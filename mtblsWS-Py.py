@@ -57,6 +57,65 @@ class GetStudyLocation(Resource):
         return wsc.get_study_location(study_id, user_token)
 
 
+class GetStudy(Resource):
+    """Get the Study in different formats"""
+    @swagger.operation(
+        summary='Get MTBLS Study',
+        notes='Get the current MTBLS Study in JSON format.',
+        parameters=[
+            {
+                "name": "study_id",
+                "in": "path",
+                "description": "Identifier of the study",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "MetaboLights identifier",
+                "dataType": "String"
+            },
+            {
+                "name": "user_token",
+                "in": "header",
+                "description": "User API token, mandatory. Used to check for permissions.",
+                "paramType": "API key",
+                "type": "String",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Study is returned, JSON format."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        if 'user_token' not in request.headers:
+            abort(401)
+        else:
+            user_token = request.headers['user_token']
+
+        # get study from MetaboLights WS
+        return wsc.get_study(study_id, user_token)
+
+
 app = Flask(__name__)
 app.config.from_object(config)
 
@@ -68,6 +127,7 @@ api = swagger.docs(Api(app),
 
 api.add_resource(About, config.RESOURCES_PATH)
 api.add_resource(GetStudyLocation, config.RESOURCES_PATH + '/study/<study_id>/location')
+api.add_resource(GetStudy, config.RESOURCES_PATH + '/study/<study_id>')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=config.PORT, debug=config.DEBUG)
