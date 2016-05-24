@@ -1,6 +1,7 @@
 import os
 
 ENV = os.environ.get('ENVIRONMENT', 'dev')
+# ENV = os.environ.get('ENVIRONMENT', 'prod')
 
 PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
 
@@ -11,11 +12,17 @@ APP_NAME = 'MetaboLights Python-based REST WebService'
 APP_VERSION = 'v1'
 RESOURCES_PATH = '/mtbls/ws/' + APP_VERSION
 API_DOC = RESOURCES_PATH + '/api/spec'
+TEST_DATA_PATH = 'testdata'
+
+MTBLS_WS_HOST = 'http://localhost'
+MTBLS_WS_PORT = ':8080'
+MTBLS_WS_RESOURCES_PATH = '/metabolights/webservice'
 
 if ENV == 'dev':
     PORT = 5000
     APP_BASE_LINK = 'http://localhost:' + str(PORT)
     DEBUG = True
 else:
+    PORT = 5000
     APP_BASE_LINK = 'https://www.ebi.ac.uk/metabolights'
     DEBUG = False
