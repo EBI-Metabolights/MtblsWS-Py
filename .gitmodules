@@ -4,3 +4,6 @@
 [submodule "isa-rest-service"]
 	path = isa-rest-service
 	url = https://github.com/ISA-tools/isa-rest-service.git
+[submodule "mzml2isa"]
+	path = mzml2isa
+	url = https://github.com/althonos/mzml2isa.git
