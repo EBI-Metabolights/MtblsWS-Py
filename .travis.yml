@@ -8,6 +8,9 @@ install:
 script:
   python mtblsWSclient.py
 
+after_success:
+  - coveralls
+
 branches:
   only:
   - master
