@@ -5,6 +5,9 @@ python:
 install:
   - pip install --upgrade pip && pip install -r requirements.txt
 
+script:
+
+
 branches:
   only:
   - master
