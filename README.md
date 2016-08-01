@@ -1,8 +1,7 @@
 MTBLS Python-based REST service
 ================
 
-![Build Status] (https://travis-ci.org/EBI-Metabolights/MtblsWS-Py.svg?branch=develop)
-
+|Git| [![Build Status] (https://travis-ci.org/EBI-Metabolights/MtblsWS-Py.svg?branch=develop)](https://travis-ci.org/EBI-Metabolights/MtblsWS-Py)
 
 Using  Flask, Swagger, flask-restful-swagger
 
