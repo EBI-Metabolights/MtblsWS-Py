@@ -1,7 +1,8 @@
 MTBLS Python-based REST service
 ================
 
-...
+|Version| |Py versions| |Git| |Build Status|
+
 
 Using  Flask, Swagger, flask-restful-swagger
 
