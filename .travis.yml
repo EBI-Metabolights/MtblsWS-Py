@@ -1,0 +1,17 @@
+language: python
+python:
+  - '2.7'
+  - '3.5'
+install:
+  - pip install --upgrade pip && pip install -r requirements.txt
+
+script:
+  python mtblsWSclient.py
+
+branches:
+  only:
+  - master
+  - develop
+
+deploy:
+  skip_cleanup: true
