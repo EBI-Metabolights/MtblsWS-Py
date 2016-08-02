@@ -1,5 +1,4 @@
 python-coveralls
-six
 flask
 flask_restful
 flask_restful_swagger
