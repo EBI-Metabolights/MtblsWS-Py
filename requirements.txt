@@ -1,3 +1,6 @@
 python-coveralls
+flask
+flask_restful
 flask_restful_swagger
 isatools
+mzml2isa
