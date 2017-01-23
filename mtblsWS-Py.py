@@ -41,22 +41,6 @@ class About(Resource):
                 }
 
 
-class GetStudyLocation(Resource):
-    def get(self, study_id):
-
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        # User authentication
-        user_token = request.headers['user_token']
-        if user_token is None:
-            abort(401)
-
-        # get study info from MetaboLights WS
-        return wsc.get_study_location(study_id, user_token)
-
-
 class GetStudy(Resource):
     """Get the Study in different formats"""
     @swagger.operation(
@@ -126,7 +110,6 @@ api = swagger.docs(Api(app),
                    resourcePath=config.RESOURCES_PATH)
 
 api.add_resource(About, config.RESOURCES_PATH)
-api.add_resource(GetStudyLocation, config.RESOURCES_PATH + '/study/<study_id>/location')
 api.add_resource(GetStudy, config.RESOURCES_PATH + '/study/<study_id>')
 
 if __name__ == '__main__':
