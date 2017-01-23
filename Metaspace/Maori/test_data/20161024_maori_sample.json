@@ -1,0 +1,46 @@
+{
+  "Submitted_By": {
+    "Submitter": {
+      "First_Name": "James",
+      "Surname": "McKenzie",
+      "Email": "j.mckenzie@imperial.ac.uk"
+    },
+    "Principal_Investigator": {
+      "First_Name": "Zoltan",
+      "Surname": "Takats",
+      "Email": "z.takats@imperial.ac.uk"
+    },
+    "Institution": "ICL"
+  },
+  "metaspace_options": {
+    "Metabolite_Database": "ChEBI",
+    "Dataset_Name": "ICL//BRB04W"
+  },
+  "Sample_Information": {
+    "Organism": "Homo_sapiens_(Human)",
+    "Organism_Part": "Breast",
+    "Condition": "Diseased",
+    "Sample_Growth_Conditions": "Human tissue"
+  },
+  "Additional_Information": {
+    "Sample_Description_Freetext": "Breast tissue",
+    "Additional_Information_Freetext": "",
+    "Publication_DOI": "10.1158/0008-5472.can-14-2258",
+    "Sample_Preparation_Freetext": "See MetaboLights repository MTBLS273"
+  },
+  "MS_Analysis": {
+    "Polarity": "Negative",
+    "Ionisation_Source": "DESI",
+    "Detector_Resolving_Power": {
+      "Resolving_Power": 100000,
+      "mz": 200
+    },
+    "Analyzer": "Orbitrap"
+  },
+  "Sample_Preparation": {
+    "MALDI_Matrix": "none",
+    "MALDI_Matrix_Application": "none",
+    "Sample_Stabilisation": "Fresh_Frozen",
+    "Tissue_Modification": "none"
+  }
+}

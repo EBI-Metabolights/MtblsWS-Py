@@ -1,0 +1,47 @@
+{
+  "Sample_Information": {
+    "Organism": "Homo_sapiens_(Human)",
+    "Organism_Part": "Colon",
+    "Condition": "Diseased",
+    "Sample_Growth_Conditions": "Human tissue"
+  },
+  "Sample_Preparation": {
+    "Sample_Stabilisation": "Fresh_Frozen",
+    "Tissue_Modification": "none",
+    "MALDI_Matrix": "none",
+    "MALDI_Matrix_Application": "none"
+  },
+  "MS_Analysis": {
+    "Ionisation_Source": "DESI",
+    "Analyzer": "Orbitrap",
+    "Detector_Resolving_Power": {
+      "mz": 200,
+      "Resolving_Power": 100000
+    },
+    "Polarity": "Positive"
+  },
+  "Submitted_By": {
+    "Institution": "Imperial College London",
+    "Submitter": {
+      "Surname": "McKenzie",
+      "First_Name": "James",
+      "Email": "j.mckenzie@imperial.ac.uk"
+    },
+    "Principal_Investigator": {
+      "Surname": "Takats",
+      "First_Name": "Zoltan",
+      "Email": "z.takats@imperial.ac.uk"
+    }
+  },
+  "metaspace_options": {
+    "Metabolite_Database": "ChEBI",
+    "Alpha-tester": false,
+    "Dataset_Name": "dataset-1"
+  },
+  "Additional_Information": {
+    "Publication_DOI": "http://www.ebi.ac.uk/metabolights/MTBLS289",
+    "Sample_Description_Freetext": "Samples from patients with colorectal adenocarcinoma.",
+    "Sample_Preparation_Freetext": "See MetaboLights repository MTBLS289",
+    "Additional_Information_Freetext": "Collection Year: 2013"
+  }
+}
