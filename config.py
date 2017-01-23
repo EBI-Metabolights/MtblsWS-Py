@@ -14,7 +14,7 @@ RESOURCES_PATH = '/mtbls/ws/' + APP_VERSION
 API_DOC = RESOURCES_PATH + '/api/spec'
 TEST_DATA_PATH = 'testdata'
 
-MTBLS_WS_HOST = 'http://localhost'
+MTBLS_WS_HOST = 'http://ves-ebi-8d'
 MTBLS_WS_PORT = ':8080'
 MTBLS_WS_RESOURCES_PATH = '/metabolights/webservice'
 
