@@ -5,3 +5,4 @@ flask_restful_swagger
 isatools
 mzml2isa
 requests
+jsonschema
