@@ -23,12 +23,12 @@ class WsClient:
         :param user_token: User API token. Used to check for permissions
         """
         if config.DEBUG:
-            return jsonify({'Study-Location': os.path.normpath(os.path.join(config.PROJECT_PATH, config.TEST_DATA_PATH))})
+            return os.path.normpath(os.path.join(config.STUDIES_PATH, study_id))
         else:
             resource = config.MTBLS_WS_RESOURCES_PATH + '/study/' + study_id
             url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
             resp = requests.get(url, headers={"user_token": user_token}).json()
-            return jsonify({'Study-Location': resp['content']['studyLocation']})
+            return resp['content']['studyLocation']
 
     def get_study(self, study_id, user_token):
         """
