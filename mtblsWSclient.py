@@ -25,10 +25,10 @@ class WsClient:
         if config.DEBUG:
             return os.path.normpath(os.path.join(config.STUDIES_PATH, study_id))
         else:
-            resource = config.MTBLS_WS_RESOURCES_PATH + '/study/' + study_id
+            resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
             url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
             resp = requests.get(url, headers={"user_token": user_token}).json()
-            return resp['content']['studyLocation']
+            return resp["content"]["studyLocation"]
 
     def get_study(self, study_id, user_token):
         """
@@ -39,14 +39,13 @@ class WsClient:
         :param study_id: Identifier of the study in MetaboLights
         :param user_token: User API token. Used to check for permissions
         """
-        resource = config.MTBLS_WS_RESOURCES_PATH + '/study/' + study_id
+        resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
         url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
         resp = requests.get(url, headers={"user_token": user_token}).json()
-        if resp['err'] is not None:
-            response = Response(mimetype='application/json')
+        if resp["err"] is not None:
             response = jsonify({
-                'message': resp['message'],
-                'cause': resp['err']['localizedMessage']
+                "message": resp["message"],
+                "cause": resp["err"]["localizedMessage"]
             })
             response.status_code = 403
             return response

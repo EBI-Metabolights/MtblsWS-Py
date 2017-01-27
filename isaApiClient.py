@@ -1,7 +1,4 @@
-from flask import jsonify
 from isatools.convert import isatab2json
-from isatools.isatab import dump
-from isatools.model.v1 import Investigation, Study
 from mtblsWSclient import WsClient
 
 """
@@ -28,7 +25,7 @@ class IsaApiClient:
         """
         return wsc.get_study_location(study_id, api_key)
 
-    def get_investigation_obj(self, study_id, api_key):
+    def get_isa_json(self, study_id, api_key):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
@@ -36,8 +33,24 @@ class IsaApiClient:
         :return: an ISA-API Investigation object
         """
         path = self.get_study_location(study_id, api_key)
-        inv_obj = isatab2json.convert(path, validate_first=False)
-        return inv_obj
+        # try the new parser first
+        # isa_json = None
+        try:
+            isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=True)
+        except Exception as inst:  # on failure, use the old one
+            try:
+                isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=False)
+            except Exception as inst:
+                # if it fails too
+                if isa_json is None:
+                    print(type(inst))  # the exception instance
+                    print(inst.args)
+                    # raise
+                    raise RuntimeError("Validation error when trying to read the study.")
+            else:
+                return isa_json
+        else:
+            return isa_json
 
     def get_study_title(self, study_id, api_key):
         """
@@ -46,6 +59,6 @@ class IsaApiClient:
         :param api_key: User API key for accession check
         :return: a string with the study title
         """
-        inv_obj = self.get_investigation_obj(study_id,api_key)
-        std_obj = inv_obj.get('studies')[0]  # assuming there is only one study per investigation file
-        return std_obj.get('title')
+        inv_obj = self.get_isa_json(study_id, api_key)
+        std_obj = inv_obj.get("studies")[0]  # assuming there is only one study per investigation file
+        return std_obj.get("title")
