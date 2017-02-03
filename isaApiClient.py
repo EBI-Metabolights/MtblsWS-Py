@@ -97,7 +97,7 @@ class IsaApiClient:
         i_filename = glob.glob(os.path.join(i_path, "i_*.txt"))[0]
         o_filename = os.path.join(o_path, "i_investigation.txt")
 
-        o_file = open(o_filename, mode='a')
+        o_file = open(o_filename, mode='w')
 
         with open(i_filename) as i_file:
             for line in i_file:
@@ -107,3 +107,44 @@ class IsaApiClient:
                     o_file.write('Study Title' + '\t' + '"' + new_title + '"' + '\n')
 
         return new_title
+
+    def get_study_description(self, study_id, api_key):
+        """
+        Get the Study description
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: a string with the study description
+        """
+        inv_obj = self.get_isa_json(study_id, api_key)
+        std_obj = inv_obj.get("studies")[0]  # assuming there is only one study per investigation file
+        return std_obj.get("description")
+
+    def get_study_description_noISATools(self, study_id, api_key):
+        path = self.get_study_location(study_id, api_key)
+        i_filename = glob.glob(os.path.join(path, "i_*.txt"))[0]
+        with open(i_filename) as i_file:
+            for line in i_file:
+                if "Study Description" in line:
+                    line = line.replace("Study Description", "")
+                    line = line.replace("\t", "")
+                    line = line.replace("\n", "")
+                    line = line.replace("\"", "")
+                    return line
+
+    def write_study_description(self, study_id, api_key, new_description):
+        i_path = self.get_study_location(study_id, api_key)
+        o_path = self.get_study_updates_location(study_id, api_key)
+
+        i_filename = glob.glob(os.path.join(i_path, "i_*.txt"))[0]
+        o_filename = os.path.join(o_path, "i_investigation.txt")
+
+        o_file = open(o_filename, mode='w')
+
+        with open(i_filename) as i_file:
+            for line in i_file:
+                if "Study Description" not in line:
+                    o_file.write(line)
+                else:
+                    o_file.write('Study Description' + '\t' + '"' + new_description + '"' + '\n')
+
+        return new_description
