@@ -5,6 +5,9 @@ MTBLS Python-based REST service
 Branch: Master
 [![Build Status](https://travis-ci.org/EBI-Metabolights/MtblsWS-Py.svg?branch=master)](https://travis-ci.org/EBI-Metabolights/MtblsWS-Py) [![Coverage Status](https://coveralls.io/repos/github/EBI-Metabolights/MtblsWS-Py/badge.svg?branch=master)](https://coveralls.io/github/EBI-Metabolights/MtblsWS-Py?branch=master)
 
+Branch: Develop
+[![Build Status](https://travis-ci.org/EBI-Metabolights/MtblsWS-Py.svg?branch=develop)](https://travis-ci.org/EBI-Metabolights/MtblsWS-Py) [![Coverage Status](https://coveralls.io/repos/github/EBI-Metabolights/MtblsWS-Py/badge.svg?branch=develop)](https://coveralls.io/github/EBI-Metabolights/MtblsWS-Py?branch=mdevelop)
+
 
 Using  Flask, Swagger, flask-restful-swagger
 
