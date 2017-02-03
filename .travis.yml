@@ -14,6 +14,7 @@ after_success:
 branches:
   only:
   - master
+  - develop
 
 deploy:
   skip_cleanup: true
