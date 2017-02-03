@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # check paths after installation and change accordingly
-if [ $1 == 'dev' ]
+if [[ $1 == "dev" ]]
   then
     HOME=/home/tc_cm01
  else
