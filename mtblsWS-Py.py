@@ -166,7 +166,9 @@ class StudyTitle(Resource):
     """Manage the Study title"""
     @swagger.operation(
         summary="Get MTBLS Study title",
-        notes="Get the current MTBLS Study title in JSON format.",
+        notes="""Get the current MTBLS Study title in JSON format.<br>
+        NOTE: Use '?method=noISATools' in the query path to access i_*.txt file directly,
+        without using the ISA-Tools API.""",
         parameters=[
             {
                 "name": "study_id",
@@ -217,7 +219,13 @@ class StudyTitle(Resource):
         else:
             user_token = request.headers["user_token"]
 
-        title = iac.get_study_title(study_id, user_token)
+        args = request.args
+        print(args)  # For debugging
+
+        if "noISATools" in args['method']:
+            title = iac.get_study_title_noISATools(study_id, user_token)
+        else:
+            title = iac.get_study_title(study_id, user_token)
 
         return jsonify({"Study-title": title})
 
@@ -283,7 +291,8 @@ class StudyTitle(Resource):
             user_token = request.headers['user_token']
 
         # update study title
-        return iac.write_study_title_json(study_id, user_token, new_title)
+        # return iac.write_study_json_title(study_id, user_token, new_title)
+        return iac.write_study_title(study_id, user_token, new_title)
 
 
 app = Flask(__name__)

@@ -13,7 +13,8 @@ APP_VERSION = "v1"
 RESOURCES_PATH = "/mtbls/ws/" + APP_VERSION
 API_DOC = RESOURCES_PATH + "/api/spec"
 TEST_DATA_PATH = "testdata"
-STUDIES_PATH = "/Users/jrmacias/Projects/Deploy-local/vnas-metabolights/metabolights/test/studies/"
+STUDIES_INPUT_PATH = "/Users/jrmacias/Projects/Deploy-local/vnas-metabolights/metabolights/test/studies/"
+STUDIES_OUTPUT_PATH = "/Users/jrmacias/Projects/Deploy-local/vnas-metabolights/metabolights/test/userspace/"
 
 MTBLS_WS_HOST = "http://ves-ebi-8d"
 MTBLS_WS_PORT = ":8080"
