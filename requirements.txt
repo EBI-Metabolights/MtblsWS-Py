@@ -6,4 +6,3 @@ isatools
 mzml2isa
 requests
 jsonschema
-isatools
