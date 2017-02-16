@@ -6,4 +6,4 @@ VENVDIR=$APPDIR/venv
 
 cd $APPDIR
 source $VENVDIR/bin/activate
-python $APPDIR/mtblsWS-Py.py
+python $APPDIR/mtblsWS-Py.py & echo $! > mtblsWS-Py.pid
