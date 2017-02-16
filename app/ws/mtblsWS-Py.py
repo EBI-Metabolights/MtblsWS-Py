@@ -1,17 +1,16 @@
-import config
 import json
+import config
 from flask import Flask, request, abort, jsonify
 from flask_restful import Api, Resource
 from flask_restful_swagger import swagger
-from isaApiClient import IsaApiClient
-from mtblsWSclient import WsClient
+from app.ws.isaApiClient import IsaApiClient, WsClient
 
 """
 MetaboLights WS-Py
 
 MTBLS Python-based REST Web Service
 
-author: jrmacias
+author: jrmacias@ebi.ac.uk
 date: 20160520
 """
 

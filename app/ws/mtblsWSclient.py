@@ -8,7 +8,7 @@ MetaboLights WS client
 
 Use the Java-based REST resources provided from MTBLS
 
-author: jrmacias
+author: jrmacias@ebi.ac.uk
 date: 20160520
 """
 

@@ -1,18 +1,14 @@
 import glob
 import os
-
-from isatools import isatab
 from isatools.convert import isatab2json
-from isatools.model.v1 import *
-
-from mtblsWSclient import WsClient
+from app.ws.mtblsWSclient import WsClient
 
 """
 MetaboLights ISA-API client
 
 Use the Python-based ISA-API tools
 
-author: jrmacias
+author: jrmacias@ebi.ac.uk
 date: 20170112
 """
 

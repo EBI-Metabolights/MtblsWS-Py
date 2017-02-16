@@ -1,6 +1,7 @@
-import os
 import json
-from Metaspace.Maori.model import maoriStudy
+import os
+
+from app.modules.Metaspace import maoriStudy
 
 """
 METASPACE MaoriParser
