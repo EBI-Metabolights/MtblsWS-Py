@@ -54,9 +54,6 @@ class IsaApiClient:
             except Exception as inst:
                 # if it fails too
                 if isa_json is None:
-                    print(type(inst))  # the exception instance
-                    print(inst.args)
-                    # raise
                     raise RuntimeError("Validation error when trying to read the study.")
             else:
                 return isa_json
