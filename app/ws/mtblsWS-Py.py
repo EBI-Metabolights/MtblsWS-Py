@@ -219,7 +219,6 @@ class StudyTitle(Resource):
             user_token = request.headers["user_token"]
 
         args = request.args
-        print(args)  # For debugging
 
         if "noISATools" in args['method']:
             title = iac.get_study_title_noISATools(study_id, user_token)
@@ -356,7 +355,6 @@ class StudyDescription(Resource):
             user_token = request.headers["user_token"]
 
         args = request.args
-        print(args)  # For debugging
 
         if "noISATools" in args['method']:
             description = iac.get_study_description_noISATools(study_id, user_token)
