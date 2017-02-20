@@ -51,7 +51,6 @@ class GetStudy(Resource):
         parameters=[
             {
                 "name": "study_id",
-                "in": "path",
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
@@ -60,7 +59,6 @@ class GetStudy(Resource):
             },
             {
                 "name": "user_token",
-                "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
                 "paramType": "header",
                 "type": "string",
@@ -190,6 +188,17 @@ class StudyTitle(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "method",
+                "in": "path",
+                "description": "Use 'direct' to access i_*.txt file without calling ISA-API.",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["ISA-API", "direct"],
+                "default": "ISA-API"
             }
         ],
         responseMessages=[
@@ -228,7 +237,7 @@ class StudyTitle(Resource):
 
         args = request.args
 
-        if "noISATools" in args['method']:
+        if "direct" in args['method']:
             title = iac.get_study_title_noISATools(study_id, user_token)
         else:
             title = iac.get_study_title(study_id, user_token)
@@ -238,15 +247,10 @@ class StudyTitle(Resource):
     @swagger.operation(
         summary='Update MTBLS Study title',
         notes="""Update MTBLS Study title.
-              The new title must be provided in the body of the request, in JSON format, i.e.:
-              {
-                "title": "New Study title..."
-              }
-              """,
+              Only the new title should be provided in the body of the request (in JSON format)""",
         parameters=[
             {
                 "name": "study_id",
-                "in": "path",
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
@@ -255,18 +259,28 @@ class StudyTitle(Resource):
             },
             {
                 "name": "user_token",
-                "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "title",
+                "description": """The new title must be provided in the body of the request, in JSON format.</br>
+                 i.e.: { "title": "New Study title..." }""",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+                "default": """{ ""title"": ""New Study title..." }"""
             }
         ],
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK."
+                "message": "OK. The Study title is returned, JSON format."
             },
             {
                 "code": 400,
@@ -295,7 +309,7 @@ class StudyTitle(Resource):
         if request.data is None:
             abort(400)
         else:
-            dataDict = json.loads(request.data.decode('utf-8'))
+            dataDict = request.get_json(force=True)
             new_title = dataDict['title']
 
         # User authentication
@@ -319,7 +333,6 @@ class StudyDescription(Resource):
         parameters=[
             {
                 "name": "study_id",
-                "in": "path",
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
@@ -328,12 +341,21 @@ class StudyDescription(Resource):
             },
             {
                 "name": "user_token",
-                "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "method",
+                "description": "Use 'direct' to access i_*.txt file without calling ISA-API.",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["ISA-API", "direct"],
+                "default": "ISA-API"
             }
         ],
         responseMessages=[
@@ -372,7 +394,7 @@ class StudyDescription(Resource):
 
         args = request.args
 
-        if "noISATools" in args['method']:
+        if "direct" in args['method']:
             description = iac.get_study_description_noISATools(study_id, user_token)
         else:
             description = iac.get_study_description(study_id, user_token)
@@ -390,7 +412,6 @@ class StudyDescription(Resource):
         parameters=[
             {
                 "name": "study_id",
-                "in": "path",
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
@@ -399,18 +420,28 @@ class StudyDescription(Resource):
             },
             {
                 "name": "user_token",
-                "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "description",
+                "description": """The new description must be provided in the body of the request, in JSON format.</br>
+                 i.e.: { "description": "New Study description..." }""",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+                "default": """{ ""description"": ""New Study title..." }"""
             }
         ],
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK."
+                "message": "OK. The Study description is returned, JSON format."
             },
             {
                 "code": 400,
@@ -462,7 +493,7 @@ api = swagger.docs(Api(app),
 
 api.add_resource(About, config.RESOURCES_PATH)
 api.add_resource(GetStudy, config.RESOURCES_PATH + "/study/<study_id>")
-api.add_resource(Study, config.RESOURCES_PATH + "/study/<study_id>/isa_json")
+# api.add_resource(Study, config.RESOURCES_PATH + "/study/<study_id>/isa_json")
 api.add_resource(StudyTitle, config.RESOURCES_PATH + "/study/<study_id>/title")
 api.add_resource(StudyDescription, config.RESOURCES_PATH + "/study/<study_id>/description")
 
