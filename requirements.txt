@@ -2,6 +2,7 @@ python-coveralls
 flask
 flask_restful
 flask_restful_swagger
+flask-cors
 isatools
 mzml2isa
 requests

@@ -3,6 +3,7 @@ import config
 from flask import Flask, request, abort, jsonify
 from flask_restful import Api, Resource
 from flask_restful_swagger import swagger
+from flask_cors import CORS, cross_origin
 from app.ws.isaApiClient import IsaApiClient, WsClient
 
 """
@@ -483,6 +484,7 @@ class StudyDescription(Resource):
         return iac.write_study_description(study_id, user_token, new_description)
 
 app = Flask(__name__)
+CORS(app, resources={r'/mtbls/ws/v1/study/*': {"origins": "http://localhost:4200"}})
 app.config.from_object(config)
 
 api = swagger.docs(Api(app),
