@@ -6,4 +6,4 @@ VENVDIR=$APPDIR/venv
 
 cd $APPDIR
 source $VENVDIR/bin/activate
-python $APPDIR/mtblsWS-Py.py & echo $! > mtblsWS-Py.pid
+python $APPDIR/app.py > logs.txt 2>&1 & echo $! > app.pid
