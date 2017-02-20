@@ -23,7 +23,7 @@ iac = IsaApiClient()
 class About(Resource):
     """Basic description of the Web Service"""
     @swagger.operation(
-        summary="About this WS",
+        summary="About this Web Service",
         notes="Basic description of the Web Service",
         nickname="about",
         responseMessages=[
@@ -48,11 +48,11 @@ class GetStudy(Resource):
     """Get the Study in different formats"""
     @swagger.operation(
         summary="Get MTBLS Study",
-        notes="Get the current MTBLS Study in JSON format.",
+        notes="Get the MTBLS Study with {study_id} in JSON format.",
         parameters=[
             {
                 "name": "study_id",
-                "description": "Identifier of the study",
+                "description": "MTBLS Identifier",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -60,7 +60,7 @@ class GetStudy(Resource):
             },
             {
                 "name": "user_token",
-                "description": "User API token, mandatory. Used to check for permissions.",
+                "description": "User API token",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
@@ -103,13 +103,12 @@ class GetStudy(Resource):
 
 class Study(Resource):
     @swagger.operation(
-        summary="Get MTBLS Study",
-        notes="Get the MTBLS Study as ISA-Tab object.",
+        summary="Get ISA object from MTBLS Study",
+        notes="Get the MTBLS Study with {study_id} as ISA object.",
         parameters=[
             {
                 "name": "study_id",
-                "in": "path",
-                "description": "Identifier of the study",
+                "description": "MTBLS Identifier",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -117,8 +116,7 @@ class Study(Resource):
             },
             {
                 "name": "user_token",
-                "in": "header",
-                "description": "User API token, mandatory. Used to check for permissions.",
+                "description": "User API token",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
@@ -168,14 +166,11 @@ class StudyTitle(Resource):
     """Manage the Study title"""
     @swagger.operation(
         summary="Get MTBLS Study title",
-        notes="""Get the current MTBLS Study title in JSON format.<br>
-        NOTE: Use '?method=noISATools' in the query path to access i_*.txt file directly,
-        without using the ISA-Tools API.""",
+        notes="Get the title of the MTBLS Study with {study_id} in JSON format.",
         parameters=[
             {
                 "name": "study_id",
-                "in": "path",
-                "description": "Identifier of the study",
+                "description": "MTBLS Identifier",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -183,8 +178,7 @@ class StudyTitle(Resource):
             },
             {
                 "name": "user_token",
-                "in": "header",
-                "description": "User API token, mandatory. Used to check for permissions.",
+                "description": "User API token",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
@@ -193,7 +187,7 @@ class StudyTitle(Resource):
             {
                 "name": "method",
                 "in": "path",
-                "description": "Use 'direct' to access i_*.txt file without calling ISA-API.",
+                "description": "Use 'direct' to access i_*.txt without calling ISA-API.",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -247,12 +241,13 @@ class StudyTitle(Resource):
 
     @swagger.operation(
         summary='Update MTBLS Study title',
-        notes="""Update MTBLS Study title.
-              Only the new title should be provided in the body of the request (in JSON format)""",
+        notes="""Update the title of the MTBLS Study with {study_id}.
+              Only the new title (in JSON format) must be provided in the body of the request.
+              i.e.: { "title": "New Study title..." }""",
         parameters=[
             {
                 "name": "study_id",
-                "description": "Identifier of the study",
+                "description": "MTBLS Identifier",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -260,7 +255,7 @@ class StudyTitle(Resource):
             },
             {
                 "name": "user_token",
-                "description": "User API token, mandatory. Used to check for permissions.",
+                "description": "User API token",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
@@ -268,14 +263,13 @@ class StudyTitle(Resource):
             },
             {
                 "name": "title",
-                "description": """The new title must be provided in the body of the request, in JSON format.</br>
+                "description": """New title in JSON format.</br>
                  i.e.: { "title": "New Study title..." }""",
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
                 "required": True,
-                "allowMultiple": False,
-                "default": """{ ""title"": ""New Study title..." }"""
+                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -328,13 +322,11 @@ class StudyDescription(Resource):
     """Manage the Study title"""
     @swagger.operation(
         summary="Get MTBLS Study description",
-        notes="""Get the current MTBLS Study description in JSON format.<br>
-        NOTE: Use '?method=noISATools' in the query path to access i_*.txt file directly,
-        without using the ISA-Tools API.""",
+        notes="Get the description of the MTBLS Study with {study_id} in JSON format.",
         parameters=[
             {
                 "name": "study_id",
-                "description": "Identifier of the study",
+                "description": "MTBLS Identifier",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -342,7 +334,7 @@ class StudyDescription(Resource):
             },
             {
                 "name": "user_token",
-                "description": "User API token, mandatory. Used to check for permissions.",
+                "description": "User API token",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
@@ -350,7 +342,7 @@ class StudyDescription(Resource):
             },
             {
                 "name": "method",
-                "description": "Use 'direct' to access i_*.txt file without calling ISA-API.",
+                "description": "Use 'direct' to access i_*.txt without calling ISA-API.",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -404,16 +396,13 @@ class StudyDescription(Resource):
 
     @swagger.operation(
         summary='Update MTBLS Study description',
-        notes="""Update MTBLS Study description.
-              The new description must be provided in the body of the request, in JSON format, i.e.:
-              {
-                "description": "New Study description..."
-              }
-              """,
+        notes="""Update the description of the MTBLS Study with {study_id}.
+                  Only the new description (in JSON format) must be provided in the body of the request.
+                  i.e.: { "description": "New Study description..." }""",
         parameters=[
             {
                 "name": "study_id",
-                "description": "Identifier of the study",
+                "description": "MTBLS Identifier",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -421,7 +410,7 @@ class StudyDescription(Resource):
             },
             {
                 "name": "user_token",
-                "description": "User API token, mandatory. Used to check for permissions.",
+                "description": "User API token",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
@@ -429,14 +418,13 @@ class StudyDescription(Resource):
             },
             {
                 "name": "description",
-                "description": """The new description must be provided in the body of the request, in JSON format.</br>
+                "description": """New description in JSON format.</br>
                  i.e.: { "description": "New Study description..." }""",
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
                 "required": True,
-                "allowMultiple": False,
-                "default": """{ ""description"": ""New Study title..." }"""
+                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -495,7 +483,7 @@ api = swagger.docs(Api(app),
 
 api.add_resource(About, config.RESOURCES_PATH)
 api.add_resource(GetStudy, config.RESOURCES_PATH + "/study/<study_id>")
-# api.add_resource(Study, config.RESOURCES_PATH + "/study/<study_id>/isa_json")
+api.add_resource(Study, config.RESOURCES_PATH + "/study/<study_id>/isa_json")
 api.add_resource(StudyTitle, config.RESOURCES_PATH + "/study/<study_id>/title")
 api.add_resource(StudyDescription, config.RESOURCES_PATH + "/study/<study_id>/description")
 
