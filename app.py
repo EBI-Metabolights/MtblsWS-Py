@@ -55,15 +55,15 @@ class GetStudy(Resource):
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
-                "paramType": "MetaboLights identifier",
-                "dataType": "String"
+                "paramType": "path",
+                "dataType": "string"
             },
             {
                 "name": "user_token",
                 "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
-                "paramType": "API key",
-                "type": "String",
+                "paramType": "header",
+                "type": "string",
                 "required": True,
                 "allowMultiple": False
             }
@@ -113,15 +113,15 @@ class Study(Resource):
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
-                "paramType": "MetaboLights identifier",
-                "dataType": "String"
+                "paramType": "path",
+                "dataType": "string"
             },
             {
                 "name": "user_token",
                 "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
-                "paramType": "API key",
-                "type": "String",
+                "paramType": "header",
+                "type": "string",
                 "required": True,
                 "allowMultiple": False
             }
@@ -130,6 +130,10 @@ class Study(Resource):
             {
                 "code": 200,
                 "message": "OK. The Study title is returned, JSON format."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
             },
             {
                 "code": 401,
@@ -175,15 +179,15 @@ class StudyTitle(Resource):
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
-                "paramType": "MetaboLights identifier",
-                "dataType": "String"
+                "paramType": "path",
+                "dataType": "string"
             },
             {
                 "name": "user_token",
                 "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
-                "paramType": "API key",
-                "type": "String",
+                "paramType": "header",
+                "type": "string",
                 "required": True,
                 "allowMultiple": False
             }
@@ -192,6 +196,10 @@ class StudyTitle(Resource):
             {
                 "code": 200,
                 "message": "OK. The Study title is returned, JSON format."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
             },
             {
                 "code": 401,
@@ -242,15 +250,15 @@ class StudyTitle(Resource):
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
-                "paramType": "MetaboLights identifier",
-                "dataType": "String"
+                "paramType": "path",
+                "dataType": "string"
             },
             {
                 "name": "user_token",
                 "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
-                "paramType": "API key",
-                "type": "String",
+                "paramType": "header",
+                "type": "string",
                 "required": True,
                 "allowMultiple": False
             }
@@ -259,6 +267,10 @@ class StudyTitle(Resource):
             {
                 "code": 200,
                 "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
             },
             {
                 "code": 401,
@@ -311,15 +323,15 @@ class StudyDescription(Resource):
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
-                "paramType": "MetaboLights identifier",
-                "dataType": "String"
+                "paramType": "path",
+                "dataType": "string"
             },
             {
                 "name": "user_token",
                 "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
-                "paramType": "API key",
-                "type": "String",
+                "paramType": "header",
+                "type": "string",
                 "required": True,
                 "allowMultiple": False
             }
@@ -328,6 +340,10 @@ class StudyDescription(Resource):
             {
                 "code": 200,
                 "message": "OK. The Study description is returned, JSON format."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
             },
             {
                 "code": 401,
@@ -378,15 +394,15 @@ class StudyDescription(Resource):
                 "description": "Identifier of the study",
                 "required": True,
                 "allowMultiple": False,
-                "paramType": "MetaboLights identifier",
-                "dataType": "String"
+                "paramType": "path",
+                "dataType": "string"
             },
             {
                 "name": "user_token",
                 "in": "header",
                 "description": "User API token, mandatory. Used to check for permissions.",
-                "paramType": "API key",
-                "type": "String",
+                "paramType": "header",
+                "type": "string",
                 "required": True,
                 "allowMultiple": False
             }
@@ -395,6 +411,10 @@ class StudyDescription(Resource):
             {
                 "code": 200,
                 "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
             },
             {
                 "code": 401,
