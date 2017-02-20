@@ -286,7 +286,7 @@ class StudyTitle(Resource):
             }
         ]
     )
-    def post(self, study_id):
+    def put(self, study_id):
         # param validation
         if study_id is None:
             abort(404)
@@ -430,7 +430,7 @@ class StudyDescription(Resource):
             }
         ]
     )
-    def post(self, study_id):
+    def put(self, study_id):
         # param validation
         if study_id is None:
             abort(404)
