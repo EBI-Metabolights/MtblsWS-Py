@@ -6,7 +6,7 @@ install:
   - pip install --upgrade pip && pip install six && pip install -r requirements.txt
 
 script:
-  python app.py
+  travis_wait python app.py
 
 after_success:
   - coveralls
