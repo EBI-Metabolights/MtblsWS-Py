@@ -6,7 +6,7 @@ install:
   - pip install --upgrade pip && pip install six && pip install -r requirements.txt
 
 script:
-  travis_wait python app.py
+  python app.py
 
 after_success:
   - coveralls
@@ -14,9 +14,3 @@ after_success:
 branches:
   only:
   - master
-  - develop
-
-deploy:
-  skip_cleanup: true
-  on:
-    tags: true

@@ -3,6 +3,7 @@ flask
 flask_restful
 flask_restful_swagger
 flask-cors
+enum34
 isatools
 mzml2isa
 requests
