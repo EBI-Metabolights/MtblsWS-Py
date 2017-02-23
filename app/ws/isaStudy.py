@@ -83,11 +83,9 @@ class StudyTitle(Resource):
         # User authentication
         if "user_token" not in request.headers:
             abort(401)
-        else:
-            user_token = request.headers["user_token"]
+        user_token = request.headers["user_token"]
 
         args = request.args
-
         if "direct" in args['method']:
             title = iac.get_study_title_noISATools(study_id, user_token)
         else:
@@ -156,18 +154,16 @@ class StudyTitle(Resource):
         if study_id is None:
             abort(404)
 
+        # User authentication
+        if "user_token" not in request.headers:
+            abort(401)
+        user_token = request.headers["user_token"]
+
         # body content validation
         if request.data is None:
             abort(400)
-        else:
-            dataDict = request.get_json(force=True)
-            new_title = dataDict['title']
-
-        # User authentication
-        if 'user_token' not in request.headers:
-            abort(401)
-        else:
-            user_token = request.headers['user_token']
+        data_dict = request.get_json(force=True)
+        new_title = data_dict['title']
 
         # update study title
         # return iac.write_study_json_title(study_id, user_token, new_title)
@@ -238,8 +234,7 @@ class StudyDescription(Resource):
         # User authentication
         if "user_token" not in request.headers:
             abort(401)
-        else:
-            user_token = request.headers["user_token"]
+        user_token = request.headers["user_token"]
 
         args = request.args
 
@@ -311,18 +306,16 @@ class StudyDescription(Resource):
         if study_id is None:
             abort(404)
 
+        # User authentication
+        if "user_token" not in request.headers:
+            abort(401)
+        user_token = request.headers["user_token"]
+
         # body content validation
         if request.data is None:
             abort(400)
-        else:
-            dataDict = json.loads(request.data.decode('utf-8'))
-            new_description = dataDict['description']
-
-        # User authentication
-        if 'user_token' not in request.headers:
-            abort(401)
-        else:
-            user_token = request.headers['user_token']
+        data_dict = json.loads(request.data.decode('utf-8'))
+        new_description = data_dict['description']
 
         # update study description
         return iac.write_study_description(study_id, user_token, new_description)
