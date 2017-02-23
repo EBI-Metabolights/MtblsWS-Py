@@ -1,5 +1,6 @@
 import glob
 import os
+from flask import abort
 from isatools.convert import isatab2json
 from app.ws.mtblsWSclient import WsClient
 
@@ -35,7 +36,8 @@ class IsaApiClient:
             except Exception as inst:
                 # if it fails too
                 if isa_json is None:
-                    raise RuntimeError("Validation error when trying to read the study.")
+                    # raise RuntimeError("Validation error when trying to read the study.")
+                    abort(500)
             else:
                 return isa_json
         else:
