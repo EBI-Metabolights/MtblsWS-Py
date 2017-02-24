@@ -81,7 +81,7 @@ class IsaApiClient:
         std_obj = inv_obj.studies[0]
         std_obj.title = new_title
 
-        path = wsc.get_study_location(study_id, api_key)
+        path = wsc.get_study_updates_location(study_id, api_key)
 
         # Using the new feature in isaoools, implemented from issue #185
         # https://github.com/ISA-tools/isa-api/issues/185
@@ -103,7 +103,7 @@ class IsaApiClient:
         std_obj = inv_obj.studies[0]
         std_obj.description = new_description
 
-        path = wsc.get_study_location(study_id, api_key)
+        path = wsc.get_study_updates_location(study_id, api_key)
 
         # Using the new feature in isaoools, implemented from issue #185
         # https://github.com/ISA-tools/isa-api/issues/185
