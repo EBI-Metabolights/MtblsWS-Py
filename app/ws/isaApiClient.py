@@ -1,7 +1,8 @@
 import glob
 import os
 from flask import abort
-from isatools.convert import isatab2json
+# TODO here we are using the develop branch of isatools. Replace with the pip version when released.
+from isatools.isatab import load, dumps
 from app.ws.mtblsWSclient import WsClient
 
 """
@@ -19,7 +20,7 @@ wsc = WsClient()
 
 class IsaApiClient:
 
-    def get_isa_json(self, study_id, api_key):
+    def _get_isa_json(self, study_id, api_key):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
@@ -27,21 +28,19 @@ class IsaApiClient:
         :return: an ISA-API Investigation object
         """
         path = wsc.get_study_location(study_id, api_key)
-        # try the new parser first
         try:
-            isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=True)
-        except Exception as inst:  # on failure, use the old one
-            try:
-                isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=False)
-            except Exception as inst:
-                # if it fails too
-                if isa_json is None:
-                    # raise RuntimeError("Validation error when trying to read the study.")
-                    abort(500)
-            else:
-                return isa_json
+            i_filename = glob.glob(os.path.join(path, "i_*.txt"))[0]
+            fp = open(i_filename)
+            isa_json = load(fp, skip_load_tables=True)
+        except Exception:
+            abort(500)
         else:
             return isa_json
+
+    def get_json_study(self, study_id, api_key):
+        inv_obj = self._get_isa_json(study_id, api_key)
+        std_obj = inv_obj.studies[0]
+        return std_obj
 
     def get_study_title(self, study_id, api_key):
         """
@@ -50,40 +49,8 @@ class IsaApiClient:
         :param api_key: User API key for accession check
         :return: a string with the study title
         """
-        inv_obj = self.get_isa_json(study_id, api_key)
-        std_obj = inv_obj.get("studies")[0]  # assuming there is only one study per investigation file
-        return std_obj.get("title")
-
-    # TODO remove once the new ISA parser is fully tested and functional
-    def get_study_title_noISATools(self, study_id, api_key):
-        path = wsc.get_study_location(study_id, api_key)
-        i_filename = glob.glob(os.path.join(path, "i_*.txt"))[0]
-        with open(i_filename) as i_file:
-            for line in i_file:
-                if "Study Title" in line:
-                    line = line.replace("Study Title", "")
-                    line = line.replace("\t", "")
-                    line = line.replace("\n", "")
-                    line = line.replace("\"", "")
-                    return line
-
-    def write_study_title(self, study_id, api_key, new_title):
-        i_path = wsc.get_study_location(study_id, api_key)
-        o_path = wsc.get_study_updates_location(study_id, api_key)
-
-        i_filename = glob.glob(os.path.join(i_path, "i_*.txt"))[0]
-        o_filename = os.path.join(o_path, "i_investigation.txt")
-
-        o_file = open(o_filename, mode='w')
-
-        with open(i_filename) as i_file:
-            for line in i_file:
-                if "Study Title" not in line:
-                    o_file.write(line)
-                else:
-                    o_file.write('Study Title' + '\t' + '"' + new_title + '"' + '\n')
-
-        return new_title
+        std_obj = self.get_json_study(study_id, api_key)
+        return std_obj.title
 
     def get_study_description(self, study_id, api_key):
         """
@@ -92,37 +59,48 @@ class IsaApiClient:
         :param api_key: User API key for accession check
         :return: a string with the study description
         """
-        inv_obj = self.get_isa_json(study_id, api_key)
-        std_obj = inv_obj.get("studies")[0]  # assuming there is only one study per investigation file
-        return std_obj.get("description")
+        std_obj = self.get_json_study(study_id, api_key)
+        return std_obj.description
 
-    # TODO remove once the new ISA parser is fully tested and functional
-    def get_study_description_noISATools(self, study_id, api_key):
-        path = wsc.get_study_location(study_id, api_key)
-        i_filename = glob.glob(os.path.join(path, "i_*.txt"))[0]
-        with open(i_filename) as i_file:
-            for line in i_file:
-                if "Study Description" in line:
-                    line = line.replace("Study Description", "")
-                    line = line.replace("\t", "")
-                    line = line.replace("\n", "")
-                    line = line.replace("\"", "")
-                    return line
+    def write_study_json_title(self, study_id, api_key, new_title):
+        inv_obj = self._get_isa_json(study_id, api_key)
+        std_obj = inv_obj.studies[0]
+        std_obj.title = new_title
 
-    def write_study_description(self, study_id, api_key, new_description):
-        i_path = wsc.get_study_location(study_id, api_key)
-        o_path = wsc.get_study_updates_location(study_id, api_key)
+        # Using the new feature in isaoools, implemented from issue #185
+        # https://github.com/ISA-tools/isa-api/issues/185
+        # dumps() writes out the ISA as a string representation of the ISA-Tab,
+        # skipping writing tables, i.e. only i_investigation.txt
+        inv_str = dumps(inv_obj, skip_dump_tables=True)
+        self.write_inv_file(study_id, api_key, inv_str)
 
-        i_filename = glob.glob(os.path.join(i_path, "i_*.txt"))[0]
-        o_filename = os.path.join(o_path, "i_investigation.txt")
+        return new_title
 
-        o_file = open(o_filename, mode='w')
+    def write_study_json_description(self, study_id, api_key, new_description):
+        inv_obj = self._get_isa_json(study_id, api_key)
+        std_obj = inv_obj.studies[0]
+        std_obj.description = new_description
 
-        with open(i_filename) as i_file:
-            for line in i_file:
-                if "Study Description" not in line:
-                    o_file.write(line)
-                else:
-                    o_file.write('Study Description' + '\t' + '"' + new_description + '"' + '\n')
+        # Using the new feature in isaoools, implemented from issue #185
+        # https://github.com/ISA-tools/isa-api/issues/185
+        # dumps() writes out the ISA as a string representation of the ISA-Tab,
+        # skipping writing tables, i.e. only i_investigation.txt
+        inv_str = dumps(inv_obj, skip_dump_tables=True)
+        self.write_inv_file(study_id, api_key, inv_str)
 
         return new_description
+
+    def write_inv_file(self, study_id, api_key, inv_str):
+        """
+        Write an ISA object to a file
+        :param inv_str:  ISA object as a string representation of the ISA-Tab
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: success
+        """
+        out_path = wsc.get_study_updates_location(study_id, api_key)
+        out_full_filename = os.path.join(out_path, "i_investigation.txt")
+
+        with open(out_full_filename, mode='w') as o_file:
+            ok = o_file.write(inv_str)
+        return ok

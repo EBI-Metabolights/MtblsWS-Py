@@ -99,17 +99,6 @@ class StudyTitle(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
-            },
-            {
-                "name": "method",
-                "in": "path",
-                "description": "Use 'direct' to access i_*.txt without calling ISA-API.",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["ISA-API", "direct"],
-                "default": "ISA-API"
             }
         ],
         responseMessages=[
@@ -145,11 +134,7 @@ class StudyTitle(Resource):
             abort(401)
         user_token = request.headers["user_token"]
 
-        args = request.args
-        if "direct" in args['method']:
-            title = iac.get_study_title_noISATools(study_id, user_token)
-        else:
-            title = iac.get_study_title(study_id, user_token)
+        title = iac.get_study_title(study_id, user_token)
 
         return jsonify({"Study-title": title})
 
@@ -226,8 +211,9 @@ class StudyTitle(Resource):
         new_title = data_dict['title']
 
         # update study title
-        # return iac.write_study_json_title(study_id, user_token, new_title)
-        return iac.write_study_title(study_id, user_token, new_title)
+        iac.write_study_json_title(study_id, user_token, new_title)
+
+        return jsonify({"Study-title": new_title})
 
 
 class StudyDescription(Resource):
@@ -251,16 +237,6 @@ class StudyDescription(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
-            },
-            {
-                "name": "method",
-                "description": "Use 'direct' to access i_*.txt without calling ISA-API.",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["ISA-API", "direct"],
-                "default": "ISA-API"
             }
         ],
         responseMessages=[
@@ -296,12 +272,7 @@ class StudyDescription(Resource):
             abort(401)
         user_token = request.headers["user_token"]
 
-        args = request.args
-
-        if "direct" in args['method']:
-            description = iac.get_study_description_noISATools(study_id, user_token)
-        else:
-            description = iac.get_study_description(study_id, user_token)
+        description = iac.get_study_description(study_id, user_token)
 
         return jsonify({"Study-description": description})
 
@@ -378,4 +349,6 @@ class StudyDescription(Resource):
         new_description = data_dict['description']
 
         # update study description
-        return iac.write_study_description(study_id, user_token, new_description)
+        iac.write_study_json_description(study_id, user_token, new_description)
+
+        return jsonify({"Study-description": new_description})
