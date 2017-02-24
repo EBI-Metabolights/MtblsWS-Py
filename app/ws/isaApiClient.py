@@ -2,7 +2,7 @@ import glob
 import os
 from flask import abort
 # TODO here we are using the develop branch of isatools. Replace with the pip version when released.
-from isatools.isatab import load, dumps
+from isatools.isatab import load, dump
 from app.ws.mtblsWSclient import WsClient
 
 """
@@ -20,7 +20,7 @@ wsc = WsClient()
 
 class IsaApiClient:
 
-    def _get_isa_json(self, study_id, api_key):
+    def get_isa_investigation(self, study_id, api_key):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
@@ -37,8 +37,14 @@ class IsaApiClient:
         else:
             return isa_json
 
-    def get_json_study(self, study_id, api_key):
-        inv_obj = self._get_isa_json(study_id, api_key)
+    def get_isa_study(self, study_id, api_key):
+        """
+        Get the Study section from the Investigation ISA object
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: an ISA-API Study object
+        """
+        inv_obj = self.get_isa_investigation(study_id, api_key)
         std_obj = inv_obj.studies[0]
         return std_obj
 
@@ -49,7 +55,7 @@ class IsaApiClient:
         :param api_key: User API key for accession check
         :return: a string with the study title
         """
-        std_obj = self.get_json_study(study_id, api_key)
+        std_obj = self.get_isa_study(study_id, api_key)
         return std_obj.title
 
     def get_study_description(self, study_id, api_key):
@@ -59,48 +65,49 @@ class IsaApiClient:
         :param api_key: User API key for accession check
         :return: a string with the study description
         """
-        std_obj = self.get_json_study(study_id, api_key)
+        std_obj = self.get_isa_study(study_id, api_key)
         return std_obj.description
 
     def write_study_json_title(self, study_id, api_key, new_title):
-        inv_obj = self._get_isa_json(study_id, api_key)
+        """
+        Write out a new Investigation file with the new Study title
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :param new_title: the new title for the Study
+        :return: the new title
+        """
+        inv_obj = self.get_isa_investigation(study_id, api_key)
         std_obj = inv_obj.studies[0]
         std_obj.title = new_title
 
+        path = wsc.get_study_location(study_id, api_key)
+
         # Using the new feature in isaoools, implemented from issue #185
         # https://github.com/ISA-tools/isa-api/issues/185
-        # dumps() writes out the ISA as a string representation of the ISA-Tab,
+        # isatools.isatab.dump() writes out the ISA as a string representation of the ISA-Tab,
         # skipping writing tables, i.e. only i_investigation.txt
-        inv_str = dumps(inv_obj, skip_dump_tables=True)
-        self.write_inv_file(study_id, api_key, inv_str)
+        dump(inv_obj, path, skip_dump_tables=True)
 
         return new_title
 
     def write_study_json_description(self, study_id, api_key, new_description):
-        inv_obj = self._get_isa_json(study_id, api_key)
+        """
+        Write out a new Investigation file with the new Study title
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :param new_description: the new description for the Study
+        :return: the new description
+        """
+        inv_obj = self.get_isa_investigation(study_id, api_key)
         std_obj = inv_obj.studies[0]
         std_obj.description = new_description
 
+        path = wsc.get_study_location(study_id, api_key)
+
         # Using the new feature in isaoools, implemented from issue #185
         # https://github.com/ISA-tools/isa-api/issues/185
-        # dumps() writes out the ISA as a string representation of the ISA-Tab,
+        # isatools.isatab.dump() writes out the ISA as a string representation of the ISA-Tab,
         # skipping writing tables, i.e. only i_investigation.txt
-        inv_str = dumps(inv_obj, skip_dump_tables=True)
-        self.write_inv_file(study_id, api_key, inv_str)
+        dump(inv_obj, path, skip_dump_tables=True)
 
         return new_description
-
-    def write_inv_file(self, study_id, api_key, inv_str):
-        """
-        Write an ISA object to a file
-        :param inv_str:  ISA object as a string representation of the ISA-Tab
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :return: success
-        """
-        out_path = wsc.get_study_updates_location(study_id, api_key)
-        out_full_filename = os.path.join(out_path, "i_investigation.txt")
-
-        with open(out_full_filename, mode='w') as o_file:
-            ok = o_file.write(inv_str)
-        return ok
