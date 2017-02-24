@@ -2,6 +2,7 @@ import glob
 import os
 from flask import abort
 # TODO here we are using the develop branch of isatools. Replace with the pip version when released.
+from isatools.convert import isatab2json
 from isatools.isatab import load, dump
 from app.ws.mtblsWSclient import WsClient
 
@@ -111,3 +112,27 @@ class IsaApiClient:
         dump(inv_obj, path, skip_dump_tables=True)
 
         return new_description
+
+    def get_isa_json(self, study_id, api_key):
+        """
+        Get an ISA-API Investigation object reading directly from the ISA-Tab files
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: an ISA-API Investigation object
+        """
+        path = wsc.get_study_location(study_id, api_key)
+        # try the new parser first
+        # isa_json = None
+        try:
+            isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=True)
+        except Exception as inst:  # on failure, use the old one
+            try:
+                isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=False)
+            except Exception as inst:
+                # if it fails too
+                if isa_json is None:
+                    raise RuntimeError("Validation error when trying to read the study.")
+            else:
+                return isa_json
+        else:
+            return isa_json
