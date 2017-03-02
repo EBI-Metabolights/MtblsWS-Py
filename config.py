@@ -17,16 +17,13 @@ TEST_DATA_PATH = "testdata"
 MTBLS_WS_HOST = "http://ves-ebi-8d"
 MTBLS_WS_PORT = ":8080"
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
+UPDATE_PATH_SUFFIX = "/audit"
 
 if ENV == "dev":
-    STUDIES_INPUT_PATH = "/Users/jrmacias/Projects/Deploy-local/vnas-metabolights/metabolights/test/studies/"
-    STUDIES_OUTPUT_PATH = "/Users/jrmacias/Projects/Deploy-local/vnas-metabolights/metabolights/test/userspace/"
     PORT = 5000
     APP_BASE_LINK = "http://localhost:" + str(PORT)
     DEBUG = True
 else:
-    STUDIES_INPUT_PATH = "/net/vnas-metabolights/metabolights/test/studies/"
-    STUDIES_OUTPUT_PATH = "/net/vnas-metabolights/metabolights/test/userspace/"
     PORT = 5000
     APP_BASE_LINK = "https://www.ebi.ac.uk/metabolights"
     DEBUG = False
