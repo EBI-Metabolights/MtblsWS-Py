@@ -1,6 +1,8 @@
+import logging
 import config
 import requests
 from flask import jsonify
+from flask_restful import abort
 
 """
 MetaboLights WS client
@@ -24,6 +26,18 @@ class WsClient:
         resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
         url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
         resp = requests.get(url, headers={"user_token": user_token}).json()
+
+        # check response is OK
+        if resp['err'] is not None:
+            logging.info("%s v%s Started!", config.APP_NAME, config.APP_VERSION)
+            abort(403, message=resp['err']['message'])
+
+        if resp['content'] is None:
+            if resp['message'] == 'Study not found':
+                abort(404, message=resp['message'])
+            else:
+                abort(500, message=resp['err']['message'])
+
         return resp["content"]["studyLocation"]
 
     def get_study_updates_location(self, study_id, user_token):

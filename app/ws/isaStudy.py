@@ -1,6 +1,6 @@
 import json
-from flask import request, abort, jsonify
-from flask_restful import Resource
+from flask import request, jsonify
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 
