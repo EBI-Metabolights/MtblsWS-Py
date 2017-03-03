@@ -1,7 +1,6 @@
-import os
 import config
 import requests
-from flask import jsonify, Response
+from flask import jsonify
 
 """
 MetaboLights WS client
@@ -22,29 +21,26 @@ class WsClient:
         :param study_id: Identifier of the study in MetaboLights
         :param user_token: User API token. Used to check for permissions
         """
-        if config.DEBUG:
-            return os.path.normpath(os.path.join(config.STUDIES_INPUT_PATH, study_id))
-        else:
-            resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
-            url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
-            resp = requests.get(url, headers={"user_token": user_token}).json()
-            return resp["content"]["studyLocation"]
+        resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
+        url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
+        resp = requests.get(url, headers={"user_token": user_token}).json()
+        return resp["content"]["studyLocation"]
 
     def get_study_updates_location(self, study_id, user_token):
         """
-        Get location for output updates in a MetaboLights study (possibly a user MTBLS-Labs folder)
-
+        Get location for output updates in a MetaboLights study.
+        This is where afected files are copied before applying changes, for audit purposes.
         :param study_id:
         :param user_token:
         :return:
         """
-        if config.DEBUG:
-            return os.path.normpath(os.path.join(config.STUDIES_OUTPUT_PATH, study_id))
-        else:
-            resource = config.MTBLS_WS_RESOURCES_PATH + "/study" + study_id + "/updates"
-            url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
-            resp = requests.get(url, headers={"user_token": user_token}).json()
-            return resp["content"]["studyLocation"]
+        resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
+        url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
+        resp = requests.get(url, headers={"user_token": user_token}).json()
+        std_folder = resp["content"]["studyLocation"]
+        update_folder = std_folder + config.UPDATE_PATH_SUFFIX
+
+        return update_folder
 
     def get_study(self, study_id, user_token):
         """

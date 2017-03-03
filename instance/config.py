@@ -1,7 +1,7 @@
 import os
 
-# ENV = os.environ.get("ENVIRONMENT", "dev")
-ENV = os.environ.get("ENVIRONMENT", "prod")
+ENV = os.environ.get("ENVIRONMENT", "dev")
+# ENV = os.environ.get("ENVIRONMENT", "prod")
 
 PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
 
@@ -21,7 +21,7 @@ MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 UPDATE_PATH_SUFFIX = "/audit"
 
 if ENV == "dev":
-    PORT = 5000
+    PORT = 5005
     APP_BASE_LINK = "http://localhost:" + str(PORT)
     DEBUG = True
 else:
