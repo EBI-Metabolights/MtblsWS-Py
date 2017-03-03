@@ -1,7 +1,6 @@
 import glob
 import os
-from flask import abort
-# TODO here we are using the develop branch of isatools. Replace with the pip version when released.
+from flask_restful import abort
 from isatools.convert import isatab2json
 from isatools.isatab import load, dump
 from app.ws.mtblsWSclient import WsClient
