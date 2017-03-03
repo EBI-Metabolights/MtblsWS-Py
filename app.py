@@ -1,3 +1,4 @@
+import logging
 import config
 from flask import Flask
 from flask_restful import Api, Resource
@@ -31,6 +32,7 @@ class About(Resource):
     )
     def get(self):
         return {"WS name": config.APP_NAME,
+                "WS description": config.APP_DESCRIPTION,
                 "API": {
                     "version": config.APP_VERSION,
                     "documentation": config.APP_BASE_LINK + config.API_DOC + ".html",
@@ -40,9 +42,17 @@ class About(Resource):
                 }
 
 
-app = Flask(__name__)
-CORS(app, resources={r'/mtbls/ws/v1/study/*': {"origins": "http://localhost:4200"}})
+app = Flask(__name__, instance_relative_config=True)
 app.config.from_object(config)
+app.config.from_pyfile('config.py')
+
+# basic Logging
+logging.basicConfig(filename=config.APP_NAME + ".log",
+                    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                    level=logging.DEBUG)
+logging.info("%s v%s Started!", config.APP_NAME, config.APP_VERSION)
+
+CORS(app, resources={r'/mtbls/ws/study/*': {"origins": "http://localhost:4200"}})
 
 api = swagger.docs(Api(app),
                    apiVersion=config.APP_VERSION,
