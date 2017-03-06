@@ -19,7 +19,7 @@ date: 20170112
 class IsaApiClient:
 
     def __init__(self):
-        self.inv_filename = "i_investigation.txt"
+        self.inv_filename = "i_Investigation.txt"
         self.wsc = WsClient()   # MetaboLights (Java-Based) WebService client
 
         return
