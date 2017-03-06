@@ -1,9 +1,10 @@
 import logging
 import config
 from flask import Flask
-from flask_restful import Api, Resource
+from flask_restful import Api
 from flask_restful_swagger import swagger
 from flask_cors import CORS
+from app.ws.about import About
 from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import Study, StudyTitle, StudyDescription
 
@@ -15,32 +16,6 @@ MTBLS Python-based REST Web Service
 author: jrmacias@ebi.ac.uk
 date: 20160520
 """
-
-
-class About(Resource):
-    """Basic description of the Web Service"""
-    @swagger.operation(
-        summary="About this Web Service",
-        notes="Basic description of the Web Service",
-        nickname="about",
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            }
-        ]
-    )
-    def get(self):
-        return {"WS name": config.WS_APP_NAME,
-                "WS description": config.WS_APP_DESCRIPTION,
-                "API": {
-                    "version": config.API_VERSION,
-                    "documentation": config.WS_APP_BASE_LINK + config.API_DOC + ".html",
-                    "specification": config.WS_APP_BASE_LINK + config.API_DOC + ".json",
-                },
-                "URL": config.WS_APP_BASE_LINK + config.RESOURCES_PATH,
-                }
-
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object(config)
