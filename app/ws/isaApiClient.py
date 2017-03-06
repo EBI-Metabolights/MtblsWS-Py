@@ -146,6 +146,6 @@ class IsaApiClient:
         # https://github.com/ISA-tools/isa-api/issues/185
         # isatools.isatab.dump() writes out the ISA as a string representation of the ISA-Tab,
         # skipping writing tables, i.e. only i_investigation.txt
-        dump(inv_obj, std_path, skip_dump_tables=True)
+        dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=True)
 
         return
