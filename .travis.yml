@@ -3,7 +3,7 @@ python: '3.5'
 install:
   - pip install --upgrade pip && pip install six && pip install -r requirements.txt
 
-script: python app.py
+script: python runWS.py
 
 after_success:
   - coveralls
