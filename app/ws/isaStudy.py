@@ -169,6 +169,16 @@ class StudyTitle(Resource):
                 "format": "application/json",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -210,8 +220,13 @@ class StudyTitle(Resource):
         data_dict = request.get_json(force=True)
         new_title = data_dict['title']
 
+        # check for keeping copies
+        save_audit_copy = True
+        if "save_audit_copy" in request.headers:
+            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+
         # update study title
-        iac.write_study_json_title(study_id, user_token, new_title)
+        iac.write_study_json_title(study_id, user_token, new_title, save_audit_copy)
 
         return jsonify({"Study-title": new_title})
 
@@ -307,6 +322,16 @@ class StudyDescription(Resource):
                 "format": "application/json",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -348,7 +373,12 @@ class StudyDescription(Resource):
         data_dict = json.loads(request.data.decode('utf-8'))
         new_description = data_dict['description']
 
+        # check for keeping copies
+        save_audit_copy = True
+        if "save_audit_copy" in request.headers:
+            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+
         # update study description
-        iac.write_study_json_description(study_id, user_token, new_description)
+        iac.write_study_json_description(study_id, user_token, new_description, save_audit_copy)
 
         return jsonify({"Study-description": new_description})

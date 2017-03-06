@@ -31,14 +31,14 @@ class About(Resource):
         ]
     )
     def get(self):
-        return {"WS name": config.APP_NAME,
-                "WS description": config.APP_DESCRIPTION,
+        return {"WS name": config.WS_APP_NAME,
+                "WS description": config.WS_APP_DESCRIPTION,
                 "API": {
-                    "version": config.APP_VERSION,
-                    "documentation": config.APP_BASE_LINK + config.API_DOC + ".html",
-                    "specification": config.APP_BASE_LINK + config.API_DOC + ".json",
+                    "version": config.API_VERSION,
+                    "documentation": config.WS_APP_BASE_LINK + config.API_DOC + ".html",
+                    "specification": config.WS_APP_BASE_LINK + config.API_DOC + ".json",
                 },
-                "URL": config.APP_BASE_LINK + config.RESOURCES_PATH,
+                "URL": config.WS_APP_BASE_LINK + config.RESOURCES_PATH,
                 }
 
 
@@ -47,16 +47,16 @@ app.config.from_object(config)
 app.config.from_pyfile('config.py')
 
 # basic Logging
-logging.basicConfig(filename=config.APP_NAME + ".log",
+logging.basicConfig(filename=config.WS_APP_NAME + ".log",
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                     level=logging.DEBUG)
-logging.info("%s v%s Started!", config.APP_NAME, config.APP_VERSION)
+logging.info("%s v%s Started!", config.WS_APP_NAME, config.WS_APP_VERSION)
 
 CORS(app, resources={r'/mtbls/ws/study/*': {"origins": "http://localhost:4200"}})
 
 api = swagger.docs(Api(app),
-                   apiVersion=config.APP_VERSION,
-                   basePath=config.APP_BASE_LINK,
+                   apiVersion=config.API_VERSION,
+                   basePath=config.WS_APP_BASE_LINK,
                    api_spec_url=config.API_DOC,
                    resourcePath=config.RESOURCES_PATH)
 

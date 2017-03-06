@@ -29,7 +29,7 @@ class WsClient:
 
         # check response is OK
         if resp['err'] is not None:
-            logging.info("%s v%s Started!", config.APP_NAME, config.APP_VERSION)
+            logging.info("%s v%s Started!", config.WS_APP_NAME, config.WS_APP_VERSION)
             abort(403, message=resp['err']['message'])
 
         if resp['content'] is None:
