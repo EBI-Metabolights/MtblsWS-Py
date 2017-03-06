@@ -142,7 +142,7 @@ class IsaApiClient:
 
         copy_file(src, dest)
 
-        # Using the new feature in isaoools, implemented from issue #185
+        # Using the new feature in isatools, implemented from issue #185
         # https://github.com/ISA-tools/isa-api/issues/185
         # isatools.isatab.dump() writes out the ISA as a string representation of the ISA-Tab,
         # skipping writing tables, i.e. only i_investigation.txt
