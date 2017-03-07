@@ -215,7 +215,7 @@ class StudyTitle(Resource):
         user_token = request.headers["user_token"]
 
         # body content validation
-        if request.data is None:
+        if request.data is None or request.json is None:
             abort(400)
         data_dict = request.get_json(force=True)
         new_title = data_dict['title']
@@ -368,7 +368,7 @@ class StudyDescription(Resource):
         user_token = request.headers["user_token"]
 
         # body content validation
-        if request.data is None:
+        if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
         new_description = data_dict['description']
