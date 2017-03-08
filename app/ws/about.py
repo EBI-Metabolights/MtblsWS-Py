@@ -1,4 +1,5 @@
 import config
+import logging
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 
@@ -10,6 +11,8 @@ Basic description of the Web Service
 author: jrmacias@ebi.ac.uk
 date: 2017-03-06
 """
+
+logger = logging.getLogger('wslog')
 
 
 class About(Resource):
@@ -26,6 +29,7 @@ class About(Resource):
         ]
     )
     def get(self):
+        logger.info('Getting WS-about information')
         return {"WS name": config.WS_APP_NAME,
                 "WS description": config.WS_APP_DESCRIPTION,
                 "API": {

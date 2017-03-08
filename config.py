@@ -30,4 +30,3 @@ MTBLS_WS_PORT = ":8080"
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 
 UPDATE_PATH_SUFFIX = "/audit"
-

@@ -1,9 +1,9 @@
 import json
+import logging
 from flask import request, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
-
 
 """
 ISA Study
@@ -14,6 +14,7 @@ author: jrmacias@ebi.ac.uk
 date: 2017-02-23
 """
 
+logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 
 
@@ -72,6 +73,7 @@ class Study(Resource):
             abort(401)
         user_token = request.headers["user_token"]
 
+        logger.info('Getting JSON Study %s, using API-Key %s', study_id, user_token)
         isa_obj = iac.get_isa_json(study_id, user_token)
 
         return jsonify(isa_obj)
@@ -134,8 +136,9 @@ class StudyTitle(Resource):
             abort(401)
         user_token = request.headers["user_token"]
 
+        logger.info('Getting Study title for %s, using API-Key %s', study_id, user_token)
         title = iac.get_study_title(study_id, user_token)
-
+        logger.info('Got %s', title)
         return jsonify({"Study-title": title})
 
     @swagger.operation(
@@ -226,7 +229,13 @@ class StudyTitle(Resource):
             save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
 
         # update study title
+        logger.info('Updating Study title for %s, using API-Key %s', study_id, user_token)
+        if save_audit_copy:
+            logging.warning("A copy of the previous file will be saved")
+        else:
+            logging.warning("A copy of the previous file will NOT be saved")
         iac.write_study_json_title(study_id, user_token, new_title, save_audit_copy)
+        logger.info('Applied %s', new_title)
 
         return jsonify({"Study-title": new_title})
 
@@ -287,8 +296,9 @@ class StudyDescription(Resource):
             abort(401)
         user_token = request.headers["user_token"]
 
+        logger.info('Getting Study description for %s, using API-Key %s', study_id, user_token)
         description = iac.get_study_description(study_id, user_token)
-
+        logger.info('Got %s', description)
         return jsonify({"Study-description": description})
 
     @swagger.operation(
@@ -379,6 +389,12 @@ class StudyDescription(Resource):
             save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
 
         # update study description
+        logger.info('Updating Study description for %s, using API-Key %s', study_id, user_token)
+        if save_audit_copy:
+            logging.warning("A copy of the previous file will be saved")
+        else:
+            logging.warning("A copy of the previous file will NOT be saved")
         iac.write_study_json_description(study_id, user_token, new_description, save_audit_copy)
+        logger.info('Applied %s', new_description)
 
         return jsonify({"Study-description": new_description})

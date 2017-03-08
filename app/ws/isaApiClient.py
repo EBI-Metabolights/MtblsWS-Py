@@ -1,5 +1,6 @@
 import glob
 import os
+import logging
 from flask_restful import abort
 from isatools.convert import isatab2json
 from isatools.isatab import load, dump
@@ -14,6 +15,8 @@ Use the Python-based ISA-API tools
 author: jrmacias@ebi.ac.uk
 date: 20170112
 """
+
+logger = logging.getLogger('wslog')
 
 
 class IsaApiClient:
@@ -37,6 +40,7 @@ class IsaApiClient:
             fp = open(i_filename)
             isa_json = load(fp, skip_load_tables=True)
         except Exception:
+            logger.exception("Failed to find i_*.txt file")
             abort(500)
         else:
             return isa_json
@@ -140,17 +144,18 @@ class IsaApiClient:
         if save_audit_copy:
             src = os.path.join(std_path, self.inv_filename)
 
-            # dest folder name is timestamp
+            # dest folder name is a timestamp
             dest_path = self.wsc.get_study_updates_location(study_id, api_key)
             dest_folder = new_timestamped_folder(dest_path)
             dest = os.path.join(dest_folder, self.inv_filename)
-
+            logger.info("Copying %s to %s", src, dest)
             copy_file(src, dest)
 
         # Using the new feature in isatools, implemented from issue #185
         # https://github.com/ISA-tools/isa-api/issues/185
         # isatools.isatab.dump() writes out the ISA as a string representation of the ISA-Tab,
         # skipping writing tables, i.e. only i_investigation.txt
+        logger.info("Writing %s to %s", self.inv_filename, std_path)
         dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=True)
 
         return

@@ -1,3 +1,4 @@
+import logging
 from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -12,6 +13,7 @@ author: jrmacias@ebi.ac.uk
 date: 2017-02-23
 """
 
+logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
 
@@ -69,4 +71,5 @@ class MtblsStudy(Resource):
         user_token = request.headers["user_token"]
 
         # get study from MetaboLights WS
+        logger.info('Getting MTBLS Study %s, using API-Key %s', study_id, user_token)
         return wsc.get_study(study_id, user_token)
