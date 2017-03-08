@@ -1,5 +1,6 @@
 import glob
 import os
+import logging
 from flask_restful import abort
 from isatools.convert import isatab2json
 from isatools.isatab import load, dump
@@ -14,6 +15,8 @@ Use the Python-based ISA-API tools
 author: jrmacias@ebi.ac.uk
 date: 20170112
 """
+
+logger = logging.getLogger('wslog')
 
 
 class IsaApiClient:
@@ -37,6 +40,7 @@ class IsaApiClient:
             fp = open(i_filename)
             isa_json = load(fp, skip_load_tables=True)
         except Exception:
+            logger.exception("Failed to find i_*.txt file")
             abort(500)
         else:
             return isa_json
@@ -72,12 +76,13 @@ class IsaApiClient:
         std_obj = self._get_isa_study(study_id, api_key)
         return std_obj.description
 
-    def write_study_json_title(self, study_id, api_key, new_title):
+    def write_study_json_title(self, study_id, api_key, new_title, save_audit_copy=True):
         """
         Write out a new Investigation file with the new Study title
         :param study_id: MTBLS study identifier
         :param api_key: User API key for accession check
         :param new_title: the new title for the Study
+        :param save_audit_copy: Keep track of changes saving a copy of the unmodified files
         :return: the new title
         """
         inv_obj = self._get_isa_investigation(study_id, api_key)
@@ -85,16 +90,17 @@ class IsaApiClient:
         std_obj.title = new_title
 
         # write changes to ISA-tab file
-        self._write_study_json(study_id, api_key, inv_obj)
+        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
         return new_title
 
-    def write_study_json_description(self, study_id, api_key, new_description):
+    def write_study_json_description(self, study_id, api_key, new_description, save_audit_copy=True):
         """
         Write out a new Investigation file with the new Study title
         :param study_id: MTBLS study identifier
         :param api_key: User API key for accession check
         :param new_description: the new description for the Study
+        :param save_audit_copy: Keep track of changes saving a copy of the unmodified files
         :return: the new description
         """
         inv_obj = self._get_isa_investigation(study_id, api_key)
@@ -102,7 +108,7 @@ class IsaApiClient:
         std_obj.description = new_description
 
         # write changes to ISA-tab file
-        self._write_study_json(study_id, api_key, inv_obj)
+        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
         return new_description
 
@@ -130,22 +136,26 @@ class IsaApiClient:
         else:
             return isa_json
 
-    def _write_study_json(self, study_id, api_key, inv_obj):
-        # make a copy before applying changes
+    def _write_study_json(self, study_id, api_key, inv_obj, save_audit_copy=True):
+
         std_path = self.wsc.get_study_location(study_id, api_key)
-        src = os.path.join(std_path, self.inv_filename)
 
-        # dest folder name is timestamp
-        dest_path = self.wsc.get_study_updates_location(study_id, api_key)
-        dest_folder = new_timestamped_folder(dest_path)
-        dest = os.path.join(dest_folder, self.inv_filename)
+        # make a copy before applying changes
+        if save_audit_copy:
+            src = os.path.join(std_path, self.inv_filename)
 
-        copy_file(src, dest)
+            # dest folder name is a timestamp
+            dest_path = self.wsc.get_study_updates_location(study_id, api_key)
+            dest_folder = new_timestamped_folder(dest_path)
+            dest = os.path.join(dest_folder, self.inv_filename)
+            logger.info("Copying %s to %s", src, dest)
+            copy_file(src, dest)
 
         # Using the new feature in isatools, implemented from issue #185
         # https://github.com/ISA-tools/isa-api/issues/185
         # isatools.isatab.dump() writes out the ISA as a string representation of the ISA-Tab,
         # skipping writing tables, i.e. only i_investigation.txt
+        logger.info("Writing %s to %s", self.inv_filename, std_path)
         dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=True)
 
         return
