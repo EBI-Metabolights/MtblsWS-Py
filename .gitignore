@@ -65,3 +65,6 @@ ENV/
 
 # Editors
 .idea/
+
+# Logs
+logs/
