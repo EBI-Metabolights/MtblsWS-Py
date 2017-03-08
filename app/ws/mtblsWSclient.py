@@ -13,6 +13,8 @@ author: jrmacias@ebi.ac.uk
 date: 20160520
 """
 
+logger = logging.getLogger('wslog')
+
 
 class WsClient:
 
@@ -23,22 +25,27 @@ class WsClient:
         :param study_id: Identifier of the study in MetaboLights
         :param user_token: User API token. Used to check for permissions
         """
+        logger.info('Getting actual location for Study %s on the filesystem, using API-Key %s', study_id, user_token)
         resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
         url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
         resp = requests.get(url, headers={"user_token": user_token}).json()
 
         # check response is OK
         if resp['err'] is not None:
-            logging.info("%s v%s Started!", config.APP_NAME, config.APP_VERSION)
+            logger.error("Authentication error on Mtbls-WS")
             abort(403, message=resp['err']['message'])
 
         if resp['content'] is None:
             if resp['message'] == 'Study not found':
+                logger.error("Failed to find the MTBLS Study")
                 abort(404, message=resp['message'])
             else:
+                logger.error("Internal error on Mtbls-WS")
                 abort(500, message=resp['err']['message'])
 
-        return resp["content"]["studyLocation"]
+        location = resp["content"]["studyLocation"]
+        logger.info('Got %s', location)
+        return location
 
     def get_study_updates_location(self, study_id, user_token):
         """
@@ -48,12 +55,13 @@ class WsClient:
         :param user_token:
         :return:
         """
+        logger.info('Getting location for output update for Study %s on the filesystem, using API-Key %s', study_id, user_token)
         resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
         url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
         resp = requests.get(url, headers={"user_token": user_token}).json()
         std_folder = resp["content"]["studyLocation"]
         update_folder = std_folder + config.UPDATE_PATH_SUFFIX
-
+        logger.info('Got %s', update_folder)
         return update_folder
 
     def get_study(self, study_id, user_token):
@@ -65,6 +73,7 @@ class WsClient:
         :param study_id: Identifier of the study in MetaboLights
         :param user_token: User API token. Used to check for permissions
         """
+        logger.info('Getting JSON object for Study %s, using API-Key %s', study_id, user_token)
         resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
         url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
         resp = requests.get(url, headers={"user_token": user_token}).json()
