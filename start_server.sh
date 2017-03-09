@@ -6,4 +6,4 @@ VENVDIR=$APPDIR/venv
 
 cd $APPDIR
 source $VENVDIR/bin/activate
-python $APPDIR/runWS.py > logs.txt 2>&1 & echo $! > app.pid
+python $APPDIR/app/wsapp.py > logs.txt 2>&1 & echo $! > app.pid
