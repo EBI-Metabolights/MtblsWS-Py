@@ -76,13 +76,27 @@ class WsClient:
         logger.info('Getting JSON object for Study %s, using API-Key %s', study_id, user_token)
         resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
         url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
-        resp = requests.get(url, headers={"user_token": user_token}).json()
-        if resp["err"] is not None:
+        resp = requests.get(url, headers={"user_token": user_token})
+        if resp.status_code != 200:
+            if resp.status_code == 401:
+                abort(401)
+            if resp.status_code == 403:
+                abort(403)
+            if resp.status_code == 404:
+                abort(404)
+            if resp.status_code == 500:
+                abort(500)
+        # double check for errors
+        json_resp = resp.json()
+        if json_resp["err"] is not None:
             response = jsonify({
-                "message": resp["message"],
-                "cause": resp["err"]["localizedMessage"]
+                "message": json_resp["message"],
+                "cause": json_resp["err"]["localizedMessage"]
             })
-            response.status_code = 403
+            if user_token is None:
+                response.status_code = 401
+            else:
+                response.status_code = 403
             return response
         else:
-            return resp
+            return json_resp
