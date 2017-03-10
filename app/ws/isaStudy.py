@@ -36,7 +36,7 @@ class Study(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -69,13 +69,17 @@ class Study(Resource):
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting JSON Study %s, using API-Key %s', study_id, user_token)
         isa_obj = iac.get_isa_json(study_id, user_token)
-
+        logger.info('... found ISA-JSON obj: %s %s', isa_obj.get('title'), isa_obj.get('identifier'))
         return jsonify(isa_obj)
 
 
@@ -99,7 +103,7 @@ class StudyTitle(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -160,7 +164,7 @@ class StudyTitle(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             },
             {
@@ -259,7 +263,7 @@ class StudyDescription(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -320,7 +324,7 @@ class StudyDescription(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             },
             {

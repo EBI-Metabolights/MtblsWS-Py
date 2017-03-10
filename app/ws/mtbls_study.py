@@ -61,8 +61,11 @@ class MtblsStudy(Resource):
         ]
     )
     def get(self, study_id):
-        # get study from MetaboLights WS
-        logger.info('Getting MTBLS Study %s', study_id)
+        """
+        Get study from MetaboLights WS
+        :param study_id:
+        :return:
+        """
 
         # param validation
         if study_id is None:
@@ -73,5 +76,6 @@ class MtblsStudy(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        logger.info('Getting MTBLS Study %s, using API-Key %s', study_id, user_token)
         study = wsc.get_study(study_id, user_token)
         return study
