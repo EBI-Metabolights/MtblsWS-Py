@@ -37,7 +37,7 @@ class MtblsStudy(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -61,15 +61,17 @@ class MtblsStudy(Resource):
         ]
     )
     def get(self, study_id):
+        # get study from MetaboLights WS
+        logger.info('Getting MTBLS Study %s', study_id)
+
         # param validation
         if study_id is None:
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
-        # get study from MetaboLights WS
-        logger.info('Getting MTBLS Study %s, using API-Key %s', study_id, user_token)
-        return wsc.get_study(study_id, user_token)
+        study = wsc.get_study(study_id, user_token)
+        return study
