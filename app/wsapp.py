@@ -1,4 +1,3 @@
-import logging
 import logging.config
 import config
 from flask import Flask
@@ -27,8 +26,6 @@ logger = logging.getLogger('wslog')
 def configure_app(flask_app):
     flask_app.config.from_object(config)
     flask_app.config.from_pyfile('config.py')
-    # log messages emitted by Werkzeug also
-    wlog = logging.getLogger('werkzeug')
 
 
 def initialize_app(flask_app):
