@@ -80,7 +80,7 @@ class WsClient:
             else:
                 abort(403)
 
-        logger.info('... found Study  %s', json_resp)
+        logger.info('... found Study  %s', json_resp['content']['title'])
         return json_resp
 
     def get_study_status(self, study_id, user_token):
