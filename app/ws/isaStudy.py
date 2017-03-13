@@ -143,9 +143,13 @@ class StudyTitle(Resource):
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting Study title for %s, using API-Key %s', study_id, user_token)
         title = iac.get_study_title(study_id, user_token)
@@ -303,9 +307,13 @@ class StudyDescription(Resource):
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting Study description for %s, using API-Key %s', study_id, user_token)
         description = iac.get_study_description(study_id, user_token)
