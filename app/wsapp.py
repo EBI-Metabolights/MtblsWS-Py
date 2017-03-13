@@ -39,10 +39,10 @@ def initialize_app(flask_app):
                        api_spec_url=config.API_DOC,
                        resourcePath=config.RESOURCES_PATH)
     api.add_resource(About, config.RESOURCES_PATH)
-    api.add_resource(MtblsStudy, config.RESOURCES_PATH + "/study/<study_id>")
-    api.add_resource(Study, config.RESOURCES_PATH + "/study/<study_id>/isa_json")
-    api.add_resource(StudyTitle, config.RESOURCES_PATH + "/study/<study_id>/title")
-    api.add_resource(StudyDescription, config.RESOURCES_PATH + "/study/<study_id>/description")
+    api.add_resource(MtblsStudy, config.RESOURCES_PATH + "/study/<string:study_id>")
+    api.add_resource(Study, config.RESOURCES_PATH + "/study/<string:study_id>/isa_json")
+    api.add_resource(StudyTitle, config.RESOURCES_PATH + "/study/<string:study_id>/title")
+    api.add_resource(StudyDescription, config.RESOURCES_PATH + "/study/<string:study_id>/description")
 
 
 def main():

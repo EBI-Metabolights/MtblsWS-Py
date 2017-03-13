@@ -20,8 +20,9 @@ iac = IsaApiClient()
 
 class Study(Resource):
     @swagger.operation(
-        summary="Get ISA object from MTBLS Study",
-        notes="Get the MTBLS Study with {study_id} as ISA object.",
+        summary="Get ISA-JSON Study",
+        nickname="Get ISA-JSON Study",
+        notes="Get the MTBLS Study with {study_id} as ISA-JSON object.",
         parameters=[
             {
                 "name": "study_id",
@@ -43,7 +44,7 @@ class Study(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study title is returned, JSON format."
+                "message": "OK. The Study is returned, ISA-JSON format."
             },
             {
                 "code": 400,
@@ -64,6 +65,12 @@ class Study(Resource):
         ]
     )
     def get(self, study_id):
+        """
+        Get Study in ISA-JSON format
+        :param study_id: MTBLS study identifier
+        :return: an ISA-JSON representation of the Study
+        """
+
         # param validation
         if study_id is None:
             abort(404)

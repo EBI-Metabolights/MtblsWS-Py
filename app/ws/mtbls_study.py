@@ -22,6 +22,7 @@ class MtblsStudy(Resource):
     """Get the Study in different formats"""
     @swagger.operation(
         summary="Get MTBLS Study",
+        nickname="Get MTBLS Study",
         notes="Get the MTBLS Study with {study_id} in JSON format.",
         parameters=[
             {
@@ -63,8 +64,8 @@ class MtblsStudy(Resource):
     def get(self, study_id):
         """
         Get study from MetaboLights WS
-        :param study_id:
-        :return:
+        :param study_id: MTBLS study identifier
+        :return: a JSON representation of the MTBLS Study object
         """
 
         # param validation
