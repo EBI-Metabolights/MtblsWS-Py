@@ -25,13 +25,15 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has API\"] = responseBody.has(\"WS-API\");",
-									"tests[\"Body has specification\"] = responseBody.has(\"Specification\");",
-									"tests[\"Body has version\"] = responseBody.has(\"Version\");",
-									"tests[\"Body has WS documentation\"] = responseBody.has(\"Documentation\");",
 									"tests[\"Body has WS name\"] = responseBody.has(\"WS-Name\");",
-									"tests[\"Body has description\"] = responseBody.has(\"WS-Description\");",
-									"tests[\"Body has URL\"] = responseBody.has(\"WS-URL\");"
+									"tests[\"Body has URL\"] = responseBody.has(\"WS-URL\");",
+									"tests[\"Body has WS Version\"] = responseBody.has(\"WS-Version\");",
+									"tests[\"Body has API\"] = responseBody.has(\"WS-API\");",
+									"tests[\"Body has API specification\"] = responseBody.has(\"Specification\");",
+									"tests[\"Body has API version\"] = responseBody.has(\"Version\");",
+									"tests[\"Body has API description\"] = responseBody.has(\"WS-Description\");",
+									"tests[\"Body has WS documentation\"] = responseBody.has(\"Documentation\");",
+									""
 								]
 							}
 						}

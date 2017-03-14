@@ -12,7 +12,7 @@ WS_APP_DESCRIPTION = "MetaboLights Python-based REST WebService"
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.1.4-dev"
+WS_APP_VERSION = "0.1.5-dev"
 RESOURCES_PATH = "/mtbls/ws"
 
 TEST_DATA_PATH = "testdata"
