@@ -228,9 +228,13 @@ class StudyTitle(Resource):
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         # body content validation
         if request.data is None or request.json is None:
@@ -392,9 +396,13 @@ class StudyDescription(Resource):
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         # body content validation
         if request.data is None or request.json is None:
