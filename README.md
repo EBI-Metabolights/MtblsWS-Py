@@ -5,20 +5,23 @@ MTBLS Python-based REST service
 Branch: Master
 [![Build Status](https://travis-ci.org/EBI-Metabolights/MtblsWS-Py.svg?branch=master)](https://travis-ci.org/EBI-Metabolights/MtblsWS-Py) [![Coverage Status](https://coveralls.io/repos/github/EBI-Metabolights/MtblsWS-Py/badge.svg?branch=master)](https://coveralls.io/github/EBI-Metabolights/MtblsWS-Py?branch=master)
 
-Branch: Develop
-[![Build Status](https://travis-ci.org/EBI-Metabolights/MtblsWS-Py.svg?branch=develop)](https://travis-ci.org/EBI-Metabolights/MtblsWS-Py) [![Coverage Status](https://coveralls.io/repos/github/EBI-Metabolights/MtblsWS-Py/badge.svg?branch=develop)](https://coveralls.io/github/EBI-Metabolights/MtblsWS-Py?branch=mdevelop)
 
-
-Using  Flask, Swagger, flask-restful-swagger
+Using  
+- [ISA-API](https://github.com/ISA-tools/isa-api), 
+- [Flask](http://flask.pocoo.org/),
+- [~~Flask-RESTful~~](https://flask-restful.readthedocs.io/),
+- [Flask-RESTPlus](https://github.com/noirbizarre/flask-restplus),
+- [flask-restful-swagger-2](https://github.com/swege/flask-restful-swagger-2.0)
 
 
 
 
 Using the REST service
 --------------------------
-To see what REST calls you can make and how to format your queries, have a look at the swagger API [http://www.ebi.ac.uk/metabolights/:5000/mtbls/ws/v1/api/spec.html]onl-line description.
+To see what REST calls you can make and how to format your queries, have a look at the on-line
+[Swagger UI API documentation](http://www.ebi.ac.uk:5000/mtbls/ws/api/spec.html).
 
-Please contact the [http://www.ebi.ac.uk/metabolights/]MetaboLights Team for further information.
+Please contact the [MetaboLights Team](http://www.ebi.ac.uk/metabolights/contact)  for further information.
 
 
 Feedback

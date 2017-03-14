@@ -1,4 +1,3 @@
-import logging
 import logging.config
 import config
 from flask import Flask
@@ -27,8 +26,6 @@ logger = logging.getLogger('wslog')
 def configure_app(flask_app):
     flask_app.config.from_object(config)
     flask_app.config.from_pyfile('config.py')
-    # log messages emitted by Werkzeug also
-    wlog = logging.getLogger('werkzeug')
 
 
 def initialize_app(flask_app):
@@ -42,16 +39,14 @@ def initialize_app(flask_app):
                        api_spec_url=config.API_DOC,
                        resourcePath=config.RESOURCES_PATH)
     api.add_resource(About, config.RESOURCES_PATH)
-    api.add_resource(MtblsStudy, config.RESOURCES_PATH + "/study/<study_id>")
-    api.add_resource(Study, config.RESOURCES_PATH + "/study/<study_id>/isa_json")
-    api.add_resource(StudyTitle, config.RESOURCES_PATH + "/study/<study_id>/title")
-    api.add_resource(StudyDescription, config.RESOURCES_PATH + "/study/<study_id>/description")
+    api.add_resource(MtblsStudy, config.RESOURCES_PATH + "/study/<string:study_id>")
+    api.add_resource(Study, config.RESOURCES_PATH + "/study/<string:study_id>/isa_json")
+    api.add_resource(StudyTitle, config.RESOURCES_PATH + "/study/<string:study_id>/title")
+    api.add_resource(StudyDescription, config.RESOURCES_PATH + "/study/<string:study_id>/description")
 
 
 def main():
     initialize_app(app)
-
-
 
     logger.info("Starting server %s v%s", config.WS_APP_NAME, config.WS_APP_VERSION)
     app.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG)

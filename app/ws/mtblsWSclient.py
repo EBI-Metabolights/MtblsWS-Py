@@ -1,7 +1,6 @@
 import logging
 import config
 import requests
-from flask import jsonify
 from flask_restful import abort
 
 """
@@ -26,25 +25,9 @@ class WsClient:
         :param user_token: User API token. Used to check for permissions
         """
         logger.info('Getting actual location for Study %s on the filesystem, using API-Key %s', study_id, user_token)
-        resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
-        url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
-        resp = requests.get(url, headers={"user_token": user_token}).json()
-
-        # check response is OK
-        if resp['err'] is not None:
-            logger.error("Authentication error on Mtbls-WS")
-            abort(403, message=resp['err']['message'])
-
-        if resp['content'] is None:
-            if resp['message'] == 'Study not found':
-                logger.error("Failed to find the MTBLS Study")
-                abort(404, message=resp['message'])
-            else:
-                logger.error("Internal error on Mtbls-WS")
-                abort(500, message=resp['err']['message'])
-
-        location = resp["content"]["studyLocation"]
-        logger.info('Got %s', location)
+        study = self.get_study(study_id, user_token)
+        location = study["content"]["studyLocation"]
+        logger.info('... found study folder %s', location)
         return location
 
     def get_study_updates_location(self, study_id, user_token):
@@ -55,13 +38,14 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Getting location for output update for Study %s on the filesystem, using API-Key %s', study_id, user_token)
-        resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
-        url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
-        resp = requests.get(url, headers={"user_token": user_token}).json()
-        std_folder = resp["content"]["studyLocation"]
+        logger.info('Getting location for output updates for Study %s on the filesystem, using API-Key %s',
+                    study_id, user_token)
+
+        study = self.get_study(study_id, user_token)
+        std_folder = study["content"]["studyLocation"]
+
         update_folder = std_folder + config.UPDATE_PATH_SUFFIX
-        logger.info('Got %s', update_folder)
+        logger.info('... found updates folder %s', update_folder)
         return update_folder
 
     def get_study(self, study_id, user_token):
@@ -76,13 +60,57 @@ class WsClient:
         logger.info('Getting JSON object for Study %s, using API-Key %s', study_id, user_token)
         resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
         url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
-        resp = requests.get(url, headers={"user_token": user_token}).json()
-        if resp["err"] is not None:
-            response = jsonify({
-                "message": resp["message"],
-                "cause": resp["err"]["localizedMessage"]
-            })
-            response.status_code = 403
-            return response
-        else:
-            return resp
+        resp = requests.get(url, headers={"user_token": user_token})
+        if resp.status_code != 200:
+            if resp.status_code == 401:
+                abort(401)
+            if resp.status_code == 403:
+                abort(403)
+            if resp.status_code == 404:
+                abort(404)
+            if resp.status_code == 500:
+                abort(500)
+
+        json_resp = resp.json()
+
+        # double check for errors
+        if json_resp["err"] is not None:
+            if user_token is None:
+                abort(401)
+            else:
+                abort(403)
+
+        logger.info('... found Study  %s', json_resp['content']['title'])
+        return json_resp
+
+    def get_study_status(self, study_id, user_token):
+        """
+        Get the status of the Study: PUBLIC, INCURATION, ...
+        :param study_id:
+        :param user_token:
+        :return:
+        """
+        logger.info('Getting the status of the Study, using API-Key %s', study_id, user_token)
+        study = self.get_study(study_id, user_token)
+        std_status = study["content"]["studyStatus"]
+        logger.info('... found Study is %s', std_status)
+        return std_status
+
+    def is_study_public(self, study_id, user_token):
+        """
+        Check if the Study is public
+        :param study_id:
+        :param user_token:
+        :return:
+        """
+        logger.info('Checking if Study %s is public, using API-Key %s', study_id, user_token)
+        study = self.get_study(study_id, user_token)
+        # Check for
+        #   "publicStudy": true
+        # and
+        #   "studyStatus": "PUBLIC"
+        std_status = study["content"]["studyStatus"]
+        std_public = study["content"]["publicStudy"]
+        is_public = std_public and std_status == "PUBLIC"
+        logger.info('... found Study is %s', std_status)
+        return is_public
