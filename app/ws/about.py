@@ -1,6 +1,6 @@
 import config
 import logging
-from flask_restful import Resource
+from flask_restful import Resource, fields, marshal_with
 from flask_restful_swagger import swagger
 
 """
@@ -29,13 +29,14 @@ class About(Resource):
         ]
     )
     def get(self):
+        """Get a basic description of the Web Service"""
         logger.info('Getting WS-about information')
-        return {"WS name": config.WS_APP_NAME,
-                "WS description": config.WS_APP_DESCRIPTION,
-                "API": {
-                    "version": config.API_VERSION,
-                    "documentation": config.WS_APP_BASE_LINK + config.API_DOC + ".html",
-                    "specification": config.WS_APP_BASE_LINK + config.API_DOC + ".json",
+        return {"WS-Name": config.WS_APP_NAME,
+                "WS-Description": config.WS_APP_DESCRIPTION,
+                "WS-API": {
+                    "Version": config.API_VERSION,
+                    "Documentation": config.WS_APP_BASE_LINK + config.API_DOC + ".html",
+                    "Specification": config.WS_APP_BASE_LINK + config.API_DOC + ".json",
                 },
-                "URL": config.WS_APP_BASE_LINK + config.RESOURCES_PATH,
+                "WS-URL": config.WS_APP_BASE_LINK + config.RESOURCES_PATH,
                 }

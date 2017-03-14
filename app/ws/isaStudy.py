@@ -20,8 +20,9 @@ iac = IsaApiClient()
 
 class Study(Resource):
     @swagger.operation(
-        summary="Get ISA object from MTBLS Study",
-        notes="Get the MTBLS Study with {study_id} as ISA object.",
+        summary="Get ISA-JSON Study",
+        nickname="Get ISA-JSON Study",
+        notes="Get the MTBLS Study with {study_id} as ISA-JSON object.",
         parameters=[
             {
                 "name": "study_id",
@@ -36,14 +37,14 @@ class Study(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study title is returned, JSON format."
+                "message": "OK. The Study is returned, ISA-JSON format."
             },
             {
                 "code": 400,
@@ -64,18 +65,28 @@ class Study(Resource):
         ]
     )
     def get(self, study_id):
+        """
+        Get Study in ISA-JSON format
+        :param study_id: MTBLS study identifier
+        :return: an ISA-JSON representation of the Study
+        """
+
         # param validation
         if study_id is None:
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting JSON Study %s, using API-Key %s', study_id, user_token)
         isa_obj = iac.get_isa_json(study_id, user_token)
-
+        logger.info('... found ISA-JSON obj: %s %s', isa_obj.get('title'), isa_obj.get('identifier'))
         return jsonify(isa_obj)
 
 
@@ -99,7 +110,7 @@ class StudyTitle(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -132,9 +143,13 @@ class StudyTitle(Resource):
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting Study title for %s, using API-Key %s', study_id, user_token)
         title = iac.get_study_title(study_id, user_token)
@@ -160,7 +175,7 @@ class StudyTitle(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             },
             {
@@ -213,9 +228,13 @@ class StudyTitle(Resource):
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         # body content validation
         if request.data is None or request.json is None:
@@ -259,7 +278,7 @@ class StudyDescription(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -292,9 +311,13 @@ class StudyDescription(Resource):
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting Study description for %s, using API-Key %s', study_id, user_token)
         description = iac.get_study_description(study_id, user_token)
@@ -320,7 +343,7 @@ class StudyDescription(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             },
             {
@@ -373,9 +396,13 @@ class StudyDescription(Resource):
             abort(404)
 
         # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        from app.ws.mtblsWSclient import WsClient
+        wsc = WsClient()
+        wsc.is_study_public(study_id, user_token)
 
         # body content validation
         if request.data is None or request.json is None:
