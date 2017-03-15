@@ -1,9 +1,5 @@
-python-coveralls
-flask
-flask_restful
-flask_restful_swagger
-flask-cors
-isatools
-mzml2isa
-requests
-jsonschema
+Flask-RESTful==0.3.5
+flask-restful-swagger==0.19
+Flask-Cors==3.0.2
+isatools==0.6.2
+mzml2isa==0.5.1
