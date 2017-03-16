@@ -32,11 +32,11 @@ class About(Resource):
         """Get a basic description of the Web Service"""
         logger.info('Getting WS-about information')
         return {"WS-Name": config.WS_APP_NAME,
-                "WS-Description": config.WS_APP_DESCRIPTION,
-                "WS-API": {
-                    "Version": config.API_VERSION,
-                    "Documentation": config.WS_APP_BASE_LINK + config.API_DOC + ".html",
-                    "Specification": config.WS_APP_BASE_LINK + config.API_DOC + ".json",
-                },
                 "WS-URL": config.WS_APP_BASE_LINK + config.RESOURCES_PATH,
+                "WS-Version": config.WS_APP_VERSION,
+                "WS-Description": config.WS_APP_DESCRIPTION,
+                "WS-API": {"Version": config.API_VERSION,
+                           "Documentation": config.WS_APP_BASE_LINK + config.API_DOC + ".html",
+                           "Specification": config.WS_APP_BASE_LINK + config.API_DOC + ".json"
+                           }
                 }
