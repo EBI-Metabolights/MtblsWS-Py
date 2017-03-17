@@ -1,6 +1,5 @@
 import os
 
-
 PORT = 5000
 WS_APP_BASE_LINK = "https://www.ebi.ac.uk/metabolights"
 DEBUG = False
@@ -18,7 +17,7 @@ RESOURCES_PATH = "/mtbls/ws"
 TEST_DATA_PATH = "testdata"
 
 # Increment only when the API changes
-API_VERSION = "0.2.1"
+API_VERSION = "0.2.2"
 API_DOC = RESOURCES_PATH + "/api/spec"
 
 STATIC_FOLDER = os.path.join(PROJECT_PATH, "static")
