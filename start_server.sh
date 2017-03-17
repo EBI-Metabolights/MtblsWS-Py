@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# check paths after installation and change accordingly
-APPDIR=$HOME/metabolights/software/MtblsWS-Py
+APPDIR=$PWD
 VENVDIR=$APPDIR/venv
 
 PYTHONPATH=$APPDIR
