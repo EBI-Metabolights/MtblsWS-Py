@@ -29,7 +29,7 @@ api_fields = {
 
 about_fields = {
     'WS-App': fields.Nested(app_fields),
-    'API': fields.Nested(api_fields),
+    'WS-API': fields.Nested(api_fields),
 }
 
 
@@ -59,5 +59,5 @@ class About(Resource):
                "WS-Description": config.WS_APP_DESCRIPTION,
                "WS-URL": config.WS_APP_BASE_LINK + config.RESOURCES_PATH,
                }
-        about = {'WS-App': app, 'API': api}
+        about = {'WS-App': app, 'WS-API': api}
         return about
