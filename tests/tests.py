@@ -51,8 +51,8 @@ class WsTests(unittest.TestCase):
     WrongAuth = '1234567890'
     url_pubId = 'http://localhost:5000/mtbls/ws/study/' + PubStudyId
     url_privId = 'http://localhost:5000/mtbls/ws/study/' + PrivStudyId
-    url_nullId = 'http://localhost:5000/mtbls/ws/study/' + '/title'
-    url_badId = 'http://localhost:5000/mtbls/ws/study/' + BadStudyId + '/title'
+    url_nullId = 'http://localhost:5000/mtbls/ws/study/'
+    url_badId = 'http://localhost:5000/mtbls/ws/study/' + BadStudyId
 
     # GET Study Title - Pub -> 200
     def test_get_title(self):
