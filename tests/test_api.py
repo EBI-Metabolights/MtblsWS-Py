@@ -13,7 +13,7 @@ url_priv_id = 'http://localhost:5000/mtbls/ws/study/' + private_study_id
 url_null_id = 'http://localhost:5000/mtbls/ws/study/'
 url_wrong_id = 'http://localhost:5000/mtbls/ws/study/' + bad_study_id
 data_new_title = b'{ "title": "New Study title..." }'
-data_new_description = b'{ "title": "New Study description..." }'
+data_new_description = b'{ "description": "New Study description..." }'
 
 
 class WsTests(unittest.TestCase):
@@ -473,7 +473,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # PUT Update Study Description - Pub -> 200
     def test_update_description_pub(self):
-        request = urllib.request.Request(url_pub_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         with urllib.request.urlopen(request) as response:
             self.assertEqual(response.code, 200)
@@ -485,7 +485,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Pub - Auth -> 200
     def test_update_description_pub_auth(self):
-        request = urllib.request.Request(url_pub_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -498,7 +498,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Pub - NoAuth -> 200
     def test_update_description_pub_noAuth(self):
-        request = urllib.request.Request(url_pub_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         with urllib.request.urlopen(request) as response:
@@ -511,7 +511,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Priv - Auth -> 200
     def test_update_description_priv_auth(self):
-        request = urllib.request.Request(url_priv_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -524,7 +524,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Priv -> 401
     def test_update_description_priv(self):
-        request = urllib.request.Request(url_priv_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -537,7 +537,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Priv - NoAuth -> 403
     def test_update_description_priv_noAuth(self):
-        request = urllib.request.Request(url_priv_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         try:
@@ -551,7 +551,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - NullId -> 404
     def test_update_description_nullId(self):
-        request = urllib.request.Request(url_null_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_null_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -564,7 +564,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - BadId -> 404
     def test_update_description_badId(self):
-        request = urllib.request.Request(url_wrong_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_wrong_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -577,7 +577,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Pub - NoSave -> 200
     def test_update_description_pub_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
         with urllib.request.urlopen(request) as response:
@@ -590,7 +590,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Pub - Auth - NoSave -> 200
     def test_update_description_pub_auth_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         request.add_header('save_audit_copy', 'False')
@@ -604,7 +604,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Pub - NoAuth - NoSave -> 200
     def test_update_description_pub_noAuth_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         request.add_header('save_audit_copy', 'False')
@@ -618,7 +618,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Priv - Auth - NoSave -> 200
     def test_update_description_priv_auth_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         request.add_header('save_audit_copy', 'False')
@@ -632,7 +632,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Priv - NoSave -> 401
     def test_update_description_priv_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
         try:
@@ -646,7 +646,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - Priv - NoAuth - NoSave -> 403
     def test_update_description_priv_noAuth_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         request.add_header('save_audit_copy', 'False')
@@ -661,7 +661,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - NullId - NoSave -> 404
     def test_update_description_nullId_noSave(self):
-        request = urllib.request.Request(url_null_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_null_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
         try:
@@ -675,7 +675,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
     # Update Study Description - BadId - NoSave -> 404
     def test_update_description_badId_noSave(self):
-        request = urllib.request.Request(url_wrong_id + '/description', data=data_new_title, method='PUT')
+        request = urllib.request.Request(url_wrong_id + '/description', data=data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
         try:
