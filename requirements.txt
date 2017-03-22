@@ -1,5 +1,5 @@
 Flask-RESTful==0.3.5
 flask-restful-swagger==0.19
 Flask-Cors==3.0.2
-isatools==0.6.2
+isatools==0.7.0
 mzml2isa==0.5.1
