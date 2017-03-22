@@ -7,7 +7,7 @@ Branch: Master
 
 
 Using  
-- [ISA-API](https://github.com/ISA-tools/isa-api) >= 0.6.2, 
+- [ISA-API](https://github.com/ISA-tools/isa-api) >= 0.7.0, 
 - [Flask](http://flask.pocoo.org/),
 - [Flask-RESTful](https://flask-restful.readthedocs.io/),
 - [flask-restful-swagger](https://github.com/rantav/flask-restful-swagger)
