@@ -25,14 +25,17 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
+									"tests[\"Body has About-WS\"] = responseBody.has(\"About-WS\");",
+									"tests[\"Body has WS App\"] = responseBody.has(\"WS-App\");",
 									"tests[\"Body has WS name\"] = responseBody.has(\"WS-Name\");",
 									"tests[\"Body has URL\"] = responseBody.has(\"WS-URL\");",
 									"tests[\"Body has WS Version\"] = responseBody.has(\"WS-Version\");",
-									"tests[\"Body has API\"] = responseBody.has(\"WS-API\");",
-									"tests[\"Body has API specification\"] = responseBody.has(\"Specification\");",
-									"tests[\"Body has API version\"] = responseBody.has(\"Version\");",
 									"tests[\"Body has API description\"] = responseBody.has(\"WS-Description\");",
-									"tests[\"Body has WS documentation\"] = responseBody.has(\"Documentation\");",
+									"tests[\"Body has API\"] = responseBody.has(\"WS-API\");",
+									"tests[\"Body has API specification\"] = responseBody.has(\"API-Specification\");",
+									"tests[\"Body has API version\"] = responseBody.has(\"API-Version\");",
+									"tests[\"Body has API documentation\"] = responseBody.has(\"API-Documentation\");",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -868,6 +871,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -912,6 +916,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -961,6 +966,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1010,6 +1016,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1061,6 +1068,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1107,6 +1115,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1158,6 +1167,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1204,6 +1214,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1235,7 +1246,7 @@
 			]
 		},
 		{
-			"name": "Get Study Title copy",
+			"name": "Get Study Title",
 			"description": "",
 			"item": [
 				{
@@ -1254,6 +1265,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1298,6 +1310,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1347,6 +1360,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1396,6 +1410,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1447,6 +1462,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1493,6 +1509,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1527,7 +1544,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Study Title - BadId -> 404",
+					"name": "Get Study Title - NullId -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -1544,13 +1561,14 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/title",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//title",
 						"method": "GET",
 						"header": [
 							{
@@ -1573,7 +1591,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Study Title - NullId -> 404",
+					"name": "Get Study Title - BadId -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -1590,13 +1608,14 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//title",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/title",
 						"method": "GET",
 						"header": [
 							{
@@ -1640,6 +1659,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1684,6 +1704,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1733,6 +1754,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1782,6 +1804,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1833,6 +1856,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1879,6 +1903,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1930,6 +1955,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1976,6 +2002,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2020,6 +2047,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2069,6 +2097,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2123,6 +2152,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2177,6 +2207,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-description\"] = responseBody.has('\"Study-description\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2233,6 +2264,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2284,6 +2316,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2340,6 +2373,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2391,6 +2425,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2446,6 +2481,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2490,6 +2526,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2539,6 +2576,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2588,6 +2626,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2639,6 +2678,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2685,6 +2725,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2736,6 +2777,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2782,6 +2824,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2826,6 +2869,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2875,6 +2919,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2929,6 +2974,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2983,6 +3029,7 @@
 									"",
 									"// Body",
 									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -3039,6 +3086,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -3090,6 +3138,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -3146,6 +3195,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -3197,6 +3247,7 @@
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
 									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body has NOT null\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
