@@ -4,6 +4,7 @@ from flask import request, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.mtblsWSclient import WsClient
 
 """
 ISA Study
@@ -16,6 +17,35 @@ date: 2017-02-23
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
+wsc = WsClient()
+
+
+class StudyPubList(Resource):
+    @swagger.operation(
+        summary="Get All Public Studies",
+        nickname="Get All Public Studies",
+        notes="Get a list of all public Studies in MetaboLights.",
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The a list of Studies is returned."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            }
+        ]
+    )
+    def get(self):
+        """
+        Get all public Studies
+        :return: a list with all the public Studies in MetaboLights
+        """
+
+        logger.info('Getting all public studies')
+        pub_list = wsc.get_public_studies()
+        logger.info('... found %d public studies', len(pub_list['content']))
+        return jsonify(pub_list)
 
 
 class Study(Resource):
@@ -80,8 +110,6 @@ class Study(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        from app.ws.mtblsWSclient import WsClient
-        wsc = WsClient()
         wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting JSON Study %s, using API-Key %s', study_id, user_token)
@@ -147,8 +175,6 @@ class StudyTitle(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        from app.ws.mtblsWSclient import WsClient
-        wsc = WsClient()
         wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting Study title for %s, using API-Key %s', study_id, user_token)
@@ -232,8 +258,6 @@ class StudyTitle(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        from app.ws.mtblsWSclient import WsClient
-        wsc = WsClient()
         wsc.is_study_public(study_id, user_token)
 
         # body content validation
@@ -315,8 +339,6 @@ class StudyDescription(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        from app.ws.mtblsWSclient import WsClient
-        wsc = WsClient()
         wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting Study description for %s, using API-Key %s', study_id, user_token)
@@ -400,8 +422,6 @@ class StudyDescription(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        from app.ws.mtblsWSclient import WsClient
-        wsc = WsClient()
         wsc.is_study_public(study_id, user_token)
 
         # body content validation
