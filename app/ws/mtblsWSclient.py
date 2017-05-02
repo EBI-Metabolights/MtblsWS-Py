@@ -114,3 +114,23 @@ class WsClient:
         is_public = std_public and std_status == "PUBLIC"
         logger.info('... found Study is %s', std_status)
         return is_public
+
+    def get_public_studies(self):
+        logger.info('Getting all public studies')
+        resource = config.MTBLS_WS_RESOURCES_PATH + "/study/list"
+        url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
+        resp = requests.get(url)
+
+        if resp.status_code != 200:
+            if resp.status_code == 401:
+                abort(401)
+            if resp.status_code == 403:
+                abort(403)
+            if resp.status_code == 404:
+                abort(404)
+            if resp.status_code == 500:
+                abort(500)
+
+        json_resp = resp.json()
+        logger.info('... found %d public studies', len(json_resp['content']))
+        return json_resp

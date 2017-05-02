@@ -8,10 +8,11 @@ private_study_id = 'MTBLS48'
 bad_study_id = '123456'
 auth_id = '0f8ceff2-3a39-487b-9b77-6da415c7f3e8'
 wrong_auth_token = '1234567890'
-url_pub_id = 'http://localhost:5000/mtbls/ws/study/' + public_study_id
-url_priv_id = 'http://localhost:5000/mtbls/ws/study/' + private_study_id
-url_null_id = 'http://localhost:5000/mtbls/ws/study/'
-url_wrong_id = 'http://localhost:5000/mtbls/ws/study/' + bad_study_id
+url_base = 'http://localhost:5000/mtbls/ws/study/'
+url_pub_id = url_base + public_study_id
+url_priv_id = url_base + private_study_id
+url_null_id = url_base
+url_wrong_id = url_base + bad_study_id
 data_new_title = b'{ "title": "New Study title..." }'
 data_new_description = b'{ "description": "New Study description..." }'
 
@@ -50,6 +51,20 @@ class AboutTests(WsTests):
             self.assertIn('API-Specification', body)
             self.assertIn('API-Version', body)
             self.assertIn('API-Documentation', body)
+
+
+class GetStudyPubListTests(WsTests):
+
+    # Get All Public Studies - Pub -> 200
+    def test_get_pub_studies(self):
+        request = urllib.request.Request(url_null_id + 'list', method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('content', body)
 
 
 class GetStudyTitleTests(WsTests):
