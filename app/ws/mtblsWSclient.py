@@ -134,3 +134,25 @@ class WsClient:
         json_resp = resp.json()
         logger.info('... found %d public studies', len(json_resp['content']))
         return json_resp
+
+    def is_user_token_valid(self, user_token):
+        logger.info('Checking for user credentials in MTBLS-Labs')
+        resource = config.MTBLS_WS_RESOURCES_PATH + "/labs/" + "authenticateToken"
+        url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
+        resp = requests.post(url, data='{"token":"' + user_token + '"}')
+        if resp.status_code != 200:
+            if resp.status_code == 401:
+                abort(401)
+            if resp.status_code == 403:
+                abort(403)
+            if resp.status_code == 404:
+                abort(404)
+            if resp.status_code == 500:
+                abort(500)
+
+        user = resp.headers.get('user')
+        jwt = resp.headers.get('jwt')
+        if user is None or jwt is None:
+            abort(403)
+        logger.info('... found user %s with jwt key: %s', user, jwt)
+        return True
