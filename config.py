@@ -24,7 +24,7 @@ STATIC_FOLDER = os.path.join(PROJECT_PATH, "static")
 TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 
 # Calling the Java-based MTBLS WS
-MTBLS_WS_HOST = "http://ves-ebi-8d"
+MTBLS_WS_HOST = "http://ves-ebi-90"
 MTBLS_WS_PORT = ":8080"
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 
