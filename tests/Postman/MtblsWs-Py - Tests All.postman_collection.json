@@ -3260,7 +3260,7 @@
 						}
 					],
 					"request": {
-						"url": "http://wwwdev.ebi.ac.uk/metabolights/webservice/labs/authenticateToken",
+						"url": "{{server}}{{port}}/metabolights/webservice/labs/authenticateToken",
 						"method": "POST",
 						"header": [
 							{
