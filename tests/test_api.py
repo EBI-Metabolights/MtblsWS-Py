@@ -729,6 +729,63 @@ class PostStudyNew(WsTests):
             self.assertIn('submissionDate', body)
             self.assertIn('publicReleaseDate', body)
 
+    # New Study - Null Req -> 400
+    def test_post_new_study_nullReq(self):
+        request = urllib.request.Request(url_base + 'new', data=b'', method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study - Bad req -> 400
+    def test_post_new_study_badReq(self):
+        request = urllib.request.Request(url_base + 'new',
+                                         data=b'{"title": "Study title"}',
+                                         method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study - NoUser -> 401
+    def test_post_new_study_noUser(self):
+        request = urllib.request.Request(url_base + 'new', data=data_new_study, method='POST')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # New Study - NoAuth -> 403
+    def test_post_new_study_noAuth(self):
+        request = urllib.request.Request(url_base + 'new', data=data_new_study, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
 
 if __name__ == '__main__':
     unittest.main()

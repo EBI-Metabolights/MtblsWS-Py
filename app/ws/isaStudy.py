@@ -511,10 +511,14 @@ class StudyNew(Resource):
         # read inv data from request body
         data_dict = request.get_json(force=True)
         # data_dict = json.loads(request.data.decode('utf-8'))
-        title = data_dict['title']
-        description = data_dict['description']
-        sub_date = data_dict['submission_date']
-        pub_rel_date = data_dict['public_release_date']
+        try:
+            title = data_dict['title']
+            description = data_dict['description']
+            sub_date = data_dict['submission_date']
+            pub_rel_date = data_dict['public_release_date']
+        except Exception as inst:
+            logger.warning('Malformed request. Some of the required fields are missing')
+            abort(400)
 
         inv_obj = iac.create_new_study(title=title,
                                        description=description,
