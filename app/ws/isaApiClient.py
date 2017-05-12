@@ -164,6 +164,14 @@ class IsaApiClient:
         return
 
     def create_new_study(self, title, description, sub_date, pub_rel_date):
+        """
+        Create a new MTBLS Study
+        :param title: 
+        :param description: 
+        :param sub_date: 
+        :param pub_rel_date: 
+        :return: an ISA-JSON representation of the Study
+        """
 
         # investigation file
         investigation = Investigation(filename="i_investigation.txt")

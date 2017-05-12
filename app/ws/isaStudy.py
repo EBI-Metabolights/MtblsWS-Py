@@ -520,9 +520,12 @@ class StudyNew(Resource):
             logger.warning('Malformed request. Some of the required fields are missing')
             abort(400)
 
+        logger.info('Creating a new MTBLS Study as ISA-JSON object.')
         inv_obj = iac.create_new_study(title=title,
                                        description=description,
                                        sub_date=sub_date,
                                        pub_rel_date=pub_rel_date)
+        logger.info('New MTBLS Study, title: %s, desc.: %s, pub.rel.date: %s',
+                       title, description, pub_rel_date)
 
         return inv_obj
