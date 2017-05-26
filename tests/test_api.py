@@ -13,8 +13,16 @@ url_pub_id = url_base + public_study_id
 url_priv_id = url_base + private_study_id
 url_null_id = url_base
 url_wrong_id = url_base + bad_study_id
-data_new_title = b'{ "title": "New Study title..." }'
-data_new_description = b'{ "description": "New Study description..." }'
+new_study_title = b'"New Study title..."'
+new_study_description = b'"New Study description..."'
+submission_date = b'"2017-05-08"'
+public_release_date = b'"2018-05-08"'
+data_new_title = b'{ "title":' + new_study_title + b' }'
+data_new_description = b'{ "description": ' + new_study_description + b' }'
+data_new_study = b'{ "title": "New Study title...", '\
+                 b' "description": ' + new_study_description + b',' \
+                 b' "submission_date": ' + submission_date + b',' \
+                 b' "public_release_date": ' + public_release_date + b' }'
 
 
 class WsTests(unittest.TestCase):
@@ -701,6 +709,82 @@ class UpdateStudyDescriptionTests(WsTests):
             self.check_body_common(err.read().decode('utf-8'))
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
+
+
+class PostStudyNew(WsTests):
+
+    # POST New Study - Auth -> 200
+    def test_post_new_study_auth(self):
+        request = urllib.request.Request(url_base + 'new', data=data_new_study, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('title', body)
+            self.assertIn('description', body)
+            self.assertIn('submissionDate', body)
+            self.assertIn('publicReleaseDate', body)
+
+    # New Study - Null Req -> 400
+    def test_post_new_study_nullReq(self):
+        request = urllib.request.Request(url_base + 'new', data=b'', method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study - Bad req -> 400
+    def test_post_new_study_badReq(self):
+        request = urllib.request.Request(url_base + 'new',
+                                         data=b'{"title": "Study title"}',
+                                         method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study - NoUser -> 401
+    def test_post_new_study_noUser(self):
+        request = urllib.request.Request(url_base + 'new', data=data_new_study, method='POST')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # New Study - NoAuth -> 403
+    def test_post_new_study_noAuth(self):
+        request = urllib.request.Request(url_base + 'new', data=data_new_study, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
 
 if __name__ == '__main__':

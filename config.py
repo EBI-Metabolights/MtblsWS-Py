@@ -11,20 +11,20 @@ WS_APP_DESCRIPTION = "MetaboLights Python-based REST WebService"
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.1.9"
+WS_APP_VERSION = "0.1.10"
 RESOURCES_PATH = "/mtbls/ws"
 
 TEST_DATA_PATH = "testdata"
 
 # Increment only when the API changes
-API_VERSION = "0.2.3"
+API_VERSION = "0.2.4"
 API_DOC = RESOURCES_PATH + "/api/spec"
 
 STATIC_FOLDER = os.path.join(PROJECT_PATH, "static")
 TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 
 # Calling the Java-based MTBLS WS
-MTBLS_WS_HOST = "http://ves-ebi-8d"
+MTBLS_WS_HOST = "http://ves-ebi-90"
 MTBLS_WS_PORT = ":8080"
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 

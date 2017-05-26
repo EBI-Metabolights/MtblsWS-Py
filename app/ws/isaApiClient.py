@@ -6,6 +6,9 @@ from isatools.convert import isatab2json
 from isatools.isatab import load, dump
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import copy_file, new_timestamped_folder
+import json
+from isatools.model.v1 import *
+from isatools.isajson import ISAJSONEncoder
 
 """
 MetaboLights ISA-API client
@@ -159,3 +162,39 @@ class IsaApiClient:
         dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=True)
 
         return
+
+    def create_new_study(self, title, description, sub_date, pub_rel_date):
+        """
+        Create a new MTBLS Study
+        :param title: 
+        :param description: 
+        :param sub_date: 
+        :param pub_rel_date: 
+        :return: an ISA-JSON representation of the Study
+        """
+
+        # investigation file
+        investigation = Investigation(filename="i_investigation.txt")
+        investigation.title = title
+        investigation.description = description
+        investigation.submission_date = sub_date
+        investigation.public_release_date = pub_rel_date
+
+        # study file
+        study = Study(filename="s_study.txt")
+        study.identifier = "s1"
+        study.title = title
+        study.description = description
+        study.submission_date = sub_date
+        study.public_release_date = pub_rel_date
+        investigation.studies.append(study)
+
+        # assay file
+        assay = Assay(filename="a_assay.txt")
+        extraction_protocol = Protocol(name='extraction', protocol_type=OntologyAnnotation(term="material extraction"))
+        study.protocols.append(extraction_protocol)
+        sequencing_protocol = Protocol(name='sequencing', protocol_type=OntologyAnnotation(term="material sequencing"))
+        study.protocols.append(sequencing_protocol)
+        study.assays.append(assay)
+
+        return json.dumps(investigation, cls=ISAJSONEncoder, sort_keys=True, indent=4, separators=(',', ': '))

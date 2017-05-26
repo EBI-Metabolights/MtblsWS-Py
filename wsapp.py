@@ -6,7 +6,7 @@ from flask_restful_swagger import swagger
 from flask_cors import CORS
 from app.ws.about import About
 from app.ws.mtbls_study import MtblsStudy
-from app.ws.isaStudy import Study, StudyTitle, StudyDescription, StudyPubList
+from app.ws.isaStudy import Study, StudyTitle, StudyDescription, StudyPubList, StudyNew
 
 """
 MTBLS WS-Py
@@ -32,8 +32,7 @@ def initialize_app(flask_app):
     configure_app(flask_app)
 
     CORS(app, resources={r'/mtbls/ws/study/*': {"origins": ["http://localhost:4200",
-                                                            "http://localhost:8080",
-                                                            "http://localhost.ebi.ac.uk:8080"]}})
+                                                            "http://localhost:8080"]}})
 
     api = swagger.docs(Api(app),
                        apiVersion=config.API_VERSION,
@@ -46,6 +45,7 @@ def initialize_app(flask_app):
     api.add_resource(Study, config.RESOURCES_PATH + "/study/<string:study_id>/isa_json")
     api.add_resource(StudyTitle, config.RESOURCES_PATH + "/study/<string:study_id>/title")
     api.add_resource(StudyDescription, config.RESOURCES_PATH + "/study/<string:study_id>/description")
+    api.add_resource(StudyNew, config.RESOURCES_PATH + "/study/new")
 
 
 def main():
