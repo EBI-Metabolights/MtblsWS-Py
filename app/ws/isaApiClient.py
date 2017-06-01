@@ -1,6 +1,7 @@
 import glob
 import os
 import logging
+import time
 from flask_restful import abort
 from isatools.convert import isatab2json
 from isatools.isatab import load, dump
@@ -122,6 +123,8 @@ class IsaApiClient:
         :param api_key: User API key for accession check
         :return: an ISA-API Investigation object
         """
+        start = time.time()
+
         path = self.wsc.get_study_location(study_id, api_key)
         # try the new parser first
         # isa_json = None
@@ -135,8 +138,10 @@ class IsaApiClient:
                 if isa_json is None:
                     raise RuntimeError("Validation error when trying to read the study.")
             else:
+                logger.info('... get_isa_json() processing (I): %s sec.', time.time() - start)
                 return isa_json
         else:
+            logger.info('... get_isa_json() processing (II): %s sec.', time.time() - start)
             return isa_json
 
     def _write_study_json(self, study_id, api_key, inv_obj, save_audit_copy=True):
