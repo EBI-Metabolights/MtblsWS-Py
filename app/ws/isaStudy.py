@@ -5,6 +5,8 @@ from flask_restful import Resource, abort, marshal_with, fields
 from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from json import JSONEncoder
+from isatools.model.v1 import *
 
 """
 ISA Study
@@ -284,7 +286,7 @@ class StudyTitle(Resource):
 
 
 class StudyDescription(Resource):
-    """Manage the Study title"""
+    """Manage the Study description"""
     @swagger.operation(
         summary="Get MTBLS Study description",
         notes="Get the description of the MTBLS Study with {study_id} in JSON format.",
@@ -529,3 +531,124 @@ class StudyNew(Resource):
                        title, description, pub_rel_date)
 
         return inv_obj
+
+
+def encode_json(obj):
+    if isinstance(obj, Protocol):
+        # protocol_type
+        prot_type = '{'
+        prot_type += "'term':" + obj.protocol_type.term + ","
+        if obj.protocol_type.term_source is not None:
+            prot_type += "'term_source':" + obj.protocol_type.term_source + ","
+        if len(obj.protocol_type.term_accession) > 0:
+            prot_type += "'term_accession':" + obj.protocol_type.term_accession
+        prot_type += '}'
+        # parameters
+        parameters = ''
+        if len(obj.parameters) > 0:
+            parameters += '{['
+            for param in obj.parameters:
+                parameters = "'parameter_name':" + param.parameter_name.term + ','
+                if param.parameter_name.term_source is not None:
+                    parameters += "'term_source':" + obj.protocol_type.term_source + ","
+                if len(param.parameter_name.term_accession) > 0:
+                    parameters += "'term_accession':" + obj.protocol_type.term_accession
+            parameters += ']}'
+
+        # components
+        components = ''
+        if len(obj.components) > 0:
+            components += '{['
+            for comp in obj.components:
+                components = "'parameter_name':" + comp.term + ','
+                if comp.term_source is not None:
+                    components += "'term_source':" + comp.term_source + ","
+                if len(comp.term_accession) > 0:
+                    components += "'term_accession':" + comp.term_accession
+            components += ']}'
+
+        # comments
+        comments = ''
+        if len(obj.comments) > 0:
+            comments += '{['
+            for com in obj.comments:
+                comments = "'parameter_name':" + com.term + ','
+                comments += ']}'
+
+        return {
+            # 'id': obj.id,
+            'name': obj.name,
+            'protocol_type': prot_type,
+            'description': obj.description,
+            'uri': obj.uri,
+            'version': obj.version,
+            'parameters': parameters,
+            'components': components,
+            'comments': comments
+        }
+
+
+class StudyProtocols(Resource):
+    """Manage the Study protocols"""
+
+    @swagger.operation(
+        summary="Get MTBLS Study protocols",
+        notes="Get the protocols of the MTBLS Study with {study_id} in JSON format.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages = [
+            {
+                "code": 200,
+                "message": "OK. The Study protocols is returned, JSON format."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
+        protocols = iac.get_study_protocols(study_id, user_token)
+        logger.info('Got: %s', protocols)
+
+        return jsonify({'Study-protocols': json.dumps(protocols, default=encode_json)})

@@ -203,3 +203,14 @@ class IsaApiClient:
         study.assays.append(assay)
 
         return json.dumps(investigation, cls=ISAJSONEncoder, sort_keys=True, indent=4, separators=(',', ': '))
+
+    def get_study_protocols(self, study_id, api_key):
+        """
+        Get the Study protocols
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: a string with the study protocols
+        """
+        std_obj = self._get_isa_study(study_id, api_key)
+        protocols = std_obj.protocols
+        return protocols
