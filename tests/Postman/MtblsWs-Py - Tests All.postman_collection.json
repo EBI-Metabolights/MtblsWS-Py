@@ -1162,7 +1162,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//title",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//description",
 						"method": "GET",
 						"header": [
 							{
