@@ -787,5 +787,104 @@ class PostStudyNew(WsTests):
             self.assertEqual('FORBIDDEN', err.reason)
 
 
+class GetStudyProtocolsTests(WsTests):
+
+    # Get Study Protocols - Pub -> 200
+    def test_get_protocols(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+
+    # Get Study Protocols - Pub - Auth -> 200
+    def test_get_protocols_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+
+    # Get Study Protocols - Pub - NoAuth -> 200
+    def test_get_protocols_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+
+    # Get Study Protocols - Priv - Auth -> 200
+    def test_get_protocols_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+
+    # Get Study Protocols - Priv -> 401
+    def test_get_protocols_priv(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Get Study Protocols - Priv - NoAuth -> 403
+    def test_get_protocols_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # GET Study Protocols - NullId -> 404
+    def test_get_protocols_nullId(self):
+        request = urllib.request.Request(url_null_id + '/protocols', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # GET Study Protocols - BadId -> 404
+    def test_get_protocols_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/protocols', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+
 if __name__ == '__main__':
     unittest.main()
