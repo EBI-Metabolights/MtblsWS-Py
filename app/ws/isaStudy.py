@@ -5,7 +5,6 @@ from flask_restful import Resource, abort, marshal_with, fields
 from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from json import JSONEncoder
 from isatools.model.v1 import *
 
 """
@@ -533,59 +532,117 @@ class StudyNew(Resource):
         return inv_obj
 
 
-def encode_json(obj):
-    if isinstance(obj, Protocol):
-        # protocol_type
-        prot_type = '{'
-        prot_type += "'term':" + obj.protocol_type.term + ","
-        if obj.protocol_type.term_source is not None:
-            prot_type += "'term_source':" + obj.protocol_type.term_source + ","
-        if len(obj.protocol_type.term_accession) > 0:
-            prot_type += "'term_accession':" + obj.protocol_type.term_accession
-        prot_type += '}'
-        # parameters
-        parameters = ''
-        if len(obj.parameters) > 0:
-            parameters += '{['
-            for param in obj.parameters:
-                parameters = "'parameter_name':" + param.parameter_name.term + ','
-                if param.parameter_name.term_source is not None:
-                    parameters += "'term_source':" + obj.protocol_type.term_source + ","
-                if len(param.parameter_name.term_accession) > 0:
-                    parameters += "'term_accession':" + obj.protocol_type.term_accession
-            parameters += ']}'
+# TODO ...
+def unserialize_protocols(json_prot_list):
+    protocol_list = list()
+    for json_protocol in json_prot_list:
 
-        # components
-        components = ''
-        if len(obj.components) > 0:
-            components += '{['
-            for comp in obj.components:
-                components = "'parameter_name':" + comp.term + ','
-                if comp.term_source is not None:
-                    components += "'term_source':" + comp.term_source + ","
-                if len(comp.term_accession) > 0:
-                    components += "'term_accession':" + comp.term_accession
-            components += ']}'
+        if json_protocol['protocol_type'] is not None:
+            protocol_type = OntologyAnnotation(term=json_protocol['protocol_type']['term'])
+        else:
+            protocol_type = OntologyAnnotation()
 
-        # comments
-        comments = ''
-        if len(obj.comments) > 0:
-            comments += '{['
-            for com in obj.comments:
-                comments = "'parameter_name':" + com.term + ','
-                comments += ']}'
+        parameters = list()
+        if len(json_protocol['parameters']) > 0:
+            for json_parameter in json_protocol['parameters']:
+                parameters.append(ProtocolParameter(parameter_name=json_parameter['parameter_name']))
 
-        return {
-            # 'id': obj.id,
-            'name': obj.name,
-            'protocol_type': prot_type,
-            'description': obj.description,
-            'uri': obj.uri,
-            'version': obj.version,
-            'parameters': parameters,
-            'components': components,
-            'comments': comments
-        }
+        components = list()
+        if len(json_protocol['components']) > 0:
+            for comp in json_protocol['components']:
+                components.append(ProtocolComponent(name=comp['name']))
+
+        comments = list()
+        if len(json_protocol['comments']) > 0:
+            for comment in json_protocol['comments']:
+                comments.append(comment)
+        else:
+            comments = []
+
+        new_protocol = Protocol(
+            name=json_protocol['name'],
+            protocol_type=protocol_type,
+            description=json_protocol['description'],
+            uri=json_protocol['uri'],
+            version=json_protocol['version'],
+            parameters=parameters,
+            components=components,
+            comments=comments
+        )
+        protocol_list.append(new_protocol)
+    return protocol_list
+
+
+def serialize_protocol(obj):
+    assert isinstance(obj, Protocol)
+
+    # name (str):
+    # protocol_type (OntologyAnnotation):
+    # description (str):
+    # uri (str):
+    # version (str):
+    # parameters (list, ProtocolParameter):
+    # components (list, OntologyAnnotation):
+    # comments (list, str):
+    return {
+        'name': obj.name,
+        'protocol_type': json.loads(json.dumps(obj.protocol_type, default=serialize_OntologyAnn, sort_keys=True)),
+        'description': obj.description,
+        'uri': obj.uri,
+        'version': obj.version,
+        'parameters': json.loads(json.dumps(obj.parameters, default=serialize_ProtocolParameter, sort_keys=True)),
+        'components': json.loads(json.dumps(obj.components, default=serialize_OntologyAnn, sort_keys=True)),
+        'comments': obj.comments
+    }
+
+
+def serialize_ProtocolParameter(obj):
+    assert isinstance(obj, ProtocolParameter)
+
+    # name (OntologyAnnotation): A parameter name as a term
+    # unit (OntologyAnnotation): A unit, if applicable
+    # comments (list, NoneType):
+
+    unit = ''
+    if hasattr(obj, 'unit') and obj.unit is not None:
+        unit = serialize_OntologyAnn(obj.unit),
+    return {
+        'name': serialize_OntologyAnn(obj.parameter_name),
+        'unit': unit,
+        'comments': obj.comments
+    }
+
+
+def serialize_OntologySource(obj):
+    assert isinstance(obj, OntologySource)
+
+    # name (str):
+    # file (str):
+    # version (str):
+    # description (str):
+    # comments (list,):
+    return {
+        'name': obj.name,
+        'file': obj.file,
+        'version': obj.version,
+        'description': obj.description,
+        'comments': obj.comments
+    }
+
+
+def serialize_OntologyAnn(obj):
+    assert isinstance(obj, OntologyAnnotation)
+
+    # term (str, NoneType):
+    # term_source (OntologySource, NoneType):
+    # term_accession (str, NoneType):
+    # comments (list, NoneType):
+    return {
+        'term': obj.term,
+        'term_source': obj.term_source,
+        'term_accession': obj.term_accession,
+        'comments': obj.comments
+    }
 
 
 class StudyProtocols(Resource):
@@ -612,7 +669,7 @@ class StudyProtocols(Resource):
                 "allowMultiple": False
             }
         ],
-        responseMessages = [
+        responseMessages=[
             {
                 "code": 200,
                 "message": "OK. The Study protocols is returned, JSON format."
@@ -649,6 +706,114 @@ class StudyProtocols(Resource):
 
         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
         protocols = iac.get_study_protocols(study_id, user_token)
-        logger.info('Got: %s', protocols)
+        str_protocols = json.dumps({'Study-protocols': protocols}, default=serialize_protocol, sort_keys=True)
+        logger.info('Got: %s', str_protocols)
 
-        return jsonify({'Study-protocols': json.dumps(protocols, default=encode_json)})
+        return json.loads(str_protocols)
+
+
+    @swagger.operation(
+        summary='Update MTBLS Study protocols',
+        notes="""Update the protocols of the MTBLS Study with {study_id}.
+                      Only the new protocols (in JSON format) must be provided in the body of the request.
+                      i.e.: { "protocols": "Updated Study protocols..." }""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
+                "name": "protocols",
+                "description": """New protocols in JSON format.</br>
+             i.e.: { "protocols": "New Study protocols..." }""",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Study description is returned, JSON format."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+        data_dict = json.loads(request.data.decode('utf-8'))
+        new_protocols = data_dict['Study-protocols']
+
+        prots_list = unserialize_protocols(new_protocols)
+
+        # check for keeping copies
+        save_audit_copy = True
+        if "save_audit_copy" in request.headers:
+            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+
+        # update study description
+        logger.info('Updating Study protocols for %s, using API-Key %s', study_id, user_token)
+        if save_audit_copy:
+            logging.warning("A copy of the previous file will be saved")
+        else:
+            logging.warning("A copy of the previous file will NOT be saved")
+
+        # TODO ---
+        # iac.write_study_json_protocols(study_id, user_token, prots_list, save_audit_copy)
+        logger.info('Applied %s', new_protocols)
+
+        # return jsonify({"Study-protocols": new_protocols})
+        return jsonify({"Study-protocols": prots_list})
+
