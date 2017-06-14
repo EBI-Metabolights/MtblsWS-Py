@@ -3,7 +3,7 @@ import config
 from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 from app.ws.about import About
 from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import Study, StudyTitle, StudyDescription, StudyPubList, StudyNew, StudyProtocols
@@ -31,7 +31,6 @@ def configure_app(flask_app):
 def initialize_app(flask_app):
     configure_app(flask_app)
 
-    # TODO fine tune the accession through CORS
     CORS(app, resources={r'/mtbls/ws/*'}, origins={"http://localhost:4200",
                                                    "http://localhost:8080",
                                                    "http://localhost.ebi.ac.uk:8080"})
@@ -47,8 +46,8 @@ def initialize_app(flask_app):
     api.add_resource(Study, config.RESOURCES_PATH + "/study/<string:study_id>/isa_json")
     api.add_resource(StudyTitle, config.RESOURCES_PATH + "/study/<string:study_id>/title")
     api.add_resource(StudyDescription, config.RESOURCES_PATH + "/study/<string:study_id>/description")
-    api.add_resource(StudyProtocols, config.RESOURCES_PATH + "/study/<string:study_id>/protocols")
     api.add_resource(StudyNew, config.RESOURCES_PATH + "/study/new")
+    api.add_resource(StudyProtocols, config.RESOURCES_PATH + "/study/<string:study_id>/protocols")
 
 
 def main():
