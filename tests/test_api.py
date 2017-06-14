@@ -1,6 +1,7 @@
 import urllib.request
 import urllib.error
 import unittest
+import time
 
 url_about = 'http://localhost:5000/mtbls/ws'
 public_study_id = 'MTBLS1'
@@ -16,6 +17,7 @@ url_wrong_id = url_base + bad_study_id
 new_study_title = b'"New Study title..."'
 new_study_description = b'"New Study description..."'
 submission_date = b'"2017-05-08"'
+update_date = b'"2017-06-15"'
 public_release_date = b'"2018-05-08"'
 data_new_title = b'{ "title":' + new_study_title + b' }'
 data_new_description = b'{ "description": ' + new_study_description + b' }'
@@ -23,6 +25,17 @@ data_new_study = b'{ "title": "New Study title...", '\
                  b' "description": ' + new_study_description + b',' \
                  b' "submission_date": ' + submission_date + b',' \
                  b' "public_release_date": ' + public_release_date + b' }'
+data_new_protocol = b'{"Study-protocols": [{"comments": [' \
+                    b'"2017-06-15","Updated with MtblsWs-Py", "Updated by userID"],' \
+                    b'"components": [],"description": "Protocol description here.",' \
+                    b'"name": "Protocol name here.","parameters": [{"comments": [],' \
+                    b'"parameter_name": {"comments": [],"term": "Parameter name here.",' \
+                    b'"term_accession": "","term_source": null},' \
+                    b'"unit": null}],' \
+                    b'"protocol_type": {"comments": [],' \
+                    b'"term": "Protocol type name here","term_accession": "","term_source": null},' \
+                    b'"uri": "",' \
+                    b'"version": "{{$randomInt}}"}]}'
 
 
 class WsTests(unittest.TestCase):
@@ -175,6 +188,8 @@ class GetStudyTitleTests(WsTests):
 
 
 class UpdateStudyTitleTests(WsTests):
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
 
     # PUT Update Study Title - Pub -> 200
     def test_update_title_pub(self):
@@ -493,6 +508,8 @@ class GetStudyDescriptionTests(WsTests):
 
 
 class UpdateStudyDescriptionTests(WsTests):
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
 
     # PUT Update Study Description - Pub -> 200
     def test_update_description_pub(self):
@@ -712,6 +729,8 @@ class UpdateStudyDescriptionTests(WsTests):
 
 
 class PostStudyNew(WsTests):
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
 
     # POST New Study - Auth -> 200
     def test_post_new_study_auth(self):
@@ -785,6 +804,334 @@ class PostStudyNew(WsTests):
             self.check_body_common(err.read().decode('utf-8'))
             self.assertEqual('FORBIDDEN', err.msg)
             self.assertEqual('FORBIDDEN', err.reason)
+
+
+class GetStudyProtocolsTests(WsTests):
+
+    # Get Study Protocols - Pub -> 200
+    def test_get_protocols(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+
+    # Get Study Protocols - Pub - Auth -> 200
+    def test_get_protocols_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+
+    # Get Study Protocols - Pub - NoAuth -> 200
+    def test_get_protocols_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+
+    # Get Study Protocols - Priv - Auth -> 200
+    def test_get_protocols_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+
+    # Get Study Protocols - Priv -> 401
+    def test_get_protocols_priv(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Get Study Protocols - Priv - NoAuth -> 403
+    def test_get_protocols_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # GET Study Protocols - NullId -> 404
+    def test_get_protocols_nullId(self):
+        request = urllib.request.Request(url_null_id + '/protocols', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # GET Study Protocols - BadId -> 404
+    def test_get_protocols_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/protocols', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+
+class UpdateStudyProtocolsTests(WsTests):
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    # PUT Update Study Protocols - Pub -> 200
+    def test_update_protocols_pub(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+            self.assertIn('Updated with MtblsWs-Py', body)
+
+    # Update Study Protocols - Pub - Auth -> 200
+    def test_update_protocols_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+            self.assertIn('Updated with MtblsWs-Py', body)
+
+    # Update Study Protocols - Pub - NoAuth -> 200
+    def test_update_protocols_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+            self.assertIn('Updated with MtblsWs-Py', body)
+
+    # Update Study Protocols - Priv - Auth -> 200
+    def test_update_protocols_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+            self.assertIn('Updated with MtblsWs-Py', body)
+
+    # Update Study Protocols - Priv -> 401
+    def test_update_protocols_priv(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Protocols - Priv - NoAuth -> 403
+    def test_update_protocols_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Protocols - NullId -> 404
+    def test_update_protocols_nullId(self):
+        request = urllib.request.Request(url_null_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Protocols - BadId -> 404
+    def test_update_protocols_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Protocols - Pub - NoSave -> 200
+    def test_update_protocols_pub_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+            self.assertIn('Updated with MtblsWs-Py', body)
+
+    # Update Study Protocols - Pub - Auth - NoSave -> 200
+    def test_update_protocols_pub_auth_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+            self.assertIn('Updated with MtblsWs-Py', body)
+
+    # Update Study Protocols - Pub - NoAuth - NoSave -> 200
+    def test_update_protocols_pub_noAuth_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+            self.assertIn('Updated with MtblsWs-Py', body)
+
+    # Update Study Protocols - Priv - Auth - NoSave -> 200
+    def test_update_protocols_priv_auth_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('Study-protocols', body)
+            self.assertIn('Updated with MtblsWs-Py', body)
+
+    # Update Study Protocols - Priv - NoSave -> 401
+    def test_update_protocols_priv_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Protocols - Priv - NoAuth - NoSave -> 403
+    def test_update_protocols_priv_noAuth_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Protocols - NullId - NoSave -> 404
+    def test_update_protocols_nullId_noSave(self):
+        request = urllib.request.Request(url_null_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Protocols - BadId - NoSave -> 404
+    def test_update_protocols_badId_noSave(self):
+        request = urllib.request.Request(url_wrong_id + '/protocols', data=data_new_protocol, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
 
 
 if __name__ == '__main__':
