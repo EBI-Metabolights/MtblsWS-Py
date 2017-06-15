@@ -2,18 +2,15 @@ import json
 import logging
 from flask import request, jsonify
 from flask_restful import Resource, abort, marshal_with, fields
-from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from isatools.model.v1 import *
+from app.ws.models import *
 
 """
 ISA Study
 
 Manage MTBLS studies from ISA-Tab files using ISA-API
-
-author: jrmacias@ebi.ac.uk
-date: 2017-02-23
 """
 
 logger = logging.getLogger('wslog')
@@ -922,3 +919,97 @@ class StudyProtocols(Resource):
         logger.info('Applied %s', json_protocols)
 
         return jsonify({"Study-protocols": json_protocols})
+
+
+class StudyContacts(Resource):
+    """A person/contact that can be attributed to an Investigation or Study.
+
+        Attributes:
+            last_name (str, NoneType): The last name of a person associated with the investigation.
+            first_name (str, NoneType): The first name of a person associated with the investigation.
+            mid_initials (str, NoneType): The middle initials of a person associated with the investigation.
+            email (str, NoneType): The email address of a person associated with the investigation.
+            phone (str, NoneType): The telephone number of a person associated with the investigation.
+            fax (str, NoneType): The fax number of a person associated with the investigation.
+            address (str, NoneType): The address of a person associated with the investigation.
+            affiliation (str, NoneType): The organization affiliation for a person associated with the investigation.
+            roles (list, NoneType): OntologyAnnotations to classify the role(s) performed by this person in the context of
+            the investigation, which means that the roles reported here need not correspond to roles held withing their
+            affiliated organization.
+            comments (list, NoneType): Comments associated with instances of this class.
+        """
+
+    @swagger.operation(
+        summary="Get MTBLS Study Contacts",
+        notes="Get the a list of People/contacts associated with the Study {study_id} in JSON format.",
+        responseClass=StudyContact.__name__, multiValuedResponse=True, responseContainer="List",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            # {
+            #     "name": "contacts",
+            #     "description": "Updated list of contacts",
+            #     "paramType": "body",
+            #     "type": "StudyContact",
+            #     "responseContainer": "List",
+            #     "format": "application/json",
+            #     "required": False,
+            #     "allowMultiple": True
+            # }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Study contacts list is returned, JSON format."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        logger.info('Getting Study contacts for %s, using API-Key %s', study_id, user_token)
+        isa_contacts = iac.get_study_contacts(study_id, user_token)
+        json_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_person, sort_keys=True)
+
+        logger.info('Got %s', json_contacts)
+        return json.loads(json_contacts)
