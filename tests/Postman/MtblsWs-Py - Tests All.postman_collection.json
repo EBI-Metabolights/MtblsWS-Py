@@ -871,9 +871,9 @@
 									"    tests[\"JSON response has key 'first_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('first_name');",
 									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
 									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
-									"}",
-									"if (jsonData.StudyContacts[0].roles.length > 0) {",
+									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
 									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
+									"    }",
 									"}",
 									""
 								]
@@ -924,9 +924,9 @@
 									"    tests[\"JSON response has key 'first_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('first_name');",
 									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
 									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
-									"}",
-									"if (jsonData.StudyContacts[0].roles.length > 0) {",
+									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
 									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
+									"    }",
 									"}",
 									""
 								]
@@ -982,9 +982,9 @@
 									"    tests[\"JSON response has key 'first_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('first_name');",
 									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
 									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
-									"}",
-									"if (jsonData.StudyContacts[0].roles.length > 0) {",
+									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
 									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
+									"    }",
 									"}",
 									""
 								]
@@ -1040,9 +1040,9 @@
 									"    tests[\"JSON response has key 'first_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('first_name');",
 									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
 									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
-									"}",
-									"if (jsonData.StudyContacts[0].roles.length > 0) {",
+									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
 									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
+									"    }",
 									"}",
 									""
 								]
