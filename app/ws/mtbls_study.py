@@ -8,9 +8,6 @@ from app.ws.mtblsWSclient import WsClient
 MTBLS Study
 
 Manage MTBLS studies obtained from Java-based MTBLS WS
-
-author: jrmacias@ebi.ac.uk
-date: 2017-02-23
 """
 
 logger = logging.getLogger('wslog')

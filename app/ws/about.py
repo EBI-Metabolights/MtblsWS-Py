@@ -7,9 +7,6 @@ from flask_restful_swagger import swagger
 MtblsWS-Py About
 
 Basic description of the Web Service
-
-author: jrmacias@ebi.ac.uk
-date: 2017-03-06
 """
 
 logger = logging.getLogger('wslog')

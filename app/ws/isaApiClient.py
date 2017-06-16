@@ -15,9 +15,6 @@ from isatools.isajson import ISAJSONEncoder
 MetaboLights ISA-API client
 
 Use the Python-based ISA-API tools
-
-author: jrmacias@ebi.ac.uk
-date: 20170112
 """
 
 logger = logging.getLogger('wslog')
@@ -232,3 +229,14 @@ class IsaApiClient:
         self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
         return new_protocols
+
+    def get_study_contacts(self, study_id, api_key):
+        """
+        Get the Study list of contacts
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: a string with the list of study contacts
+        """
+        std_obj = self._get_isa_study(study_id, api_key)
+        contacts = std_obj.contacts
+        return contacts

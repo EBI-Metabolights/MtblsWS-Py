@@ -2,18 +2,15 @@ import json
 import logging
 from flask import request, jsonify
 from flask_restful import Resource, abort, marshal_with, fields
-from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from isatools.model.v1 import *
+from app.ws.models import *
 
 """
 ISA Study
 
 Manage MTBLS studies from ISA-Tab files using ISA-API
-
-author: jrmacias@ebi.ac.uk
-date: 2017-02-23
 """
 
 logger = logging.getLogger('wslog')
@@ -532,220 +529,6 @@ class StudyNew(Resource):
         return inv_obj
 
 
-def serialize_protocol(isa_obj):
-    assert isinstance(isa_obj, Protocol)
-    # name (str):
-    # protocol_type (OntologyAnnotation):
-    # description (str):
-    # uri (str):
-    # version (str):
-    # parameters (list, ProtocolParameter):
-    # components (list, OntologyAnnotation):
-    # comments (list, str):
-    return {
-        'name': isa_obj.name,
-        'protocol_type': json.loads(json.dumps(isa_obj.protocol_type, default=serialize_OntologyAnnotation, sort_keys=True)),
-        'description': isa_obj.description,
-        'uri': isa_obj.uri,
-        'version': isa_obj.version,
-        'parameters': json.loads(json.dumps(isa_obj.parameters, default=serialize_ProtocolParameter, sort_keys=True)),
-        'components': json.loads(json.dumps(isa_obj.components, default=serialize_OntologyAnnotation, sort_keys=True)),
-        'comments': isa_obj.comments
-    }
-
-
-def serialize_OntologyAnnotation(isa_obj):
-    assert isinstance(isa_obj, OntologyAnnotation)
-    # term (str, NoneType):
-    # term_source (OntologySource, NoneType):
-    # term_accession (str, NoneType):
-    # comments (list, NoneType):
-    term_source = None
-    if hasattr(isa_obj, 'term_source') and isa_obj.term_source is not None:
-        term_source = serialize_OntologySource(isa_obj.term_source)
-
-    return {
-        'term': isa_obj.term,
-        'term_source': term_source,
-        'term_accession': isa_obj.term_accession,
-        'comments': isa_obj.comments
-    }
-
-
-def serialize_ProtocolParameter(isa_obj):
-    assert isinstance(isa_obj, ProtocolParameter)
-    # name (OntologyAnnotation): A parameter name as a term
-    # unit (OntologyAnnotation): A unit, if applicable
-    # comments (list, NoneType):
-    parameter_name = None
-    if hasattr(isa_obj, 'parameter_name') and isa_obj.parameter_name is not None:
-        parameter_name = serialize_OntologyAnnotation(isa_obj.parameter_name)
-
-    unit = None
-    if hasattr(isa_obj, 'unit') and isa_obj.unit is not None:
-        unit = serialize_OntologyAnnotation(isa_obj.unit)
-
-    return {
-        'parameter_name': parameter_name,
-        'unit': unit,
-        'comments': isa_obj.comments
-    }
-
-
-def serialize_OntologySource(isa_obj):
-    assert isinstance(isa_obj, OntologySource)
-    # name (str):
-    # file (str):
-    # version (str):
-    # description (str):
-    # comments (list,):
-    return {
-        'name': isa_obj.name,
-        'file': isa_obj.file,
-        'version': isa_obj.version,
-        'description': isa_obj.description,
-        'comments': isa_obj.comments
-    }
-
-
-def unserialize_Protocol(json_protocol):
-    # name (str):
-    # protocol_type (OntologyAnnotation):
-    # description (str):
-    # uri (str):
-    # version (str):
-    # parameters (list, ProtocolParameter):
-    # components (list, OntologyAnnotation):
-    # comments (list, str):
-    name = ''
-    if 'name' in json_protocol and json_protocol['name'] is not None:
-        name = json_protocol['name']
-
-    protocol_type = OntologyAnnotation()
-    if 'protocol_type' in json_protocol and json_protocol['protocol_type'] is not None:
-        protocol_type = unserialize_OntologyAnnotation(json_protocol['protocol_type'])
-
-    description = ''
-    if 'description' in json_protocol and json_protocol['description'] is not None:
-        description = json_protocol['description']
-
-    uri = ''
-    if 'uri' in json_protocol and json_protocol['uri'] is not None:
-        uri = json_protocol['uri']
-
-    version = ''
-    if 'version' in json_protocol and json_protocol['version'] is not None:
-        version = json_protocol['version']
-
-    parameters = list()
-    if 'parameters' in json_protocol:
-        for parameter in json_protocol['parameters']:
-            parameters.append(unserialize_ProtocolParameter(parameter))
-
-    components = list()
-    if len(json_protocol['components']) > 0:
-        for comp in json_protocol['components']:
-            components.append(ProtocolComponent(name=comp['name']))
-
-    comments = list()
-    if 'comments' in json_protocol:
-        for comment in json_protocol['comments']:
-            comments.append(comment)
-
-    return Protocol(name=name,
-                    protocol_type=protocol_type,
-                    description=description,
-                    uri=uri,
-                    version=version,
-                    parameters=parameters,
-                    components=components,
-                    comments=comments)
-
-
-def unserialize_OntologyAnnotation(json_obj):
-    # term (str, NoneType):
-    # term_source (OntologySource, NoneType):
-    # term_accession (str, NoneType):
-    # comments (list, NoneType):
-    term = ''
-    if 'term' in json_obj and json_obj['term'] is not None:
-        term = json_obj['term']
-
-    term_source = None
-    if 'term_source' in json_obj and json_obj['term_source'] is not None:
-        term_source = unserialize_OntologySource(json_obj['term'])
-
-    term_accession = ''
-    if 'term_accession' in json_obj and json_obj['term_accession'] is not None:
-        term_accession = json_obj['term_accession']
-
-    comments = list()
-    if 'comments' in json_obj:
-        for comment in json_obj['comments']:
-            comments.append(comment)
-
-    return OntologyAnnotation(term=term,
-                              term_source=term_source,
-                              term_accession=term_accession,
-                              comments=comments)
-
-
-def unserialize_OntologySource(json_obj):
-    # name (str):
-    # file (str):
-    # version (str):
-    # description (str):
-    # comments (list,):
-    name = ''
-    if 'name' in json_obj and json_obj['name'] is not None:
-        name = json_obj['name']
-
-    file = ''
-    if 'name' in json_obj and json_obj['file'] is not None:
-        file = json_obj['file']
-
-    version = ''
-    if 'version' in json_obj and json_obj['version'] is not None:
-        version = json_obj['version']
-
-    description = ''
-    if 'description' in json_obj and json_obj['description'] is not None:
-        description = json_obj['description']
-
-    comments = list()
-    if 'comments' in json_obj:
-        for comment in json_obj['comments']:
-            comments.append(comment)
-
-    return OntologySource(name=name,
-                          file=file,
-                          version=version,
-                          description=description,
-                          comments='')
-
-
-def unserialize_ProtocolParameter(json_obj):
-    # name (OntologyAnnotation): A parameter name as a term
-    # unit (OntologyAnnotation): A unit, if applicable
-    # comments (list, NoneType):
-    parameter_name = OntologyAnnotation()
-    if 'parameter_name' in json_obj and json_obj['parameter_name'] is not None:
-        parameter_name = unserialize_OntologyAnnotation(json_obj['parameter_name'])
-
-    unit = OntologyAnnotation()
-    if 'unit' in json_obj and json_obj['unit'] is not None:
-        unit = unserialize_OntologyAnnotation(json_obj['unit'])
-
-    comments = list()
-    if 'comments' in json_obj:
-        for comment in json_obj['comments']:
-            comments.append(comment)
-
-    return ProtocolParameter(parameter_name=parameter_name,
-                             unit=unit,
-                             comments=comments)
-
-
 class StudyProtocols(Resource):
     """Manage the Study protocols"""
 
@@ -807,7 +590,7 @@ class StudyProtocols(Resource):
 
         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
         json_protocols = iac.get_study_protocols(study_id, user_token)
-        str_protocols = json.dumps({'Study-protocols': json_protocols}, default=serialize_protocol, sort_keys=True)
+        str_protocols = json.dumps({'StudyProtocols': json_protocols}, default=serialize_protocol, sort_keys=True)
         logger.info('Got: %s', str_protocols)
 
         return json.loads(str_protocols)
@@ -922,3 +705,97 @@ class StudyProtocols(Resource):
         logger.info('Applied %s', json_protocols)
 
         return jsonify({"Study-protocols": json_protocols})
+
+
+class StudyContacts(Resource):
+    """A person/contact that can be attributed to an Investigation or Study.
+
+        Attributes:
+            last_name (str, NoneType): The last name of a person associated with the investigation.
+            first_name (str, NoneType): The first name of a person associated with the investigation.
+            mid_initials (str, NoneType): The middle initials of a person associated with the investigation.
+            email (str, NoneType): The email address of a person associated with the investigation.
+            phone (str, NoneType): The telephone number of a person associated with the investigation.
+            fax (str, NoneType): The fax number of a person associated with the investigation.
+            address (str, NoneType): The address of a person associated with the investigation.
+            affiliation (str, NoneType): The organization affiliation for a person associated with the investigation.
+            roles (list, NoneType): OntologyAnnotations to classify the role(s) performed by this person in the context of
+            the investigation, which means that the roles reported here need not correspond to roles held withing their
+            affiliated organization.
+            comments (list, NoneType): Comments associated with instances of this class.
+        """
+
+    @swagger.operation(
+        summary="Get MTBLS Study Contacts",
+        notes="Get the a list of People/contacts associated with the Study.",
+        responseClass=StudyContact.__name__, multiValuedResponse=True, responseContainer="List",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            # {
+            #     "name": "contacts",
+            #     "description": "Updated list of contacts",
+            #     "paramType": "body",
+            #     "type": "StudyContact",
+            #     "responseContainer": "List",
+            #     "format": "application/json",
+            #     "required": False,
+            #     "allowMultiple": True
+            # }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Study contacts list is returned, JSON format."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        logger.info('Getting Study contacts for %s, using API-Key %s', study_id, user_token)
+        isa_contacts = iac.get_study_contacts(study_id, user_token)
+        json_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_Person, sort_keys=True)
+
+        logger.info('Got %s', json_contacts)
+        return json.loads(json_contacts)

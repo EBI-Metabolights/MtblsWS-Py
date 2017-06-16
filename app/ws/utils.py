@@ -1,5 +1,4 @@
 import os
-import logging
 from shutil import copyfile
 import time
 
@@ -7,9 +6,6 @@ import time
 Utils
 
 Misc of utils
-
-author: jrmacias@ebi.ac.uk
-date: 20170301
 """
 
 
