@@ -3,6 +3,7 @@ import urllib.request
 import urllib.error
 import unittest
 import time
+from isatools.model.v1 import Person
 
 url_about = 'http://localhost:5000/mtbls/ws'
 public_study_id = 'MTBLS1'
@@ -1137,6 +1138,23 @@ class UpdateStudyProtocolsTests(WsTests):
 
 class GetStudyContactsTests(WsTests):
 
+    def check_Person_class(self, obj):
+        self.assertIsNotNone(obj['StudyContacts'])
+        for person in obj['StudyContacts']:
+            self.assertIsNotNone(person['first_name'])
+            self.assertIsNotNone(person['mid_initials'])
+            self.assertIsNotNone(person['last_name'])
+            self.assertIsNotNone(person['email'])
+            self.assertIsNotNone(person['affiliation'])
+            self.assertIsNotNone(person['phone'])
+            self.assertIsNotNone(person['address'])
+            self.assertIsNotNone(person['fax'])
+            self.assertIsNotNone(person['comments'])
+        for role in obj['StudyContacts'][0]['roles']:
+            self.assertIsNotNone(role['term'])
+            self.assertIsNotNone(role['term_accession'])
+            self.assertIsNotNone(role['comments'])
+
     # Get Study Contacts - Pub -> 200
     def test_get_contacts(self):
         request = urllib.request.Request(url_pub_id + '/contacts', method='GET')
@@ -1146,12 +1164,9 @@ class GetStudyContactsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
+            j_resp = json.loads(body)
             self.assertIn('StudyContacts', body)
-            self.assertIn('first_name', body)
-            self.assertIn('last_name', body)
-            self.assertIn('email', body)
-            self.assertIn('roles', body)
-            self.assertIn('term', body)
+            self.check_Person_class(j_resp)
 
     # Get Study Contacts - Pub - Auth -> 200
     def test_get_contacts_pub_auth(self):
@@ -1163,13 +1178,9 @@ class GetStudyContactsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
+            j_resp = json.loads(body)
             self.assertIn('StudyContacts', body)
-            self.assertIn('StudyContacts', body)
-            self.assertIn('first_name', body)
-            self.assertIn('last_name', body)
-            self.assertIn('email', body)
-            self.assertIn('roles', body)
-            self.assertIn('term', body)
+            self.check_Person_class(j_resp)
 
     # Get Study Contacts - Pub - NoAuth -> 200
     def test_get_contacts_pub_noAuth(self):
@@ -1181,13 +1192,9 @@ class GetStudyContactsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
+            j_resp = json.loads(body)
             self.assertIn('StudyContacts', body)
-            self.assertIn('StudyContacts', body)
-            self.assertIn('first_name', body)
-            self.assertIn('last_name', body)
-            self.assertIn('email', body)
-            self.assertIn('roles', body)
-            self.assertIn('term', body)
+            self.check_Person_class(j_resp)
 
     # Get Study Contacts - Priv - Auth -> 200
     def test_get_contacts_priv_auth(self):
@@ -1199,13 +1206,9 @@ class GetStudyContactsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
+            j_resp = json.loads(body)
             self.assertIn('StudyContacts', body)
-            self.assertIn('StudyContacts', body)
-            self.assertIn('first_name', body)
-            self.assertIn('last_name', body)
-            self.assertIn('email', body)
-            self.assertIn('roles', body)
-
+            self.check_Person_class(j_resp)
 
     # Get Study Contacts - Priv -> 401
     def test_get_contacts_priv(self):
