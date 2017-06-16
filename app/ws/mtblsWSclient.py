@@ -7,9 +7,6 @@ from flask_restful import abort
 MetaboLights WS client
 
 Use the Java-based REST resources provided from MTBLS
-
-author: jrmacias@ebi.ac.uk
-date: 20160520
 """
 
 logger = logging.getLogger('wslog')

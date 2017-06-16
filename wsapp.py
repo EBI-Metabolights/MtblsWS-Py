@@ -7,14 +7,12 @@ from flask_cors import CORS
 from app.ws.about import About
 from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import Study, StudyTitle, StudyDescription, StudyPubList, StudyNew, StudyProtocols
+from app.ws.isaStudy import StudyContacts
 
 """
 MTBLS WS-Py
 
 MetaboLights Python-based REST Web Service
-
-author: jrmacias@ebi.ac.uk
-date: 20160520
 """
 
 app = Flask(__name__, instance_relative_config=True)
@@ -48,6 +46,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyDescription, config.RESOURCES_PATH + "/study/<string:study_id>/description")
     api.add_resource(StudyNew, config.RESOURCES_PATH + "/study/new")
     api.add_resource(StudyProtocols, config.RESOURCES_PATH + "/study/<string:study_id>/protocols")
+    api.add_resource(StudyContacts, config.RESOURCES_PATH + "/study/<string:study_id>/contacts")
 
 
 def main():
