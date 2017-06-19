@@ -1,3 +1,4 @@
+from flask_restful import fields
 from flask_restful_swagger import swagger
 from isatools.model.v1 import Person, OntologyAnnotation, OntologySource, Protocol
 from isatools.model.v1 import ProtocolParameter, ProtocolComponent
@@ -24,6 +25,52 @@ class StudyContact(Person):
         self.address = address
         self.affiliation = affiliation
         self.roles = roles
+
+
+OntologySource_api_model = {
+    'name': fields.String,
+    'file': fields.String,
+    'version': fields.String,
+    'description': fields.String,
+    'comments': fields.List(fields.String)
+}
+
+OntologyAnnotation_api_model = {
+    'term': fields.String,
+    'term_source': OntologySource_api_model,
+    'term_accession': fields.String,
+    'comments': fields.List(fields.String)
+}
+
+ProtocolParameter_api_model = {
+    'name': fields.Nested(OntologyAnnotation_api_model),
+    'unit': fields.Nested(OntologyAnnotation_api_model),
+    'comments': fields.List(fields.String)
+}
+
+Protocol_api_model = {
+    'name': fields.String,
+    'protocol_type': fields.Nested(OntologyAnnotation_api_model),
+    'description': fields.String,
+    'uri': fields.String,
+    'version': fields.String,
+    'parameters': fields.List(fields.Nested(ProtocolParameter_api_model)),
+    'components': fields.List(fields.Nested(OntologyAnnotation_api_model)),
+    'comments': fields.List(fields.String)
+}
+
+Person_api_model = {
+    'last_name': fields.String,
+    'first_name': fields.String,
+    'mid_initials': fields.String,
+    'email': fields.String,
+    'phone': fields.String,
+    'fax': fields.String,
+    'address': fields.String,
+    'affiliation': fields.String,
+    'roles': fields.List(fields.Nested(OntologyAnnotation_api_model)),
+    'comments': fields.List(fields.String)
+}
 
 
 def serialize_protocol(isa_obj):

@@ -1,7 +1,7 @@
 import json
 import logging
 from flask import request, jsonify
-from flask_restful import Resource, abort, marshal_with, fields
+from flask_restful import Resource, abort, marshal_with, fields, marshal
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from isatools.model.v1 import *
@@ -576,6 +576,7 @@ class StudyProtocols(Resource):
             }
         ]
     )
+    @marshal_with(Protocol_api_model, envelope='StudyProtocols')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -589,11 +590,11 @@ class StudyProtocols(Resource):
         wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
-        json_protocols = iac.get_study_protocols(study_id, user_token)
-        str_protocols = json.dumps({'StudyProtocols': json_protocols}, default=serialize_protocol, sort_keys=True)
+        isa_protocols = iac.get_study_protocols(study_id, user_token)
+        str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_protocol, sort_keys=True)
         logger.info('Got: %s', str_protocols)
 
-        return json.loads(str_protocols)
+        return isa_protocols
 
 
     @swagger.operation(
@@ -728,7 +729,7 @@ class StudyContacts(Resource):
     @swagger.operation(
         summary="Get MTBLS Study Contacts",
         notes="Get the a list of People/contacts associated with the Study.",
-        responseClass=StudyContact.__name__, multiValuedResponse=True, responseContainer="List",
+        # responseClass=StudyContact.__name__, multiValuedResponse=True, responseContainer="List",
         parameters=[
             {
                 "name": "study_id",
@@ -745,17 +746,7 @@ class StudyContacts(Resource):
                 "type": "string",
                 "required": False,
                 "allowMultiple": False
-            },
-            # {
-            #     "name": "contacts",
-            #     "description": "Updated list of contacts",
-            #     "paramType": "body",
-            #     "type": "StudyContact",
-            #     "responseContainer": "List",
-            #     "format": "application/json",
-            #     "required": False,
-            #     "allowMultiple": True
-            # }
+            }
         ],
         responseMessages=[
             {
@@ -780,6 +771,7 @@ class StudyContacts(Resource):
             }
         ]
     )
+    @marshal_with(Person_api_model, envelope='StudyContacts')
     def get(self, study_id):
 
         # param validation
@@ -795,7 +787,7 @@ class StudyContacts(Resource):
 
         logger.info('Getting Study contacts for %s, using API-Key %s', study_id, user_token)
         isa_contacts = iac.get_study_contacts(study_id, user_token)
-        json_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_Person, sort_keys=True)
+        str_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_Person, sort_keys=True)
+        logger.info('Got %s', str_contacts)
 
-        logger.info('Got %s', json_contacts)
-        return json.loads(json_contacts)
+        return isa_contacts
