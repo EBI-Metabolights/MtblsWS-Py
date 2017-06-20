@@ -27,7 +27,7 @@ data_new_study = b'{ "title": "New Study title...", '\
                  b' "description": ' + new_study_description + b',' \
                  b' "submission_date": ' + submission_date + b',' \
                  b' "public_release_date": ' + public_release_date + b' }'
-data_new_protocol = b'{"Study-protocols": [{"comments": [' \
+data_new_protocol = b'{"StudyProtocols": [{"comments": [' \
                     b'"2017-06-15","Updated with MtblsWs-Py", "Updated by userID"],' \
                     b'"components": [],"description": "Protocol description here.",' \
                     b'"name": "Protocol name here.","parameters": [{"comments": [],' \
@@ -921,7 +921,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Pub - Auth -> 200
@@ -935,7 +935,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Pub - NoAuth -> 200
@@ -949,7 +949,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Priv - Auth -> 200
@@ -963,7 +963,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Priv -> 401
@@ -1030,7 +1030,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Pub - Auth - NoSave -> 200
@@ -1045,7 +1045,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Pub - NoAuth - NoSave -> 200
@@ -1060,7 +1060,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Priv - Auth - NoSave -> 200
@@ -1075,7 +1075,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Priv - NoSave -> 401

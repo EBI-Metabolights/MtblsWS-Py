@@ -3529,7 +3529,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"Study-protocols\":');",
+									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -3553,7 +3553,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -3574,7 +3574,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"Study-protocols\":');",
+									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -3603,7 +3603,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -3624,7 +3624,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"Study-protocols\":');",
+									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -3653,7 +3653,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -3674,7 +3674,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"Study-protocols\":');",
+									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -3703,7 +3703,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -3726,7 +3726,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -3750,7 +3750,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -3773,7 +3773,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -3802,7 +3802,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -3825,7 +3825,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -3849,7 +3849,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -3872,7 +3872,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -3896,7 +3896,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -3917,7 +3917,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"Study-protocols\":');",
+									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -3946,7 +3946,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -3967,7 +3967,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"Study-protocols\":');",
+									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -4001,7 +4001,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -4022,7 +4022,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"Study-protocols\":');",
+									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -4056,7 +4056,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -4077,7 +4077,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"Study-protocols\":');",
+									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -4111,7 +4111,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -4134,7 +4134,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -4163,7 +4163,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -4186,7 +4186,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -4220,7 +4220,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -4243,7 +4243,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -4272,7 +4272,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -4295,7 +4295,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -4324,7 +4324,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"Study-protocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t\"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
