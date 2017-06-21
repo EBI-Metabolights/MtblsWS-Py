@@ -1,6 +1,7 @@
+from flask_restful import fields
 from flask_restful_swagger import swagger
 from isatools.model.v1 import Person, OntologyAnnotation, OntologySource, Protocol
-from isatools.model.v1 import ProtocolParameter, ProtocolComponent
+from isatools.model.v1 import ProtocolParameter
 import json
 
 
@@ -24,6 +25,52 @@ class StudyContact(Person):
         self.address = address
         self.affiliation = affiliation
         self.roles = roles
+
+
+OntologySource_api_model = {
+    'name': fields.String,
+    'file': fields.String,
+    'version': fields.String,
+    'description': fields.String,
+    'comments': fields.List(fields.String)
+}
+
+OntologyAnnotation_api_model = {
+    'term': fields.String,
+    'term_source': OntologySource_api_model,
+    'term_accession': fields.String,
+    'comments': fields.List(fields.String)
+}
+
+ProtocolParameter_api_model = {
+    'parameter_name': fields.Nested(OntologyAnnotation_api_model),
+    'unit': fields.Nested(OntologyAnnotation_api_model),
+    'comments': fields.List(fields.String)
+}
+
+Protocol_api_model = {
+    'name': fields.String,
+    'protocol_type': fields.Nested(OntologyAnnotation_api_model),
+    'description': fields.String,
+    'uri': fields.String,
+    'version': fields.String,
+    'parameters': fields.List(fields.Nested(ProtocolParameter_api_model)),
+    'components': fields.List(fields.Nested(OntologyAnnotation_api_model)),
+    'comments': fields.List(fields.String)
+}
+
+Person_api_model = {
+    'last_name': fields.String,
+    'first_name': fields.String,
+    'mid_initials': fields.String,
+    'email': fields.String,
+    'phone': fields.String,
+    'fax': fields.String,
+    'address': fields.String,
+    'affiliation': fields.String,
+    'roles': fields.List(fields.Nested(OntologyAnnotation_api_model)),
+    'comments': fields.List(fields.String)
+}
 
 
 def serialize_protocol(isa_obj):
@@ -57,7 +104,6 @@ def serialize_OntologyAnnotation(isa_obj):
     term_source = None
     if hasattr(isa_obj, 'term_source') and isa_obj.term_source is not None:
         term_source = serialize_OntologySource(isa_obj.term_source)
-
     return {
         'term': isa_obj.term,
         'term_source': term_source,
@@ -74,11 +120,9 @@ def serialize_ProtocolParameter(isa_obj):
     parameter_name = None
     if hasattr(isa_obj, 'parameter_name') and isa_obj.parameter_name is not None:
         parameter_name = serialize_OntologyAnnotation(isa_obj.parameter_name)
-
     unit = None
     if hasattr(isa_obj, 'unit') and isa_obj.unit is not None:
         unit = serialize_OntologyAnnotation(isa_obj.unit)
-
     return {
         'parameter_name': parameter_name,
         'unit': unit,
@@ -102,7 +146,7 @@ def serialize_OntologySource(isa_obj):
     }
 
 
-def unserialize_Protocol(json_protocol):
+def unserialize_Protocol(json_obj):
     # name (str):
     # protocol_type (OntologyAnnotation):
     # description (str):
@@ -112,40 +156,32 @@ def unserialize_Protocol(json_protocol):
     # components (list, OntologyAnnotation):
     # comments (list, str):
     name = ''
-    if 'name' in json_protocol and json_protocol['name'] is not None:
-        name = json_protocol['name']
-
+    if 'name' in json_obj and json_obj['name'] is not None:
+        name = json_obj['name']
     protocol_type = OntologyAnnotation()
-    if 'protocol_type' in json_protocol and json_protocol['protocol_type'] is not None:
-        protocol_type = unserialize_OntologyAnnotation(json_protocol['protocol_type'])
-
+    if 'protocol_type' in json_obj and json_obj['protocol_type'] is not None:
+        protocol_type = unserialize_OntologyAnnotation(json_obj['protocol_type'])
     description = ''
-    if 'description' in json_protocol and json_protocol['description'] is not None:
-        description = json_protocol['description']
-
+    if 'description' in json_obj and json_obj['description'] is not None:
+        description = json_obj['description']
     uri = ''
-    if 'uri' in json_protocol and json_protocol['uri'] is not None:
-        uri = json_protocol['uri']
-
+    if 'uri' in json_obj and json_obj['uri'] is not None:
+        uri = json_obj['uri']
     version = ''
-    if 'version' in json_protocol and json_protocol['version'] is not None:
-        version = json_protocol['version']
-
+    if 'version' in json_obj and json_obj['version'] is not None:
+        version = json_obj['version']
     parameters = list()
-    if 'parameters' in json_protocol:
-        for parameter in json_protocol['parameters']:
+    if 'parameters' in json_obj:
+        for parameter in json_obj['parameters']:
             parameters.append(unserialize_ProtocolParameter(parameter))
-
     components = list()
-    if len(json_protocol['components']) > 0:
-        for comp in json_protocol['components']:
-            components.append(ProtocolComponent(name=comp['name']))
-
+    if len(json_obj['components']) > 0:
+        for comp in json_obj['components']:
+            components.append(unserialize_OntologyAnnotation(comp))
     comments = list()
-    if 'comments' in json_protocol:
-        for comment in json_protocol['comments']:
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
             comments.append(comment)
-
     return Protocol(name=name,
                     protocol_type=protocol_type,
                     description=description,
@@ -164,17 +200,14 @@ def unserialize_OntologyAnnotation(json_obj):
     term = ''
     if 'term' in json_obj and json_obj['term'] is not None:
         term = json_obj['term']
-
     term_source = None
     if 'term_source' in json_obj and json_obj['term_source'] is not None:
-        term_source = unserialize_OntologySource(json_obj['term'])
-
+        term_source = unserialize_OntologySource(json_obj['term_source'])
     term_accession = ''
     if 'term_accession' in json_obj and json_obj['term_accession'] is not None:
         term_accession = json_obj['term_accession']
-
     comments = list()
-    if 'comments' in json_obj:
+    if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
             comments.append(comment)
 
@@ -193,21 +226,17 @@ def unserialize_OntologySource(json_obj):
     name = ''
     if 'name' in json_obj and json_obj['name'] is not None:
         name = json_obj['name']
-
     file = ''
     if 'name' in json_obj and json_obj['file'] is not None:
         file = json_obj['file']
-
     version = ''
     if 'version' in json_obj and json_obj['version'] is not None:
         version = json_obj['version']
-
     description = ''
     if 'description' in json_obj and json_obj['description'] is not None:
         description = json_obj['description']
-
     comments = list()
-    if 'comments' in json_obj:
+    if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
             comments.append(comment)
 
@@ -215,7 +244,7 @@ def unserialize_OntologySource(json_obj):
                           file=file,
                           version=version,
                           description=description,
-                          comments='')
+                          comments=comments)
 
 
 def unserialize_ProtocolParameter(json_obj):
@@ -225,13 +254,11 @@ def unserialize_ProtocolParameter(json_obj):
     parameter_name = OntologyAnnotation()
     if 'parameter_name' in json_obj and json_obj['parameter_name'] is not None:
         parameter_name = unserialize_OntologyAnnotation(json_obj['parameter_name'])
-
     unit = OntologyAnnotation()
     if 'unit' in json_obj and json_obj['unit'] is not None:
         unit = unserialize_OntologyAnnotation(json_obj['unit'])
-
     comments = list()
-    if 'comments' in json_obj:
+    if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
             comments.append(comment)
 
@@ -264,3 +291,59 @@ def serialize_Person(isa_obj):
         'roles': json.loads(json.dumps(isa_obj.roles, default=serialize_OntologyAnnotation, sort_keys=True)),
         'comments': isa_obj.comments
     }
+
+
+def unserialize_Person(json_obj):
+    # last_name (str, NoneType):
+    # first_name (str, NoneType):
+    # mid_initials (str, NoneType):
+    # email (str, NoneType):
+    # phone (str, NoneType):
+    # fax (str, NoneType):
+    # address (str, NoneType):
+    # affiliation (str, NoneType):
+    # roles (list, OntologyAnnotations):
+    # comments (list, str):
+    last_name = ''
+    if 'last_name' in json_obj and json_obj['last_name'] is not None:
+        last_name = json_obj['last_name']
+    first_name = ''
+    if 'first_name' in json_obj and json_obj['first_name'] is not None:
+        first_name = json_obj['first_name']
+    mid_initials = ''
+    if 'mid_initials' in json_obj and json_obj['mid_initials'] is not None:
+        mid_initials = json_obj['mid_initials']
+    email = ''
+    if 'email' in json_obj and json_obj['email'] is not None:
+        email = json_obj['email']
+    phone = ''
+    if 'phone' in json_obj and json_obj['phone'] is not None:
+        phone = json_obj['phone']
+    fax = ''
+    if 'fax' in json_obj and json_obj['fax'] is not None:
+        fax = json_obj['fax']
+    address = ''
+    if 'address' in json_obj and json_obj['address'] is not None:
+        address = json_obj['address']
+    affiliation = ''
+    if 'affiliation' in json_obj and json_obj['affiliation'] is not None:
+        affiliation = json_obj['affiliation']
+    roles = list()
+    if len(json_obj['roles']) > 0:
+        for role in json_obj['roles']:
+            roles.append(unserialize_OntologyAnnotation(role))
+    comments = list()
+    if 'comments' in json_obj:
+        for comment in json_obj['comments']:
+            comments.append(comment)
+
+    return Person(first_name=first_name,
+                  last_name=last_name,
+                  mid_initials=mid_initials,
+                  email=email,
+                  phone=phone,
+                  fax=fax,
+                  address=address,
+                  affiliation=affiliation,
+                  roles=roles,
+                  comments=comments)

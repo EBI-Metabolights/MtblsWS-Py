@@ -1,7 +1,7 @@
 import json
 import logging
 from flask import request, jsonify
-from flask_restful import Resource, abort, marshal_with, fields
+from flask_restful import Resource, abort, marshal_with, fields, marshal
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from isatools.model.v1 import *
@@ -534,7 +534,7 @@ class StudyProtocols(Resource):
 
     @swagger.operation(
         summary="Get MTBLS Study protocols",
-        notes="Get the protocols of the MTBLS Study with {study_id} in JSON format.",
+        notes="Get the list of protocols of the MTBLS Study with {study_id} in JSON format.",
         parameters=[
             {
                 "name": "study_id",
@@ -576,6 +576,7 @@ class StudyProtocols(Resource):
             }
         ]
     )
+    @marshal_with(Protocol_api_model, envelope='StudyProtocols')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -589,18 +590,15 @@ class StudyProtocols(Resource):
         wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
-        json_protocols = iac.get_study_protocols(study_id, user_token)
-        str_protocols = json.dumps({'StudyProtocols': json_protocols}, default=serialize_protocol, sort_keys=True)
+        isa_protocols = iac.get_study_protocols(study_id, user_token)
+        str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_protocol, sort_keys=True)
         logger.info('Got: %s', str_protocols)
 
-        return json.loads(str_protocols)
-
+        return isa_protocols
 
     @swagger.operation(
         summary='Update MTBLS Study protocols',
-        notes="""Update the protocols of the MTBLS Study with {study_id}.
-                      Only the new protocols (in JSON format) must be provided in the body of the request.
-                      i.e.: { "Study-protocols": [ {...}, {...}]}""",
+        notes='Update the list of protocols of the MTBLS Study with {study_id}.',
         parameters=[
             {
                 "name": "study_id",
@@ -620,12 +618,7 @@ class StudyProtocols(Resource):
             },
             {
                 "name": "protocols",
-                "description": """
-                New protocols in JSON format.</br>
-                i.e.: { "Study-protocols": [ 
-                </br>{...}, 
-                </br>{...}</br>]}
-                """,
+                "description": 'Updated list of protocols in JSON format.',
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
@@ -666,6 +659,7 @@ class StudyProtocols(Resource):
             }
         ]
     )
+    @marshal_with(Protocol_api_model, envelope='StudyProtocols')
     def put(self, study_id):
         # param validation
         if study_id is None:
@@ -682,7 +676,7 @@ class StudyProtocols(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_protocols = data_dict['Study-protocols']
+        json_protocols = data_dict['StudyProtocols']
 
         isa_protocols = list()
         for json_protocol in json_protocols:
@@ -694,7 +688,7 @@ class StudyProtocols(Resource):
         if "save_audit_copy" in request.headers:
             save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
 
-        # update study description
+        # update study protocols
         logger.info('Updating Study protocols for %s, using API-Key %s', study_id, user_token)
         if save_audit_copy:
             logging.warning("A copy of the previous file will be saved")
@@ -704,7 +698,8 @@ class StudyProtocols(Resource):
         iac.write_study_json_protocols(study_id, user_token, isa_protocols, save_audit_copy)
         logger.info('Applied %s', json_protocols)
 
-        return jsonify({"Study-protocols": json_protocols})
+        # return jsonify({"Study-protocols": json_protocols})
+        return isa_protocols
 
 
 class StudyContacts(Resource):
@@ -727,8 +722,8 @@ class StudyContacts(Resource):
 
     @swagger.operation(
         summary="Get MTBLS Study Contacts",
-        notes="Get the a list of People/contacts associated with the Study.",
-        responseClass=StudyContact.__name__, multiValuedResponse=True, responseContainer="List",
+        notes="Get the list of People/contacts associated with the Study.",
+        # responseClass=StudyContact.__name__, multiValuedResponse=True, responseContainer="List",
         parameters=[
             {
                 "name": "study_id",
@@ -745,17 +740,7 @@ class StudyContacts(Resource):
                 "type": "string",
                 "required": False,
                 "allowMultiple": False
-            },
-            # {
-            #     "name": "contacts",
-            #     "description": "Updated list of contacts",
-            #     "paramType": "body",
-            #     "type": "StudyContact",
-            #     "responseContainer": "List",
-            #     "format": "application/json",
-            #     "required": False,
-            #     "allowMultiple": True
-            # }
+            }
         ],
         responseMessages=[
             {
@@ -780,6 +765,7 @@ class StudyContacts(Resource):
             }
         ]
     )
+    @marshal_with(Person_api_model, envelope='StudyContacts')
     def get(self, study_id):
 
         # param validation
@@ -795,7 +781,111 @@ class StudyContacts(Resource):
 
         logger.info('Getting Study contacts for %s, using API-Key %s', study_id, user_token)
         isa_contacts = iac.get_study_contacts(study_id, user_token)
-        json_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_Person, sort_keys=True)
+        str_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_Person, sort_keys=True)
+        logger.info('Got %s', str_contacts)
 
-        logger.info('Got %s', json_contacts)
-        return json.loads(json_contacts)
+        return isa_contacts
+
+    @swagger.operation(
+        summary='Update MTBLS Study contacts',
+        notes='Update the list of People/contacts associated with the Study.',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
+                "name": "contacts",
+                "description": 'Updated list of People/contacts in JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Study description is returned, JSON format."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(Person_api_model, envelope='StudyContacts')
+    def put(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+        data_dict = json.loads(request.data.decode('utf-8'))
+        json_contacts = data_dict['StudyContacts']
+
+        isa_contacts = list()
+        for json_contact in json_contacts:
+            isa_contact = unserialize_Person(json_contact)
+            isa_contacts.append(isa_contact)
+
+        # check for keeping copies
+        save_audit_copy = True
+        if "save_audit_copy" in request.headers:
+            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+
+        # update study contacts
+        logger.info('Updating Study contacts for %s, using API-Key %s', study_id, user_token)
+        if save_audit_copy:
+            logging.warning("A copy of the previous file will be saved")
+        else:
+            logging.warning("A copy of the previous file will NOT be saved")
+
+        iac.write_study_json_contacts(study_id, user_token, isa_contacts, save_audit_copy)
+        logger.info('Applied %s', json_contacts)
+
+        return isa_contacts

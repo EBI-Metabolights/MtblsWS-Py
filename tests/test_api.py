@@ -27,7 +27,7 @@ data_new_study = b'{ "title": "New Study title...", '\
                  b' "description": ' + new_study_description + b',' \
                  b' "submission_date": ' + submission_date + b',' \
                  b' "public_release_date": ' + public_release_date + b' }'
-data_new_protocol = b'{"Study-protocols": [{"comments": [' \
+data_new_protocol = b'{"StudyProtocols": [{"comments": [' \
                     b'"2017-06-15","Updated with MtblsWs-Py", "Updated by userID"],' \
                     b'"components": [],"description": "Protocol description here.",' \
                     b'"name": "Protocol name here.","parameters": [{"comments": [],' \
@@ -38,7 +38,25 @@ data_new_protocol = b'{"Study-protocols": [{"comments": [' \
                     b'"term": "Protocol type name here","term_accession": "","term_source": null},' \
                     b'"uri": "",' \
                     b'"version": "{{$randomInt}}"}]}'
-
+data_new_contacts = b'{"StudyContacts": [' \
+                    b'{"phone": "012345678901",' \
+                    b'"mid_initials": "A",' \
+                    b'"roles": [' \
+                    b'{"term_source": {' \
+                    b'"file": null, "version": null, "name": null,"comments": [],"description": null},' \
+                    b'"term_accession": "http://www.ebi.ac.uk/efo/EFO_0001739",' \
+                    b'"term": "investigator", "comments": []}],' \
+                    b'"first_name": "John","address": "","affiliation": "Life Sciences Institute",' \
+                    b'"last_name":"Doe",' \
+                    b'"fax": "","comments": [], "email": "doej@a.mail.com"},' \
+                    b'{"phone": "012345678902","mid_initials": "A","roles": [' \
+                    b'{"term_source": {"file": null,"version": null,"name": null,"comments": [],' \
+                    b'"description": null},"term_accession": "","term": "Bioinformatician",' \
+                    b'"comments": []}],' \
+                    b'"first_name": "Jack","address": "","affiliation": "Department of Biochemistry",' \
+                    b'"last_name": "Smith",' \
+                    b'"fax": "","comments": [],"email": "smithj@a.mail.com"' \
+                    b'}]}'
 
 class WsTests(unittest.TestCase):
 
@@ -921,7 +939,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Pub - Auth -> 200
@@ -935,7 +953,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Pub - NoAuth -> 200
@@ -949,7 +967,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Priv - Auth -> 200
@@ -963,7 +981,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Priv -> 401
@@ -1030,7 +1048,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Pub - Auth - NoSave -> 200
@@ -1045,7 +1063,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Pub - NoAuth - NoSave -> 200
@@ -1060,7 +1078,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Priv - Auth - NoSave -> 200
@@ -1075,7 +1093,7 @@ class UpdateStudyProtocolsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-protocols', body)
+            self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
     # Update Study Protocols - Priv - NoSave -> 401
@@ -1259,6 +1277,226 @@ class GetStudyContactsTests(WsTests):
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
 
+
+class UpdateStudyContactsTests(WsTests):
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    # PUT Update Study Contacts - Pub -> 200
+    def test_update_contacts_pub(self):
+        request = urllib.request.Request(url_pub_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('StudyContacts', body)
+
+    # Update Study Contacts - Pub - Auth -> 200
+    def test_update_contacts_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('StudyContacts', body)
+
+    # Update Study Contacts - Pub - NoAuth -> 200
+    def test_update_contacts_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('StudyContacts', body)
+
+    # Update Study Contacts - Priv - Auth -> 200
+    def test_update_contacts_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('StudyContacts', body)
+
+    # Update Study Contacts - Priv -> 401
+    def test_update_contacts_priv(self):
+        request = urllib.request.Request(url_priv_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Contacts - Priv - NoAuth -> 403
+    def test_update_contacts_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Contacts - NullId -> 404
+    def test_update_contacts_nullId(self):
+        request = urllib.request.Request(url_null_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Contacts - BadId -> 404
+    def test_update_contacts_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Contacts - Pub - NoSave -> 200
+    def test_update_contacts_pub_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('StudyContacts', body)
+
+    # Update Study Contacts - Pub - Auth - NoSave -> 200
+    def test_update_contacts_pub_auth_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('StudyContacts', body)
+
+    # Update Study Contacts - Pub - NoAuth - NoSave -> 200
+    def test_update_contacts_pub_noAuth_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('StudyContacts', body)
+
+    # Update Study Contacts - Priv - Auth - NoSave -> 200
+    def test_update_contacts_priv_auth_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('StudyContacts', body)
+
+    # Update Study Contacts - Priv - NoSave -> 401
+    def test_update_contacts_priv_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Contacts - Priv - NoAuth - NoSave -> 403
+    def test_update_contacts_priv_noAuth_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Contacts - NullId - NoSave -> 404
+    def test_update_contacts_nullId_noSave(self):
+        request = urllib.request.Request(url_null_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Contacts - BadId - NoSave -> 404
+    def test_update_contacts_badId_noSave(self):
+        request = urllib.request.Request(url_wrong_id + '/contacts', data=data_new_contacts, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
 
 if __name__ == '__main__':
     unittest.main()
