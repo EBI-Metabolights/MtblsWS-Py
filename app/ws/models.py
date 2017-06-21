@@ -331,7 +331,7 @@ def unserialize_Person(json_obj):
     roles = list()
     if len(json_obj['roles']) > 0:
         for role in json_obj['roles']:
-            roles.append(unserialize_OntologyAnnotation(json_obj['roles']))
+            roles.append(unserialize_OntologyAnnotation(role))
     comments = list()
     if 'comments' in json_obj:
         for comment in json_obj['comments']:
