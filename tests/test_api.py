@@ -27,8 +27,8 @@ data_new_study = b'{ "title": "New Study title...", '\
                  b' "description": ' + new_study_description + b',' \
                  b' "submission_date": ' + submission_date + b',' \
                  b' "public_release_date": ' + public_release_date + b' }'
-data_new_protocol = b'{"StudyProtocols": [{"comments": [' \
-                    b'"2017-06-15","Updated with MtblsWs-Py", "Updated by userID"],' \
+data_new_protocol = b'{"StudyProtocols": [{' \
+                    b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
                     b'"components": [],"description": "Protocol description here.",' \
                     b'"name": "Protocol name here.","parameters": [{"comments": [],' \
                     b'"parameter_name": {"comments": [],"term": "Parameter name here.",' \
