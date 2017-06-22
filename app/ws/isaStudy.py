@@ -26,7 +26,7 @@ class StudyPubList(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The a list of Studies is returned."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -72,7 +72,7 @@ class Study(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study is returned, ISA-JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -143,7 +143,7 @@ class StudyTitle(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study title is returned, JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -226,7 +226,7 @@ class StudyTitle(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study title is returned, JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -307,7 +307,7 @@ class StudyDescription(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study description is returned, JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -390,7 +390,7 @@ class StudyDescription(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study description is returned, JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -473,7 +473,7 @@ class StudyNew(Resource):
         responseMessages = [
             {
                 "code": 200,
-                "message": "OK. The Study description is returned, JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -556,7 +556,7 @@ class StudyProtocols(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study protocols is returned, JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -639,7 +639,7 @@ class StudyProtocols(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study description is returned, JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -745,7 +745,7 @@ class StudyContacts(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study contacts list is returned, JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -829,7 +829,7 @@ class StudyContacts(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Study description is returned, JSON format."
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -889,3 +889,73 @@ class StudyContacts(Resource):
         logger.info('Applied %s', json_contacts)
 
         return isa_contacts
+
+
+class StudyFactors(Resource):
+    @swagger.operation(
+        summary="Get MTBLS Study Factors",
+        notes="Get the list of factors associated with the Study.",
+        # responseClass=StudyFactor_api_model, multiValuedResponse=True, responseContainer="List",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudyFactor_api_model, envelope='StudyFactors')
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        logger.info('Getting Study factors for %s, using API-Key %s', study_id, user_token)
+        isa_factors = iac.get_study_factors(study_id, user_token)
+        # str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_StudyFactor, sort_keys=True)
+        # logger.info('Got %s', str_factors)
+        str_factors = jsonify('', isa_factors)
+        logger.info('Got %s', str_factors)
+
+        return isa_factors
