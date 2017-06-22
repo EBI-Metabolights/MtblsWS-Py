@@ -894,7 +894,7 @@ class StudyContacts(Resource):
 class StudyFactors(Resource):
     @swagger.operation(
         summary="Get MTBLS Study Factors",
-        notes="Get the list of factors associated with the Study.",
+        notes="Get the list of independent variables (factors) associated with the Study.",
         # responseClass=StudyFactor_api_model, multiValuedResponse=True, responseContainer="List",
         parameters=[
             {
@@ -955,5 +955,109 @@ class StudyFactors(Resource):
         isa_factors = iac.get_study_factors(study_id, user_token)
         str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_StudyFactor, sort_keys=True)
         logger.info('Got %s', str_factors)
+
+        return isa_factors
+
+    @swagger.operation(
+        summary='Update MTBLS Study factors',
+        notes='Update the list of independent variables (factors) associated with the Study.',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
+                "name": "contacts",
+                "description": 'Updated list of independent variables (factors) in JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudyFactor_api_model, envelope='StudyFactors')
+    def put(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+        data_dict = json.loads(request.data.decode('utf-8'))
+        json_factors = data_dict['StudyFactors']
+
+        isa_factors = list()
+        for json_factor in json_factors:
+            isa_factor = unserialize_StudyFactor(json_factor)
+            isa_factors.append(isa_factor)
+
+        # check for keeping copies
+        save_audit_copy = True
+        if "save_audit_copy" in request.headers:
+            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+
+        # update study factors
+        logger.info('Updating Study factors for %s, using API-Key %s', study_id, user_token)
+        if save_audit_copy:
+            logging.warning("A copy of the previous file will be saved")
+        else:
+            logging.warning("A copy of the previous file will NOT be saved")
+
+        iac.write_study_json_factors(study_id, user_token, isa_factors, save_audit_copy)
+        logger.info('Applied %s', json_factors)
 
         return isa_factors
