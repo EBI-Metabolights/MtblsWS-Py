@@ -1,7 +1,7 @@
 from flask_restful import fields
 from flask_restful_swagger import swagger
 from isatools.model.v1 import Person, OntologyAnnotation, OntologySource, Protocol
-from isatools.model.v1 import ProtocolParameter
+from isatools.model.v1 import ProtocolParameter, StudyFactor
 import json
 
 
@@ -363,3 +363,15 @@ def unserialize_Person(json_obj):
                   affiliation=affiliation,
                   roles=roles,
                   comments=comments)
+
+
+def serialize_StudyFactor(isa_obj):
+    assert isinstance(isa_obj, StudyFactor)
+    # name (str):
+    # factor_type (OntologyAnnotation):
+    # comments (list, NoneType):
+    return {
+        'name': isa_obj.name,
+        'factor_type': json.loads(json.dumps(isa_obj.factor_type, default=serialize_OntologyAnnotation, sort_keys=True)),
+        'comments': isa_obj.comments
+    }

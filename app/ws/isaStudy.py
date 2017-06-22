@@ -953,9 +953,7 @@ class StudyFactors(Resource):
 
         logger.info('Getting Study factors for %s, using API-Key %s', study_id, user_token)
         isa_factors = iac.get_study_factors(study_id, user_token)
-        # str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_StudyFactor, sort_keys=True)
-        # logger.info('Got %s', str_factors)
-        str_factors = jsonify('', isa_factors)
+        str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_StudyFactor, sort_keys=True)
         logger.info('Got %s', str_factors)
 
         return isa_factors
