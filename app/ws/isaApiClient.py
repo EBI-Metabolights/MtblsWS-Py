@@ -258,3 +258,14 @@ class IsaApiClient:
         self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
         return new_contacts
+
+    def get_study_factors(self, study_id, api_key):
+        """
+        Get the Study list of factors
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: list of ISA StudyFactor objects.
+        """
+        std_obj = self._get_isa_study(study_id, api_key)
+        factors = std_obj.factors
+        return factors
