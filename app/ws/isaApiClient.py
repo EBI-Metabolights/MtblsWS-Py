@@ -287,3 +287,15 @@ class IsaApiClient:
         self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
         return new_factors
+
+    # get_study_descriptors
+    def get_study_descriptors(self, study_id, api_key):
+        """
+        Get the Study list of design descriptors
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: list of design descriptors : ISA OntologyAnnotation objects.
+        """
+        std_obj = self._get_isa_study(study_id, api_key)
+        factors = std_obj.design_descriptors
+        return factors
