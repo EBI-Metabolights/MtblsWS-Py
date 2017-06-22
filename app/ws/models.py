@@ -349,7 +349,7 @@ def unserialize_Person(json_obj):
         for role in json_obj['roles']:
             roles.append(unserialize_OntologyAnnotation(role))
     comments = list()
-    if 'comments' in json_obj:
+    if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
             comments.append(comment)
 
@@ -375,3 +375,23 @@ def serialize_StudyFactor(isa_obj):
         'factor_type': json.loads(json.dumps(isa_obj.factor_type, default=serialize_OntologyAnnotation, sort_keys=True)),
         'comments': isa_obj.comments
     }
+
+
+def unserialize_StudyFactor(json_obj):
+    # name (str):
+    # factor_type (OntologyAnnotation):
+    # comments (list, Comment):
+    name = ''
+    if 'name' in json_obj and json_obj['name'] is not None:
+        name = json_obj['name']
+    factor_type = OntologyAnnotation()
+    if 'factor_type' in json_obj and json_obj['factor_type'] is not None:
+        factor_type = unserialize_OntologyAnnotation(json_obj['factor_type'])
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(comment)
+
+    return StudyFactor(name=name,
+                       factor_type=factor_type,
+                       comments=comments)
