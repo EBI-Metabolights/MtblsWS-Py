@@ -269,3 +269,21 @@ class IsaApiClient:
         std_obj = self._get_isa_study(study_id, api_key)
         factors = std_obj.factors
         return factors
+
+    def write_study_json_factors(self, study_id, api_key, new_factors, save_audit_copy=True):
+        """
+        Write out a new Investigation file with the new Study factors
+        :param study_id:
+        :param api_key:
+        :param new_factors:
+        :param save_audit_copy:
+        :return:
+        """
+        inv_obj = self._get_isa_investigation(study_id, api_key)
+        std_obj = inv_obj.studies[0]
+        std_obj.factors = new_factors
+
+        # write changes to ISA-tab file
+        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
+
+        return new_factors
