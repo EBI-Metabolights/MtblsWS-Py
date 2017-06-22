@@ -1,7 +1,7 @@
 from flask_restful import fields
 from flask_restful_swagger import swagger
 from isatools.model.v1 import Person, OntologyAnnotation, OntologySource, Protocol
-from isatools.model.v1 import ProtocolParameter
+from isatools.model.v1 import ProtocolParameter, StudyFactor
 import json
 
 
@@ -27,25 +27,32 @@ class StudyContact(Person):
         self.roles = roles
 
 
+Comment_api_model = {
+    # name (str):
+    # value (str, int, float, NoneType):
+    'name': fields.String,
+    'value': fields.String
+}
+
 OntologySource_api_model = {
     'name': fields.String,
     'file': fields.String,
     'version': fields.String,
     'description': fields.String,
-    'comments': fields.List(fields.String)
+    'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
 OntologyAnnotation_api_model = {
     'term': fields.String,
     'term_source': OntologySource_api_model,
     'term_accession': fields.String,
-    'comments': fields.List(fields.String)
+    'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
 ProtocolParameter_api_model = {
     'parameter_name': fields.Nested(OntologyAnnotation_api_model),
     'unit': fields.Nested(OntologyAnnotation_api_model),
-    'comments': fields.List(fields.String)
+    'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
 Protocol_api_model = {
@@ -56,7 +63,7 @@ Protocol_api_model = {
     'version': fields.String,
     'parameters': fields.List(fields.Nested(ProtocolParameter_api_model)),
     'components': fields.List(fields.Nested(OntologyAnnotation_api_model)),
-    'comments': fields.List(fields.String)
+    'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
 Person_api_model = {
@@ -69,7 +76,16 @@ Person_api_model = {
     'address': fields.String,
     'affiliation': fields.String,
     'roles': fields.List(fields.Nested(OntologyAnnotation_api_model)),
-    'comments': fields.List(fields.String)
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+StudyFactor_api_model = {
+    # name (str):
+    # factor_type (OntologyAnnotation):
+    # comments (list, NoneType):
+    'name': fields.String,
+    'factor_type': fields.Nested(OntologyAnnotation_api_model),
+    'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
 
@@ -347,3 +363,15 @@ def unserialize_Person(json_obj):
                   affiliation=affiliation,
                   roles=roles,
                   comments=comments)
+
+
+def serialize_StudyFactor(isa_obj):
+    assert isinstance(isa_obj, StudyFactor)
+    # name (str):
+    # factor_type (OntologyAnnotation):
+    # comments (list, NoneType):
+    return {
+        'name': isa_obj.name,
+        'factor_type': json.loads(json.dumps(isa_obj.factor_type, default=serialize_OntologyAnnotation, sort_keys=True)),
+        'comments': isa_obj.comments
+    }

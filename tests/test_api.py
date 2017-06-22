@@ -27,8 +27,8 @@ data_new_study = b'{ "title": "New Study title...", '\
                  b' "description": ' + new_study_description + b',' \
                  b' "submission_date": ' + submission_date + b',' \
                  b' "public_release_date": ' + public_release_date + b' }'
-data_new_protocol = b'{"StudyProtocols": [{"comments": [' \
-                    b'"2017-06-15","Updated with MtblsWs-Py", "Updated by userID"],' \
+data_new_protocol = b'{"StudyProtocols": [{' \
+                    b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
                     b'"components": [],"description": "Protocol description here.",' \
                     b'"name": "Protocol name here.","parameters": [{"comments": [],' \
                     b'"parameter_name": {"comments": [],"term": "Parameter name here.",' \
@@ -1497,6 +1497,121 @@ class UpdateStudyContactsTests(WsTests):
             self.check_body_common(err.read().decode('utf-8'))
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
+
+
+class GetStudyFactorsTests(WsTests):
+
+    def check_Factors_class(self, obj):
+        self.assertIsNotNone(obj['StudyFactors'])
+        for factor in obj['StudyFactors']:
+            self.assertIsNotNone(factor['name'])
+            self.assertIsNotNone(factor['factor_type'])
+            self.assertIsNotNone(factor['comments'])
+
+    # Get Study Factors - Pub -> 200
+    def test_get_factors(self):
+        request = urllib.request.Request(url_pub_id + '/factors', method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyFactors', body)
+            self.check_Factors_class(j_resp)
+
+    # Get Study Factors - Pub - Auth -> 200
+    def test_get_factors_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/factors', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyFactors', body)
+            self.check_Factors_class(j_resp)
+
+    # Get Study Factors - Pub - NoAuth -> 200
+    def test_get_factors_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/factors', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyFactors', body)
+            self.check_Factors_class(j_resp)
+
+    # Get Study Factors - Priv - Auth -> 200
+    def test_get_factors_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/factors', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyFactors', body)
+            self.check_Factors_class(j_resp)
+
+    # Get Study Factors - Priv -> 401
+    def test_get_factors_priv(self):
+        request = urllib.request.Request(url_priv_id + '/factors', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Get Study Factors - Priv - NoAuth -> 403
+    def test_get_factors_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/factors', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # GET Study Factors - NullId -> 404
+    def test_get_factors_nullId(self):
+        request = urllib.request.Request(url_null_id + '/factors', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # GET Study Factors - BadId -> 404
+    def test_get_factors_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/factors', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
 
 if __name__ == '__main__':
     unittest.main()
