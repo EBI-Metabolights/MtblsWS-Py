@@ -5229,11 +5229,11 @@
 			]
 		},
 		{
-			"name": "Update Study Protocols",
+			"name": "Update Study Factors",
 			"description": "",
 			"item": [
 				{
-					"name": "Update Study Protocols - Pub -> 200",
+					"name": "Update Study Factors - Pub -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -5247,7 +5247,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -5255,7 +5255,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5271,14 +5271,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Pub - Auth -> 200",
+					"name": "Update Study Factors - Pub - Auth -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -5292,7 +5292,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -5300,7 +5300,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5321,14 +5321,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Pub - NoAuth -> 200",
+					"name": "Update Study Factors - Pub - NoAuth -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -5342,7 +5342,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -5350,7 +5350,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5371,14 +5371,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Priv - Auth -> 200",
+					"name": "Update Study Factors - Priv - Auth -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -5392,7 +5392,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -5400,7 +5400,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5421,14 +5421,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Priv -> 401",
+					"name": "Update Study Factors - Priv -> 401",
 					"event": [
 						{
 							"listen": "test",
@@ -5444,7 +5444,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -5452,7 +5452,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5468,14 +5468,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Priv - NoAuth -> 403",
+					"name": "Update Study Factors - Priv - NoAuth -> 403",
 					"event": [
 						{
 							"listen": "test",
@@ -5491,7 +5491,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -5499,7 +5499,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5520,14 +5520,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - NullId -> 404",
+					"name": "Update Study Factors - NullId -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -5543,7 +5543,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -5551,7 +5551,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5567,14 +5567,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - BadId -> 404",
+					"name": "Update Study Factors - BadId -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -5590,7 +5590,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -5598,7 +5598,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5614,14 +5614,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Pub - NoSave -> 200",
+					"name": "Update Study Factors - Pub - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -5635,7 +5635,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -5643,7 +5643,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5664,14 +5664,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Pub - Auth - NoSave -> 200 copy",
+					"name": "Update Study Factors - Pub - Auth - NoSave -> 200 copy",
 					"event": [
 						{
 							"listen": "test",
@@ -5685,7 +5685,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -5693,7 +5693,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5719,14 +5719,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Pub - NoAuth - NoSave -> 200 copy",
+					"name": "Update Study Factors - Pub - NoAuth - NoSave -> 200 copy",
 					"event": [
 						{
 							"listen": "test",
@@ -5740,7 +5740,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -5748,7 +5748,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5774,14 +5774,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Priv - Auth - NoSave -> 200 copy",
+					"name": "Update Study Factors - Priv - Auth - NoSave -> 200 copy",
 					"event": [
 						{
 							"listen": "test",
@@ -5795,7 +5795,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -5803,7 +5803,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5829,14 +5829,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Priv - NoSave -> 401 copy",
+					"name": "Update Study Factors - Priv - NoSave -> 401 copy",
 					"event": [
 						{
 							"listen": "test",
@@ -5852,7 +5852,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -5860,7 +5860,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5881,14 +5881,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Priv - NoAuth - NoSave -> 403 copy",
+					"name": "Update Study Factors - Priv - NoAuth - NoSave -> 403 copy",
 					"event": [
 						{
 							"listen": "test",
@@ -5904,7 +5904,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -5912,7 +5912,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5938,14 +5938,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - NullId - NoSave -> 404 copy",
+					"name": "Update Study Factors - NullId - NoSave -> 404 copy",
 					"event": [
 						{
 							"listen": "test",
@@ -5961,7 +5961,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -5969,7 +5969,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -5990,14 +5990,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - BadId - NoSave -> 404 copy",
+					"name": "Update Study Factors - BadId - NoSave -> 404 copy",
 					"event": [
 						{
 							"listen": "test",
@@ -6013,7 +6013,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -6021,7 +6021,7 @@
 						}
 					],
 					"request": {
-						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/protocols",
+						"url": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/factors",
 						"method": "PUT",
 						"header": [
 							{
@@ -6042,7 +6042,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
 						},
 						"description": ""
 					},
@@ -6093,7 +6093,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6143,7 +6143,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6193,7 +6193,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6243,7 +6243,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6290,7 +6290,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6342,7 +6342,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6389,7 +6389,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6436,7 +6436,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6486,7 +6486,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6541,7 +6541,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6596,7 +6596,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6651,7 +6651,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6703,7 +6703,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6760,7 +6760,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6812,7 +6812,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
@@ -6864,7 +6864,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n        \"{{$timestamp}}\",\n        \"Updated with MtblsWs-Py\",\n        \"Updated by {{$guid}}\"\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"description": ""
 					},
