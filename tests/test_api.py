@@ -1871,7 +1871,7 @@ class GetStudyDescriptorsTests(WsTests):
 
     # Get Study Descriptors - Pub - Auth -> 200
     def test_get_descriptors_pub_auth(self):
-            request = urllib.request.Request(url_pub_id + '/descriptors', method='GET')
+        request = urllib.request.Request(url_pub_id + '/descriptors', method='GET')
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
             self.assertEqual(response.code, 200)
