@@ -1129,3 +1129,107 @@ class StudyDescriptors(Resource):
         logger.info('Got %s', str_descriptors)
 
         return isa_descriptors
+
+    @swagger.operation(
+        summary='Update MTBLS Study descriptors',
+        notes='Update the list of design descriptors associated with the Study.',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
+                "name": "contacts",
+                "description": 'Update the list of design descriptors associated with the Study.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(OntologyAnnotation_api_model, envelope='StudyDescriptors')
+    def put(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+        data_dict = json.loads(request.data.decode('utf-8'))
+        json_descriptors = data_dict['StudyDescriptors']
+
+        isa_descriptors = list()
+        for json_descriptor in json_descriptors:
+            isa_descriptor = unserialize_OntologyAnnotation(json_descriptor)
+            isa_descriptors.append(isa_descriptor)
+
+        # check for keeping copies
+        save_audit_copy = True
+        if "save_audit_copy" in request.headers:
+            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+
+        # update study factors
+        logger.info('Updating Study descriptors for %s, using API-Key %s', study_id, user_token)
+        if save_audit_copy:
+            logging.warning("A copy of the previous file will be saved")
+        else:
+            logging.warning("A copy of the previous file will NOT be saved")
+
+        iac.write_study_json_descriptors(study_id, user_token, isa_descriptors, save_audit_copy)
+        logger.info('Applied %s', json_descriptors)
+
+        return isa_descriptors
