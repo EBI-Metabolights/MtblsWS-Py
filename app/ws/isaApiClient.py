@@ -228,7 +228,7 @@ class IsaApiClient:
         # write changes to ISA-tab file
         self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
-        return new_protocols
+        return std_obj.protocols
 
     def get_study_contacts(self, study_id, api_key):
         """
@@ -257,7 +257,7 @@ class IsaApiClient:
         # write changes to ISA-tab file
         self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
-        return new_contacts
+        return std_obj.contacts
 
     def get_study_factors(self, study_id, api_key):
         """
@@ -286,7 +286,7 @@ class IsaApiClient:
         # write changes to ISA-tab file
         self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
-        return new_factors
+        return std_obj.factors
 
     # get_study_descriptors
     def get_study_descriptors(self, study_id, api_key):
@@ -297,5 +297,23 @@ class IsaApiClient:
         :return: list of design descriptors : ISA OntologyAnnotation objects.
         """
         std_obj = self._get_isa_study(study_id, api_key)
-        factors = std_obj.design_descriptors
-        return factors
+        descriptors = std_obj.design_descriptors
+        return descriptors
+
+    def write_study_json_descriptors(self, study_id, api_key, new_descriptors, save_audit_copy=True):
+        """
+        Write out a new Investigation file with the new Study design descriptors
+        :param study_id:
+        :param api_key:
+        :param new_descriptors:
+        :param save_audit_copy:
+        :return:
+        """
+        inv_obj = self._get_isa_investigation(study_id, api_key)
+        std_obj = inv_obj.studies[0]
+        std_obj.design_descriptors = new_descriptors
+
+        # write changes to ISA-tab file
+        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
+
+        return std_obj.design_descriptors
