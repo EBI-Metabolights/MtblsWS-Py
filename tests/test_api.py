@@ -57,17 +57,6 @@ data_new_contacts = b'{"StudyContacts": [' \
                     b'"last_name": "Smith",' \
                     b'"fax": "","comments": [],"email": "smithj@a.mail.com"' \
                     b'}]}'
-data_new_factors = b'{"StudyFactors": [{' \
-                   b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
-                   b'"factor_type": {"term_accession": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",' \
-                   b'"comments": [],"term": "Gender","term_source": {' \
-                   b'"description": null,"name": null,"version": null,"file": null,' \
-                   b'"comments": []}},"name": "Gender"},' \
-                   b'{"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
-                   b'"factor_type": {"term_accession": "","comments": [],' \
-                   b'"term": "metabolic syndrome","term_source": {' \
-                   b'"description": null,"name": null,"version": null,"file": null,' \
-                   b'"comments": []}},"name": "Metabolic syndrome"}]}'
 
 
 class WsTests(unittest.TestCase):
@@ -1626,12 +1615,25 @@ class GetStudyFactorsTests(WsTests):
 
 
 class UpdateStudyFactorsTests(WsTests):
+
+    data_new_factors = b'{"StudyFactors": [{' \
+                       b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
+                       b'"factor_type": {"term_accession": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",' \
+                       b'"comments": [],"term": "Gender","term_source": {' \
+                       b'"description": null,"name": null,"version": null,"file": null,' \
+                       b'"comments": []}},"name": "Gender"},' \
+                       b'{"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
+                       b'"factor_type": {"term_accession": "","comments": [],' \
+                       b'"term": "metabolic syndrome","term_source": {' \
+                       b'"description": null,"name": null,"version": null,"file": null,' \
+                       b'"comments": []}},"name": "Metabolic syndrome"}]}'
+
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
 
     # PUT Update Study Factors - Pub -> 200
     def test_update_factors_pub(self):
-        request = urllib.request.Request(url_pub_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         with urllib.request.urlopen(request) as response:
             self.assertEqual(response.code, 200)
@@ -1643,7 +1645,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Pub - Auth -> 200
     def test_update_factors_pub_auth(self):
-        request = urllib.request.Request(url_pub_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -1656,7 +1658,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Pub - NoAuth -> 200
     def test_update_factors_pub_noAuth(self):
-        request = urllib.request.Request(url_pub_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         with urllib.request.urlopen(request) as response:
@@ -1669,7 +1671,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Priv - Auth -> 200
     def test_update_factors_priv_auth(self):
-        request = urllib.request.Request(url_priv_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -1682,7 +1684,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Priv -> 401
     def test_update_factors_priv(self):
-        request = urllib.request.Request(url_priv_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -1695,7 +1697,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Priv - NoAuth -> 403
     def test_update_factors_priv_noAuth(self):
-        request = urllib.request.Request(url_priv_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         try:
@@ -1709,7 +1711,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - NullId -> 404
     def test_update_factors_nullId(self):
-        request = urllib.request.Request(url_null_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_null_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -1722,7 +1724,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - BadId -> 404
     def test_update_factors_badId(self):
-        request = urllib.request.Request(url_wrong_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_wrong_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -1735,7 +1737,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Pub - NoSave -> 200
     def test_update_factors_pub_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
         with urllib.request.urlopen(request) as response:
@@ -1748,7 +1750,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Pub - Auth - NoSave -> 200
     def test_update_factors_pub_auth_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         request.add_header('save_audit_copy', 'False')
@@ -1762,7 +1764,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Pub - NoAuth - NoSave -> 200
     def test_update_factors_pub_noAuth_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_pub_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         request.add_header('save_audit_copy', 'False')
@@ -1776,7 +1778,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Priv - Auth - NoSave -> 200
     def test_update_factors_priv_auth_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         request.add_header('save_audit_copy', 'False')
@@ -1790,7 +1792,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Priv - NoSave -> 401
     def test_update_factors_priv_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
         try:
@@ -1804,7 +1806,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - Priv - NoAuth - NoSave -> 403
     def test_update_factors_priv_noAuth_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         request.add_header('save_audit_copy', 'False')
@@ -1819,7 +1821,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - NullId - NoSave -> 404
     def test_update_factors_nullId_noSave(self):
-        request = urllib.request.Request(url_null_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_null_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
         try:
@@ -1833,7 +1835,7 @@ class UpdateStudyFactorsTests(WsTests):
 
     # Update Study Factors - BadId - NoSave -> 404
     def test_update_factors_badId_noSave(self):
-        request = urllib.request.Request(url_wrong_id + '/factors', data=data_new_factors, method='PUT')
+        request = urllib.request.Request(url_wrong_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
         try:
@@ -1850,11 +1852,11 @@ class GetStudyDescriptorsTests(WsTests):
 
     def check_Descriptors_class(self, obj):
         self.assertIsNotNone(obj['StudyDescriptors'])
-        for factor in obj['StudyDescriptors']:
-            self.assertIsNotNone(factor['term'])
-            self.assertIsNotNone(factor['term_accession'])
-            self.assertIsNotNone(factor['term_source'])
-            self.assertIsNotNone(factor['comments'])
+        for descriptor in obj['StudyDescriptors']:
+            self.assertIsNotNone(descriptor['term'])
+            self.assertIsNotNone(descriptor['term_accession'])
+            self.assertIsNotNone(descriptor['term_source'])
+            self.assertIsNotNone(descriptor['comments'])
 
     # Get Study Descriptors - Pub -> 200
     def test_get_descriptors(self):
@@ -1951,6 +1953,265 @@ class GetStudyDescriptorsTests(WsTests):
     # GET Study Descriptors - BadId -> 404
     def test_get_descriptors_badId(self):
         request = urllib.request.Request(url_wrong_id + '/descriptors', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+
+class UpdateStudyDescriptorsTests(WsTests):
+
+    data_new_descriptors = b'{"StudyDescriptors": [' \
+                           b'{"term_source": {"version": null,"description": null,"file": null,' \
+                           b'"comments": [],"name": null},' \
+                           b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
+                           b'"term":"nuclear magnetic resonance spectroscopy",' \
+                           b'"term_accession":"http://purl.obolibrary.org/obo/CHMO_0000591"},' \
+                           b'{"term_source": {"version": null,"description": null,"file": null,' \
+                           b'"comments": [],"name": null},' \
+                           b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
+                           b'"term": "metabolic syndrome",' \
+                           b'"term_accession": "http://www.ebi.ac.uk/efo/EFO_0000195"' \
+                           b'}]}'
+
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    def check_Descriptors_class(self, obj):
+        self.assertIsNotNone(obj['StudyDescriptors'])
+        for descriptor in obj['StudyDescriptors']:
+            self.assertIsNotNone(descriptor['term'])
+            self.assertIsNotNone(descriptor['term_accession'])
+            self.assertIsNotNone(descriptor['term_source'])
+            self.assertIsNotNone(descriptor['comments'])
+
+    # PUT Update Study Descriptors - Pub -> 200
+    def test_update_factors_pub(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyDescriptors', body)
+            self.check_Descriptors_class(j_resp)
+
+    # Update Study Descriptors - Pub - Auth -> 200
+    def test_update_factors_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyDescriptors', body)
+            self.check_Descriptors_class(j_resp)
+
+    # Update Study Descriptors - Pub - NoAuth -> 200
+    def test_update_factors_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyDescriptors', body)
+            self.check_Descriptors_class(j_resp)
+
+    # Update Study Descriptors - Priv - Auth -> 200
+    def test_update_factors_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyDescriptors', body)
+            self.check_Descriptors_class(j_resp)
+
+    # Update Study Descriptors - Priv -> 401
+    def test_update_factors_priv(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Descriptors - Priv - NoAuth -> 403
+    def test_update_factors_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Descriptors - NullId -> 404
+    def test_update_factors_nullId(self):
+        request = urllib.request.Request(url_null_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Descriptors - BadId -> 404
+    def test_update_factors_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Descriptors - Pub - NoSave -> 200
+    def test_update_factors_pub_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyDescriptors', body)
+            self.check_Descriptors_class(j_resp)
+
+    # Update Study Descriptors - Pub - Auth - NoSave -> 200
+    def test_update_factors_pub_auth_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyDescriptors', body)
+            self.check_Descriptors_class(j_resp)
+
+    # Update Study Descriptors - Pub - NoAuth - NoSave -> 200
+    def test_update_factors_pub_noAuth_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyDescriptors', body)
+            self.check_Descriptors_class(j_resp)
+
+    # Update Study Descriptors - Priv - Auth - NoSave -> 200
+    def test_update_factors_priv_auth_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('StudyDescriptors', body)
+            self.check_Descriptors_class(j_resp)
+
+    # Update Study Descriptors - Priv - NoSave -> 401
+    def test_update_factors_priv_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Descriptors - Priv - NoAuth - NoSave -> 403
+    def test_update_factors_priv_noAuth_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Descriptors - NullId - NoSave -> 404
+    def test_update_factors_nullId_noSave(self):
+        request = urllib.request.Request(url_null_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Descriptors - BadId - NoSave -> 404
+    def test_update_factors_badId_noSave(self):
+        request = urllib.request.Request(url_wrong_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
