@@ -1,7 +1,7 @@
 from flask_restful import fields
 from flask_restful_swagger import swagger
 from isatools.model.v1 import Person, OntologyAnnotation, OntologySource, Protocol
-from isatools.model.v1 import ProtocolParameter, StudyFactor
+from isatools.model.v1 import ProtocolParameter, StudyFactor, Comment
 import json
 
 
@@ -67,7 +67,31 @@ StudyFactor_api_model = {
 }
 
 
-def serialize_protocol(isa_obj):
+def serialize_Comment(isa_obj):
+    assert isinstance(isa_obj, Comment)
+    # name (str):
+    # value (str, int, float, NoneType):
+    return {
+        'name': isa_obj.name,
+        'value': isa_obj.value
+    }
+
+
+def unserialize_Comment(json_obj):
+    # name (str):
+    # value (str, int, float, NoneType):
+    name = ''
+    if 'name' in json_obj and json_obj['name'] is not None:
+        name = json_obj['name']
+    value = ''
+    if 'value' in json_obj and json_obj['value'] is not None:
+        value = json_obj['value']
+
+    return Comment(name=name,
+                   value=value)
+
+
+def serialize_Protocol(isa_obj):
     assert isinstance(isa_obj, Protocol)
     # name (str):
     # protocol_type (OntologyAnnotation):
@@ -85,58 +109,7 @@ def serialize_protocol(isa_obj):
         'version': isa_obj.version,
         'parameters': json.loads(json.dumps(isa_obj.parameters, default=serialize_ProtocolParameter, sort_keys=True)),
         'components': json.loads(json.dumps(isa_obj.components, default=serialize_OntologyAnnotation, sort_keys=True)),
-        'comments': isa_obj.comments
-    }
-
-
-def serialize_OntologyAnnotation(isa_obj):
-    assert isinstance(isa_obj, OntologyAnnotation)
-    # term (str, NoneType):
-    # term_source (OntologySource, NoneType):
-    # term_accession (str, NoneType):
-    # comments (list, NoneType):
-    term_source = None
-    if hasattr(isa_obj, 'term_source') and isa_obj.term_source is not None:
-        term_source = serialize_OntologySource(isa_obj.term_source)
-    return {
-        'term': isa_obj.term,
-        'term_source': term_source,
-        'term_accession': isa_obj.term_accession,
-        'comments': isa_obj.comments
-    }
-
-
-def serialize_ProtocolParameter(isa_obj):
-    assert isinstance(isa_obj, ProtocolParameter)
-    # name (OntologyAnnotation): A parameter name as a term
-    # unit (OntologyAnnotation): A unit, if applicable
-    # comments (list, NoneType):
-    parameter_name = None
-    if hasattr(isa_obj, 'parameter_name') and isa_obj.parameter_name is not None:
-        parameter_name = serialize_OntologyAnnotation(isa_obj.parameter_name)
-    unit = None
-    if hasattr(isa_obj, 'unit') and isa_obj.unit is not None:
-        unit = serialize_OntologyAnnotation(isa_obj.unit)
-    return {
-        'parameter_name': parameter_name,
-        'unit': unit,
-        'comments': isa_obj.comments
-    }
-
-
-def serialize_OntologySource(isa_obj):
-    assert isinstance(isa_obj, OntologySource)
-    # name (str):
-    # file (str):
-    # version (str):
-    # description (str):
-    # comments (list,):
-    return {
-        'name': isa_obj.name,
-        'file': isa_obj.file,
-        'version': isa_obj.version,
-        'description': isa_obj.description,
-        'comments': isa_obj.comments
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_Comment, sort_keys=True))
     }
 
 
@@ -175,7 +148,8 @@ def unserialize_Protocol(json_obj):
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
-            comments.append(comment)
+            comments.append(unserialize_Comment(comment))
+
     return Protocol(name=name,
                     protocol_type=protocol_type,
                     description=description,
@@ -184,6 +158,23 @@ def unserialize_Protocol(json_obj):
                     parameters=parameters,
                     components=components,
                     comments=comments)
+
+
+def serialize_OntologyAnnotation(isa_obj):
+    assert isinstance(isa_obj, OntologyAnnotation)
+    # term (str, NoneType):
+    # term_source (OntologySource, NoneType):
+    # term_accession (str, NoneType):
+    # comments (list, NoneType):
+    term_source = None
+    if hasattr(isa_obj, 'term_source') and isa_obj.term_source is not None:
+        term_source = serialize_OntologySource(isa_obj.term_source)
+    return {
+        'term': isa_obj.term,
+        'term_source': term_source,
+        'term_accession': isa_obj.term_accession,
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_Comment, sort_keys=True))
+    }
 
 
 def unserialize_OntologyAnnotation(json_obj):
@@ -203,12 +194,66 @@ def unserialize_OntologyAnnotation(json_obj):
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
-            comments.append(comment)
+            comments.append(unserialize_Comment(comment))
 
     return OntologyAnnotation(term=term,
                               term_source=term_source,
                               term_accession=term_accession,
                               comments=comments)
+
+
+def serialize_ProtocolParameter(isa_obj):
+    assert isinstance(isa_obj, ProtocolParameter)
+    # name (OntologyAnnotation): A parameter name as a term
+    # unit (OntologyAnnotation): A unit, if applicable
+    # comments (list, NoneType):
+    parameter_name = None
+    if hasattr(isa_obj, 'parameter_name') and isa_obj.parameter_name is not None:
+        parameter_name = serialize_OntologyAnnotation(isa_obj.parameter_name)
+    unit = None
+    if hasattr(isa_obj, 'unit') and isa_obj.unit is not None:
+        unit = serialize_OntologyAnnotation(isa_obj.unit)
+    return {
+        'parameter_name': parameter_name,
+        'unit': unit,
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_Comment, sort_keys=True))
+    }
+
+
+def unserialize_ProtocolParameter(json_obj):
+    # name (OntologyAnnotation): A parameter name as a term
+    # unit (OntologyAnnotation): A unit, if applicable
+    # comments (list, NoneType):
+    parameter_name = OntologyAnnotation()
+    if 'parameter_name' in json_obj and json_obj['parameter_name'] is not None:
+        parameter_name = unserialize_OntologyAnnotation(json_obj['parameter_name'])
+    unit = OntologyAnnotation()
+    if 'unit' in json_obj and json_obj['unit'] is not None:
+        unit = unserialize_OntologyAnnotation(json_obj['unit'])
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_Comment(comment))
+
+    return ProtocolParameter(parameter_name=parameter_name,
+                             unit=unit,
+                             comments=comments)
+
+
+def serialize_OntologySource(isa_obj):
+    assert isinstance(isa_obj, OntologySource)
+    # name (str):
+    # file (str):
+    # version (str):
+    # description (str):
+    # comments (list,):
+    return {
+        'name': isa_obj.name,
+        'file': isa_obj.file,
+        'version': isa_obj.version,
+        'description': isa_obj.description,
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_Comment, sort_keys=True))
+    }
 
 
 def unserialize_OntologySource(json_obj):
@@ -232,33 +277,13 @@ def unserialize_OntologySource(json_obj):
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
-            comments.append(comment)
+            comments.append(unserialize_Comment(comment))
 
     return OntologySource(name=name,
                           file=file,
                           version=version,
                           description=description,
                           comments=comments)
-
-
-def unserialize_ProtocolParameter(json_obj):
-    # name (OntologyAnnotation): A parameter name as a term
-    # unit (OntologyAnnotation): A unit, if applicable
-    # comments (list, NoneType):
-    parameter_name = OntologyAnnotation()
-    if 'parameter_name' in json_obj and json_obj['parameter_name'] is not None:
-        parameter_name = unserialize_OntologyAnnotation(json_obj['parameter_name'])
-    unit = OntologyAnnotation()
-    if 'unit' in json_obj and json_obj['unit'] is not None:
-        unit = unserialize_OntologyAnnotation(json_obj['unit'])
-    comments = list()
-    if 'comments' in json_obj and json_obj['comments'] is not None:
-        for comment in json_obj['comments']:
-            comments.append(comment)
-
-    return ProtocolParameter(parameter_name=parameter_name,
-                             unit=unit,
-                             comments=comments)
 
 
 def serialize_Person(isa_obj):
@@ -283,7 +308,7 @@ def serialize_Person(isa_obj):
         'address': isa_obj.address,
         'affiliation': isa_obj.affiliation,
         'roles': json.loads(json.dumps(isa_obj.roles, default=serialize_OntologyAnnotation, sort_keys=True)),
-        'comments': isa_obj.comments
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_Comment, sort_keys=True))
     }
 
 
@@ -329,7 +354,7 @@ def unserialize_Person(json_obj):
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
-            comments.append(comment)
+            comments.append(unserialize_Comment(comment))
 
     return Person(first_name=first_name,
                   last_name=last_name,
@@ -351,7 +376,7 @@ def serialize_StudyFactor(isa_obj):
     return {
         'name': isa_obj.name,
         'factor_type': json.loads(json.dumps(isa_obj.factor_type, default=serialize_OntologyAnnotation, sort_keys=True)),
-        'comments': isa_obj.comments
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_Comment, sort_keys=True))
     }
 
 
@@ -368,7 +393,7 @@ def unserialize_StudyFactor(json_obj):
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
-            comments.append(comment)
+            comments.append(unserialize_Comment(comment))
 
     return StudyFactor(name=name,
                        factor_type=factor_type,

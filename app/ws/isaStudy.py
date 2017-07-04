@@ -591,7 +591,7 @@ class StudyProtocols(Resource):
 
         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
         isa_protocols = iac.get_study_protocols(study_id, user_token)
-        str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_protocol, sort_keys=True)
+        str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_Protocol, sort_keys=True)
         logger.info('Got: %s', str_protocols)
 
         return isa_protocols
