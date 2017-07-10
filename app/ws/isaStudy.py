@@ -1,10 +1,9 @@
-import json
 import logging
 from flask import request, jsonify
-from flask_restful import Resource, abort, marshal_with, fields, marshal
+from flask_restful import Resource, abort, marshal_with
+from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from isatools.model.v1 import *
 from app.ws.models import *
 
 """

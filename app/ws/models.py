@@ -1,5 +1,4 @@
 from flask_restful import fields
-from flask_restful_swagger import swagger
 from isatools.model.v1 import Person, OntologyAnnotation, OntologySource, Protocol
 from isatools.model.v1 import ProtocolParameter, StudyFactor, Comment
 import json
