@@ -591,7 +591,7 @@ class StudyProtocols(Resource):
 
         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
         isa_protocols = iac.get_study_protocols(study_id, user_token)
-        str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_Protocol, sort_keys=True)
+        str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_protocol, sort_keys=True)
         logger.info('Got: %s', str_protocols)
 
         return isa_protocols
@@ -680,7 +680,7 @@ class StudyProtocols(Resource):
 
         isa_protocols = list()
         for json_protocol in json_protocols:
-            isa_protocol = unserialize_Protocol(json_protocol)
+            isa_protocol = unserialize_protocol(json_protocol)
             isa_protocols.append(isa_protocol)
 
         # check for keeping copies
@@ -781,7 +781,7 @@ class StudyContacts(Resource):
 
         logger.info('Getting Study contacts for %s, using API-Key %s', study_id, user_token)
         isa_contacts = iac.get_study_contacts(study_id, user_token)
-        str_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_Person, sort_keys=True)
+        str_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_person, sort_keys=True)
         logger.info('Got %s', str_contacts)
 
         return isa_contacts
@@ -870,7 +870,7 @@ class StudyContacts(Resource):
 
         isa_contacts = list()
         for json_contact in json_contacts:
-            isa_contact = unserialize_Person(json_contact)
+            isa_contact = unserialize_person(json_contact)
             isa_contacts.append(isa_contact)
 
         # check for keeping copies
@@ -1124,7 +1124,7 @@ class StudyDescriptors(Resource):
 
         logger.info('Getting Study design descriptors for %s, using API-Key %s', study_id, user_token)
         isa_descriptors = iac.get_study_descriptors(study_id, user_token)
-        str_descriptors = json.dumps({'StudyDescriptors': isa_descriptors}, default=serialize_OntologyAnnotation,
+        str_descriptors = json.dumps({'StudyDescriptors': isa_descriptors}, default=serialize_ontology_annotation,
                                      sort_keys=True)
         logger.info('Got %s', str_descriptors)
 
@@ -1214,7 +1214,7 @@ class StudyDescriptors(Resource):
 
         isa_descriptors = list()
         for json_descriptor in json_descriptors:
-            isa_descriptor = unserialize_OntologyAnnotation(json_descriptor)
+            isa_descriptor = unserialize_ontology_annotation(json_descriptor)
             isa_descriptors.append(isa_descriptor)
 
         # check for keeping copies
