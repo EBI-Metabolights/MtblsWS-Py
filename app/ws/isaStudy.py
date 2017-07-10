@@ -953,7 +953,7 @@ class StudyFactors(Resource):
 
         logger.info('Getting Study factors for %s, using API-Key %s', study_id, user_token)
         isa_factors = iac.get_study_factors(study_id, user_token)
-        str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_StudyFactor, sort_keys=True)
+        str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_study_factor, sort_keys=True)
         logger.info('Got %s', str_factors)
 
         return isa_factors
@@ -1042,7 +1042,7 @@ class StudyFactors(Resource):
 
         isa_factors = list()
         for json_factor in json_factors:
-            isa_factor = unserialize_StudyFactor(json_factor)
+            isa_factor = unserialize_study_factor(json_factor)
             isa_factors.append(isa_factor)
 
         # check for keeping copies

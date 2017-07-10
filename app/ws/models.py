@@ -5,28 +5,6 @@ from isatools.model.v1 import ProtocolParameter, StudyFactor, Comment
 import json
 
 
-@swagger.model
-class StudyContact(Person):
-    def __init__(self, first_name=None, last_name=None, mid_initials=None,
-                 email=None, phone=None, fax=None,
-                 address=None, affiliation=None,
-                 roles=None,
-                 comments=None,
-                 id_=''
-                 ):
-        super().__init__(comments)
-        self.id = id_
-        self.last_name = last_name
-        self.first_name = first_name
-        self.mid_initials = mid_initials
-        self.email = email
-        self.phone = phone
-        self.fax = fax
-        self.address = address
-        self.affiliation = affiliation
-        self.roles = roles
-
-
 Comment_api_model = {
     # name (str):
     # value (str, int, float, NoneType):
@@ -396,7 +374,7 @@ StudyFactor_api_model = {
 }
 
 
-def serialize_StudyFactor(isa_obj):
+def serialize_study_factor(isa_obj):
     assert isinstance(isa_obj, StudyFactor)
     # name (str):
     # factor_type (OntologyAnnotation):
@@ -408,7 +386,7 @@ def serialize_StudyFactor(isa_obj):
     }
 
 
-def unserialize_StudyFactor(json_obj):
+def unserialize_study_factor(json_obj):
     # name (str):
     # factor_type (OntologyAnnotation):
     # comments (list, Comment):
