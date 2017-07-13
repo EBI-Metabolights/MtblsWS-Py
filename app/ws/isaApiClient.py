@@ -39,7 +39,8 @@ class IsaApiClient:
         try:
             i_filename = glob.glob(os.path.join(path, "i_*.txt"))[0]
             fp = open(i_filename)
-            isa_json = load(fp, skip_load_tables=True)
+            # isa_json = load(fp, skip_load_tables=True)
+            isa_json = load(fp, skip_load_tables=False)
         except Exception:
             logger.exception("Failed to find i_*.txt file")
             abort(500)
@@ -288,7 +289,6 @@ class IsaApiClient:
 
         return std_obj.factors
 
-    # get_study_descriptors
     def get_study_descriptors(self, study_id, api_key):
         """
         Get the Study list of design descriptors
@@ -317,3 +317,14 @@ class IsaApiClient:
         self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
         return std_obj.design_descriptors
+
+    def get_study_publications(self, study_id, api_key):
+        """
+        Get the Study list of publications
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: list of publications
+        """
+        std_obj = self._get_isa_study(study_id, api_key)
+        publications = std_obj.publications
+        return publications

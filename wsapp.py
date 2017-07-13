@@ -7,7 +7,7 @@ from flask_cors import CORS
 from app.ws.about import About
 from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import Study, StudyTitle, StudyDescription, StudyPubList, StudyNew, StudyProtocols
-from app.ws.isaStudy import StudyContacts, StudyFactors, StudyDescriptors
+from app.ws.isaStudy import StudyContacts, StudyFactors, StudyDescriptors, StudyPublications
 
 """
 MTBLS WS-Py
@@ -49,6 +49,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyContacts, config.RESOURCES_PATH + "/study/<string:study_id>/contacts")
     api.add_resource(StudyFactors, config.RESOURCES_PATH + "/study/<string:study_id>/factors")
     api.add_resource(StudyDescriptors, config.RESOURCES_PATH + "/study/<string:study_id>/descriptors")
+    api.add_resource(StudyPublications, config.RESOURCES_PATH + "/study/<string:study_id>/publications")
 
 
 def main():

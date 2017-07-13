@@ -1,6 +1,6 @@
 from flask_restful import fields
 from isatools.model.v1 import Person, OntologyAnnotation, OntologySource, Protocol
-from isatools.model.v1 import ProtocolParameter, StudyFactor, Comment
+from isatools.model.v1 import ProtocolParameter, StudyFactor, Comment, Publication
 import json
 
 
@@ -403,3 +403,33 @@ def unserialize_study_factor(json_obj):
     return StudyFactor(name=name,
                        factor_type=factor_type,
                        comments=comments)
+
+
+# StudyPublications
+#
+# pubmed_id (str, NoneType):
+# doi (str, NoneType):
+# author_list (str, NoneType):
+# title (str, NoneType):
+# status (str, OntologyAnnotation, NoneType):
+# comments (list, Comment):
+StudyPublications_api_model = {
+    'pubMedID': fields.String(attribute='pubmed_id'),
+    'doi': fields.String,
+    'authorList': fields.String(attribute='author_list'),
+    'title': fields.String,
+    'status': fields.Nested(OntologyAnnotation_api_model),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_study_publication(isa_obj):
+    assert isinstance(isa_obj, Publication)
+    return {
+        'pubMedID': isa_obj.pubmed_id,
+        'doi': isa_obj.doi,
+        'authorList': isa_obj.author_list,
+        'title': isa_obj.title,
+        'status': json.loads(json.dumps(isa_obj.status, default=serialize_ontology_annotation, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
