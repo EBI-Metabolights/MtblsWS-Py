@@ -1221,7 +1221,7 @@ class StudyDescriptors(Resource):
         if "save_audit_copy" in request.headers:
             save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
 
-        # update study factors
+        # update study descriptors
         logger.info('Updating Study descriptors for %s, using API-Key %s', study_id, user_token)
         if save_audit_copy:
             logging.warning("A copy of the previous file will be saved")
@@ -1297,5 +1297,109 @@ class StudyPublications(Resource):
         isa_publications = iac.get_study_publications(study_id, user_token)
         str_publications = json.dumps({'publications': isa_publications}, default=serialize_study_publication, sort_keys=True)
         logger.info('Got %s', str_publications)
+
+        return isa_publications
+
+    @swagger.operation(
+        summary='Update MTBLS Study Publications',
+        notes='Update the list of publications associated with the Study.',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
+                "name": "contacts",
+                "description": 'Update the list of design descriptors associated with the Study.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudyPublications_api_model, envelope='publications')
+    def put(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+        data_dict = json.loads(request.data.decode('utf-8'))
+        json_publications = data_dict['publications']
+
+        isa_publications = list()
+        for json_publication in json_publications:
+            isa_publication = unserialize_study_publication(json_publication)
+            isa_publications.append(isa_publication)
+
+        # check for keeping copies
+        save_audit_copy = True
+        if "save_audit_copy" in request.headers:
+            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+
+        # update study publications
+        logger.info('Updating Study publications for %s, using API-Key %s', study_id, user_token)
+        if save_audit_copy:
+            logging.warning("A copy of the previous file will be saved")
+        else:
+            logging.warning("A copy of the previous file will NOT be saved")
+
+        iac.write_study_json_publications(study_id, user_token, isa_publications, save_audit_copy)
+        logger.info('Applied %s', json_publications)
 
         return isa_publications
