@@ -1,7 +1,6 @@
 from flask_restful import fields
-from flask_restful_swagger import swagger
 from isatools.model.v1 import Person, OntologyAnnotation, OntologySource, Protocol
-from isatools.model.v1 import ProtocolParameter, StudyFactor, Comment
+from isatools.model.v1 import ProtocolParameter, StudyFactor, Comment, Publication
 import json
 
 
@@ -403,4 +402,63 @@ def unserialize_study_factor(json_obj):
 
     return StudyFactor(name=name,
                        factor_type=factor_type,
+                       comments=comments)
+
+
+# StudyPublications
+#
+# pubmed_id (str, NoneType):
+# doi (str, NoneType):
+# author_list (str, NoneType):
+# title (str, NoneType):
+# status (str, OntologyAnnotation, NoneType):
+# comments (list, Comment):
+StudyPublications_api_model = {
+    'pubMedID': fields.String(attribute='pubmed_id'),
+    'doi': fields.String,
+    'authorList': fields.String(attribute='author_list'),
+    'title': fields.String,
+    'status': fields.Nested(OntologyAnnotation_api_model),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_study_publication(isa_obj):
+    assert isinstance(isa_obj, Publication)
+    return {
+        'pubMedID': isa_obj.pubmed_id,
+        'doi': isa_obj.doi,
+        'authorList': isa_obj.author_list,
+        'title': isa_obj.title,
+        'status': json.loads(json.dumps(isa_obj.status, default=serialize_ontology_annotation, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
+
+
+def unserialize_study_publication(json_obj):
+    pubmed_id = ''
+    if 'pubMedID' in json_obj and json_obj['pubMedID'] is not None:
+        pubmed_id = json_obj['pubMedID']
+    doi = ''
+    if 'doi' in json_obj and json_obj['doi'] is not None:
+        doi = json_obj['doi']
+    author_list = ''
+    if 'authorList' in json_obj and json_obj['authorList'] is not None:
+        author_list = json_obj['authorList']
+    title = ''
+    if 'title' in json_obj and json_obj['title'] is not None:
+        title = json_obj['title']
+    status = OntologyAnnotation()
+    if 'status' in json_obj and json_obj['status'] is not None:
+        status = unserialize_ontology_annotation(json_obj['status'])
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_comment(comment))
+
+    return Publication(pubmed_id=pubmed_id,
+                       doi=doi,
+                       author_list=author_list,
+                       title=title,
+                       status=status,
                        comments=comments)
