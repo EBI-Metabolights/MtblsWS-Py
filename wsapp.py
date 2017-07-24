@@ -31,7 +31,8 @@ def initialize_app(flask_app):
 
     CORS(app, resources={r'/mtbls/ws/*'}, origins={"http://localhost:4200",
                                                    "http://localhost:8080",
-                                                   "http://localhost.ebi.ac.uk:8080"})
+                                                   "http://localhost.ebi.ac.uk:8080,"
+                                                   "http://wwwdev.ebi.ac.uk"})
 
     api = swagger.docs(Api(app),
                        apiVersion=config.API_VERSION,
