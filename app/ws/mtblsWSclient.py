@@ -45,6 +45,8 @@ class WsClient:
         std_folder = study["content"]["studyLocation"]
 
         update_folder = std_folder + config.UPDATE_PATH_SUFFIX
+        if config.DEBUG:
+            update_folder = os.path.join(config.DEBUG_STUDIES_PATH, update_folder.strip('/'))
         logger.info('... found updates folder %s', update_folder)
         return update_folder
 
