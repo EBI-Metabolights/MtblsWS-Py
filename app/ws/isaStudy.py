@@ -978,7 +978,7 @@ class StudyFactors(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "contacts",
+                "name": "factors",
                 "description": 'Updated list of independent variables (factors) in JSON format.',
                 "paramType": "body",
                 "type": "string",
@@ -1150,7 +1150,7 @@ class StudyDescriptors(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "contacts",
+                "name": "descriptors",
                 "description": 'Update the list of design descriptors associated with the Study.',
                 "paramType": "body",
                 "type": "string",
@@ -1321,7 +1321,7 @@ class StudyPublications(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "contacts",
+                "name": "publications",
                 "description": 'Update the list of publications associated with the Study.',
                 "paramType": "body",
                 "type": "string",
