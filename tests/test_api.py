@@ -1994,7 +1994,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertIsNotNone(descriptor['comments'])
 
     # PUT Update Study Descriptors - Pub -> 200
-    def test_update_factors_pub(self):
+    def test_update_descriptors_pub(self):
         request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         with urllib.request.urlopen(request) as response:
@@ -2008,7 +2008,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Pub - Auth -> 200
-    def test_update_factors_pub_auth(self):
+    def test_update_descriptors_pub_auth(self):
         request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -2023,7 +2023,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Pub - NoAuth -> 200
-    def test_update_factors_pub_noAuth(self):
+    def test_update_descriptors_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
@@ -2038,7 +2038,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Priv - Auth -> 200
-    def test_update_factors_priv_auth(self):
+    def test_update_descriptors_priv_auth(self):
         request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -2053,7 +2053,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Priv -> 401
-    def test_update_factors_priv(self):
+    def test_update_descriptors_priv(self):
         request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         try:
@@ -2066,7 +2066,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertEqual('UNAUTHORIZED', err.reason)
 
     # Update Study Descriptors - Priv - NoAuth -> 403
-    def test_update_factors_priv_noAuth(self):
+    def test_update_descriptorspriv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
@@ -2080,7 +2080,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Descriptors - NullId -> 404
-    def test_update_factors_nullId(self):
+    def test_update_descriptors_nullId(self):
         request = urllib.request.Request(url_null_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         try:
@@ -2093,7 +2093,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertEqual('NOT FOUND', err.reason)
 
     # Update Study Descriptors - BadId -> 404
-    def test_update_factors_badId(self):
+    def test_update_descriptors_badId(self):
         request = urllib.request.Request(url_wrong_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         try:
@@ -2106,7 +2106,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertEqual('NOT FOUND', err.reason)
 
     # Update Study Descriptors - Pub - NoSave -> 200
-    def test_update_factors_pub_noSave(self):
+    def test_update_descriptors_pub_noSave(self):
         request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
@@ -2121,7 +2121,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Pub - Auth - NoSave -> 200
-    def test_update_factors_pub_auth_noSave(self):
+    def test_update_descriptors_pub_auth_noSave(self):
         request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -2137,7 +2137,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Pub - NoAuth - NoSave -> 200
-    def test_update_factors_pub_noAuth_noSave(self):
+    def test_update_descriptors_pub_noAuth_noSave(self):
         request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
@@ -2153,7 +2153,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Priv - Auth - NoSave -> 200
-    def test_update_factors_priv_auth_noSave(self):
+    def test_update_descriptors_priv_auth_noSave(self):
         request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -2169,7 +2169,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Priv - NoSave -> 401
-    def test_update_factors_priv_noSave(self):
+    def test_update_descriptors_priv_noSave(self):
         request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
@@ -2183,7 +2183,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertEqual('UNAUTHORIZED', err.reason)
 
     # Update Study Descriptors - Priv - NoAuth - NoSave -> 403
-    def test_update_factors_priv_noAuth_noSave(self):
+    def test_update_descriptors_priv_noAuth_noSave(self):
         request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
@@ -2198,7 +2198,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Descriptors - NullId - NoSave -> 404
-    def test_update_factors_nullId_noSave(self):
+    def test_update_descriptors_nullId_noSave(self):
         request = urllib.request.Request(url_null_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
@@ -2212,7 +2212,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertEqual('NOT FOUND', err.reason)
 
     # Update Study Descriptors - BadId - NoSave -> 404
-    def test_update_factors_badId_noSave(self):
+    def test_update_descriptors_badId_noSave(self):
         request = urllib.request.Request(url_wrong_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('save_audit_copy', 'False')
@@ -2340,6 +2340,268 @@ class GetStudyPublicationsTests(WsTests):
     # GET Study Publications - BadId -> 404
     def test_get_descriptors_badId(self):
         request = urllib.request.Request(url_wrong_id + '/publications', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+
+class UpdateStudyPublicationsTests(WsTests):
+
+    data_new_publications = b'{"publications": [{' \
+                           b'"title": "Updated: Title for this publication.",' \
+                           b'"status": {' \
+                           b' "term_source": {"version": null,"description": null,"file": null,' \
+                           b'"comments": [],"name": null},' \
+                           b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
+                           b'"term":"Published",' \
+                           b'"term_accession":""},' \
+                           b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
+                           b'"doi": "http://dx.doi.org/10.1105/tpc.109.066670",' \
+                           b'"authorList": "Author A, Author B, Author C",' \
+                           b'"pubMedID": "123456789"' \
+                           b'}]}'
+
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    def check_Publications_class(self, obj):
+        self.assertIsNotNone(obj['publications'])
+        for publication in obj['publications']:
+            self.assertIsNotNone(publication['title'])
+            self.assertIsNotNone(publication['status'])
+            self.assertIsNotNone(publication['doi'])
+            self.assertIsNotNone(publication['authorList'])
+            self.assertIsNotNone(publication['pubMedID'])
+            self.assertIsNotNone(publication['comments'])
+
+    # PUT Update Study Publications - Pub -> 200
+    def test_update_publications_pub(self):
+        request = urllib.request.Request(url_pub_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('publications', body)
+            self.check_Publications_class(j_resp)
+
+    # Update Study Publications - Pub - Auth -> 200
+    def test_update_publications_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('publications', body)
+            self.check_Publications_class(j_resp)
+
+    # Update Study Publications - Pub - NoAuth -> 200
+    def test_update_publications_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('publications', body)
+            self.check_Publications_class(j_resp)
+
+    # Update Study Publications - Priv - Auth -> 200
+    def test_update_publications_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('publications', body)
+            self.check_Publications_class(j_resp)
+
+    # Update Study Publications - Priv -> 401
+    def test_update_publications_priv(self):
+        request = urllib.request.Request(url_priv_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Publications - Priv - NoAuth -> 403
+    def test_update_publications_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Publications - NullId -> 404
+    def test_update_publications_nullId(self):
+        request = urllib.request.Request(url_null_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Publications - BadId -> 404
+    def test_update_publications_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Publications - Pub - NoSave -> 200
+    def test_update_publications_pub_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('publications', body)
+            self.check_Publications_class(j_resp)
+
+    # Update Study Publications - Pub - Auth - NoSave -> 200
+    def test_update_publications_pub_auth_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('publications', body)
+            self.check_Publications_class(j_resp)
+
+    # Update Study Publications - Pub - NoAuth - NoSave -> 200
+    def test_update_publications_pub_noAuth_noSave(self):
+        request = urllib.request.Request(url_pub_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('publications', body)
+            self.check_Publications_class(j_resp)
+
+    # Update Study Publications - Priv - Auth - NoSave -> 200
+    def test_update_publications_priv_auth_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        request.add_header('save_audit_copy', 'False')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('publications', body)
+            self.check_Publications_class(j_resp)
+
+    # Update Study Publications - Priv - NoSave -> 401
+    def test_update_publications_priv_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Publications - Priv - NoAuth - NoSave -> 403
+    def test_update_publications_priv_noAuth_noSave(self):
+        request = urllib.request.Request(url_priv_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Publications - NullId - NoSave -> 404
+    def test_update_publications_nullId_noSave(self):
+        request = urllib.request.Request(url_null_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Publications - BadId - NoSave -> 404
+    def test_update_publications_badId_noSave(self):
+        request = urllib.request.Request(url_wrong_id + '/publications', data=self.data_new_publications, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('save_audit_copy', 'False')
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
