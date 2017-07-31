@@ -11,10 +11,12 @@ WS_APP_DESCRIPTION = "MetaboLights Python-based REST WebService"
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.7.4"
+WS_APP_VERSION = "0.7.5"
 RESOURCES_PATH = "/mtbls/ws"
 
 TEST_DATA_PATH = "testdata"
+DEBUG = True
+DEBUG_STUDIES_PATH = os.path.realpath("/Users/jrmacias/")
 
 # Increment only when the API changes
 API_VERSION = "0.7.1"
