@@ -1322,7 +1322,7 @@ class StudyPublications(Resource):
             },
             {
                 "name": "contacts",
-                "description": 'Update the list of design descriptors associated with the Study.',
+                "description": 'Update the list of publications associated with the Study.',
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
