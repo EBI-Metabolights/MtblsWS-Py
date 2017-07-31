@@ -1,3 +1,4 @@
+import os
 import logging
 import config
 import requests
@@ -25,6 +26,8 @@ class WsClient:
         study = self.get_study(study_id, user_token)
         location = study["content"]["studyLocation"]
         logger.info('... found study folder %s', location)
+        if config.DEBUG:
+            location = os.path.join(config.DEBUG_STUDIES_PATH, location.strip('/'))
         return location
 
     def get_study_updates_location(self, study_id, user_token):

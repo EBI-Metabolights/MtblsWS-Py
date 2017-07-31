@@ -15,6 +15,8 @@ WS_APP_VERSION = "0.7.4"
 RESOURCES_PATH = "/mtbls/ws"
 
 TEST_DATA_PATH = "testdata"
+DEBUG = True
+DEBUG_STUDIES_PATH = os.path.realpath("/Users/jrmacias/")
 
 # Increment only when the API changes
 API_VERSION = "0.7.1"
