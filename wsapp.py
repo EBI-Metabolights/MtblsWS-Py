@@ -60,7 +60,8 @@ def main():
     initialize_app(app)
 
     logger.info("Starting server %s v%s", config.WS_APP_NAME, config.WS_APP_VERSION)
-    app.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG, ssl_context=context)
+    # app.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG, ssl_context=context)
+    app.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG)
     logger.info("Finished server %s v%s", config.WS_APP_NAME, config.WS_APP_VERSION)
 
 
