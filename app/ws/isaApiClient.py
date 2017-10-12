@@ -125,7 +125,7 @@ class IsaApiClient:
 
         path = self.wsc.get_study_location(study_id, api_key)
         # try the new parser first
-        # isa_json = None
+        isa_json = None
         try:
             isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=True)
         except Exception as inst:  # on failure, use the old one
