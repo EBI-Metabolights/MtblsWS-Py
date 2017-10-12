@@ -110,7 +110,10 @@ class Study(Resource):
         wsc.is_study_public(study_id, user_token)
 
         logger.info('Getting JSON Study %s, using API-Key %s', study_id, user_token)
-        isa_obj = iac.get_isa_json(study_id, user_token)
+        try:
+            isa_obj = iac.get_isa_json(study_id, user_token)
+        except Exception:
+            abort(500)
         logger.info('... found ISA-JSON obj: %s %s', isa_obj.get('title'), isa_obj.get('identifier'))
         return jsonify(isa_obj)
 
