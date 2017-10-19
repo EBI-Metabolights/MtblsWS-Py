@@ -2,7 +2,7 @@ import os
 
 PORT = 5000
 WS_APP_BASE_LINK = "http://www.ebi.ac.uk/metabolights"
-DEBUG = True
+DEBUG = False
 PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
 
 WS_APP_NAME = "MtblsWS-Py"
