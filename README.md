@@ -12,7 +12,7 @@ Using
 - [Flask](http://flask.pocoo.org/),
 - [Flask-RESTful](https://flask-restful.readthedocs.io/),
 - [flask-restful-swagger](https://github.com/rantav/flask-restful-swagger)
-
+- [Flask-CORS](http://flask-cors.readthedocs.io/en/latest/api.html)
 
 
 
