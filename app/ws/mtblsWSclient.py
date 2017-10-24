@@ -3,6 +3,7 @@ import logging
 import config
 import requests
 from flask_restful import abort
+from flask import current_app as app
 
 """
 MetaboLights WS client
@@ -26,8 +27,7 @@ class WsClient:
         study = self.get_study(study_id, user_token)
         location = study["content"]["studyLocation"]
         logger.info('... found study folder %s', location)
-        if config.DEBUG:
-            location = os.path.join(config.DEBUG_STUDIES_PATH, location.strip('/'))
+        location = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), location.strip('/'))
         return location
 
     def get_study_updates_location(self, study_id, user_token):
@@ -44,9 +44,8 @@ class WsClient:
         study = self.get_study(study_id, user_token)
         std_folder = study["content"]["studyLocation"]
 
-        update_folder = std_folder + config.UPDATE_PATH_SUFFIX
-        if config.DEBUG:
-            update_folder = os.path.join(config.DEBUG_STUDIES_PATH, update_folder.strip('/'))
+        update_folder = std_folder + app.config.get('UPDATE_PATH_SUFFIX')
+        update_folder = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), update_folder.strip('/'))
         logger.info('... found updates folder %s', update_folder)
         return update_folder
 
@@ -60,8 +59,8 @@ class WsClient:
         :param user_token: User API token. Used to check for permissions
         """
         logger.info('Getting JSON object for Study %s, using API-Key %s', study_id, user_token)
-        resource = config.MTBLS_WS_RESOURCES_PATH + "/study/" + study_id
-        url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.get(url, headers={"user_token": user_token})
         if resp.status_code != 200:
             if resp.status_code == 401:
@@ -119,8 +118,8 @@ class WsClient:
 
     def get_public_studies(self):
         logger.info('Getting all public studies')
-        resource = config.MTBLS_WS_RESOURCES_PATH + "/study/list"
-        url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/list"
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.get(url)
 
         if resp.status_code != 200:
@@ -139,8 +138,8 @@ class WsClient:
 
     def is_user_token_valid(self, user_token):
         logger.info('Checking for user credentials in MTBLS-Labs')
-        resource = config.MTBLS_WS_RESOURCES_PATH + "/labs/" + "authenticateToken"
-        url = config.MTBLS_WS_HOST + config.MTBLS_WS_PORT + resource
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/labs/" + "authenticateToken"
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.post(url, data='{"token":"' + user_token + '"}')
         if resp.status_code != 200:
             if resp.status_code == 401:

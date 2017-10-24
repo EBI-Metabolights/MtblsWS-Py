@@ -45,16 +45,19 @@ class About(Resource):
     )
     @marshal_with(about_fields, envelope='About-WS')
     def get(self):
+
+        from flask import current_app as app
+
         """Get a basic description of the Web Service"""
         logger.info('Getting WS-about information')
-        api = {"API-Version": config.API_VERSION,
-               "API-Documentation": config.WS_APP_BASE_LINK + config.API_DOC + ".html",
-               "API-Specification": config.WS_APP_BASE_LINK + config.API_DOC + ".json"
+        api = {"API-Version": app.config.get('API_VERSION'),
+               "API-Documentation": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".html",
+               "API-Specification": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".json"
                }
-        app = {"WS-Name": config.WS_APP_NAME,
-               "WS-Version": config.WS_APP_VERSION,
-               "WS-Description": config.WS_APP_DESCRIPTION,
-               "WS-URL": config.WS_APP_BASE_LINK + config.RESOURCES_PATH,
-               }
-        about = {'WS-App': app, 'WS-API': api}
+        appl = {"WS-Name": app.config.get('WS_APP_NAME'),
+                "WS-Version": app.config.get('WS_APP_VERSION'),
+                "WS-Description": app.config.get('WS_APP_DESCRIPTION'),
+                "WS-URL": app.config.get('WS_APP_BASE_LINK') + app.config.get('RESOURCES_PATH')
+                }
+        about = {'WS-App': appl, 'WS-API': api}
         return about
