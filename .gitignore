@@ -68,6 +68,7 @@ ENV/
 
 # Logs
 logs/
+logs.txt
 
 # SSL
 ssl/
