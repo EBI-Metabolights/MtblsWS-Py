@@ -2612,5 +2612,38 @@ class UpdateStudyPublicationsTests(WsTests):
             self.assertEqual('NOT FOUND', err.reason)
 
 
+# tests for GET Method for Study Samples
+#
+# pubmed_id (str, NoneType):
+# doi (str, NoneType):
+# author_list (str, NoneType):
+# title (str, NoneType):
+# status (str, OntologyAnnotation, NoneType):
+# comments (list, Comment):
+class GetStudySamplesTests(WsTests):
+
+    def check_Samples_class(self, obj):
+        self.assertIsNotNone(obj['samples'])
+        for publication in obj['publications']:
+            self.assertIsNotNone(publication['pubMedID'])
+            self.assertIsNotNone(publication['authorList'])
+            self.assertIsNotNone(publication['title'])
+            self.assertIsNotNone(publication['status'])
+            self.assertIsNotNone(publication['comments'])
+
+    # Get Study Samples - Pub -> 200
+    def test_get_descriptors(self):
+        request = urllib.request.Request(url_pub_id + '/samples', method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            j_resp = json.loads(body)
+            self.assertIn('publications', body)
+            self.check_Samples_class(j_resp)
+
+
 if __name__ == '__main__':
     unittest.main()

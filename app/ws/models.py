@@ -1,6 +1,7 @@
 from flask_restful import fields
 from isatools.model import Person, OntologyAnnotation, OntologySource, Protocol
 from isatools.model import ProtocolParameter, StudyFactor, Comment, Publication
+from isatools.model import Sample, Characteristic, FactorValue, Source, Material
 import json
 
 
@@ -210,7 +211,8 @@ def serialize_protocol(isa_obj):
     # comments (list, str):
     return {
         'name': isa_obj.name,
-        'protocol_type': json.loads(json.dumps(isa_obj.protocol_type, default=serialize_ontology_annotation, sort_keys=True)),
+        'protocol_type': json.loads(
+            json.dumps(isa_obj.protocol_type, default=serialize_ontology_annotation, sort_keys=True)),
         'description': isa_obj.description,
         'uri': isa_obj.uri,
         'version': isa_obj.version,
@@ -366,7 +368,7 @@ def unserialize_person(json_obj):
 StudyFactor_api_model = {
     # name (str):
     # factor_type (OntologyAnnotation):
-    # comments (list, NoneType):
+    # comments (list, Comment):
     'name': fields.String,
     'factor_type': fields.Nested(OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
@@ -377,10 +379,11 @@ def serialize_study_factor(isa_obj):
     assert isinstance(isa_obj, StudyFactor)
     # name (str):
     # factor_type (OntologyAnnotation):
-    # comments (list, NoneType):
+    # comments (list, Comment):
     return {
         'name': isa_obj.name,
-        'factor_type': json.loads(json.dumps(isa_obj.factor_type, default=serialize_ontology_annotation, sort_keys=True)),
+        'factor_type': json.loads(
+            json.dumps(isa_obj.factor_type, default=serialize_ontology_annotation, sort_keys=True)),
         'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
     }
 
@@ -462,3 +465,117 @@ def unserialize_study_publication(json_obj):
                        title=title,
                        status=status,
                        comments=comments)
+
+
+# Characteristic
+#
+# category (OntologyAnnotation):
+# value (OntologyAnnotation):
+# unit (OntologyAnnotation):
+# comments (list, Comment):
+Characteristic_api_model = {
+    'category': fields.Nested(OntologyAnnotation_api_model),
+    'value': fields.Nested(OntologyAnnotation_api_model),
+    'unit': fields.Nested(OntologyAnnotation_api_model),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_characteristic(isa_obj):
+    assert isinstance(isa_obj, Characteristic)
+    return {
+        'category': json.loads(json.dumps(isa_obj.category, default=serialize_ontology_annotation, sort_keys=True)),
+        'value': json.loads(json.dumps(isa_obj.value, default=serialize_ontology_annotation, sort_keys=True)),
+        'unit': json.loads(json.dumps(isa_obj.unit, default=serialize_ontology_annotation, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
+
+
+# FactorValue
+#
+# factor_name (StudyFactor):
+# value (OntologyAnnotation):
+# unit (OntologyAnnotation):
+# comments (list, Comment):
+FactorValue_api_model = {
+    'factor_name': fields.Nested(StudyFactor_api_model),
+    'value': fields.Nested(OntologyAnnotation_api_model),
+    'unit': fields.Nested(OntologyAnnotation_api_model),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_factor_value(isa_obj):
+    assert isinstance(isa_obj, FactorValue)
+    return {
+        'factor_name': json.loads(json.dumps(isa_obj.factor_name, default=serialize_study_factor, sort_keys=True)),
+        'value': json.loads(json.dumps(isa_obj.value, default=serialize_ontology_annotation, sort_keys=True)),
+        'unit': json.loads(json.dumps(isa_obj.unit, default=serialize_ontology_annotation, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
+
+
+# Source
+#
+# name (str):
+# characteristics (list, OntologyAnnotation):
+# comments (list, Comment):
+Source_api_model = {
+    'name': fields.String,
+    'characteristics': fields.List(fields.Nested(OntologyAnnotation_api_model)),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_source(isa_obj):
+    assert isinstance(isa_obj, Source)
+    return {
+        'name': isa_obj.name,
+        'characteristics': json.loads(
+            json.dumps(isa_obj.characteristics, default=serialize_characteristic, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
+
+
+# Sample
+#
+# name (str):
+# characteristics (list, OntologyAnnotation):
+# derives_from (Source):
+# factor_values (FactorValues):
+# comments (list, Comment):
+Sample_api_model = {
+    'name': fields.String,
+    'characteristics': fields.List(fields.Nested(Characteristic_api_model)),
+    'derivesFrom': fields.List(fields.Nested(Source_api_model)),
+    'factor_values': fields.List(fields.Nested(FactorValue_api_model)),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_sample(isa_obj):
+    assert isinstance(isa_obj, Sample)
+    return {
+        'name': isa_obj.name,
+        'characteristics': json.loads(
+            json.dumps(isa_obj.characteristics, default=serialize_characteristic, sort_keys=True)),
+        'derives_from': json.loads(
+            json.dumps(isa_obj.derives_from, default=serialize_source, sort_keys=True)),
+        'factor_values': json.loads(
+            json.dumps(isa_obj.factor_values, default=serialize_factor_value, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
+
+
+# Material
+#
+# name (str):
+# type (OntologyAnnotation):
+# characteristics (list, OntologyAnnotation):
+# comments (list, Comment):
+Material_api_model = {
+    'other_materials': fields.List(fields.Nested(Characteristic_api_model)),
+    'sources': fields.List(fields.Nested(Source_api_model)),
+    'samples': fields.List(fields.Nested(Sample_api_model)),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}

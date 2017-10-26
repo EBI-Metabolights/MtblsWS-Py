@@ -1406,3 +1406,70 @@ class StudyPublications(Resource):
         logger.info('Applied %s', json_publications)
 
         return isa_publications
+
+
+class StudySamples(Resource):
+    @swagger.operation(
+        summary="Get MTBLS Study Samples",
+        notes="Get the list of samples associated with the Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(Sample_api_model, envelope='samples')
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        wsc.is_study_public(study_id, user_token)
+
+        logger.info('Getting Study samples for %s, using API-Key %s', study_id, user_token)
+        isa_samples = iac.get_study_samples(study_id, user_token)
+        str_samples = json.dumps({'samples': isa_samples}, default=serialize_sample, sort_keys=True)
+        logger.info('Got %s', str_samples)
+
+        return isa_samples

@@ -346,3 +346,14 @@ class IsaApiClient:
         self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
 
         return std_obj.publications
+
+    def get_study_samples(self, study_id, api_key):
+        """
+        Get the samples associated with the Study
+        :param study_id: MTBLS study identifier
+        :param api_key: User API key for accession check
+        :return: list of samples
+        """
+        std_obj = self._get_isa_study(study_id, api_key)
+        samples = std_obj.samples
+        return samples
