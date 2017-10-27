@@ -491,6 +491,30 @@ def serialize_characteristic(isa_obj):
     }
 
 
+def unserialize_characteristic(json_obj):
+    # category (OntologyAnnotation):
+    # value (OntologyAnnotation):
+    # unit (OntologyAnnotation):
+    category = OntologyAnnotation()
+    if 'category' in json_obj and json_obj['category'] is not None:
+        category = json_obj['category']
+    value = OntologyAnnotation()
+    if 'value' in json_obj and json_obj['value'] is not None:
+        value = unserialize_ontology_annotation(json_obj['value'])
+    unit = OntologyAnnotation()
+    if 'unit' in json_obj and json_obj['unit'] is not None:
+        unit = unserialize_ontology_annotation(json_obj['value'])
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_comment(comment))
+
+    return Characteristic(category=category,
+                          value=value,
+                          unit=unit,
+                          comments=comments)
+
+
 # FactorValue
 #
 # factor_name (StudyFactor):
@@ -513,6 +537,27 @@ def serialize_factor_value(isa_obj):
         'unit': json.loads(json.dumps(isa_obj.unit, default=serialize_ontology_annotation, sort_keys=True)),
         'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
     }
+
+
+def unserialize_factor_value(json_obj):
+    factor_name = OntologyAnnotation()
+    if 'factor_name' in json_obj and json_obj['factor_name'] is not None:
+        factor_name = json_obj['factor_name']
+    value = OntologyAnnotation()
+    if 'value' in json_obj and json_obj['value'] is not None:
+        value = unserialize_ontology_annotation(json_obj['value'])
+    unit = OntologyAnnotation()
+    if 'unit' in json_obj and json_obj['unit'] is not None:
+        unit = unserialize_ontology_annotation(json_obj['value'])
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_comment(comment))
+
+    return FactorValue(factor_name=factor_name,
+                       value=value,
+                       unit=unit,
+                       comments=comments)
 
 
 # Source

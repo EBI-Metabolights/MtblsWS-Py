@@ -1,6 +1,5 @@
 import os
 import logging
-import config
 import requests
 from flask_restful import abort
 from flask import current_app as app
