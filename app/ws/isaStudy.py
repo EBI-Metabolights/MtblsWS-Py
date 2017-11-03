@@ -1408,10 +1408,10 @@ class StudyPublications(Resource):
         return isa_publications
 
 
-class StudySamples(Resource):
+class StudyMaterials(Resource):
     @swagger.operation(
-        summary="Get MTBLS Study Samples",
-        notes="Get the list of samples associated with the Study.",
+        summary="Get all materials in a MTBLS Study",
+        notes="Get the list of materials associated with the Study.",
         parameters=[
             {
                 "name": "study_id",
@@ -1453,7 +1453,7 @@ class StudySamples(Resource):
             }
         ]
     )
-    @marshal_with(Sample_api_model, envelope='samples')
+    @marshal_with(StudyMaterial_api_model, envelope='Study-materials')
     def get(self, study_id):
 
         # param validation
@@ -1465,11 +1465,450 @@ class StudySamples(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
+        logger.info('Getting Study sources for %s, using API-Key %s', study_id, user_token)
+
+        isa_study = iac.get_isa_study(study_id, user_token)
+        isa_materials = isa_study.materials
+
+        logger.debug('Got %s', isa_materials)
+
+        # return isa_sources
+        return isa_materials
+
+
+class StudySources(Resource):
+    @swagger.operation(
+        summary="Get all sources in a MTBLS Study",
+        notes="Get the list of source names associated with the Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study sources for %s, using API-Key %s', study_id, user_token)
+
+        isa_study = iac.get_isa_study(study_id, user_token)
+        isa_sources = isa_study.sources
+        isa_sources_names = []
+        for source in isa_sources:
+            isa_sources_names.append(source.name)
+
+        logger.debug('Got %s', isa_sources_names)
+
+        # return isa_sources
+        return jsonify({"Study-sources": isa_sources_names})
+
+
+class StudySource(Resource):
+    @swagger.operation(
+        summary="Get Study source in a MTBLS Study",
+        notes="Get Study source, by name.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "source_name",
+                "description": "Source name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudySource_api_model, envelope='Study_source')
+    def get(self, study_id, source_name):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+        if source_name is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study source %s for %s, using API-Key %s', source_name, study_id, user_token)
+
+        isa_study = iac.get_isa_study(study_id, user_token)
+        isa_sources = isa_study.sources
+        isa_source = ''
+        for source in isa_sources:
+            if source.name == source_name:
+                isa_source = source
+        if isa_source == '':
+            abort(404)
+        logger.info('Got %s', isa_source)
+
+        return isa_source
+
+    @swagger.operation(
+        summary="Update source in a MTBLS Study",
+        notes="Update source, by name.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "source_name",
+                "description": "Source name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudySource_api_model, envelope='New_source')
+    def put(self, study_id, source_name):
+        # TODO implement this
+        pass
+
+
+class StudySamples(Resource):
+    @swagger.operation(
+        summary="Get all samples in a MTBLS Study",
+        notes="Get the list of samples names associated with the Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
         logger.info('Getting Study samples for %s, using API-Key %s', study_id, user_token)
-        isa_samples = iac.get_study_samples(study_id, user_token)
-        str_samples = json.dumps({'samples': isa_samples}, default=serialize_sample, sort_keys=True)
-        logger.info('Got %s', str_samples)
 
-        return isa_samples
+        isa_study = iac.get_isa_study(study_id, user_token)
+        isa_samples = isa_study.samples
+        isa_samples_names = []
+        for samples in isa_samples:
+            isa_samples_names.append(samples.name)
+
+        logger.debug('Got %s', isa_samples_names)
+
+        # return isa_sources
+        return jsonify({"Study-samples": isa_samples_names})
+
+
+class StudySample(Resource):
+    @swagger.operation(
+        summary="Get Study sample in a MTBLS Study",
+        notes="Get Study sample, by name.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "sample_name",
+                "description": "Sample name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudySample_api_model, envelope='Study_sample')
+    def get(self, study_id, sample_name):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+        if sample_name is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study sample %s for %s, using API-Key %s', sample_name, study_id, user_token)
+
+        isa_study = iac.get_isa_study(study_id, user_token)
+        isa_samples = isa_study.samples
+        isa_sample = ''
+        for sample in isa_samples:
+            if sample.name == sample_name:
+                isa_sample = sample
+        if isa_sample == '':
+            abort(404)
+        logger.info('Got %s', isa_sample)
+
+        return isa_sample
+
+    @swagger.operation(
+        summary="Update sample in a MTBLS Study",
+        notes="Update sample, by name.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "sample_name",
+                "description": "Sample name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudySample_api_model, envelope='New_sample')
+    def put(self, study_id, sample_name):
+        # TODO implement this
+        pass

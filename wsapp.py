@@ -54,7 +54,13 @@ def initialize_app(flask_app):
     api.add_resource(StudyFactors, res_path + "/study/<string:study_id>/factors")
     api.add_resource(StudyDescriptors, res_path + "/study/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/study/<string:study_id>/publications")
+    api.add_resource(StudyMaterials, res_path + "/study/<string:study_id>/materials")
+
+    api.add_resource(StudySources, res_path + "/study/<string:study_id>/sources")
+    api.add_resource(StudySource, res_path + "/study/<string:study_id>/sources/<string:source_name>")
     api.add_resource(StudySamples, res_path + "/study/<string:study_id>/samples")
+    api.add_resource(StudySample, res_path + "/study/<string:study_id>/samples/<string:sample_name>")
+
 
 
 def main():
