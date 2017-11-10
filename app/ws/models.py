@@ -594,7 +594,8 @@ def unserialize_study_source(json_obj):
         for comment in json_obj['comments']:
             comments.append(unserialize_comment(comment))
 
-    return Sample(name=name, characteristics=characteristics,
+    return Source(name=name,
+                  characteristics=characteristics,
                   comments=comments)
 
 
