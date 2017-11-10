@@ -23,4 +23,4 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 
-UPDATE_PATH_SUFFIX = "/audit"
+UPDATE_PATH_SUFFIX = "audit"
