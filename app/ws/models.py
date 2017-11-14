@@ -183,7 +183,7 @@ def unserialize_protocol_parameter(json_obj):
             comments.append(unserialize_comment(comment))
 
     return ProtocolParameter(parameter_name=parameter_name,
-                             unit=unit,
+                             # unit=unit,
                              comments=comments)
 
 
@@ -586,9 +586,10 @@ def unserialize_study_source(json_obj):
     name = ''
     if 'name' in json_obj and json_obj['name'] is not None:
         name = json_obj['name']
-    characteristics = ''
+    characteristics = list()
     if 'characteristics' in json_obj and json_obj['characteristics'] is not None:
-        characteristics = json_obj['characteristics']
+        for characteristic in json_obj['characteristics']:
+            characteristics.append(unserialize_characteristic(characteristic))
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
@@ -633,15 +634,17 @@ def unserialize_study_sample(json_obj):
     name = ''
     if 'name' in json_obj and json_obj['name'] is not None:
         name = json_obj['name']
-    characteristics = ''
+    characteristics = list()
     if 'characteristics' in json_obj and json_obj['characteristics'] is not None:
-        characteristics = json_obj['characteristics']
+        for characteristic in json_obj['characteristics']:
+            characteristics.append(unserialize_characteristic(characteristic))
     derives_from = ''
     if 'derives_from' in json_obj and json_obj['derives_from'] is not None:
         derives_from = json_obj['derives_from']
-    factor_values = ''
+    factor_values = list()
     if 'factor_values' in json_obj and json_obj['factor_values'] is not None:
-        factor_values = json_obj['factor_values']
+        for factor_value in json_obj['factor_values']:
+            factor_value.append(unserialize_factor_value(factor_value))
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:

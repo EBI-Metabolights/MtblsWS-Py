@@ -10,6 +10,7 @@ from app.ws.utils import copy_file, new_timestamped_folder
 import json
 from isatools.model import *
 from isatools.isajson import ISAJSONEncoder
+from flask import current_app as app
 
 """
 MetaboLights ISA-API client
@@ -27,92 +28,6 @@ class IsaApiClient:
         self.wsc = WsClient()   # MetaboLights (Java-Based) WebService client
 
         return
-
-    def _get_isa_investigation(self, study_id, api_key):
-        """
-        Get an ISA-API Investigation object reading directly from the ISA-Tab files
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :return: an ISA-API Investigation object
-        """
-        path = self.wsc.get_study_location(study_id, api_key)
-        try:
-            i_filename = glob.glob(os.path.join(path, "i_*.txt"))[0]
-            fp = open(i_filename)
-            # isa_json = load(fp, skip_load_tables=True)
-            isa_json = load(fp, skip_load_tables=False)
-        except Exception:
-            logger.exception("Failed to find i_*.txt file")
-            abort(500)
-        else:
-            return isa_json
-
-    def get_isa_study(self, study_id, api_key):
-        """
-        Get the Study section from the Investigation ISA object
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :return: an ISA-API Study object
-        """
-        inv_obj = self._get_isa_investigation(study_id, api_key)
-        std_obj = inv_obj.studies[0]
-        return std_obj
-
-    def get_study_title(self, study_id, api_key):
-        """
-        Get the Study title
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :return: a string with the study title
-        """
-        std_obj = self.get_isa_study(study_id, api_key)
-        return std_obj.title
-
-    def get_study_description(self, study_id, api_key):
-        """
-        Get the Study description
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :return: a string with the study description
-        """
-        std_obj = self.get_isa_study(study_id, api_key)
-        return std_obj.description
-
-    def write_study_json_title(self, study_id, api_key, new_title, save_audit_copy=True):
-        """
-        Write out a new Investigation file with the new Study title
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :param new_title: the new title for the Study
-        :param save_audit_copy: Keep track of changes saving a copy of the unmodified files
-        :return: the new title
-        """
-        inv_obj = self._get_isa_investigation(study_id, api_key)
-        std_obj = inv_obj.studies[0]
-        std_obj.title = new_title
-
-        # write changes to ISA-tab file
-        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
-
-        return new_title
-
-    def write_study_json_description(self, study_id, api_key, new_description, save_audit_copy=True):
-        """
-        Write out a new Investigation file with the new Study title
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :param new_description: the new description for the Study
-        :param save_audit_copy: Keep track of changes saving a copy of the unmodified files
-        :return: the new description
-        """
-        inv_obj = self._get_isa_investigation(study_id, api_key)
-        std_obj = inv_obj.studies[0]
-        std_obj.description = new_description
-
-        # write changes to ISA-tab file
-        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
-
-        return new_description
 
     def get_isa_json(self, study_id, api_key):
         """
@@ -141,30 +56,6 @@ class IsaApiClient:
         else:
             logger.info('... get_isa_json() processing (II): %s sec.', time.time() - start)
             return isa_json
-
-    def _write_study_json(self, study_id, api_key, inv_obj, save_audit_copy=True):
-
-        std_path = self.wsc.get_study_location(study_id, api_key)
-
-        # make a copy before applying changes
-        if save_audit_copy:
-            src = os.path.join(std_path, self.inv_filename)
-
-            # dest folder name is a timestamp
-            dest_path = self.wsc.get_study_updates_location(study_id, api_key)
-            dest_folder = new_timestamped_folder(dest_path)
-            dest = os.path.join(dest_folder, self.inv_filename)
-            logger.info("Copying %s to %s", src, dest)
-            copy_file(src, dest)
-
-        # Using the new feature in isatools, implemented from issue #185
-        # https://github.com/ISA-tools/isa-api/issues/185
-        # isatools.isatab.dump() writes out the ISA as a string representation of the ISA-Tab,
-        # skipping writing tables, i.e. only i_investigation.txt
-        logger.info("Writing %s to %s", self.inv_filename, std_path)
-        dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=False)
-
-        return
 
     def create_new_study(self, title, description, sub_date, pub_rel_date):
         """
@@ -202,169 +93,68 @@ class IsaApiClient:
 
         return json.dumps(investigation, cls=ISAJSONEncoder, sort_keys=True, indent=4, separators=(',', ': '))
 
-    def get_study_protocols(self, study_id, api_key):
+    def get_isa_study(self, study_id, api_key):
         """
-        Get the Study protocols
+        Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
         :param api_key: User API key for accession check
-        :return: a string with the study protocols
+        :return: tupla consisting in ISA-Study obj, ISA-Investigation obj
+                and path to the Study in the file system
         """
-        std_obj = self.get_isa_study(study_id, api_key)
-        protocols = std_obj.protocols
-        return protocols
+        std_path = self.wsc.get_study_location(study_id, api_key)
+        try:
+            i_filename = glob.glob(os.path.join(std_path, "i_*.txt"))[0]
+            fp = open(i_filename)
+            # loading tables also load Samples and Assays
+            isa_inv = load(fp, skip_load_tables=False)
+            isa_study = isa_inv.studies[0]
+        except IndexError:
+            logger.exception("Failed to find Investigation file from %s", study_id, std_path)
+            abort(500)
+        else:
+            return isa_study, isa_inv, std_path
 
-    def write_study_json_protocols(self, study_id, api_key, new_protocols, save_audit_copy=True):
+    def write_isa_study(self, inv_obj, api_key, std_path,
+                        save_audit_copy=True, save_audit_samples=False, save_audit_assays=False):
         """
-        Write out a new Investigation file with the new Study protocols
-        :param study_id:
-        :param api_key:
-        :param new_protocols:
-        :param save_audit_copy:
-        :return:
-        """
-        inv_obj = self._get_isa_investigation(study_id, api_key)
-        std_obj = inv_obj.studies[0]
-        std_obj.protocols = new_protocols
-
-        # write changes to ISA-tab file
-        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
-
-        return std_obj.protocols
-
-    def get_study_contacts(self, study_id, api_key):
-        """
-        Get the Study list of contacts
-        :param study_id: MTBLS study identifier
+        Write back an ISA-API Investigation object directly into ISA-Tab files
+        :param inv_obj: ISA-API Investigation object
         :param api_key: User API key for accession check
-        :return: a string with the list of study contacts
-        """
-        std_obj = self.get_isa_study(study_id, api_key)
-        contacts = std_obj.contacts
-        return contacts
-
-    def write_study_json_contacts(self, study_id, api_key, new_contacts, save_audit_copy=True):
-        """
-        Write out a new Investigation file with the new Study contacts
-        :param study_id:
-        :param api_key:
-        :param new_contacts:
-        :param save_audit_copy:
+        :param std_path: file system path to destination folder
+        :param save_audit_copy: Keep track of changes saving a copy of the unmodified i_*.txt file
+        :param save_audit_samples: Keep track of changes saving a copy of the unmodified s_*.txt file
+        :param save_audit_assays: Keep track of changes saving a copy of the unmodified a_*.txt file
         :return:
         """
-        inv_obj = self._get_isa_investigation(study_id, api_key)
-        std_obj = inv_obj.studies[0]
-        std_obj.contacts = new_contacts
+        # dest folder name is a timestamp
+        update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
+        update_path = os.path.join(std_path, update_path_suffix)
+        dest_path = new_timestamped_folder(update_path)
 
-        # write changes to ISA-tab file
-        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
+        # make a copy before applying changes
+        if save_audit_copy:
+            src_file = os.path.join(std_path, self.inv_filename)
+            dest_file = os.path.join(dest_path, self.inv_filename)
+            logger.info("Copying %s to %s", src_file, dest_file)
+            copy_file(src_file, dest_file)
 
-        return std_obj.contacts
+        if save_audit_samples:
+            for sample_file in glob.glob(os.path.join(std_path, "s_*.txt")):
+                sample_file_name = os.path.basename(sample_file)
+                src_file = sample_file
+                dest_file = os.path.join(dest_path, sample_file_name)
+                logger.info("Copying %s to %s", src_file, dest_file)
+                copy_file(src_file, dest_file)
 
-    def get_study_factors(self, study_id, api_key):
-        """
-        Get the Study list of factors
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :return: list of ISA StudyFactor objects.
-        """
-        std_obj = self.get_isa_study(study_id, api_key)
-        factors = std_obj.factors
-        return factors
+        if save_audit_assays:
+            for assay_file in glob.glob(os.path.join(std_path, "a_*.txt")):
+                assay_file_name = os.path.basename(assay_file)
+                src_file = assay_file
+                dest_file = os.path.join(dest_path, assay_file_name)
+                logger.info("Copying %s to %s", src_file, dest_file)
+                copy_file(src_file, dest_file)
 
-    def write_study_json_factors(self, study_id, api_key, new_factors, save_audit_copy=True):
-        """
-        Write out a new Investigation file with the new Study factors
-        :param study_id:
-        :param api_key:
-        :param new_factors:
-        :param save_audit_copy:
-        :return:
-        """
-        inv_obj = self._get_isa_investigation(study_id, api_key)
-        std_obj = inv_obj.studies[0]
-        std_obj.factors = new_factors
+        logger.info("Writing %s to %s", self.inv_filename, std_path)
+        dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=False)
 
-        # write changes to ISA-tab file
-        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
-
-        return std_obj.factors
-
-    def get_study_descriptors(self, study_id, api_key):
-        """
-        Get the Study list of design descriptors
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :return: list of design descriptors : ISA OntologyAnnotation objects.
-        """
-        std_obj = self.get_isa_study(study_id, api_key)
-        descriptors = std_obj.design_descriptors
-        return descriptors
-
-    def write_study_json_descriptors(self, study_id, api_key, new_descriptors, save_audit_copy=True):
-        """
-        Write out a new Investigation file with the new Study design descriptors
-        :param study_id:
-        :param api_key:
-        :param new_descriptors:
-        :param save_audit_copy:
-        :return:
-        """
-        inv_obj = self._get_isa_investigation(study_id, api_key)
-        std_obj = inv_obj.studies[0]
-        std_obj.design_descriptors = new_descriptors
-
-        # write changes to ISA-tab file
-        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
-
-        return std_obj.design_descriptors
-
-    def get_study_publications(self, study_id, api_key):
-        """
-        Get the Study list of publications
-        :param study_id: MTBLS study identifier
-        :param api_key: User API key for accession check
-        :return: list of publications
-        """
-        std_obj = self.get_isa_study(study_id, api_key)
-        publications = std_obj.publications
-        return publications
-
-    def write_study_json_publications(self, study_id, api_key, new_publications, save_audit_copy=True):
-        """
-        Write out a new Investigation file with the new Study publications
-        :param study_id:
-        :param api_key:
-        :param new_publications:
-        :param save_audit_copy:
-        :return:
-        """
-        inv_obj = self._get_isa_investigation(study_id, api_key)
-        std_obj = inv_obj.studies[0]
-        std_obj.publications = new_publications
-
-        # write changes to ISA-tab file
-        self._write_study_json(study_id, api_key, inv_obj, save_audit_copy)
-
-        return std_obj.publications
-
-    def write_study_json_sources(self, inv_obj, std_obj, api_key, updated_sources, save_audit_copy=True):
-        """
-        Write out a new Investigation file with the new Study sources
-        :param std_obj:
-        :param api_key:
-        :param updated_sources:
-        :param save_audit_copy:
-        :return:
-        """
-        std_obj.sources = updated_sources
-
-        # write changes to ISA-tab file
-        self._write_study_json(std_obj, api_key, inv_obj, save_audit_copy)
-
-        return updated_sources
-
-    def write_isa_tab_study(self, inv_obj):
-
-        # std_path = self.wsc.get_study_location(study_id, api_key)
-
-        dump(isa_obj=inv_obj, output_path='', skip_dump_tables=False)
+        return
