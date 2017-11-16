@@ -497,7 +497,7 @@ def unserialize_characteristic(json_obj):
     # unit (OntologyAnnotation):
     category = OntologyAnnotation()
     if 'category' in json_obj and json_obj['category'] is not None:
-        category = json_obj['category']
+        category = unserialize_ontology_annotation(json_obj['category'])
     value = OntologyAnnotation()
     if 'value' in json_obj and json_obj['value'] is not None:
         value = unserialize_ontology_annotation(json_obj['value'])
