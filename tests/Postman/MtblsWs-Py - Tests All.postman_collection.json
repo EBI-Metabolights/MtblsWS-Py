@@ -7,6 +7,986 @@
 	},
 	"item": [
 		{
+			"name": "Update Study Source",
+			"description": "",
+			"item": [
+				{
+					"name": "Update Study Source - Pub -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_source\"] = responseBody.has('\"Updated_source\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/sources/{{PubSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"sources",
+								"{{PubSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_source\"] = responseBody.has('\"Updated_source\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/sources/{{PubSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"sources",
+								"{{PubSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - NoAuth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_source\"] = responseBody.has('\"Updated_source\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/sources/{{PubSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"sources",
+								"{{PubSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_source\"] = responseBody.has('\"Updated_source\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"name\": \"ME6\",\n    \"characteristics\": [\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"Mus musculus\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/10090\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"ICR Mouse\",\n          \"comments\": [],\n          \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C37408\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Variant\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"blood serum\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000133\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/sources/{{PrivSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"sources",
+								"{{PrivSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv -> 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 401;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"name\": \"ME6\",\n    \"characteristics\": [\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"Mus musculus\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/10090\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"ICR Mouse\",\n          \"comments\": [],\n          \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C37408\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Variant\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"blood serum\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000133\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/sources/{{PrivSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"sources",
+								"{{PrivSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"name\": \"ME6\",\n    \"characteristics\": [\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"Mus musculus\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/10090\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"ICR Mouse\",\n          \"comments\": [],\n          \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C37408\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Variant\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"blood serum\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000133\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/sources/{{PrivSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"sources",
+								"{{PrivSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//sources",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"",
+								"sources"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/sources/{{BadSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{BadStudyId}}",
+								"sources",
+								"{{BadSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - NoSave -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_source\"] = responseBody.has('\"Updated_source\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/sources/{{PubSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"sources",
+								"{{PubSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - Auth - NoSave -> 200 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_source\"] = responseBody.has('\"Updated_source\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/sources/{{PubSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"sources",
+								"{{PubSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - NoAuth - NoSave -> 200 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_source\"] = responseBody.has('\"Updated_source\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/sources/{{PubSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"sources",
+								"{{PubSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - Auth - NoSave -> 200 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_source\"] = responseBody.has('\"Updated_source\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"name\": \"ME6\",\n    \"characteristics\": [\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"Mus musculus\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/10090\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"ICR Mouse\",\n          \"comments\": [],\n          \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C37408\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Variant\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"blood serum\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000133\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/sources/{{PrivSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"sources",
+								"{{PrivSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - NoSave -> 401 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 401;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"name\": \"ME6\",\n    \"characteristics\": [\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"Mus musculus\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/10090\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"ICR Mouse\",\n          \"comments\": [],\n          \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C37408\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Variant\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"blood serum\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000133\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/sources/{{PrivSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"sources",
+								"{{PrivSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - NoAuth - NoSave -> 403 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"name\": \"ME6\",\n    \"characteristics\": [\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"Mus musculus\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/10090\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"ICR Mouse\",\n          \"comments\": [],\n          \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C37408\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Variant\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      },\n      {\n        \"unit\": {\n          \"term\": null,\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": null,\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"value\": {\n          \"term\": \"blood serum\",\n          \"comments\": [],\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000133\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        },\n        \"comments\": [],\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"comments\": [],\n          \"term_accession\": \"\",\n          \"term_source\": {\n            \"description\": null,\n            \"name\": null,\n            \"comments\": [],\n            \"version\": null,\n            \"file\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/sources/{{PrivSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"sources",
+								"{{PrivSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - NullId - NoSave -> 404 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//sources",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"",
+								"sources"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - BadId - NoSave -> 404 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_source\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l02h5a1\",\n    \"characteristics\": [\n      {\n        \"category\": {\n          \"term\": \"Organism\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"Nicotiana attenuata\",\n          \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"category\": {\n          \"term\": \"Organism part\",\n          \"term_accession\": \"\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"comments\": [],\n        \"value\": {\n          \"term\": \"leaf\",\n          \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n          \"comments\": [],\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": [],\n            \"name\": null\n          }\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_accession\": null,\n          \"comments\": null,\n          \"term_source\": {\n            \"version\": null,\n            \"file\": null,\n            \"description\": null,\n            \"comments\": null,\n            \"name\": null\n          }\n        }\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/sources/{{BadSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{BadStudyId}}",
+								"sources",
+								"{{BadSourceName}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Get Study Sample",
 			"description": "",
 			"item": [
