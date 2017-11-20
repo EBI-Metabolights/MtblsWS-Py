@@ -542,7 +542,7 @@ def serialize_factor_value(isa_obj):
 def unserialize_factor_value(json_obj):
     factor_name = OntologyAnnotation()
     if 'factor_name' in json_obj and json_obj['factor_name'] is not None:
-        factor_name = json_obj['factor_name']
+        factor_name = unserialize_study_factor(json_obj['factor_name'])
     value = OntologyAnnotation()
     if 'value' in json_obj and json_obj['value'] is not None:
         value = unserialize_ontology_annotation(json_obj['value'])
@@ -644,7 +644,7 @@ def unserialize_study_sample(json_obj):
     factor_values = list()
     if 'factor_values' in json_obj and json_obj['factor_values'] is not None:
         for factor_value in json_obj['factor_values']:
-            factor_value.append(unserialize_factor_value(factor_value))
+            factor_values.append(unserialize_factor_value(factor_value))
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
