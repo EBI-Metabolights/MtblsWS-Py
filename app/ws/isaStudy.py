@@ -1922,7 +1922,50 @@ class StudySample(Resource):
             }
         ]
     )
-    @marshal_with(StudySample_api_model, envelope='New_sample')
+    @marshal_with(StudySample_api_model, envelope='Updated_sample')
     def put(self, study_id, sample_name):
-        # TODO implement this
-        pass
+        # param validation
+        if study_id is None:
+            abort(404)
+        if sample_name is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+        data_dict = json.loads(request.data.decode('utf-8'))
+        json_updated_sample = data_dict['Study_sample']
+        isa_updated_sample = unserialize_study_sample(json_updated_sample)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        logger.info('Updating Study sample for %s, using API-Key %s', study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_sample_found = False
+        for index, sample in enumerate(isa_study.samples):
+            if sample.name == sample_name:
+                isa_sample_found = True
+                isa_study.samples[index].name = isa_updated_sample.name
+                isa_study.samples[index].characteristics = list(isa_updated_sample.characteristics)
+                isa_study.samples[index].derives_from = list(isa_updated_sample.derives_from)
+                isa_study.samples[index].factor_values = list(isa_updated_sample.factor_values)
+                isa_study.samples[index].comments = list(isa_updated_sample.comments)
+                break
+        if not isa_sample_found:
+            abort(404)
+        logger.info('Got Study sample %s - %s', study_id, sample.name)
+
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy,
+                            save_audit_assays=True, save_audit_samples=True)
+        logger.info('Updated %s - %s', study_id, isa_updated_sample.name)
+        return isa_updated_sample
