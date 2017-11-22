@@ -1,14 +1,976 @@
 {
 	"info": {
 		"name": "MtblsWs-Py - Tests All",
-		"_postman_id": "c595d55f-b19e-a494-b768-6aee6e5277bc",
+		"_postman_id": "85c15185-5c83-2e26-c81a-d17218747aad",
 		"description": "",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
+			"name": "Update Study Sample",
+			"item": [
+				{
+					"name": "Update Study Source - Pub -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_sample\"] = responseBody.has('\"Updated_sample\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/samples/{{PubSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"samples",
+								"{{PubSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_sample\"] = responseBody.has('\"Updated_sample\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/samples/{{PubSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"samples",
+								"{{PubSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - NoAuth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_sample\"] = responseBody.has('\"Updated_sample\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/samples/{{PubSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"samples",
+								"{{PubSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_sample\"] = responseBody.has('\"Updated_sample\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"MS6\",\n    \"derives_from\": [\n      {\n        \"name\": \"ME6\",\n        \"comments\": [],\n        \"characteristics\": [\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Variant\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"Chemical Exposure \",\n          \"factor_type\": {\n            \"term\": \"Exposure to chemical pollution\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"102435003\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      },\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"time point\",\n          \"factor_type\": {\n            \"term\": \"days\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"time:days\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      }\n    ],\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/samples/{{PrivSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"samples",
+								"{{PrivSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv -> 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 401;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"MS6\",\n    \"derives_from\": [\n      {\n        \"name\": \"ME6\",\n        \"comments\": [],\n        \"characteristics\": [\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Variant\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"Chemical Exposure \",\n          \"factor_type\": {\n            \"term\": \"Exposure to chemical pollution\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"102435003\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      },\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"time point\",\n          \"factor_type\": {\n            \"term\": \"days\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"time:days\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      }\n    ],\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/samples/{{PrivSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"samples",
+								"{{PrivSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"MS6\",\n    \"derives_from\": [\n      {\n        \"name\": \"ME6\",\n        \"comments\": [],\n        \"characteristics\": [\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Variant\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"Chemical Exposure \",\n          \"factor_type\": {\n            \"term\": \"Exposure to chemical pollution\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"102435003\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      },\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"time point\",\n          \"factor_type\": {\n            \"term\": \"days\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"time:days\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      }\n    ],\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/samples/{{PrivSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"samples",
+								"{{PrivSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//samples",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"",
+								"samples"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/samples/{{BadSourceName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{BadStudyId}}",
+								"samples",
+								"{{BadSourceName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - NoSave -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_sample\"] = responseBody.has('\"Updated_sample\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/samples/{{PubSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"samples",
+								"{{PubSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - Auth - NoSave -> 200 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_sample\"] = responseBody.has('\"Updated_sample\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/samples/{{PubSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"samples",
+								"{{PubSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Pub - NoAuth - NoSave -> 200 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_sample\"] = responseBody.has('\"Updated_sample\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/samples/{{PubSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"samples",
+								"{{PubSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - Auth - NoSave -> 200 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has Updated_sample\"] = responseBody.has('\"Updated_sample\":');",
+									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"MS6\",\n    \"derives_from\": [\n      {\n        \"name\": \"ME6\",\n        \"comments\": [],\n        \"characteristics\": [\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Variant\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"Chemical Exposure \",\n          \"factor_type\": {\n            \"term\": \"Exposure to chemical pollution\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"102435003\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      },\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"time point\",\n          \"factor_type\": {\n            \"term\": \"days\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"time:days\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      }\n    ],\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/samples/{{PrivSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"samples",
+								"{{PrivSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - NoSave -> 401 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 401;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"MS6\",\n    \"derives_from\": [\n      {\n        \"name\": \"ME6\",\n        \"comments\": [],\n        \"characteristics\": [\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Variant\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"Chemical Exposure \",\n          \"factor_type\": {\n            \"term\": \"Exposure to chemical pollution\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"102435003\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      },\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"time point\",\n          \"factor_type\": {\n            \"term\": \"days\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"time:days\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      }\n    ],\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/samples/{{PrivSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"samples",
+								"{{PrivSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - Priv - NoAuth - NoSave -> 403 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"MS6\",\n    \"derives_from\": [\n      {\n        \"name\": \"ME6\",\n        \"comments\": [],\n        \"characteristics\": [\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Variant\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          },\n          {\n            \"unit\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"comments\": [],\n            \"value\": {\n              \"term\": null,\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": null,\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": null,\n              \"comments\": null\n            },\n            \"category\": {\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"name\": null,\n                \"version\": null,\n                \"comments\": [],\n                \"description\": null,\n                \"file\": null\n              },\n              \"term_accession\": \"\",\n              \"comments\": []\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"Chemical Exposure \",\n          \"factor_type\": {\n            \"term\": \"Exposure to chemical pollution\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"102435003\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      },\n      {\n        \"comments\": [],\n        \"value\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"unit\": {\n          \"term\": null,\n          \"term_source\": {\n            \"name\": null,\n            \"version\": null,\n            \"comments\": null,\n            \"description\": null,\n            \"file\": null\n          },\n          \"term_accession\": null,\n          \"comments\": null\n        },\n        \"factor_name\": {\n          \"name\": \"time point\",\n          \"factor_type\": {\n            \"term\": \"days\",\n            \"term_source\": {\n              \"name\": null,\n              \"version\": null,\n              \"comments\": [],\n              \"description\": null,\n              \"file\": null\n            },\n            \"term_accession\": \"time:days\",\n            \"comments\": []\n          },\n          \"comments\": []\n        }\n      }\n    ],\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/samples/{{PrivSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"samples",
+								"{{PrivSampleName}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - NullId - NoSave -> 404 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//samples",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"",
+								"samples"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Source - BadId - NoSave -> 404 copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Study_sample\": {\n    \"derives_from\": [\n      {\n        \"comments\": [],\n        \"name\": \"02sa01l01h5a1\",\n        \"characteristics\": [\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.bioontology.org/ontology/NCBITAXON/49451\",\n              \"term\": \"Nicotiana attenuata\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          },\n          {\n            \"comments\": [],\n            \"unit\": {\n              \"comments\": null,\n              \"term_accession\": null,\n              \"term\": null,\n              \"term_source\": {\n                \"comments\": null,\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"category\": {\n              \"comments\": [],\n              \"term_accession\": \"\",\n              \"term\": \"Organism part\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            },\n            \"value\": {\n              \"comments\": [],\n              \"term_accession\": \"http://purl.obolibrary.org/obo/BTO_0000713\",\n              \"term\": \"leaf\",\n              \"term_source\": {\n                \"comments\": [],\n                \"file\": null,\n                \"version\": null,\n                \"description\": null,\n                \"name\": null\n              }\n            }\n          }\n        ]\n      }\n    ],\n    \"factor_values\": [\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://purl.obolibrary.org/obo/GO_0009611\",\n            \"term\": \"response to wounding\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Treatment\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      },\n      {\n        \"comments\": [],\n        \"factor_name\": {\n          \"comments\": [],\n          \"factor_type\": {\n            \"comments\": [],\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n            \"term\": \"timepoint\",\n            \"term_source\": {\n              \"comments\": [],\n              \"file\": null,\n              \"version\": null,\n              \"description\": null,\n              \"name\": null\n            }\n          },\n          \"name\": \"Timepoint\"\n        },\n        \"unit\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        },\n        \"value\": {\n          \"comments\": null,\n          \"term_accession\": null,\n          \"term\": null,\n          \"term_source\": {\n            \"comments\": null,\n            \"file\": null,\n            \"version\": null,\n            \"description\": null,\n            \"name\": null\n          }\n        }\n      }\n    ],\n    \"comments\": [{\n    \"name\": \"Updated\",\n    \"value\": \"Updated with MtblsWs-Py\"\n    }],\n    \"name\": \"02sa01l01h5a1\",\n    \"characteristics\": []\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/samples/{{BadSampleName}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{BadStudyId}}",
+								"samples",
+								"{{BadSampleName}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Update Study Source",
-			"description": "",
 			"item": [
 				{
 					"name": "Update Study Source - Pub -> 200",
@@ -61,8 +1023,7 @@
 								"sources",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -121,8 +1082,7 @@
 								"sources",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -181,8 +1141,7 @@
 								"sources",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -241,8 +1200,7 @@
 								"sources",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -299,8 +1257,7 @@
 								"sources",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -361,8 +1318,7 @@
 								"sources",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -418,8 +1374,7 @@
 								"",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -476,8 +1431,7 @@
 								"sources",
 								"{{BadSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -536,8 +1490,7 @@
 								"sources",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -600,8 +1553,7 @@
 								"sources",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -664,8 +1616,7 @@
 								"sources",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -728,8 +1679,7 @@
 								"sources",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -790,8 +1740,7 @@
 								"sources",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -856,8 +1805,7 @@
 								"sources",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -917,8 +1865,7 @@
 								"",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -979,8 +1926,7 @@
 								"sources",
 								"{{BadSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -988,7 +1934,6 @@
 		},
 		{
 			"name": "Get Study Sample",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Sample - Pub -> 200",
@@ -1046,8 +1991,7 @@
 								"samples",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1111,8 +2055,7 @@
 								"samples",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1176,8 +2119,7 @@
 								"samples",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1241,8 +2183,7 @@
 								"samples",
 								"{{PrivSampleName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1299,8 +2240,7 @@
 								"samples",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1361,8 +2301,7 @@
 								"samples",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1419,8 +2358,7 @@
 								"samples",
 								""
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1477,8 +2415,7 @@
 								"samples",
 								"{{BadSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -1486,7 +2423,6 @@
 		},
 		{
 			"name": "Get Study Samples",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Samples - Pub -> 200",
@@ -1537,8 +2473,7 @@
 								"{{PubStudyId}}",
 								"samples"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1595,8 +2530,7 @@
 								"{{PubStudyId}}",
 								"samples"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1653,8 +2587,7 @@
 								"{{PubStudyId}}",
 								"samples"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1711,8 +2644,7 @@
 								"{{PrivStudyId}}",
 								"samples"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1768,8 +2700,7 @@
 								"{{PrivStudyId}}",
 								"samples"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1829,8 +2760,7 @@
 								"{{PrivStudyId}}",
 								"samples"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1886,8 +2816,7 @@
 								"",
 								"samples"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -1943,8 +2872,7 @@
 								"{{BadStudyId}}",
 								"samples"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -1952,7 +2880,6 @@
 		},
 		{
 			"name": "Get Study Source",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Source - Pub -> 200",
@@ -2008,8 +2935,7 @@
 								"sources",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2071,8 +2997,7 @@
 								"sources",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2134,8 +3059,7 @@
 								"sources",
 								"{{PubSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2197,8 +3121,7 @@
 								"sources",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2255,8 +3178,7 @@
 								"sources",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2317,8 +3239,7 @@
 								"sources",
 								"{{PrivSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2375,8 +3296,7 @@
 								"sources",
 								""
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2433,8 +3353,7 @@
 								"sources",
 								"{{BadSourceName}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -2442,7 +3361,6 @@
 		},
 		{
 			"name": "Get Study Sources",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Sources - Pub -> 200",
@@ -2493,8 +3411,7 @@
 								"{{PubStudyId}}",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2551,8 +3468,7 @@
 								"{{PubStudyId}}",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2609,8 +3525,7 @@
 								"{{PubStudyId}}",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2667,8 +3582,7 @@
 								"{{PrivStudyId}}",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2724,8 +3638,7 @@
 								"{{PrivStudyId}}",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2785,8 +3698,7 @@
 								"{{PrivStudyId}}",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2842,8 +3754,7 @@
 								"",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -2899,8 +3810,7 @@
 								"{{BadStudyId}}",
 								"sources"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -2908,7 +3818,6 @@
 		},
 		{
 			"name": "Update Study Title",
-			"description": "",
 			"item": [
 				{
 					"name": "Update Study Title - Pub -> 200",
@@ -2960,8 +3869,7 @@
 								"{{PubStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3019,8 +3927,7 @@
 								"{{PubStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3078,8 +3985,7 @@
 								"{{PubStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3137,8 +4043,7 @@
 								"{{PrivStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3194,8 +4099,7 @@
 								"{{PrivStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3255,8 +4159,7 @@
 								"{{PrivStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3312,8 +4215,7 @@
 								"",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3369,8 +4271,7 @@
 								"{{BadStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3428,8 +4329,7 @@
 								"{{PubStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3491,8 +4391,7 @@
 								"{{PubStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3554,8 +4453,7 @@
 								"{{PubStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3617,8 +4515,7 @@
 								"{{PrivStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3678,8 +4575,7 @@
 								"{{PrivStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3743,8 +4639,7 @@
 								"{{PrivStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3804,8 +4699,7 @@
 								"",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3865,8 +4759,7 @@
 								"{{BadStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -3874,7 +4767,6 @@
 		},
 		{
 			"name": "Update Study Publications",
-			"description": "",
 			"item": [
 				{
 					"name": "Update Study Publications - Pub -> 200",
@@ -3926,8 +4818,7 @@
 								"{{PubStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -3985,8 +4876,7 @@
 								"{{PubStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4044,8 +4934,7 @@
 								"{{PubStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4103,8 +4992,7 @@
 								"{{PrivStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4160,8 +5048,7 @@
 								"{{PrivStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4221,8 +5108,7 @@
 								"{{PrivStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4278,8 +5164,7 @@
 								"",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4335,8 +5220,7 @@
 								"{{BadStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4394,8 +5278,7 @@
 								"{{PubStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4457,8 +5340,7 @@
 								"{{PubStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4520,8 +5402,7 @@
 								"{{PubStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4583,8 +5464,7 @@
 								"{{PrivStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4644,8 +5524,7 @@
 								"{{PrivStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4709,8 +5588,7 @@
 								"{{PrivStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4770,8 +5648,7 @@
 								"",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4831,8 +5708,7 @@
 								"{{BadStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -4840,7 +5716,6 @@
 		},
 		{
 			"name": "Update Study Protocols",
-			"description": "",
 			"item": [
 				{
 					"name": "Update Study Protocols - Pub -> 200",
@@ -4892,8 +5767,7 @@
 								"{{PubStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -4951,8 +5825,7 @@
 								"{{PubStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5010,8 +5883,7 @@
 								"{{PubStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5069,8 +5941,7 @@
 								"{{PrivStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5126,8 +5997,7 @@
 								"{{PrivStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5187,8 +6057,7 @@
 								"{{PrivStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5244,8 +6113,7 @@
 								"",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5301,8 +6169,7 @@
 								"{{BadStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5360,8 +6227,7 @@
 								"{{PubStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5423,8 +6289,7 @@
 								"{{PubStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5486,8 +6351,7 @@
 								"{{PubStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5549,8 +6413,7 @@
 								"{{PrivStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5610,8 +6473,7 @@
 								"{{PrivStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5675,8 +6537,7 @@
 								"{{PrivStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5736,8 +6597,7 @@
 								"",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5797,8 +6657,7 @@
 								"{{BadStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -5806,7 +6665,6 @@
 		},
 		{
 			"name": "Update Study Factors",
-			"description": "",
 			"item": [
 				{
 					"name": "Update Study Factors - Pub -> 200",
@@ -5858,8 +6716,7 @@
 								"{{PubStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5917,8 +6774,7 @@
 								"{{PubStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -5976,8 +6832,7 @@
 								"{{PubStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6035,8 +6890,7 @@
 								"{{PrivStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6092,8 +6946,7 @@
 								"{{PrivStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6153,8 +7006,7 @@
 								"{{PrivStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6210,8 +7062,7 @@
 								"",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6267,8 +7118,7 @@
 								"{{BadStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6326,8 +7176,7 @@
 								"{{PubStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6389,8 +7238,7 @@
 								"{{PubStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6452,8 +7300,7 @@
 								"{{PubStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6515,8 +7362,7 @@
 								"{{PrivStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6576,8 +7422,7 @@
 								"{{PrivStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6641,8 +7486,7 @@
 								"{{PrivStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6702,8 +7546,7 @@
 								"",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6763,8 +7606,7 @@
 								"{{BadStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -6772,7 +7614,6 @@
 		},
 		{
 			"name": "Update Study Descriptors",
-			"description": "",
 			"item": [
 				{
 					"name": "Update Study Descriptors - Pub -> 200",
@@ -6824,8 +7665,7 @@
 								"{{PubStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6883,8 +7723,7 @@
 								"{{PubStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -6942,8 +7781,7 @@
 								"{{PubStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7001,8 +7839,7 @@
 								"{{PrivStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7058,8 +7895,7 @@
 								"{{PrivStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7119,8 +7955,7 @@
 								"{{PrivStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7176,8 +8011,7 @@
 								"",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7233,8 +8067,7 @@
 								"{{BadStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7292,8 +8125,7 @@
 								"{{PubStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7355,8 +8187,7 @@
 								"{{PubStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7418,8 +8249,7 @@
 								"{{PubStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7481,8 +8311,7 @@
 								"{{PrivStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7542,8 +8371,7 @@
 								"{{PrivStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7607,8 +8435,7 @@
 								"{{PrivStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7668,8 +8495,7 @@
 								"",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7729,8 +8555,7 @@
 								"{{BadStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -7738,7 +8563,6 @@
 		},
 		{
 			"name": "Update Study Description",
-			"description": "",
 			"item": [
 				{
 					"name": "Update Study Description - Pub -> 200",
@@ -7790,8 +8614,7 @@
 								"{{PubStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7849,8 +8672,7 @@
 								"{{PubStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7908,8 +8730,7 @@
 								"{{PubStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -7967,8 +8788,7 @@
 								"{{PrivStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8024,8 +8844,7 @@
 								"{{PrivStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8085,8 +8904,7 @@
 								"{{PrivStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8142,8 +8960,7 @@
 								"",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8199,8 +9016,7 @@
 								"{{BadStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8258,8 +9074,7 @@
 								"{{PubStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8321,8 +9136,7 @@
 								"{{PubStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8384,8 +9198,7 @@
 								"{{PubStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8447,8 +9260,7 @@
 								"{{PrivStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8508,8 +9320,7 @@
 								"{{PrivStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8573,8 +9384,7 @@
 								"{{PrivStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8634,8 +9444,7 @@
 								"",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8695,8 +9504,7 @@
 								"{{BadStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -8704,7 +9512,6 @@
 		},
 		{
 			"name": "Update Study Contacts",
-			"description": "",
 			"item": [
 				{
 					"name": "Update Study Contacts - Pub -> 200",
@@ -8764,8 +9571,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8831,8 +9637,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8898,8 +9703,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -8965,8 +9769,7 @@
 								"{{PrivStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9022,8 +9825,7 @@
 								"{{PrivStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9083,8 +9885,7 @@
 								"{{PrivStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9140,8 +9941,7 @@
 								"",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9197,8 +9997,7 @@
 								"{{BadStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9264,8 +10063,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9335,8 +10133,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9406,8 +10203,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9477,8 +10273,7 @@
 								"{{PrivStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9538,8 +10333,7 @@
 								"{{PrivStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9603,8 +10397,7 @@
 								"{{PrivStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9664,8 +10457,7 @@
 								"",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9725,8 +10517,7 @@
 								"{{BadStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9788,8 +10579,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -9797,7 +10587,6 @@
 		},
 		{
 			"name": "POST New Study",
-			"description": "",
 			"item": [
 				{
 					"name": "New Study - Auth -> 200",
@@ -9852,8 +10641,7 @@
 								"study",
 								"new"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9910,8 +10698,7 @@
 								"study",
 								"new"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -9968,8 +10755,7 @@
 								"study",
 								"new"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10022,8 +10808,7 @@
 								"study",
 								"new"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10080,8 +10865,7 @@
 								"study",
 								"new"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -10089,7 +10873,6 @@
 		},
 		{
 			"name": "Get MTBLS Study",
-			"description": "",
 			"item": [
 				{
 					"name": "Get MTBLS Study - Pub -> 200",
@@ -10142,8 +10925,7 @@
 								"study",
 								"{{PubStudyId}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10202,8 +10984,7 @@
 								"study",
 								"{{PubStudyId}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10262,8 +11043,7 @@
 								"study",
 								"{{PubStudyId}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10322,8 +11102,7 @@
 								"study",
 								"{{PrivStudyId}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10378,8 +11157,7 @@
 								"study",
 								"{{PrivStudyId}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10437,8 +11215,7 @@
 								"study",
 								"{{PrivStudyId}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10492,8 +11269,7 @@
 								"study",
 								""
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10547,8 +11323,7 @@
 								"study",
 								"{{BadStudyId}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -10556,7 +11331,6 @@
 		},
 		{
 			"name": "Get ISA-JSON Study",
-			"description": "",
 			"item": [
 				{
 					"name": "Get ISA-JSON Study - Pub -> 200",
@@ -10607,8 +11381,7 @@
 								"{{PubStudyId}}",
 								"isa_json"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10665,8 +11438,7 @@
 								"{{PubStudyId}}",
 								"isa_json"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10723,8 +11495,7 @@
 								"{{PubStudyId}}",
 								"isa_json"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10781,8 +11552,7 @@
 								"{{PrivStudyId}}",
 								"isa_json"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10837,8 +11607,7 @@
 								"{{PrivStudyId}}",
 								"isa_json"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10897,8 +11666,7 @@
 								"{{PrivStudyId}}",
 								"isa_json"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -10953,8 +11721,7 @@
 								"",
 								"isa_json"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11009,8 +11776,7 @@
 								"{{BadStudyId}}",
 								"isa_json"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -11018,7 +11784,6 @@
 		},
 		{
 			"name": "Get Study Title",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Title - Pub -> 200",
@@ -11070,8 +11835,7 @@
 								"{{PubStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11129,8 +11893,7 @@
 								"{{PubStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11188,8 +11951,7 @@
 								"{{PubStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11247,8 +12009,7 @@
 								"{{PrivStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11304,8 +12065,7 @@
 								"{{PrivStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11365,8 +12125,7 @@
 								"{{PrivStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11422,8 +12181,7 @@
 								"",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11479,8 +12237,7 @@
 								"{{BadStudyId}}",
 								"title"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -11488,7 +12245,6 @@
 		},
 		{
 			"name": "Get Study Publications",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Publications - Pub -> 200",
@@ -11549,8 +12305,7 @@
 								"{{PubStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11617,8 +12372,7 @@
 								"{{PubStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11685,8 +12439,7 @@
 								"{{PubStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11753,8 +12506,7 @@
 								"{{PrivStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11810,8 +12562,7 @@
 								"{{PrivStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11871,8 +12622,7 @@
 								"{{PrivStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11928,8 +12678,7 @@
 								"",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -11985,8 +12734,7 @@
 								"{{BadStudyId}}",
 								"publications"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -11994,7 +12742,6 @@
 		},
 		{
 			"name": "Get Study Protocols",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Protocols - Pub -> 200",
@@ -12050,8 +12797,7 @@
 								"{{PubStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12113,8 +12859,7 @@
 								"{{PubStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12176,8 +12921,7 @@
 								"{{PubStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12239,8 +12983,7 @@
 								"{{PrivStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12296,8 +13039,7 @@
 								"{{PrivStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12357,8 +13099,7 @@
 								"{{PrivStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12414,8 +13155,7 @@
 								"",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12471,8 +13211,7 @@
 								"{{BadStudyId}}",
 								"protocols"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -12480,7 +13219,6 @@
 		},
 		{
 			"name": "Get Study Factors",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Factors - Pub -> 200",
@@ -12535,8 +13273,7 @@
 								"{{PubStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12597,8 +13334,7 @@
 								"{{PubStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12659,8 +13395,7 @@
 								"{{PubStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12721,8 +13456,7 @@
 								"{{PrivStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12778,8 +13512,7 @@
 								"{{PrivStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12839,8 +13572,7 @@
 								"{{PrivStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12896,8 +13628,7 @@
 								"",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -12953,8 +13684,7 @@
 								"{{BadStudyId}}",
 								"factors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -12962,7 +13692,6 @@
 		},
 		{
 			"name": "Get Study Descriptors",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Descriptors - Pub -> 200",
@@ -13018,8 +13747,7 @@
 								"{{PubStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13081,8 +13809,7 @@
 								"{{PubStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13144,8 +13871,7 @@
 								"{{PubStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13207,8 +13933,7 @@
 								"{{PrivStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13264,8 +13989,7 @@
 								"{{PrivStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13325,8 +14049,7 @@
 								"{{PrivStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13382,8 +14105,7 @@
 								"",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13439,8 +14161,7 @@
 								"{{BadStudyId}}",
 								"descriptors"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -13448,7 +14169,6 @@
 		},
 		{
 			"name": "Get Study Description",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Description - Pub -> 200",
@@ -13500,8 +14220,7 @@
 								"{{PubStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13559,8 +14278,7 @@
 								"{{PubStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13618,8 +14336,7 @@
 								"{{PubStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13677,8 +14394,7 @@
 								"{{PrivStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13734,8 +14450,7 @@
 								"{{PrivStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13795,8 +14510,7 @@
 								"{{PrivStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13852,8 +14566,7 @@
 								"",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -13909,8 +14622,7 @@
 								"{{BadStudyId}}",
 								"description"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -13918,7 +14630,6 @@
 		},
 		{
 			"name": "Get Study Contacts",
-			"description": "",
 			"item": [
 				{
 					"name": "Get Study Contacts - Pub -> 200",
@@ -13978,8 +14689,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14045,8 +14755,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14112,8 +14821,7 @@
 								"{{PubStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14179,8 +14887,7 @@
 								"{{PrivStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14236,8 +14943,7 @@
 								"{{PrivStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14297,8 +15003,7 @@
 								"{{PrivStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14354,8 +15059,7 @@
 								"",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14411,8 +15115,7 @@
 								"{{BadStudyId}}",
 								"contacts"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
@@ -14420,7 +15123,6 @@
 		},
 		{
 			"name": "Get All Public Studies",
-			"description": "",
 			"item": [
 				{
 					"name": "Get All Public Studies - Pub -> 200",
@@ -14471,8 +15173,7 @@
 								"study",
 								"list"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14529,8 +15230,7 @@
 								"study",
 								"list"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14587,8 +15287,7 @@
 								"study",
 								"list"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				},
@@ -14644,8 +15343,7 @@
 								"list",
 								"{{BadStudyId}}"
 							]
-						},
-						"description": ""
+						}
 					},
 					"response": []
 				}
