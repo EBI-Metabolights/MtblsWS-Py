@@ -107,8 +107,6 @@ class Study(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
-
         logger.info('Getting JSON Study %s, using API-Key %s', study_id, user_token)
         try:
             isa_obj = iac.get_isa_json(study_id, user_token)
@@ -175,10 +173,9 @@ class StudyTitle(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
-
         logger.info('Getting Study title for %s, using API-Key %s', study_id, user_token)
-        title = iac.get_study_title(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        title = isa_study.title
         logger.info('Got %s', title)
         return jsonify({"Study-title": title})
 
@@ -267,19 +264,19 @@ class StudyTitle(Resource):
         new_title = data_dict['title']
 
         # check for keeping copies
-        save_audit_copy = True
-        if "save_audit_copy" in request.headers:
-            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
 
         # update study title
         logger.info('Updating Study title for %s, using API-Key %s', study_id, user_token)
-        if save_audit_copy:
-            logging.warning("A copy of the previous file will be saved")
-        else:
-            logging.warning("A copy of the previous file will NOT be saved")
-        iac.write_study_json_title(study_id, user_token, new_title, save_audit_copy)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study.title = new_title
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', new_title)
-
         return jsonify({"Study-title": new_title})
 
 
@@ -339,10 +336,9 @@ class StudyDescription(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
-
         logger.info('Getting Study description for %s, using API-Key %s', study_id, user_token)
-        description = iac.get_study_description(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        description = isa_study.description
         logger.info('Got %s', description)
         return jsonify({"Study-description": description})
 
@@ -431,19 +427,19 @@ class StudyDescription(Resource):
         new_description = data_dict['description']
 
         # check for keeping copies
-        save_audit_copy = True
-        if "save_audit_copy" in request.headers:
-            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
 
         # update study description
         logger.info('Updating Study description for %s, using API-Key %s', study_id, user_token)
-        if save_audit_copy:
-            logging.warning("A copy of the previous file will be saved")
-        else:
-            logging.warning("A copy of the previous file will NOT be saved")
-        iac.write_study_json_description(study_id, user_token, new_description, save_audit_copy)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study.description = new_description
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', new_description)
-
         return jsonify({"Study-description": new_description})
 
 
@@ -589,13 +585,12 @@ class StudyProtocols(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
-
         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
-        isa_protocols = iac.get_study_protocols(study_id, user_token)
-        str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_protocol, sort_keys=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_protocols = isa_study.protocols
+        str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_protocol,
+                                   sort_keys=True)
         logger.info('Got: %s', str_protocols)
-
         return isa_protocols
 
     @swagger.operation(
@@ -686,21 +681,19 @@ class StudyProtocols(Resource):
             isa_protocols.append(isa_protocol)
 
         # check for keeping copies
-        save_audit_copy = True
-        if "save_audit_copy" in request.headers:
-            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
 
         # update study protocols
         logger.info('Updating Study protocols for %s, using API-Key %s', study_id, user_token)
-        if save_audit_copy:
-            logging.warning("A copy of the previous file will be saved")
-        else:
-            logging.warning("A copy of the previous file will NOT be saved")
-
-        iac.write_study_json_protocols(study_id, user_token, isa_protocols, save_audit_copy)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study.protocols = isa_protocols
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', json_protocols)
-
-        # return jsonify({"Study-protocols": json_protocols})
         return isa_protocols
 
 
@@ -779,13 +772,11 @@ class StudyContacts(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
-
         logger.info('Getting Study contacts for %s, using API-Key %s', study_id, user_token)
-        isa_contacts = iac.get_study_contacts(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_contacts = isa_study.contacts
         str_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_person, sort_keys=True)
         logger.info('Got %s', str_contacts)
-
         return isa_contacts
 
     @swagger.operation(
@@ -876,20 +867,19 @@ class StudyContacts(Resource):
             isa_contacts.append(isa_contact)
 
         # check for keeping copies
-        save_audit_copy = True
-        if "save_audit_copy" in request.headers:
-            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
 
         # update study contacts
         logger.info('Updating Study contacts for %s, using API-Key %s', study_id, user_token)
-        if save_audit_copy:
-            logging.warning("A copy of the previous file will be saved")
-        else:
-            logging.warning("A copy of the previous file will NOT be saved")
-
-        iac.write_study_json_contacts(study_id, user_token, isa_contacts, save_audit_copy)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study.contacts = isa_contacts
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', json_contacts)
-
         return isa_contacts
 
 
@@ -951,13 +941,11 @@ class StudyFactors(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
-
         logger.info('Getting Study factors for %s, using API-Key %s', study_id, user_token)
-        isa_factors = iac.get_study_factors(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_factors = isa_study.factors
         str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_study_factor, sort_keys=True)
         logger.info('Got %s', str_factors)
-
         return isa_factors
 
     @swagger.operation(
@@ -1048,18 +1036,18 @@ class StudyFactors(Resource):
             isa_factors.append(isa_factor)
 
         # check for keeping copies
-        save_audit_copy = True
-        if "save_audit_copy" in request.headers:
-            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
 
         # update study factors
         logger.info('Updating Study factors for %s, using API-Key %s', study_id, user_token)
-        if save_audit_copy:
-            logging.warning("A copy of the previous file will be saved")
-        else:
-            logging.warning("A copy of the previous file will NOT be saved")
-
-        iac.write_study_json_factors(study_id, user_token, isa_factors, save_audit_copy)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study.factors = isa_factors
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', json_factors)
 
         return isa_factors
@@ -1122,14 +1110,12 @@ class StudyDescriptors(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
-
         logger.info('Getting Study design descriptors for %s, using API-Key %s', study_id, user_token)
-        isa_descriptors = iac.get_study_descriptors(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_descriptors = isa_study.design_descriptors
         str_descriptors = json.dumps({'StudyDescriptors': isa_descriptors}, default=serialize_ontology_annotation,
                                      sort_keys=True)
         logger.info('Got %s', str_descriptors)
-
         return isa_descriptors
 
     @swagger.operation(
@@ -1220,20 +1206,19 @@ class StudyDescriptors(Resource):
             isa_descriptors.append(isa_descriptor)
 
         # check for keeping copies
-        save_audit_copy = True
-        if "save_audit_copy" in request.headers:
-            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
 
         # update study descriptors
         logger.info('Updating Study descriptors for %s, using API-Key %s', study_id, user_token)
-        if save_audit_copy:
-            logging.warning("A copy of the previous file will be saved")
-        else:
-            logging.warning("A copy of the previous file will NOT be saved")
-
-        iac.write_study_json_descriptors(study_id, user_token, isa_descriptors, save_audit_copy)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study.design_descriptors = isa_descriptors
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', json_descriptors)
-
         return isa_descriptors
 
 
@@ -1294,13 +1279,12 @@ class StudyPublications(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
-
         logger.info('Getting Study publications for %s, using API-Key %s', study_id, user_token)
-        isa_publications = iac.get_study_publications(study_id, user_token)
-        str_publications = json.dumps({'publications': isa_publications}, default=serialize_study_publication, sort_keys=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_publications = isa_study.publications
+        str_publications = json.dumps({'publications': isa_publications},
+                                      default=serialize_study_publication, sort_keys=True)
         logger.info('Got %s', str_publications)
-
         return isa_publications
 
     @swagger.operation(
@@ -1377,32 +1361,611 @@ class StudyPublications(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
         json_publications = data_dict['publications']
-
         isa_publications = list()
         for json_publication in json_publications:
             isa_publication = unserialize_study_publication(json_publication)
             isa_publications.append(isa_publication)
 
         # check for keeping copies
-        save_audit_copy = True
-        if "save_audit_copy" in request.headers:
-            save_audit_copy = request.headers["save_audit_copy"].lower() == 'true'
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
 
         # update study publications
         logger.info('Updating Study publications for %s, using API-Key %s', study_id, user_token)
-        if save_audit_copy:
-            logging.warning("A copy of the previous file will be saved")
-        else:
-            logging.warning("A copy of the previous file will NOT be saved")
-
-        iac.write_study_json_publications(study_id, user_token, isa_publications, save_audit_copy)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study.publications = isa_publications
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', json_publications)
-
         return isa_publications
+
+
+class StudyMaterials(Resource):
+    @swagger.operation(
+        summary="Get all materials in a MTBLS Study",
+        notes="Get the list of materials associated with the Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudyMaterial_api_model, envelope='Study-materials')
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study sources for %s, using API-Key %s', study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_materials = isa_study.materials
+        logger.debug('Got %s', isa_materials)
+        return isa_materials
+
+
+class StudySources(Resource):
+    @swagger.operation(
+        summary="Get all sources in a MTBLS Study",
+        notes="Get the list of source names associated with the Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study sources for %s, using API-Key %s', study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_sources_names = []
+        for source in isa_study.sources:
+            isa_sources_names.append(source.name)
+        logger.debug('Got %s', isa_sources_names)
+        return jsonify({"Study-sources": isa_sources_names})
+
+
+class StudySource(Resource):
+    @swagger.operation(
+        summary="Get Study source in a MTBLS Study",
+        notes="Get Study source, by name.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "source_name",
+                "description": "Source name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudySource_api_model, envelope='Study_source')
+    def get(self, study_id, source_name):
+        # param validation
+        if study_id is None:
+            abort(404)
+        if source_name is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study source %s for %s, using API-Key %s', source_name, study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_source_found = False
+        for index, source in enumerate(isa_study.sources):
+            if source.name == source_name:
+                isa_source_found = True
+                break
+        if not isa_source_found:
+            abort(404)
+        logger.info('Got Study source %s', source.name)
+        return source
+
+    @swagger.operation(
+        summary="Update source in a MTBLS Study",
+        notes="Update source, by name.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "source_name",
+                "description": "Source name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "study_source",
+                "description": 'Update the source associated with the Study.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudySource_api_model, envelope='Updated_source')
+    def put(self, study_id, source_name):
+        # param validation
+        if study_id is None:
+            abort(404)
+        if source_name is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+        data_dict = json.loads(request.data.decode('utf-8'))
+        json_updated_source = data_dict['Study_source']
+        isa_updated_source = unserialize_study_source(json_updated_source)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        logger.info('Updating Study source for %s, using API-Key %s', study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_source_found = False
+        for index, source in enumerate(isa_study.sources):
+            if source.name == source_name:
+                isa_source_found = True
+                isa_study.sources[index].name = isa_updated_source.name
+                isa_study.sources[index].characteristics = list(isa_updated_source.characteristics)
+                isa_study.sources[index].comments = list(isa_updated_source.comments)
+                break
+        if not isa_source_found:
+            abort(404)
+        logger.info('Got Study source %s - %s', study_id, source.name)
+
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy,
+                            save_audit_assays=True, save_audit_samples=True)
+        logger.info('Updated %s - %s', study_id, isa_updated_source.name)
+        return isa_updated_source
+
+
+class StudySamples(Resource):
+    @swagger.operation(
+        summary="Get all samples in a MTBLS Study",
+        notes="Get the list of samples names associated with the Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study samples for %s, using API-Key %s', study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_samples_names = []
+        for samples in isa_study.samples:
+            isa_samples_names.append(samples.name)
+        logger.debug('Got %s', isa_samples_names)
+        return jsonify({"Study-samples": isa_samples_names})
+
+
+class StudySample(Resource):
+    @swagger.operation(
+        summary="Get Study sample in a MTBLS Study",
+        notes="Get Study sample, by name.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "sample_name",
+                "description": "Sample name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudySample_api_model, envelope='Study_sample')
+    def get(self, study_id, sample_name):
+        # param validation
+        if study_id is None:
+            abort(404)
+        if sample_name is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study sample %s for %s, using API-Key %s', sample_name, study_id, user_token)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_sample = ''
+        for sample in isa_study.samples:
+            if sample.name == sample_name:
+                isa_sample = sample
+        if isa_sample == '':
+            abort(404)
+
+        logger.info('Got %s', isa_sample)
+        return isa_sample
+
+    @swagger.operation(
+        summary="Update sample in a MTBLS Study",
+        notes="Update sample, by name.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "sample_name",
+                "description": "Sample name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "study_sample",
+                "description": 'Update the sample associated with the Study.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(StudySample_api_model, envelope='Updated_sample')
+    def put(self, study_id, sample_name):
+        # param validation
+        if study_id is None:
+            abort(404)
+        if sample_name is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+        data_dict = json.loads(request.data.decode('utf-8'))
+        json_updated_sample = data_dict['Study_sample']
+        isa_updated_sample = unserialize_study_sample(json_updated_sample)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        logger.info('Updating Study sample for %s, using API-Key %s', study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_sample_found = False
+        for index, sample in enumerate(isa_study.samples):
+            if sample.name == sample_name:
+                isa_sample_found = True
+                isa_study.samples[index].name = isa_updated_sample.name
+                isa_study.samples[index].characteristics = list(isa_updated_sample.characteristics)
+                isa_study.samples[index].derives_from = list(isa_updated_sample.derives_from)
+                isa_study.samples[index].factor_values = list(isa_updated_sample.factor_values)
+                isa_study.samples[index].comments = list(isa_updated_sample.comments)
+                break
+        if not isa_sample_found:
+            abort(404)
+        logger.info('Got Study sample %s - %s', study_id, sample.name)
+
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy,
+                            save_audit_assays=True, save_audit_samples=True)
+        logger.info('Updated %s - %s', study_id, isa_updated_sample.name)
+        return isa_updated_sample

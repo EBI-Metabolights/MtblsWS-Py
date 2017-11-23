@@ -2,12 +2,10 @@ import logging.config
 import config
 from flask import Flask
 from flask_restful import Api
-from flask_restful_swagger import swagger
 from flask_cors import CORS
 from app.ws.about import About
 from app.ws.mtbls_study import MtblsStudy
-from app.ws.isaStudy import Study, StudyTitle, StudyDescription, StudyPubList, StudyNew, StudyProtocols
-from app.ws.isaStudy import StudyContacts, StudyFactors, StudyDescriptors, StudyPublications
+from app.ws.isaStudy import *
 
 """
 MTBLS WS-Py
@@ -56,6 +54,13 @@ def initialize_app(flask_app):
     api.add_resource(StudyFactors, res_path + "/study/<string:study_id>/factors")
     api.add_resource(StudyDescriptors, res_path + "/study/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/study/<string:study_id>/publications")
+    api.add_resource(StudyMaterials, res_path + "/study/<string:study_id>/materials")
+
+    api.add_resource(StudySources, res_path + "/study/<string:study_id>/sources")
+    api.add_resource(StudySource, res_path + "/study/<string:study_id>/sources/<string:source_name>")
+    api.add_resource(StudySamples, res_path + "/study/<string:study_id>/samples")
+    api.add_resource(StudySample, res_path + "/study/<string:study_id>/samples/<string:sample_name>")
+
 
 
 def main():

@@ -1,6 +1,7 @@
 from flask_restful import fields
 from isatools.model import Person, OntologyAnnotation, OntologySource, Protocol
 from isatools.model import ProtocolParameter, StudyFactor, Comment, Publication
+from isatools.model import Sample, Characteristic, FactorValue, Source, Material
 import json
 
 
@@ -182,7 +183,7 @@ def unserialize_protocol_parameter(json_obj):
             comments.append(unserialize_comment(comment))
 
     return ProtocolParameter(parameter_name=parameter_name,
-                             unit=unit,
+                             # unit=unit,
                              comments=comments)
 
 
@@ -210,7 +211,8 @@ def serialize_protocol(isa_obj):
     # comments (list, str):
     return {
         'name': isa_obj.name,
-        'protocol_type': json.loads(json.dumps(isa_obj.protocol_type, default=serialize_ontology_annotation, sort_keys=True)),
+        'protocol_type': json.loads(
+            json.dumps(isa_obj.protocol_type, default=serialize_ontology_annotation, sort_keys=True)),
         'description': isa_obj.description,
         'uri': isa_obj.uri,
         'version': isa_obj.version,
@@ -366,7 +368,7 @@ def unserialize_person(json_obj):
 StudyFactor_api_model = {
     # name (str):
     # factor_type (OntologyAnnotation):
-    # comments (list, NoneType):
+    # comments (list, Comment):
     'name': fields.String,
     'factor_type': fields.Nested(OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
@@ -377,10 +379,11 @@ def serialize_study_factor(isa_obj):
     assert isinstance(isa_obj, StudyFactor)
     # name (str):
     # factor_type (OntologyAnnotation):
-    # comments (list, NoneType):
+    # comments (list, Comment):
     return {
         'name': isa_obj.name,
-        'factor_type': json.loads(json.dumps(isa_obj.factor_type, default=serialize_ontology_annotation, sort_keys=True)),
+        'factor_type': json.loads(
+            json.dumps(isa_obj.factor_type, default=serialize_ontology_annotation, sort_keys=True)),
         'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
     }
 
@@ -462,3 +465,205 @@ def unserialize_study_publication(json_obj):
                        title=title,
                        status=status,
                        comments=comments)
+
+
+# Characteristic
+#
+# category (OntologyAnnotation):
+# value (OntologyAnnotation):
+# unit (OntologyAnnotation):
+# comments (list, Comment):
+Characteristic_api_model = {
+    'category': fields.Nested(OntologyAnnotation_api_model),
+    'value': fields.Nested(OntologyAnnotation_api_model),
+    'unit': fields.Nested(OntologyAnnotation_api_model),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_characteristic(isa_obj):
+    assert isinstance(isa_obj, Characteristic)
+    return {
+        'category': json.loads(json.dumps(isa_obj.category, default=serialize_ontology_annotation, sort_keys=True)),
+        'value': json.loads(json.dumps(isa_obj.value, default=serialize_ontology_annotation, sort_keys=True)),
+        'unit': json.loads(json.dumps(isa_obj.unit, default=serialize_ontology_annotation, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
+
+
+def unserialize_characteristic(json_obj):
+    # category (OntologyAnnotation):
+    # value (OntologyAnnotation):
+    # unit (OntologyAnnotation):
+    category = OntologyAnnotation()
+    if 'category' in json_obj and json_obj['category'] is not None:
+        category = unserialize_ontology_annotation(json_obj['category'])
+    value = OntologyAnnotation()
+    if 'value' in json_obj and json_obj['value'] is not None:
+        value = unserialize_ontology_annotation(json_obj['value'])
+    unit = OntologyAnnotation()
+    if 'unit' in json_obj and json_obj['unit'] is not None:
+        unit = unserialize_ontology_annotation(json_obj['value'])
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_comment(comment))
+
+    return Characteristic(category=category,
+                          value=value,
+                          unit=unit,
+                          comments=comments)
+
+
+# FactorValue
+#
+# factor_name (StudyFactor):
+# value (OntologyAnnotation):
+# unit (OntologyAnnotation):
+# comments (list, Comment):
+FactorValue_api_model = {
+    'factor_name': fields.Nested(StudyFactor_api_model),
+    'value': fields.Nested(OntologyAnnotation_api_model),
+    'unit': fields.Nested(OntologyAnnotation_api_model),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_factor_value(isa_obj):
+    assert isinstance(isa_obj, FactorValue)
+    return {
+        'factor_name': json.loads(json.dumps(isa_obj.factor_name, default=serialize_study_factor, sort_keys=True)),
+        'value': json.loads(json.dumps(isa_obj.value, default=serialize_ontology_annotation, sort_keys=True)),
+        'unit': json.loads(json.dumps(isa_obj.unit, default=serialize_ontology_annotation, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
+
+
+def unserialize_factor_value(json_obj):
+    factor_name = OntologyAnnotation()
+    if 'factor_name' in json_obj and json_obj['factor_name'] is not None:
+        factor_name = unserialize_study_factor(json_obj['factor_name'])
+    value = OntologyAnnotation()
+    if 'value' in json_obj and json_obj['value'] is not None:
+        value = unserialize_ontology_annotation(json_obj['value'])
+    unit = OntologyAnnotation()
+    if 'unit' in json_obj and json_obj['unit'] is not None:
+        unit = unserialize_ontology_annotation(json_obj['value'])
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_comment(comment))
+
+    return FactorValue(factor_name=factor_name,
+                       value=value,
+                       unit=unit,
+                       comments=comments)
+
+
+# Source
+#
+# name (str):
+# characteristics (list, OntologyAnnotation):
+# comments (list, Comment):
+StudySource_api_model = {
+    'name': fields.String,
+    'characteristics': fields.List(fields.Nested(Characteristic_api_model)),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_study_source(isa_obj):
+    assert isinstance(isa_obj, Source)
+    return {
+        'name': isa_obj.name,
+        'characteristics': json.loads(
+            json.dumps(isa_obj.characteristics, default=serialize_characteristic, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
+
+
+def unserialize_study_source(json_obj):
+    name = ''
+    if 'name' in json_obj and json_obj['name'] is not None:
+        name = json_obj['name']
+    characteristics = list()
+    if 'characteristics' in json_obj and json_obj['characteristics'] is not None:
+        for characteristic in json_obj['characteristics']:
+            characteristics.append(unserialize_characteristic(characteristic))
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_comment(comment))
+
+    return Source(name=name,
+                  characteristics=characteristics,
+                  comments=comments)
+
+
+# Sample
+#
+# name (str):
+# characteristics (list, OntologyAnnotation):
+# derives_from (Source):
+# factor_values (FactorValues):
+# comments (list, Comment):
+StudySample_api_model = {
+    'name': fields.String,
+    'characteristics': fields.List(fields.Nested(Characteristic_api_model)),
+    'derives_from': fields.List(fields.Nested(StudySource_api_model)),
+    'factor_values': fields.List(fields.Nested(FactorValue_api_model)),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+def serialize_study_sample(isa_obj):
+    assert isinstance(isa_obj, Sample)
+    return {
+        'name': isa_obj.name,
+        'characteristics': json.loads(
+            json.dumps(isa_obj.characteristics, default=serialize_characteristic, sort_keys=True)),
+        'derives_from': json.loads(
+            json.dumps(isa_obj.derives_from, default=serialize_study_source, sort_keys=True)),
+        'factor_values': json.loads(
+            json.dumps(isa_obj.factor_values, default=serialize_factor_value, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+    }
+
+
+def unserialize_study_sample(json_obj):
+    name = ''
+    if 'name' in json_obj and json_obj['name'] is not None:
+        name = json_obj['name']
+    characteristics = list()
+    if 'characteristics' in json_obj and json_obj['characteristics'] is not None:
+        for characteristic in json_obj['characteristics']:
+            characteristics.append(unserialize_characteristic(characteristic))
+    derives_from = ''
+    if 'derives_from' in json_obj and json_obj['derives_from'] is not None:
+        derives_from = json_obj['derives_from']
+    factor_values = list()
+    if 'factor_values' in json_obj and json_obj['factor_values'] is not None:
+        for factor_value in json_obj['factor_values']:
+            factor_values.append(unserialize_factor_value(factor_value))
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_comment(comment))
+
+    return Sample(name=name, characteristics=characteristics,
+                  derives_from=derives_from, factor_values=factor_values,
+                  comments=comments)
+
+
+# Material
+#
+# name (str):
+# type (OntologyAnnotation):
+# characteristics (list, OntologyAnnotation):
+# comments (list, Comment):
+StudyMaterial_api_model = {
+    'other_materials': fields.List(fields.Nested(Characteristic_api_model)),
+    'sources': fields.List(fields.Nested(StudySource_api_model)),
+    'samples': fields.List(fields.Nested(StudySample_api_model)),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
