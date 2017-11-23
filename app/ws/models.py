@@ -183,7 +183,7 @@ def unserialize_protocol_parameter(json_obj):
             comments.append(unserialize_comment(comment))
 
     return ProtocolParameter(parameter_name=parameter_name,
-                             unit=unit,
+                             # unit=unit,
                              comments=comments)
 
 
@@ -497,7 +497,7 @@ def unserialize_characteristic(json_obj):
     # unit (OntologyAnnotation):
     category = OntologyAnnotation()
     if 'category' in json_obj and json_obj['category'] is not None:
-        category = json_obj['category']
+        category = unserialize_ontology_annotation(json_obj['category'])
     value = OntologyAnnotation()
     if 'value' in json_obj and json_obj['value'] is not None:
         value = unserialize_ontology_annotation(json_obj['value'])
@@ -542,7 +542,7 @@ def serialize_factor_value(isa_obj):
 def unserialize_factor_value(json_obj):
     factor_name = OntologyAnnotation()
     if 'factor_name' in json_obj and json_obj['factor_name'] is not None:
-        factor_name = json_obj['factor_name']
+        factor_name = unserialize_study_factor(json_obj['factor_name'])
     value = OntologyAnnotation()
     if 'value' in json_obj and json_obj['value'] is not None:
         value = unserialize_ontology_annotation(json_obj['value'])
@@ -565,14 +565,14 @@ def unserialize_factor_value(json_obj):
 # name (str):
 # characteristics (list, OntologyAnnotation):
 # comments (list, Comment):
-Source_api_model = {
+StudySource_api_model = {
     'name': fields.String,
-    'characteristics': fields.List(fields.Nested(OntologyAnnotation_api_model)),
+    'characteristics': fields.List(fields.Nested(Characteristic_api_model)),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
 
-def serialize_source(isa_obj):
+def serialize_study_source(isa_obj):
     assert isinstance(isa_obj, Source)
     return {
         'name': isa_obj.name,
@@ -582,6 +582,24 @@ def serialize_source(isa_obj):
     }
 
 
+def unserialize_study_source(json_obj):
+    name = ''
+    if 'name' in json_obj and json_obj['name'] is not None:
+        name = json_obj['name']
+    characteristics = list()
+    if 'characteristics' in json_obj and json_obj['characteristics'] is not None:
+        for characteristic in json_obj['characteristics']:
+            characteristics.append(unserialize_characteristic(characteristic))
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_comment(comment))
+
+    return Source(name=name,
+                  characteristics=characteristics,
+                  comments=comments)
+
+
 # Sample
 #
 # name (str):
@@ -589,27 +607,52 @@ def serialize_source(isa_obj):
 # derives_from (Source):
 # factor_values (FactorValues):
 # comments (list, Comment):
-Sample_api_model = {
+StudySample_api_model = {
     'name': fields.String,
     'characteristics': fields.List(fields.Nested(Characteristic_api_model)),
-    'derivesFrom': fields.List(fields.Nested(Source_api_model)),
+    'derives_from': fields.List(fields.Nested(StudySource_api_model)),
     'factor_values': fields.List(fields.Nested(FactorValue_api_model)),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
 
-def serialize_sample(isa_obj):
+def serialize_study_sample(isa_obj):
     assert isinstance(isa_obj, Sample)
     return {
         'name': isa_obj.name,
         'characteristics': json.loads(
             json.dumps(isa_obj.characteristics, default=serialize_characteristic, sort_keys=True)),
         'derives_from': json.loads(
-            json.dumps(isa_obj.derives_from, default=serialize_source, sort_keys=True)),
+            json.dumps(isa_obj.derives_from, default=serialize_study_source, sort_keys=True)),
         'factor_values': json.loads(
             json.dumps(isa_obj.factor_values, default=serialize_factor_value, sort_keys=True)),
         'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
     }
+
+
+def unserialize_study_sample(json_obj):
+    name = ''
+    if 'name' in json_obj and json_obj['name'] is not None:
+        name = json_obj['name']
+    characteristics = list()
+    if 'characteristics' in json_obj and json_obj['characteristics'] is not None:
+        for characteristic in json_obj['characteristics']:
+            characteristics.append(unserialize_characteristic(characteristic))
+    derives_from = ''
+    if 'derives_from' in json_obj and json_obj['derives_from'] is not None:
+        derives_from = json_obj['derives_from']
+    factor_values = list()
+    if 'factor_values' in json_obj and json_obj['factor_values'] is not None:
+        for factor_value in json_obj['factor_values']:
+            factor_values.append(unserialize_factor_value(factor_value))
+    comments = list()
+    if 'comments' in json_obj and json_obj['comments'] is not None:
+        for comment in json_obj['comments']:
+            comments.append(unserialize_comment(comment))
+
+    return Sample(name=name, characteristics=characteristics,
+                  derives_from=derives_from, factor_values=factor_values,
+                  comments=comments)
 
 
 # Material
@@ -618,9 +661,9 @@ def serialize_sample(isa_obj):
 # type (OntologyAnnotation):
 # characteristics (list, OntologyAnnotation):
 # comments (list, Comment):
-Material_api_model = {
+StudyMaterial_api_model = {
     'other_materials': fields.List(fields.Nested(Characteristic_api_model)),
-    'sources': fields.List(fields.Nested(Source_api_model)),
-    'samples': fields.List(fields.Nested(Sample_api_model)),
+    'sources': fields.List(fields.Nested(StudySource_api_model)),
+    'samples': fields.List(fields.Nested(StudySample_api_model)),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }

@@ -74,6 +74,9 @@ class WsClient:
         json_resp = resp.json()
 
         # double check for errors
+        if json_resp["message"] is not None:
+            if json_resp["message"] == 'Study not found':
+                abort(404)
         if json_resp["err"] is not None:
             if user_token is None:
                 abort(401)
