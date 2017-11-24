@@ -1508,9 +1508,9 @@ class StudySources(Resource):
 
         logger.info('Getting Study sources for %s, using API-Key %s', study_id, user_token)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
-        isa_sources_names = []
+        isa_sources_names = list()
         for source in isa_study.sources:
-            isa_sources_names.append(source.name)
+            isa_sources_names.append({'name': source.name})
         logger.debug('Got %s', isa_sources_names)
         return jsonify({"Study-sources": isa_sources_names})
 
@@ -1766,9 +1766,9 @@ class StudySamples(Resource):
 
         logger.info('Getting Study samples for %s, using API-Key %s', study_id, user_token)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
-        isa_samples_names = []
+        isa_samples_names = list()
         for samples in isa_study.samples:
-            isa_samples_names.append(samples.name)
+            isa_samples_names.append({'name': samples.name})
         logger.debug('Got %s', isa_samples_names)
         return jsonify({"Study-samples": isa_samples_names})
 
