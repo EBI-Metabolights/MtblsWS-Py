@@ -15,7 +15,7 @@ WS_APP_VERSION = "0.8.1"
 RESOURCES_PATH = "/mtbls/ws"
 
 # Increment only when the API changes
-API_VERSION = "0.8.1"
+API_VERSION = "0.8.2"
 API_DOC = RESOURCES_PATH + "/api/spec"
 
 STATIC_FOLDER = os.path.join(PROJECT_PATH, "static")
