@@ -86,6 +86,34 @@ class WsClient:
         logger.info('... found Study  %s', json_resp['content']['title'])
         return json_resp
 
+    def get_study_maf(self, study_id, assay_id, user_token):
+        """
+        Get the JSON object for a given MAF for a MTBLS study
+        by calling current Java-based WS
+            {{server}}{{port}}/metabolights/webservice/study/MTBLS_ID/assay/ASSAY_ID/jsonmaf
+
+        :param study_id: Identifier of the study in MetaboLights
+        :param assay_id: The number of the assay for the given study_id
+        :param user_token: User API token. Used to check for permissions
+        """
+        logger.info('Getting JSON object for MAF for Study %s (Assay %s), using API-Key %s', study_id, assay_id, user_token)
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/assay/" + assay_id + "/jsonmaf"
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        resp = requests.get(url, headers={"user_token": user_token})
+        if resp.status_code != 200:
+            if resp.status_code == 401:
+                abort(401)
+            if resp.status_code == 403:
+                abort(403)
+            if resp.status_code == 404:
+                abort(404)
+            if resp.status_code == 500:
+                abort(500)
+
+        json_resp = resp.json()
+        return json_resp
+
+
     def get_study_status(self, study_id, user_token):
         """
         Get the status of the Study: PUBLIC, INCURATION, ...
