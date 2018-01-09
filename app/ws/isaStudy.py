@@ -174,7 +174,7 @@ class StudyTitle(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study title for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         title = isa_study.title
         logger.info('Got %s', title)
         return jsonify({"Study-title": title})
@@ -277,7 +277,7 @@ class StudyTitle(Resource):
 
         # update study title
         logger.info('Updating Study title for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.title = new_title
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
@@ -342,7 +342,7 @@ class StudyDescription(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study description for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         description = isa_study.description
         logger.info('Got %s', description)
         return jsonify({"Study-description": description})
@@ -439,7 +439,7 @@ class StudyDescription(Resource):
 
         # update study description
         logger.info('Updating Study description for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.description = new_description
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
@@ -590,7 +590,7 @@ class StudyProtocols(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_protocols = isa_study.protocols
         str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_protocol,
                                    sort_keys=True)
@@ -693,7 +693,7 @@ class StudyProtocols(Resource):
 
         # update study protocols
         logger.info('Updating Study protocols for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.protocols = isa_protocols
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
@@ -777,7 +777,7 @@ class StudyContacts(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study contacts for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_contacts = isa_study.contacts
         str_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_person, sort_keys=True)
         logger.info('Got %s', str_contacts)
@@ -879,7 +879,7 @@ class StudyContacts(Resource):
 
         # update study contacts
         logger.info('Updating Study contacts for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.contacts = isa_contacts
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
@@ -946,7 +946,7 @@ class StudyFactors(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study factors for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_factors = isa_study.factors
         str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_study_factor, sort_keys=True)
         logger.info('Got %s', str_factors)
@@ -1048,7 +1048,7 @@ class StudyFactors(Resource):
 
         # update study factors
         logger.info('Updating Study factors for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.factors = isa_factors
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
@@ -1115,7 +1115,7 @@ class StudyDescriptors(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study design descriptors for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_descriptors = isa_study.design_descriptors
         str_descriptors = json.dumps({'StudyDescriptors': isa_descriptors}, default=serialize_ontology_annotation,
                                      sort_keys=True)
@@ -1218,7 +1218,7 @@ class StudyDescriptors(Resource):
 
         # update study descriptors
         logger.info('Updating Study descriptors for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.design_descriptors = isa_descriptors
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
@@ -1284,7 +1284,7 @@ class StudyPublications(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study publications for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_publications = isa_study.publications
         str_publications = json.dumps({'publications': isa_publications},
                                       default=serialize_study_publication, sort_keys=True)
@@ -1384,7 +1384,7 @@ class StudyPublications(Resource):
 
         # update study publications
         logger.info('Updating Study publications for %s, using API-Key %s', study_id, user_token)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.publications = isa_publications
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
