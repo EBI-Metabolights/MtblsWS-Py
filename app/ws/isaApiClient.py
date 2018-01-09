@@ -93,12 +93,13 @@ class IsaApiClient:
 
         return json.dumps(investigation, cls=ISAJSONEncoder, sort_keys=True, indent=4, separators=(',', ': '))
 
-    def get_isa_study(self, study_id, api_key):
+    def get_isa_study(self, study_id, api_key, skip_load_tables=False):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
         :param api_key: User API key for accession check
-        :return: tupla consisting in ISA-Study obj, ISA-Investigation obj
+        :param skip_load_tables: speed-up reading by skiping loading assay and sample tables
+        :return: a tuple consisting in ISA-Study obj, ISA-Investigation obj
                 and path to the Study in the file system
         """
         std_path = self.wsc.get_study_location(study_id, api_key)
@@ -106,7 +107,7 @@ class IsaApiClient:
             i_filename = glob.glob(os.path.join(std_path, "i_*.txt"))[0]
             fp = open(i_filename)
             # loading tables also load Samples and Assays
-            isa_inv = load(fp, skip_load_tables=False)
+            isa_inv = load(fp, skip_load_tables)
             isa_study = isa_inv.studies[0]
         except IndexError:
             logger.exception("Failed to find Investigation file from %s", study_id, std_path)
