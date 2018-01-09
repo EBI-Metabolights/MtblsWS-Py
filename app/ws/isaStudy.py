@@ -249,18 +249,23 @@ class StudyTitle(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        wsc.is_study_public(study_id, user_token)
+        # wsc.is_study_public(study_id, user_token)
+        # Studies can be edited only when status = SUBMITTED
+        status = wsc.get_study_status(study_id, user_token)
+        # SUBMITTED, INCURATION, INREVIEW, PUBLIC
+        if status not in {'SUBMITTED', 'INCURATION'}:
+            abort(403)
 
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
-        data_dict = request.get_json(force=True)
+        # data_dict = request.get_json(force=True)
+        data_dict = json.loads(request.data.decode('utf-8'))
         new_title = data_dict['title']
 
         # check for keeping copies
@@ -412,7 +417,6 @@ class StudyDescription(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
