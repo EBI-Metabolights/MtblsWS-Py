@@ -206,18 +206,19 @@ class UpdateStudyTitleTests(WsTests):
             self.check_body_common(body)
             self.assertIn('Study-title', body)
 
-    # Update Study Title - Pub - NoAuth -> 200
+    # Update Study Title - Pub - NoAuth -> 403
     def test_update_title_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/title', data=self.data_new_title, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('Study-title', body)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Title - Priv - Auth -> 200
     def test_update_title_priv_auth(self):
@@ -529,18 +530,19 @@ class UpdateStudyDescriptionTests(WsTests):
             self.check_body_common(body)
             self.assertIn('Study-description', body)
 
-    # Update Study Description - Pub - NoAuth -> 200
+    # Update Study Description - Pub - NoAuth -> 403
     def test_update_description_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/description', data=self.data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('Study-description', body)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Description - Priv - Auth -> 200
     def test_update_description_priv_auth(self):
@@ -723,10 +725,7 @@ class UpdateStudyDescriptionTests(WsTests):
 
 class PostStudyNew(WsTests):
 
-    data_new_study = b'{ "title": "New Study title...", ' \
-                     b' "description": "New Study description...",' \
-                     b' "submission_date": "2017-05-08",' \
-                     b' "public_release_date": "2018-05-08" }'
+    data_new_study = instance.config.TEST_DATA_NEW_STUDY
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -906,17 +905,7 @@ class GetStudyProtocolsTests(WsTests):
 
 class UpdateStudyProtocolsTests(WsTests):
 
-    data_new_protocol = b'{"StudyProtocols": [{' \
-                        b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
-                        b'"components": [],"description": "Protocol description here.",' \
-                        b'"name": "Protocol name here.","parameters": [{"comments": [],' \
-                        b'"parameter_name": {"comments": [],"term": "Parameter name here.",' \
-                        b'"term_accession": "","term_source": null},' \
-                        b'"unit": null}],' \
-                        b'"protocol_type": {"comments": [],' \
-                        b'"term": "Protocol type name here","term_accession": "","term_source": null},' \
-                        b'"uri": "",' \
-                        b'"version": "{{$randomInt}}"}]}'
+    data_new_protocol = instance.config.TEST_DATA_PROTOCOLS
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -948,19 +937,19 @@ class UpdateStudyProtocolsTests(WsTests):
             self.assertIn('StudyProtocols', body)
             self.assertIn('Updated with MtblsWs-Py', body)
 
-    # Update Study Protocols - Pub - NoAuth -> 200
+    # Update Study Protocols - Pub - NoAuth -> 403
     def test_update_protocols_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/protocols', data=self.data_new_protocol, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('StudyProtocols', body)
-            self.assertIn('Updated with MtblsWs-Py', body)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Protocols - Priv - Auth -> 200
     def test_update_protocols_priv_auth(self):
@@ -1320,18 +1309,19 @@ class UpdateStudyContactsTests(WsTests):
             self.check_body_common(body)
             self.assertIn('StudyContacts', body)
 
-    # Update Study Contacts - Pub - NoAuth -> 200
+    # Update Study Contacts - Pub - NoAuth -> 403
     def test_update_contacts_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/contacts', data=self.data_new_contacts, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('StudyContacts', body)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Contacts - Priv - Auth -> 200
     def test_update_contacts_priv_auth(self):
@@ -1628,17 +1618,7 @@ class GetStudyFactorsTests(WsTests):
 
 class UpdateStudyFactorsTests(WsTests):
 
-    data_new_factors = b'{"StudyFactors": [{' \
-                       b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
-                       b'"factor_type": {"term_accession": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",' \
-                       b'"comments": [],"term": "Gender","term_source": {' \
-                       b'"description": null,"name": null,"version": null,"file": null,' \
-                       b'"comments": []}},"name": "Gender"},' \
-                       b'{"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
-                       b'"factor_type": {"term_accession": "","comments": [],' \
-                       b'"term": "metabolic syndrome","term_source": {' \
-                       b'"description": null,"name": null,"version": null,"file": null,' \
-                       b'"comments": []}},"name": "Metabolic syndrome"}]}'
+    data_new_factors = instance.config.TEST_DATA_STUDYFACTORS
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -1668,18 +1648,19 @@ class UpdateStudyFactorsTests(WsTests):
             self.check_body_common(body)
             self.assertIn('StudyFactors', body)
 
-    # Update Study Factors - Pub - NoAuth -> 200
+    # Update Study Factors - Pub - NoAuth -> 403
     def test_update_factors_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/factors', data=self.data_new_factors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('StudyFactors', body)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Factors - Priv - Auth -> 200
     def test_update_factors_priv_auth(self):
@@ -2030,20 +2011,19 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertIn('StudyDescriptors', body)
             self.check_Descriptors_class(j_resp)
 
-    # Update Study Descriptors - Pub - NoAuth -> 200
+    # Update Study Descriptors - Pub - NoAuth -> 403
     def test_update_descriptors_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('StudyDescriptors', body)
-            self.check_Descriptors_class(j_resp)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Descriptors - Priv - Auth -> 200
     def test_update_descriptors_priv_auth(self):
@@ -2360,19 +2340,7 @@ class GetStudyPublicationsTests(WsTests):
 
 class UpdateStudyPublicationsTests(WsTests):
 
-    data_new_publications = b'{"publications": [{' \
-                           b'"title": "Updated: Title for this publication.",' \
-                           b'"status": {' \
-                           b' "term_source": {"version": null,"description": null,"file": null,' \
-                           b'"comments": [],"name": null},' \
-                           b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
-                           b'"term":"Published",' \
-                           b'"term_accession":""},' \
-                           b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
-                           b'"doi": "http://dx.doi.org/10.1105/tpc.109.066670",' \
-                           b'"authorList": "Author A, Author B, Author C",' \
-                           b'"pubMedID": "123456789"' \
-                           b'}]}'
+    data_new_publications = instance.config.TEST_DATA_PUBLICATIONS
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -2416,20 +2384,19 @@ class UpdateStudyPublicationsTests(WsTests):
             self.assertIn('publications', body)
             self.check_Publications_class(j_resp)
 
-    # Update Study Publications - Pub - NoAuth -> 200
+    # Update Study Publications - Pub - NoAuth -> 403
     def test_update_publications_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/publications', data=self.data_new_publications, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('publications', body)
-            self.check_Publications_class(j_resp)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Publications - Priv - Auth -> 200
     def test_update_publications_priv_auth(self):
@@ -2811,22 +2778,21 @@ class UpdateStudySourceTests(WsTests):
             self.assertIn('Updated_source', body)
             self.check_Source_class(j_resp)
 
-    # Update Study Source - Pub - NoAuth -> 200
+    # Update Study Source - Pub - NoAuth -> 403
     def test_update_source_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/sources/' + public_source_id,
                                          data=self.data_updated_pub_source,
                                          method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('Updated_source', body)
-            self.check_Source_class(j_resp)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Source - Priv - Auth -> 200
     def test_update_source_priv_auth(self):
@@ -3240,22 +3206,21 @@ class UpdateStudySampleTests(WsTests):
             self.assertIn('Updated_sample', body)
             self.check_Sample_class(j_resp)
 
-    # Update Study Sample - Pub - NoAuth -> 200
+    # Update Study Sample - Pub - NoAuth -> 403
     def test_update_sample_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/samples/' + public_sample_id,
                                          data=self.data_updated_pub_sample,
                                          method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('Updated_sample', body)
-            self.check_Sample_class(j_resp)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Sample - Priv - Auth -> 200
     def test_update_sample_priv_auth(self):

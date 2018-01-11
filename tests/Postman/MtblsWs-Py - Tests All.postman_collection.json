@@ -3932,21 +3932,24 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Title - Pub - NoAuth -> 200",
+					"name": "Update Study Title - Pub - NoAuth -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "531b715f-611d-45e6-b2ec-cb301a417e51",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -4334,7 +4337,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Title - Pub - Auth - NoSave -> 200 copy",
+					"name": "Update Study Title - Pub - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -4396,21 +4399,24 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Title - Pub - NoAuth - NoSave -> 200 copy",
+					"name": "Update Study Title - Pub - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "1d4e9236-0fe3-41d4-aff7-46feb084d596",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -4458,7 +4464,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Title - Priv - Auth - NoSave -> 200 copy",
+					"name": "Update Study Title - Priv - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -4520,7 +4526,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Title - Priv - NoSave -> 401 copy",
+					"name": "Update Study Title - Priv - NoSave -> 401",
 					"event": [
 						{
 							"listen": "test",
@@ -4580,7 +4586,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Title - Priv - NoAuth - NoSave -> 403 copy",
+					"name": "Update Study Title - Priv - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
@@ -4644,7 +4650,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Title - NullId - NoSave -> 404 copy",
+					"name": "Update Study Title - NullId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -4704,7 +4710,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Title - BadId - NoSave -> 404 copy",
+					"name": "Update Study Title - BadId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
