@@ -113,7 +113,6 @@ class WsClient:
         json_resp = resp.json()
         return json_resp
 
-
     def get_study_status(self, study_id, user_token):
         """
         Get the status of the Study: PUBLIC, INCURATION, ...
@@ -187,3 +186,47 @@ class WsClient:
             abort(403)
         logger.info('... found user %s with jwt key: %s', user, jwt)
         return True
+
+    # used to index the tuple response
+    CAN_READ = 0
+    CAN_WRITE = 1
+
+    def get_permisions(self, study_id, user_token):
+        """
+        Check MTBLS-WS for permissions on this Study for this user
+
+        Study       User    Submitter   Curator
+        SUBMITTED   ----    Read+Write  Read+Write
+        INCURATION  ----    Read        Read+Write
+        INREVIEW    ----    Read        Read+Write
+        PUBLIC      Read    Read        Read+Write
+
+        :param study_id:
+        :param user_token:
+        :return:
+        """
+        logger.info('Checking for user permisions in MTBLS WS')
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/getPermissions"
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        resp = requests.post(url,
+                             headers={"content-type": "application/x-www-form-urlencoded",
+                                      "cache-control": "no-cache"},
+                             data="token=" + (user_token or ''))
+        if resp.status_code != 200:
+            if resp.status_code == 401:
+                abort(401)
+            if resp.status_code == 403:
+                abort(403)
+            if resp.status_code == 404:
+                abort(404)
+            if resp.status_code == 500:
+                abort(500)
+
+        json_resp = resp.json()
+        import json
+        cont = json.loads(json_resp['content'])
+        read_access = cont['read']
+        write_access = cont['write']
+        logger.info('... found permissions for reading: %s and writing: %s', read_access, write_access)
+        return read_access, write_access
+
