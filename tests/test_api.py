@@ -458,18 +458,6 @@ class UpdateStudyDescriptionTests(WsTests):
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
 
-    # PUT Update Study Description - Pub -> 200
-    def test_update_description_pub(self):
-        request = urllib.request.Request(url_pub_id + '/description', data=self.data_new_description, method='PUT')
-        self.add_common_headers(request)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('Study-description', body)
-
     # Update Study Description - Pub - Auth -> 200
     def test_update_description_pub_auth(self):
         request = urllib.request.Request(url_pub_id + '/description', data=self.data_new_description, method='PUT')
@@ -510,19 +498,6 @@ class UpdateStudyDescriptionTests(WsTests):
             self.check_body_common(body)
             self.assertIn('Study-description', body)
 
-    # Update Study Description - Priv -> 401
-    def test_update_description_priv(self):
-        request = urllib.request.Request(url_priv_id + '/description', data=self.data_new_description, method='PUT')
-        self.add_common_headers(request)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 401)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('UNAUTHORIZED', err.msg)
-            self.assertEqual('UNAUTHORIZED', err.reason)
-
     # Update Study Description - Priv - NoAuth -> 403
     def test_update_description_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/description', data=self.data_new_description, method='PUT')
@@ -554,6 +529,7 @@ class UpdateStudyDescriptionTests(WsTests):
     def test_update_description_badId(self):
         request = urllib.request.Request(url_wrong_id + '/description', data=self.data_new_description, method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -562,19 +538,6 @@ class UpdateStudyDescriptionTests(WsTests):
             self.check_body_common(err.read().decode('utf-8'))
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
-
-    # Update Study Description - Pub - NoSave -> 200
-    def test_update_description_pub_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/description', data=self.data_new_description, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('Study-description', body)
 
     # Update Study Description - Pub - Auth - NoSave -> 200
     def test_update_description_pub_auth_noSave(self):
@@ -590,19 +553,20 @@ class UpdateStudyDescriptionTests(WsTests):
             self.check_body_common(body)
             self.assertIn('Study-description', body)
 
-    # Update Study Description - Pub - NoAuth - NoSave -> 200
+    # Update Study Description - Pub - NoAuth - NoSave -> 403
     def test_update_description_pub_noAuth_noSave(self):
         request = urllib.request.Request(url_pub_id + '/description', data=self.data_new_description, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('Study-description', body)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Description - Priv - Auth - NoSave -> 200
     def test_update_description_priv_auth_noSave(self):
@@ -617,20 +581,6 @@ class UpdateStudyDescriptionTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             self.assertIn('Study-description', body)
-
-    # Update Study Description - Priv - NoSave -> 401
-    def test_update_description_priv_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/description', data=self.data_new_description, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('save_audit_copy', 'False')
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 401)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('UNAUTHORIZED', err.msg)
-            self.assertEqual('UNAUTHORIZED', err.reason)
 
     # Update Study Description - Priv - NoAuth - NoSave -> 403
     def test_update_description_priv_noAuth_noSave(self):
@@ -665,6 +615,7 @@ class UpdateStudyDescriptionTests(WsTests):
     def test_update_description_badId_noSave(self):
         request = urllib.request.Request(url_wrong_id + '/description', data=self.data_new_description, method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         request.add_header('save_audit_copy', 'False')
         try:
             urllib.request.urlopen(request)
