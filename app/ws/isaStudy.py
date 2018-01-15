@@ -231,6 +231,10 @@ class StudyTitle(Resource):
                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
             },
             {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
                 "code": 403,
                 "message": "Forbidden. Access to the study is not allowed for this user."
             },
@@ -389,6 +393,10 @@ class StudyDescription(Resource):
             {
                 "code": 400,
                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
             },
             {
                 "code": 403,
@@ -633,6 +641,10 @@ class StudyProtocols(Resource):
             {
                 "code": 400,
                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
             },
             {
                 "code": 403,
