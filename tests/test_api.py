@@ -182,19 +182,6 @@ class UpdateStudyTitleTests(WsTests):
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
 
-    # PUT Update Study Title - Pub -> 200
-    def test_update_title_pub(self):
-        request = urllib.request.Request(url_pub_id + '/title', data=self.data_new_title, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('Study-title', body)
-
     # Update Study Title - Pub - Auth -> 200
     def test_update_title_pub_auth(self):
         request = urllib.request.Request(url_pub_id + '/title', data=self.data_new_title, method='PUT')
@@ -234,19 +221,6 @@ class UpdateStudyTitleTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             self.assertIn('Study-title', body)
-
-    # Update Study Title - Priv -> 401
-    def test_update_title_priv(self):
-        request = urllib.request.Request(url_priv_id+ '/title', data=self.data_new_title, method='PUT')
-        self.add_common_headers(request)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 401)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('UNAUTHORIZED', err.msg)
-            self.assertEqual('UNAUTHORIZED', err.reason)
 
     # Update Study Title - Priv - NoAuth -> 403
     def test_update_title_priv_noAuth(self):
@@ -288,20 +262,6 @@ class UpdateStudyTitleTests(WsTests):
             self.check_body_common(err.read().decode('utf-8'))
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
-
-    # Update Study Title - Pub - NoSave -> 200
-    def test_update_title_pub_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/title', data=self.data_new_title, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('Study-title', body)
 
     # Update Study Title - Pub - Auth - NoSave -> 200
     def test_update_title_pub_auth_noSave(self):
@@ -345,20 +305,6 @@ class UpdateStudyTitleTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             self.assertIn('Study-title', body)
-
-    # Update Study Title - Priv - NoSave -> 401
-    def test_update_title_priv_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/title', data=self.data_new_title, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('save_audit_copy', 'False')
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 401)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('UNAUTHORIZED', err.msg)
-            self.assertEqual('UNAUTHORIZED', err.reason)
 
     # Update Study Title - Priv - NoAuth - NoSave -> 403
     def test_update_title_priv_noAuth_noSave(self):

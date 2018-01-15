@@ -197,7 +197,7 @@ class StudyTitle(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -229,10 +229,6 @@ class StudyTitle(Resource):
             {
                 "code": 400,
                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
             },
             {
                 "code": 403,
@@ -361,7 +357,7 @@ class StudyDescription(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -462,7 +458,7 @@ class StudyNew(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -610,7 +606,7 @@ class StudyProtocols(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -794,7 +790,7 @@ class StudyContacts(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -961,7 +957,7 @@ class StudyFactors(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -1129,7 +1125,7 @@ class StudyDescriptors(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -1296,7 +1292,7 @@ class StudyPublications(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
