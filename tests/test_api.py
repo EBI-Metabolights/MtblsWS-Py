@@ -186,6 +186,7 @@ class UpdateStudyTitleTests(WsTests):
     def test_update_title_pub(self):
         request = urllib.request.Request(url_pub_id + '/title', data=self.data_new_title, method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
             self.assertEqual(response.code, 200)
             header = response.info()
@@ -278,6 +279,7 @@ class UpdateStudyTitleTests(WsTests):
     def test_update_title_badId(self):
         request = urllib.request.Request(url_wrong_id + '/title', data=self.data_new_title, method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -291,6 +293,7 @@ class UpdateStudyTitleTests(WsTests):
     def test_update_title_pub_noSave(self):
         request = urllib.request.Request(url_pub_id + '/title', data=self.data_new_title, method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         request.add_header('save_audit_copy', 'False')
         with urllib.request.urlopen(request) as response:
             self.assertEqual(response.code, 200)
@@ -314,19 +317,20 @@ class UpdateStudyTitleTests(WsTests):
             self.check_body_common(body)
             self.assertIn('Study-title', body)
 
-    # Update Study Title - Pub - NoAuth - NoSave -> 200
+    # Update Study Title - Pub - NoAuth - NoSave -> 403
     def test_update_title_pub_noAuth_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/title', data=self.data_new_title, method='PUT')
+        request = urllib.request.Request(url_priv_id + '/title', data=self.data_new_title, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            self.assertIn('Study-title', body)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Title - Priv - Auth - NoSave -> 200
     def test_update_title_priv_auth_noSave(self):
@@ -389,6 +393,7 @@ class UpdateStudyTitleTests(WsTests):
     def test_update_title_badId_noSave(self):
         request = urllib.request.Request(url_wrong_id + '/title', data=self.data_new_title, method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         request.add_header('save_audit_copy', 'False')
         try:
             urllib.request.urlopen(request)
