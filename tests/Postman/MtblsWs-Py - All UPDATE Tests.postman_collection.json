@@ -1488,60 +1488,6 @@
 			"name": "Update Study Protocols",
 			"item": [
 				{
-					"name": "Update Study Protocols - Pub -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"protocols"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "Update Study Protocols - Pub - Auth -> 200",
 					"event": [
 						{
@@ -1600,22 +1546,25 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Pub - NoAuth -> 200",
+					"name": "Update Study Protocols - Pub - NoAuth -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "a0d22fc5-c72d-45b9-acee-ce0b011d304f",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -1693,62 +1642,6 @@
 							{
 								"key": "user_token",
 								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"protocols"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Protocols - Priv -> 401",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
 							}
 						],
 						"body": {
@@ -1919,6 +1812,10 @@
 								"value": "application/json"
 							},
 							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -1944,65 +1841,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Pub - NoSave -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"protocols"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Protocols - Pub - Auth - NoSave -> 200 copy",
+					"name": "Update Study Protocols - Pub - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -2064,22 +1903,25 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Pub - NoAuth - NoSave -> 200 copy",
+					"name": "Update Study Protocols - Pub - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "460dd97d-6ee7-4265-9bac-80b03950dac3",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -2126,7 +1968,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Priv - Auth - NoSave -> 200 copy",
+					"name": "Update Study Protocols - Priv - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -2188,67 +2030,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - Priv - NoSave -> 401 copy",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyProtocols\"] = !(responseBody.has('\"StudyProtocols\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"protocols"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Protocols - Priv - NoAuth - NoSave -> 403 copy",
+					"name": "Update Study Protocols - Priv - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
@@ -2312,7 +2094,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - NullId - NoSave -> 404 copy",
+					"name": "Update Study Protocols - NullId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -2372,7 +2154,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Protocols - BadId - NoSave -> 404 copy",
+					"name": "Update Study Protocols - BadId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -2405,6 +2187,10 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
 							},
 							{
 								"key": "save_audit_copy",

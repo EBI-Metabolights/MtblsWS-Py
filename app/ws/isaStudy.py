@@ -635,10 +635,6 @@ class StudyProtocols(Resource):
                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
             },
             {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
                 "code": 403,
                 "message": "Forbidden. Access to the study is not allowed for this user."
             },
