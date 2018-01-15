@@ -164,6 +164,7 @@ class GetStudyTitleTests(WsTests):
     # GET Study Title - BadId -> 404
     def test_get_title_badId(self):
         request = urllib.request.Request(url_wrong_id + '/title', method='GET')
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -488,6 +489,7 @@ class GetStudyDescriptionTests(WsTests):
     # GET Study Description - BadId -> 404
     def test_get_desc_badId(self):
         request = urllib.request.Request(url_wrong_id + '/description', method='GET')
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -893,6 +895,7 @@ class GetStudyProtocolsTests(WsTests):
     # GET Study Protocols - BadId -> 404
     def test_get_protocols_badId(self):
         request = urllib.request.Request(url_wrong_id + '/protocols', method='GET')
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -1249,6 +1252,7 @@ class GetStudyContactsTests(WsTests):
     # GET Study Contacts - BadId -> 404
     def test_get_contacts_badId(self):
         request = urllib.request.Request(url_wrong_id + '/contacts', method='GET')
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -1606,6 +1610,7 @@ class GetStudyFactorsTests(WsTests):
     # GET Study Factors - BadId -> 404
     def test_get_factors_badId(self):
         request = urllib.request.Request(url_wrong_id + '/factors', method='GET')
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -1946,6 +1951,7 @@ class GetStudyDescriptorsTests(WsTests):
     # GET Study Descriptors - BadId -> 404
     def test_get_descriptors_badId(self):
         request = urllib.request.Request(url_wrong_id + '/descriptors', method='GET')
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -2328,6 +2334,7 @@ class GetStudyPublicationsTests(WsTests):
     # GET Study Publications - BadId -> 404
     def test_get_descriptors_badId(self):
         request = urllib.request.Request(url_wrong_id + '/publications', method='GET')
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -2720,6 +2727,7 @@ class GetStudySourceTests(WsTests):
     # GET Study Source - BadId -> 404
     def test_get_source_badId(self):
         request = urllib.request.Request(url_wrong_id + '/sources/' + public_source_id, method='GET')
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -3146,6 +3154,7 @@ class GetStudySampleTests(WsTests):
     # GET Study Sample - BadId -> 404
     def test_get_sample_badId(self):
         request = urllib.request.Request(url_wrong_id + '/samples/' + public_sample_id, method='GET')
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:

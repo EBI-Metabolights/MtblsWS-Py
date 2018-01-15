@@ -213,7 +213,7 @@ class WsClient:
                                       "cache-control": "no-cache"},
                              data="token=" + (user_token or ''))
         if resp.status_code != 200:
-            if resp.status_code == 401:
+            if not user_token or resp.status_code == 401:
                 abort(401)
             if resp.status_code == 403:
                 abort(403)
