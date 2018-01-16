@@ -3791,60 +3791,6 @@
 			"name": "Update Study Descriptors",
 			"item": [
 				{
-					"name": "Update Study Descriptors - Pub -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/descriptors",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"descriptors"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "Update Study Descriptors - Pub - Auth -> 200",
 					"event": [
 						{
@@ -3903,22 +3849,25 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Descriptors - Pub - NoAuth -> 200",
+					"name": "Update Study Descriptors - Pub - NoAuth -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "a5aa5352-3cdf-48b0-a718-e31db148f04b",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain StudyDescriptors\"] = !(responseBody.has('\"StudyDescriptors\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -3996,62 +3945,6 @@
 							{
 								"key": "user_token",
 								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/descriptors",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"descriptors"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Descriptors - Priv -> 401",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyDescriptors\"] = !(responseBody.has('\"StudyDescriptors\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
 							}
 						],
 						"body": {
@@ -4224,6 +4117,10 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
 							}
 						],
 						"body": {
@@ -4247,65 +4144,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Descriptors - Pub - NoSave -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/descriptors",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"descriptors"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Descriptors - Pub - Auth - NoSave -> 200 copy",
+					"name": "Update Study Descriptors - Pub - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -4367,22 +4206,25 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Descriptors - Pub - NoAuth - NoSave -> 200 copy",
+					"name": "Update Study Descriptors - Pub - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "9ec1bc14-fbc3-4a54-b45d-79d8fe27db62",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain StudyDescriptors\"] = !(responseBody.has('\"StudyDescriptors\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -4429,7 +4271,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Descriptors - Priv - Auth - NoSave -> 200 copy",
+					"name": "Update Study Descriptors - Priv - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -4491,67 +4333,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Descriptors - Priv - NoSave -> 401 copy",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyDescriptors\"] = !(responseBody.has('\"StudyDescriptors\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/descriptors",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"descriptors"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Descriptors - Priv - NoAuth - NoSave -> 403 copy",
+					"name": "Update Study Descriptors - Priv - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
@@ -4615,7 +4397,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Descriptors - NullId - NoSave -> 404 copy",
+					"name": "Update Study Descriptors - NullId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -4675,7 +4457,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Descriptors - BadId - NoSave -> 404 copy",
+					"name": "Update Study Descriptors - BadId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -4708,6 +4490,10 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
 							},
 							{
 								"key": "save_audit_copy",

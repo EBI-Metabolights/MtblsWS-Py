@@ -1739,20 +1739,6 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertIsNotNone(descriptor['term_source'])
             self.assertIsNotNone(descriptor['comments'])
 
-    # PUT Update Study Descriptors - Pub -> 200
-    def test_update_descriptors_pub(self):
-        request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
-        self.add_common_headers(request)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('StudyDescriptors', body)
-            self.check_Descriptors_class(j_resp)
-
     # Update Study Descriptors - Pub - Auth -> 200
     def test_update_descriptors_pub_auth(self):
         request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
@@ -1797,19 +1783,6 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertIn('StudyDescriptors', body)
             self.check_Descriptors_class(j_resp)
 
-    # Update Study Descriptors - Priv -> 401
-    def test_update_descriptors_priv(self):
-        request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
-        self.add_common_headers(request)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 401)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('UNAUTHORIZED', err.msg)
-            self.assertEqual('UNAUTHORIZED', err.reason)
-
     # Update Study Descriptors - Priv - NoAuth -> 403
     def test_update_descriptors_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
@@ -1841,6 +1814,7 @@ class UpdateStudyDescriptorsTests(WsTests):
     def test_update_descriptors_badId(self):
         request = urllib.request.Request(url_wrong_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -1849,21 +1823,6 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.check_body_common(err.read().decode('utf-8'))
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
-
-    # Update Study Descriptors - Pub - NoSave -> 200
-    def test_update_descriptors_pub_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('StudyDescriptors', body)
-            self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Pub - Auth - NoSave -> 200
     def test_update_descriptors_pub_auth_noSave(self):
@@ -1881,21 +1840,20 @@ class UpdateStudyDescriptorsTests(WsTests):
             self.assertIn('StudyDescriptors', body)
             self.check_Descriptors_class(j_resp)
 
-    # Update Study Descriptors - Pub - NoAuth - NoSave -> 200
+    # Update Study Descriptors - Pub - NoAuth - NoSave -> 403
     def test_update_descriptors_pub_noAuth_noSave(self):
         request = urllib.request.Request(url_pub_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('StudyDescriptors', body)
-            self.check_Descriptors_class(j_resp)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Descriptors - Priv - Auth - NoSave -> 200
     def test_update_descriptors_priv_auth_noSave(self):
@@ -1912,20 +1870,6 @@ class UpdateStudyDescriptorsTests(WsTests):
             j_resp = json.loads(body)
             self.assertIn('StudyDescriptors', body)
             self.check_Descriptors_class(j_resp)
-
-    # Update Study Descriptors - Priv - NoSave -> 401
-    def test_update_descriptors_priv_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('save_audit_copy', 'False')
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 401)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('UNAUTHORIZED', err.msg)
-            self.assertEqual('UNAUTHORIZED', err.reason)
 
     # Update Study Descriptors - Priv - NoAuth - NoSave -> 403
     def test_update_descriptors_priv_noAuth_noSave(self):
@@ -1960,6 +1904,7 @@ class UpdateStudyDescriptorsTests(WsTests):
     def test_update_descriptors_badId_noSave(self):
         request = urllib.request.Request(url_wrong_id + '/descriptors', data=self.data_new_descriptors, method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         request.add_header('save_audit_copy', 'False')
         try:
             urllib.request.urlopen(request)
