@@ -3056,60 +3056,6 @@
 			"name": "Update Study Factors",
 			"item": [
 				{
-					"name": "Update Study Factors - Pub -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/factors",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"factors"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "Update Study Factors - Pub - Auth -> 200",
 					"event": [
 						{
@@ -3168,22 +3114,25 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Factors - Pub - NoAuth -> 200",
+					"name": "Update Study Factors - Pub - NoAuth -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "555da98c-d26b-4b97-9052-0dd673a91108",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -3261,62 +3210,6 @@
 							{
 								"key": "user_token",
 								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/factors",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"factors"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Factors - Priv -> 401",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
 							}
 						],
 						"body": {
@@ -3489,6 +3382,10 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
 							}
 						],
 						"body": {
@@ -3512,65 +3409,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Factors - Pub - NoSave -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/factors",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"factors"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Factors - Pub - Auth - NoSave -> 200 copy",
+					"name": "Update Study Factors - Pub - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -3632,22 +3471,25 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Factors - Pub - NoAuth - NoSave -> 200 copy",
+					"name": "Update Study Factors - Pub - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "ed400212-7fc7-406f-86d5-6ab49e5f4d16",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -3694,7 +3536,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Factors - Priv - Auth - NoSave -> 200 copy",
+					"name": "Update Study Factors - Priv - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -3756,67 +3598,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Factors - Priv - NoSave -> 401 copy",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyFactors\"] = !(responseBody.has('\"StudyFactors\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"StudyFactors\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl\",\n        \"comments\": [],\n        \"term\": \"Gender\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Gender\"\n    },\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"factor_type\": {\n        \"term_accession\": \"\",\n        \"comments\": [],\n        \"term\": \"metabolic syndrome\",\n        \"term_source\": {\n          \"description\": null,\n          \"name\": null,\n          \"version\": null,\n          \"file\": null,\n          \"comments\": []\n        }\n      },\n      \"name\": \"Metabolic syndrome\"\n    }\n  ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/factors",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"factors"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Factors - Priv - NoAuth - NoSave -> 403 copy",
+					"name": "Update Study Factors - Priv - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
@@ -3880,7 +3662,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Factors - NullId - NoSave -> 404 copy",
+					"name": "Update Study Factors - NullId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -3940,7 +3722,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Factors - BadId - NoSave -> 404 copy",
+					"name": "Update Study Factors - BadId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -3973,6 +3755,10 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
 							},
 							{
 								"key": "save_audit_copy",
