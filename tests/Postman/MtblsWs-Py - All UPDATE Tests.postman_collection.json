@@ -4526,60 +4526,6 @@
 			"name": "Update Study Publications",
 			"item": [
 				{
-					"name": "Update Study Publications - Pub -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has publications\"] = responseBody.has('\"publications\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"publications\": [\n    {\n      \"title\": \"Updated: Title for this publication.\",\n      \"status\": {\n        \"term_source\": {\n          \"name\": null,\n          \"description\": null,\n          \"file\": null,\n          \"version\": null,\n          \"comments\": []\n        },\n        \"term\": \"Published\",\n        \"comments\": [],\n        \"term_accession\": \"\"\n      },\n      \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n      \"doi\": \"http://dx.doi.org/10.1105/tpc.109.066670\",\n      \"authorList\": \"Author A, Author B, Author C\",\n      \"pubMedID\": \"123456789\"\n    }\n  ]\n}\n"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/publications",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"publications"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "Update Study Publications - Pub - Auth -> 200",
 					"event": [
 						{
@@ -4638,22 +4584,25 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Publications - Pub - NoAuth -> 200",
+					"name": "Update Study Publications - Pub - NoAuth -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "82c216f6-2931-474f-aed1-c437f2ba613e",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 401\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has publications\"] = responseBody.has('\"publications\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -4731,62 +4680,6 @@
 							{
 								"key": "user_token",
 								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"publications\": [\n    {\n      \"title\": \"Updated: Title for this publication.\",\n      \"status\": {\n        \"term_source\": {\n          \"name\": null,\n          \"description\": null,\n          \"file\": null,\n          \"version\": null,\n          \"comments\": []\n        },\n        \"term\": \"Published\",\n        \"comments\": [],\n        \"term_accession\": \"\"\n      },\n      \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n      \"doi\": \"http://dx.doi.org/10.1105/tpc.109.066670\",\n      \"authorList\": \"Author A, Author B, Author C\",\n      \"pubMedID\": \"123456789\"\n    }\n  ]\n}\n"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/publications",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"publications"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Publications - Priv -> 401",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
 							}
 						],
 						"body": {
@@ -4959,6 +4852,10 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
 							}
 						],
 						"body": {
@@ -4982,65 +4879,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Publications - Pub - NoSave -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has publications\"] = responseBody.has('\"publications\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"publications\": [\n    {\n      \"title\": \"Updated: Title for this publication.\",\n      \"status\": {\n        \"term_source\": {\n          \"name\": null,\n          \"description\": null,\n          \"file\": null,\n          \"version\": null,\n          \"comments\": []\n        },\n        \"term\": \"Published\",\n        \"comments\": [],\n        \"term_accession\": \"\"\n      },\n      \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n      \"doi\": \"http://dx.doi.org/10.1105/tpc.109.066670\",\n      \"authorList\": \"Author A, Author B, Author C\",\n      \"pubMedID\": \"123456789\"\n    }\n  ]\n}\n"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/publications",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"publications"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Publications - Pub - Auth - NoSave -> 200 copy",
+					"name": "Update Study Publications - Pub - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -5102,22 +4941,25 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Publications - Pub - NoAuth - NoSave -> 200 copy",
+					"name": "Update Study Publications - Pub - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "73e1c000-238f-4a60-b18e-190367b2a6ab",
 								"type": "text/javascript",
 								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"tests[\"Status code is 401\"] = responseCode.code === 403;",
 									"",
 									"// Header",
 									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has publications\"] = responseBody.has('\"publications\":');",
-									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
 							}
@@ -5164,7 +5006,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Publications - Priv - Auth - NoSave -> 200 copy",
+					"name": "Update Study Publications - Priv - Auth - NoSave -> 200",
 					"event": [
 						{
 							"listen": "test",
@@ -5226,67 +5068,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Publications - Priv - NoSave -> 401 copy",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"publications\": [\n    {\n      \"title\": \"Updated: Title for this publication.\",\n      \"status\": {\n        \"term_source\": {\n          \"name\": null,\n          \"description\": null,\n          \"file\": null,\n          \"version\": null,\n          \"comments\": []\n        },\n        \"term\": \"Published\",\n        \"comments\": [],\n        \"term_accession\": \"\"\n      },\n      \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n      \"doi\": \"http://dx.doi.org/10.1105/tpc.109.066670\",\n      \"authorList\": \"Author A, Author B, Author C\",\n      \"pubMedID\": \"123456789\"\n    }\n  ]\n}\n"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/publications",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"publications"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Publications - Priv - NoAuth - NoSave -> 403 copy",
+					"name": "Update Study Publications - Priv - NoAuth - NoSave -> 403",
 					"event": [
 						{
 							"listen": "test",
@@ -5350,7 +5132,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Publications - NullId - NoSave -> 404 copy",
+					"name": "Update Study Publications - NullId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -5410,7 +5192,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Study Publications - BadId - NoSave -> 404 copy",
+					"name": "Update Study Publications - BadId - NoSave -> 404",
 					"event": [
 						{
 							"listen": "test",
@@ -5443,6 +5225,10 @@
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
 							},
 							{
 								"key": "save_audit_copy",
