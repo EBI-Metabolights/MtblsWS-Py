@@ -49,7 +49,7 @@ class IsaApiClient:
             except Exception as inst:
                 # if it fails too
                 if isa_json is None:
-                    raise RuntimeError("Validation error when trying to read the study.")
+                    abort(500)
             else:
                 logger.info('... get_isa_json() processing (I): %s sec.', time.time() - start)
                 return isa_json
