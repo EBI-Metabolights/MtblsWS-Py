@@ -377,9 +377,6 @@ StudyFactor_api_model = {
 
 def serialize_study_factor(isa_obj):
     assert isinstance(isa_obj, StudyFactor)
-    # name (str):
-    # factor_type (OntologyAnnotation):
-    # comments (list, Comment):
     return {
         'name': isa_obj.name,
         'factor_type': json.loads(
@@ -389,9 +386,6 @@ def serialize_study_factor(isa_obj):
 
 
 def unserialize_study_factor(json_obj):
-    # name (str):
-    # factor_type (OntologyAnnotation):
-    # comments (list, Comment):
     name = ''
     if 'name' in json_obj and json_obj['name'] is not None:
         name = json_obj['name']
@@ -515,6 +509,21 @@ def unserialize_characteristic(json_obj):
                           comments=comments)
 
 
+class FactorValueItem(fields.Raw):
+    def format(self, value):
+        val = None
+        if isinstance(value, (int, float, str)):
+            val = value
+        if isinstance(value, OntologyAnnotation):
+            val = {
+                'term': value.term,
+                'term_source': value.term_source,
+                'term_accession':  value.term_accession,
+                'comments':  value.comments
+            }
+        return val
+
+
 # FactorValue
 #
 # factor_name (StudyFactor):
@@ -523,7 +532,7 @@ def unserialize_characteristic(json_obj):
 # comments (list, Comment):
 FactorValue_api_model = {
     'factor_name': fields.Nested(StudyFactor_api_model),
-    'value': fields.Nested(OntologyAnnotation_api_model),
+    'value': FactorValueItem(attribute='value'),
     'unit': fields.Nested(OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
@@ -540,7 +549,7 @@ def serialize_factor_value(isa_obj):
 
 
 def unserialize_factor_value(json_obj):
-    factor_name = OntologyAnnotation()
+    factor_name = StudyFactor()
     if 'factor_name' in json_obj and json_obj['factor_name'] is not None:
         factor_name = unserialize_study_factor(json_obj['factor_name'])
     value = OntologyAnnotation()

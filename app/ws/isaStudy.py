@@ -108,10 +108,7 @@ class Study(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting JSON Study %s, using API-Key %s', study_id, user_token)
-        try:
-            isa_obj = iac.get_isa_json(study_id, user_token)
-        except Exception:
-            abort(500)
+        isa_obj = iac.get_isa_json(study_id, user_token)
         logger.info('... found ISA-JSON obj: %s %s', isa_obj.get('title'), isa_obj.get('identifier'))
         return jsonify(isa_obj)
 
@@ -167,13 +164,15 @@ class StudyTitle(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study title for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         title = isa_study.title
         logger.info('Got %s', title)
@@ -198,7 +197,7 @@ class StudyTitle(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -249,20 +248,16 @@ class StudyTitle(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        wsc.is_study_public(study_id, user_token)
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
-        data_dict = request.get_json(force=True)
+        # data_dict = request.get_json(force=True)
+        data_dict = json.loads(request.data.decode('utf-8'))
         new_title = data_dict['title']
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -272,6 +267,9 @@ class StudyTitle(Resource):
 
         # update study title
         logger.info('Updating Study title for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.title = new_title
         logging.info("A copy of the previous files will %s saved", save_msg_str)
@@ -330,13 +328,15 @@ class StudyDescription(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study description for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         description = isa_study.description
         logger.info('Got %s', description)
@@ -361,7 +361,7 @@ class StudyDescription(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -412,20 +412,15 @@ class StudyDescription(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        wsc.is_study_public(study_id, user_token)
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
         new_description = data_dict['description']
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -435,6 +430,9 @@ class StudyDescription(Resource):
 
         # update study description
         logger.info('Updating Study description for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.description = new_description
         logging.info("A copy of the previous files will %s saved", save_msg_str)
@@ -464,7 +462,7 @@ class StudyNew(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -579,13 +577,15 @@ class StudyProtocols(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_protocols = isa_study.protocols
         str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_protocol,
@@ -610,7 +610,7 @@ class StudyProtocols(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -661,25 +661,19 @@ class StudyProtocols(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        wsc.is_study_public(study_id, user_token)
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
         json_protocols = data_dict['StudyProtocols']
-
         isa_protocols = list()
         for json_protocol in json_protocols:
             isa_protocol = unserialize_protocol(json_protocol)
             isa_protocols.append(isa_protocol)
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -689,6 +683,9 @@ class StudyProtocols(Resource):
 
         # update study protocols
         logger.info('Updating Study protocols for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.protocols = isa_protocols
         logging.info("A copy of the previous files will %s saved", save_msg_str)
@@ -762,17 +759,18 @@ class StudyContacts(Resource):
     )
     @marshal_with(Person_api_model, envelope='StudyContacts')
     def get(self, study_id):
-
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study contacts for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_contacts = isa_study.contacts
         str_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_person, sort_keys=True)
@@ -796,7 +794,7 @@ class StudyContacts(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -847,25 +845,19 @@ class StudyContacts(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        wsc.is_study_public(study_id, user_token)
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
         json_contacts = data_dict['StudyContacts']
-
         isa_contacts = list()
         for json_contact in json_contacts:
             isa_contact = unserialize_person(json_contact)
             isa_contacts.append(isa_contact)
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -875,6 +867,9 @@ class StudyContacts(Resource):
 
         # update study contacts
         logger.info('Updating Study contacts for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.contacts = isa_contacts
         logging.info("A copy of the previous files will %s saved", save_msg_str)
@@ -931,17 +926,18 @@ class StudyFactors(Resource):
     )
     @marshal_with(StudyFactor_api_model, envelope='StudyFactors')
     def get(self, study_id):
-
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study factors for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_factors = isa_study.factors
         str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_study_factor, sort_keys=True)
@@ -965,7 +961,7 @@ class StudyFactors(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -1016,25 +1012,19 @@ class StudyFactors(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        wsc.is_study_public(study_id, user_token)
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
         json_factors = data_dict['StudyFactors']
-
         isa_factors = list()
         for json_factor in json_factors:
             isa_factor = unserialize_study_factor(json_factor)
             isa_factors.append(isa_factor)
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1044,6 +1034,9 @@ class StudyFactors(Resource):
 
         # update study factors
         logger.info('Updating Study factors for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.factors = isa_factors
         logging.info("A copy of the previous files will %s saved", save_msg_str)
@@ -1100,17 +1093,18 @@ class StudyDescriptors(Resource):
     )
     @marshal_with(OntologyAnnotation_api_model, envelope='StudyDescriptors')
     def get(self, study_id):
-
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study design descriptors for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_descriptors = isa_study.design_descriptors
         str_descriptors = json.dumps({'StudyDescriptors': isa_descriptors}, default=serialize_ontology_annotation,
@@ -1135,7 +1129,7 @@ class StudyDescriptors(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -1186,25 +1180,19 @@ class StudyDescriptors(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        wsc.is_study_public(study_id, user_token)
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
         json_descriptors = data_dict['StudyDescriptors']
-
         isa_descriptors = list()
         for json_descriptor in json_descriptors:
             isa_descriptor = unserialize_ontology_annotation(json_descriptor)
             isa_descriptors.append(isa_descriptor)
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1214,6 +1202,9 @@ class StudyDescriptors(Resource):
 
         # update study descriptors
         logger.info('Updating Study descriptors for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.design_descriptors = isa_descriptors
         logging.info("A copy of the previous files will %s saved", save_msg_str)
@@ -1269,17 +1260,18 @@ class StudyPublications(Resource):
     )
     @marshal_with(StudyPublications_api_model, envelope='publications')
     def get(self, study_id):
-
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study publications for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_publications = isa_study.publications
         str_publications = json.dumps({'publications': isa_publications},
@@ -1304,7 +1296,7 @@ class StudyPublications(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             },
             {
@@ -1355,12 +1347,10 @@ class StudyPublications(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
@@ -1370,7 +1360,6 @@ class StudyPublications(Resource):
         for json_publication in json_publications:
             isa_publication = unserialize_study_publication(json_publication)
             isa_publications.append(isa_publication)
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1380,6 +1369,9 @@ class StudyPublications(Resource):
 
         # update study publications
         logger.info('Updating Study publications for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.publications = isa_publications
         logging.info("A copy of the previous files will %s saved", save_msg_str)
@@ -1435,17 +1427,18 @@ class StudyMaterials(Resource):
     )
     @marshal_with(StudyMaterial_api_model, envelope='Study-materials')
     def get(self, study_id):
-
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study sources for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
         isa_materials = isa_study.materials
         logger.debug('Got %s', isa_materials)
@@ -1507,6 +1500,9 @@ class StudySources(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study sources for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
         isa_sources_names = list()
         for source in isa_study.sources:
@@ -1581,6 +1577,9 @@ class StudySource(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study source %s for %s, using API-Key %s', source_name, study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
         isa_source_found = False
         for index, source in enumerate(isa_study.sources):
@@ -1674,14 +1673,12 @@ class StudySource(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
         json_updated_source = data_dict['Study_source']
         isa_updated_source = unserialize_study_source(json_updated_source)
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1690,6 +1687,9 @@ class StudySource(Resource):
             save_msg_str = "be"
 
         logger.info('Updating Study source for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
         isa_source_found = False
         for index, source in enumerate(isa_study.sources):
@@ -1765,6 +1765,9 @@ class StudySamples(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study samples for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
         isa_samples_names = list()
         for samples in isa_study.samples:
@@ -1839,7 +1842,9 @@ class StudySample(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('Getting Study sample %s for %s, using API-Key %s', sample_name, study_id, user_token)
-
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
         isa_sample = ''
         for sample in isa_study.samples:
@@ -1847,7 +1852,6 @@ class StudySample(Resource):
                 isa_sample = sample
         if isa_sample == '':
             abort(404)
-
         logger.info('Got %s', isa_sample)
         return isa_sample
 
@@ -1933,14 +1937,12 @@ class StudySample(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
         json_updated_sample = data_dict['Study_sample']
         isa_updated_sample = unserialize_study_sample(json_updated_sample)
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1949,6 +1951,9 @@ class StudySample(Resource):
             save_msg_str = "be"
 
         logger.info('Updating Study sample for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token)
         isa_sample_found = False
         for index, sample in enumerate(isa_study.samples):

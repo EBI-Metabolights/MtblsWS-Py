@@ -5,6 +5,7 @@ from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
 from app.ws.mtbls_study import MtblsStudy
+from app.ws.mtbls_maf import MtblsMAF
 from app.ws.isaStudy import *
 
 """
@@ -32,7 +33,10 @@ def initialize_app(flask_app):
                   "http://localhost:4200",
                   "http://localhost:8080",
                   "http://localhost.ebi.ac.uk:8080",
-                  "http://wwwdev.ebi.ac.uk"},
+                  "http://wwwdev.ebi.ac.uk",
+                  "http://ves-ebi-8d:8080",
+                  "http://ves-ebi-8d.ebi.ac.uk:8080"
+                  },
          methods={"GET, HEAD, POST, OPTIONS, PUT"}
          )
 
@@ -44,6 +48,7 @@ def initialize_app(flask_app):
                        resourcePath=res_path)
     api.add_resource(About, res_path)
     api.add_resource(MtblsStudy, res_path + "/study/<string:study_id>")
+    api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
     api.add_resource(StudyPubList, res_path + "/study/list")
     api.add_resource(Study, res_path + "/study/<string:study_id>/isa_json")
     api.add_resource(StudyTitle, res_path + "/study/<string:study_id>/title")
