@@ -2393,22 +2393,6 @@ class UpdateStudySourceTests(WsTests):
         self.assertIsNotNone(source['characteristics'])
         self.assertIsNotNone(source['comments'])
 
-    # PUT Update Study Source - Pub -> 200
-    def test_update_source_pub(self):
-        request = urllib.request.Request(url_pub_id + '/sources/' + public_source_id,
-                                         data=self.data_updated_pub_source,
-                                         method='PUT')
-        self.add_common_headers(request)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('Updated_source', body)
-            self.check_Source_class(j_resp)
-
     # Update Study Source - Pub - Auth -> 200
     def test_update_source_pub_auth(self):
         request = urllib.request.Request(url_pub_id + '/sources/' + public_source_id,
@@ -2459,21 +2443,6 @@ class UpdateStudySourceTests(WsTests):
             self.assertIn('Updated_source', body)
             self.check_Source_class(j_resp)
 
-    # Update Study Source - Priv -> 401
-    def test_update_source_priv(self):
-        request = urllib.request.Request(url_priv_id + '/sources/' + private_source_id,
-                                         data=self.data_updated_priv_source,
-                                         method='PUT')
-        self.add_common_headers(request)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 401)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('UNAUTHORIZED', err.msg)
-            self.assertEqual('UNAUTHORIZED', err.reason)
-
     # Update Study Source - Priv - NoAuth -> 403
     def test_update_source_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/sources/' + private_source_id,
@@ -2511,6 +2480,7 @@ class UpdateStudySourceTests(WsTests):
                                          data=self.data_updated_pub_source,
                                          method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
         except urllib.error.HTTPError as err:
@@ -2519,23 +2489,6 @@ class UpdateStudySourceTests(WsTests):
             self.check_body_common(err.read().decode('utf-8'))
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
-
-    # Update Study Source - Pub - NoSave -> 200
-    def test_update_source_pub_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/sources/' + public_source_id,
-                                         data=self.data_updated_pub_source,
-                                         method='PUT')
-        self.add_common_headers(request)
-        request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('Updated_source', body)
-            self.check_Source_class(j_resp)
 
     # Update Study Source - Pub - Auth - NoSave -> 200
     def test_update_source_pub_auth_noSave(self):
@@ -2555,23 +2508,21 @@ class UpdateStudySourceTests(WsTests):
             self.assertIn('Updated_source', body)
             self.check_Source_class(j_resp)
 
-    # Update Study Source - Pub - NoAuth - NoSave -> 200
+    # Update Study Source - Pub - NoAuth - NoSave -> 403
     def test_update_source_pub_noAuth_noSave(self):
         request = urllib.request.Request(url_pub_id + '/sources/' + public_source_id,
                                          data=self.data_updated_pub_source,
                                          method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
-        request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('Updated_source', body)
-            self.check_Source_class(j_resp)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
     # Update Study Source - Priv - Auth - NoSave -> 200
     def test_update_source_priv_auth_noSave(self):
@@ -2590,22 +2541,6 @@ class UpdateStudySourceTests(WsTests):
             j_resp = json.loads(body)
             self.assertIn('Updated_source', body)
             self.check_Source_class(j_resp)
-
-    # Update Study Source - Priv - NoSave -> 401
-    def test_update_source_priv_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/sources/' + private_source_id,
-                                         data=self.data_updated_priv_source,
-                                         method='PUT')
-        self.add_common_headers(request)
-        request.add_header('save_audit_copy', 'False')
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 401)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('UNAUTHORIZED', err.msg)
-            self.assertEqual('UNAUTHORIZED', err.reason)
 
     # Update Study Source - Priv - NoAuth - NoSave -> 403
     def test_update_source_priv_noAuth_noSave(self):
@@ -2646,6 +2581,7 @@ class UpdateStudySourceTests(WsTests):
                                          data=self.data_updated_pub_source,
                                          method='PUT')
         self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
         request.add_header('save_audit_copy', 'False')
         try:
             urllib.request.urlopen(request)
