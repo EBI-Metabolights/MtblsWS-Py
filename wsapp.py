@@ -48,24 +48,22 @@ def initialize_app(flask_app):
                        resourcePath=res_path)
     api.add_resource(About, res_path)
     api.add_resource(MtblsStudy, res_path + "/study/<string:study_id>")
-    api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
     api.add_resource(StudyPubList, res_path + "/study/list")
     api.add_resource(Study, res_path + "/study/<string:study_id>/isa_json")
     api.add_resource(StudyTitle, res_path + "/study/<string:study_id>/title")
     api.add_resource(StudyDescription, res_path + "/study/<string:study_id>/description")
     api.add_resource(StudyNew, res_path + "/study/new")
-    api.add_resource(StudyProtocols, res_path + "/study/<string:study_id>/protocols")
     api.add_resource(StudyContacts, res_path + "/study/<string:study_id>/contacts")
+    api.add_resource(StudyProtocols, res_path + "/study/<string:study_id>/protocols")
     api.add_resource(StudyFactors, res_path + "/study/<string:study_id>/factors")
     api.add_resource(StudyDescriptors, res_path + "/study/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/study/<string:study_id>/publications")
     api.add_resource(StudyMaterials, res_path + "/study/<string:study_id>/materials")
-
     api.add_resource(StudySources, res_path + "/study/<string:study_id>/sources")
     api.add_resource(StudySource, res_path + "/study/<string:study_id>/sources/<string:source_name>")
     api.add_resource(StudySamples, res_path + "/study/<string:study_id>/samples")
     api.add_resource(StudySample, res_path + "/study/<string:study_id>/samples/<string:sample_name>")
-
+    api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
 
 
 def main():

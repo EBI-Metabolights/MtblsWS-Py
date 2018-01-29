@@ -945,6 +945,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "d75f7b61-1e14-4c8a-9e2b-46f5052bbe9c",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -954,12 +955,15 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"/// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'name'\"] = jsonData.StudyProtocols[0].hasOwnProperty('name');",
-									"tests[\"JSON response has key 'description'\"] = jsonData.StudyProtocols[0].hasOwnProperty('description');",
-									"tests[\"JSON response has key 'protocol_type'\"] = jsonData.StudyProtocols[0].hasOwnProperty('protocol_type');",
-									"tests[\"JSON response has key 'version'\"] = jsonData.StudyProtocols[0].hasOwnProperty('version');",
+									"tests[\"JSON response has key 'name'\"] = jsonData.protocols[0].hasOwnProperty('name');",
+									"tests[\"JSON response has key 'description'\"] = jsonData.protocols[0].hasOwnProperty('description');",
+									"tests[\"JSON response has key 'protocol_type'\"] = jsonData.protocols[0].hasOwnProperty('protocolType');",
+									"tests[\"JSON response has key 'uri'\"] = jsonData.protocols[0].hasOwnProperty('uri');",
+									"tests[\"JSON response has key 'version'\"] = jsonData.protocols[0].hasOwnProperty('version');",
+									"tests[\"JSON response has key 'parameters'\"] = jsonData.protocols[0].hasOwnProperty('parameters');",
+									"tests[\"JSON response has key 'components'\"] = jsonData.protocols[0].hasOwnProperty('components');",
 									""
 								]
 							}
@@ -1003,6 +1007,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "16285822-a6f9-400a-995e-22ab45716570",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1012,12 +1017,15 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"/// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'name'\"] = jsonData.StudyProtocols[0].hasOwnProperty('name');",
-									"tests[\"JSON response has key 'description'\"] = jsonData.StudyProtocols[0].hasOwnProperty('description');",
-									"tests[\"JSON response has key 'protocol_type'\"] = jsonData.StudyProtocols[0].hasOwnProperty('protocol_type');",
-									"tests[\"JSON response has key 'version'\"] = jsonData.StudyProtocols[0].hasOwnProperty('version');",
+									"tests[\"JSON response has key 'name'\"] = jsonData.protocols[0].hasOwnProperty('name');",
+									"tests[\"JSON response has key 'description'\"] = jsonData.protocols[0].hasOwnProperty('description');",
+									"tests[\"JSON response has key 'protocol_type'\"] = jsonData.protocols[0].hasOwnProperty('protocolType');",
+									"tests[\"JSON response has key 'uri'\"] = jsonData.protocols[0].hasOwnProperty('uri');",
+									"tests[\"JSON response has key 'version'\"] = jsonData.protocols[0].hasOwnProperty('version');",
+									"tests[\"JSON response has key 'parameters'\"] = jsonData.protocols[0].hasOwnProperty('parameters');",
+									"tests[\"JSON response has key 'components'\"] = jsonData.protocols[0].hasOwnProperty('components');",
 									""
 								]
 							}
@@ -1065,6 +1073,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "d23419dd-055d-45bc-98bf-c51a4d30f4a7",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1074,12 +1083,15 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"/// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'name'\"] = jsonData.StudyProtocols[0].hasOwnProperty('name');",
-									"tests[\"JSON response has key 'description'\"] = jsonData.StudyProtocols[0].hasOwnProperty('description');",
-									"tests[\"JSON response has key 'protocol_type'\"] = jsonData.StudyProtocols[0].hasOwnProperty('protocol_type');",
-									"tests[\"JSON response has key 'version'\"] = jsonData.StudyProtocols[0].hasOwnProperty('version');",
+									"tests[\"JSON response has key 'name'\"] = jsonData.protocols[0].hasOwnProperty('name');",
+									"tests[\"JSON response has key 'description'\"] = jsonData.protocols[0].hasOwnProperty('description');",
+									"tests[\"JSON response has key 'protocol_type'\"] = jsonData.protocols[0].hasOwnProperty('protocolType');",
+									"tests[\"JSON response has key 'uri'\"] = jsonData.protocols[0].hasOwnProperty('uri');",
+									"tests[\"JSON response has key 'version'\"] = jsonData.protocols[0].hasOwnProperty('version');",
+									"tests[\"JSON response has key 'parameters'\"] = jsonData.protocols[0].hasOwnProperty('parameters');",
+									"tests[\"JSON response has key 'components'\"] = jsonData.protocols[0].hasOwnProperty('components');",
 									""
 								]
 							}
@@ -1127,6 +1139,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "04cdad63-62a7-4ceb-aab7-6bd42986b36b",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1136,12 +1149,15 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"/// Body",
-									"tests[\"Body has Study-protocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'name'\"] = jsonData.StudyProtocols[0].hasOwnProperty('name');",
-									"tests[\"JSON response has key 'description'\"] = jsonData.StudyProtocols[0].hasOwnProperty('description');",
-									"tests[\"JSON response has key 'protocol_type'\"] = jsonData.StudyProtocols[0].hasOwnProperty('protocol_type');",
-									"tests[\"JSON response has key 'version'\"] = jsonData.StudyProtocols[0].hasOwnProperty('version');",
+									"tests[\"JSON response has key 'name'\"] = jsonData.protocols[0].hasOwnProperty('name');",
+									"tests[\"JSON response has key 'description'\"] = jsonData.protocols[0].hasOwnProperty('description');",
+									"tests[\"JSON response has key 'protocol_type'\"] = jsonData.protocols[0].hasOwnProperty('protocolType');",
+									"tests[\"JSON response has key 'uri'\"] = jsonData.protocols[0].hasOwnProperty('uri');",
+									"tests[\"JSON response has key 'version'\"] = jsonData.protocols[0].hasOwnProperty('version');",
+									"tests[\"JSON response has key 'parameters'\"] = jsonData.protocols[0].hasOwnProperty('parameters');",
+									"tests[\"JSON response has key 'components'\"] = jsonData.protocols[0].hasOwnProperty('components');",
 									""
 								]
 							}
@@ -1426,6 +1442,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "729ea9a6-d953-425b-bc00-e2720d723415",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1442,7 +1459,7 @@
 									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
 									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
 									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
-									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
+									"    tests[\"JSON response has key 'role annotationValue'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('annotationValue');",
 									"    }",
 									"}",
 									""
@@ -1488,6 +1505,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "13417f00-351f-4459-b40d-452c33691a91",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1504,7 +1522,7 @@
 									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
 									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
 									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
-									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
+									"    tests[\"JSON response has key 'role annotationValue'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('annotationValue');",
 									"    }",
 									"}",
 									""
@@ -1554,6 +1572,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "18eda422-6320-41e6-af15-b5b3881e00de",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1570,7 +1589,7 @@
 									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
 									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
 									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
-									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
+									"    tests[\"JSON response has key 'role annotationValue'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('annotationValue');",
 									"    }",
 									"}",
 									""
@@ -1620,6 +1639,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "af29e586-8f54-434a-96de-20c244997298",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1636,7 +1656,7 @@
 									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
 									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
 									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
-									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
+									"    tests[\"JSON response has key 'role annotationValue'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('annotationValue');",
 									"    }",
 									"}",
 									""
@@ -1924,6 +1944,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "4e6d4f76-efeb-418e-8bc0-d30cb4ca7ea0",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1933,11 +1954,11 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"/// Body",
-									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
+									"tests[\"Body has factors\"] = responseBody.has('\"factors\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'name'\"] = jsonData.StudyFactors[0].hasOwnProperty('name');",
-									"tests[\"JSON response has key 'factor_type'\"] = jsonData.StudyFactors[0].hasOwnProperty('factor_type');",
-									"tests[\"JSON response has key 'comments'\"] = jsonData.StudyFactors[0].hasOwnProperty('comments');",
+									"tests[\"JSON response has key 'factorName'\"] = jsonData.factors[0].hasOwnProperty('factorName');",
+									"tests[\"JSON response has key 'factorType'\"] = jsonData.factors[0].hasOwnProperty('factorType');",
+									"tests[\"JSON response has key 'comments'\"] = jsonData.factors[0].hasOwnProperty('comments');",
 									""
 								]
 							}
@@ -1981,6 +2002,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "3a6c01d3-a1ba-446d-a940-457155433bbe",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1990,11 +2012,11 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"/// Body",
-									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
+									"tests[\"Body has factors\"] = responseBody.has('\"factors\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'name'\"] = jsonData.StudyFactors[0].hasOwnProperty('name');",
-									"tests[\"JSON response has key 'factor_type'\"] = jsonData.StudyFactors[0].hasOwnProperty('factor_type');",
-									"tests[\"JSON response has key 'comments'\"] = jsonData.StudyFactors[0].hasOwnProperty('comments');",
+									"tests[\"JSON response has key 'factorName'\"] = jsonData.factors[0].hasOwnProperty('factorName');",
+									"tests[\"JSON response has key 'factorType'\"] = jsonData.factors[0].hasOwnProperty('factorType');",
+									"tests[\"JSON response has key 'comments'\"] = jsonData.factors[0].hasOwnProperty('comments');",
 									""
 								]
 							}
@@ -2042,6 +2064,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "cecc2711-7840-4ea2-854b-50077c33451c",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -2051,11 +2074,11 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"/// Body",
-									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
+									"tests[\"Body has factors\"] = responseBody.has('\"factors\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'name'\"] = jsonData.StudyFactors[0].hasOwnProperty('name');",
-									"tests[\"JSON response has key 'factor_type'\"] = jsonData.StudyFactors[0].hasOwnProperty('factor_type');",
-									"tests[\"JSON response has key 'comments'\"] = jsonData.StudyFactors[0].hasOwnProperty('comments');",
+									"tests[\"JSON response has key 'factorName'\"] = jsonData.factors[0].hasOwnProperty('factorName');",
+									"tests[\"JSON response has key 'factorType'\"] = jsonData.factors[0].hasOwnProperty('factorType');",
+									"tests[\"JSON response has key 'comments'\"] = jsonData.factors[0].hasOwnProperty('comments');",
 									""
 								]
 							}
@@ -2103,6 +2126,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "70b809fd-180f-45fe-a23e-e92e78b93ffe",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -2112,11 +2136,11 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"/// Body",
-									"tests[\"Body has StudyFactors\"] = responseBody.has('\"StudyFactors\":');",
+									"tests[\"Body has factors\"] = responseBody.has('\"factors\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'name'\"] = jsonData.StudyFactors[0].hasOwnProperty('name');",
-									"tests[\"JSON response has key 'factor_type'\"] = jsonData.StudyFactors[0].hasOwnProperty('factor_type');",
-									"tests[\"JSON response has key 'comments'\"] = jsonData.StudyFactors[0].hasOwnProperty('comments');",
+									"tests[\"JSON response has key 'factorName'\"] = jsonData.factors[0].hasOwnProperty('factorName');",
+									"tests[\"JSON response has key 'factorType'\"] = jsonData.factors[0].hasOwnProperty('factorType');",
+									"tests[\"JSON response has key 'comments'\"] = jsonData.factors[0].hasOwnProperty('comments');",
 									""
 								]
 							}
@@ -2401,6 +2425,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "b0b1672b-60f0-4f9e-b474-c273e6b755a7",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -2412,9 +2437,9 @@
 									"/// Body",
 									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'term'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term');",
-									"tests[\"JSON response has key 'term_accession'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term_accession');",
-									"tests[\"JSON response has key 'term_source'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term_source');",
+									"tests[\"JSON response has key 'annotationValue'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('annotationValue');",
+									"tests[\"JSON response has key 'termAccession'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('termAccession');",
+									"tests[\"JSON response has key 'termSource'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('termSource');",
 									"tests[\"JSON response has key 'comments'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('comments');",
 									""
 								]
@@ -2459,6 +2484,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "92cf95b0-3b9d-4681-991b-84621244bc68",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -2470,9 +2496,9 @@
 									"/// Body",
 									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'term'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term');",
-									"tests[\"JSON response has key 'term_accession'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term_accession');",
-									"tests[\"JSON response has key 'term_source'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term_source');",
+									"tests[\"JSON response has key 'annotationValue'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('annotationValue');",
+									"tests[\"JSON response has key 'termAccession'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('termAccession');",
+									"tests[\"JSON response has key 'termSource'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('termSource');",
 									"tests[\"JSON response has key 'comments'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('comments');",
 									""
 								]
@@ -2521,6 +2547,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "d96957bd-ed7a-4212-ae2a-d449ba476e21",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -2532,9 +2559,9 @@
 									"/// Body",
 									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'term'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term');",
-									"tests[\"JSON response has key 'term_accession'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term_accession');",
-									"tests[\"JSON response has key 'term_source'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term_source');",
+									"tests[\"JSON response has key 'annotationValue'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('annotationValue');",
+									"tests[\"JSON response has key 'termAccession'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('termAccession');",
+									"tests[\"JSON response has key 'termSource'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('termSource');",
 									"tests[\"JSON response has key 'comments'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('comments');",
 									""
 								]
@@ -2583,6 +2610,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "13af7843-c5e8-410d-a7b0-983c1da67209",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -2594,9 +2622,9 @@
 									"/// Body",
 									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
 									"var jsonData = JSON.parse(responseBody);",
-									"tests[\"JSON response has key 'term'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term');",
-									"tests[\"JSON response has key 'term_accession'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term_accession');",
-									"tests[\"JSON response has key 'term_source'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('term_source');",
+									"tests[\"JSON response has key 'annotationValue'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('annotationValue');",
+									"tests[\"JSON response has key 'termAccession'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('termAccession');",
+									"tests[\"JSON response has key 'termSource'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('termSource');",
 									"tests[\"JSON response has key 'comments'\"] = jsonData.StudyDescriptors[0].hasOwnProperty('comments');",
 									""
 								]
@@ -2882,6 +2910,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "95a65094-0e22-4e63-82ae-1f4f11b9ca31",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -2898,9 +2927,9 @@
 									"tests[\"JSON response has key 'title'\"] = jsonData.publications[0].hasOwnProperty('title');",
 									"tests[\"JSON response has key 'doi'\"] = jsonData.publications[0].hasOwnProperty('doi');",
 									"tests[\"JSON response has key 'comments'\"] = jsonData.publications[0].hasOwnProperty('comments');",
-									"tests[\"JSON response has key 'status.term'\"] = jsonData.publications[0].status.hasOwnProperty('term');",
-									"tests[\"JSON response has key 'status.term_accession'\"] = jsonData.publications[0].status.hasOwnProperty('term_accession');",
-									"tests[\"JSON response has key 'status.term_source'\"] = jsonData.publications[0].status.hasOwnProperty('term_source');",
+									"tests[\"JSON response has key 'status.annotationValue'\"] = jsonData.publications[0].status.hasOwnProperty('annotationValue');",
+									"tests[\"JSON response has key 'status.termAccession'\"] = jsonData.publications[0].status.hasOwnProperty('termAccession');",
+									"tests[\"JSON response has key 'status.termSource'\"] = jsonData.publications[0].status.hasOwnProperty('termSource');",
 									"tests[\"JSON response has key 'status.comments'\"] = jsonData.publications[0].status.hasOwnProperty('comments');",
 									""
 								]
@@ -2945,6 +2974,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "b465688e-efce-4d08-9e9d-fae233090d79",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -2961,9 +2991,9 @@
 									"tests[\"JSON response has key 'title'\"] = jsonData.publications[0].hasOwnProperty('title');",
 									"tests[\"JSON response has key 'doi'\"] = jsonData.publications[0].hasOwnProperty('doi');",
 									"tests[\"JSON response has key 'comments'\"] = jsonData.publications[0].hasOwnProperty('comments');",
-									"tests[\"JSON response has key 'status.term'\"] = jsonData.publications[0].status.hasOwnProperty('term');",
-									"tests[\"JSON response has key 'status.term_accession'\"] = jsonData.publications[0].status.hasOwnProperty('term_accession');",
-									"tests[\"JSON response has key 'status.term_source'\"] = jsonData.publications[0].status.hasOwnProperty('term_source');",
+									"tests[\"JSON response has key 'status.annotationValue'\"] = jsonData.publications[0].status.hasOwnProperty('annotationValue');",
+									"tests[\"JSON response has key 'status.termAccession'\"] = jsonData.publications[0].status.hasOwnProperty('termAccession');",
+									"tests[\"JSON response has key 'status.termSource'\"] = jsonData.publications[0].status.hasOwnProperty('termSource');",
 									"tests[\"JSON response has key 'status.comments'\"] = jsonData.publications[0].status.hasOwnProperty('comments');",
 									""
 								]
@@ -3012,6 +3042,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "096954a2-92a2-413f-9b75-4cf1af229c26",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -3028,9 +3059,9 @@
 									"tests[\"JSON response has key 'title'\"] = jsonData.publications[0].hasOwnProperty('title');",
 									"tests[\"JSON response has key 'doi'\"] = jsonData.publications[0].hasOwnProperty('doi');",
 									"tests[\"JSON response has key 'comments'\"] = jsonData.publications[0].hasOwnProperty('comments');",
-									"tests[\"JSON response has key 'status.term'\"] = jsonData.publications[0].status.hasOwnProperty('term');",
-									"tests[\"JSON response has key 'status.term_accession'\"] = jsonData.publications[0].status.hasOwnProperty('term_accession');",
-									"tests[\"JSON response has key 'status.term_source'\"] = jsonData.publications[0].status.hasOwnProperty('term_source');",
+									"tests[\"JSON response has key 'status.annotationValue'\"] = jsonData.publications[0].status.hasOwnProperty('annotationValue');",
+									"tests[\"JSON response has key 'status.termAccession'\"] = jsonData.publications[0].status.hasOwnProperty('termAccession');",
+									"tests[\"JSON response has key 'status.termSource'\"] = jsonData.publications[0].status.hasOwnProperty('termSource');",
 									"tests[\"JSON response has key 'status.comments'\"] = jsonData.publications[0].status.hasOwnProperty('comments');",
 									""
 								]
@@ -3079,6 +3110,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "e5cabab8-da8d-41da-94f7-4c1375d66a7e",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -3095,9 +3127,9 @@
 									"tests[\"JSON response has key 'title'\"] = jsonData.publications[0].hasOwnProperty('title');",
 									"tests[\"JSON response has key 'doi'\"] = jsonData.publications[0].hasOwnProperty('doi');",
 									"tests[\"JSON response has key 'comments'\"] = jsonData.publications[0].hasOwnProperty('comments');",
-									"tests[\"JSON response has key 'status.term'\"] = jsonData.publications[0].status.hasOwnProperty('term');",
-									"tests[\"JSON response has key 'status.term_accession'\"] = jsonData.publications[0].status.hasOwnProperty('term_accession');",
-									"tests[\"JSON response has key 'status.term_source'\"] = jsonData.publications[0].status.hasOwnProperty('term_source');",
+									"tests[\"JSON response has key 'status.annotationValue'\"] = jsonData.publications[0].status.hasOwnProperty('annotationValue');",
+									"tests[\"JSON response has key 'status.termAccession'\"] = jsonData.publications[0].status.hasOwnProperty('termAccession');",
+									"tests[\"JSON response has key 'status.termSource'\"] = jsonData.publications[0].status.hasOwnProperty('termSource');",
 									"tests[\"JSON response has key 'status.comments'\"] = jsonData.publications[0].status.hasOwnProperty('comments');",
 									""
 								]

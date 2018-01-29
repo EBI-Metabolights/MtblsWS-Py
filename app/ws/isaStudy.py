@@ -572,7 +572,7 @@ class StudyProtocols(Resource):
             }
         ]
     )
-    @marshal_with(Protocol_api_model, envelope='StudyProtocols')
+    @marshal_with(Protocol_api_model, envelope='protocols')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -924,7 +924,7 @@ class StudyFactors(Resource):
             }
         ]
     )
-    @marshal_with(StudyFactor_api_model, envelope='StudyFactors')
+    @marshal_with(StudyFactor_api_model, envelope='factors')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -940,7 +940,7 @@ class StudyFactors(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_factors = isa_study.factors
-        str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_study_factor, sort_keys=True)
+        str_factors = json.dumps({'factors': isa_factors}, default=serialize_study_factor, sort_keys=True)
         logger.info('Got %s', str_factors)
         return isa_factors
 
