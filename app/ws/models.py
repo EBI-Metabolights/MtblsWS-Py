@@ -6,8 +6,8 @@ import json
 
 
 Comment_api_model = {
-    # name (str):
-    # value (str, int, float, NoneType):
+    # name      (str):
+    # value     (str, int, float, NoneType):
     'name': fields.String,
     'value': fields.String
 }
@@ -15,8 +15,6 @@ Comment_api_model = {
 
 def serialize_comment(isa_obj):
     assert isinstance(isa_obj, Comment)
-    # name (str):
-    # value (str, int, float, NoneType):
     return {
         'name': isa_obj.name,
         'value': isa_obj.value
@@ -24,8 +22,6 @@ def serialize_comment(isa_obj):
 
 
 def unserialize_comment(json_obj):
-    # name (str):
-    # value (str, int, float, NoneType):
     name = ''
     if 'name' in json_obj and json_obj['name'] is not None:
         name = json_obj['name']
@@ -38,6 +34,11 @@ def unserialize_comment(json_obj):
 
 
 OntologySource_api_model = {
+    # name          (str):
+    # file          (str):
+    # version       (str):
+    # description   (str):
+    # comments      (list, comment):
     'name': fields.String,
     'file': fields.String,
     'version': fields.String,
@@ -48,11 +49,6 @@ OntologySource_api_model = {
 
 def serialize_ontology_source(isa_obj):
     assert isinstance(isa_obj, OntologySource)
-    # name (str):
-    # file (str):
-    # version (str):
-    # description (str):
-    # comments (list,):
     return {
         'name': isa_obj.name,
         'file': isa_obj.file,
@@ -63,11 +59,6 @@ def serialize_ontology_source(isa_obj):
 
 
 def unserialize_ontology_source(json_obj):
-    # name (str):
-    # file (str):
-    # version (str):
-    # description (str):
-    # comments (list,):
     name = ''
     if 'name' in json_obj and json_obj['name'] is not None:
         name = json_obj['name']
@@ -93,6 +84,10 @@ def unserialize_ontology_source(json_obj):
 
 
 OntologyAnnotation_api_model = {
+    # term -> annotationValue           (str):
+    # term_source -> termSource         (OntologySource):
+    # term_accession -> termAccession   (str):
+    # comments                          (list, Comment):
     'annotationValue': fields.String(attribute='term'),
     'termSource': fields.Nested(OntologySource_api_model, attribute='term_source'),
     'termAccession': fields.String(attribute='term_accession'),
@@ -102,10 +97,6 @@ OntologyAnnotation_api_model = {
 
 def serialize_ontology_annotation(isa_obj):
     assert isinstance(isa_obj, OntologyAnnotation)
-    # term (str, NoneType):
-    # term_source (OntologySource, NoneType):
-    # term_accession (str, NoneType):
-    # comments (list, NoneType):
     term_source = None
     if hasattr(isa_obj, 'term_source') and isa_obj.term_source is not None:
         term_source = serialize_ontology_source(isa_obj.term_source)
@@ -118,10 +109,6 @@ def serialize_ontology_annotation(isa_obj):
 
 
 def unserialize_ontology_annotation(json_obj):
-    # term (str, NoneType):
-    # term_source (OntologySource, NoneType):
-    # term_accession (str, NoneType):
-    # comments (list, NoneType):
     term = ''
     if 'term' in json_obj and json_obj['term'] is not None:
         term = json_obj['term']
@@ -143,7 +130,10 @@ def unserialize_ontology_annotation(json_obj):
 
 
 ProtocolParameter_api_model = {
-    'parameter_name': fields.Nested(OntologyAnnotation_api_model),
+    # parameter_name -> parameterName   (OntologyAnnotation):
+    # unit                              (OntologyAnnotation):
+    # comments                          (list, Comment):
+    'parameterName': fields.Nested(OntologyAnnotation_api_model, attribute='parameter_name'),
     'unit': fields.Nested(OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
@@ -151,9 +141,6 @@ ProtocolParameter_api_model = {
 
 def serialize_protocol_parameter(isa_obj):
     assert isinstance(isa_obj, ProtocolParameter)
-    # name (OntologyAnnotation): A parameter name as a term
-    # unit (OntologyAnnotation): A unit, if applicable
-    # comments (list, NoneType):
     parameter_name = None
     if hasattr(isa_obj, 'parameter_name') and isa_obj.parameter_name is not None:
         parameter_name = serialize_ontology_annotation(isa_obj.parameter_name)
@@ -161,16 +148,13 @@ def serialize_protocol_parameter(isa_obj):
     if hasattr(isa_obj, 'unit') and isa_obj.unit is not None:
         unit = serialize_ontology_annotation(isa_obj.unit)
     return {
-        'parameter_name': parameter_name,
+        'parameterName': parameter_name,
         'unit': unit,
         'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
     }
 
 
 def unserialize_protocol_parameter(json_obj):
-    # name (OntologyAnnotation): A parameter name as a term
-    # unit (OntologyAnnotation): A unit, if applicable
-    # comments (list, NoneType):
     parameter_name = OntologyAnnotation()
     if 'parameter_name' in json_obj and json_obj['parameter_name'] is not None:
         parameter_name = unserialize_ontology_annotation(json_obj['parameter_name'])
@@ -188,8 +172,16 @@ def unserialize_protocol_parameter(json_obj):
 
 
 Protocol_api_model = {
+    # name                              (str):
+    # protocol_type -> protocolType     (OntologyAnnotation):
+    # description                       (str):
+    # uri                               (str):
+    # version                           (str):
+    # parameters                        (list, ProtocolParameter):
+    # components                        (list, OntologyAnnotation):
+    # comments                          (list, comment):
     'name': fields.String,
-    'protocolType': fields.Nested(OntologyAnnotation_api_model,attribute='protocol_type'),
+    'protocolType': fields.Nested(OntologyAnnotation_api_model, attribute='protocol_type'),
     'description': fields.String,
     'uri': fields.String,
     'version': fields.String,
@@ -201,36 +193,23 @@ Protocol_api_model = {
 
 def serialize_protocol(isa_obj):
     assert isinstance(isa_obj, Protocol)
-    # name (str):
-    # protocol_type (OntologyAnnotation):
-    # description (str):
-    # uri (str):
-    # version (str):
-    # parameters (list, ProtocolParameter):
-    # components (list, OntologyAnnotation):
-    # comments (list, str):
     return {
         'name': isa_obj.name,
-        'protocolType': json.loads(
-            json.dumps(isa_obj.protocol_type, default=serialize_ontology_annotation, sort_keys=True)),
+        'protocolType': json.loads(json.dumps(isa_obj.protocol_type,
+                                              default=serialize_ontology_annotation, sort_keys=True)),
         'description': isa_obj.description,
         'uri': isa_obj.uri,
         'version': isa_obj.version,
-        'parameters': json.loads(json.dumps(isa_obj.parameters, default=serialize_protocol_parameter, sort_keys=True)),
-        'components': json.loads(json.dumps(isa_obj.components, default=serialize_ontology_annotation, sort_keys=True)),
-        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
+        'parameters': json.loads(json.dumps(isa_obj.parameters,
+                                            default=serialize_protocol_parameter, sort_keys=True)),
+        'components': json.loads(json.dumps(isa_obj.components,
+                                            default=serialize_ontology_annotation, sort_keys=True)),
+        'comments': json.loads(json.dumps(isa_obj.comments,
+                                          default=serialize_comment, sort_keys=True))
     }
 
 
 def unserialize_protocol(json_obj):
-    # name (str):
-    # protocol_type (OntologyAnnotation):
-    # description (str):
-    # uri (str):
-    # version (str):
-    # parameters (list, ProtocolParameter):
-    # components (list, OntologyAnnotation):
-    # comments (list, str):
     name = ''
     if 'name' in json_obj and json_obj['name'] is not None:
         name = json_obj['name']
@@ -270,9 +249,19 @@ def unserialize_protocol(json_obj):
 
 
 Person_api_model = {
-    'last_name': fields.String,
-    'first_name': fields.String,
-    'mid_initials': fields.String,
+    # last_name -> lastName         (str):
+    # first_name -> firstName       (str):
+    # mid_initials -> midInitials   (str):
+    # email                         (str):
+    # phone                         (str):
+    # fax                           (str):
+    # address                       (str):
+    # affiliation                   (str):
+    # roles                         (list, OntologyAnnotation):
+    # comments                      (list, Comment):
+    'lastName': fields.String(attribute='last_name'),
+    'firstName': fields.String(attribute='first_name'),
+    'midInitials': fields.String(attribute='mid_initials'),
     'email': fields.String,
     'phone': fields.String,
     'fax': fields.String,
@@ -285,20 +274,10 @@ Person_api_model = {
 
 def serialize_person(isa_obj):
     assert isinstance(isa_obj, Person)
-    # last_name (str, NoneType):
-    # first_name (str, NoneType):
-    # mid_initials (str, NoneType):
-    # email (str, NoneType):
-    # phone (str, NoneType):
-    # fax (str, NoneType):
-    # address (str, NoneType):
-    # affiliation (str, NoneType):
-    # roles (list, NoneType):
-    # comments (list, OntologyAnnotations):
     return {
-        'last_name': isa_obj.last_name,
-        'first_name': isa_obj.first_name,
-        'mid_initials': isa_obj.mid_initials,
+        'lastName': isa_obj.last_name,
+        'firstName': isa_obj.first_name,
+        'midInitials': isa_obj.mid_initials,
         'email': isa_obj.email,
         'phone': isa_obj.phone,
         'fax': isa_obj.fax,
@@ -310,16 +289,6 @@ def serialize_person(isa_obj):
 
 
 def unserialize_person(json_obj):
-    # last_name (str, NoneType):
-    # first_name (str, NoneType):
-    # mid_initials (str, NoneType):
-    # email (str, NoneType):
-    # phone (str, NoneType):
-    # fax (str, NoneType):
-    # address (str, NoneType):
-    # affiliation (str, NoneType):
-    # roles (list, OntologyAnnotations):
-    # comments (list, str):
     last_name = ''
     if 'last_name' in json_obj and json_obj['last_name'] is not None:
         last_name = json_obj['last_name']
@@ -366,9 +335,9 @@ def unserialize_person(json_obj):
 
 
 StudyFactor_api_model = {
-    # name (str):
-    # factor_type (OntologyAnnotation):
-    # comments (list, Comment):
+    # name -> factorName        (str):
+    # factor_type -> factorType (OntologyAnnotation):
+    # comments                  (list, Comment):
     'factorName': fields.String(attribute='name'),
     'factorType': fields.Nested(OntologyAnnotation_api_model, attribute='factor_type'),
     'comments': fields.List(fields.Nested(Comment_api_model))
@@ -402,15 +371,13 @@ def unserialize_study_factor(json_obj):
                        comments=comments)
 
 
-# StudyPublications
-#
-# pubmed_id (str, NoneType):
-# doi (str, NoneType):
-# author_list (str, NoneType):
-# title (str, NoneType):
-# status (str, OntologyAnnotation, NoneType):
-# comments (list, Comment):
 StudyPublications_api_model = {
+    # pubmed_id                     (str):
+    # doi                           (str):
+    # author_list -> authorList     (str):
+    # title                         (str):
+    # status                        (str, OntologyAnnotation):
+    # comments                      (list, Comment):
     'pubMedID': fields.String(attribute='pubmed_id'),
     'doi': fields.String,
     'authorList': fields.String(attribute='author_list'),
@@ -461,13 +428,11 @@ def unserialize_study_publication(json_obj):
                        comments=comments)
 
 
-# Characteristic
-#
-# category (OntologyAnnotation):
-# value (OntologyAnnotation):
-# unit (OntologyAnnotation):
-# comments (list, Comment):
 Characteristic_api_model = {
+    # category (OntologyAnnotation):
+    # value (OntologyAnnotation):
+    # unit (OntologyAnnotation):
+    # comments (list, Comment):
     'category': fields.Nested(OntologyAnnotation_api_model),
     'value': fields.Nested(OntologyAnnotation_api_model),
     'unit': fields.Nested(OntologyAnnotation_api_model),
@@ -486,9 +451,6 @@ def serialize_characteristic(isa_obj):
 
 
 def unserialize_characteristic(json_obj):
-    # category (OntologyAnnotation):
-    # value (OntologyAnnotation):
-    # unit (OntologyAnnotation):
     category = OntologyAnnotation()
     if 'category' in json_obj and json_obj['category'] is not None:
         category = unserialize_ontology_annotation(json_obj['category'])
@@ -516,22 +478,20 @@ class FactorValueItem(fields.Raw):
             val = value
         if isinstance(value, OntologyAnnotation):
             val = {
-                'term': value.term,
-                'term_source': value.term_source,
-                'term_accession':  value.term_accession,
+                'annotationValue': value.term,
+                'termSource': value.term_source,
+                'termAccession':  value.term_accession,
                 'comments':  value.comments
             }
         return val
 
 
-# FactorValue
-#
-# factor_name (StudyFactor):
-# value (OntologyAnnotation):
-# unit (OntologyAnnotation):
-# comments (list, Comment):
 FactorValue_api_model = {
-    'factor_name': fields.Nested(StudyFactor_api_model),
+    # factor_name -> factorName     (StudyFactor):
+    # value                         (OntologyAnnotation):
+    # unit                          (OntologyAnnotation):
+    # comments                      (list, Comment):
+    'factorName': fields.Nested(StudyFactor_api_model, attribute='factor_name'),
     'value': FactorValueItem(attribute='value'),
     'unit': fields.Nested(OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
@@ -541,7 +501,7 @@ FactorValue_api_model = {
 def serialize_factor_value(isa_obj):
     assert isinstance(isa_obj, FactorValue)
     return {
-        'factor_name': json.loads(json.dumps(isa_obj.factor_name, default=serialize_study_factor, sort_keys=True)),
+        'factorName': json.loads(json.dumps(isa_obj.factor_name, default=serialize_study_factor, sort_keys=True)),
         'value': json.loads(json.dumps(isa_obj.value, default=serialize_ontology_annotation, sort_keys=True)),
         'unit': json.loads(json.dumps(isa_obj.unit, default=serialize_ontology_annotation, sort_keys=True)),
         'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
@@ -569,12 +529,10 @@ def unserialize_factor_value(json_obj):
                        comments=comments)
 
 
-# Source
-#
-# name (str):
-# characteristics (list, OntologyAnnotation):
-# comments (list, Comment):
 StudySource_api_model = {
+    # name (str):
+    # characteristics (list, OntologyAnnotation):
+    # comments (list, Comment):
     'name': fields.String,
     'characteristics': fields.List(fields.Nested(Characteristic_api_model)),
     'comments': fields.List(fields.Nested(Comment_api_model))
@@ -609,18 +567,16 @@ def unserialize_study_source(json_obj):
                   comments=comments)
 
 
-# Sample
-#
-# name (str):
-# characteristics (list, OntologyAnnotation):
-# derives_from (Source):
-# factor_values (FactorValues):
-# comments (list, Comment):
 StudySample_api_model = {
+    # name                              (str):
+    # characteristics                   (list, OntologyAnnotation):
+    # factor_values -> factorValues     (FactorValues):
+    # derives_from                      (Source):
+    # comments                          (list, Comment):
     'name': fields.String,
     'characteristics': fields.List(fields.Nested(Characteristic_api_model)),
     'derives_from': fields.List(fields.Nested(StudySource_api_model)),
-    'factor_values': fields.List(fields.Nested(FactorValue_api_model)),
+    'factorValues': fields.List(fields.Nested(FactorValue_api_model,attribute='factor_values')),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -631,10 +587,10 @@ def serialize_study_sample(isa_obj):
         'name': isa_obj.name,
         'characteristics': json.loads(
             json.dumps(isa_obj.characteristics, default=serialize_characteristic, sort_keys=True)),
+        'factorValues': json.loads(
+            json.dumps(isa_obj.factor_values, default=serialize_factor_value, sort_keys=True)),
         'derives_from': json.loads(
             json.dumps(isa_obj.derives_from, default=serialize_study_source, sort_keys=True)),
-        'factor_values': json.loads(
-            json.dumps(isa_obj.factor_values, default=serialize_factor_value, sort_keys=True)),
         'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True))
     }
 
@@ -664,14 +620,12 @@ def unserialize_study_sample(json_obj):
                   comments=comments)
 
 
-# Material
-#
-# name (str):
-# type (OntologyAnnotation):
-# characteristics (list, OntologyAnnotation):
-# comments (list, Comment):
 StudyMaterial_api_model = {
-    'other_materials': fields.List(fields.Nested(Characteristic_api_model)),
+    # other_materials -> otherMaterials     (list, OntologyAnnotation):
+    # sources                               (StudySource):
+    # samples                               (StudySample):
+    # comments                              (list, Comment):
+    'otherMaterials': fields.List(fields.Nested(Characteristic_api_model, attribute='other_materials')),
     'sources': fields.List(fields.Nested(StudySource_api_model)),
     'samples': fields.List(fields.Nested(StudySample_api_model)),
     'comments': fields.List(fields.Nested(Comment_api_model))

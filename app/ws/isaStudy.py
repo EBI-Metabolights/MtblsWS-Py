@@ -757,7 +757,7 @@ class StudyContacts(Resource):
             }
         ]
     )
-    @marshal_with(Person_api_model, envelope='StudyContacts')
+    @marshal_with(Person_api_model, envelope='people')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -1425,7 +1425,7 @@ class StudyMaterials(Resource):
             }
         ]
     )
-    @marshal_with(StudyMaterial_api_model, envelope='Study-materials')
+    @marshal_with(StudyMaterial_api_model, envelope='materials')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -1508,7 +1508,7 @@ class StudySources(Resource):
         for source in isa_study.sources:
             isa_sources_names.append({'name': source.name})
         logger.debug('Got %s', isa_sources_names)
-        return jsonify({"Study-sources": isa_sources_names})
+        return jsonify({"sources": isa_sources_names})
 
 
 class StudySource(Resource):
@@ -1564,7 +1564,7 @@ class StudySource(Resource):
             }
         ]
     )
-    @marshal_with(StudySource_api_model, envelope='Study_source')
+    @marshal_with(StudySource_api_model, envelope='source')
     def get(self, study_id, source_name):
         # param validation
         if study_id is None:
@@ -1829,7 +1829,7 @@ class StudySample(Resource):
             }
         ]
     )
-    @marshal_with(StudySample_api_model, envelope='Study_sample')
+    @marshal_with(StudySample_api_model, envelope='sample')
     def get(self, study_id, sample_name):
         # param validation
         if study_id is None:
