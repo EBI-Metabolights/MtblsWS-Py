@@ -176,7 +176,7 @@ class StudyTitle(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         title = isa_study.title
         logger.info('Got %s', title)
-        return jsonify({"Study-title": title})
+        return jsonify({"title": title})
 
     @swagger.operation(
         summary='Update MTBLS Study title',
@@ -340,7 +340,7 @@ class StudyDescription(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         description = isa_study.description
         logger.info('Got %s', description)
-        return jsonify({"Study-description": description})
+        return jsonify({"description": description})
 
     @swagger.operation(
         summary='Update MTBLS Study description',
@@ -757,7 +757,7 @@ class StudyContacts(Resource):
             }
         ]
     )
-    @marshal_with(Person_api_model, envelope='people')
+    @marshal_with(Person_api_model, envelope='contacts')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -1091,7 +1091,7 @@ class StudyDescriptors(Resource):
             }
         ]
     )
-    @marshal_with(OntologyAnnotation_api_model, envelope='StudyDescriptors')
+    @marshal_with(OntologyAnnotation_api_model, envelope='descriptors')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -1773,7 +1773,7 @@ class StudySamples(Resource):
         for samples in isa_study.samples:
             isa_samples_names.append({'name': samples.name})
         logger.debug('Got %s', isa_samples_names)
-        return jsonify({"Study-samples": isa_samples_names})
+        return jsonify({"samples": isa_samples_names})
 
 
 class StudySample(Resource):

@@ -576,7 +576,7 @@ StudySample_api_model = {
     'name': fields.String,
     'characteristics': fields.List(fields.Nested(Characteristic_api_model)),
     'derives_from': fields.List(fields.Nested(StudySource_api_model)),
-    'factorValues': fields.List(fields.Nested(FactorValue_api_model,attribute='factor_values')),
+    'factorValues': fields.List(fields.Nested(FactorValue_api_model), attribute='factor_values'),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -587,7 +587,7 @@ def serialize_study_sample(isa_obj):
         'name': isa_obj.name,
         'characteristics': json.loads(
             json.dumps(isa_obj.characteristics, default=serialize_characteristic, sort_keys=True)),
-        'factorValues': json.loads(
+        'factor_values': json.loads(
             json.dumps(isa_obj.factor_values, default=serialize_factor_value, sort_keys=True)),
         'derives_from': json.loads(
             json.dumps(isa_obj.derives_from, default=serialize_study_source, sort_keys=True)),
