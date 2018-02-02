@@ -356,11 +356,11 @@ def serialize_study_factor(isa_obj):
 
 def unserialize_study_factor(json_obj):
     name = ''
-    if 'factorName' in json_obj and json_obj['name'] is not None:
-        name = json_obj['name']
+    if 'factorName' in json_obj and json_obj['factorName'] is not None:
+        name = json_obj['factorName']
     factor_type = OntologyAnnotation()
-    if 'factorType' in json_obj and json_obj['factor_type'] is not None:
-        factor_type = unserialize_ontology_annotation(json_obj['factor_type'])
+    if 'factorType' in json_obj and json_obj['factorType'] is not None:
+        factor_type = unserialize_ontology_annotation(json_obj['factorType'])
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:

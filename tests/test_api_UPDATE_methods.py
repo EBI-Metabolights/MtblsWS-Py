@@ -882,6 +882,13 @@ class UpdateStudyFactorsTests(WsTests):
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
 
+    def check_Factors_class(self, obj):
+        self.assertIsNotNone(obj['factors'])
+        for factor in obj['factors']:
+            self.assertIsNotNone(factor['factorName'])
+            self.assertIsNotNone(factor['factorType'])
+            self.assertIsNotNone(factor['comments'])
+
     # Update Study Factors - Pub - Auth -> 200
     def test_update_factors_pub_auth(self):
         request = urllib.request.Request(url_pub_id + '/factors', data=self.data_new_factors, method='PUT')
@@ -893,7 +900,9 @@ class UpdateStudyFactorsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
+            j_resp = json.loads(body)
             self.assertIn('factors', body)
+            self.check_Factors_class(j_resp)
 
     # Update Study Factors - Pub - NoAuth -> 403
     def test_update_factors_pub_noAuth(self):
@@ -920,7 +929,9 @@ class UpdateStudyFactorsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
+            j_resp = json.loads(body)
             self.assertIn('factors', body)
+            self.check_Factors_class(j_resp)
 
     # Update Study Factors - Priv - NoAuth -> 403
     def test_update_factors_priv_noAuth(self):
@@ -976,7 +987,9 @@ class UpdateStudyFactorsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
+            j_resp = json.loads(body)
             self.assertIn('factors', body)
+            self.check_Factors_class(j_resp)
 
     # Update Study Factors - Pub - NoAuth - NoSave -> 403
     def test_update_factors_pub_noAuth_noSave(self):
@@ -1005,7 +1018,9 @@ class UpdateStudyFactorsTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
+            j_resp = json.loads(body)
             self.assertIn('factors', body)
+            self.check_Factors_class(j_resp)
 
     # Update Study Factors - Priv - NoAuth - NoSave -> 403
     def test_update_factors_priv_noAuth_noSave(self):
