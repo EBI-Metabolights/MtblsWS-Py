@@ -3970,6 +3970,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "9a0d014a-45a8-4c36-8ed5-47752abca286",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -3979,7 +3980,19 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
+									"tests[\"Body has descriptors\"] = responseBody.has('\"descriptors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.descriptors.length > 0) {",
+									"    var item = jsonData.descriptors[0]",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -4004,7 +4017,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/descriptors",
@@ -4065,7 +4078,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/descriptors",
@@ -4089,6 +4102,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "5bc0eeb5-de03-41e3-8942-d85c4b2a9ad7",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -4098,7 +4112,19 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
+									"tests[\"Body has descriptors\"] = responseBody.has('\"descriptors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.descriptors.length > 0) {",
+									"    var item = jsonData.descriptors[0]",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -4123,7 +4149,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/descriptors",
@@ -4183,7 +4209,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/descriptors",
@@ -4239,7 +4265,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//descriptors",
@@ -4299,7 +4325,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/descriptors",
@@ -4323,6 +4349,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "ad0cd6ce-b6e1-4aec-995d-f6d1d5db85f3",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -4332,7 +4359,19 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
+									"tests[\"Body has descriptors\"] = responseBody.has('\"descriptors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.descriptors.length > 0) {",
+									"    var item = jsonData.descriptors[0]",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -4361,7 +4400,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/descriptors",
@@ -4426,7 +4465,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/descriptors",
@@ -4450,6 +4489,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "7d6c7102-bda0-4a78-95de-b2943e09998c",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -4459,7 +4499,19 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyDescriptors\"] = responseBody.has('\"StudyDescriptors\":');",
+									"tests[\"Body has descriptors\"] = responseBody.has('\"descriptors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.descriptors.length > 0) {",
+									"    var item = jsonData.descriptors[0]",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -4488,7 +4540,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/descriptors",
@@ -4552,7 +4604,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/descriptors",
@@ -4612,7 +4664,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//descriptors",
@@ -4676,7 +4728,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"StudyDescriptors\": [\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\":\"nuclear magnetic resonance spectroscopy\",\n            \"term_accession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"term_source\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"term\": \"metabolic syndrome\",\n            \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}"
+							"raw": "{\n    \"descriptors\": [\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\":\"nuclear magnetic resonance spectroscopy\",\n            \"termAccession\":\"http://purl.obolibrary.org/obo/CHMO_0000591\"\n        },\n        {\n            \"termSource\": {\n                \"version\": null,\n                \"description\": null,\n                \"file\": null,\n                \"comments\": [],\n                \"name\": null\n            },\n            \"comments\": [\n\t\t      \t{\n\t\t      \t  \"name\": \"Updated\",\n\t\t      \t  \"value\": \"Updated with MtblsWs-Py\"\n\t\t      \t}\n\t\t      ],\n            \"annotationValue\": \"metabolic syndrome\",\n            \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000195\"\n        }\n    ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/descriptors",

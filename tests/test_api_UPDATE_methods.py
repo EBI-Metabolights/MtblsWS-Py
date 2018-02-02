@@ -1069,25 +1069,14 @@ class UpdateStudyFactorsTests(WsTests):
 
 class UpdateStudyDescriptorsTests(WsTests):
 
-    data_new_descriptors = b'{"StudyDescriptors": [' \
-                           b'{"termSource": {"version": null,"description": null,"file": null,' \
-                           b'"comments": [],"name": null},' \
-                           b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
-                           b'"annotationValue":"nuclear magnetic resonance spectroscopy",' \
-                           b'"termAccession":"http://purl.obolibrary.org/obo/CHMO_0000591"},' \
-                           b'{"termSource": {"version": null,"description": null,"file": null,' \
-                           b'"comments": [],"name": null},' \
-                           b'"comments": [{"name": "Updated","value": "Updated with MtblsWs-Py"}],' \
-                           b'"annotationValue": "metabolic syndrome",' \
-                           b'"termAccession": "http://www.ebi.ac.uk/efo/EFO_0000195"' \
-                           b'}]}'
+    data_new_descriptors = instance.config.TEST_DATA_DESCRIPTORS
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
 
     def check_Descriptors_class(self, obj):
-        self.assertIsNotNone(obj['StudyDescriptors'])
-        for descriptor in obj['StudyDescriptors']:
+        self.assertIsNotNone(obj['descriptors'])
+        for descriptor in obj['descriptors']:
             self.assertIsNotNone(descriptor['annotationValue'])
             self.assertIsNotNone(descriptor['termAccession'])
             self.assertIsNotNone(descriptor['termSource'])
@@ -1105,7 +1094,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('StudyDescriptors', body)
+            self.assertIn('descriptors', body)
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Pub - NoAuth -> 403
@@ -1134,7 +1123,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('StudyDescriptors', body)
+            self.assertIn('descriptors', body)
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Priv - NoAuth -> 403
@@ -1191,7 +1180,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('StudyDescriptors', body)
+            self.assertIn('descriptors', body)
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Pub - NoAuth - NoSave -> 403
@@ -1222,7 +1211,7 @@ class UpdateStudyDescriptorsTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('StudyDescriptors', body)
+            self.assertIn('descriptors', body)
             self.check_Descriptors_class(j_resp)
 
     # Update Study Descriptors - Priv - NoAuth - NoSave -> 403

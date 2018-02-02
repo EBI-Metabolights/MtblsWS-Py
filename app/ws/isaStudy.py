@@ -1107,7 +1107,7 @@ class StudyDescriptors(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_descriptors = isa_study.design_descriptors
-        str_descriptors = json.dumps({'StudyDescriptors': isa_descriptors}, default=serialize_ontology_annotation,
+        str_descriptors = json.dumps({'descriptors': isa_descriptors}, default=serialize_ontology_annotation,
                                      sort_keys=True)
         logger.info('Got %s', str_descriptors)
         return isa_descriptors
@@ -1175,7 +1175,7 @@ class StudyDescriptors(Resource):
             }
         ]
     )
-    @marshal_with(OntologyAnnotation_api_model, envelope='StudyDescriptors')
+    @marshal_with(OntologyAnnotation_api_model, envelope='descriptors')
     def put(self, study_id):
         # param validation
         if study_id is None:
@@ -1188,7 +1188,7 @@ class StudyDescriptors(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_descriptors = data_dict['StudyDescriptors']
+        json_descriptors = data_dict['descriptors']
         isa_descriptors = list()
         for json_descriptor in json_descriptors:
             isa_descriptor = unserialize_ontology_annotation(json_descriptor)
