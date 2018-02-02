@@ -98,7 +98,7 @@ OntologyAnnotation_api_model = {
 def serialize_ontology_annotation(isa_obj):
     assert isinstance(isa_obj, OntologyAnnotation)
     term_source = None
-    if hasattr(isa_obj, 'term_source') and isa_obj.term_source is not None:
+    if hasattr(isa_obj, 'termSource') and isa_obj.term_source is not None:
         term_source = serialize_ontology_source(isa_obj.term_source)
     return {
         'annotationValue': isa_obj.term,
@@ -110,14 +110,14 @@ def serialize_ontology_annotation(isa_obj):
 
 def unserialize_ontology_annotation(json_obj):
     term = ''
-    if 'term' in json_obj and json_obj['term'] is not None:
-        term = json_obj['term']
+    if 'annotationValue' in json_obj and json_obj['annotationValue'] is not None:
+        term = json_obj['annotationValue']
     term_source = None
-    if 'term_source' in json_obj and json_obj['term_source'] is not None:
-        term_source = unserialize_ontology_source(json_obj['term_source'])
+    if 'termSource' in json_obj and json_obj['termSource'] is not None:
+        term_source = unserialize_ontology_source(json_obj['termSource'])
     term_accession = ''
-    if 'term_accession' in json_obj and json_obj['term_accession'] is not None:
-        term_accession = json_obj['term_accession']
+    if 'termAccession' in json_obj and json_obj['termAccession'] is not None:
+        term_accession = json_obj['termAccession']
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
         for comment in json_obj['comments']:
@@ -290,14 +290,14 @@ def serialize_person(isa_obj):
 
 def unserialize_person(json_obj):
     last_name = ''
-    if 'last_name' in json_obj and json_obj['last_name'] is not None:
-        last_name = json_obj['last_name']
+    if 'lastName' in json_obj and json_obj['lastName'] is not None:
+        last_name = json_obj['lastName']
     first_name = ''
-    if 'first_name' in json_obj and json_obj['first_name'] is not None:
-        first_name = json_obj['first_name']
+    if 'firstName' in json_obj and json_obj['firstName'] is not None:
+        first_name = json_obj['firstName']
     mid_initials = ''
-    if 'mid_initials' in json_obj and json_obj['mid_initials'] is not None:
-        mid_initials = json_obj['mid_initials']
+    if 'midInitials' in json_obj and json_obj['midInitials'] is not None:
+        mid_initials = json_obj['midInitials']
     email = ''
     if 'email' in json_obj and json_obj['email'] is not None:
         email = json_obj['email']
@@ -356,10 +356,10 @@ def serialize_study_factor(isa_obj):
 
 def unserialize_study_factor(json_obj):
     name = ''
-    if 'name' in json_obj and json_obj['name'] is not None:
+    if 'factorName' in json_obj and json_obj['name'] is not None:
         name = json_obj['name']
     factor_type = OntologyAnnotation()
-    if 'factor_type' in json_obj and json_obj['factor_type'] is not None:
+    if 'factorType' in json_obj and json_obj['factor_type'] is not None:
         factor_type = unserialize_ontology_annotation(json_obj['factor_type'])
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:

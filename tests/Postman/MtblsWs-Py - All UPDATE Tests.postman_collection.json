@@ -1485,14 +1485,15 @@
 			]
 		},
 		{
-			"name": "Update Study Protocols",
+			"name": "Update Study Contacts",
 			"item": [
 				{
-					"name": "Update Study Protocols - Pub - Auth -> 200",
+					"name": "Update Study Contacts - Pub - Auth -> 200",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"id": "500b4598-1ac7-40cf-9a97-1bd2e87c796c",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1502,7 +1503,906 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has contacts\"] = responseBody.has('\"contacts\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.contacts.length > 0) {",
+									"    var item = jsonData.contacts[0]",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - Pub - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3ea6ea3b-1bf1-4de8-96fc-16ded466fe49",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - Priv - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "17c9a9a9-e3c3-4ed6-938b-9c877d054874",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"contacts\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.contacts.length > 0) {",
+									"    var item = jsonData.contacts[0]",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "51c0ac83-414d-4a0f-b73a-ae807a36fe3a",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fef6fa4b-5c76-451c-9ac9-1eaad74d8411",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e9b2be8c-3c77-4009-b1c5-4d088d7425b8",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{BadStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - Pub - Auth - NoSave -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e44aa18b-1221-4d58-9dd0-479c556a6fbd",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"contacts\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.contacts.length > 0) {",
+									"    var item = jsonData.contacts[0]",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - Pub - NoAuth - NoSave -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "741d90a1-3678-472d-b3b2-7b9751862d27",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - Priv - Auth - NoSave -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "87c52fbb-bf89-4eb3-bcfa-5460e00ca706",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"contacts\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.contacts.length > 0) {",
+									"    var item = jsonData.contacts[0]",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - Priv - NoAuth - NoSave -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "0dd952e1-5ec3-4cf3-a15c-6d122db564df",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - NullId - NoSave -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "cbf7d8a1-2668-4445-a763-8f80f8fe82d9",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts - BadId - NoSave -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "072f699c-2c3c-44e0-860a-3f31cd99efbb",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							},
+							{
+								"key": "save_audit_copy",
+								"value": "False"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{BadStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Study Contacts with empty Comments - Pub -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "bb154056-6707-45b4-842c-1f1bae543693",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"contacts\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.contacts.length > 0) {",
+									"    var item = jsonData.contacts[0]",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"contacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"study",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Update Study Protocols",
+			"item": [
+				{
+					"name": "Update Study Protocols - Pub - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "884dd7b1-3ae6-4b5c-9098-69e11bb35c75",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.protocols.length > 0) {",
+									"    var item = jsonData.protocols[0]",
+									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
+									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
+									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
+									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
+									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
+									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
+									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
+									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
+									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
+									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
+									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
+									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
+									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
+									"    tests[\"JSON response key 'version' not Null\"] = item.version;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -1527,7 +2427,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
@@ -1588,7 +2488,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
@@ -1612,6 +2512,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "f60048d9-6789-46da-a315-3b6a6672152f",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1621,7 +2522,27 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.protocols.length > 0) {",
+									"    var item = jsonData.protocols[0]",
+									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
+									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
+									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
+									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
+									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
+									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
+									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
+									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
+									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
+									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
+									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
+									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
+									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
+									"    tests[\"JSON response key 'version' not Null\"] = item.version;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -1646,7 +2567,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
@@ -1706,7 +2627,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
@@ -1762,7 +2683,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//protocols",
@@ -1822,7 +2743,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/protocols",
@@ -1846,6 +2767,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "af99c1c9-a94e-413a-a3a4-3702348f351f",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1855,7 +2777,27 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.protocols.length > 0) {",
+									"    var item = jsonData.protocols[0]",
+									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
+									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
+									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
+									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
+									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
+									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
+									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
+									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
+									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
+									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
+									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
+									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
+									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
+									"    tests[\"JSON response key 'version' not Null\"] = item.version;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -1884,7 +2826,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
@@ -1949,7 +2891,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
@@ -1973,6 +2915,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "ce44f559-32cd-40c3-b0b5-ad9f659a53b1",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -1982,7 +2925,27 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has StudyProtocols\"] = responseBody.has('\"StudyProtocols\":');",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.protocols.length > 0) {",
+									"    var item = jsonData.protocols[0]",
+									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
+									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
+									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
+									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
+									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
+									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
+									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
+									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
+									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
+									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
+									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
+									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
+									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
+									"    tests[\"JSON response key 'version' not Null\"] = item.version;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
 									"tests[\"Body has Updated with MtblsWs-Py\"] = responseBody.has('\"Updated with MtblsWs-Py\"');",
 									""
 								]
@@ -2011,7 +2974,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
@@ -2075,7 +3038,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
@@ -2135,7 +3098,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//protocols",
@@ -2199,7 +3162,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"StudyProtocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
+							"raw": "{\n  \"protocols\": [\n    {\n      \"comments\": [\n      \t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ],\n      \"components\": [],\n      \"description\": \"Protocol description here.\",\n      \"name\": \"Protocol name here.\",\n      \"parameters\": [\n        {\n          \"comments\": [],\n          \"parameter_name\": {\n            \"comments\": [],\n            \"term\": \"Parameter name here.\",\n            \"term_accession\": \"\",\n            \"term_source\": null\n          },\n          \"unit\": null\n        }\n      ],\n      \"protocol_type\": {\n        \"comments\": [],\n        \"term\": \"Protocol type name here\",\n        \"term_accession\": \"\",\n        \"term_source\": null\n      },\n      \"uri\": \"\",\n      \"version\": \"{{$randomInt}}\"\n    }\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/protocols",
@@ -2212,839 +3175,6 @@
 								"study",
 								"{{BadStudyId}}",
 								"protocols"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Update Study Contacts",
-			"item": [
-				{
-					"name": "Update Study Contacts - Pub - Auth -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyContacts\"] = responseBody.has('\"StudyContacts\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.StudyContacts.length > 0) {",
-									"    tests[\"JSON response has key 'first_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('first_name');",
-									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
-									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
-									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
-									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
-									"    }",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - Pub - NoAuth -> 403",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "e28390c0-0b66-4064-861f-efd4333378e8",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 403\"] = responseCode.code === 403;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyContacts\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{WrongAuth}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - Priv - Auth -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyContacts\"] = responseBody.has('\"StudyContacts\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.StudyContacts.length > 0) {",
-									"    tests[\"JSON response has key 'first_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('first_name');",
-									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
-									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
-									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
-									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
-									"    }",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - Priv - NoAuth -> 403",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 403\"] = responseCode.code === 403;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyContacts\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{WrongAuth}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - NullId -> 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 404\"] = responseCode.code === 404;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyContacts\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - BadId -> 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 404\"] = responseCode.code === 404;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyContacts\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{BadStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - Pub - Auth - NoSave -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyContacts\"] = responseBody.has('\"StudyContacts\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.StudyContacts.length > 0) {",
-									"    tests[\"JSON response has key 'first_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('first_name');",
-									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
-									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
-									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
-									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
-									"    }",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - Pub - NoAuth - NoSave -> 403",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "9c7bfc32-5320-48a1-b577-60a7f1e3fbea",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 403\"] = responseCode.code === 403;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyContacts\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{WrongAuth}}"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - Priv - Auth - NoSave -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyContacts\"] = responseBody.has('\"StudyContacts\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.StudyContacts.length > 0) {",
-									"    tests[\"JSON response has key 'first_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('first_name');",
-									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
-									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
-									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
-									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
-									"    }",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - Priv - NoAuth - NoSave -> 403",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 403\"] = responseCode.code === 403;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyContacts\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{WrongAuth}}"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - NullId - NoSave -> 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 404\"] = responseCode.code === 404;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyContacts\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts - BadId - NoSave -> 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 404\"] = responseCode.code === 404;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain StudyContacts\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							},
-							{
-								"key": "save_audit_copy",
-								"value": "False"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{BadStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Study Contacts with empty Comments - Pub -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has StudyContacts\"] = responseBody.has('\"StudyContacts\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.StudyContacts.length > 0) {",
-									"    tests[\"JSON response has key 'first_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('first_name');",
-									"    tests[\"JSON response has key 'last_name'\"] = jsonData.StudyContacts[0].hasOwnProperty('last_name');",
-									"    tests[\"JSON response has key 'email'\"] = jsonData.StudyContacts[0].hasOwnProperty('email');",
-									"    if (jsonData.StudyContacts[0].roles.length > 0) {",
-									"    tests[\"JSON response has key 'role term'\"] = jsonData.StudyContacts[0].roles[0].hasOwnProperty('term');",
-									"    }",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"StudyContacts\": [\n        {\n            \"phone\": \"012345678901\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n\t\t          \"term\": \"investigator\",\n\t\t          \"comments\": []\n\t\t        }\n\t\t    ],\n            \"first_name\": \"John\",\n            \"address\": \"\",\n            \"affiliation\": \"Life Sciences Institute\",\n            \"last_name\": \"Doe\",\n            \"fax\": \"\",\n            \"comments\": [\n\t\t        {\n\t\t          \"name\": \"\",\n\t\t          \"value\": \"\"\n\t\t        }\n\t\t      ],\n            \"email\": \"doej@a.mail.com\"\n        },\n        {\n            \"phone\": \"012345678902\",\n            \"mid_initials\": \"A\",\n            \"roles\": [\n\t\t        {\n\t\t          \"term_source\": {\n\t\t            \"file\": null,\n\t\t            \"version\": null,\n\t\t            \"name\": null,\n\t\t            \"comments\": [],\n\t\t            \"description\": null\n\t\t          },\n\t\t          \"term_accession\": \"\",\n\t\t          \"term\": \"Bioinformatician\",\n\t\t          \"comments\": []\n\t\t        }\n    \t\t],\n            \"first_name\": \"Jack\",\n            \"address\": \"\",\n            \"affiliation\": \"Department of Biochemistry\",\n            \"last_name\": \"Smith\",\n            \"fax\": \"\",\n            \"comments\": [\n\t\t        {\n\t\t          \"name\": \"Updated\",\n\t\t          \"value\": \"Updated with MtblsWS-Py\"\n\t\t        }\n\t\t      ],\n            \"email\": \"smithj@a.mail.com\"\n        }\n    ]\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"contacts"
 							]
 						}
 					},

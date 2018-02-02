@@ -656,7 +656,7 @@ class StudyProtocols(Resource):
             }
         ]
     )
-    @marshal_with(Protocol_api_model, envelope='StudyProtocols')
+    @marshal_with(Protocol_api_model, envelope='protocols')
     def put(self, study_id):
         # param validation
         if study_id is None:
@@ -669,7 +669,7 @@ class StudyProtocols(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_protocols = data_dict['StudyProtocols']
+        json_protocols = data_dict['protocols']
         isa_protocols = list()
         for json_protocol in json_protocols:
             isa_protocol = unserialize_protocol(json_protocol)
@@ -773,7 +773,7 @@ class StudyContacts(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_contacts = isa_study.contacts
-        str_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_person, sort_keys=True)
+        str_contacts = json.dumps({'contacts': isa_contacts}, default=serialize_person, sort_keys=True)
         logger.info('Got %s', str_contacts)
         return isa_contacts
 
@@ -840,7 +840,7 @@ class StudyContacts(Resource):
             }
         ]
     )
-    @marshal_with(Person_api_model, envelope='StudyContacts')
+    @marshal_with(Person_api_model, envelope='contacts')
     def put(self, study_id):
         # param validation
         if study_id is None:
@@ -853,7 +853,7 @@ class StudyContacts(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_contacts = data_dict['StudyContacts']
+        json_contacts = data_dict['contacts']
         isa_contacts = list()
         for json_contact in json_contacts:
             isa_contact = unserialize_person(json_contact)
@@ -1007,7 +1007,7 @@ class StudyFactors(Resource):
             }
         ]
     )
-    @marshal_with(StudyFactor_api_model, envelope='StudyFactors')
+    @marshal_with(StudyFactor_api_model, envelope='factors')
     def put(self, study_id):
         # param validation
         if study_id is None:
@@ -1020,7 +1020,7 @@ class StudyFactors(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_factors = data_dict['StudyFactors']
+        json_factors = data_dict['factors']
         isa_factors = list()
         for json_factor in json_factors:
             isa_factor = unserialize_study_factor(json_factor)
