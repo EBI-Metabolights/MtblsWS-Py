@@ -1662,7 +1662,7 @@ class StudySource(Resource):
             }
         ]
     )
-    @marshal_with(StudySource_api_model, envelope='Updated_source')
+    @marshal_with(StudySource_api_model, envelope='source')
     def put(self, study_id, source_name):
         # param validation
         if study_id is None:
@@ -1677,7 +1677,7 @@ class StudySource(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_updated_source = data_dict['Study_source']
+        json_updated_source = data_dict['source']
         isa_updated_source = unserialize_study_source(json_updated_source)
         # check for keeping copies
         save_audit_copy = False

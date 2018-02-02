@@ -1461,8 +1461,8 @@ class UpdateStudySourceTests(WsTests):
         time.sleep(1)  # sleep time in seconds
 
     def check_Source_class(self, obj):
-        self.assertIsNotNone(obj['Updated_source'])
-        source = obj['Updated_source']
+        self.assertIsNotNone(obj['source'])
+        source = obj['source']
         self.assertIsNotNone(source['name'])
         self.assertIsNotNone(source['characteristics'])
         self.assertIsNotNone(source['comments'])
@@ -1481,7 +1481,7 @@ class UpdateStudySourceTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('Updated_source', body)
+            self.assertIn('source', body)
             self.check_Source_class(j_resp)
 
     # Update Study Source - Pub - NoAuth -> 403
@@ -1514,7 +1514,7 @@ class UpdateStudySourceTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('Updated_source', body)
+            self.assertIn('source', body)
             self.check_Source_class(j_resp)
 
     # Update Study Source - Priv - NoAuth -> 403
@@ -1579,7 +1579,7 @@ class UpdateStudySourceTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('Updated_source', body)
+            self.assertIn('source', body)
             self.check_Source_class(j_resp)
 
     # Update Study Source - Pub - NoAuth - NoSave -> 403
@@ -1613,7 +1613,7 @@ class UpdateStudySourceTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('Updated_source', body)
+            self.assertIn('source', body)
             self.check_Source_class(j_resp)
 
     # Update Study Source - Priv - NoAuth - NoSave -> 403
