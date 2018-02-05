@@ -1676,12 +1676,12 @@ class UpdateStudySampleTests(WsTests):
         time.sleep(1)  # sleep time in seconds
 
     def check_Sample_class(self, obj):
-        self.assertIsNotNone(obj['Updated_sample'])
-        sample = obj['Updated_sample']
+        self.assertIsNotNone(obj['sample'])
+        sample = obj['sample']
         self.assertIsNotNone(sample['name'])
         self.assertIsNotNone(sample['derives_from'])
         self.assertIsNotNone(sample['characteristics'])
-        self.assertIsNotNone(sample['factor_values'])
+        self.assertIsNotNone(sample['factorValues'])
         self.assertIsNotNone(sample['comments'])
 
     # Update Study Sample - Pub - Auth -> 200
@@ -1698,7 +1698,7 @@ class UpdateStudySampleTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('Updated_sample', body)
+            self.assertIn('sample', body)
             self.check_Sample_class(j_resp)
 
     # Update Study Sample - Pub - NoAuth -> 403
@@ -1731,7 +1731,7 @@ class UpdateStudySampleTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('Updated_sample', body)
+            self.assertIn('sample', body)
             self.check_Sample_class(j_resp)
 
     # Update Study Sample - Priv - NoAuth -> 403
@@ -1796,7 +1796,7 @@ class UpdateStudySampleTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('Updated_sample', body)
+            self.assertIn('sample', body)
             self.check_Sample_class(j_resp)
 
     # Update Study Sample - Pub - NoAuth - NoSave -> 403
@@ -1831,7 +1831,7 @@ class UpdateStudySampleTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             j_resp = json.loads(body)
-            self.assertIn('Updated_sample', body)
+            self.assertIn('sample', body)
             self.check_Sample_class(j_resp)
 
     # Update Study Sample - Priv - NoAuth - NoSave -> 403

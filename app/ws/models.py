@@ -491,7 +491,7 @@ FactorValue_api_model = {
     # value                         (OntologyAnnotation):
     # unit                          (OntologyAnnotation):
     # comments                      (list, Comment):
-    'factorName': fields.Nested(StudyFactor_api_model, attribute='factor_name'),
+    'category': fields.Nested(StudyFactor_api_model, attribute='factor_name'),
     'value': FactorValueItem(attribute='value'),
     'unit': fields.Nested(OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
@@ -510,8 +510,8 @@ def serialize_factor_value(isa_obj):
 
 def unserialize_factor_value(json_obj):
     factor_name = StudyFactor()
-    if 'factor_name' in json_obj and json_obj['factor_name'] is not None:
-        factor_name = unserialize_study_factor(json_obj['factor_name'])
+    if 'factorName' in json_obj and json_obj['factorName'] is not None:
+        factor_name = unserialize_study_factor(json_obj['factorName'])
     value = OntologyAnnotation()
     if 'value' in json_obj and json_obj['value'] is not None:
         value = unserialize_ontology_annotation(json_obj['value'])
@@ -587,7 +587,7 @@ def serialize_study_sample(isa_obj):
         'name': isa_obj.name,
         'characteristics': json.loads(
             json.dumps(isa_obj.characteristics, default=serialize_characteristic, sort_keys=True)),
-        'factor_values': json.loads(
+        'factorValues': json.loads(
             json.dumps(isa_obj.factor_values, default=serialize_factor_value, sort_keys=True)),
         'derives_from': json.loads(
             json.dumps(isa_obj.derives_from, default=serialize_study_source, sort_keys=True)),
@@ -607,8 +607,8 @@ def unserialize_study_sample(json_obj):
     if 'derives_from' in json_obj and json_obj['derives_from'] is not None:
         derives_from = json_obj['derives_from']
     factor_values = list()
-    if 'factor_values' in json_obj and json_obj['factor_values'] is not None:
-        for factor_value in json_obj['factor_values']:
+    if 'factorValues' in json_obj and json_obj['factorValues'] is not None:
+        for factor_value in json_obj['factorValues']:
             factor_values.append(unserialize_factor_value(factor_value))
     comments = list()
     if 'comments' in json_obj and json_obj['comments'] is not None:
