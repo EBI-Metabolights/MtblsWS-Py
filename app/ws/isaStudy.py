@@ -176,7 +176,7 @@ class StudyTitle(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         title = isa_study.title
         logger.info('Got %s', title)
-        return jsonify({"Study-title": title})
+        return jsonify({"title": title})
 
     @swagger.operation(
         summary='Update MTBLS Study title',
@@ -340,7 +340,7 @@ class StudyDescription(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         description = isa_study.description
         logger.info('Got %s', description)
-        return jsonify({"Study-description": description})
+        return jsonify({"description": description})
 
     @swagger.operation(
         summary='Update MTBLS Study description',
@@ -572,7 +572,7 @@ class StudyProtocols(Resource):
             }
         ]
     )
-    @marshal_with(Protocol_api_model, envelope='StudyProtocols')
+    @marshal_with(Protocol_api_model, envelope='protocols')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -656,7 +656,7 @@ class StudyProtocols(Resource):
             }
         ]
     )
-    @marshal_with(Protocol_api_model, envelope='StudyProtocols')
+    @marshal_with(Protocol_api_model, envelope='protocols')
     def put(self, study_id):
         # param validation
         if study_id is None:
@@ -669,7 +669,7 @@ class StudyProtocols(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_protocols = data_dict['StudyProtocols']
+        json_protocols = data_dict['protocols']
         isa_protocols = list()
         for json_protocol in json_protocols:
             isa_protocol = unserialize_protocol(json_protocol)
@@ -757,7 +757,7 @@ class StudyContacts(Resource):
             }
         ]
     )
-    @marshal_with(Person_api_model, envelope='StudyContacts')
+    @marshal_with(Person_api_model, envelope='contacts')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -773,7 +773,7 @@ class StudyContacts(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_contacts = isa_study.contacts
-        str_contacts = json.dumps({'StudyContacts': isa_contacts}, default=serialize_person, sort_keys=True)
+        str_contacts = json.dumps({'contacts': isa_contacts}, default=serialize_person, sort_keys=True)
         logger.info('Got %s', str_contacts)
         return isa_contacts
 
@@ -840,7 +840,7 @@ class StudyContacts(Resource):
             }
         ]
     )
-    @marshal_with(Person_api_model, envelope='StudyContacts')
+    @marshal_with(Person_api_model, envelope='contacts')
     def put(self, study_id):
         # param validation
         if study_id is None:
@@ -853,7 +853,7 @@ class StudyContacts(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_contacts = data_dict['StudyContacts']
+        json_contacts = data_dict['contacts']
         isa_contacts = list()
         for json_contact in json_contacts:
             isa_contact = unserialize_person(json_contact)
@@ -924,7 +924,7 @@ class StudyFactors(Resource):
             }
         ]
     )
-    @marshal_with(StudyFactor_api_model, envelope='StudyFactors')
+    @marshal_with(StudyFactor_api_model, envelope='factors')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -940,7 +940,7 @@ class StudyFactors(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_factors = isa_study.factors
-        str_factors = json.dumps({'StudyFactors': isa_factors}, default=serialize_study_factor, sort_keys=True)
+        str_factors = json.dumps({'factors': isa_factors}, default=serialize_study_factor, sort_keys=True)
         logger.info('Got %s', str_factors)
         return isa_factors
 
@@ -1007,7 +1007,7 @@ class StudyFactors(Resource):
             }
         ]
     )
-    @marshal_with(StudyFactor_api_model, envelope='StudyFactors')
+    @marshal_with(StudyFactor_api_model, envelope='factors')
     def put(self, study_id):
         # param validation
         if study_id is None:
@@ -1020,7 +1020,7 @@ class StudyFactors(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_factors = data_dict['StudyFactors']
+        json_factors = data_dict['factors']
         isa_factors = list()
         for json_factor in json_factors:
             isa_factor = unserialize_study_factor(json_factor)
@@ -1091,7 +1091,7 @@ class StudyDescriptors(Resource):
             }
         ]
     )
-    @marshal_with(OntologyAnnotation_api_model, envelope='StudyDescriptors')
+    @marshal_with(OntologyAnnotation_api_model, envelope='descriptors')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -1107,7 +1107,7 @@ class StudyDescriptors(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_descriptors = isa_study.design_descriptors
-        str_descriptors = json.dumps({'StudyDescriptors': isa_descriptors}, default=serialize_ontology_annotation,
+        str_descriptors = json.dumps({'descriptors': isa_descriptors}, default=serialize_ontology_annotation,
                                      sort_keys=True)
         logger.info('Got %s', str_descriptors)
         return isa_descriptors
@@ -1175,7 +1175,7 @@ class StudyDescriptors(Resource):
             }
         ]
     )
-    @marshal_with(OntologyAnnotation_api_model, envelope='StudyDescriptors')
+    @marshal_with(OntologyAnnotation_api_model, envelope='descriptors')
     def put(self, study_id):
         # param validation
         if study_id is None:
@@ -1188,7 +1188,7 @@ class StudyDescriptors(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_descriptors = data_dict['StudyDescriptors']
+        json_descriptors = data_dict['descriptors']
         isa_descriptors = list()
         for json_descriptor in json_descriptors:
             isa_descriptor = unserialize_ontology_annotation(json_descriptor)
@@ -1425,7 +1425,7 @@ class StudyMaterials(Resource):
             }
         ]
     )
-    @marshal_with(StudyMaterial_api_model, envelope='Study-materials')
+    @marshal_with(StudyMaterial_api_model, envelope='materials')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -1508,7 +1508,7 @@ class StudySources(Resource):
         for source in isa_study.sources:
             isa_sources_names.append({'name': source.name})
         logger.debug('Got %s', isa_sources_names)
-        return jsonify({"Study-sources": isa_sources_names})
+        return jsonify({"sources": isa_sources_names})
 
 
 class StudySource(Resource):
@@ -1564,7 +1564,7 @@ class StudySource(Resource):
             }
         ]
     )
-    @marshal_with(StudySource_api_model, envelope='Study_source')
+    @marshal_with(StudySource_api_model, envelope='source')
     def get(self, study_id, source_name):
         # param validation
         if study_id is None:
@@ -1662,7 +1662,7 @@ class StudySource(Resource):
             }
         ]
     )
-    @marshal_with(StudySource_api_model, envelope='Updated_source')
+    @marshal_with(StudySource_api_model, envelope='source')
     def put(self, study_id, source_name):
         # param validation
         if study_id is None:
@@ -1677,7 +1677,7 @@ class StudySource(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_updated_source = data_dict['Study_source']
+        json_updated_source = data_dict['source']
         isa_updated_source = unserialize_study_source(json_updated_source)
         # check for keeping copies
         save_audit_copy = False
@@ -1773,7 +1773,7 @@ class StudySamples(Resource):
         for samples in isa_study.samples:
             isa_samples_names.append({'name': samples.name})
         logger.debug('Got %s', isa_samples_names)
-        return jsonify({"Study-samples": isa_samples_names})
+        return jsonify({"samples": isa_samples_names})
 
 
 class StudySample(Resource):
@@ -1829,7 +1829,7 @@ class StudySample(Resource):
             }
         ]
     )
-    @marshal_with(StudySample_api_model, envelope='Study_sample')
+    @marshal_with(StudySample_api_model, envelope='sample')
     def get(self, study_id, sample_name):
         # param validation
         if study_id is None:
@@ -1926,7 +1926,7 @@ class StudySample(Resource):
             }
         ]
     )
-    @marshal_with(StudySample_api_model, envelope='Updated_sample')
+    @marshal_with(StudySample_api_model, envelope='sample')
     def put(self, study_id, sample_name):
         # param validation
         if study_id is None:
@@ -1941,7 +1941,7 @@ class StudySample(Resource):
         if request.data is None or request.json is None:
             abort(400)
         data_dict = json.loads(request.data.decode('utf-8'))
-        json_updated_sample = data_dict['Study_sample']
+        json_updated_sample = data_dict['sample']
         isa_updated_sample = unserialize_study_sample(json_updated_sample)
         # check for keeping copies
         save_audit_copy = False
