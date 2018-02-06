@@ -16,48 +16,6 @@ wsc = WsClient()
 
 
 class MtblsStudy(Resource):
-    """Get the Study in different formats"""
-    @swagger.operation(
-        summary="Get MTBLS Study",
-        nickname="Get MTBLS Study",
-        notes="Get the MTBLS Study with {study_id} in JSON format.",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": False,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. The Study is returned, JSON format."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
     def get(self, study_id):
         """
         Get study from MetaboLights WS
