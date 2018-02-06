@@ -275,7 +275,7 @@ class StudyTitle(Resource):
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', new_title)
-        return jsonify({"Study-title": new_title})
+        return jsonify({"title": new_title})
 
 
 class StudyDescription(Resource):
@@ -438,7 +438,7 @@ class StudyDescription(Resource):
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', new_description)
-        return jsonify({"Study-description": new_description})
+        return jsonify({"description": new_description})
 
 
 class StudyNew(Resource):
