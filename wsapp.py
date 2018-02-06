@@ -45,7 +45,9 @@ def initialize_app(flask_app):
                        apiVersion=app.config.get('API_VERSION'),
                        basePath=app.config.get('WS_APP_BASE_LINK'),
                        api_spec_url=app.config.get('API_DOC'),
-                       resourcePath=res_path)
+                       resourcePath=res_path,
+                       description='MtblsWS-Py : MetaboLights Python-based REST service'
+                       )
     api.add_resource(About, res_path)
     api.add_resource(MtblsStudy, res_path + "/study/<string:study_id>")
     api.add_resource(StudyPubList, res_path + "/study/list")
