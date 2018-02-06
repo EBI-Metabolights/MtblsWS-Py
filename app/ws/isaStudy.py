@@ -468,8 +468,8 @@ class StudyNew(Resource):
         ],
         responseMessages = [
             {
-                "code": 200,
-                "message": "OK."
+                "code": 201,
+                "message": "Created."
             },
             {
                 "code": 400,
@@ -520,9 +520,9 @@ class StudyNew(Resource):
                                        sub_date=sub_date,
                                        pub_rel_date=pub_rel_date)
         logger.info('New MTBLS Study, title: %s, desc.: %s, pub.rel.date: %s',
-                       title, description, pub_rel_date)
+                    title, description, pub_rel_date)
 
-        return inv_obj
+        return inv_obj, 201
 
 
 class StudyProtocols(Resource):
