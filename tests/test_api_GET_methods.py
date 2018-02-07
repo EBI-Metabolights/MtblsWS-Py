@@ -49,23 +49,23 @@ class AboutTests(WsTests):
             self.assertEqual(response.code, 200)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('About-WS', body)
-            self.assertIn('WS-App', body)
-            self.assertIn('WS-Name', body)
-            self.assertIn('WS-URL', body)
-            self.assertIn('WS-Version', body)
-            self.assertIn('WS-Description', body)
-            self.assertIn('WS-API', body)
-            self.assertIn('API-Specification', body)
-            self.assertIn('API-Version', body)
-            self.assertIn('API-Documentation', body)
+            self.assertIn('AboutWS', body)
+            self.assertIn('WsApp', body)
+            self.assertIn('WsName', body)
+            self.assertIn('WsURL', body)
+            self.assertIn('WsVersion', body)
+            self.assertIn('WsDescription', body)
+            self.assertIn('WsApi', body)
+            self.assertIn('ApiSpecification', body)
+            self.assertIn('ApiVersion', body)
+            self.assertIn('ApiDocumentation', body)
 
 
 class GetStudyPubListTests(WsTests):
 
     # Get All Public Studies - Pub -> 200
     def test_get_pub_studies(self):
-        request = urllib.request.Request(url_null_id + 'list', method='GET')
+        request = urllib.request.Request(instance.config.TEST_URL_BASE_PATH, method='GET')
         with urllib.request.urlopen(request) as response:
             self.assertEqual(response.code, 200)
             header = response.info()
