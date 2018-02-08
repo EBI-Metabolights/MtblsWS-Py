@@ -336,7 +336,7 @@ class UpdateStudyDescriptionTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-description', body)
+            self.assertIn('description', body)
 
     # Update Study Description - Pub - NoAuth -> 403
     def test_update_description_pub_noAuth(self):
@@ -363,7 +363,7 @@ class UpdateStudyDescriptionTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-description', body)
+            self.assertIn('description', body)
 
     # Update Study Description - Priv - NoAuth -> 403
     def test_update_description_priv_noAuth(self):
@@ -418,7 +418,7 @@ class UpdateStudyDescriptionTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-description', body)
+            self.assertIn('description', body)
 
     # Update Study Description - Pub - NoAuth - NoSave -> 403
     def test_update_description_pub_noAuth_noSave(self):
@@ -447,7 +447,7 @@ class UpdateStudyDescriptionTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-description', body)
+            self.assertIn('description', body)
 
     # Update Study Description - Priv - NoAuth - NoSave -> 403
     def test_update_description_priv_noAuth_noSave(self):

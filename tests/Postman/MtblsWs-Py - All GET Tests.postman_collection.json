@@ -1575,14 +1575,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/description",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/description",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"description"
 							]
@@ -1637,14 +1637,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/description",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/description",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"description"
 							]
@@ -1699,14 +1699,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/description",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/description",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"description"
 							]
@@ -1761,14 +1761,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/description",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/description",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"description"
 							]
@@ -1782,6 +1782,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "a4776e35-d94b-49c5-8ef5-6e4d01b7afb2",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 401\"] = responseCode.code === 401;",
@@ -1793,7 +1794,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body does NOT contain description\"] = !(responseBody.has('\"description\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -1817,14 +1818,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/description",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/description",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"description"
 							]
@@ -1838,6 +1839,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "4f5e355b-0be2-4270-a391-c31503e023a3",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 403\"] = responseCode.code === 403;",
@@ -1849,7 +1851,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body does NOT contain description\"] = !(responseBody.has('\"description\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -1877,14 +1879,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/description",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/description",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"description"
 							]
@@ -1898,6 +1900,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "376b9c23-e27a-4cc0-aa47-60e8c34c4301",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 404\"] = responseCode.code === 404;",
@@ -1909,7 +1912,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body does NOT contain description\"] = !(responseBody.has('\"description\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -1933,14 +1936,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//description",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies//description",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"",
 								"description"
 							]
@@ -1954,6 +1957,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "d0f38fa9-f223-466d-bb35-595cf12440a0",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 404\"] = responseCode.code === 404;",
@@ -1965,7 +1969,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-description\"] = !(responseBody.has('\"Study-description\":'));",
+									"tests[\"Body does NOT contain description\"] = !(responseBody.has('\"description\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -1993,14 +1997,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/description",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{BadStudyId}}/description",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{BadStudyId}}",
 								"description"
 							]
