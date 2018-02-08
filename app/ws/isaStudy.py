@@ -17,35 +17,7 @@ iac = IsaApiClient()
 wsc = WsClient()
 
 
-class StudyPubList(Resource):
-    @swagger.operation(
-        summary="Get All Public Studies",
-        nickname="Get All Public Studies",
-        notes="Get a list of all public Studies in MetaboLights.",
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            }
-        ]
-    )
-    def get(self):
-        """
-        Get all public Studies
-        :return: a list with all the public Studies in MetaboLights
-        """
-
-        logger.info('Getting all public studies')
-        pub_list = wsc.get_public_studies()
-        logger.info('... found %d public studies', len(pub_list['content']))
-        return jsonify(pub_list)
-
-
-class Study(Resource):
+class IsaJsonStudy(Resource):
     @swagger.operation(
         summary="Get ISA-JSON Study",
         nickname="Get ISA-JSON Study",
@@ -91,26 +63,136 @@ class Study(Resource):
             }
         ]
     )
+    @marshal_with(Investigation_api_model, envelope='investigation')
     def get(self, study_id):
         """
         Get Study in ISA-JSON format
         :param study_id: MTBLS study identifier
         :return: an ISA-JSON representation of the Study
         """
-
         # param validation
         if study_id is None:
             abort(404)
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
         logger.info('Getting JSON Study %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
         isa_obj = iac.get_isa_json(study_id, user_token)
+        str_inv = json.dumps({'investigation': isa_obj}, default=serialize_investigation, sort_keys=True)
         logger.info('... found ISA-JSON obj: %s %s', isa_obj.get('title'), isa_obj.get('identifier'))
-        return jsonify(isa_obj)
+        return isa_obj
+
+class IsaJsonStudies(Resource):
+    @swagger.operation(
+        summary="Get ISA-JSON Studies",
+        notes="Get a list of all public Studies in MetaboLights, in ISA-JSON format.",
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            }
+        ]
+    )
+    def get(self):
+        """
+        Get all public Studies
+        """
+        logger.info('Getting all public studies')
+        pub_list = wsc.get_public_studies()
+        logger.info('... found %d public studies', len(pub_list['content']))
+        return jsonify(pub_list)
+
+    @swagger.operation(
+        summary="Create a new ISA-JSON Study",
+        notes="Create a new MTBLS Study as ISA-JSON object.",
+        nickname="New Study",
+        parameters=[
+            {
+                "name": "study",
+                "description": """Study in ISA-JSON format.</br>
+                             i.e.: { "title": "New Study title..." }""",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages = [
+            {
+                "code": 201,
+                "message": "Created."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            }
+        ]
+    )
+    @marshal_with(Investigation_api_model, envelope='investigation')
+    def post(self):
+        """
+        POST a new ISA-JSON Study
+        :return: an ISA-JSON representation of the Study
+        """
+        # User authentication
+        if "user_token" not in request.headers:
+            abort(401)
+        user_token = request.headers["user_token"]
+
+        if not wsc.is_user_token_valid(user_token):
+            abort(403)
+
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+
+        # read inv data from request body
+        data_dict = request.get_json(force=True)
+        # data_dict = json.loads(request.data.decode('utf-8'))
+        try:
+            title = data_dict['title']
+            description = data_dict['description']
+            sub_date = data_dict['submissionDate']
+            pub_rel_date = data_dict['publicReleaseDate']
+        except Exception as inst:
+            logger.warning('Malformed request. Some of the required fields are missing')
+            abort(400)
+
+        logger.info('Creating a new MTBLS Study as ISA-JSON object.')
+        inv_obj = iac.create_new_study(title=title,
+                                       description=description,
+                                       sub_date=sub_date,
+                                       pub_rel_date=pub_rel_date)
+        logger.info('New MTBLS Study, title: %s, desc.: %s, pub.rel.date: %s',
+                    title, description, pub_rel_date)
+
+        return inv_obj, 201
 
 
 class StudyTitle(Resource):
@@ -441,90 +523,6 @@ class StudyDescription(Resource):
         return jsonify({"description": new_description})
 
 
-class StudyNew(Resource):
-    @swagger.operation(
-        summary="Create a new ISA-JSON Study",
-        notes="Create a new MTBLS Study as ISA-JSON object.",
-        nickname="New Study",
-        parameters=[
-            {
-                "name": "study",
-                "description": """Study in ISA-JSON format.</br>
-                             i.e.: { "title": "New Study title..." }""",
-                "paramType": "body",
-                "type": "string",
-                "format": "application/json",
-                "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages = [
-            {
-                "code": 201,
-                "message": "Created."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            }
-        ]
-    )
-    def post(self):
-        """
-        POST a new ISA-JSON Study 
-        :return: an ISA-JSON representation of the Study
-        """
-        # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
-
-        if not wsc.is_user_token_valid(user_token):
-            abort(403)
-
-        # body content validation
-        if request.data is None or request.json is None:
-            abort(400)
-
-        # read inv data from request body
-        data_dict = request.get_json(force=True)
-        # data_dict = json.loads(request.data.decode('utf-8'))
-        try:
-            title = data_dict['title']
-            description = data_dict['description']
-            sub_date = data_dict['submission_date']
-            pub_rel_date = data_dict['public_release_date']
-        except Exception as inst:
-            logger.warning('Malformed request. Some of the required fields are missing')
-            abort(400)
-
-        logger.info('Creating a new MTBLS Study as ISA-JSON object.')
-        inv_obj = iac.create_new_study(title=title,
-                                       description=description,
-                                       sub_date=sub_date,
-                                       pub_rel_date=pub_rel_date)
-        logger.info('New MTBLS Study, title: %s, desc.: %s, pub.rel.date: %s',
-                    title, description, pub_rel_date)
-
-        return inv_obj, 201
-
-
 class StudyProtocols(Resource):
     """Manage the Study protocols"""
 
@@ -588,7 +586,7 @@ class StudyProtocols(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_protocols = isa_study.protocols
-        str_protocols = json.dumps({'StudyProtocols': isa_protocols}, default=serialize_protocol,
+        str_protocols = json.dumps({'protocols': isa_protocols}, default=serialize_protocol,
                                    sort_keys=True)
         logger.info('Got: %s', str_protocols)
         return isa_protocols

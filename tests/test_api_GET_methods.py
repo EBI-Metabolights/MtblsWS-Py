@@ -13,8 +13,8 @@ bad_study_id = instance.config.TEST_BAD_STUDY_ID
 auth_id = instance.config.TEST_AUTH_ID
 wrong_auth_token = instance.config.TEST_WRONG_AUTH_TOKEN
 url_base = instance.config.TEST_URL_BASE
-url_pub_id = url_base + public_study_id
-url_priv_id = url_base + private_study_id
+url_pub_id = url_base + "/" + public_study_id
+url_priv_id = url_base + "/" + private_study_id
 url_null_id = url_base
 url_wrong_id = url_base + bad_study_id
 public_source_id = instance.config.TEST_PUB_SOURCE_ID
@@ -61,11 +61,11 @@ class AboutTests(WsTests):
             self.assertIn('ApiDocumentation', body)
 
 
-class GetStudyPubListTests(WsTests):
+class GetStudiesTests(WsTests):
 
     # Get All Public Studies - Pub -> 200
-    def test_get_pub_studies(self):
-        request = urllib.request.Request(instance.config.TEST_URL_BASE_PATH, method='GET')
+    def test_get_studies(self):
+        request = urllib.request.Request(url_base, method='GET')
         with urllib.request.urlopen(request) as response:
             self.assertEqual(response.code, 200)
             header = response.info()
@@ -73,6 +73,133 @@ class GetStudyPubListTests(WsTests):
             body = response.read().decode('utf-8')
             self.check_body_common(body)
             self.assertIn('content', body)
+
+
+class GetSingleStudyTests(WsTests):
+
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    def check_Investigation_class(self, obj):
+        self.assertIsNotNone(obj['investigation'])
+        inv = obj['investigation']
+        self.assertIsNotNone(inv['comments'])
+        self.assertIsNotNone(inv['description'])
+        # self.assertIsNotNone(inv['filename'])
+        # self.assertIsNotNone(inv['id'])
+        self.assertIsNotNone(inv['identifier'])
+        # self.assertIsNotNone(inv['ontologySourceReferences'])
+        # self.assertIsNotNone(inv['people'])
+        # self.assertIsNotNone(inv['publicReleaseDate'])
+        self.assertIsNotNone(inv['publications'])
+        self.assertIsNotNone(inv['studies'])
+        # self.assertIsNotNone(inv['submissionDate'])
+        self.assertIsNotNone(inv['title'])
+
+    # Get Study - Pub -> 200
+    def test_get_study(self):
+        request = urllib.request.Request(url_pub_id, method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('investigation', body)
+            j_resp = json.loads(body)
+            self.check_Investigation_class(j_resp)
+
+    # Get Study - Pub - Auth -> 200
+    def test_get_study_pub_auth(self):
+        request = urllib.request.Request(url_pub_id, method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('investigation', body)
+            j_resp = json.loads(body)
+            self.check_Investigation_class(j_resp)
+
+    # Get Study - Pub - NoAuth -> 200
+    def test_get_study_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id, method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('investigation', body)
+            j_resp = json.loads(body)
+            self.check_Investigation_class(j_resp)
+
+    # Get Study - Priv - Auth -> 200
+    def test_get_study_priv_auth(self):
+        request = urllib.request.Request(url_priv_id, method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('investigation', body)
+            j_resp = json.loads(body)
+            self.check_Investigation_class(j_resp)
+
+    # Get Study - Priv -> 401
+    def test_get_study_priv(self):
+        request = urllib.request.Request(url_priv_id, method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Get Study - Priv - NoAuth -> 403
+    def test_get_study_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id, method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # GET Study - NullId -> 404
+    def test_get_study_nullId(self):
+        request = urllib.request.Request(url_null_id, method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # GET Study - BadId -> 404
+    def test_get_study_badId(self):
+        request = urllib.request.Request(url_wrong_id, method='GET')
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
 
 
 class GetStudyTitleTests(WsTests):
@@ -758,15 +885,15 @@ class GetStudyDescriptorsTests(WsTests):
             self.assertEqual('NOT FOUND', err.reason)
 
 
-# tests for GET Method for Study Publications
-#
-# pubmed_id (str, NoneType):
-# doi (str, NoneType):
-# author_list (str, NoneType):
-# title (str, NoneType):
-# status (str, OntologyAnnotation, NoneType):
-# comments (list, Comment):
 class GetStudyPublicationsTests(WsTests):
+    # tests for GET Method for Study Publications
+    #
+    # pubmed_id (str, NoneType):
+    # doi (str, NoneType):
+    # author_list (str, NoneType):
+    # title (str, NoneType):
+    # status (str, OntologyAnnotation, NoneType):
+    # comments (list, Comment):
 
     def check_Publications_class(self, obj):
         self.assertIsNotNone(obj['publications'])
@@ -884,10 +1011,10 @@ class GetStudyPublicationsTests(WsTests):
             self.assertEqual('NOT FOUND', err.reason)
 
 
-# tests for GET Method for list of sources names associated with the Study
-#
-# name (str):
 class GetStudySourcesTests(WsTests):
+    # tests for GET Method for list of sources names associated with the Study
+    #
+    # name (str):
 
     def check_Sources_class(self, obj):
         self.assertIsNotNone(obj['sources'])
@@ -908,12 +1035,12 @@ class GetStudySourcesTests(WsTests):
             self.check_Sources_class(j_resp)
 
 
-# tests for GET Method for Study Source, by name
-#
-# name (str):
-# characteristics (list, OntologyAnnotation):
-# comments (list, Comment):
 class GetStudySourceTests(WsTests):
+    # tests for GET Method for Study Source, by name
+    #
+    # name (str):
+    # characteristics (list, OntologyAnnotation):
+    # comments (list, Comment):
 
     def check_Source_class(self, obj):
         self.assertIsNotNone(obj['source'])
@@ -1028,10 +1155,10 @@ class GetStudySourceTests(WsTests):
             self.assertEqual('NOT FOUND', err.reason)
 
 
-# tests for GET Method for list of samples names associated with the Study
-#
-# name (str):
 class GetStudySamplesTests(WsTests):
+    # tests for GET Method for list of samples names associated with the Study
+    #
+    # name (str):
 
     def check_Samples_class(self, obj):
         self.assertIsNotNone(obj['samples'])
@@ -1052,14 +1179,14 @@ class GetStudySamplesTests(WsTests):
             self.check_Samples_class(j_resp)
 
 
-# tests for GET Method for Study Sample, by name
-#
-# name (str):
-# characteristics (list, OntologyAnnotation):
-# derives_from (Source):
-# factor_values (FactorValues):
-# comments (list, Comment):
 class GetStudySampleTests(WsTests):
+    # tests for GET Method for Study Sample, by name
+    #
+    # name (str):
+    # characteristics (list, OntologyAnnotation):
+    # derives_from (Source):
+    # factorValues (FactorValues):
+    # comments (list, Comment):
 
     def check_Sample_class(self, obj):
         self.assertIsNotNone(obj['sample'])
