@@ -1094,14 +1094,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"title"
 							]
@@ -1156,14 +1156,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"title"
 							]
@@ -1218,14 +1218,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"title"
 							]
@@ -1280,14 +1280,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"title"
 							]
@@ -1336,14 +1336,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"title"
 							]
@@ -1396,14 +1396,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"title"
 							]
@@ -1452,14 +1452,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies//title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"",
 								"title"
 							]
@@ -1512,14 +1512,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{BadStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{BadStudyId}}",
 								"title"
 							]

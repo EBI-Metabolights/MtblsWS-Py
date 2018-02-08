@@ -13,9 +13,9 @@ bad_study_id = instance.config.TEST_BAD_STUDY_ID
 auth_id = instance.config.TEST_AUTH_ID
 wrong_auth_token = instance.config.TEST_WRONG_AUTH_TOKEN
 url_base = instance.config.TEST_URL_BASE
-url_pub_id = url_base + public_study_id
-url_priv_id = url_base + private_study_id
-url_null_id = url_base
+url_pub_id = url_base + "/" + public_study_id
+url_priv_id = url_base + "/" + private_study_id
+url_null_id = url_base + "/"
 url_wrong_id = url_base + bad_study_id
 public_source_id = instance.config.TEST_PUB_SOURCE_ID
 private_source_id = instance.config.TEST_PRIV_SOURCE_ID
@@ -160,7 +160,7 @@ class UpdateStudyTitleTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-title', body)
+            self.assertIn('title', body)
 
     # Update Study Title - Pub - NoAuth -> 403
     def test_update_title_pub_noAuth(self):
@@ -187,7 +187,7 @@ class UpdateStudyTitleTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-title', body)
+            self.assertIn('title', body)
 
     # Update Study Title - Priv - NoAuth -> 403
     def test_update_title_priv_noAuth(self):
@@ -242,7 +242,7 @@ class UpdateStudyTitleTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-title', body)
+            self.assertIn('title', body)
 
     # Update Study Title - Pub - NoAuth - NoSave -> 403
     def test_update_title_pub_noAuth_noSave(self):
@@ -271,7 +271,7 @@ class UpdateStudyTitleTests(WsTests):
             self.check_header_common(header)
             body = response.read().decode('utf-8')
             self.check_body_common(body)
-            self.assertIn('Study-title', body)
+            self.assertIn('title', body)
 
     # Update Study Title - Priv - NoAuth - NoSave -> 403
     def test_update_title_priv_noAuth_noSave(self):

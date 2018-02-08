@@ -326,6 +326,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "f7ae13f6-5e6f-4922-a513-6b101374ba7f",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -335,7 +336,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has title\"] = responseBody.has('\"title\":');",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -363,14 +364,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"title"
 							]
@@ -384,7 +385,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "531b715f-611d-45e6-b2ec-cb301a417e51",
+								"id": "f567243e-f2db-43f2-8164-d985ad5039b5",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 403\"] = responseCode.code === 403;",
@@ -396,7 +397,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body does NOT contain title\"] = !(responseBody.has('\"title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -428,14 +429,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"title"
 							]
@@ -449,6 +450,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "35cfea89-f22f-4f33-8acc-085f3f821058",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -458,7 +460,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has title\"] = responseBody.has('\"title\":');",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -486,14 +488,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"title"
 							]
@@ -507,6 +509,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "5e1d1117-51e2-42c1-a04b-1e2e74daa64d",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 403\"] = responseCode.code === 403;",
@@ -518,7 +521,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body does NOT contain title\"] = !(responseBody.has('\"title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -546,14 +549,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"title"
 							]
@@ -567,6 +570,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "27186e32-e8a7-4b4a-bd2d-3e91ae276a6f",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 404\"] = responseCode.code === 404;",
@@ -578,7 +582,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body does NOT contain title\"] = !(responseBody.has('\"title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -602,14 +606,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies//title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"",
 								"title"
 							]
@@ -623,6 +627,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "0d72befe-1949-45f1-b711-1f72a264e8ce",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 404\"] = responseCode.code === 404;",
@@ -634,7 +639,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body does NOT contain title\"] = !(responseBody.has('\"title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -662,14 +667,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{BadStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{BadStudyId}}",
 								"title"
 							]
@@ -683,6 +688,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "ed82d28d-d8da-4ffd-ab39-eece9ab1cd70",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -692,7 +698,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has title\"] = responseBody.has('\"title\":');",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -724,14 +730,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"title"
 							]
@@ -745,7 +751,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "1d4e9236-0fe3-41d4-aff7-46feb084d596",
+								"id": "a365bd59-4cc7-419e-8059-8f20d57f7d2d",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 403\"] = responseCode.code === 403;",
@@ -757,7 +763,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body does NOT contain title\"] = !(responseBody.has('\"title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -789,14 +795,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PubStudyId}}",
 								"title"
 							]
@@ -810,6 +816,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "86d08ddb-e5e6-40b5-b5a5-2a07ce8a27d8",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 200\"] = responseCode.code === 200;",
@@ -819,7 +826,7 @@
 									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
 									"",
 									"// Body",
-									"tests[\"Body has Study-title\"] = responseBody.has('\"Study-title\":');",
+									"tests[\"Body has title\"] = responseBody.has('\"title\":');",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -851,14 +858,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"title"
 							]
@@ -872,6 +879,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "6df798d4-93cb-495a-af51-498a11e2f5df",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 403\"] = responseCode.code === 403;",
@@ -883,7 +891,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body does NOT contain title\"] = !(responseBody.has('\"title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -915,14 +923,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{PrivStudyId}}",
 								"title"
 							]
@@ -936,6 +944,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "e0bef6c8-4397-4620-a5e6-f113afe21005",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 404\"] = responseCode.code === 404;",
@@ -947,7 +956,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body does NOT contain title\"] = !(responseBody.has('\"title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -975,14 +984,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies//title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"",
 								"title"
 							]
@@ -996,6 +1005,7 @@
 						{
 							"listen": "test",
 							"script": {
+								"id": "b87ee810-763a-4cd1-82d8-06195f408801",
 								"type": "text/javascript",
 								"exec": [
 									"tests[\"Status code is 404\"] = responseCode.code === 404;",
@@ -1007,7 +1017,7 @@
 									"// Body",
 									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
 									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"Study-title\":'));",
+									"tests[\"Body does NOT contain title\"] = !(responseBody.has('\"title\":'));",
 									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
 									""
 								]
@@ -1039,14 +1049,14 @@
 							"raw": "{\n    \"title\": \"Study title\"\n}"
 						},
 						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/title",
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{BadStudyId}}/title",
 							"host": [
 								"{{ws-py-server}}{{ws-py-port}}"
 							],
 							"path": [
 								"mtbls",
 								"ws",
-								"study",
+								"studies",
 								"{{BadStudyId}}",
 								"title"
 							]

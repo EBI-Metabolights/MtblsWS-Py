@@ -52,8 +52,8 @@ def initialize_app(flask_app):
     api.add_resource(MtblsStudy, res_path + "/mtbls_studies/<string:study_id>")
     api.add_resource(IsaJsonStudies, res_path + "/studies")
     api.add_resource(IsaJsonStudy, res_path + "/studies/<string:study_id>")
+    api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
 
-    # api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     # api.add_resource(StudyDescription, res_path + "/study/<string:study_id>/description")
     # api.add_resource(StudyContacts, res_path + "/study/<string:study_id>/contacts")
     # api.add_resource(StudyProtocols, res_path + "/study/<string:study_id>/protocols")
