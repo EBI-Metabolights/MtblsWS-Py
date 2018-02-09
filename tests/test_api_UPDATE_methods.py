@@ -493,205 +493,205 @@ class UpdateStudyDescriptionTests(WsTests):
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
 
-
-class UpdateStudyContactsTests(WsTests):
-
-    data_new_contacts = instance.config.TEST_DATA_CONTACTS
-
-    def tearDown(self):
-        time.sleep(1)  # sleep time in seconds
-
-    def check_Person_class(self, obj):
-        self.assertIsNotNone(obj['contacts'])
-        for person in obj['contacts']:
-            self.assertIsNotNone(person['firstName'])
-            self.assertIsNotNone(person['midInitials'])
-            self.assertIsNotNone(person['lastName'])
-            self.assertIsNotNone(person['email'])
-            self.assertIsNotNone(person['affiliation'])
-            self.assertIsNotNone(person['phone'])
-            self.assertIsNotNone(person['address'])
-            self.assertIsNotNone(person['fax'])
-            self.assertIsNotNone(person['comments'])
-        for role in obj['contacts'][0]['roles']:
-            self.assertIsNotNone(role['annotationValue'])
-            self.assertIsNotNone(role['termAccession'])
-            self.assertIsNotNone(role['comments'])
-
-    # Update Study Contacts - Pub - Auth -> 200
-    def test_update_contacts_pub_auth(self):
-        request = urllib.request.Request(url_pub_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('contacts', body)
-            self.check_Person_class(j_resp)
-
-    # Update Study Contacts - Pub - NoAuth -> 403
-    def test_update_contacts_pub_noAuth(self):
-        request = urllib.request.Request(url_pub_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', wrong_auth_token)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 403)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('FORBIDDEN', err.msg)
-            self.assertEqual('FORBIDDEN', err.reason)
-
-    # Update Study Contacts - Priv - Auth -> 200
-    def test_update_contacts_priv_auth(self):
-        request = urllib.request.Request(url_priv_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('contacts', body)
-            self.check_Person_class(j_resp)
-
-    # Update Study Contacts - Priv - NoAuth -> 403
-    def test_update_contacts_priv_noAuth(self):
-        request = urllib.request.Request(url_priv_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', wrong_auth_token)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 403)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('FORBIDDEN', err.msg)
-            self.assertEqual('FORBIDDEN', err.reason)
-
-    # Update Study Contacts - NullId -> 404
-    def test_update_contacts_nullId(self):
-        request = urllib.request.Request(url_null_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 404)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('NOT FOUND', err.msg)
-            self.assertEqual('NOT FOUND', err.reason)
-
-    # Update Study Contacts - BadId -> 404
-    def test_update_contacts_badId(self):
-        request = urllib.request.Request(url_wrong_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 404)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('NOT FOUND', err.msg)
-            self.assertEqual('NOT FOUND', err.reason)
-
-    # Update Study Contacts - Pub - Auth - NoSave -> 200
-    def test_update_contacts_pub_auth_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('contacts', body)
-            self.check_Person_class(j_resp)
-
-    # Update Study Contacts - Pub - NoAuth - NoSave -> 403
-    def test_update_contacts_pub_noAuth_noSave(self):
-        request = urllib.request.Request(url_pub_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', wrong_auth_token)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 403)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('FORBIDDEN', err.msg)
-            self.assertEqual('FORBIDDEN', err.reason)
-
-    # Update Study Contacts - Priv - Auth - NoSave -> 200
-    def test_update_contacts_priv_auth_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        request.add_header('save_audit_copy', 'False')
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 200)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('contacts', body)
-            self.check_Person_class(j_resp)
-
-    # Update Study Contacts - Priv - NoAuth - NoSave -> 403
-    def test_update_contacts_priv_noAuth_noSave(self):
-        request = urllib.request.Request(url_priv_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', wrong_auth_token)
-        request.add_header('save_audit_copy', 'False')
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 403)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('FORBIDDEN', err.msg)
-            self.assertEqual('FORBIDDEN', err.reason)
-
-    # Update Study Contacts - NullId - NoSave -> 404
-    def test_update_contacts_nullId_noSave(self):
-        request = urllib.request.Request(url_null_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('save_audit_copy', 'False')
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 404)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('NOT FOUND', err.msg)
-            self.assertEqual('NOT FOUND', err.reason)
-
-    # Update Study Contacts - BadId - NoSave -> 404
-    def test_update_contacts_badId_noSave(self):
-        request = urllib.request.Request(url_wrong_id + '/contacts', data=self.data_new_contacts, method='PUT')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        request.add_header('save_audit_copy', 'False')
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 404)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('NOT FOUND', err.msg)
-            self.assertEqual('NOT FOUND', err.reason)
+#
+# class UpdateStudyPeopleTests(WsTests):
+#
+#     data_new_contacts = instance.config.TEST_DATA_CONTACTS
+#
+#     def tearDown(self):
+#         time.sleep(1)  # sleep time in seconds
+#
+#     def check_Person_class(self, obj):
+#         self.assertIsNotNone(obj['people'])
+#         for person in obj['people']:
+#             self.assertIsNotNone(person['firstName'])
+#             self.assertIsNotNone(person['midInitials'])
+#             self.assertIsNotNone(person['lastName'])
+#             self.assertIsNotNone(person['email'])
+#             self.assertIsNotNone(person['affiliation'])
+#             self.assertIsNotNone(person['phone'])
+#             self.assertIsNotNone(person['address'])
+#             self.assertIsNotNone(person['fax'])
+#             self.assertIsNotNone(person['comments'])
+#         for role in obj['people'][0]['roles']:
+#             self.assertIsNotNone(role['annotationValue'])
+#             self.assertIsNotNone(role['termAccession'])
+#             self.assertIsNotNone(role['comments'])
+#
+#     # Update Study People - Pub - Auth -> 200
+#     def test_update_People_pub_auth(self):
+#         request = urllib.request.Request(url_pub_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', auth_id)
+#         with urllib.request.urlopen(request) as response:
+#             self.assertEqual(response.code, 200)
+#             header = response.info()
+#             self.check_header_common(header)
+#             body = response.read().decode('utf-8')
+#             self.check_body_common(body)
+#             j_resp = json.loads(body)
+#             # self.assertIn('people', body)
+#             self.check_Person_class(j_resp)
+#
+#     # Update Study People - Pub - NoAuth -> 403
+#     def test_update_People_pub_noAuth(self):
+#         request = urllib.request.Request(url_pub_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', wrong_auth_token)
+#         try:
+#             urllib.request.urlopen(request)
+#         except urllib.error.HTTPError as err:
+#             self.assertEqual(err.code, 403)
+#             self.check_header_common(err.headers)
+#             self.check_body_common(err.read().decode('utf-8'))
+#             self.assertEqual('FORBIDDEN', err.msg)
+#             self.assertEqual('FORBIDDEN', err.reason)
+#
+#     # Update Study People - Priv - Auth -> 200
+#     def test_update_People_priv_auth(self):
+#         request = urllib.request.Request(url_priv_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', auth_id)
+#         with urllib.request.urlopen(request) as response:
+#             self.assertEqual(response.code, 200)
+#             header = response.info()
+#             self.check_header_common(header)
+#             body = response.read().decode('utf-8')
+#             self.check_body_common(body)
+#             j_resp = json.loads(body)
+#             self.assertIn('people', body)
+#             self.check_Person_class(j_resp)
+#
+#     # Update Study People - Priv - NoAuth -> 403
+#     def test_update_People_priv_noAuth(self):
+#         request = urllib.request.Request(url_priv_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', wrong_auth_token)
+#         try:
+#             urllib.request.urlopen(request)
+#         except urllib.error.HTTPError as err:
+#             self.assertEqual(err.code, 403)
+#             self.check_header_common(err.headers)
+#             self.check_body_common(err.read().decode('utf-8'))
+#             self.assertEqual('FORBIDDEN', err.msg)
+#             self.assertEqual('FORBIDDEN', err.reason)
+#
+#     # Update Study People - NullId -> 404
+#     def test_update_People_nullId(self):
+#         request = urllib.request.Request(url_null_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         try:
+#             urllib.request.urlopen(request)
+#         except urllib.error.HTTPError as err:
+#             self.assertEqual(err.code, 404)
+#             self.check_header_common(err.headers)
+#             self.check_body_common(err.read().decode('utf-8'))
+#             self.assertEqual('NOT FOUND', err.msg)
+#             self.assertEqual('NOT FOUND', err.reason)
+#
+#     # Update Study People - BadId -> 404
+#     def test_update_People_badId(self):
+#         request = urllib.request.Request(url_wrong_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', auth_id)
+#         try:
+#             urllib.request.urlopen(request)
+#         except urllib.error.HTTPError as err:
+#             self.assertEqual(err.code, 404)
+#             self.check_header_common(err.headers)
+#             self.check_body_common(err.read().decode('utf-8'))
+#             self.assertEqual('NOT FOUND', err.msg)
+#             self.assertEqual('NOT FOUND', err.reason)
+#
+#     # Update Study People - Pub - Auth - NoSave -> 200
+#     def test_update_People_pub_auth_noSave(self):
+#         request = urllib.request.Request(url_pub_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', auth_id)
+#         request.add_header('save_audit_copy', 'False')
+#         with urllib.request.urlopen(request) as response:
+#             self.assertEqual(response.code, 200)
+#             header = response.info()
+#             self.check_header_common(header)
+#             body = response.read().decode('utf-8')
+#             self.check_body_common(body)
+#             j_resp = json.loads(body)
+#             self.assertIn('people', body)
+#             self.check_Person_class(j_resp)
+#
+#     # Update Study People - Pub - NoAuth - NoSave -> 403
+#     def test_update_People_pub_noAuth_noSave(self):
+#         request = urllib.request.Request(url_pub_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', wrong_auth_token)
+#         try:
+#             urllib.request.urlopen(request)
+#         except urllib.error.HTTPError as err:
+#             self.assertEqual(err.code, 403)
+#             self.check_header_common(err.headers)
+#             self.check_body_common(err.read().decode('utf-8'))
+#             self.assertEqual('FORBIDDEN', err.msg)
+#             self.assertEqual('FORBIDDEN', err.reason)
+#
+#     # Update Study People - Priv - Auth - NoSave -> 200
+#     def test_update_People_priv_auth_noSave(self):
+#         request = urllib.request.Request(url_priv_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', auth_id)
+#         request.add_header('save_audit_copy', 'False')
+#         with urllib.request.urlopen(request) as response:
+#             self.assertEqual(response.code, 200)
+#             header = response.info()
+#             self.check_header_common(header)
+#             body = response.read().decode('utf-8')
+#             self.check_body_common(body)
+#             j_resp = json.loads(body)
+#             self.assertIn('people', body)
+#             self.check_Person_class(j_resp)
+#
+#     # Update Study People - Priv - NoAuth - NoSave -> 403
+#     def test_update_People_priv_noAuth_noSave(self):
+#         request = urllib.request.Request(url_priv_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', wrong_auth_token)
+#         request.add_header('save_audit_copy', 'False')
+#         try:
+#             urllib.request.urlopen(request)
+#         except urllib.error.HTTPError as err:
+#             self.assertEqual(err.code, 403)
+#             self.check_header_common(err.headers)
+#             self.check_body_common(err.read().decode('utf-8'))
+#             self.assertEqual('FORBIDDEN', err.msg)
+#             self.assertEqual('FORBIDDEN', err.reason)
+#
+#     # Update Study People - NullId - NoSave -> 404
+#     def test_update_People_nullId_noSave(self):
+#         request = urllib.request.Request(url_null_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('save_audit_copy', 'False')
+#         try:
+#             urllib.request.urlopen(request)
+#         except urllib.error.HTTPError as err:
+#             self.assertEqual(err.code, 404)
+#             self.check_header_common(err.headers)
+#             self.check_body_common(err.read().decode('utf-8'))
+#             self.assertEqual('NOT FOUND', err.msg)
+#             self.assertEqual('NOT FOUND', err.reason)
+#
+#     # Update Study People - BadId - NoSave -> 404
+#     def test_update_People_badId_noSave(self):
+#         request = urllib.request.Request(url_wrong_id + '/people', data=self.data_new_contacts, method='PUT')
+#         self.add_common_headers(request)
+#         request.add_header('user_token', auth_id)
+#         request.add_header('save_audit_copy', 'False')
+#         try:
+#             urllib.request.urlopen(request)
+#         except urllib.error.HTTPError as err:
+#             self.assertEqual(err.code, 404)
+#             self.check_header_common(err.headers)
+#             self.check_body_common(err.read().decode('utf-8'))
+#             self.assertEqual('NOT FOUND', err.msg)
+#             self.assertEqual('NOT FOUND', err.reason)
 
 
 class UpdateStudyProtocolsTests(WsTests):

@@ -2015,6 +2015,1125 @@
 			]
 		},
 		{
+			"name": "Get Study People",
+			"item": [
+				{
+					"name": "Get Study People - Pub -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "53463b73-f1f0-4312-aae0-cbbf66159a2c",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"people\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.people.length > 0) {",
+									"    var item = jsonData.people[0]",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/people",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"people"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - Pub - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "740177ed-f650-4f6a-a4d1-852404db5152",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"people\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.people.length > 0) {",
+									"    var item = jsonData.people[0]",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/people",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"people"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - Pub - NoAuth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "73e089e8-b183-4e92-9e46-ef2c2a2c5d5f",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"people\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.people.length > 0) {",
+									"    var item = jsonData.people[0]",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/people",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"people"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - Priv - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "5d29dd37-56d9-4b9d-a664-a2cabaf5af7c",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"people\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.people.length > 0) {",
+									"    var item = jsonData.people[0]",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/people",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"people"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - Priv -> 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3ed854fa-02c4-4841-b65d-f9fd75b81fc7",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 401;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain people\"] = !(responseBody.has('\"people\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/people",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"people"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "cd69e4d4-5b78-4168-be59-6a91eb1e483c",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain people\"] = !(responseBody.has('\"people\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/people",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"people"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "db8e5421-d7ff-4cf4-bf0e-9b2566f4607d",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain people\"] = !(responseBody.has('\"people\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies//people",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"",
+								"people"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "75043c47-c3cd-4481-bd28-8b214b875483",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain people\"] = !(responseBody.has('\"people\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{BadStudyId}}/people",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{BadStudyId}}",
+								"people"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "f3df7f22-8ee0-4535-b502-5a175c7c1894",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "851bf978-c1c5-4398-866c-78e3cc2c6ae7",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Get Study Person",
+			"item": [
+				{
+					"name": "Get Study Person - Pub -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a9288606-9709-454b-aa7c-2abd852e6360",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"person\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.person) {",
+									"    var item = jsonData.person",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/people/{{PersonID}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"people",
+								"{{PersonID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Person - Pub - BadPersonId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "415ca84e-1fdf-49fd-b21c-209873fb80ce",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain people\"] = !(responseBody.has('\"people\":'));",
+									"tests[\"Body does NOT contain person\"] = !(responseBody.has('\"person\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/people/{{BadPersonId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"people",
+								"{{BadPersonId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - Pub - NoAuth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "55a9ea72-0f03-408f-a96e-7b1faf7ceee6",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"person\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.person) {",
+									"    var item = jsonData.person",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/people/{{PersonID}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"people",
+								"{{PersonID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - Priv - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "b7059b8e-6eb0-4b31-bb77-ff02d634cae5",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contacts\"] = responseBody.has('\"person\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.person) {",
+									"    var item = jsonData.person",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0]",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/people/{{PersonID}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"people",
+								"{{PersonID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Person - Priv - BadPersonId - Auth -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3a3211a3-ef6d-4dc6-8989-be1ff5ff0652",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain people\"] = !(responseBody.has('\"people\":'));",
+									"tests[\"Body does NOT contain person\"] = !(responseBody.has('\"person\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/people/{{BadPersonId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"people",
+								"{{BadPersonId}}"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - Priv -> 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "92169454-59a3-45e5-b0ea-eea1e26637a1",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 401;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain people\"] = !(responseBody.has('\"people\":'));",
+									"tests[\"Body does NOT contain person\"] = !(responseBody.has('\"person\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/people/{{PersonID}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"people",
+								"{{PersonID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a56e17a-4b77-4d79-b025-26e941aabdef",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain people\"] = !(responseBody.has('\"people\":'));",
+									"tests[\"Body does NOT contain person\"] = !(responseBody.has('\"person\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/people/{{PersonID}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"people",
+								"{{PersonID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study People - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "ffac17bc-6008-4de9-a0af-e165a2be6c05",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain people\"] = !(responseBody.has('\"people\":'));",
+									"tests[\"Body does NOT contain person\"] = !(responseBody.has('\"person\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/people/",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"people",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "f3df7f22-8ee0-4535-b502-5a175c7c1894",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "851bf978-c1c5-4398-866c-78e3cc2c6ae7",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
 			"name": "Get Study Protocols",
 			"item": [
 				{
@@ -2546,540 +3665,6 @@
 								"protocols"
 							]
 						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Get Study Contacts",
-			"item": [
-				{
-					"name": "Get Study Contacts - Pub -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "3018320d-27c3-43ad-a2a9-3487e529db14",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has contacts\"] = responseBody.has('\"contacts\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.contacts.length > 0) {",
-									"    var item = jsonData.contacts[0]",
-									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
-									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
-									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
-									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
-									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
-									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
-									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
-									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
-									"    if (item.roles.length > 0) {",
-									"        var role = item.roles[0]",
-									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
-									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
-									"    }",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Contacts - Pub - Auth -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "a7ce0561-925e-4cce-ac58-bc47c17b3b14",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has contacts\"] = responseBody.has('\"contacts\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.contacts.length > 0) {",
-									"    var item = jsonData.contacts[0]",
-									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
-									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
-									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
-									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
-									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
-									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
-									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
-									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
-									"    if (item.roles.length > 0) {",
-									"        var role = item.roles[0]",
-									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
-									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
-									"    }",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Contacts - Pub - NoAuth -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "528faf2c-e330-40a6-995f-517854bd49a4",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has contacts\"] = responseBody.has('\"contacts\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.contacts.length > 0) {",
-									"    var item = jsonData.contacts[0]",
-									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
-									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
-									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
-									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
-									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
-									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
-									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
-									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
-									"    if (item.roles.length > 0) {",
-									"        var role = item.roles[0]",
-									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
-									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
-									"    }",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{WrongAuth}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Contacts - Priv - Auth -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "fda77a12-e5bd-4df0-a3df-ab0c32b456de",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Body has contacts\"] = responseBody.has('\"contacts\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.contacts.length > 0) {",
-									"    var item = jsonData.contacts[0]",
-									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
-									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
-									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
-									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
-									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
-									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
-									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
-									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
-									"    if (item.roles.length > 0) {",
-									"        var role = item.roles[0]",
-									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
-									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
-									"    }",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{userTokenOK}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Contacts - Priv -> 401",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Contacts - Priv - NoAuth -> 403",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 403\"] = responseCode.code === 403;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{WrongAuth}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Contacts - NullId -> 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 404\"] = responseCode.code === 404;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"",
-								"contacts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Contacts - BadId -> 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 404\"] = responseCode.code === 404;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-title\"] = !(responseBody.has('\"StudyContacts\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{userTokenOK}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/contacts",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{BadStudyId}}",
-								"contacts"
-							]
-						},
-						"description": null
 					},
 					"response": []
 				}

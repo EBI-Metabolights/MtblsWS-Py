@@ -54,8 +54,9 @@ def initialize_app(flask_app):
     api.add_resource(IsaJsonStudy, res_path + "/studies/<string:study_id>")
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     api.add_resource(StudyDescription, res_path + "/studies/<string:study_id>/description")
+    api.add_resource(StudyPeople, res_path + "/studies/<string:study_id>/people")
+    api.add_resource(StudyPerson, res_path + "/studies/<string:study_id>/people/<string:person_id>")
 
-    # api.add_resource(StudyContacts, res_path + "/study/<string:study_id>/contacts")
     # api.add_resource(StudyProtocols, res_path + "/study/<string:study_id>/protocols")
     # api.add_resource(StudyFactors, res_path + "/study/<string:study_id>/factors")
     # api.add_resource(StudyDescriptors, res_path + "/study/<string:study_id>/descriptors")

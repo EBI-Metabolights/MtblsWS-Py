@@ -87,6 +87,7 @@ class IsaJsonStudy(Resource):
         logger.info('... found ISA-JSON obj: %s %s', isa_obj.get('title'), isa_obj.get('identifier'))
         return isa_obj
 
+
 class IsaJsonStudies(Resource):
     @swagger.operation(
         summary="Get ISA-JSON Studies",
@@ -523,6 +524,156 @@ class StudyDescription(Resource):
         return jsonify({"description": new_description})
 
 
+class StudyPeople(Resource):
+    """ Manage Study contacts, as a list"""
+
+    @swagger.operation(
+        summary="Get MTBLS Study people",
+        notes="Get the list of People associated with the Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(Std_Person_api_model, envelope='people')
+    def get(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study people for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_contacts = isa_study.contacts
+        str_contacts = json.dumps({'people': isa_contacts}, default=serialize_person, sort_keys=True)
+        logger.info('Got %s', str_contacts)
+        return isa_contacts
+
+
+class StudyPerson(Resource):
+    """ Manage a Person associated with the Study """
+
+    @swagger.operation(
+        summary="Get details for a Person associated",
+        notes="Get details for a Person associated with the Study by ID.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "person_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(Std_Person_api_model, envelope='person')
+    def get(self, study_id, person_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Person % for Study %s, using API-Key %s', study_id, person_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_person_found = False
+        person = None
+        for index, person in enumerate(isa_study.contacts):
+            if person.email == person_id:
+                isa_person_found = True
+                break
+        if not isa_person_found:
+            abort(404)
+        logger.info('Got %s', person.email)
+        return person
+
+
 class StudyProtocols(Resource):
     """Manage the Study protocols"""
 
@@ -690,190 +841,6 @@ class StudyProtocols(Resource):
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Applied %s', json_protocols)
         return isa_protocols
-
-
-class StudyContacts(Resource):
-    """A person/contact that can be attributed to an Investigation or Study.
-
-        Attributes:
-            last_name (str, NoneType): The last name of a person associated with the investigation.
-            first_name (str, NoneType): The first name of a person associated with the investigation.
-            mid_initials (str, NoneType): The middle initials of a person associated with the investigation.
-            email (str, NoneType): The email address of a person associated with the investigation.
-            phone (str, NoneType): The telephone number of a person associated with the investigation.
-            fax (str, NoneType): The fax number of a person associated with the investigation.
-            address (str, NoneType): The address of a person associated with the investigation.
-            affiliation (str, NoneType): The organization affiliation for a person associated with the investigation.
-            roles (list, NoneType): OntologyAnnotations to classify the role(s) performed by this person in the context of
-            the investigation, which means that the roles reported here need not correspond to roles held withing their
-            affiliated organization.
-            comments (list, NoneType): Comments associated with instances of this class.
-        """
-
-    @swagger.operation(
-        summary="Get MTBLS Study Contacts",
-        notes="Get the list of People/contacts associated with the Study.",
-        # responseClass=StudyContact.__name__, multiValuedResponse=True, responseContainer="List",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": False,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
-    @marshal_with(Person_api_model, envelope='contacts')
-    def get(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        logger.info('Getting Study contacts for %s, using API-Key %s', study_id, user_token)
-        # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
-            abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
-        isa_contacts = isa_study.contacts
-        str_contacts = json.dumps({'contacts': isa_contacts}, default=serialize_person, sort_keys=True)
-        logger.info('Got %s', str_contacts)
-        return isa_contacts
-
-    @swagger.operation(
-        summary='Update MTBLS Study contacts',
-        notes='Update the list of People/contacts associated with the Study.',
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "contacts",
-                "description": 'Updated list of People/contacts in JSON format.',
-                "paramType": "body",
-                "type": "string",
-                "format": "application/json",
-                "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "save_audit_copy",
-                "description": "Keep track of changes saving a copy of the unmodified files.",
-                "paramType": "header",
-                "type": "Boolean",
-                "defaultValue": True,
-                "format": "application/json",
-                "required": False,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
-    @marshal_with(Person_api_model, envelope='contacts')
-    def put(self, study_id):
-        # param validation
-        if study_id is None:
-            abort(404)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        # body content validation
-        if request.data is None or request.json is None:
-            abort(400)
-        data_dict = json.loads(request.data.decode('utf-8'))
-        json_contacts = data_dict['contacts']
-        isa_contacts = list()
-        for json_contact in json_contacts:
-            isa_contact = unserialize_person(json_contact)
-            isa_contacts.append(isa_contact)
-        # check for keeping copies
-        save_audit_copy = False
-        save_msg_str = "NOT be"
-        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
-            save_audit_copy = True
-            save_msg_str = "be"
-
-        # update study contacts
-        logger.info('Updating Study contacts for %s, using API-Key %s', study_id, user_token)
-        # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
-            abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
-        isa_study.contacts = isa_contacts
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
-        logger.info('Applied %s', json_contacts)
-        return isa_contacts
 
 
 class StudyFactors(Resource):
@@ -1089,7 +1056,7 @@ class StudyDescriptors(Resource):
             }
         ]
     )
-    @marshal_with(OntologyAnnotation_api_model, envelope='descriptors')
+    @marshal_with(Inv_OntologyAnnotation_api_model, envelope='descriptors')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -1173,7 +1140,7 @@ class StudyDescriptors(Resource):
             }
         ]
     )
-    @marshal_with(OntologyAnnotation_api_model, envelope='descriptors')
+    @marshal_with(Inv_OntologyAnnotation_api_model, envelope='descriptors')
     def put(self, study_id):
         # param validation
         if study_id is None:
