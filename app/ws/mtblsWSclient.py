@@ -62,14 +62,7 @@ class WsClient:
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.get(url, headers={"user_token": user_token})
         if resp.status_code != 200:
-            if resp.status_code == 401:
-                abort(401)
-            if resp.status_code == 403:
-                abort(403)
-            if resp.status_code == 404:
-                abort(404)
-            if resp.status_code == 500:
-                abort(500)
+            abort(resp.status_code)
 
         json_resp = resp.json()
 
@@ -101,14 +94,7 @@ class WsClient:
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.get(url, headers={"user_token": user_token})
         if resp.status_code != 200:
-            if resp.status_code == 401:
-                abort(401)
-            if resp.status_code == 403:
-                abort(403)
-            if resp.status_code == 404:
-                abort(404)
-            if resp.status_code == 500:
-                abort(500)
+            abort(resp.status_code)
 
         json_resp = resp.json()
         return json_resp
@@ -150,16 +136,8 @@ class WsClient:
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/list"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.get(url)
-
         if resp.status_code != 200:
-            if resp.status_code == 401:
-                abort(401)
-            if resp.status_code == 403:
-                abort(403)
-            if resp.status_code == 404:
-                abort(404)
-            if resp.status_code == 500:
-                abort(500)
+            abort(resp.status_code)
 
         json_resp = resp.json()
         logger.info('... found %d public studies', len(json_resp['content']))
@@ -213,14 +191,7 @@ class WsClient:
                                       "cache-control": "no-cache"},
                              data="token=" + (user_token or ''))
         if resp.status_code != 200:
-            if not user_token or resp.status_code == 401:
-                abort(401)
-            if resp.status_code == 403:
-                abort(403)
-            if resp.status_code == 404:
-                abort(404)
-            if resp.status_code == 500:
-                abort(500)
+            abort(resp.status_code)
 
         json_resp = resp.json()
         import json
