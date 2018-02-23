@@ -5,7 +5,6 @@ from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
 from app.ws.mtbls_study import MtblsStudy
-from app.ws.mtbls_maf import MtblsMAF
 from app.ws.isaStudy import *
 
 """
@@ -42,20 +41,24 @@ def initialize_app(flask_app):
 
     res_path = app.config.get('RESOURCES_PATH')
     api = swagger.docs(Api(app),
+                       description='MtblsWS-Py : MetaboLights Python-based REST service',
                        apiVersion=app.config.get('API_VERSION'),
                        basePath=app.config.get('WS_APP_BASE_LINK'),
                        api_spec_url=app.config.get('API_DOC'),
-                       resourcePath=res_path,
-                       description='MtblsWS-Py : MetaboLights Python-based REST service'
+                       resourcePath=res_path
                        )
+
     api.add_resource(About, res_path)
-    api.add_resource(MtblsStudy, res_path + "/mtbls_studies/<string:study_id>")
+
     api.add_resource(IsaJsonStudies, res_path + "/studies")
+    api.add_resource(MtblsStudy, res_path + "/mtbls_studies/<string:study_id>")
     api.add_resource(IsaJsonStudy, res_path + "/studies/<string:study_id>")
+
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     api.add_resource(StudyDescription, res_path + "/studies/<string:study_id>/description")
-    api.add_resource(StudyPeople, res_path + "/studies/<string:study_id>/people")
-    api.add_resource(StudyPerson, res_path + "/studies/<string:study_id>/people/<string:person_id>")
+
+    api.add_resource(StudyPerson, res_path + "/studies/<string:study_id>/contacts"
+                     , res_path + "/studies/<string:study_id>/contacts/")
 
     # api.add_resource(StudyProtocols, res_path + "/study/<string:study_id>/protocols")
     # api.add_resource(StudyFactors, res_path + "/study/<string:study_id>/factors")
