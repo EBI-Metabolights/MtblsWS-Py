@@ -2,6 +2,7 @@ from flask_restful import fields
 from isatools.model import Person, OntologyAnnotation, OntologySource, Protocol
 from isatools.model import ProtocolParameter, StudyFactor, Comment, Publication
 from isatools.model import Sample, Characteristic, FactorValue, Source, Material
+from isatools.model import Investigation
 import json
 
 
@@ -83,7 +84,19 @@ def unserialize_ontology_source(json_obj):
                           comments=comments)
 
 
-OntologyAnnotation_api_model = {
+Inv_OntologyAnnotation_api_model = {
+    # term                              (str):
+    # term_source                       (OntologySource):
+    # term_accession                    (str):
+    # comments                          (list, Comment):
+    'annotationValue': fields.String,
+    'termSource': fields.Nested(OntologySource_api_model),
+    'termAccession': fields.String,
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+Std_OntologyAnnotation_api_model = {
     # term -> annotationValue           (str):
     # term_source -> termSource         (OntologySource):
     # term_accession -> termAccession   (str):
@@ -133,8 +146,8 @@ ProtocolParameter_api_model = {
     # parameter_name -> parameterName   (OntologyAnnotation):
     # unit                              (OntologyAnnotation):
     # comments                          (list, Comment):
-    'parameterName': fields.Nested(OntologyAnnotation_api_model, attribute='parameter_name'),
-    'unit': fields.Nested(OntologyAnnotation_api_model),
+    'parameterName': fields.Nested(Inv_OntologyAnnotation_api_model),
+    'unit': fields.Nested(Inv_OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -181,12 +194,12 @@ Protocol_api_model = {
     # components                        (list, OntologyAnnotation):
     # comments                          (list, comment):
     'name': fields.String,
-    'protocolType': fields.Nested(OntologyAnnotation_api_model, attribute='protocol_type'),
+    'protocolType': fields.Nested(Inv_OntologyAnnotation_api_model),
     'description': fields.String,
     'uri': fields.String,
     'version': fields.String,
     'parameters': fields.List(fields.Nested(ProtocolParameter_api_model)),
-    'components': fields.List(fields.Nested(OntologyAnnotation_api_model)),
+    'components': fields.List(fields.Nested(Inv_OntologyAnnotation_api_model)),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -248,7 +261,31 @@ def unserialize_protocol(json_obj):
                     comments=comments)
 
 
-Person_api_model = {
+Inv_Person_api_model = {
+    # lastName                      (str):
+    # firstName                     (str):
+    # midInitials                   (str):
+    # email                         (str):
+    # phone                         (str):
+    # fax                           (str):
+    # address                       (str):
+    # affiliation                   (str):
+    # roles                         (list, OntologyAnnotation):
+    # comments                      (list, Comment):
+    'lastName': fields.String,
+    'firstName': fields.String,
+    'midInitials': fields.String,
+    'email': fields.String,
+    'phone': fields.String,
+    'fax': fields.String,
+    'address': fields.String,
+    'affiliation': fields.String,
+    'roles': fields.List(fields.Nested(Inv_OntologyAnnotation_api_model)),
+    'comments': fields.List(fields.Nested(Comment_api_model))
+}
+
+
+Std_Person_api_model = {
     # last_name -> lastName         (str):
     # first_name -> firstName       (str):
     # mid_initials -> midInitials   (str):
@@ -261,13 +298,13 @@ Person_api_model = {
     # comments                      (list, Comment):
     'lastName': fields.String(attribute='last_name'),
     'firstName': fields.String(attribute='first_name'),
-    'midInitials': fields.String(attribute='mid_initials'),
+    'midInitials': fields.String,
     'email': fields.String,
     'phone': fields.String,
     'fax': fields.String,
     'address': fields.String,
     'affiliation': fields.String,
-    'roles': fields.List(fields.Nested(OntologyAnnotation_api_model)),
+    'roles': fields.List(fields.Nested(Std_OntologyAnnotation_api_model)),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -338,8 +375,8 @@ StudyFactor_api_model = {
     # name -> factorName        (str):
     # factor_type -> factorType (OntologyAnnotation):
     # comments                  (list, Comment):
-    'factorName': fields.String(attribute='name'),
-    'factorType': fields.Nested(OntologyAnnotation_api_model, attribute='factor_type'),
+    'factorName': fields.String,
+    'factorType': fields.Nested(Inv_OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -378,11 +415,11 @@ StudyPublications_api_model = {
     # title                         (str):
     # status                        (str, OntologyAnnotation):
     # comments                      (list, Comment):
-    'pubMedID': fields.String(attribute='pubmed_id'),
+    'pubMedID': fields.String,
     'doi': fields.String,
-    'authorList': fields.String(attribute='author_list'),
+    'authorList': fields.String,
     'title': fields.String,
-    'status': fields.Nested(OntologyAnnotation_api_model),
+    'status': fields.Nested(Inv_OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -433,9 +470,9 @@ Characteristic_api_model = {
     # value (OntologyAnnotation):
     # unit (OntologyAnnotation):
     # comments (list, Comment):
-    'category': fields.Nested(OntologyAnnotation_api_model),
-    'value': fields.Nested(OntologyAnnotation_api_model),
-    'unit': fields.Nested(OntologyAnnotation_api_model),
+    'category': fields.Nested(Inv_OntologyAnnotation_api_model),
+    'value': fields.Nested(Inv_OntologyAnnotation_api_model),
+    'unit': fields.Nested(Inv_OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -491,9 +528,9 @@ FactorValue_api_model = {
     # value                         (OntologyAnnotation):
     # unit                          (OntologyAnnotation):
     # comments                      (list, Comment):
-    'category': fields.Nested(StudyFactor_api_model, attribute='factor_name'),
+    'category': fields.Nested(StudyFactor_api_model),
     'value': FactorValueItem(attribute='value'),
-    'unit': fields.Nested(OntologyAnnotation_api_model),
+    'unit': fields.Nested(Inv_OntologyAnnotation_api_model),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -576,7 +613,7 @@ StudySample_api_model = {
     'name': fields.String,
     'characteristics': fields.List(fields.Nested(Characteristic_api_model)),
     'derives_from': fields.List(fields.Nested(StudySource_api_model)),
-    'factorValues': fields.List(fields.Nested(FactorValue_api_model), attribute='factor_values'),
+    'factorValues': fields.List(fields.Nested(FactorValue_api_model)),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
 
@@ -625,8 +662,76 @@ StudyMaterial_api_model = {
     # sources                               (StudySource):
     # samples                               (StudySample):
     # comments                              (list, Comment):
-    'otherMaterials': fields.List(fields.Nested(Characteristic_api_model, attribute='other_materials')),
+    'otherMaterials': fields.List(fields.Nested(Characteristic_api_model)),
     'sources': fields.List(fields.Nested(StudySource_api_model)),
     'samples': fields.List(fields.Nested(StudySample_api_model)),
     'comments': fields.List(fields.Nested(Comment_api_model))
 }
+
+
+Study_api_model = {
+    'assays': fields.String,
+    # ToDo check characteristicCategories model
+    'characteristicCategories': fields.List(fields.Nested(Characteristic_api_model)),
+    'comments': fields.List(fields.Nested(Comment_api_model)),
+    'description': fields.String,
+    'factors': fields.List(fields.Nested(StudyFactor_api_model)),
+    'filename': fields.String,
+    'identifier': fields.String,
+    'materials': fields.List(fields.Nested(StudyMaterial_api_model)),
+    'people': fields.List(fields.Nested(Inv_Person_api_model)),
+    'processSequence': fields.List(fields.Nested(Inv_Person_api_model)),
+    'protocols': fields.List(fields.Nested(Protocol_api_model)),
+    'publicReleaseDate': fields.String,
+    'publications': fields.List(fields.Nested(StudyPublications_api_model)),
+    'studyDesignDescriptors': fields.List(fields.Nested(Inv_OntologyAnnotation_api_model)),
+    'submissionDate': fields.String,
+    'title': fields.String,
+    'unitCategories': fields.List(fields.Nested(Inv_OntologyAnnotation_api_model))
+}
+
+
+Investigation_api_model = {
+    # id                                (str):
+    # identifier                        (str):
+    # title                             (str):
+    # description                       (str):
+    # submissionDate                    (str):
+    # publicReleaseDate                 (str):
+    # filename                          (str):
+    # people                            (list, Person):
+    # publications                      (list, StudyPublications):
+    # ontologySourceReferences          (list, OntologyAnnotation):
+    # studies                           (list, Study):
+    'comments': fields.List(fields.Nested(Comment_api_model)),
+    'description': fields.String,
+    'filename': fields.String,
+    'id': fields.String,
+    'identifier': fields.String,
+    'ontologySourceReferences': fields.List(fields.Nested(OntologySource_api_model)),
+    'people': fields.List(fields.Nested(Inv_Person_api_model)),
+    'publicReleaseDate': fields.String(attribute='public_release_date'),
+    'publications': fields.List(fields.Nested(StudyPublications_api_model)),
+    'studies': fields.List(fields.Nested(Study_api_model)),
+    'submissionDate': fields.String(attribute='submission_date'),
+    'title': fields.String
+}
+
+
+def serialize_investigation(isa_obj):
+    assert isinstance(isa_obj, Investigation)
+    return {
+        'comments': json.loads(json.dumps(isa_obj.comments, default=serialize_comment, sort_keys=True)),
+        'description': isa_obj.title,
+        'filename': isa_obj.filename,
+        'id': isa_obj.id,
+        'identifier': isa_obj.identifier,
+        'ontologySourceReferences': json.loads(
+            json.dumps(isa_obj.ontology_source_references, default=serialize_characteristic, sort_keys=True)),
+        'people': isa_obj.contacts,
+        'publicReleaseDate': isa_obj.public_release_date,
+        'publications': isa_obj.publications,
+        'studies': isa_obj.studies,
+        'submissionDate': isa_obj.submission_date,
+        'title': isa_obj.title
+    }
