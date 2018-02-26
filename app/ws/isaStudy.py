@@ -530,8 +530,10 @@ class StudyDescription(Resource):
 class StudyPerson(Resource):
 
     @swagger.operation(
-        summary="Get details for a Contact associated with the Study",
-        notes="Get details for a Contact associated with the Study by email.",
+        summary="Get details for Contacts associated with the Study",
+        notes="""Get details for Contacts associated with the Study.
+              <br>
+              Use contact's email as a query parameter to get a single contact.""",
         parameters=[
             {
                 "name": "study_id",
@@ -543,7 +545,7 @@ class StudyPerson(Resource):
             },
             {
                 "name": "email",
-                "description": "Person email",
+                "description": "Contact's email",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -593,7 +595,7 @@ class StudyPerson(Resource):
 
         # ToDo add more filters: lastName, firstName,...
         parser = reqparse.RequestParser()
-        parser.add_argument('email', help='Person email')
+        parser.add_argument('email', help="Contact's email")
         email = None
         if request.args:
             args = parser.parse_args(req=request)
@@ -612,20 +614,22 @@ class StudyPerson(Resource):
         else:
             # return a single user
             isa_person_found = False
-            person = None
-            for index, person in enumerate(isa_study.contacts):
-                if person.email == email:
+            contact = None
+            for index, contact in enumerate(isa_study.contacts):
+                if contact.email == email:
                     isa_person_found = True
                     break
             if not isa_person_found:
                 abort(404)
-            logger.info('Got %s', person.email)
+            logger.info('Got %s', contact.email)
 
-        return MMPersonSchema().dump(person)
+        return MMPersonSchema().dump(contact)
 
     @swagger.operation(
         summary='Update details for a Contact associated with the Study',
-        notes='Update details for a Contact associated with the Study.',
+        notes="""Update details for a Contact associated with the Study.
+              <br>
+              Use contact's email as a query parameter to get a single contact.""",
         parameters=[
             {
                 "name": "study_id",
@@ -637,7 +641,7 @@ class StudyPerson(Resource):
             },
             {
                 "name": "email",
-                "description": "Person email",
+                "description": "Contact's email",
                 "required": True,
                 "allowEmptyValue": False,
                 "allowMultiple": False,
@@ -653,8 +657,8 @@ class StudyPerson(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "person",
-                "description": 'details for person in JSON format.',
+                "name": "contact",
+                "description": 'details for contact in JSON format.',
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
@@ -701,7 +705,7 @@ class StudyPerson(Resource):
             abort(404)
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('email', help='Person email')
+        parser.add_argument('email', help="Contact's email")
         args = parser.parse_args()
         email = args['email']
         if email is None:
@@ -720,18 +724,18 @@ class StudyPerson(Resource):
             save_msg_str = "be"
 
         # body content validation
-        updated_person = None
+        updated_contact = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['contact']
             # ignore missing fields entirely by setting partial=True
             result = MMPersonSchema().load(data, partial=True)
-            updated_person = result.data
+            updated_contact = result.data
         except (ValidationError, Exception) as err:
             abort(400)
 
-        # update person details
-        logger.info('Updating Person details for %s, using API-Key %s', study_id, user_token)
+        # update contact details
+        logger.info('Updating Contact details for %s, using API-Key %s', study_id, user_token)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -741,17 +745,15 @@ class StudyPerson(Resource):
             if person.email == email:
                 person_found = True
                 # update person details
-                isa_study.contacts[index] = updated_person
+                isa_study.contacts[index] = updated_contact
                 break
         if not person_found:
             abort(404)
-
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
-        logger.info('Updated %s', updated_person.email)
+        logger.info('Updated %s', updated_contact.email)
 
-        return MMPersonSchema().dump(updated_person)
-
+        return MMPersonSchema().dump(updated_contact)
 
 
 # class StudyProtocols(Resource):
