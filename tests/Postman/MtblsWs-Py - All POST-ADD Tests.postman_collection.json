@@ -1,0 +1,1267 @@
+{
+	"info": {
+		"name": "MtblsWs-Py - All POST-ADD Tests",
+		"_postman_id": "c82788d0-952c-4e5c-a08d-79482e428f44",
+		"description": "Only UPDATE methods, those which actually modify data in the server. Should be run with caution, as it may lead to data loss (when run in PROD) or inconsistencies.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "POST New Study",
+			"description": null,
+			"item": [
+				{
+					"name": "New Study - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "9e6c7efb-e37c-458a-811d-61f52df60e53",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 201\"] = responseCode.code === 201;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.investigation) {",
+									"    var item = jsonData.investigation",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
+									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
+									"    tests[\"JSON response has key 'filename'\"] = item.hasOwnProperty('filename');",
+									"    tests[\"JSON response key 'filename' not Null\"] = item.filename;",
+									"    tests[\"JSON response has key 'id'\"] = item.hasOwnProperty('id');",
+									"    // tests[\"JSON response key 'id' not Null\"] = item.id;",
+									"    tests[\"JSON response has key 'identifier'\"] = item.hasOwnProperty('identifier');",
+									"    // tests[\"JSON response key 'identifier' not Null\"] = item.identifier;",
+									"    tests[\"JSON response has key 'ontologySourceReferences'\"] = item.hasOwnProperty('ontologySourceReferences');",
+									"    // tests[\"JSON response key 'ontologySourceReferences' not Null\"] = item.ontologySourceReferences;",
+									"    tests[\"JSON response has key 'people'\"] = item.hasOwnProperty('people');",
+									"    // tests[\"JSON response key 'people' not Null\"] = item.people;",
+									"    tests[\"JSON response has key 'publicReleaseDate'\"] = item.hasOwnProperty('publicReleaseDate');",
+									"    tests[\"JSON response key 'publicReleaseDate' not Null\"] = item.publicReleaseDate;",
+									"    tests[\"JSON response has key 'publications'\"] = item.hasOwnProperty('publications');",
+									"    tests[\"JSON response key 'publications' not Null\"] = item.publications;",
+									"    tests[\"JSON response has key 'studies'\"] = item.hasOwnProperty('studies');",
+									"    tests[\"JSON response key 'studies' not Null\"] = item.studies;",
+									"    tests[\"JSON response has key 'submissionDate'\"] = item.hasOwnProperty('submissionDate');",
+									"    tests[\"JSON response key 'submissionDate' not Null\"] = item.submissionDate;",
+									"    tests[\"JSON response has key 'title'\"] = item.hasOwnProperty('title');",
+									"    tests[\"JSON response key 'title' not Null\"] = item.title;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"New Study title...\",\n    \"description\": \"New Study descrition...\",\n    \"submissionDate\": \"2017-05-08\",\n    \"publicReleaseDate\": \"2018-05-08\"\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study - Null Req -> 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 400\"] = responseCode.code === 400;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study - Bad req -> 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 400\"] = responseCode.code === 400;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"New Study title...\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study - NoUser -> 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 401;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"New Study title...\",\n    \"description\": \"New Study descrition...\",\n    \"submissionDate\": \"2017-05-08\",\n    \"publicReleaseDate\": \"2018-05-08\"\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"New Study title...\",\n    \"description\": \"New Study descrition...\",\n    \"submissionDate\": \"2017-05-08\",\n    \"publicReleaseDate\": \"2018-05-08\"\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "POST New Study Contact",
+			"description": null,
+			"item": [
+				{
+					"name": "New Study Contact - Pub - Auth - NewData -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "08f1a4e1-aae8-4890-ad8d-4eeff93e2a0c",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contact\"] = responseBody.has('\"contact\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.contact) {",
+									"    var item = jsonData.contact;",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0];",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Pub - Auth - ExistingContact -> 409",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3aac8ceb-9177-4f52-8215-4475788007d6",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 409\"] = responseCode.code === 409;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Pub - Auth - NoData -> 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1ebae951-966b-4d5f-8632-4b7ffcd00276",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 400\"] = responseCode.code === 400;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Pub - Auth - MissingRequiredData -> 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8594898d-4b1e-41e7-bf33-98e0b0abb49c",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 400\"] = responseCode.code === 400;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Pub - Auth - ExtraQueryParams -> 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "aac42852-f0a5-486a-a562-8e774ccb226b",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 400\"] = responseCode.code === 400;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts?email={{ContactID}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"contacts"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "{{ContactID}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Pub - NoToken -> 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "95b45da1-610a-4394-a8df-406c66650f3e",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 401;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Pub - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "6fbccea7-78ea-4363-8fd2-e125ee6207aa",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Priv - Auth - NewData -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "97b20122-da5c-4b63-b501-0e9f3ab15eb3",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has contact\"] = responseBody.has('\"contact\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.contact) {",
+									"    var item = jsonData.contact;",
+									"    tests[\"JSON response has key 'firstName'\"] = item.hasOwnProperty('firstName');",
+									"    tests[\"JSON response key 'firstName' not Null\"] = item.firstName;",
+									"    tests[\"JSON response has key 'lastName'\"] = item.hasOwnProperty('lastName');",
+									"    tests[\"JSON response key 'lastName' not Null\"] = item.lastName;",
+									"    tests[\"JSON response has key 'email'\"] = item.hasOwnProperty('email');",
+									"    tests[\"JSON response key 'email' not Null\"] = item.email;",
+									"    tests[\"JSON response has key 'address'\"] = item.hasOwnProperty('address');",
+									"    // tests[\"JSON response key 'address' not Null\"] = item.address;",
+									"    if (item.roles.length > 0) {",
+									"        var role = item.roles[0];",
+									"        tests[\"JSON response has key 'role annotationValue'\"] = role.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'role annotationValue' not Null\"] = role.annotationValue !== null;",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Priv - Auth - ExistingContact -> 409",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3aac8ceb-9177-4f52-8215-4475788007d6",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 409\"] = responseCode.code === 409;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Priv - Auth - NoData -> 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3f5c80b2-a923-44f8-8563-8fa0baba5c33",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 400\"] = responseCode.code === 400;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Priv - Auth - MissingRequiredData -> 400 Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3f5c80b2-a923-44f8-8563-8fa0baba5c33",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 400\"] = responseCode.code === 400;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Priv - Auth - ExtraQueryParams -> 400",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "aac42852-f0a5-486a-a562-8e774ccb226b",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 400\"] = responseCode.code === 400;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/contacts?email={{ContactID}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"contacts"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "{{ContactID}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Priv - NoToken -> 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "58852c1f-0e76-42bd-8fb0-fbf9441e97c6",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 401\"] = responseCode.code === 401;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "New Study Contact - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "4b7ad100-de1c-4a71-bd5a-35f5445cfc8b",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain contacts\"] = !(responseBody.has('\"contacts\":'));",
+									"tests[\"Body does NOT contain contact\"] = !(responseBody.has('\"contact\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/contacts",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"contacts"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "961933fd-3cf4-4d36-9946-80bbc6f04f4b",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "e0ddf6cb-2531-4492-8f8f-2914cc564690",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

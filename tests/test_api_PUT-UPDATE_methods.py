@@ -26,6 +26,7 @@ bad_sample_id = instance.config.TEST_BAD_SAMPLE_ID
 valid_contact_id = instance.config.VALID_CONTACT_ID
 bad_contact_id = instance.config.BAD_CONTACT_ID
 
+
 class WsTests(unittest.TestCase):
 
     def add_common_headers(self, request):
@@ -41,107 +42,8 @@ class WsTests(unittest.TestCase):
 
 
 # ############################################
-# All tests that modify data below this point
+# All tests that UPDATE data below this point
 # ############################################
-
-class PostSingleStudyTests(WsTests):
-    """
-    This is actually an ISA-JSON Investigation object
-    that contains a list of studies, samples and assays
-    """
-    data_new_study = instance.config.TEST_DATA_NEW_STUDY
-
-    def tearDown(self):
-        time.sleep(1)  # sleep time in seconds
-
-    def check_Investigation_class(self, obj):
-        self.assertIsNotNone(obj['investigation'])
-        inv = obj['investigation']
-        self.assertIsNotNone(inv['comments'])
-        self.assertIsNotNone(inv['description'])
-        self.assertIsNotNone(inv['filename'])
-        self.assertIsNotNone(inv['id'])
-        self.assertIsNotNone(inv['identifier'])
-        # self.assertIsNotNone(inv['ontologySourceReferences'])
-        # self.assertIsNotNone(inv['people'])
-        self.assertIsNotNone(inv['publicReleaseDate'])
-        self.assertIsNotNone(inv['publications'])
-        self.assertIsNotNone(inv['studies'])
-        self.assertIsNotNone(inv['submissionDate'])
-        self.assertIsNotNone(inv['title'])
-
-    # POST New Study - Auth -> 201
-    def test_post_new_study_auth(self):
-        request = urllib.request.Request(instance.config.TEST_URL_BASE, data=self.data_new_study, method='POST')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        with urllib.request.urlopen(request) as response:
-            self.assertEqual(response.code, 201)
-            header = response.info()
-            self.check_header_common(header)
-            body = response.read().decode('utf-8')
-            self.check_body_common(body)
-            j_resp = json.loads(body)
-            self.assertIn('investigation', body)
-            self.check_Investigation_class(j_resp)
-
-    # New Study - Null Req -> 400
-    def test_post_new_study_nullReq(self):
-        request = urllib.request.Request(instance.config.TEST_URL_BASE, data=b'', method='POST')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 400)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('BAD REQUEST', err.msg)
-            self.assertEqual('BAD REQUEST', err.reason)
-
-    # New Study - Bad req -> 400
-    def test_post_new_study_badReq(self):
-        request = urllib.request.Request(instance.config.TEST_URL_BASE,
-                                         data=b'{"title": "Study title"}',
-                                         method='POST')
-        self.add_common_headers(request)
-        request.add_header('user_token', auth_id)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 400)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('BAD REQUEST', err.msg)
-            self.assertEqual('BAD REQUEST', err.reason)
-
-    # New Study - NoUser -> 401
-    def test_post_new_study_noUser(self):
-        request = urllib.request.Request(instance.config.TEST_URL_BASE, data=self.data_new_study, method='POST')
-        self.add_common_headers(request)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 401)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('UNAUTHORIZED', err.msg)
-            self.assertEqual('UNAUTHORIZED', err.reason)
-
-    # New Study - NoAuth -> 403
-    def test_post_new_study_noAuth(self):
-        request = urllib.request.Request(instance.config.TEST_URL_BASE, data=self.data_new_study, method='POST')
-        self.add_common_headers(request)
-        request.add_header('user_token', wrong_auth_token)
-        try:
-            urllib.request.urlopen(request)
-        except urllib.error.HTTPError as err:
-            self.assertEqual(err.code, 403)
-            self.check_header_common(err.headers)
-            self.check_body_common(err.read().decode('utf-8'))
-            self.assertEqual('FORBIDDEN', err.msg)
-            self.assertEqual('FORBIDDEN', err.reason)
-
 
 class UpdateStudyTitleTests(WsTests):
 

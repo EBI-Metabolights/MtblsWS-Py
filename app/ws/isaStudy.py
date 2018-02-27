@@ -1,9 +1,7 @@
 import logging
 from flask import request, jsonify
 from flask_restful import Resource, abort, marshal_with, reqparse
-from flask_restful_swagger import swagger
 from marshmallow import ValidationError
-
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import *
 from app.ws.mtblsWSclient import WsClient
@@ -529,6 +527,131 @@ class StudyDescription(Resource):
 
 class StudyPerson(Resource):
 
+
+    @swagger.operation(
+        summary='Add a new Contact associated with the Study',
+        notes='Add a new Contact associated with the Study',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "contact",
+                "description": 'details for contact in JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 201,
+                "message": "Created."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
+    def post(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('email', help="Contact's email")
+        args = parser.parse_args()
+        email = args['email']
+        # No email param allowed, just to prevent confusion with UPDATE
+        if email:
+            abort(400)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # body content validation
+        new_contact = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['contact']
+            # ignore missing fields entirely by setting partial=True
+            result = MMPersonSchema().load(data, partial=False)
+            new_contact = result.data
+        except (ValidationError, Exception) as err:
+            abort(400)
+
+        # Add new contact
+        logger.info('Adding new Contact %s for %s, using API-Key %s', new_contact.email, study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        # check for contact added already
+        for index, person in enumerate(isa_study.contacts):
+            if person.email == new_contact.email:
+                abort(409)
+        # add contact
+        isa_study.contacts.append(new_contact)
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        logger.info('Added %s', new_contact.email)
+
+        return MMPersonSchema().dump(new_contact)
+
     @swagger.operation(
         summary="Get details for Contacts associated with the Study",
         notes="""Get details for Contacts associated with the Study.
@@ -729,7 +852,7 @@ class StudyPerson(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['contact']
             # ignore missing fields entirely by setting partial=True
-            result = MMPersonSchema().load(data, partial=True)
+            result = MMPersonSchema().load(data, partial=False)
             updated_contact = result.data
         except (ValidationError, Exception) as err:
             abort(400)
