@@ -145,7 +145,7 @@ class PostSingleStudyTests(WsTests):
 
 class PostNewStudyContactTests(WsTests):
 
-    data_new_contact = instance.config.TEST_DATA_CONTACT
+    valid_contact = instance.config.TEST_DATA_CONTACT
     missingData_new_contact = instance.config.TEST_DATA_CONTACT_MISSING
     noData_new_contact = b''
 
@@ -167,12 +167,38 @@ class PostNewStudyContactTests(WsTests):
             self.assertIsNotNone(role['termAccession'])
             self.assertIsNotNone(role['comments'])
 
+    def pre_create_contact(self, url):
+        request = urllib.request.Request(url + '/contacts',
+                                         data=self.valid_contact, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    def pre_delete_contact(self, url):
+        request = urllib.request.Request(url + '/contacts'
+                                         + '?email=' + valid_contact_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise Exception(err)
+
     # New Study Contact - Pub - Auth - NewData -> 200
-    # NOTE: This test may fail if run after same data has been already added,
-    # i.e. if run twice or after some of the other tests
     def test_add_Contact_pub_auth_newData(self):
+        # first, delete the contact to ensure it won't exists
+        self.pre_delete_contact(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the contact
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -187,11 +213,14 @@ class PostNewStudyContactTests(WsTests):
             self.check_Person_class(j_resp['contact'])
 
     # New Study Contact - Pub - Auth - ExistingContact -> 409
-    # NOTE: This test may fail if not run after same data has been already added,
-    # i.e. if run before test_add_Contact_pub_auth_newData
     def test_add_Contact_pub_auth_duplicateData(self):
+        # first, create the contact to ensure it will exists
+        self.pre_create_contact(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the contact
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -237,7 +266,7 @@ class PostNewStudyContactTests(WsTests):
     def test_add_Contact_pub_auth_extraParams(self):
         request = urllib.request.Request(url_pub_id + '/contacts'
                                          + '?email=' + valid_contact_id,
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -252,7 +281,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - NoToken -> 401
     def test_add_Contact_pub_auth_noToken(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -266,7 +295,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - NoAuth -> 403
     def test_add_Contact_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         try:
@@ -279,11 +308,14 @@ class PostNewStudyContactTests(WsTests):
             self.assertEqual('FORBIDDEN', err.reason)
 
     # New Study Contact - Priv - Auth - NewData -> 200
-    # NOTE: This test may fail if run after same data has been already added,
-    # i.e. if run twice or after some of the other tests
     def test_add_Contact_priv_auth_newData(self):
+        # first, delete the contact to ensure it won't exists
+        self.pre_delete_contact(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the contact
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -298,11 +330,14 @@ class PostNewStudyContactTests(WsTests):
             self.check_Person_class(j_resp['contact'])
 
     # New Study Contact - Priv - Auth - ExistingContact -> 409
-    # NOTE: This test may fail if not run after same data has been already added,
-    # i.e. if run before test_add_Contact_priv_auth_newData
     def test_add_Contact_priv_auth_duplicateData(self):
+        # first, create the contact to ensure it will exists
+        self.pre_create_contact(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the contact
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -348,7 +383,7 @@ class PostNewStudyContactTests(WsTests):
     def test_add_Contact_priv_auth_extraParams(self):
         request = urllib.request.Request(url_priv_id + '/contacts'
                                          + '?email=' + valid_contact_id,
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -363,7 +398,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - NoToken -> 401
     def test_add_Contact_priv_auth_noToken(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -377,7 +412,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - NoAuth -> 403
     def test_add_Contact_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.data_new_contact, method='POST')
+                                         data=self.valid_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         try:
