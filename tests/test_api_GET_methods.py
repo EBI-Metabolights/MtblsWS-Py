@@ -545,6 +545,10 @@ class GetStudyContactsTests(WsTests):
 
 class GetStudyContactTests(WsTests):
 
+    valid_contact = instance.config.TEST_DATA_CONTACT
+    missingData_new_contact = instance.config.TEST_DATA_CONTACT_MISSING
+    noData_new_contact = b''
+
     def check_Person_class(self, obj):
         self.assertIsNotNone(obj['firstName'])
         # self.assertIsNotNone(person['midInitials'])
@@ -560,8 +564,36 @@ class GetStudyContactTests(WsTests):
             self.assertIsNotNone(role['termAccession'])
             self.assertIsNotNone(role['comments'])
 
+    def pre_create_contact(self, url):
+        request = urllib.request.Request(url + '/contacts',
+                                         data=self.valid_contact, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    def pre_delete_contact(self, url):
+        request = urllib.request.Request(url + '/contacts'
+                                         + '?email=' + valid_contact_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise Exception(err)
+
     # Get Study Contact - Pub - ContacId -> 200
     def test_get_Contacts_pub(self):
+        # first, create the contact to ensure it will exists
+        self.pre_create_contact(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to get the contact
         request = urllib.request.Request(url_pub_id + '/contacts'
                                          + '?email=' + valid_contact_id,
                                          method='GET')
@@ -606,6 +638,11 @@ class GetStudyContactTests(WsTests):
 
     # Get Study Contact - Priv - Auth - ContactId -> 200
     def test_get_Contact_priv_auth(self):
+        # first, create the contact to ensure it will exists
+        self.pre_create_contact(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to get the contact
         request = urllib.request.Request(url_priv_id + '/contacts'
                                          + '?email=' + valid_contact_id,
                                          method='GET')
