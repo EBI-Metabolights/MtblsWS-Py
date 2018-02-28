@@ -6,6 +6,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import *
 from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
+from flask_restful_swagger import swagger
 
 """
 ISA Study
@@ -527,7 +528,6 @@ class StudyDescription(Resource):
 
 class StudyPerson(Resource):
 
-
     @swagger.operation(
         summary='Add a new Contact associated with the Study',
         notes='Add a new Contact associated with the Study',
@@ -629,7 +629,7 @@ class StudyPerson(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['contact']
             # ignore missing fields entirely by setting partial=True
-            result = MMPersonSchema().load(data, partial=False)
+            result = PersonSchema().load(data, partial=False)
             new_contact = result.data
         except (ValidationError, Exception) as err:
             abort(400)
@@ -650,7 +650,7 @@ class StudyPerson(Resource):
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Added %s', new_contact.email)
 
-        return MMPersonSchema().dump(new_contact)
+        return PersonSchema().dump(new_contact)
 
     @swagger.operation(
         summary="Get details for Contacts associated with the Study",
@@ -733,7 +733,7 @@ class StudyPerson(Resource):
         if email is None:
             # return a list of users
             logger.info('Got %s contacts', len(isa_study.contacts))
-            return MMPersonSchema().dump(isa_study.contacts, many=True)
+            return PersonSchema().dump(isa_study.contacts, many=True)
         else:
             # return a single user
             isa_person_found = False
@@ -746,7 +746,7 @@ class StudyPerson(Resource):
                 abort(404)
             logger.info('Got %s', contact.email)
 
-        return MMPersonSchema().dump(contact)
+        return PersonSchema().dump(contact)
 
     @swagger.operation(
         summary='Update details for a Contact associated with the Study',
@@ -852,7 +852,7 @@ class StudyPerson(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['contact']
             # ignore missing fields entirely by setting partial=True
-            result = MMPersonSchema().load(data, partial=False)
+            result = PersonSchema().load(data, partial=False)
             updated_contact = result.data
         except (ValidationError, Exception) as err:
             abort(400)
@@ -876,7 +876,7 @@ class StudyPerson(Resource):
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Updated %s', updated_contact.email)
 
-        return MMPersonSchema().dump(updated_contact)
+        return PersonSchema().dump(updated_contact)
 
     @swagger.operation(
         summary='Delete a Contact associated with the Study',
@@ -988,178 +988,211 @@ class StudyPerson(Resource):
         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
         logger.info('Deleted %s', person.email)
 
-        return MMPersonSchema().dump(person)
+        return PersonSchema().dump(person)
 
 
-# class StudyProtocols(Resource):
-#     """Manage the Study protocols"""
-#
-#     @swagger.operation(
-#         summary="Get MTBLS Study protocols",
-#         notes="Get the list of protocols of the MTBLS Study with {study_id} in JSON format.",
-#         parameters=[
-#             {
-#                 "name": "study_id",
-#                 "description": "MTBLS Identifier",
-#                 "required": True,
-#                 "allowMultiple": False,
-#                 "paramType": "path",
-#                 "dataType": "string"
-#             },
-#             {
-#                 "name": "user_token",
-#                 "description": "User API token",
-#                 "paramType": "header",
-#                 "type": "string",
-#                 "required": False,
-#                 "allowMultiple": False
-#             }
-#         ],
-#         responseMessages=[
-#             {
-#                 "code": 200,
-#                 "message": "OK."
-#             },
-#             {
-#                 "code": 400,
-#                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
-#             },
-#             {
-#                 "code": 401,
-#                 "message": "Unauthorized. Access to the resource requires user authentication."
-#             },
-#             {
-#                 "code": 403,
-#                 "message": "Forbidden. Access to the study is not allowed for this user."
-#             },
-#             {
-#                 "code": 404,
-#                 "message": "Not found. The requested identifier is not valid or does not exist."
-#             }
-#         ]
-#     )
-#     @marshal_with(Protocol_api_model, envelope='protocols')
-#     def get(self, study_id):
-#         # param validation
-#         if study_id is None:
-#             abort(404)
-#         # User authentication
-#         user_token = None
-#         if "user_token" in request.headers:
-#             user_token = request.headers["user_token"]
-#
-#         logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
-#         # check for access rights
-#         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
-#             abort(403)
-#         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
-#         isa_protocols = isa_study.protocols
-#         str_protocols = json.dumps({'protocols': isa_protocols}, default=serialize_protocol,
-#                                    sort_keys=True)
-#         logger.info('Got: %s', str_protocols)
-#         return isa_protocols
-#
-#     @swagger.operation(
-#         summary='Update MTBLS Study protocols',
-#         notes='Update the list of protocols of the MTBLS Study with {study_id}.',
-#         parameters=[
-#             {
-#                 "name": "study_id",
-#                 "description": "MTBLS Identifier",
-#                 "required": True,
-#                 "allowMultiple": False,
-#                 "paramType": "path",
-#                 "dataType": "string"
-#             },
-#             {
-#                 "name": "user_token",
-#                 "description": "User API token",
-#                 "paramType": "header",
-#                 "type": "string",
-#                 "required": True,
-#                 "allowMultiple": False
-#             },
-#             {
-#                 "name": "protocols",
-#                 "description": 'Updated list of protocols in JSON format.',
-#                 "paramType": "body",
-#                 "type": "string",
-#                 "format": "application/json",
-#                 "required": True,
-#                 "allowMultiple": False
-#             },
-#             {
-#                 "name": "save_audit_copy",
-#                 "description": "Keep track of changes saving a copy of the unmodified files.",
-#                 "paramType": "header",
-#                 "type": "Boolean",
-#                 "defaultValue": True,
-#                 "format": "application/json",
-#                 "required": False,
-#                 "allowMultiple": False
-#             }
-#         ],
-#         responseMessages=[
-#             {
-#                 "code": 200,
-#                 "message": "OK."
-#             },
-#             {
-#                 "code": 400,
-#                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
-#             },
-#             {
-#                 "code": 401,
-#                 "message": "Unauthorized. Access to the resource requires user authentication."
-#             },
-#             {
-#                 "code": 403,
-#                 "message": "Forbidden. Access to the study is not allowed for this user."
-#             },
-#             {
-#                 "code": 404,
-#                 "message": "Not found. The requested identifier is not valid or does not exist."
-#             }
-#         ]
-#     )
-#     @marshal_with(Protocol_api_model, envelope='protocols')
-#     def put(self, study_id):
-#         # param validation
-#         if study_id is None:
-#             abort(404)
-#         # User authentication
-#         user_token = None
-#         if "user_token" in request.headers:
-#             user_token = request.headers["user_token"]
-#         # body content validation
-#         if request.data is None or request.json is None:
-#             abort(400)
-#         data_dict = json.loads(request.data.decode('utf-8'))
-#         json_protocols = data_dict['protocols']
-#         isa_protocols = list()
-#         for json_protocol in json_protocols:
-#             isa_protocol = unserialize_protocol(json_protocol)
-#             isa_protocols.append(isa_protocol)
-#         # check for keeping copies
-#         save_audit_copy = False
-#         save_msg_str = "NOT be"
-#         if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
-#             save_audit_copy = True
-#             save_msg_str = "be"
-#
-#         # update study protocols
-#         logger.info('Updating Study protocols for %s, using API-Key %s', study_id, user_token)
-#         # check for access rights
-#         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
-#             abort(403)
-#         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
-#         isa_study.protocols = isa_protocols
-#         logging.info("A copy of the previous files will %s saved", save_msg_str)
-#         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
-#         logger.info('Applied %s', json_protocols)
-#         return isa_protocols
-#
-#
+class StudyProtocols(Resource):
+    """Manage the Study protocols"""
+
+    @swagger.operation(
+        summary="Get Study protocols",
+        notes="""Get Study protocols.
+              <br>
+              Use protocol name as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "name",
+                "description": "Protocol name",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @marshal_with(Protocol_api_model, envelope='protocols')
+    def get(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help='Protocol name')
+        prot_name = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            prot_name = args['name']
+
+        logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        if prot_name is None:
+            # return a list of protocols
+            logger.info('Got %s protocols', len(isa_study.protocols))
+            return ProtocolSchema().dump(isa_study.protocols, many=True)
+        else:
+            # return a single protocol
+            protocol_found = False
+            protocol = None
+            for index, protocol in enumerate(isa_study.protocols):
+                if protocol.name == prot_name:
+                    protocol_found = True
+                    break
+            if not protocol_found:
+                abort(404)
+            logger.info('Got %s', protocol.name)
+
+        return ProtocolSchema().dump(protocol)
+
+    # @swagger.operation(
+    #     summary='Update MTBLS Study protocols',
+    #     notes='Update the list of protocols of the MTBLS Study with {study_id}.',
+    #     parameters=[
+    #         {
+    #             "name": "study_id",
+    #             "description": "MTBLS Identifier",
+    #             "required": True,
+    #             "allowMultiple": False,
+    #             "paramType": "path",
+    #             "dataType": "string"
+    #         },
+    #         {
+    #             "name": "user_token",
+    #             "description": "User API token",
+    #             "paramType": "header",
+    #             "type": "string",
+    #             "required": True,
+    #             "allowMultiple": False
+    #         },
+    #         {
+    #             "name": "protocols",
+    #             "description": 'Updated list of protocols in JSON format.',
+    #             "paramType": "body",
+    #             "type": "string",
+    #             "format": "application/json",
+    #             "required": True,
+    #             "allowMultiple": False
+    #         },
+    #         {
+    #             "name": "save_audit_copy",
+    #             "description": "Keep track of changes saving a copy of the unmodified files.",
+    #             "paramType": "header",
+    #             "type": "Boolean",
+    #             "defaultValue": True,
+    #             "format": "application/json",
+    #             "required": False,
+    #             "allowMultiple": False
+    #         }
+    #     ],
+    #     responseMessages=[
+    #         {
+    #             "code": 200,
+    #             "message": "OK."
+    #         },
+    #         {
+    #             "code": 400,
+    #             "message": "Bad Request. Server could not understand the request due to malformed syntax."
+    #         },
+    #         {
+    #             "code": 401,
+    #             "message": "Unauthorized. Access to the resource requires user authentication."
+    #         },
+    #         {
+    #             "code": 403,
+    #             "message": "Forbidden. Access to the study is not allowed for this user."
+    #         },
+    #         {
+    #             "code": 404,
+    #             "message": "Not found. The requested identifier is not valid or does not exist."
+    #         }
+    #     ]
+    # )
+    # @marshal_with(Protocol_api_model, envelope='protocols')
+    # def put(self, study_id):
+    #     # param validation
+    #     if study_id is None:
+    #         abort(404)
+    #     # User authentication
+    #     user_token = None
+    #     if "user_token" in request.headers:
+    #         user_token = request.headers["user_token"]
+    #     # body content validation
+    #     if request.data is None or request.json is None:
+    #         abort(400)
+    #     data_dict = json.loads(request.data.decode('utf-8'))
+    #     json_protocols = data_dict['protocols']
+    #     isa_protocols = list()
+    #     for json_protocol in json_protocols:
+    #         isa_protocol = unserialize_protocol(json_protocol)
+    #         isa_protocols.append(isa_protocol)
+    #     # check for keeping copies
+    #     save_audit_copy = False
+    #     save_msg_str = "NOT be"
+    #     if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+    #         save_audit_copy = True
+    #         save_msg_str = "be"
+    #
+    #     # update study protocols
+    #     logger.info('Updating Study protocols for %s, using API-Key %s', study_id, user_token)
+    #     # check for access rights
+    #     if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+    #         abort(403)
+    #     isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+    #     isa_study.protocols = isa_protocols
+    #     logging.info("A copy of the previous files will %s saved", save_msg_str)
+    #     iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+    #     logger.info('Applied %s', json_protocols)
+    #     return isa_protocols
+
+
+
+
 # class StudyFactors(Resource):
 #     @swagger.operation(
 #         summary="Get MTBLS Study Factors",

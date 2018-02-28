@@ -1,4 +1,3 @@
-from flask_restful_swagger import swagger
 from isatools.model import *
 from marshmallow import Schema, fields, post_load, post_dump
 
@@ -53,8 +52,8 @@ class OntologyAnnotationSchema(Schema):
         ordered = True
 
     term = fields.String(load_from='annotationValue', dump_to='annotationValue')
-    term_source = fields.Nested(OntologySourceSchema, load_from='termSource', dump_to='termSource', required=False,
-                                allow_none=True)
+    term_source = fields.Nested(OntologySourceSchema, load_from='termSource', dump_to='termSource',
+                                required=False, allow_none=True)
     term_accession = fields.String(load_from='termAccession', dump_to='termAccession')
     comments = fields.Nested(CommentSchema, many=True)
 
@@ -63,7 +62,7 @@ class OntologyAnnotationSchema(Schema):
         return OntologyAnnotation(**data)
 
 
-class MMPersonSchema(Schema):
+class PersonSchema(Schema):
     # marshmallow schema for ISA-API class Person
     #
     # last_name -> lastName         (str):
@@ -85,7 +84,6 @@ class MMPersonSchema(Schema):
     email = fields.Email(required=True)
     affiliation = fields.Str(required=True)
     comments = fields.Nested(CommentSchema, many=True)
-    age = fields.Number(validate=lambda n: 18 <= n <= 40)
     address = fields.Str()
     fax = fields.Str()
     mid_initials = fields.Str(load_from='midInitials', dump_to='midInitials')
@@ -103,6 +101,72 @@ class MMPersonSchema(Schema):
         return {
             key: data
         }
+
+
+class ProtocolParameterSchema(Schema):
+    # marshmallow schema for ISA-API class ProtocolParameter
+    #
+    # parameter_name -> parameterName   (OntologyAnnotation):
+    # unit                              (OntologyAnnotation):
+    # comments                          (list, Comment):
+    class Meta:
+        strict = True
+        ordered = True
+
+    parameter_name = fields.Nested(OntologyAnnotationSchema, required=True,
+                                   load_from='parameterName', dump_to='parameterName')
+    unit = fields.Nested(OntologyAnnotationSchema)
+    comments = fields.Nested(CommentSchema, many=True)
+
+    @post_load
+    def make_protocol_param(self, data):
+        return ProtocolParameter(**data)
+
+    # add an envelope to responses
+    @post_dump(pass_many=True)
+    def set_envelop(self, data, many):
+        key = 'parameters' if many else 'parameter'
+        return {
+            key: data
+        }
+
+
+class ProtocolSchema(Schema):
+    # marshmallow schema for ISA-API class Protocol
+    #
+    # name                              (str):
+    # protocol_type -> protocolType     (OntologyAnnotation):
+    # description                       (str):
+    # uri                               (str):
+    # version                           (str):
+    # parameters                        (list, ProtocolParameter):
+    # components                        (list, OntologyAnnotation):
+    # comments                          (list, comment):
+    class Meta:
+        strict = True
+        ordered = True
+
+    name = fields.Str(required=True)
+    protocol_type = fields.Nested(OntologyAnnotationSchema,
+                                  load_from='protocolType', dump_to='protocolType')
+    description = fields.Str()
+    uri = fields.Str()
+    version = fields.Str()
+    parameters = fields.Nested(ProtocolParameterSchema, missing=None, many=True)
+    components = fields.Nested(OntologyAnnotationSchema, missing=None, many=True)
+    comments = fields.Nested(CommentSchema, many=True)
+
+    @post_load
+    def make_protocol(self, data):
+        return Protocol(**data)
+
+    # # add an envelope to responses
+    # @post_dump(pass_many=True)
+    # def set_envelop(self, data, many):
+    #     key = 'protocols' if many else 'protocol'
+    #     return {
+    #         key: data
+    #     }
 
 
 class PublicationSchema(Schema):
@@ -156,7 +220,7 @@ class IsaInvestigationSchema(Schema):
     submissionDate = fields.Str()
     public_release_date = fields.Str(dump_to='public_release_date')
     filename = fields.Str()
-    contacts = fields.Nested(MMPersonSchema, many=True, dump_to='people')
+    contacts = fields.Nested(PersonSchema, many=True, dump_to='people')
     publications = fields.Nested(PublicationSchema, many=True)
     ontology_source_references = fields.Nested(OntologyAnnotationSchema, many=True,
                                                dump_to='ontologySourceReferences')
