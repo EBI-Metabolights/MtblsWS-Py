@@ -907,7 +907,7 @@ class GetStudyProtocolTests(WsTests):
             self.assertIsNotNone(j_resp['protocol'])
             self.check_Protocol_class(j_resp['protocol'])
 
-    # Get Study Protocol - Pub - BadContacId -> 404
+    # Get Study Protocol - Pub - BadProtocolId -> 404
     def test_get_protocol_pub_badId(self):
         request = urllib.request.Request(url_wrong_id + '/protocols'
                                          + '?name=' + bad_protocol_id,
@@ -957,7 +957,7 @@ class GetStudyProtocolTests(WsTests):
             self.assertIsNotNone(j_resp['protocol'])
             self.check_Protocol_class(j_resp['protocol'])
 
-    # Get Study Protocol - Priv - Auth - BadContacId -> 404
+    # Get Study Protocol - Priv - Auth - BadProtocolId -> 404
     def test_get_protocol_priv_Auth_badId(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
                                          + '?name=' + bad_protocol_id,
@@ -1004,7 +1004,7 @@ class GetStudyProtocolTests(WsTests):
     # Get Study Protocol - Priv - NoAuth -> 403
     def test_get_protocol_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + valid_contact_id,
+                                         + '?name=' + valid_protocol_id,
                                          method='GET')
         request.add_header('user_token', wrong_auth_token)
         try:
