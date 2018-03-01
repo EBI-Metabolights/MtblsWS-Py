@@ -107,7 +107,6 @@ class ProtocolParameterSchema(Schema):
     # marshmallow schema for ISA-API class ProtocolParameter
     #
     # parameter_name -> parameterName   (OntologyAnnotation):
-    # unit                              (OntologyAnnotation):
     # comments                          (list, Comment):
     class Meta:
         strict = True
@@ -115,20 +114,11 @@ class ProtocolParameterSchema(Schema):
 
     parameter_name = fields.Nested(OntologyAnnotationSchema, required=True,
                                    load_from='parameterName', dump_to='parameterName')
-    unit = fields.Nested(OntologyAnnotationSchema)
     comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
     def make_protocol_param(self, data):
         return ProtocolParameter(**data)
-
-    # add an envelope to responses
-    @post_dump(pass_many=True)
-    def set_envelop(self, data, many):
-        key = 'parameters' if many else 'parameter'
-        return {
-            key: data
-        }
 
 
 class ProtocolSchema(Schema):
@@ -160,13 +150,13 @@ class ProtocolSchema(Schema):
     def make_protocol(self, data):
         return Protocol(**data)
 
-    # # add an envelope to responses
-    # @post_dump(pass_many=True)
-    # def set_envelop(self, data, many):
-    #     key = 'protocols' if many else 'protocol'
-    #     return {
-    #         key: data
-    #     }
+    # add an envelope to responses
+    @post_dump(pass_many=True)
+    def set_envelop(self, data, many):
+        key = 'protocols' if many else 'protocol'
+        return {
+            key: data
+        }
 
 
 class PublicationSchema(Schema):

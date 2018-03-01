@@ -570,8 +570,8 @@ class StudyPerson(Resource):
         ],
         responseMessages=[
             {
-                "code": 201,
-                "message": "Created."
+                "code": 200,
+                "message": "OK."
             },
             {
                 "code": 400,
@@ -628,7 +628,7 @@ class StudyPerson(Resource):
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['contact']
-            # ignore missing fields entirely by setting partial=True
+            # if partial=True missing fields will be ignored
             result = PersonSchema().load(data, partial=False)
             new_contact = result.data
         except (ValidationError, Exception) as err:
@@ -745,8 +745,7 @@ class StudyPerson(Resource):
             if not isa_person_found:
                 abort(404)
             logger.info('Got %s', contact.email)
-
-        return PersonSchema().dump(contact)
+            return PersonSchema().dump(contact)
 
     @swagger.operation(
         summary='Update details for a Contact associated with the Study',
@@ -991,8 +990,133 @@ class StudyPerson(Resource):
         return PersonSchema().dump(person)
 
 
-class StudyProtocols(Resource):
+class StudyProtocol(Resource):
     """Manage the Study protocols"""
+
+    @swagger.operation(
+        summary='Add a new Protocol to a Study',
+        notes='Add a new Protocol to a Study',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "protocol",
+                "description": 'Protocol in JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
+    def post(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help="Protocol name")
+        args = parser.parse_args()
+        prot_name = args['name']
+        # No protocol param allowed, just to prevent confusion with UPDATE
+        if prot_name:
+            abort(400)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # body content validation
+        new_protocol = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['protocol']
+            # if partial=True missing fields will be ignored
+            result = ProtocolSchema().load(data, partial=True)
+            new_protocol = result.data
+        except (ValidationError, Exception) as err:
+            abort(400)
+
+        # Add new contact
+        logger.info('Adding new Protocol %s for %s, using API-Key %s', new_protocol.name, study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        # check for protocol added already
+        for index, prot_name in enumerate(isa_study.protocols):
+            if prot_name.name == new_protocol.name:
+                abort(409)
+        # add protocol
+        isa_study.protocols.append(new_protocol)
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        logger.info('Added %s', new_protocol.name)
+
+        return ProtocolSchema().dump(new_protocol)
 
     @swagger.operation(
         summary="Get Study protocols",
@@ -1049,7 +1173,6 @@ class StudyProtocols(Resource):
             }
         ]
     )
-    @marshal_with(Protocol_api_model, envelope='protocols')
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -1087,8 +1210,7 @@ class StudyProtocols(Resource):
             if not protocol_found:
                 abort(404)
             logger.info('Got %s', protocol.name)
-
-        return ProtocolSchema().dump(protocol)
+            return ProtocolSchema().dump(protocol)
 
     # @swagger.operation(
     #     summary='Update MTBLS Study protocols',
