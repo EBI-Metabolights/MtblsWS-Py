@@ -1095,12 +1095,12 @@ class StudyProtocol(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['protocol']
             # if partial=True missing fields will be ignored
-            result = ProtocolSchema().load(data, partial=True)
+            result = ProtocolSchema().load(data, partial=False)
             new_protocol = result.data
         except (ValidationError, Exception) as err:
             abort(400)
 
-        # Add new contact
+        # Add new protocol
         logger.info('Adding new Protocol %s for %s, using API-Key %s', new_protocol.name, study_id, user_token)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
@@ -1211,6 +1211,125 @@ class StudyProtocol(Resource):
                 abort(404)
             logger.info('Got %s', protocol.name)
             return ProtocolSchema().dump(protocol)
+
+    @swagger.operation(
+        summary='Delete a Protocol associated with the Study',
+        notes="""Delete a Protocol associated with the Study.
+              <br>
+              Use protocol name as a query parameter to get a single protocol.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "name",
+                "description": "Protocol name",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def delete(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help="Protocol name", location="args")
+        args = parser.parse_args()
+        prot_name = args['name']
+        if prot_name is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # delete protocol
+        logger.info('Deleting protocol %s for %s, using API-Key %s', prot_name, study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        protocol_found = False
+        for index, protocol in enumerate(isa_study.protocols):
+            if protocol.name == prot_name:
+                protocol_found = True
+                # delete protocol
+                del isa_study.protocols[index]
+                break
+        if not protocol_found:
+            abort(404)
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        logger.info('Deleted %s', protocol.name)
+
+        return ProtocolSchema().dump(protocol)
+
+
+
+
+
+
+
 
     # @swagger.operation(
     #     summary='Update MTBLS Study protocols',

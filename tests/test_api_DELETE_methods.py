@@ -24,6 +24,8 @@ private_sample_id = instance.config.TEST_PRIV_SAMPLE_ID
 bad_sample_id = instance.config.TEST_BAD_SAMPLE_ID
 valid_contact_id = instance.config.VALID_CONTACT_ID
 bad_contact_id = instance.config.BAD_CONTACT_ID
+valid_protocol_id = instance.config.VALID_PROTOCOL_ID
+bad_protocol_id = instance.config.BAD_PROTOCOL_ID
 
 
 class WsTests(unittest.TestCase):
@@ -282,6 +284,250 @@ class DeleteStudyContactTests(WsTests):
     def test_delete_Contact_priv_auth_unknownContact(self):
         request = urllib.request.Request(url_priv_id + '/contacts'
                                          + '?email=' + bad_contact_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+
+class DeleteStudyProtocolTests(WsTests):
+
+    valid_protocol = instance.config.TEST_DATA_PROTOCOL
+    missingData_new_protocol = instance.config.TEST_DATA_PROTOCOL_MISSING
+    noData_new_protocol = b''
+
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    def check_Protocol_class(self, obj):
+        self.assertIsNotNone(obj['name'])
+        self.assertIsNotNone(obj['protocolType'])
+        self.assertIsNotNone(obj['description'])
+        self.assertIsNotNone(obj['uri'])
+        self.assertIsNotNone(obj['version'])
+        self.assertIsNotNone(obj['parameters'])
+        self.assertIsNotNone(obj['components'])
+
+    def pre_create_protocol(self, url):
+        request = urllib.request.Request(url + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    def pre_delete_protocol(self, url):
+        request = urllib.request.Request(url + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise Exception(err)
+
+    # Delete Study Protocol - Pub - Auth -> 200
+    def test_delete_Protocol_pub_auth(self):
+        # first, create the protocol to ensure it will exists
+        self.pre_create_protocol(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to delete the protocol
+        request = urllib.request.Request(url_pub_id + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('protocol', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['protocol'])
+            self.check_Protocol_class(j_resp['protocol'])
+
+    # Delete Study Protocol - Pub - NoToken -> 401
+    def test_delete_Protocol_pub_auth_noToken(self):
+        request = urllib.request.Request(url_pub_id + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Delete Study Protocol - Pub - NoAuth -> 403
+    def test_delete_Protocol_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Delete Study Protocol - Pub - Auth - NoParams -> 404
+    def test_delete_Protocol_pub_auth_noParams(self):
+        request = urllib.request.Request(url_pub_id + '/protocols',
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Protocol - Pub - Auth - NoData -> 404
+    def test_delete_Protocol_pub_auth_noData(self):
+        request = urllib.request.Request(url_pub_id + '/protocols'
+                                         + '?name=',
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Protocol - Pub - Auth - unknownProtocol -> 404
+    def test_delete_Protocol_pub_auth_unknownProtocol(self):
+        request = urllib.request.Request(url_pub_id + '/protocols'
+                                         + '?name=' + bad_protocol_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Protocol - Priv - Auth - NewData -> 200
+    def test_delete_Protocol_priv_auth_newData(self):
+        # first, create the protocol to ensure it will exists
+        self.pre_create_protocol(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to delete the protocol
+        request = urllib.request.Request(url_priv_id + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('protocol', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['protocol'])
+            self.check_Protocol_class(j_resp['protocol'])
+
+    # Delete Study Protocol - Priv - NoToken -> 401
+    def test_delete_Protocol_priv_auth_noToken(self):
+        request = urllib.request.Request(url_priv_id + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Delete Study Protocol - Priv - NoAuth -> 403
+    def test_delete_Protocol_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Delete Study Protocol - Priv - Auth - NoParams -> 404
+    def test_delete_Protocol_priv_auth_noParams(self):
+        request = urllib.request.Request(url_priv_id + '/protocols',
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Protocol - Priv - Auth - NoData -> 404
+    def test_delete_Protocol_piv_auth_noData(self):
+        request = urllib.request.Request(url_priv_id + '/protocols'
+                                         + '?name=',
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Protocol - Priv - Auth - unknownProtocol -> 404
+    def test_delete_Protocol_priv_auth_unknownProtocol(self):
+        request = urllib.request.Request(url_priv_id + '/protocols'
+                                         + '?name=' + bad_protocol_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
