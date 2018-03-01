@@ -147,8 +147,8 @@ class PostSingleStudyTests(WsTests):
 class PostNewStudyContactTests(WsTests):
 
     valid_contact = instance.config.TEST_DATA_CONTACT
-    missingData_new_contact = instance.config.TEST_DATA_CONTACT_MISSING
-    noData_new_contact = b''
+    missingData_contact = instance.config.TEST_DATA_CONTACT_MISSING
+    noData_contact = b''
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -236,7 +236,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - Auth - NoData -> 400
     def test_add_Contact_pub_auth_noData(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.noData_new_contact, method='POST')
+                                         data=self.noData_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -251,7 +251,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - Auth - MissingRequiredData -> 400
     def test_add_Contact_pub_auth_missingData(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.missingData_new_contact, method='POST')
+                                         data=self.missingData_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -280,7 +280,7 @@ class PostNewStudyContactTests(WsTests):
             self.assertEqual('BAD REQUEST', err.reason)
 
     # New Study Contact - Pub - NoToken -> 401
-    def test_add_Contact_pub_auth_noToken(self):
+    def test_add_Contact_pub_noToken(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
                                          data=self.valid_contact, method='POST')
         self.add_common_headers(request)
@@ -353,7 +353,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - Auth - NoData -> 400
     def test_add_Contact_priv_auth_noData(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.noData_new_contact, method='POST')
+                                         data=self.noData_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -368,7 +368,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - Auth - MissingRequiredData -> 400
     def test_add_Contact_priv_auth_missingData(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.missingData_new_contact, method='POST')
+                                         data=self.missingData_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -397,7 +397,7 @@ class PostNewStudyContactTests(WsTests):
             self.assertEqual('BAD REQUEST', err.reason)
 
     # New Study Contact - Priv - NoToken -> 401
-    def test_add_Contact_priv_auth_noToken(self):
+    def test_add_Contact_priv_noToken(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
                                          data=self.valid_contact, method='POST')
         self.add_common_headers(request)
