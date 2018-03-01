@@ -3061,6 +3061,553 @@
 			]
 		},
 		{
+			"name": "Get Study Protocols",
+			"description": null,
+			"item": [
+				{
+					"name": "Get Study Protocols - Pub -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "92cb86bd-228c-4903-b553-cd2baa3a3946",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"/// Body",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.protocols.length > 0) {",
+									"    var item = jsonData.protocols[0]",
+									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
+									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
+									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
+									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
+									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
+									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
+									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
+									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
+									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
+									"    // tests[\"JSON response key 'version' not Null\"] = item.version;",
+									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
+									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
+									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
+									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/protocols",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"protocols"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Protocols - Pub - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "41c8a029-1e7a-42a6-9be8-99e96b5c6c12",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"/// Body",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.protocols.length > 0) {",
+									"    var item = jsonData.protocols[0]",
+									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
+									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
+									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
+									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
+									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
+									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
+									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
+									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
+									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
+									"    // tests[\"JSON response key 'version' not Null\"] = item.version;",
+									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
+									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
+									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
+									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/protocols",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"protocols"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Protocols - Pub - NoAuth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "7d8248b9-2e8c-4540-90e5-d8b9843a82d5",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"/// Body",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.protocols.length > 0) {",
+									"    var item = jsonData.protocols[0]",
+									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
+									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
+									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
+									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
+									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
+									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
+									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
+									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
+									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
+									"    // tests[\"JSON response key 'version' not Null\"] = item.version;",
+									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
+									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
+									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
+									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/protocols",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"protocols"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Protocols - Priv -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "15ca2864-64a9-4635-9c64-3503bd1cde2e",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/protocols",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"protocols"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Protocols - Priv - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "d3d6cd3a-09b7-4ecc-8995-77573d8276a1",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"/// Body",
+									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.protocols.length > 0) {",
+									"    var item = jsonData.protocols[0]",
+									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
+									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
+									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
+									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
+									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
+									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
+									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
+									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
+									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
+									"    // tests[\"JSON response key 'version' not Null\"] = item.version;",
+									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
+									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
+									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
+									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/protocols",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"protocols"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Protocols - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/protocols",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"protocols"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Protocols - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies//protocols",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"",
+								"protocols"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Protocols - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{BadStudyId}}/protocols",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{BadStudyId}}",
+								"protocols"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Get Study Descriptors",
 			"description": null,
 			"item": [
@@ -4077,552 +4624,6 @@
 								"study",
 								"{{BadStudyId}}",
 								"factors"
-							]
-						},
-						"description": null
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Get Study Protocols",
-			"description": null,
-			"item": [
-				{
-					"name": "Get Study Protocols - Pub -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "92cb86bd-228c-4903-b553-cd2baa3a3946",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"/// Body",
-									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.protocols.length > 0) {",
-									"    var item = jsonData.protocols[0]",
-									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
-									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
-									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
-									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
-									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
-									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
-									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
-									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
-									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
-									"    // tests[\"JSON response key 'version' not Null\"] = item.version;",
-									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
-									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
-									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
-									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"protocols"
-							]
-						},
-						"description": null
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Protocols - Pub - Auth -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "41c8a029-1e7a-42a6-9be8-99e96b5c6c12",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"/// Body",
-									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.protocols.length > 0) {",
-									"    var item = jsonData.protocols[0]",
-									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
-									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
-									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
-									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
-									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
-									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
-									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
-									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
-									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
-									"    // tests[\"JSON response key 'version' not Null\"] = item.version;",
-									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
-									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
-									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
-									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"protocols"
-							]
-						},
-						"description": null
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Protocols - Pub - NoAuth -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "7d8248b9-2e8c-4540-90e5-d8b9843a82d5",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"/// Body",
-									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.protocols.length > 0) {",
-									"    var item = jsonData.protocols[0]",
-									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
-									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
-									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
-									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
-									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
-									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
-									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
-									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
-									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
-									"    // tests[\"JSON response key 'version' not Null\"] = item.version;",
-									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
-									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
-									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
-									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{WrongAuth}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PubStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PubStudyId}}",
-								"protocols"
-							]
-						},
-						"description": null
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Protocols - Priv - Auth -> 200",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "d3d6cd3a-09b7-4ecc-8995-77573d8276a1",
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 200\"] = responseCode.code === 200;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"/// Body",
-									"tests[\"Body has protocols\"] = responseBody.has('\"protocols\":');",
-									"var jsonData = JSON.parse(responseBody);",
-									"if (jsonData.protocols.length > 0) {",
-									"    var item = jsonData.protocols[0]",
-									"    tests[\"JSON response has key 'name'\"] = item.hasOwnProperty('name');",
-									"    tests[\"JSON response key 'name' not Null\"] = item.name;",
-									"    tests[\"JSON response has key 'description'\"] = item.hasOwnProperty('description');",
-									"    tests[\"JSON response key 'description' not Null\"] = item.description;",
-									"    tests[\"JSON response has key 'protocolType'\"] = item.hasOwnProperty('protocolType');",
-									"    tests[\"JSON response key 'protocolType' not Null\"] = item.protocolType;",
-									"    tests[\"JSON response has key 'uri'\"] = item.hasOwnProperty('uri');",
-									"    // tests[\"JSON response key 'uri' not Null\"] = item.uri;",
-									"    tests[\"JSON response has key 'version'\"] = item.hasOwnProperty('version');",
-									"    // tests[\"JSON response key 'version' not Null\"] = item.version;",
-									"    tests[\"JSON response has key 'parameters'\"] = item.hasOwnProperty('parameters');",
-									"    tests[\"JSON response key 'parameters' not Null\"] = item.parameters;",
-									"    tests[\"JSON response has key 'components'\"] = item.hasOwnProperty('components');",
-									"    tests[\"JSON response key 'components' not Null\"] = item.components;",
-									"}",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{curator}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"protocols"
-							]
-						},
-						"description": null
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Protocols - Priv -> 401",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 401\"] = responseCode.code === 401;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"protocols"
-							]
-						},
-						"description": null
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Protocols - Priv - NoAuth -> 403",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 403\"] = responseCode.code === 403;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{WrongAuth}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{PrivStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{PrivStudyId}}",
-								"protocols"
-							]
-						},
-						"description": null
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Protocols - NullId -> 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 404\"] = responseCode.code === 404;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study//protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"",
-								"protocols"
-							]
-						},
-						"description": null
-					},
-					"response": []
-				},
-				{
-					"name": "Get Study Protocols - BadId -> 404",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"tests[\"Status code is 404\"] = responseCode.code === 404;",
-									"",
-									"// Header",
-									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
-									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
-									"",
-									"// Body",
-									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
-									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
-									"tests[\"Body does NOT contain Study-protocols\"] = !(responseBody.has('\"Study-protocols\":'));",
-									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
-									""
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							},
-							{
-								"key": "user_token",
-								"value": "{{userTokenOK}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Study title\"\n}"
-						},
-						"url": {
-							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/study/{{BadStudyId}}/protocols",
-							"host": [
-								"{{ws-py-server}}{{ws-py-port}}"
-							],
-							"path": [
-								"mtbls",
-								"ws",
-								"study",
-								"{{BadStudyId}}",
-								"protocols"
 							]
 						},
 						"description": null

@@ -1058,7 +1058,7 @@ class StudyProtocols(Resource):
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
-
+        # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Protocol name')
         prot_name = None
