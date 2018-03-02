@@ -4318,6 +4318,1116 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Get Study Factors",
+			"description": null,
+			"item": [
+				{
+					"name": "Get Study Factors - Pub -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "66296275-e306-4318-bfbd-f45b0dcb67ad",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has factors\"] = responseBody.has('\"factors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.factors.length > 0) {",
+									"    var item = jsonData.factors[0]",
+									"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+									"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+									"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+									"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"factors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factors - Pub - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "0445a0f9-c290-4eb0-9ab8-9b515bdac08f",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has factors\"] = responseBody.has('\"factors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.factors.length > 0) {",
+									"    var item = jsonData.factors[0]",
+									"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+									"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+									"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+									"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"factors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factors - Pub - NoAuth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "5281f751-96f8-412b-9e68-3a3135a7713a",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has factors\"] = responseBody.has('\"factors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.factors.length > 0) {",
+									"    var item = jsonData.factors[0]",
+									"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+									"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+									"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+									"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"factors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factors - Priv -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "c0549199-5389-4396-aec6-696925224076",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"factors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factors - Priv - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "60a51cd7-8a16-4c5c-bada-5d9bac362f42",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has factors\"] = responseBody.has('\"factors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.factors.length > 0) {",
+									"    var item = jsonData.factors[0]",
+									"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+									"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+									"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+									"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"factors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factors - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3a59ccba-c9b9-4cee-b118-e73401dc06ab",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"factors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factors - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "11bb3b89-f613-484c-b8fd-a982be309c6e",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies//factors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"",
+								"factors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factors - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3681ae8a-e4b0-44fc-b958-c9d284b3bfe1",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{BadStudyId}}/factors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{BadStudyId}}",
+								"factors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Get Study Factor",
+			"description": null,
+			"item": [
+				{
+					"name": "Get Study Factor - Pub - GoodId -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "14a35571-69fc-48a8-be15-f9659f88159b",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has factor\"] = responseBody.has('\"factor\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.factor) {",
+									"    var item = jsonData.factor",
+									"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+									"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+									"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+									"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{ValidFactorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"factors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "{{ValidFactorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factor - Pub - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "c917c0ff-d37a-447a-8837-331fca11b3de",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{BadFactorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"factors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "{{BadFactorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factor - Pub - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "7ed2d6f6-aad8-4e6b-9660-abebb7579346",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name=''",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"factors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "''",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factor - Priv - Auth - GoodId -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "2103ca88-ff1a-4365-b63e-016180fe0085",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has factor\"] = responseBody.has('\"factor\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.factor) {",
+									"    var item = jsonData.factor",
+									"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+									"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+									"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+									"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"factors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "{{ValidFactorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factor - Priv - Auth - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "5645b786-cec6-4542-8fcc-61994c3634fe",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{BadFactorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"factors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "{{BadFactorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factor - Priv - Auth - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "c5e3ab48-8e88-4ee4-8f09-1bffb20947cb",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name=''",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"factors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "''",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factor - Priv -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "0961c9cc-ffdf-4cac-a5ac-02e43ccf986b",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"factors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "{{ValidFactorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Factor - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "664c1bce-ddee-47aa-95b9-683b711af5c6",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+									"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"factors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "{{ValidFactorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "f3df7f22-8ee0-4535-b502-5a175c7c1894",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "851bf978-c1c5-4398-866c-78e3cc2c6ae7",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
 		}
 	],
 	"event": [

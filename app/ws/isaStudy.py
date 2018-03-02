@@ -636,7 +636,7 @@ class StudyPerson(Resource):
         summary="Get Study Contacts",
         notes="""Get Contacts associated with a Study.
               <br>
-              Use contact's email as a query parameter to get a single contact.""",
+              Use contact's email as a query parameter to filter out.""",
         parameters=[
             {
                 "name": "study_id",
@@ -731,7 +731,7 @@ class StudyPerson(Resource):
         summary='Update Study Contact',
         notes="""Update Contact associated with a Study.
               <br>
-              Use contact's email as a query parameter to get a single contact.""",
+              Use contact's email as a query parameter to filter out.""",
         parameters=[
             {
                 "name": "study_id",
@@ -864,7 +864,7 @@ class StudyPerson(Resource):
         summary='Delete Study Contact',
         notes="""Delete Contact associated with a Study.
               <br>
-              Use contact's email as a query parameter to get a single contact.""",
+              Use contact's email as a query parameter to filter out.""",
         parameters=[
             {
                 "name": "study_id",
@@ -1198,7 +1198,7 @@ class StudyProtocol(Resource):
         summary='Delete Study Protocol',
         notes="""Delete Study protocol.
               <br>
-              Use protocol name as a query parameter to get a single protocol.""",
+              Use protocol name as a query parameter to filter out.""",
         parameters=[
             {
                 "name": "study_id",
@@ -1310,7 +1310,7 @@ class StudyProtocol(Resource):
         summary='Update Study Protocol',
         notes="""Update Study Protocol.
               <br>
-              Use protocol name as a query parameter to get a single protocol.""",
+              Use protocol name as a query parameter to filter out.""",
         parameters=[
             {
                 "name": "study_id",
@@ -1440,177 +1440,475 @@ class StudyProtocol(Resource):
         return ProtocolSchema().dump(updated_protocol)
 
 
+class StudyFactor(Resource):
+
+    @swagger.operation(
+        summary='Add new Study Factor',
+        notes='Add new Factor to a Study.',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "protocol",
+                "description": 'Study Factor in ISA-JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
+    def post(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help="Study Factor name")
+        args = parser.parse_args()
+        factor_name = args['name']
+        # No params allowed, just to prevent confusion with UPDATE
+        if factor_name:
+            abort(400)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # body content validation
+        new_factor = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['factor']
+            # if partial=True missing fields will be ignored
+            result = StudyFactorSchema().load(data, partial=False)
+            new_factor = result.data
+        except (ValidationError, Exception) as err:
+            abort(400)
+
+        # Add new Study Factor
+        logger.info('Adding new Study Factor %s for %s, using API-Key %s', new_factor.name, study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        # check for Study Factor added already
+        for index, factor in enumerate(isa_study.factors):
+            if factor.name == new_factor.name:
+                abort(409)
+        # add Study Factor
+        isa_study.factors.append(new_factor)
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        logger.info('Added %s', new_factor.name)
+
+        return StudyFactorSchema().dump(new_factor)
+
+    @swagger.operation(
+        summary="Get Study Factors",
+        notes="""Get Study Factors.
+              <br>
+              Use factor name as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "name",
+                "description": "Factor name",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help='Factor name')
+        factor_name = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            factor_name = args['name']
+
+        logger.info('Getting Study Factors for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        if factor_name is None:
+            # return a list of factors
+            logger.info('Got %s factors', len(isa_study.factors))
+            return StudyFactorSchema().dump(isa_study.factors, many=True)
+        else:
+            # return a single factor
+            found = False
+            for index, factor in enumerate(isa_study.factors):
+                if factor.name == factor_name:
+                    found = True
+                    break
+            if not found:
+                abort(404)
+            logger.info('Got %s', factor.name)
+            return StudyFactorSchema().dump(factor)
+
+    @swagger.operation(
+        summary='Delete Study Factor',
+        notes="""Delete Study protocol.
+              <br>
+              Use factor name as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "name",
+                "description": "Factor name",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def delete(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help="Factor name", location="args")
+        args = parser.parse_args()
+        factor_name = args['name']
+        if factor_name is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # delete protocol
+        logger.info('Deleting Study Factor %s for %s, using API-Key %s', factor_name, study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        found = False
+        for index, factor in enumerate(isa_study.factors):
+            if factor.name == factor_name:
+                found = True
+                # delete Study Factor
+                del isa_study.factors[index]
+                break
+        if not found:
+            abort(404)
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        logger.info('Deleted %s', factor.name)
+
+        return StudyFactorSchema().dump(factor)
+
+    @swagger.operation(
+        summary='Update Study Factor',
+        notes="""Update Study Factor.
+              <br>
+              Use factor name as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "name",
+                "description": "Factor name",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "protocol",
+                "description": 'Factor in ISA-JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+                {
+                    "code": 200,
+                    "message": "OK."
+                },
+                {
+                    "code": 400,
+                    "message": "Bad Request. Server could not understand the request due to malformed syntax."
+                },
+                {
+                    "code": 401,
+                    "message": "Unauthorized. Access to the resource requires user authentication."
+                },
+                {
+                    "code": 403,
+                    "message": "Forbidden. Access to the study is not allowed for this user."
+                },
+                {
+                    "code": 404,
+                    "message": "Not found. The requested identifier is not valid or does not exist."
+                }
+            ]
+        )
+    def put(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help="Factor name")
+        args = parser.parse_args()
+        factor_name = args['name']
+        if factor_name is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # body content validation
+        updated_factor = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['factor']
+            # if partial=True missing fields will be ignored
+            result = StudyFactorSchema().load(data, partial=False)
+            updated_factor = result.data
+        except (ValidationError, Exception) as err:
+            abort(400)
+
+        # update Study Factor details
+        logger.info('Updating Study Factor details for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        found = False
+        for index, factor in enumerate(isa_study.factors):
+            if factor.name == factor_name:
+                found = True
+                # update protocol details
+                isa_study.factors[index] = updated_factor
+                break
+        if not found:
+            abort(404)
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        logger.info('Updated %s', updated_factor.name)
+
+        return StudyFactorSchema().dump(updated_factor)
 
 
 
-# class StudyFactors(Resource):
-#     @swagger.operation(
-#         summary="Get Study Factors",
-#         notes="Get the list of independent variables (factors) associated with the Study.",
-#         # responseClass=StudyFactor_api_model, multiValuedResponse=True, responseContainer="List",
-#         parameters=[
-#             {
-#                 "name": "study_id",
-#                 "description": "MTBLS Identifier",
-#                 "required": True,
-#                 "allowMultiple": False,
-#                 "paramType": "path",
-#                 "dataType": "string"
-#             },
-#             {
-#                 "name": "user_token",
-#                 "description": "User API token",
-#                 "paramType": "header",
-#                 "type": "string",
-#                 "required": False,
-#                 "allowMultiple": False
-#             }
-#         ],
-#         responseMessages=[
-#             {
-#                 "code": 200,
-#                 "message": "OK."
-#             },
-#             {
-#                 "code": 400,
-#                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
-#             },
-#             {
-#                 "code": 401,
-#                 "message": "Unauthorized. Access to the resource requires user authentication."
-#             },
-#             {
-#                 "code": 403,
-#                 "message": "Forbidden. Access to the study is not allowed for this user."
-#             },
-#             {
-#                 "code": 404,
-#                 "message": "Not found. The requested identifier is not valid or does not exist."
-#             }
-#         ]
-#     )
-#     @marshal_with(StudyFactor_api_model, envelope='factors')
-#     def get(self, study_id):
-#         # param validation
-#         if study_id is None:
-#             abort(404)
-#         # User authentication
-#         user_token = None
-#         if "user_token" in request.headers:
-#             user_token = request.headers["user_token"]
-#
-#         logger.info('Getting Study factors for %s, using API-Key %s', study_id, user_token)
-#         # check for access rights
-#         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
-#             abort(403)
-#         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
-#         isa_factors = isa_study.factors
-#         str_factors = json.dumps({'factors': isa_factors}, default=serialize_study_factor, sort_keys=True)
-#         logger.info('Got %s', str_factors)
-#         return isa_factors
-#
-#     @swagger.operation(
-#         summary='Update Study factors',
-#         notes='Update the list of independent variables (factors) associated with the Study.',
-#         parameters=[
-#             {
-#                 "name": "study_id",
-#                 "description": "MTBLS Identifier",
-#                 "required": True,
-#                 "allowMultiple": False,
-#                 "paramType": "path",
-#                 "dataType": "string"
-#             },
-#             {
-#                 "name": "user_token",
-#                 "description": "User API token",
-#                 "paramType": "header",
-#                 "type": "string",
-#                 "required": True,
-#                 "allowMultiple": False
-#             },
-#             {
-#                 "name": "factors",
-#                 "description": 'Updated list of independent variables (factors) in JSON format.',
-#                 "paramType": "body",
-#                 "type": "string",
-#                 "format": "application/json",
-#                 "required": True,
-#                 "allowMultiple": False
-#             },
-#             {
-#                 "name": "save_audit_copy",
-#                 "description": "Keep track of changes saving a copy of the unmodified files.",
-#                 "paramType": "header",
-#                 "type": "Boolean",
-#                 "defaultValue": True,
-#                 "format": "application/json",
-#                 "required": False,
-#                 "allowMultiple": False
-#             }
-#         ],
-#         responseMessages=[
-#             {
-#                 "code": 200,
-#                 "message": "OK."
-#             },
-#             {
-#                 "code": 400,
-#                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
-#             },
-#             {
-#                 "code": 401,
-#                 "message": "Unauthorized. Access to the resource requires user authentication."
-#             },
-#             {
-#                 "code": 403,
-#                 "message": "Forbidden. Access to the study is not allowed for this user."
-#             },
-#             {
-#                 "code": 404,
-#                 "message": "Not found. The requested identifier is not valid or does not exist."
-#             }
-#         ]
-#     )
-#     @marshal_with(StudyFactor_api_model, envelope='factors')
-#     def put(self, study_id):
-#         # param validation
-#         if study_id is None:
-#             abort(404)
-#         # User authentication
-#         user_token = None
-#         if "user_token" in request.headers:
-#             user_token = request.headers["user_token"]
-#         # body content validation
-#         if request.data is None or request.json is None:
-#             abort(400)
-#         data_dict = json.loads(request.data.decode('utf-8'))
-#         json_factors = data_dict['factors']
-#         isa_factors = list()
-#         for json_factor in json_factors:
-#             isa_factor = unserialize_study_factor(json_factor)
-#             isa_factors.append(isa_factor)
-#         # check for keeping copies
-#         save_audit_copy = False
-#         save_msg_str = "NOT be"
-#         if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
-#             save_audit_copy = True
-#             save_msg_str = "be"
-#
-#         # update study factors
-#         logger.info('Updating Study factors for %s, using API-Key %s', study_id, user_token)
-#         # check for access rights
-#         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
-#             abort(403)
-#         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
-#         isa_study.factors = isa_factors
-#         logging.info("A copy of the previous files will %s saved", save_msg_str)
-#         iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
-#         logger.info('Applied %s', json_factors)
-#
-#         return isa_factors
-#
-#
+
+
 # class StudyDescriptors(Resource):
 #     @swagger.operation(
 #         summary="Get Study Descriptors",

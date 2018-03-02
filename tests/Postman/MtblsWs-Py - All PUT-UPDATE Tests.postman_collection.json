@@ -3597,6 +3597,1010 @@
 					"_postman_isSubFolder": true
 				}
 			]
+		},
+		{
+			"name": "Update Study Factor",
+			"description": null,
+			"item": [
+				{
+					"name": "Pub",
+					"description": "",
+					"item": [
+						{
+							"name": "Update Study Factor - Pub - Auth - GoodId -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "cff00fdc-a431-4551-a203-509f9f8c66c8",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has factor\"] = responseBody.has('\"factor\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.factor) {",
+											"    var item = jsonData.factor",
+											"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+											"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+											"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+											"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+											"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"}",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Pub - Auth - NoData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "fbed67a0-9aa6-45c6-a0f4-f2568bd106c4",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "None"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Pub - Auth - MissingRequiredData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "806d15ca-04fc-4ec9-85fd-89795a3b62dd",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Pub - NoToken -> 401",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "9258f125-67c6-46af-9659-50ebd4d35652",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 401\"] = responseCode.code === 401;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Pub - NoAuth -> 403",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "47768218-fd36-42c6-8eff-b8b60b884249",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 403\"] = responseCode.code === 403;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{WrongAuth}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Pub - Auth - BadId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "4270491e-680d-4be3-bac8-6072af2eb744",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{BadFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{BadFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Pub - Auth - NullId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "5aa05272-e704-4c0a-8190-526ff4c795ac",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name=",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "Priv",
+					"description": "",
+					"item": [
+						{
+							"name": "Update Study Factor - Priv - Auth - GoodId -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "aab53500-efcb-4d55-ab97-85fdd20c1a04",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has factor\"] = responseBody.has('\"factor\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.factor) {",
+											"    var item = jsonData.factor",
+											"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+											"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+											"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+											"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+											"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"}",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Priv - Auth - NoData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "1c846f8c-4071-45a1-b524-4b75bfa47f47",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "None"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Priv - Auth - MissingRequiredData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "6da98fed-4a1a-4422-aa0b-c068f9ccb49e",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Priv - NoToken -> 401",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "d00ab201-6233-4229-9a94-97eec8bb7e71",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 401\"] = responseCode.code === 401;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Priv - NoAuth -> 403",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "e572a043-f138-45aa-bcd3-90541b239f4e",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 403\"] = responseCode.code === 403;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{WrongAuth}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Priv - Auth - BadId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "00affd8f-342c-4e90-ac63-e122b910ff29",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{BadFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{BadFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Factor - Priv - Auth - NullId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "d06b2cb1-030d-484a-80cd-920a51a98282",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name=",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				}
+			]
 		}
 	],
 	"event": [

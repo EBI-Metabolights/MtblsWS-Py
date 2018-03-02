@@ -90,7 +90,7 @@
 							},
 							"response": [
 								{
-									"id": "21a098cc-f129-44db-b54e-29381cb667c2",
+									"id": "9823d916-e02a-4d6e-a660-f5b1d90c8057",
 									"name": "New Study Contact - Pub - Auth - NewData -> 200",
 									"originalRequest": {
 										"method": "POST",
@@ -263,7 +263,7 @@
 							},
 							"response": [
 								{
-									"id": "3b56f59e-20c2-4acf-9051-694867d80eb4",
+									"id": "7dea8b3b-bbfb-4be4-bb5b-33889f4896f6",
 									"name": "Delete Study Contact - Pub - Auth -> 200",
 									"originalRequest": {
 										"method": "DELETE",
@@ -349,7 +349,7 @@
 									"body": "{\n    \"message\": \"The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again. You have requested this URI [/mtbls/ws/studies/MTBLS10/contacts] but did you mean /mtbls/ws/studies/<string:study_id>/contacts or /mtbls/ws/studies/<string:study_id>/contacts/ or /mtbls/ws/studies/<string:study_id>/title ?\"\n}\n"
 								},
 								{
-									"id": "d13a3d36-db1a-4212-bdf7-78637625713f",
+									"id": "b4ef6d3c-1f24-47b3-8753-ec678e0b36de",
 									"name": "Delete Study Contact - Pub - Auth -> 200",
 									"originalRequest": {
 										"method": "DELETE",
@@ -502,7 +502,7 @@
 							},
 							"response": [
 								{
-									"id": "a83531d2-1d94-420c-aa65-157383762169",
+									"id": "b2d7ac64-341c-4de4-bbeb-5ceb5b39d39a",
 									"name": "Delete Study Contact - Pub - NoToken -> 401",
 									"originalRequest": {
 										"method": "DELETE",
@@ -1016,7 +1016,7 @@
 							},
 							"response": [
 								{
-									"id": "fe69081b-e638-48e6-ae5e-e112c5ce5837",
+									"id": "9e13274f-cc7b-446e-bf0c-de744cf64f9e",
 									"name": "Delete Study Contact - Pub - Auth -> 200",
 									"originalRequest": {
 										"method": "DELETE",
@@ -1102,7 +1102,7 @@
 									"body": "{\n    \"message\": \"The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again. You have requested this URI [/mtbls/ws/studies/MTBLS10/contacts] but did you mean /mtbls/ws/studies/<string:study_id>/contacts or /mtbls/ws/studies/<string:study_id>/contacts/ or /mtbls/ws/studies/<string:study_id>/title ?\"\n}\n"
 								},
 								{
-									"id": "dfd15ffd-6278-48e0-a0a8-5e6017b65d38",
+									"id": "8e63dfe1-96ba-4882-b141-af5eafb30769",
 									"name": "Delete Study Contact - Pub - Auth -> 200",
 									"originalRequest": {
 										"method": "DELETE",
@@ -1255,7 +1255,7 @@
 							},
 							"response": [
 								{
-									"id": "08b44c7f-6ef0-4677-9d53-a5852411c572",
+									"id": "afef20d2-3347-4780-8351-968ddc5ffb58",
 									"name": "Delete Study Contact - Pub - NoToken -> 401",
 									"originalRequest": {
 										"method": "DELETE",
@@ -1691,7 +1691,7 @@
 							},
 							"response": [
 								{
-									"id": "9b5ce463-587a-49e2-959d-43f3dba4654c",
+									"id": "2d3fb196-38dc-4c15-a71d-27d6980fe1c5",
 									"name": "New Study Contact - Pub - Auth - NewData -> 200",
 									"originalRequest": {
 										"method": "POST",
@@ -1868,7 +1868,7 @@
 							},
 							"response": [
 								{
-									"id": "ea980560-fbe8-4960-a94d-462ac6f73fc3",
+									"id": "ef0e4735-ef16-41e9-bc42-eef52c6d3517",
 									"name": "Delete Study Contact - Pub - Auth -> 200",
 									"originalRequest": {
 										"method": "DELETE",
@@ -1954,7 +1954,7 @@
 									"body": "{\n    \"contact\": {\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"email\": \"doej@a.mail.com\",\n        \"affiliation\": \"EMBL-EBI\",\n        \"comments\": [],\n        \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n        \"fax\": \"012345678902\",\n        \"midInitials\": \"A\",\n        \"phone\": \"012345678901\",\n        \"roles\": [\n            {\n                \"annotationValue\": \"investigator\",\n                \"termSource\": null,\n                \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n                \"comments\": []\n            },\n            {\n                \"annotationValue\": \"Bioinformatician\",\n                \"termSource\": null,\n                \"termAccession\": \"\",\n                \"comments\": []\n            }\n        ]\n    }\n}\n"
 								},
 								{
-									"id": "a113242b-66e8-4ea8-be5f-9acb4d54fa29",
+									"id": "dd5b8502-be9f-48fa-8706-f791a2d73b37",
 									"name": "Delete Study Contact - Pub - Auth -> 200",
 									"originalRequest": {
 										"method": "DELETE",
@@ -2107,7 +2107,7 @@
 							},
 							"response": [
 								{
-									"id": "4874ec2f-7a77-4a54-b8d7-e23f76d8757f",
+									"id": "e3d1ca74-470c-46e4-b1d3-54b88a2fa2fa",
 									"name": "Delete Study Contact - Pub - NoToken -> 401",
 									"originalRequest": {
 										"method": "DELETE",
@@ -2629,7 +2629,7 @@
 							},
 							"response": [
 								{
-									"id": "d2ff49cb-8e2d-4604-9062-e885683eca8e",
+									"id": "a01f94bd-4f59-4aab-8115-74f13e560ff3",
 									"name": "Delete Study Contact - Pub - Auth -> 200",
 									"originalRequest": {
 										"method": "DELETE",
@@ -2715,7 +2715,7 @@
 									"body": "{\n    \"contact\": {\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"email\": \"doej@a.mail.com\",\n        \"affiliation\": \"EMBL-EBI\",\n        \"comments\": [],\n        \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n        \"fax\": \"012345678902\",\n        \"midInitials\": \"A\",\n        \"phone\": \"012345678901\",\n        \"roles\": [\n            {\n                \"annotationValue\": \"investigator\",\n                \"termSource\": null,\n                \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n                \"comments\": []\n            },\n            {\n                \"annotationValue\": \"Bioinformatician\",\n                \"termSource\": null,\n                \"termAccession\": \"\",\n                \"comments\": []\n            }\n        ]\n    }\n}\n"
 								},
 								{
-									"id": "afc9ac92-bc2a-4731-843b-e17fb10ee7d1",
+									"id": "6ddc309b-581f-43e5-bf29-ec70ba5062d5",
 									"name": "Delete Study Contact - Pub - Auth -> 200",
 									"originalRequest": {
 										"method": "DELETE",
@@ -2868,7 +2868,7 @@
 							},
 							"response": [
 								{
-									"id": "d31ee223-d048-43e0-9177-5a4ae8c24178",
+									"id": "3fbf5dcb-21cd-4df0-a6b7-851d257b7dac",
 									"name": "Delete Study Contact - Pub - NoToken -> 401",
 									"originalRequest": {
 										"method": "DELETE",
@@ -3204,6 +3204,1579 @@
 										{
 											"key": "name",
 											"value": "{{BadProtocolId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				}
+			]
+		},
+		{
+			"name": "DELETE Study Factor",
+			"description": null,
+			"item": [
+				{
+					"name": "Pub",
+					"description": "",
+					"item": [
+						{
+							"name": "0 - New Study Factor - Pub - Auth - NewData -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "660ed568-9b97-4daf-b91b-5689956ed7ae",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has factor\"] = responseBody.has('\"factor\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.factor) {",
+											"    var item = jsonData.factor",
+											"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+											"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+											"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+											"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+											"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"}",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									]
+								},
+								"description": null
+							},
+							"response": [
+								{
+									"id": "acdc0c3d-33dc-4f25-bfd0-86c9c478bdbb",
+									"name": "New Study Contact - Pub - Auth - NewData -> 200",
+									"originalRequest": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"disabled": false
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"disabled": false
+											},
+											{
+												"key": "user_token",
+												"value": "{{curator}}",
+												"disabled": false
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"contact\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"doej@a.mail.com\",\n    \"affiliation\": \"EMBL-EBI\",\n    \"comments\": [],\n    \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n    \"fax\": \"012345678902\",\n    \"midInitials\": \"A\",\n    \"phone\": \"012345678901\",\n    \"roles\": [\n      {\n        \"annotationValue\": \"investigator\",\n        \"termSource\": null,\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n        \"comments\": []\n      },\n      {\n        \"annotationValue\": \"Bioinformatician\",\n        \"termSource\": null,\n        \"termAccession\": \"\",\n        \"comments\": []\n      }\n    ]\n  }\n}\n"
+										},
+										"url": {
+											"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts",
+											"host": [
+												"{{ws-py-server}}{{ws-py-port}}"
+											],
+											"path": [
+												"mtbls",
+												"ws",
+												"studies",
+												"{{PubStudyId}}",
+												"contacts"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "http://localhost.ebi.ac.uk:8080",
+											"name": "Access-Control-Allow-Origin",
+											"description": "Specifies a URI that may access the resource. For requests without credentials, the server may specify '*' as a wildcard, thereby allowing any origin to access the resource."
+										},
+										{
+											"key": "Content-Length",
+											"value": "790",
+											"name": "Content-Length",
+											"description": "The length of the response body in octets (8-bit bytes)"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "The mime type of this content"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 27 Feb 2018 14:46:35 GMT",
+											"name": "Date",
+											"description": "The date and time that the message was sent"
+										},
+										{
+											"key": "Server",
+											"value": "Werkzeug/0.12.2 Python/3.5.4",
+											"name": "Server",
+											"description": "A name for the server"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin",
+											"name": "Vary",
+											"description": "Tells downstream proxies how to match future request headers to decide whether the cached response can be used rather than requesting a fresh one from the origin server."
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"contact\": {\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"email\": \"doej@a.mail.com\",\n        \"affiliation\": \"EMBL-EBI\",\n        \"comments\": [],\n        \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n        \"fax\": \"012345678902\",\n        \"midInitials\": \"A\",\n        \"phone\": \"012345678901\",\n        \"roles\": [\n            {\n                \"annotationValue\": \"investigator\",\n                \"termSource\": null,\n                \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n                \"comments\": []\n            },\n            {\n                \"annotationValue\": \"Bioinformatician\",\n                \"termSource\": null,\n                \"termAccession\": \"\",\n                \"comments\": []\n            }\n        ]\n    }\n}\n"
+								}
+							]
+						},
+						{
+							"name": "1 - Delete Study Factor - Pub - Auth -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "ee22ce24-7099-4aeb-b157-9b95eca1d383",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has factor\"] = responseBody.has('\"factor\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.factor) {",
+											"    var item = jsonData.factor",
+											"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+											"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+											"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+											"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+											"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"}",
+											""
+										]
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "16cd3cf1-7dc1-4c22-94bd-57995c04f5a5",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": [
+								{
+									"id": "7216bf8b-cf62-4c54-b78c-3ec27bf94c27",
+									"name": "Delete Study Contact - Pub - Auth -> 200",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"disabled": false
+											},
+											{
+												"key": "user_token",
+												"value": "{{curator}}",
+												"disabled": false
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts?email={{ContactID}}",
+											"host": [
+												"{{ws-py-server}}{{ws-py-port}}"
+											],
+											"path": [
+												"mtbls",
+												"ws",
+												"studies",
+												"{{PubStudyId}}",
+												"contacts"
+											],
+											"query": [
+												{
+													"key": "email",
+													"value": "{{ContactID}}",
+													"equals": true
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "http://localhost.ebi.ac.uk:8080",
+											"name": "Access-Control-Allow-Origin",
+											"description": "Specifies a URI that may access the resource. For requests without credentials, the server may specify '*' as a wildcard, thereby allowing any origin to access the resource."
+										},
+										{
+											"key": "Content-Length",
+											"value": "790",
+											"name": "Content-Length",
+											"description": "The length of the response body in octets (8-bit bytes)"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "The mime type of this content"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 27 Feb 2018 15:31:42 GMT",
+											"name": "Date",
+											"description": "The date and time that the message was sent"
+										},
+										{
+											"key": "Server",
+											"value": "Werkzeug/0.12.2 Python/3.5.4",
+											"name": "Server",
+											"description": "A name for the server"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin",
+											"name": "Vary",
+											"description": "Tells downstream proxies how to match future request headers to decide whether the cached response can be used rather than requesting a fresh one from the origin server."
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"contact\": {\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"email\": \"doej@a.mail.com\",\n        \"affiliation\": \"EMBL-EBI\",\n        \"comments\": [],\n        \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n        \"fax\": \"012345678902\",\n        \"midInitials\": \"A\",\n        \"phone\": \"012345678901\",\n        \"roles\": [\n            {\n                \"annotationValue\": \"investigator\",\n                \"termSource\": null,\n                \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n                \"comments\": []\n            },\n            {\n                \"annotationValue\": \"Bioinformatician\",\n                \"termSource\": null,\n                \"termAccession\": \"\",\n                \"comments\": []\n            }\n        ]\n    }\n}\n"
+								},
+								{
+									"id": "d6995b56-84d1-4650-857c-45c69df04439",
+									"name": "Delete Study Contact - Pub - Auth -> 200",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"disabled": false
+											},
+											{
+												"key": "user_token",
+												"value": "{{curator}}",
+												"disabled": false
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts?email={{ContactID}}",
+											"host": [
+												"{{ws-py-server}}{{ws-py-port}}"
+											],
+											"path": [
+												"mtbls",
+												"ws",
+												"studies",
+												"{{PubStudyId}}",
+												"contacts"
+											],
+											"query": [
+												{
+													"key": "email",
+													"value": "{{ContactID}}",
+													"equals": true
+												}
+											]
+										}
+									},
+									"status": "NOT FOUND",
+									"code": 404,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "http://localhost.ebi.ac.uk:8080",
+											"name": "Access-Control-Allow-Origin",
+											"description": "Specifies a URI that may access the resource. For requests without credentials, the server may specify '*' as a wildcard, thereby allowing any origin to access the resource."
+										},
+										{
+											"key": "Content-Length",
+											"value": "366",
+											"name": "Content-Length",
+											"description": "The length of the response body in octets (8-bit bytes)"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "The mime type of this content"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 27 Feb 2018 15:34:11 GMT",
+											"name": "Date",
+											"description": "The date and time that the message was sent"
+										},
+										{
+											"key": "Server",
+											"value": "Werkzeug/0.12.2 Python/3.5.4",
+											"name": "Server",
+											"description": "A name for the server"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin",
+											"name": "Vary",
+											"description": "Tells downstream proxies how to match future request headers to decide whether the cached response can be used rather than requesting a fresh one from the origin server."
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again. You have requested this URI [/mtbls/ws/studies/MTBLS10/contacts] but did you mean /mtbls/ws/studies/<string:study_id>/contacts or /mtbls/ws/studies/<string:study_id>/contacts/ or /mtbls/ws/studies/<string:study_id>/title ?\"\n}\n"
+								}
+							]
+						},
+						{
+							"name": "2 - Delete Study Factor - Pub - NoToken -> 401",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "cc6b4709-a53b-4136-848c-26c2d0ea5a3f",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 401\"] = responseCode.code === 401;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": [
+								{
+									"id": "b16bf354-efbe-4504-8b0e-c7a790123699",
+									"name": "Delete Study Contact - Pub - NoToken -> 401",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"disabled": false
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"disabled": false
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts?email={{ContactID}}",
+											"host": [
+												"{{ws-py-server}}{{ws-py-port}}"
+											],
+											"path": [
+												"mtbls",
+												"ws",
+												"studies",
+												"{{PubStudyId}}",
+												"contacts"
+											],
+											"query": [
+												{
+													"key": "email",
+													"value": "{{ContactID}}",
+													"equals": true
+												}
+											]
+										}
+									},
+									"status": "UNAUTHORIZED",
+									"code": 401,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "http://localhost.ebi.ac.uk:8080",
+											"name": "Access-Control-Allow-Origin",
+											"description": "Specifies a URI that may access the resource. For requests without credentials, the server may specify '*' as a wildcard, thereby allowing any origin to access the resource."
+										},
+										{
+											"key": "Content-Length",
+											"value": "243",
+											"name": "Content-Length",
+											"description": "The length of the response body in octets (8-bit bytes)"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "The mime type of this content"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 27 Feb 2018 15:33:47 GMT",
+											"name": "Date",
+											"description": "The date and time that the message was sent"
+										},
+										{
+											"key": "Server",
+											"value": "Werkzeug/0.12.2 Python/3.5.4",
+											"name": "Server",
+											"description": "A name for the server"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin",
+											"name": "Vary",
+											"description": "Tells downstream proxies how to match future request headers to decide whether the cached response can be used rather than requesting a fresh one from the origin server."
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"The server could not verify that you are authorized to access the URL requested.  You either supplied the wrong credentials (e.g. a bad password), or your browser doesn't understand how to supply the credentials required.\"\n}\n"
+								}
+							]
+						},
+						{
+							"name": "3 - Delete Study Factor - Pub - NoAuth -> 403",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "5782655c-03e0-4123-a3bb-aa6ec8d7bb32",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 403\"] = responseCode.code === 403;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{WrongAuth}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "4 - Delete Study Factor - Pub - Auth - NoParams -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "4dddfc0a-9ea1-4d2d-8ca7-c9b88e6d94a1",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "5 - Delete Study Factor - Pub - Auth - NoData -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "278baace-2a13-4950-939f-9a56c27c9b8d",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name=''",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "''",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "6 - Delete Study Factor - Pub - Auth - unknown -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "9e17a2fd-2d29-482e-95d4-55dfbab08690",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/factors?name={{BadFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{BadFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "Priv",
+					"description": "",
+					"item": [
+						{
+							"name": "10 - New Study Factor - Priv - Auth - NewData -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "d794aa2d-c2c1-4fda-affd-4be06f5f1ce9",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has factor\"] = responseBody.has('\"factor\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.factor) {",
+											"    var item = jsonData.factor",
+											"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+											"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+											"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+											"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+											"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"}",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"factor\": \n    {\n      \"factorName\": \"Test-Timepoint\",\n      \"factorType\": {\n        \"annotationValue\": \"timepoint\",\n        \"termSource\": {\n          \"name\": \"EFO\",\n          \"file\": \"http://data.bioontology.org/ontologies/EFO\",\n          \"version\": \"132\",\n          \"description\": \"Experimental Factor Ontology\",\n          \"comments\": []\n        },\n        \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0000724\",\n        \"comments\": []\n      },\n      \"comments\": []\n    }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "11 - Delete Study Factor - Priv - Auth -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "1f14b868-2acd-4341-b555-4da0675dfe09",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has factor\"] = responseBody.has('\"factor\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.factor) {",
+											"    var item = jsonData.factor",
+											"    tests[\"JSON response has key 'factorName'\"] = item.hasOwnProperty('factorName');",
+											"    tests[\"JSON response key 'factorName' not Null\"] = item.factorName;",
+											"    tests[\"JSON response has key 'factorType'\"] = item.hasOwnProperty('factorType');",
+											"    tests[\"JSON response key 'factorType' not Null\"] = item.factorType;",
+											"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"}",
+											""
+										]
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "16cd3cf1-7dc1-4c22-94bd-57995c04f5a5",
+										"type": "text/javascript",
+										"exec": [
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": [
+								{
+									"id": "11102dad-ab0f-475e-80e2-dbdb05c6feec",
+									"name": "Delete Study Contact - Pub - Auth -> 200",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"disabled": false
+											},
+											{
+												"key": "user_token",
+												"value": "{{curator}}",
+												"disabled": false
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts?email={{ContactID}}",
+											"host": [
+												"{{ws-py-server}}{{ws-py-port}}"
+											],
+											"path": [
+												"mtbls",
+												"ws",
+												"studies",
+												"{{PubStudyId}}",
+												"contacts"
+											],
+											"query": [
+												{
+													"key": "email",
+													"value": "{{ContactID}}",
+													"equals": true
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "http://localhost.ebi.ac.uk:8080",
+											"name": "Access-Control-Allow-Origin",
+											"description": "Specifies a URI that may access the resource. For requests without credentials, the server may specify '*' as a wildcard, thereby allowing any origin to access the resource."
+										},
+										{
+											"key": "Content-Length",
+											"value": "790",
+											"name": "Content-Length",
+											"description": "The length of the response body in octets (8-bit bytes)"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "The mime type of this content"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 27 Feb 2018 15:31:42 GMT",
+											"name": "Date",
+											"description": "The date and time that the message was sent"
+										},
+										{
+											"key": "Server",
+											"value": "Werkzeug/0.12.2 Python/3.5.4",
+											"name": "Server",
+											"description": "A name for the server"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin",
+											"name": "Vary",
+											"description": "Tells downstream proxies how to match future request headers to decide whether the cached response can be used rather than requesting a fresh one from the origin server."
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"contact\": {\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"email\": \"doej@a.mail.com\",\n        \"affiliation\": \"EMBL-EBI\",\n        \"comments\": [],\n        \"address\": \"Wellcome Genome Campus, Hinxton, Cambridgeshire, CB10 1SD, UK\",\n        \"fax\": \"012345678902\",\n        \"midInitials\": \"A\",\n        \"phone\": \"012345678901\",\n        \"roles\": [\n            {\n                \"annotationValue\": \"investigator\",\n                \"termSource\": null,\n                \"termAccession\": \"http://www.ebi.ac.uk/efo/EFO_0001739\",\n                \"comments\": []\n            },\n            {\n                \"annotationValue\": \"Bioinformatician\",\n                \"termSource\": null,\n                \"termAccession\": \"\",\n                \"comments\": []\n            }\n        ]\n    }\n}\n"
+								},
+								{
+									"id": "dffc4eba-ce1d-40fa-915e-859df5c09f7b",
+									"name": "Delete Study Contact - Pub - Auth -> 200",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"disabled": false
+											},
+											{
+												"key": "user_token",
+												"value": "{{curator}}",
+												"disabled": false
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts?email={{ContactID}}",
+											"host": [
+												"{{ws-py-server}}{{ws-py-port}}"
+											],
+											"path": [
+												"mtbls",
+												"ws",
+												"studies",
+												"{{PubStudyId}}",
+												"contacts"
+											],
+											"query": [
+												{
+													"key": "email",
+													"value": "{{ContactID}}",
+													"equals": true
+												}
+											]
+										}
+									},
+									"status": "NOT FOUND",
+									"code": 404,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "http://localhost.ebi.ac.uk:8080",
+											"name": "Access-Control-Allow-Origin",
+											"description": "Specifies a URI that may access the resource. For requests without credentials, the server may specify '*' as a wildcard, thereby allowing any origin to access the resource."
+										},
+										{
+											"key": "Content-Length",
+											"value": "366",
+											"name": "Content-Length",
+											"description": "The length of the response body in octets (8-bit bytes)"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "The mime type of this content"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 27 Feb 2018 15:34:11 GMT",
+											"name": "Date",
+											"description": "The date and time that the message was sent"
+										},
+										{
+											"key": "Server",
+											"value": "Werkzeug/0.12.2 Python/3.5.4",
+											"name": "Server",
+											"description": "A name for the server"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin",
+											"name": "Vary",
+											"description": "Tells downstream proxies how to match future request headers to decide whether the cached response can be used rather than requesting a fresh one from the origin server."
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again. You have requested this URI [/mtbls/ws/studies/MTBLS10/contacts] but did you mean /mtbls/ws/studies/<string:study_id>/contacts or /mtbls/ws/studies/<string:study_id>/contacts/ or /mtbls/ws/studies/<string:study_id>/title ?\"\n}\n"
+								}
+							]
+						},
+						{
+							"name": "12 - Delete Study Factor - Priv - NoToken -> 401",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "6f39b3a9-e55f-4d4c-b879-a7cf452a4c2a",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 401\"] = responseCode.code === 401;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": [
+								{
+									"id": "1c07de6d-0409-415e-9516-53d40297ad4c",
+									"name": "Delete Study Contact - Pub - NoToken -> 401",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"disabled": false
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"disabled": false
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/contacts?email={{ContactID}}",
+											"host": [
+												"{{ws-py-server}}{{ws-py-port}}"
+											],
+											"path": [
+												"mtbls",
+												"ws",
+												"studies",
+												"{{PubStudyId}}",
+												"contacts"
+											],
+											"query": [
+												{
+													"key": "email",
+													"value": "{{ContactID}}",
+													"equals": true
+												}
+											]
+										}
+									},
+									"status": "UNAUTHORIZED",
+									"code": 401,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "http://localhost.ebi.ac.uk:8080",
+											"name": "Access-Control-Allow-Origin",
+											"description": "Specifies a URI that may access the resource. For requests without credentials, the server may specify '*' as a wildcard, thereby allowing any origin to access the resource."
+										},
+										{
+											"key": "Content-Length",
+											"value": "243",
+											"name": "Content-Length",
+											"description": "The length of the response body in octets (8-bit bytes)"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "The mime type of this content"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 27 Feb 2018 15:33:47 GMT",
+											"name": "Date",
+											"description": "The date and time that the message was sent"
+										},
+										{
+											"key": "Server",
+											"value": "Werkzeug/0.12.2 Python/3.5.4",
+											"name": "Server",
+											"description": "A name for the server"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin",
+											"name": "Vary",
+											"description": "Tells downstream proxies how to match future request headers to decide whether the cached response can be used rather than requesting a fresh one from the origin server."
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"The server could not verify that you are authorized to access the URL requested.  You either supplied the wrong credentials (e.g. a bad password), or your browser doesn't understand how to supply the credentials required.\"\n}\n"
+								}
+							]
+						},
+						{
+							"name": "13 - Delete Study Factor - Priv - NoAuth -> 403",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "5bdd2232-3cb4-45ca-ad08-05e6ab0eb650",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 403\"] = responseCode.code === 403;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{WrongAuth}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{ValidFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{ValidFactorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "14 - Delete Study Factor - Priv - Auth - NoParams -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "c082e238-4827-4588-b02c-921d4123d084",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "15 - Delete Study Factor - Priv - Auth - NoData -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "89201f84-c6d7-4ca0-a9a9-9d295afdd584",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name=''",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "''",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "16 - Delete Study Factor - Priv - Auth - unknown -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "693f1db1-1218-444f-9278-ebcd9d15cd9b",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain factors\"] = !(responseBody.has('\"factors\":'));",
+											"tests[\"Body does NOT contain factor\"] = !(responseBody.has('\"factor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/factors?name={{BadFactorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"factors"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "{{BadFactorId}}",
 											"equals": true
 										}
 									]

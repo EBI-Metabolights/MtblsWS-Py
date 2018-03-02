@@ -1026,6 +1026,175 @@ class GetStudyProtocolTests(WsTests):
             self.assertEqual('FORBIDDEN', err.reason)
 
 
+class GetStudyFactorTests(WsTests):
+
+    valid_id = instance.config.VALID_FACTOR_ID
+    bad_id = instance.config.BAD_FACTOR_ID
+    valid_data = instance.config.TEST_DATA_VALID_FACTOR
+    missing_data = instance.config.TEST_DATA_MISSING_FACTOR
+    no_data = b''
+
+    def check_Factor_class(self, obj):
+        self.assertIsNotNone(obj['factorName'])
+        self.assertIsNotNone(obj['factorType'])
+        self.assertIsNotNone(obj['comments'])
+
+    def pre_create_factor(self, url):
+        request = urllib.request.Request(url + '/factors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    def pre_delete_factor(self, url):
+        request = urllib.request.Request(url + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise Exception(err)
+
+    # Get Study Factor - Pub - FactorId -> 200
+    def test_get_factors_pub(self):
+        # first, create the factor to ensure it will exists
+        self.pre_create_factor(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to get the factor
+        request = urllib.request.Request(url_pub_id + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('factor', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['factor'])
+            self.check_Factor_class(j_resp['factor'])
+
+    # Get Study Factor - Pub - BadFactorId -> 404
+    def test_get_factor_pub_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Get Study Factor - Pub - NullId -> 404
+    def test_get_factor_pub_nullId(self):
+        request = urllib.request.Request(url_null_id + '/factors'
+                                         + '?name=',
+                                         method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Get Study Factor - Priv - Auth - FactorId -> 200
+    def test_get_factor_priv_auth(self):
+        # first, create the Factor to ensure it will exists
+        self.pre_create_factor(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to get the Factor
+        request = urllib.request.Request(url_priv_id + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('factor', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['factor'])
+            self.check_Factor_class(j_resp['factor'])
+
+    # Get Study Factor - Priv - Auth - BadFactorId -> 404
+    def test_get_factor_priv_Auth_badId(self):
+        request = urllib.request.Request(url_priv_id + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         method='GET')
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Get Study Factor - Priv - Auth - NullId -> 404
+    def test_get_factor_priv_Auth_nullId(self):
+        request = urllib.request.Request(url_priv_id + '/factors'
+                                         + '?name=',
+                                         method='GET')
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Get Study People - Priv -> 403
+    def test_get_factor_priv(self):
+        request = urllib.request.Request(url_priv_id + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Get Study Factor - Priv - NoAuth -> 403
+    def test_get_factor_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+
+
+
 # class GetStudyFactorsTests(WsTests):
 #
 #     def check_Factors_class(self, obj):
