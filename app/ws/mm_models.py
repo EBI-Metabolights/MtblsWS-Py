@@ -14,7 +14,7 @@ class CommentSchema(Schema):
     value = fields.Str()
 
     @post_load
-    def make_comment(self, data):
+    def make_obj(self, data):
         return Comment(**data)
 
 
@@ -36,7 +36,7 @@ class OntologySourceSchema(Schema):
     comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
-    def make_ontology_source(self, data):
+    def make_obj(self, data):
         return OntologySource(**data)
 
 
@@ -58,7 +58,7 @@ class OntologyAnnotationSchema(Schema):
     comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
-    def make_ontology_annotation(self, data):
+    def make_obj(self, data):
         return OntologyAnnotation(**data)
 
 
@@ -91,7 +91,7 @@ class PersonSchema(Schema):
     roles = fields.Nested(OntologyAnnotationSchema, many=True)
 
     @post_load
-    def make_person(self, data):
+    def make_obj(self, data):
         return Person(**data)
 
     # add an envelope to responses
@@ -117,7 +117,7 @@ class ProtocolParameterSchema(Schema):
     comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
-    def make_protocol_param(self, data):
+    def make_obj(self, data):
         return ProtocolParameter(**data)
 
 
@@ -147,13 +147,42 @@ class ProtocolSchema(Schema):
     comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
-    def make_protocol(self, data):
+    def make_obj(self, data):
         return Protocol(**data)
 
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
         key = 'protocols' if many else 'protocol'
+        return {
+            key: data
+        }
+
+
+class StudyFactorSchema(Schema):
+    # marshmallow schema for ISA-API class StudyFactor
+    #
+    # name -> factorName        (str):
+    # factor_type -> factorType (OntologyAnnotation):
+    # comments                  (list, Comment):
+    class Meta:
+        strict = True
+        ordered = True
+
+    name = fields.Str(required=True,
+                      load_from='factorName', dump_to='factorName')
+    factor_type = fields.Nested(OntologyAnnotationSchema, missing=None,
+                                load_from='factorType', dump_to='factorType')
+    comments = fields.Nested(CommentSchema, missing=None, many=True)
+
+    @post_load
+    def make_obj(self, data):
+        return StudyFactor(**data)
+
+    # add an envelope to responses
+    @post_dump(pass_many=True)
+    def set_envelop(self, data, many):
+        key = 'factors' if many else 'factor'
         return {
             key: data
         }

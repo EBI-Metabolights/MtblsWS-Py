@@ -22,10 +22,7 @@ bad_source_id = instance.config.TEST_BAD_SOURCE_ID
 public_sample_id = instance.config.TEST_PUB_SAMPLE_ID
 private_sample_id = instance.config.TEST_PRIV_SAMPLE_ID
 bad_sample_id = instance.config.TEST_BAD_SAMPLE_ID
-valid_contact_id = instance.config.VALID_CONTACT_ID
-bad_contact_id = instance.config.BAD_CONTACT_ID
-valid_protocol_id = instance.config.VALID_PROTOCOL_ID
-bad_protocol_id = instance.config.BAD_PROTOCOL_ID
+
 
 class WsTests(unittest.TestCase):
 
@@ -146,9 +143,11 @@ class PostSingleStudyTests(WsTests):
 
 class PostNewStudyContactTests(WsTests):
 
-    valid_contact = instance.config.TEST_DATA_CONTACT
-    missingData_contact = instance.config.TEST_DATA_CONTACT_MISSING
-    noData_contact = b''
+    valid_id = instance.config.VALID_CONTACT_ID
+    bad_id = instance.config.BAD_CONTACT_ID
+    valid_data = instance.config.TEST_DATA_VALID_CONTACT
+    missing_data = instance.config.TEST_DATA_MISSING_CONTACT
+    no_data = b''
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -170,7 +169,7 @@ class PostNewStudyContactTests(WsTests):
 
     def pre_create_contact(self, url):
         request = urllib.request.Request(url + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -181,7 +180,7 @@ class PostNewStudyContactTests(WsTests):
 
     def pre_delete_contact(self, url):
         request = urllib.request.Request(url + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -199,7 +198,7 @@ class PostNewStudyContactTests(WsTests):
 
         # then, try to add the contact
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -221,7 +220,7 @@ class PostNewStudyContactTests(WsTests):
 
         # then, try to add the contact
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -236,7 +235,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - Auth - NoData -> 400
     def test_add_Contact_pub_auth_noData(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.noData_contact, method='POST')
+                                         data=self.no_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -251,7 +250,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - Auth - MissingRequiredData -> 400
     def test_add_Contact_pub_auth_missingData(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.missingData_contact, method='POST')
+                                         data=self.missing_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -266,8 +265,8 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - Auth - ExtraQueryParams -> 400
     def test_add_Contact_pub_auth_extraParams(self):
         request = urllib.request.Request(url_pub_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
-                                         data=self.valid_contact, method='POST')
+                                         + '?email=' + self.valid_id,
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -282,7 +281,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - NoToken -> 401
     def test_add_Contact_pub_noToken(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -296,7 +295,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - NoAuth -> 403
     def test_add_Contact_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         try:
@@ -316,7 +315,7 @@ class PostNewStudyContactTests(WsTests):
 
         # then, try to add the contact
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -338,7 +337,7 @@ class PostNewStudyContactTests(WsTests):
 
         # then, try to add the contact
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -353,7 +352,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - Auth - NoData -> 400
     def test_add_Contact_priv_auth_noData(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.noData_contact, method='POST')
+                                         data=self.no_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -368,7 +367,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - Auth - MissingRequiredData -> 400
     def test_add_Contact_priv_auth_missingData(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.missingData_contact, method='POST')
+                                         data=self.missing_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -383,8 +382,8 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - Auth - ExtraQueryParams -> 400
     def test_add_Contact_priv_auth_extraParams(self):
         request = urllib.request.Request(url_priv_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
-                                         data=self.valid_contact, method='POST')
+                                         + '?email=' + self.valid_id,
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -399,7 +398,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - NoToken -> 401
     def test_add_Contact_priv_noToken(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -413,7 +412,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - NoAuth -> 403
     def test_add_Contact_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         try:
@@ -428,9 +427,11 @@ class PostNewStudyContactTests(WsTests):
 
 class PostNewStudyProtocolTests(WsTests):
 
-    valid_protocol = instance.config.TEST_DATA_PROTOCOL
-    missingData_new_protocol = instance.config.TEST_DATA_PROTOCOL_MISSING
-    noData_new_protocol = b''
+    valid_id = instance.config.VALID_PROTOCOL_ID
+    bad_id = instance.config.BAD_PROTOCOL_ID
+    valid_data = instance.config.TEST_DATA_VALID_PROTOCOL
+    missing_data = instance.config.TEST_DATA_MISSING_PROTOCOL
+    no_data = b''
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -446,7 +447,7 @@ class PostNewStudyProtocolTests(WsTests):
 
     def pre_create_protocol(self, url):
         request = urllib.request.Request(url + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -457,7 +458,7 @@ class PostNewStudyProtocolTests(WsTests):
 
     def pre_delete_protocol(self, url):
         request = urllib.request.Request(url + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -475,7 +476,7 @@ class PostNewStudyProtocolTests(WsTests):
 
         # then, try to add the protocol
         request = urllib.request.Request(url_pub_id + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -497,7 +498,7 @@ class PostNewStudyProtocolTests(WsTests):
 
         # then, try to add the protocol
         request = urllib.request.Request(url_pub_id + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -512,7 +513,7 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Pub - Auth - NoData -> 400
     def test_add_Protocol_pub_auth_noData(self):
         request = urllib.request.Request(url_pub_id + '/protocols',
-                                         data=self.noData_new_protocol, method='POST')
+                                         data=self.no_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -527,7 +528,7 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Pub - Auth - MissingRequiredData -> 400
     def test_add_Protocol_pub_auth_missingData(self):
         request = urllib.request.Request(url_pub_id + '/protocols',
-                                         data=self.missingData_new_protocol, method='POST')
+                                         data=self.missing_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -542,8 +543,8 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Pub - Auth - ExtraQueryParams -> 400
     def test_add_Protocol_pub_auth_extraParams(self):
         request = urllib.request.Request(url_pub_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
-                                         data=self.valid_protocol, method='POST')
+                                         + '?name=' + self.valid_id,
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -558,7 +559,7 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Pub - NoToken -> 401
     def test_add_Protocol_pub_auth_noToken(self):
         request = urllib.request.Request(url_pub_id + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -572,7 +573,7 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Pub - NoAuth -> 403
     def test_add_Protocol_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         try:
@@ -592,7 +593,7 @@ class PostNewStudyProtocolTests(WsTests):
 
         # then, try to add the protocol
         request = urllib.request.Request(url_priv_id + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -614,7 +615,7 @@ class PostNewStudyProtocolTests(WsTests):
 
         # then, try to add the protocol
         request = urllib.request.Request(url_priv_id + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -629,7 +630,7 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Priv - Auth - NoData -> 400
     def test_add_Protocol_priv_auth_noData(self):
         request = urllib.request.Request(url_priv_id + '/protocols',
-                                         data=self.noData_new_protocol, method='POST')
+                                         data=self.no_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -644,7 +645,7 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Priv - Auth - MissingRequiredData -> 400
     def test_add_Protocol_priv_auth_missingData(self):
         request = urllib.request.Request(url_priv_id + '/protocols',
-                                         data=self.missingData_new_protocol, method='POST')
+                                         data=self.missing_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -659,8 +660,8 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Priv - Auth - ExtraQueryParams -> 400
     def test_add_Protocol_priv_auth_extraParams(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
-                                         data=self.valid_protocol, method='POST')
+                                         + '?name=' + self.valid_id,
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -675,7 +676,7 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Priv - NoToken -> 401
     def test_add_Protocol_priv_auth_noToken(self):
         request = urllib.request.Request(url_priv_id + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         try:
             urllib.request.urlopen(request)
@@ -689,7 +690,281 @@ class PostNewStudyProtocolTests(WsTests):
     # New Study Protocol - Priv - NoAuth -> 403
     def test_add_Protocol_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+
+class PostNewStudyFactorTests(WsTests):
+
+    valid_id = instance.config.VALID_FACTOR_ID
+    bad_id = instance.config.BAD_FACTOR_ID
+    valid_data = instance.config.TEST_DATA_VALID_FACTOR
+    missing_data = instance.config.TEST_DATA_MISSING_FACTOR
+    no_data = b''
+
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    def check_Factor_class(self, obj):
+        self.assertIsNotNone(obj['factorName'])
+        self.assertIsNotNone(obj['factorType'])
+        self.assertIsNotNone(obj['comments'])
+
+    def pre_create_factor(self, url):
+        request = urllib.request.Request(url + '/factors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    def pre_delete_factor(self, url):
+        request = urllib.request.Request(url + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise Exception(err)
+
+    # New Study Factor - Pub - Auth - NewData -> 200
+    def test_add_Factor_pub_auth_newData(self):
+        # first, delete the factor to ensure it won't exists
+        self.pre_delete_factor(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the factor
+        request = urllib.request.Request(url_pub_id + '/factors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('factor', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['factor'])
+            self.check_Factor_class(j_resp['factor'])
+
+    # New Study Factor - Pub - Auth - ExistingFactor -> 409
+    def test_add_Factor_pub_auth_duplicateData(self):
+        # first, create the factor to ensure it will exists
+        self.pre_create_factor(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the factor
+        request = urllib.request.Request(url_pub_id + '/factors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 409)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('CONFLICT', err.msg)
+            self.assertEqual('CONFLICT', err.reason)
+
+    # New Study Factor - Pub - Auth - NoData -> 400
+    def test_add_Factor_pub_auth_noData(self):
+        request = urllib.request.Request(url_pub_id + '/factors',
+                                         data=self.no_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Factor - Pub - Auth - MissingRequiredData -> 400
+    def test_add_Factor_pub_auth_missingData(self):
+        request = urllib.request.Request(url_pub_id + '/factors',
+                                         data=self.missing_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Factor - Pub - Auth - ExtraQueryParams -> 400
+    def test_add_Factor_pub_auth_extraParams(self):
+        request = urllib.request.Request(url_pub_id + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Factor - Pub - NoToken -> 401
+    def test_add_Factor_pub_auth_noToken(self):
+        request = urllib.request.Request(url_pub_id + '/factors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # New Study Factor - Pub - NoAuth -> 403
+    def test_add_Factor_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/factors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # New Study Factor - Priv - Auth - NewData -> 200
+    def test_add_Factor_priv_auth_newData(self):
+        # first, delete the factor to ensure it won't exists
+        self.pre_delete_factor(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the factor
+        request = urllib.request.Request(url_priv_id + '/factors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('factor', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['factor'])
+            self.check_Factor_class(j_resp['factor'])
+
+    # New Study Factor - Priv - Auth - ExistingFactor -> 409
+    def test_add_Factor_priv_auth_duplicateData(self):
+        # first, create the factor to ensure it will exists
+        self.pre_create_factor(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the factor
+        request = urllib.request.Request(url_priv_id + '/factors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 409)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('CONFLICT', err.msg)
+            self.assertEqual('CONFLICT', err.reason)
+
+    # New Study Factor - Priv - Auth - NoData -> 400
+    def test_add_Factor_priv_auth_noData(self):
+        request = urllib.request.Request(url_priv_id + '/factors',
+                                         data=self.no_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Factor - Priv - Auth - MissingRequiredData -> 400
+    def test_add_Factor_priv_auth_missingData(self):
+        request = urllib.request.Request(url_priv_id + '/factors',
+                                         data=self.missing_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Factor - Priv - Auth - ExtraQueryParams -> 400
+    def test_add_Factor_priv_auth_extraParams(self):
+        request = urllib.request.Request(url_priv_id + '/factors'
+                                         + '?name=' + self.valid_id,
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Factor - Priv - NoToken -> 401
+    def test_add_Factor_priv_auth_noToken(self):
+        request = urllib.request.Request(url_priv_id + '/factors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # New Study Factor - Priv - NoAuth -> 403
+    def test_add_Factor_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/factors',
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         try:
