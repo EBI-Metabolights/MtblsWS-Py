@@ -24,7 +24,8 @@ private_sample_id = instance.config.TEST_PRIV_SAMPLE_ID
 bad_sample_id = instance.config.TEST_BAD_SAMPLE_ID
 valid_contact_id = instance.config.VALID_CONTACT_ID
 bad_contact_id = instance.config.BAD_CONTACT_ID
-
+valid_protocol_id = instance.config.VALID_PROTOCOL_ID
+bad_protocol_id = instance.config.BAD_PROTOCOL_ID
 
 class WsTests(unittest.TestCase):
 
@@ -146,8 +147,8 @@ class PostSingleStudyTests(WsTests):
 class PostNewStudyContactTests(WsTests):
 
     valid_contact = instance.config.TEST_DATA_CONTACT
-    missingData_new_contact = instance.config.TEST_DATA_CONTACT_MISSING
-    noData_new_contact = b''
+    missingData_contact = instance.config.TEST_DATA_CONTACT_MISSING
+    noData_contact = b''
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -235,7 +236,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - Auth - NoData -> 400
     def test_add_Contact_pub_auth_noData(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.noData_new_contact, method='POST')
+                                         data=self.noData_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -250,7 +251,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Pub - Auth - MissingRequiredData -> 400
     def test_add_Contact_pub_auth_missingData(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
-                                         data=self.missingData_new_contact, method='POST')
+                                         data=self.missingData_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -279,7 +280,7 @@ class PostNewStudyContactTests(WsTests):
             self.assertEqual('BAD REQUEST', err.reason)
 
     # New Study Contact - Pub - NoToken -> 401
-    def test_add_Contact_pub_auth_noToken(self):
+    def test_add_Contact_pub_noToken(self):
         request = urllib.request.Request(url_pub_id + '/contacts',
                                          data=self.valid_contact, method='POST')
         self.add_common_headers(request)
@@ -352,7 +353,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - Auth - NoData -> 400
     def test_add_Contact_priv_auth_noData(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.noData_new_contact, method='POST')
+                                         data=self.noData_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -367,7 +368,7 @@ class PostNewStudyContactTests(WsTests):
     # New Study Contact - Priv - Auth - MissingRequiredData -> 400
     def test_add_Contact_priv_auth_missingData(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
-                                         data=self.missingData_new_contact, method='POST')
+                                         data=self.missingData_contact, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -396,7 +397,7 @@ class PostNewStudyContactTests(WsTests):
             self.assertEqual('BAD REQUEST', err.reason)
 
     # New Study Contact - Priv - NoToken -> 401
-    def test_add_Contact_priv_auth_noToken(self):
+    def test_add_Contact_priv_noToken(self):
         request = urllib.request.Request(url_priv_id + '/contacts',
                                          data=self.valid_contact, method='POST')
         self.add_common_headers(request)
@@ -424,3 +425,278 @@ class PostNewStudyContactTests(WsTests):
             self.assertEqual('FORBIDDEN', err.msg)
             self.assertEqual('FORBIDDEN', err.reason)
 
+
+class PostNewStudyProtocolTests(WsTests):
+
+    valid_protocol = instance.config.TEST_DATA_PROTOCOL
+    missingData_new_protocol = instance.config.TEST_DATA_PROTOCOL_MISSING
+    noData_new_protocol = b''
+
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    def check_Protocol_class(self, obj):
+        self.assertIsNotNone(obj['name'])
+        self.assertIsNotNone(obj['protocolType'])
+        self.assertIsNotNone(obj['description'])
+        self.assertIsNotNone(obj['uri'])
+        self.assertIsNotNone(obj['version'])
+        self.assertIsNotNone(obj['parameters'])
+        self.assertIsNotNone(obj['components'])
+
+    def pre_create_protocol(self, url):
+        request = urllib.request.Request(url + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    def pre_delete_protocol(self, url):
+        request = urllib.request.Request(url + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise Exception(err)
+
+    # New Study Protocol - Pub - Auth - NewData -> 200
+    def test_add_Protocol_pub_auth_newData(self):
+        # first, delete the protocol to ensure it won't exists
+        self.pre_delete_protocol(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the protocol
+        request = urllib.request.Request(url_pub_id + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('protocol', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['protocol'])
+            self.check_Protocol_class(j_resp['protocol'])
+
+    # New Study Protocol - Pub - Auth - ExistingProtocol -> 409
+    def test_add_Protocol_pub_auth_duplicateData(self):
+        # first, create the protocol to ensure it will exists
+        self.pre_create_protocol(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the protocol
+        request = urllib.request.Request(url_pub_id + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 409)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('CONFLICT', err.msg)
+            self.assertEqual('CONFLICT', err.reason)
+
+    # New Study Protocol - Pub - Auth - NoData -> 400
+    def test_add_Protocol_pub_auth_noData(self):
+        request = urllib.request.Request(url_pub_id + '/protocols',
+                                         data=self.noData_new_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Protocol - Pub - Auth - MissingRequiredData -> 400
+    def test_add_Protocol_pub_auth_missingData(self):
+        request = urllib.request.Request(url_pub_id + '/protocols',
+                                         data=self.missingData_new_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Protocol - Pub - Auth - ExtraQueryParams -> 400
+    def test_add_Protocol_pub_auth_extraParams(self):
+        request = urllib.request.Request(url_pub_id + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Protocol - Pub - NoToken -> 401
+    def test_add_Protocol_pub_auth_noToken(self):
+        request = urllib.request.Request(url_pub_id + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # New Study Protocol - Pub - NoAuth -> 403
+    def test_add_Protocol_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # New Study Protocol - Priv - Auth - NewData -> 200
+    def test_add_Protocol_priv_auth_newData(self):
+        # first, delete the protocol to ensure it won't exists
+        self.pre_delete_protocol(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the protocol
+        request = urllib.request.Request(url_priv_id + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('protocol', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['protocol'])
+            self.check_Protocol_class(j_resp['protocol'])
+
+    # New Study Protocol - Priv - Auth - ExistingProtocol -> 409
+    def test_add_Protocol_priv_auth_duplicateData(self):
+        # first, create the protocol to ensure it will exists
+        self.pre_create_protocol(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the protocol
+        request = urllib.request.Request(url_priv_id + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 409)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('CONFLICT', err.msg)
+            self.assertEqual('CONFLICT', err.reason)
+
+    # New Study Protocol - Priv - Auth - NoData -> 400
+    def test_add_Protocol_priv_auth_noData(self):
+        request = urllib.request.Request(url_priv_id + '/protocols',
+                                         data=self.noData_new_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Protocol - Priv - Auth - MissingRequiredData -> 400
+    def test_add_Protocol_priv_auth_missingData(self):
+        request = urllib.request.Request(url_priv_id + '/protocols',
+                                         data=self.missingData_new_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Protocol - Priv - Auth - ExtraQueryParams -> 400
+    def test_add_Protocol_priv_auth_extraParams(self):
+        request = urllib.request.Request(url_priv_id + '/protocols'
+                                         + '?name=' + valid_protocol_id,
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Protocol - Priv - NoToken -> 401
+    def test_add_Protocol_priv_auth_noToken(self):
+        request = urllib.request.Request(url_priv_id + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # New Study Protocol - Priv - NoAuth -> 403
+    def test_add_Protocol_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/protocols',
+                                         data=self.valid_protocol, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
