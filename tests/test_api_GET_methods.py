@@ -23,10 +23,6 @@ bad_source_id = instance.config.TEST_BAD_SOURCE_ID
 public_sample_id = instance.config.TEST_PUB_SAMPLE_ID
 private_sample_id = instance.config.TEST_PRIV_SAMPLE_ID
 bad_sample_id = instance.config.TEST_BAD_SAMPLE_ID
-valid_contact_id = instance.config.VALID_CONTACT_ID
-bad_contact_id = instance.config.BAD_CONTACT_ID
-valid_protocol_id = instance.config.VALID_PROTOCOL_ID
-bad_protocol_id = instance.config.BAD_PROTOCOL_ID
 
 
 class WsTests(unittest.TestCase):
@@ -416,6 +412,12 @@ class GetStudyDescriptionTests(WsTests):
 
 class GetStudyContactsTests(WsTests):
 
+    valid_id = instance.config.VALID_CONTACT_ID
+    bad_id = instance.config.BAD_CONTACT_ID
+    valid_data = instance.config.TEST_DATA_VALID_CONTACT
+    missing_data = instance.config.TEST_DATA_MISSING_CONTACT
+    no_data = b''
+
     def check_Person_class(self, obj):
         self.assertIsNotNone(obj['firstName'])
         # self.assertIsNotNone(person['midInitials'])
@@ -547,9 +549,11 @@ class GetStudyContactsTests(WsTests):
 
 class GetStudyContactTests(WsTests):
 
-    valid_contact = instance.config.TEST_DATA_CONTACT
-    missingData_new_contact = instance.config.TEST_DATA_CONTACT_MISSING
-    noData_new_contact = b''
+    valid_id = instance.config.VALID_CONTACT_ID
+    bad_id = instance.config.BAD_CONTACT_ID
+    valid_data = instance.config.TEST_DATA_VALID_CONTACT
+    missing_data = instance.config.TEST_DATA_MISSING_CONTACT
+    no_data = b''
 
     def check_Person_class(self, obj):
         self.assertIsNotNone(obj['firstName'])
@@ -568,7 +572,7 @@ class GetStudyContactTests(WsTests):
 
     def pre_create_contact(self, url):
         request = urllib.request.Request(url + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -579,7 +583,7 @@ class GetStudyContactTests(WsTests):
 
     def pre_delete_contact(self, url):
         request = urllib.request.Request(url + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -597,7 +601,7 @@ class GetStudyContactTests(WsTests):
 
         # then, try to get the contact
         request = urllib.request.Request(url_pub_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='GET')
         with urllib.request.urlopen(request) as response:
             self.assertEqual(response.code, 200)
@@ -613,7 +617,7 @@ class GetStudyContactTests(WsTests):
     # Get Study Contact - Pub - BadContacId -> 404
     def test_get_Contact_pub_badId(self):
         request = urllib.request.Request(url_wrong_id + '/contacts'
-                                         + '?email=' + bad_contact_id,
+                                         + '?email=' + self.bad_id,
                                          method='GET')
         try:
             urllib.request.urlopen(request)
@@ -646,7 +650,7 @@ class GetStudyContactTests(WsTests):
 
         # then, try to get the contact
         request = urllib.request.Request(url_priv_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='GET')
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -663,7 +667,7 @@ class GetStudyContactTests(WsTests):
     # Get Study Contact - Priv - Auth - BadContacId -> 404
     def test_get_Contact_priv_Auth_badId(self):
         request = urllib.request.Request(url_priv_id + '/contacts'
-                                         + '?email=' + bad_contact_id,
+                                         + '?email=' + self.bad_id,
                                          method='GET')
         request.add_header('user_token', auth_id)
         try:
@@ -693,7 +697,7 @@ class GetStudyContactTests(WsTests):
     # Get Study People - Priv -> 403
     def test_get_Contact_priv(self):
         request = urllib.request.Request(url_priv_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='GET')
         try:
             urllib.request.urlopen(request)
@@ -707,7 +711,7 @@ class GetStudyContactTests(WsTests):
     # Get Study Contact - Priv - NoAuth -> 403
     def test_get_Contact_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='GET')
         request.add_header('user_token', wrong_auth_token)
         try:
@@ -722,8 +726,11 @@ class GetStudyContactTests(WsTests):
 
 class GetStudyProtocolsTests(WsTests):
 
-    data_new_protocol = instance.config.TEST_DATA_PROTOCOL
-    valid_protocol_name = instance.config.TEST_PROTOCOL_NAME
+    valid_id = instance.config.VALID_PROTOCOL_ID
+    bad_id = instance.config.BAD_PROTOCOL_ID
+    valid_data = instance.config.TEST_DATA_VALID_PROTOCOL
+    missing_data = instance.config.TEST_DATA_MISSING_PROTOCOL
+    no_data = b''
 
     def check_Protocol_class(self, obj):
         self.assertIsNotNone(obj['name'])
@@ -850,9 +857,11 @@ class GetStudyProtocolsTests(WsTests):
 
 class GetStudyProtocolTests(WsTests):
 
-    valid_protocol = instance.config.TEST_DATA_PROTOCOL
-    missingData_new_protocol = instance.config.TEST_DATA_PROTOCOL_MISSING
-    noData_new_protocol = b''
+    valid_id = instance.config.VALID_PROTOCOL_ID
+    bad_id = instance.config.BAD_PROTOCOL_ID
+    valid_data = instance.config.TEST_DATA_VALID_PROTOCOL
+    missing_data = instance.config.TEST_DATA_MISSING_PROTOCOL
+    no_data = b''
 
     def check_Protocol_class(self, obj):
         self.assertIsNotNone(obj['name'])
@@ -865,7 +874,7 @@ class GetStudyProtocolTests(WsTests):
 
     def pre_create_protocol(self, url):
         request = urllib.request.Request(url + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -876,7 +885,7 @@ class GetStudyProtocolTests(WsTests):
 
     def pre_delete_protocol(self, url):
         request = urllib.request.Request(url + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -894,7 +903,7 @@ class GetStudyProtocolTests(WsTests):
 
         # then, try to get the protocol
         request = urllib.request.Request(url_pub_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='GET')
         with urllib.request.urlopen(request) as response:
             self.assertEqual(response.code, 200)
@@ -910,7 +919,7 @@ class GetStudyProtocolTests(WsTests):
     # Get Study Protocol - Pub - BadProtocolId -> 404
     def test_get_protocol_pub_badId(self):
         request = urllib.request.Request(url_wrong_id + '/protocols'
-                                         + '?name=' + bad_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='GET')
         try:
             urllib.request.urlopen(request)
@@ -943,7 +952,7 @@ class GetStudyProtocolTests(WsTests):
 
         # then, try to get the Protocol
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='GET')
         request.add_header('user_token', auth_id)
         with urllib.request.urlopen(request) as response:
@@ -960,7 +969,7 @@ class GetStudyProtocolTests(WsTests):
     # Get Study Protocol - Priv - Auth - BadProtocolId -> 404
     def test_get_protocol_priv_Auth_badId(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + bad_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='GET')
         request.add_header('user_token', auth_id)
         try:
@@ -990,7 +999,7 @@ class GetStudyProtocolTests(WsTests):
     # Get Study People - Priv -> 403
     def test_get_protocol_priv(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='GET')
         try:
             urllib.request.urlopen(request)
@@ -1004,7 +1013,7 @@ class GetStudyProtocolTests(WsTests):
     # Get Study Protocol - Priv - NoAuth -> 403
     def test_get_protocol_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='GET')
         request.add_header('user_token', wrong_auth_token)
         try:

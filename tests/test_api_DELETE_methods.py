@@ -22,10 +22,6 @@ bad_source_id = instance.config.TEST_BAD_SOURCE_ID
 public_sample_id = instance.config.TEST_PUB_SAMPLE_ID
 private_sample_id = instance.config.TEST_PRIV_SAMPLE_ID
 bad_sample_id = instance.config.TEST_BAD_SAMPLE_ID
-valid_contact_id = instance.config.VALID_CONTACT_ID
-bad_contact_id = instance.config.BAD_CONTACT_ID
-valid_protocol_id = instance.config.VALID_PROTOCOL_ID
-bad_protocol_id = instance.config.BAD_PROTOCOL_ID
 
 
 class WsTests(unittest.TestCase):
@@ -49,9 +45,11 @@ class WsTests(unittest.TestCase):
 
 class DeleteStudyContactTests(WsTests):
 
-    valid_contact = instance.config.TEST_DATA_CONTACT
-    missingData_new_contact = instance.config.TEST_DATA_CONTACT_MISSING
-    noData_new_contact = b''
+    valid_id = instance.config.VALID_CONTACT_ID
+    bad_id = instance.config.BAD_CONTACT_ID
+    valid_data = instance.config.TEST_DATA_VALID_CONTACT
+    missing_data = instance.config.TEST_DATA_MISSING_CONTACT
+    no_data = b''
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -73,7 +71,7 @@ class DeleteStudyContactTests(WsTests):
 
     def pre_create_contact(self, url):
         request = urllib.request.Request(url + '/contacts',
-                                         data=self.valid_contact, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -84,7 +82,7 @@ class DeleteStudyContactTests(WsTests):
 
     def pre_delete_contact(self, url):
         request = urllib.request.Request(url + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -102,7 +100,7 @@ class DeleteStudyContactTests(WsTests):
 
         # then, try to delete the contact
         request = urllib.request.Request(url_pub_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -120,7 +118,7 @@ class DeleteStudyContactTests(WsTests):
     # Delete Study Contact - Pub - NoToken -> 401
     def test_delete_Contact_pub_auth_noToken(self):
         request = urllib.request.Request(url_pub_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         try:
@@ -135,7 +133,7 @@ class DeleteStudyContactTests(WsTests):
     # Delete Study Contact - Pub - NoAuth -> 403
     def test_delete_Contact_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
@@ -182,7 +180,7 @@ class DeleteStudyContactTests(WsTests):
     # Delete Study Contact - Pub - Auth - unknownContact -> 404
     def test_delete_Contact_pub_auth_unknownContact(self):
         request = urllib.request.Request(url_pub_id + '/contacts'
-                                         + '?email=' + bad_contact_id,
+                                         + '?email=' + self.bad_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -203,7 +201,7 @@ class DeleteStudyContactTests(WsTests):
 
         # then, try to delete the contact
         request = urllib.request.Request(url_priv_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -221,7 +219,7 @@ class DeleteStudyContactTests(WsTests):
     # Delete Study Contact - Priv - NoToken -> 401
     def test_delete_Contact_priv_auth_noToken(self):
         request = urllib.request.Request(url_priv_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         try:
@@ -236,7 +234,7 @@ class DeleteStudyContactTests(WsTests):
     # Delete Study Contact - Priv - NoAuth -> 403
     def test_delete_Contact_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/contacts'
-                                         + '?email=' + valid_contact_id,
+                                         + '?email=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
@@ -283,7 +281,7 @@ class DeleteStudyContactTests(WsTests):
     # Delete Study Contact - Priv - Auth - unknownContact -> 404
     def test_delete_Contact_priv_auth_unknownContact(self):
         request = urllib.request.Request(url_priv_id + '/contacts'
-                                         + '?email=' + bad_contact_id,
+                                         + '?email=' + self.bad_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -299,9 +297,11 @@ class DeleteStudyContactTests(WsTests):
 
 class DeleteStudyProtocolTests(WsTests):
 
-    valid_protocol = instance.config.TEST_DATA_PROTOCOL
-    missingData_new_protocol = instance.config.TEST_DATA_PROTOCOL_MISSING
-    noData_new_protocol = b''
+    valid_id = instance.config.VALID_PROTOCOL_ID
+    bad_id = instance.config.BAD_PROTOCOL_ID
+    valid_data = instance.config.TEST_DATA_VALID_PROTOCOL
+    missing_data = instance.config.TEST_DATA_MISSING_PROTOCOL
+    no_data = b''
 
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
@@ -317,7 +317,7 @@ class DeleteStudyProtocolTests(WsTests):
 
     def pre_create_protocol(self, url):
         request = urllib.request.Request(url + '/protocols',
-                                         data=self.valid_protocol, method='POST')
+                                         data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
         try:
@@ -346,7 +346,7 @@ class DeleteStudyProtocolTests(WsTests):
 
         # then, try to delete the protocol
         request = urllib.request.Request(url_pub_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -364,7 +364,7 @@ class DeleteStudyProtocolTests(WsTests):
     # Delete Study Protocol - Pub - NoToken -> 401
     def test_delete_Protocol_pub_auth_noToken(self):
         request = urllib.request.Request(url_pub_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         try:
@@ -379,7 +379,7 @@ class DeleteStudyProtocolTests(WsTests):
     # Delete Study Protocol - Pub - NoAuth -> 403
     def test_delete_Protocol_pub_noAuth(self):
         request = urllib.request.Request(url_pub_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
@@ -426,7 +426,7 @@ class DeleteStudyProtocolTests(WsTests):
     # Delete Study Protocol - Pub - Auth - unknownProtocol -> 404
     def test_delete_Protocol_pub_auth_unknownProtocol(self):
         request = urllib.request.Request(url_pub_id + '/protocols'
-                                         + '?name=' + bad_protocol_id,
+                                         + '?name=' + self.bad_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -447,7 +447,7 @@ class DeleteStudyProtocolTests(WsTests):
 
         # then, try to delete the protocol
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -465,7 +465,7 @@ class DeleteStudyProtocolTests(WsTests):
     # Delete Study Protocol - Priv - NoToken -> 401
     def test_delete_Protocol_priv_auth_noToken(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         try:
@@ -480,7 +480,7 @@ class DeleteStudyProtocolTests(WsTests):
     # Delete Study Protocol - Priv - NoAuth -> 403
     def test_delete_Protocol_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + valid_protocol_id,
+                                         + '?name=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
@@ -527,7 +527,7 @@ class DeleteStudyProtocolTests(WsTests):
     # Delete Study Protocol - Priv - Auth - unknownProtocol -> 404
     def test_delete_Protocol_priv_auth_unknownProtocol(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
-                                         + '?name=' + bad_protocol_id,
+                                         + '?name=' + self.bad_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
