@@ -5428,6 +5428,1128 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Get Study Design Descriptors",
+			"description": null,
+			"item": [
+				{
+					"name": "Get Study Design Descriptor - Pub -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "45db33df-957b-423c-90b8-a2804d2e4ac2",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has studyDesignDescriptors\"] = responseBody.has('\"studyDesignDescriptors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.studyDesignDescriptors) {",
+									"    var item = jsonData.studyDesignDescriptors[0]",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"descriptors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Pub - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "9272de5e-24bb-4cb6-9d1e-9d92efbd9372",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has studyDesignDescriptors\"] = responseBody.has('\"studyDesignDescriptors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.studyDesignDescriptors) {",
+									"    var item = jsonData.studyDesignDescriptors[0]",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"descriptors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Pub - NoAuth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "586afc89-1fc6-4611-92c4-8f86e0a15d8a",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has studyDesignDescriptors\"] = responseBody.has('\"studyDesignDescriptors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.studyDesignDescriptors) {",
+									"    var item = jsonData.studyDesignDescriptors[0]",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"descriptors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Priv -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8e4d92ce-4b1d-42d0-b2aa-c8a922136b05",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"descriptors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Priv - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "cd52b475-b8a2-47c6-8252-1a88057aefcc",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has studyDesignDescriptors\"] = responseBody.has('\"studyDesignDescriptors\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.studyDesignDescriptors) {",
+									"    var item = jsonData.studyDesignDescriptors[0]",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"descriptors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e7f58c7a-d66a-4939-ae57-ccf879c887f6",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"descriptors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "62b321c5-dfe1-46da-9d68-9628b0da5d78",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies//descriptors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"",
+								"descriptors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "6608fc95-8f4e-4522-8d10-b59de5c314a2",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{BadStudyId}}/descriptors",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{BadStudyId}}",
+								"descriptors"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Get Study Design Descriptor",
+			"description": null,
+			"item": [
+				{
+					"name": "Get Study Design Descriptor - Pub - GoodId -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "6de47202-738e-477a-b3f7-f8aa4cb0e55f",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has studyDesignDescriptor\"] = responseBody.has('\"studyDesignDescriptor\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.studyDesignDescriptor) {",
+									"    var item = jsonData.studyDesignDescriptor",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"descriptors"
+							],
+							"query": [
+								{
+									"key": "annotationValue",
+									"value": "{{ValidDescriptorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Pub - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "aa29f702-9015-4c30-9e71-73535d0ef239",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue={{BadDescriptorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"descriptors"
+							],
+							"query": [
+								{
+									"key": "annotationValue",
+									"value": "{{BadDescriptorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Pub - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "91776872-5e49-459a-aa27-dc3c3b0417d1",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue=''",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"descriptors"
+							],
+							"query": [
+								{
+									"key": "annotationValue",
+									"value": "''",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Priv - Auth - GoodId -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a70e918a-332e-422e-971e-1d0f0dc42a33",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has studyDesignDescriptor\"] = responseBody.has('\"studyDesignDescriptor\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.studyDesignDescriptor) {",
+									"    var item = jsonData.studyDesignDescriptor",
+									"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"descriptors"
+							],
+							"query": [
+								{
+									"key": "annotationValue",
+									"value": "{{ValidDescriptorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Priv - Auth - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "4a641de0-5360-4187-8e39-39b9ce63f7f2",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{BadDescriptorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"descriptors"
+							],
+							"query": [
+								{
+									"key": "annotationValue",
+									"value": "{{BadDescriptorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Priv - Auth - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "152fccb0-40f4-4fcf-9ffc-1c5ce8d4e91a",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue=''",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"descriptors"
+							],
+							"query": [
+								{
+									"key": "annotationValue",
+									"value": "''",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Priv -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "53a57af7-3aa1-423d-b37f-d386a656e29e",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"descriptors"
+							],
+							"query": [
+								{
+									"key": "annotationValue",
+									"value": "{{ValidDescriptorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Design Descriptor - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "dca3af15-83ab-458f-91e9-54cb581f3e78",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"descriptors"
+							],
+							"query": [
+								{
+									"key": "annotationValue",
+									"value": "{{ValidDescriptorId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "f3df7f22-8ee0-4535-b502-5a175c7c1894",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "851bf978-c1c5-4398-866c-78e3cc2c6ae7",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
 		}
 	],
 	"event": [

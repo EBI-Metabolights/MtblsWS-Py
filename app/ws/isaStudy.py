@@ -2010,7 +2010,7 @@ class StudyDescriptors(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['studyDesignDescriptor']
             # if partial=True missing fields will be ignored
-            result = OntologyAnnotationSchema().load(data, partial=False)
+            result = StudyDesignDescriptorSchema().load(data, partial=False)
             new_descriptor = result.data
         except (ValidationError, Exception) as err:
             abort(400)

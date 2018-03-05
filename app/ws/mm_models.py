@@ -196,10 +196,10 @@ class StudyDesignDescriptorSchema(Schema):
     # term_accession                (str):
     # comments                      (list, Comment):
     class Meta:
-        # strict = True
+        strict = True
         ordered = True
 
-    term = fields.String(load_from='annotationValue', dump_to='annotationValue')
+    term = fields.String(required=True, load_from='annotationValue', dump_to='annotationValue')
     term_source = fields.Nested(OntologySourceSchema, load_from='termSource', dump_to='termSource',
                                 required=False, allow_none=True)
     term_accession = fields.String(load_from='termAccession', dump_to='termAccession')

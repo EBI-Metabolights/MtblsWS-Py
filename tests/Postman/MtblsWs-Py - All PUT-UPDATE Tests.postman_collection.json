@@ -4601,6 +4601,1014 @@
 					"_postman_isSubFolder": true
 				}
 			]
+		},
+		{
+			"name": "Update Study Design Descriptor",
+			"description": null,
+			"item": [
+				{
+					"name": "Pub",
+					"description": "",
+					"item": [
+						{
+							"name": "Update Study Design Descriptor - Pub - Auth - GoodId -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "fa589091-bcd6-4a3d-875d-8c02552228f6",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has studyDesignDescriptor\"] = responseBody.has('\"studyDesignDescriptor\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.studyDesignDescriptor) {",
+											"    var item = jsonData.studyDesignDescriptor",
+											"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+											"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+											"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+											"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+											"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+											"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+											"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"}",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Pub - Auth - NoData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "28686abd-a1c8-494b-b66b-997a56697581",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "None"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Pub - Auth - MissingRequiredData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "03fa0898-088b-4ce4-87b3-fe52a5405f7e",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Pub - NoToken -> 401",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "f1355d91-ce6e-47f6-9a65-ca3324ee2021",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 401\"] = responseCode.code === 401;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Pub - NoAuth -> 403",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "ac55158b-dfb9-4756-986d-6dca3a1a26ac",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 403\"] = responseCode.code === 403;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{WrongAuth}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Pub - Auth - BadId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "180a2148-7a8e-425a-86a6-3ca99cbcee07",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue={{BadDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{BadDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Pub - Auth - NullId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "bdfbc34e-fd40-4e3d-83b4-6c951cee5d1c",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/descriptors?annotationValue=",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "Priv",
+					"description": "",
+					"item": [
+						{
+							"name": "Update Study Design Descriptor - Priv - Auth - GoodId -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "f6ce4e0c-a1b6-4e49-a45b-67445a19d63b",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has studyDesignDescriptor\"] = responseBody.has('\"studyDesignDescriptor\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.studyDesignDescriptor) {",
+											"    var item = jsonData.studyDesignDescriptor",
+											"    tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+											"    tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+											"    tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+											"    tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+											"    tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+											"    tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+											"    tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"    tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"}",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Priv - Auth - NoData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "550fd077-eda1-4d72-ac68-d6736da093c8",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "None"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Priv - Auth - MissingRequiredData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "597f1d08-9a92-455c-ae5c-1a010b3cba36",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Priv - NoToken -> 401",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "3ef3ac03-b6de-40cf-b122-3bb1d00faaa0",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 401\"] = responseCode.code === 401;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Priv - NoAuth -> 403",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "591d5532-6fbc-40c4-ae50-78c6cff0f776",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 403\"] = responseCode.code === 403;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{WrongAuth}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{ValidDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{ValidDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Priv - Auth - BadId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "af58c05d-3db1-4507-8234-aa0130e59984",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue={{BadDescriptorId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "{{BadDescriptorId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Design Descriptor - Priv - Auth - NullId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "dca5198f-cd45-466f-ab56-75039603019a",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body does NOT contain studyDesignDescriptor\"] = !(responseBody.has('\"studyDesignDescriptor\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"studyDesignDescriptor\":{  \n      \"annotationValue\":\"Test-time-series-design\",\n      \"termSource\":{  \n         \"name\":\"EFO\",\n         \"file\":\"http://data.bioontology.org/ontologies/EFO\",\n         \"version\":\"132\",\n         \"description\":\"Experimental Factor Ontology\",\n         \"comments\":[]\n      },\n      \"termAccession\":\"http://www.ebi.ac.uk/efo/EFO_0001779\",\n      \"comments\":[\n\t{\n      \t  \"name\": \"Updated\",\n      \t  \"value\": \"Updated with MtblsWs-Py\"\n      \t}\n      ]\n   }\n}"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/descriptors?annotationValue=",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"descriptors"
+									],
+									"query": [
+										{
+											"key": "annotationValue",
+											"value": "",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				}
+			]
 		}
 	],
 	"event": [
