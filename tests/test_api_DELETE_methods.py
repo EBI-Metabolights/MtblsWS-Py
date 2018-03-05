@@ -45,8 +45,8 @@ class WsTests(unittest.TestCase):
 
 class DeleteStudyContactTests(WsTests):
 
-    valid_id = instance.config.VALID_CONTACT_ID
-    bad_id = instance.config.BAD_CONTACT_ID
+    valid_id = instance.config.VALID_ID_CONTACT
+    bad_id = instance.config.BAD_ID_CONTACT
     valid_data = instance.config.TEST_DATA_VALID_CONTACT
     missing_data = instance.config.TEST_DATA_MISSING_CONTACT
     no_data = b''
@@ -297,8 +297,8 @@ class DeleteStudyContactTests(WsTests):
 
 class DeleteStudyProtocolTests(WsTests):
 
-    valid_id = instance.config.VALID_PROTOCOL_ID
-    bad_id = instance.config.BAD_PROTOCOL_ID
+    valid_id = instance.config.VALID_ID_PROTOCOL
+    bad_id = instance.config.BAD_ID_PROTOCOL
     valid_data = instance.config.TEST_DATA_VALID_PROTOCOL
     missing_data = instance.config.TEST_DATA_MISSING_PROTOCOL
     no_data = b''
@@ -543,8 +543,8 @@ class DeleteStudyProtocolTests(WsTests):
 
 class DeleteStudyFactorTests(WsTests):
 
-    valid_id = instance.config.VALID_FACTOR_ID
-    bad_id = instance.config.BAD_FACTOR_ID
+    valid_id = instance.config.VALID_ID_FACTOR
+    bad_id = instance.config.BAD_ID_FACTOR
     valid_data = instance.config.TEST_DATA_VALID_FACTOR
     missing_data = instance.config.TEST_DATA_MISSING_FACTOR
     no_data = b''
@@ -781,3 +781,250 @@ class DeleteStudyFactorTests(WsTests):
             self.check_body_common(err.read().decode('utf-8'))
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
+
+
+class DeleteStudyyDesignDescriptorTests(WsTests):
+
+    valid_id = instance.config.VALID_ID_DESCRIPTOR
+    bad_id = instance.config.BAD_ID_DESCRIPTOR
+    valid_data = instance.config.TEST_DATA_VALID_DESCRIPTOR
+    missing_data = instance.config.TEST_DATA_MISSING_DESCRIPTOR
+    no_data = b''
+
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    def check_DesignDescriptor_class(self, obj):
+        self.assertIsNotNone(obj['annotationValue'])
+        self.assertIsNotNone(obj['termSource'])
+        self.assertIsNotNone(obj['termAccession'])
+        self.assertIsNotNone(obj['comments'])
+
+    def pre_create_descriptor(self, url):
+        request = urllib.request.Request(url + '/descriptors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    def pre_delete_descriptor(self, url):
+        request = urllib.request.Request(url + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise Exception(err)
+
+    # Delete Study Descriptor - Pub - Auth -> 200
+    def test_delete_descriptor_pub_auth(self):
+        # first, create the descriptor to ensure it will exists
+        self.pre_create_descriptor(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to delete the descriptor
+        request = urllib.request.Request(url_pub_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('studyDesignDescriptor', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['studyDesignDescriptor'])
+            self.check_DesignDescriptor_class(j_resp['studyDesignDescriptor'])
+
+    # Delete Study Descriptor - Pub - NoToken -> 401
+    def test_delete_descriptor_pub_auth_noToken(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Delete Study Descriptor - Pub - NoAuth -> 403
+    def test_delete_descriptor_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Delete Study Descriptor - Pub - Auth - NoParams -> 404
+    def test_delete_descriptor_pub_auth_noParams(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors',
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Descriptor - Pub - Auth - NoData -> 404
+    def test_delete_descriptor_pub_auth_noData(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors'
+                                         + '?annotationValue=',
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Descriptor - Pub - Auth - unknownDescriptor -> 404
+    def test_delete_descriptor_pub_auth_unknownDescriptor(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors'
+                                         + '?annotationValue=' + self.bad_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Descriptor - Priv - Auth - NewData -> 200
+    def test_delete_descriptor_priv_auth_newData(self):
+        # first, create the descriptor to ensure it will exists
+        self.pre_create_descriptor(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to delete the descriptor
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('studyDesignDescriptor', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['studyDesignDescriptor'])
+            self.check_DesignDescriptor_class(j_resp['studyDesignDescriptor'])
+
+    # Delete Study Descriptor - Priv - NoToken -> 401
+    def test_delete_descriptor_priv_auth_noToken(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Delete Study Descriptor - Priv - NoAuth -> 403
+    def test_delete_descriptor_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Delete Study Descriptor - Priv - Auth - NoParams -> 404
+    def test_delete_descriptor_priv_auth_noParams(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors',
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Descriptor - Priv - Auth - NoData -> 404
+    def test_delete_descriptor_piv_auth_noData(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=',
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Delete Study Descriptor - Priv - Auth - unknownDescriptor -> 404
+    def test_delete_descriptor_priv_auth_unknownFactor(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=' + self.bad_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+
+if __name__ == '__main__':
+    unittest.main()

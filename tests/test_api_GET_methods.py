@@ -412,8 +412,8 @@ class GetStudyDescriptionTests(WsTests):
 
 class GetStudyContactsTests(WsTests):
 
-    valid_id = instance.config.VALID_CONTACT_ID
-    bad_id = instance.config.BAD_CONTACT_ID
+    valid_id = instance.config.VALID_ID_CONTACT
+    bad_id = instance.config.BAD_ID_CONTACT
     valid_data = instance.config.TEST_DATA_VALID_CONTACT
     missing_data = instance.config.TEST_DATA_MISSING_CONTACT
     no_data = b''
@@ -549,8 +549,8 @@ class GetStudyContactsTests(WsTests):
 
 class GetStudyContactTests(WsTests):
 
-    valid_id = instance.config.VALID_CONTACT_ID
-    bad_id = instance.config.BAD_CONTACT_ID
+    valid_id = instance.config.VALID_ID_CONTACT
+    bad_id = instance.config.BAD_ID_CONTACT
     valid_data = instance.config.TEST_DATA_VALID_CONTACT
     missing_data = instance.config.TEST_DATA_MISSING_CONTACT
     no_data = b''
@@ -726,8 +726,8 @@ class GetStudyContactTests(WsTests):
 
 class GetStudyProtocolsTests(WsTests):
 
-    valid_id = instance.config.VALID_PROTOCOL_ID
-    bad_id = instance.config.BAD_PROTOCOL_ID
+    valid_id = instance.config.VALID_ID_PROTOCOL
+    bad_id = instance.config.BAD_ID_PROTOCOL
     valid_data = instance.config.TEST_DATA_VALID_PROTOCOL
     missing_data = instance.config.TEST_DATA_MISSING_PROTOCOL
     no_data = b''
@@ -857,8 +857,8 @@ class GetStudyProtocolsTests(WsTests):
 
 class GetStudyProtocolTests(WsTests):
 
-    valid_id = instance.config.VALID_PROTOCOL_ID
-    bad_id = instance.config.BAD_PROTOCOL_ID
+    valid_id = instance.config.VALID_ID_PROTOCOL
+    bad_id = instance.config.BAD_ID_PROTOCOL
     valid_data = instance.config.TEST_DATA_VALID_PROTOCOL
     missing_data = instance.config.TEST_DATA_MISSING_PROTOCOL
     no_data = b''
@@ -996,7 +996,7 @@ class GetStudyProtocolTests(WsTests):
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
 
-    # Get Study People - Priv -> 403
+    # Get Study Protocol - Priv -> 403
     def test_get_protocol_priv(self):
         request = urllib.request.Request(url_priv_id + '/protocols'
                                          + '?name=' + self.valid_id,
@@ -1026,10 +1026,137 @@ class GetStudyProtocolTests(WsTests):
             self.assertEqual('FORBIDDEN', err.reason)
 
 
+class GetStudyFactorsTests(WsTests):
+
+    valid_id = instance.config.VALID_ID_FACTOR
+    bad_id = instance.config.BAD_ID_FACTOR
+    valid_data = instance.config.TEST_DATA_VALID_FACTOR
+    missing_data = instance.config.TEST_DATA_MISSING_FACTOR
+    no_data = b''
+
+    def check_Factor_class(self, obj):
+        self.assertIsNotNone(obj['factorName'])
+        self.assertIsNotNone(obj['factorType'])
+        self.assertIsNotNone(obj['comments'])
+
+    # Get Study Factors - Pub -> 200
+    def test_get_factors(self):
+        request = urllib.request.Request(url_pub_id + '/factors', method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('factors', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['factors'])
+            for protocol in j_resp['factors']:
+                self.check_Factor_class(protocol)
+
+    # Get Study Factors - Pub - Auth -> 200
+    def test_get_factors_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/factors', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('factors', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['factors'])
+            for protocol in j_resp['factors']:
+                self.check_Factor_class(protocol)
+
+    # Get Study Factors - Pub - NoAuth -> 200
+    def test_get_factors_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/factors', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('factors', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['factors'])
+            for protocol in j_resp['factors']:
+                self.check_Factor_class(protocol)
+
+    # Get Study Factors - Priv -> 403
+    def test_get_factors_priv(self):
+        request = urllib.request.Request(url_priv_id + '/factors', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Get Study Factors - Priv - Auth -> 200
+    def test_get_factors_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/factors', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('factors', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['factors'])
+            for protocol in j_resp['factors']:
+                self.check_Factor_class(protocol)
+
+    # Get Study Factors - Priv - NoAuth -> 403
+    def test_get_factors_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/factors', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # GET Study Factors - NullId -> 404
+    def test_get_factors_nullId(self):
+        request = urllib.request.Request(url_null_id + '/factors', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # GET Study Factors - BadId -> 404
+    def test_get_factors_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/factors', method='GET')
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+
 class GetStudyFactorTests(WsTests):
 
-    valid_id = instance.config.VALID_FACTOR_ID
-    bad_id = instance.config.BAD_FACTOR_ID
+    valid_id = instance.config.VALID_ID_FACTOR
+    bad_id = instance.config.BAD_ID_FACTOR
     valid_data = instance.config.TEST_DATA_VALID_FACTOR
     missing_data = instance.config.TEST_DATA_MISSING_FACTOR
     no_data = b''
@@ -1163,7 +1290,7 @@ class GetStudyFactorTests(WsTests):
             self.assertEqual('NOT FOUND', err.msg)
             self.assertEqual('NOT FOUND', err.reason)
 
-    # Get Study People - Priv -> 403
+    # Get Study Factor - Priv -> 403
     def test_get_factor_priv(self):
         request = urllib.request.Request(url_priv_id + '/factors'
                                          + '?name=' + self.valid_id,
@@ -1193,655 +1320,305 @@ class GetStudyFactorTests(WsTests):
             self.assertEqual('FORBIDDEN', err.reason)
 
 
+class GetStudyDesignDescriptorsTests(WsTests):
+
+    valid_id = instance.config.VALID_ID_DESCRIPTOR
+    bad_id = instance.config.BAD_ID_DESCRIPTOR
+    valid_data = instance.config.TEST_DATA_VALID_DESCRIPTOR
+    missing_data = instance.config.TEST_DATA_MISSING_DESCRIPTOR
+    no_data = b''
+
+    def check_DesignDescriptor_class(self, obj):
+        self.assertIsNotNone(obj['annotationValue'])
+        # self.assertIsNotNone(obj['termSource'])
+        if obj['termSource']:
+            self.assertIsNotNone(obj['termSource']['name'])
+            self.assertIsNotNone(obj['termSource']['description'])
+            self.assertIsNotNone(obj['termSource']['file'])
+            self.assertIsNotNone(obj['termSource']['version'])
+        self.assertIsNotNone(obj['termAccession'])
+        self.assertIsNotNone(obj['comments'])
+
+    # Get Study Design Descriptors - Pub -> 200
+    def test_get_descriptors(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors', method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('studyDesignDescriptors', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['studyDesignDescriptors'])
+            for protocol in j_resp['studyDesignDescriptors']:
+                self.check_DesignDescriptor_class(protocol)
+
+    # Get Study Design Descriptors - Pub - Auth -> 200
+    def test_get_descriptors_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('studyDesignDescriptors', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['studyDesignDescriptors'])
+            for protocol in j_resp['studyDesignDescriptors']:
+                self.check_DesignDescriptor_class(protocol)
+
+    # Get Study Design Descriptors - Pub - NoAuth -> 200
+    def test_get_descriptors_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/descriptors', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('studyDesignDescriptors', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['studyDesignDescriptors'])
+            for protocol in j_resp['studyDesignDescriptors']:
+                self.check_DesignDescriptor_class(protocol)
+
+    # Get Study Design Descriptors - Priv -> 403
+    def test_get_descriptors_priv(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Get Study Design Descriptors - Priv - Auth -> 200
+    def test_get_descriptors_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('studyDesignDescriptors', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['studyDesignDescriptors'])
+            for protocol in j_resp['studyDesignDescriptors']:
+                self.check_DesignDescriptor_class(protocol)
+
+    # Get Study Design Descriptors - Priv - NoAuth -> 403
+    def test_get_descriptors_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # GET Study Design Descriptors - NullId -> 404
+    def test_get_descriptors_nullId(self):
+        request = urllib.request.Request(url_null_id + '/descriptors', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # GET Study Design Descriptors - BadId -> 404
+    def test_get_descriptors_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/descriptors', method='GET')
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
 
 
-# class GetStudyFactorsTests(WsTests):
-#
-#     def check_Factors_class(self, obj):
-#         self.assertIsNotNone(obj['factors'])
-#         for factor in obj['factors']:
-#             self.assertIsNotNone(factor['factorName'])
-#             self.assertIsNotNone(factor['factorType'])
-#             self.assertIsNotNone(factor['comments'])
-#
-#     # Get Study Factors - Pub -> 200
-#     def test_get_factors(self):
-#         request = urllib.request.Request(url_pub_id + '/factors', method='GET')
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('factors', body)
-#             self.check_Factors_class(j_resp)
-#
-#     # Get Study Factors - Pub - Auth -> 200
-#     def test_get_factors_pub_auth(self):
-#         request = urllib.request.Request(url_pub_id + '/factors', method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('factors', body)
-#             self.check_Factors_class(j_resp)
-#
-#     # Get Study Factors - Pub - NoAuth -> 200
-#     def test_get_factors_pub_noAuth(self):
-#         request = urllib.request.Request(url_pub_id + '/factors', method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('factors', body)
-#             self.check_Factors_class(j_resp)
-#
-#     # Get Study Factors - Priv - Auth -> 200
-#     def test_get_factors_priv_auth(self):
-#         request = urllib.request.Request(url_priv_id + '/factors', method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('factors', body)
-#             self.check_Factors_class(j_resp)
-#
-#     # Get Study Factors - Priv -> 401
-#     def test_get_factors_priv(self):
-#         request = urllib.request.Request(url_priv_id + '/factors', method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 401)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('UNAUTHORIZED', err.msg)
-#             self.assertEqual('UNAUTHORIZED', err.reason)
-#
-#     # Get Study Factors - Priv - NoAuth -> 403
-#     def test_get_factors_priv_noAuth(self):
-#         request = urllib.request.Request(url_priv_id + '/factors', method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 403)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('FORBIDDEN', err.msg)
-#             self.assertEqual('FORBIDDEN', err.reason)
-#
-#     # GET Study Factors - NullId -> 404
-#     def test_get_factors_nullId(self):
-#         request = urllib.request.Request(url_null_id + '/factors', method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
-#
-#     # GET Study Factors - BadId -> 404
-#     def test_get_factors_badId(self):
-#         request = urllib.request.Request(url_wrong_id + '/factors', method='GET')
-#         request.add_header('user_token', auth_id)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
-#
-#
-# class GetStudyDescriptorsTests(WsTests):
-#
-#     def check_Descriptors_class(self, obj):
-#         self.assertIsNotNone(obj['descriptors'])
-#         for descriptor in obj['descriptors']:
-#             self.assertIsNotNone(descriptor['annotationValue'])
-#             self.assertIsNotNone(descriptor['termAccession'])
-#             self.assertIsNotNone(descriptor['termSource'])
-#             self.assertIsNotNone(descriptor['comments'])
-#
-#     # Get Study Descriptors - Pub -> 200
-#     def test_get_descriptors(self):
-#         request = urllib.request.Request(url_pub_id + '/descriptors', method='GET')
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('descriptors', body)
-#             self.check_Descriptors_class(j_resp)
-#
-#     # Get Study Descriptors - Pub - Auth -> 200
-#     def test_get_descriptors_pub_auth(self):
-#         request = urllib.request.Request(url_pub_id + '/descriptors', method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('descriptors', body)
-#             self.check_Descriptors_class(j_resp)
-#
-#     # Get Study Descriptors - Pub - NoAuth -> 200
-#     def test_get_descriptors_pub_noAuth(self):
-#         request = urllib.request.Request(url_pub_id + '/descriptors', method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('descriptors', body)
-#             self.check_Descriptors_class(j_resp)
-#
-#     # Get Study Descriptors - Priv - Auth -> 200
-#     def test_get_descriptors_priv_auth(self):
-#         request = urllib.request.Request(url_priv_id + '/descriptors', method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('descriptors', body)
-#             self.check_Descriptors_class(j_resp)
-#
-#     # Get Study Descriptors - Priv -> 401
-#     def test_get_descriptors_priv(self):
-#         request = urllib.request.Request(url_priv_id + '/descriptors', method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 401)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('UNAUTHORIZED', err.msg)
-#             self.assertEqual('UNAUTHORIZED', err.reason)
-#
-#     # Get Study Descriptors - Priv - NoAuth -> 403
-#     def test_get_descriptors_priv_noAuth(self):
-#         request = urllib.request.Request(url_priv_id + '/descriptors', method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 403)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('FORBIDDEN', err.msg)
-#             self.assertEqual('FORBIDDEN', err.reason)
-#
-#     # GET Study Descriptors - NullId -> 404
-#     def test_get_descriptors_nullId(self):
-#         request = urllib.request.Request(url_null_id + '/descriptors', method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
-#
-#     # GET Study Descriptors - BadId -> 404
-#     def test_get_descriptors_badId(self):
-#         request = urllib.request.Request(url_wrong_id + '/descriptors', method='GET')
-#         request.add_header('user_token', auth_id)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
-#
-#
-# class GetStudyPublicationsTests(WsTests):
-#     # tests for GET Method for Study Publications
-#     #
-#     # pubmed_id (str, NoneType):
-#     # doi (str, NoneType):
-#     # author_list (str, NoneType):
-#     # title (str, NoneType):
-#     # status (str, OntologyAnnotation, NoneType):
-#     # comments (list, Comment):
-#
-#     def check_Publications_class(self, obj):
-#         self.assertIsNotNone(obj['publications'])
-#         for publication in obj['publications']:
-#             self.assertIsNotNone(publication['pubMedID'])
-#             self.assertIsNotNone(publication['doi'])
-#             self.assertIsNotNone(publication['authorList'])
-#             self.assertIsNotNone(publication['title'])
-#             self.assertIsNotNone(publication['status'])
-#             self.assertIsNotNone(publication['comments'])
-#
-#     # Get Study Publications - Pub -> 200
-#     def test_get_publications(self):
-#         request = urllib.request.Request(url_pub_id + '/publications', method='GET')
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('publications', body)
-#             self.check_Publications_class(j_resp)
-#
-#     # Get Study Publications - Pub - Auth -> 200
-#     def test_get_publications_pub_auth(self):
-#         request = urllib.request.Request(url_pub_id + '/publications', method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('publications', body)
-#             self.check_Publications_class(j_resp)
-#
-#     # Get Study Publications - Pub - NoAuth -> 200
-#     def test_get_publications_pub_noAuth(self):
-#         request = urllib.request.Request(url_pub_id + '/publications', method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('publications', body)
-#             self.check_Publications_class(j_resp)
-#
-#     # Get Study Publications - Priv - Auth -> 200
-#     def test_get_publications_priv_auth(self):
-#         request = urllib.request.Request(url_priv_id + '/publications', method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('publications', body)
-#             self.check_Publications_class(j_resp)
-#
-#     # Get Study Publications - Priv -> 401
-#     def test_get_publications_priv(self):
-#         request = urllib.request.Request(url_priv_id + '/publications', method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 401)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('UNAUTHORIZED', err.msg)
-#             self.assertEqual('UNAUTHORIZED', err.reason)
-#
-#     # Get Study Publications - Priv - NoAuth -> 403
-#     def test_get_publications_priv_noAuth(self):
-#         request = urllib.request.Request(url_priv_id + '/publications', method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 403)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('FORBIDDEN', err.msg)
-#             self.assertEqual('FORBIDDEN', err.reason)
-#
-#     # GET Study Publications - NullId -> 404
-#     def test_get_publications_nullId(self):
-#         request = urllib.request.Request(url_null_id + '/publications', method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
-#
-#     # GET Study Publications - BadId -> 404
-#     def test_get_publications_badId(self):
-#         request = urllib.request.Request(url_wrong_id + '/publications', method='GET')
-#         request.add_header('user_token', auth_id)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
-#
-#
-# class GetStudySourcesTests(WsTests):
-#     # tests for GET Method for list of sources names associated with the Study
-#     #
-#     # name (str):
-#
-#     def check_Sources_class(self, obj):
-#         self.assertIsNotNone(obj['sources'])
-#         for sample in obj['sources']:
-#             self.assertIsNotNone(sample['name'])
-#
-#     # Get Study list of Sources
-#     def test_get_sources(self):
-#         request = urllib.request.Request(url_pub_id + '/sources', method='GET')
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('sources', body)
-#             self.check_Sources_class(j_resp)
-#
-#
-# class GetStudySourceTests(WsTests):
-#     # tests for GET Method for Study Source, by name
-#     #
-#     # name (str):
-#     # characteristics (list, OntologyAnnotation):
-#     # comments (list, Comment):
-#
-#     def check_Source_class(self, obj):
-#         self.assertIsNotNone(obj['source'])
-#         source = obj['source']
-#         self.assertIsNotNone(source['name'])
-#         self.assertIsNotNone(source['characteristics'])
-#         self.assertIsNotNone(source['comments'])
-#
-#     # Get Study Source - Pub -> 200
-#     def test_get_source(self):
-#         request = urllib.request.Request(url_pub_id + '/sources/' + public_source_id, method='GET')
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('source', body)
-#             self.check_Source_class(j_resp)
-#
-#     # Get Study Source - Pub - Auth -> 200
-#     def test_get_source_pub_auth(self):
-#         request = urllib.request.Request(url_pub_id + '/sources/' + public_source_id, method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('source', body)
-#             self.check_Source_class(j_resp)
-#
-#     # Get Study Source - Pub - NoAuth -> 200
-#     def test_get_source_pub_noAuth(self):
-#         request = urllib.request.Request(url_pub_id + '/sources/' + public_source_id, method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('source', body)
-#             self.check_Source_class(j_resp)
-#
-#     # Get Study Source - Priv - Auth -> 200
-#     def test_get_source_priv_auth(self):
-#         request = urllib.request.Request(url_priv_id + '/sources/' + private_source_id, method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('source', body)
-#             self.check_Source_class(j_resp)
-#
-#     # Get Study Source - Priv -> 401
-#     def test_get_source_priv(self):
-#         request = urllib.request.Request(url_priv_id + '/sources/' + private_source_id, method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 401)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('UNAUTHORIZED', err.msg)
-#             self.assertEqual('UNAUTHORIZED', err.reason)
-#
-#     # Get Study Source - Priv - NoAuth -> 403
-#     def test_get_source_priv_noAuth(self):
-#         request = urllib.request.Request(url_priv_id + '/sources/' + private_source_id, method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 403)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('FORBIDDEN', err.msg)
-#             self.assertEqual('FORBIDDEN', err.reason)
-#
-#     # GET Study Source - NullId -> 404
-#     def test_get_source_nullId(self):
-#         request = urllib.request.Request(url_null_id + '/sources/' + public_source_id, method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
-#
-#     # GET Study Source - BadId -> 404
-#     def test_get_source_badId(self):
-#         request = urllib.request.Request(url_wrong_id + '/sources/' + public_source_id, method='GET')
-#         request.add_header('user_token', auth_id)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
-#
-#
-# class GetStudySamplesTests(WsTests):
-#     # tests for GET Method for list of samples names associated with the Study
-#     #
-#     # name (str):
-#
-#     def check_Samples_class(self, obj):
-#         self.assertIsNotNone(obj['samples'])
-#         for sample in obj['samples']:
-#             self.assertIsNotNone(sample['name'])
-#
-#     # Get Study list of Samples
-#     def test_get_samples(self):
-#         request = urllib.request.Request(url_pub_id + '/samples', method='GET')
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('samples', body)
-#             self.check_Samples_class(j_resp)
-#
-#
-# class GetStudySampleTests(WsTests):
-#     # tests for GET Method for Study Sample, by name
-#     #
-#     # name (str):
-#     # characteristics (list, OntologyAnnotation):
-#     # derives_from (Source):
-#     # factorValues (FactorValues):
-#     # comments (list, Comment):
-#
-#     def check_Sample_class(self, obj):
-#         self.assertIsNotNone(obj['sample'])
-#         sample = obj['sample']
-#         self.assertIsNotNone(sample['name'])
-#         self.assertIsNotNone(sample['derives_from'])
-#         self.assertIsNotNone(sample['characteristics'])
-#         self.assertIsNotNone(sample['factorValues'])
-#         self.assertIsNotNone(sample['comments'])
-#
-#     # Get Study Sample - Pub -> 200
-#     def test_get_sample(self):
-#         request = urllib.request.Request(url_pub_id + '/samples/' + public_sample_id, method='GET')
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('sample', body)
-#             self.check_Sample_class(j_resp)
-#
-#     # Get Study Sample - Pub - Auth -> 200
-#     def test_get_sample_pub_auth(self):
-#         request = urllib.request.Request(url_pub_id + '/samples/' + public_sample_id, method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('sample', body)
-#             self.check_Sample_class(j_resp)
-#
-#     # Get Study Sample - Pub - NoAuth -> 200
-#     def test_get_sample_pub_noAuth(self):
-#         request = urllib.request.Request(url_pub_id + '/samples/' + public_sample_id, method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('sample', body)
-#             self.check_Sample_class(j_resp)
-#
-#     # Get Study Sample - Priv - Auth -> 200
-#     def test_get_sample_priv_auth(self):
-#         request = urllib.request.Request(url_priv_id + '/samples/' + private_sample_id, method='GET')
-#         request.add_header('user_token', auth_id)
-#         with urllib.request.urlopen(request) as response:
-#             self.assertEqual(response.code, 200)
-#             header = response.info()
-#             self.check_header_common(header)
-#             body = response.read().decode('utf-8')
-#             self.check_body_common(body)
-#             j_resp = json.loads(body)
-#             self.assertIn('sample', body)
-#             self.check_Sample_class(j_resp)
-#
-#     # Get Study Samples - Priv -> 401
-#     def test_get_sample_priv(self):
-#         request = urllib.request.Request(url_priv_id + '/samples/' + private_sample_id, method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 401)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('UNAUTHORIZED', err.msg)
-#             self.assertEqual('UNAUTHORIZED', err.reason)
-#
-#     # Get Study Sample - Priv - NoAuth -> 403
-#     def test_get_sample_priv_noAuth(self):
-#         request = urllib.request.Request(url_priv_id + '/samples/' + private_sample_id, method='GET')
-#         request.add_header('user_token', wrong_auth_token)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 403)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('FORBIDDEN', err.msg)
-#             self.assertEqual('FORBIDDEN', err.reason)
-#
-#     # GET Study Sample - NullId -> 404
-#     def test_get_sample_nullId(self):
-#         request = urllib.request.Request(url_null_id + '/samples/' + public_sample_id, method='GET')
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
-#
-#     # GET Study Sample - BadId -> 404
-#     def test_get_sample_badId(self):
-#         request = urllib.request.Request(url_wrong_id + '/samples/' + public_sample_id, method='GET')
-#         request.add_header('user_token', auth_id)
-#         try:
-#             urllib.request.urlopen(request)
-#         except urllib.error.HTTPError as err:
-#             self.assertEqual(err.code, 404)
-#             self.check_header_common(err.headers)
-#             self.check_body_common(err.read().decode('utf-8'))
-#             self.assertEqual('NOT FOUND', err.msg)
-#             self.assertEqual('NOT FOUND', err.reason)
+class GetStudyDesignDescriptorTests(WsTests):
+
+    valid_id = instance.config.VALID_ID_DESCRIPTOR
+    bad_id = instance.config.BAD_ID_DESCRIPTOR
+    valid_data = instance.config.TEST_DATA_VALID_DESCRIPTOR
+    missing_data = instance.config.TEST_DATA_MISSING_DESCRIPTOR
+    no_data = b''
+
+    def check_DesignDescriptor_class(self, obj):
+        self.assertIsNotNone(obj['annotationValue'])
+        self.assertIsNotNone(obj['termSource'])
+        self.assertIsNotNone(obj['termAccession'])
+        self.assertIsNotNone(obj['comments'])
+
+    def pre_create_descriptor(self, url):
+        request = urllib.request.Request(url + '/descriptors',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    def pre_delete_descriptor(self, url):
+        request = urllib.request.Request(url + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise Exception(err)
+
+    # Get Study Design Descriptor - Pub - FactorId -> 200
+    def test_get_descriptors_pub(self):
+        # first, create the descriptor to ensure it will exists
+        self.pre_create_descriptor(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to get the descriptor
+        request = urllib.request.Request(url_pub_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('studyDesignDescriptor', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['studyDesignDescriptor'])
+            self.check_DesignDescriptor_class(j_resp['studyDesignDescriptor'])
+
+    # Get Study Design Descriptor - Pub - BadFactorId -> 404
+    def test_get_descriptor_pub_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Get Study Design Descriptor - Pub - NullId -> 404
+    def test_get_descriptor_pub_nullId(self):
+        request = urllib.request.Request(url_null_id + '/descriptors'
+                                         + '?annotationValue=',
+                                         method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Get Study Design Descriptor - Priv - Auth - FactorId -> 200
+    def test_get_descriptor_priv_auth(self):
+        # first, create the DesignDescriptor to ensure it will exists
+        self.pre_create_descriptor(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to get the DesignDescriptor
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('studyDesignDescriptor', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['studyDesignDescriptor'])
+            self.check_DesignDescriptor_class(j_resp['studyDesignDescriptor'])
+
+    # Get Study Design Descriptor - Priv - Auth - BadFactorId -> 404
+    def test_get_descriptor_priv_Auth_badId(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='GET')
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Get Study Design Descriptor - Priv - Auth - NullId -> 404
+    def test_get_descriptor_priv_Auth_nullId(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=',
+                                         method='GET')
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Get Study Design Descriptor - Priv -> 403
+    def test_get_descriptor_priv(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Get Study Design Descriptor - Priv - NoAuth -> 403
+    def test_get_descriptor_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/descriptors'
+                                         + '?annotationValue=' + self.valid_id,
+                                         method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
 
 
 if __name__ == '__main__':
