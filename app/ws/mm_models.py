@@ -188,6 +188,36 @@ class StudyFactorSchema(Schema):
         }
 
 
+class StudyDesignDescriptorSchema(Schema):
+    # marshmallow schema for ISA-API class OntologyAnnotation
+    #
+    # term                          (str):
+    # term_source                   (OntologySource):
+    # term_accession                (str):
+    # comments                      (list, Comment):
+    class Meta:
+        # strict = True
+        ordered = True
+
+    term = fields.String(load_from='annotationValue', dump_to='annotationValue')
+    term_source = fields.Nested(OntologySourceSchema, load_from='termSource', dump_to='termSource',
+                                required=False, allow_none=True)
+    term_accession = fields.String(load_from='termAccession', dump_to='termAccession')
+    comments = fields.Nested(CommentSchema, many=True)
+
+    @post_load
+    def make_obj(self, data):
+        return OntologyAnnotation(**data)
+
+    # add an envelope to responses
+    @post_dump(pass_many=True)
+    def set_envelop(self, data, many):
+        key = 'studyDesignDescriptors' if many else 'studyDesignDescriptor'
+        return {
+            key: data
+        }
+
+
 class PublicationSchema(Schema):
     # marshmallow schema for ISA-API class Publication
     #
