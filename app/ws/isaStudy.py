@@ -1662,7 +1662,7 @@ class StudyFactors(Resource):
 
     @swagger.operation(
         summary='Delete Study Factor',
-        notes="""Delete Study protocol.
+        notes="""Delete Study Factor.
               <br>
               Use factor name as a query parameter to filter out.""",
         parameters=[
@@ -2127,7 +2127,250 @@ class StudyDescriptors(Resource):
             logger.info('Got %s', descriptor.term)
             return StudyDesignDescriptorSchema().dump(descriptor)
 
+    @swagger.operation(
+        summary='Delete Study Design Descriptor',
+        notes="""Delete Study Design Descriptor.
+              <br>
+              Use descriptor annotation value as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "annotationValue",
+                "description": "Design Descriptor annotation value",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def delete(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('annotationValue', help="Design Descriptor annotation value", location="args")
+        args = parser.parse_args()
+        descriptor_value = args['annotationValue']
+        if descriptor_value is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
 
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # delete protocol
+        logger.info('Deleting Study Design Descriptor %s for %s, using API-Key %s', descriptor_value, study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        found = False
+        for index, descriptor in enumerate(isa_study.design_descriptors):
+            if descriptor.term == descriptor_value:
+                found = True
+                # delete Study Design Descriptor
+                del isa_study.design_descriptors[index]
+                break
+        if not found:
+            abort(404)
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        logger.info('Deleted %s', descriptor.term)
+
+        return StudyDesignDescriptorSchema().dump(descriptor)
+
+    @swagger.operation(
+        summary='Update Study Design Descriptor',
+        notes="""Update Study Design Descriptor.
+              <br>
+              Use descriptor annotation value as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "annotationValue",
+                "description": "Design Descriptor annotation value",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "protocol",
+                "description": 'Design Descriptor in ISA-JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+                {
+                    "code": 200,
+                    "message": "OK."
+                },
+                {
+                    "code": 400,
+                    "message": "Bad Request. Server could not understand the request due to malformed syntax."
+                },
+                {
+                    "code": 401,
+                    "message": "Unauthorized. Access to the resource requires user authentication."
+                },
+                {
+                    "code": 403,
+                    "message": "Forbidden. Access to the study is not allowed for this user."
+                },
+                {
+                    "code": 404,
+                    "message": "Not found. The requested identifier is not valid or does not exist."
+                }
+            ]
+        )
+    def put(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('annotationValue', help="Design Descriptor annotation value")
+        args = parser.parse_args()
+        descriptor_term = args['annotationValue']
+        if descriptor_term is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # body content validation
+        updated_descriptor = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['studyDesignDescriptor']
+            # if partial=True missing fields will be ignored
+            result = StudyDesignDescriptorSchema().load(data, partial=False)
+            updated_descriptor = result.data
+        except (ValidationError, Exception) as err:
+            abort(400)
+
+        # update Study Design Descriptor details
+        logger.info('Updating Study Design Descriptor details for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        found = False
+        for index, descriptor in enumerate(isa_study.design_descriptors):
+            if descriptor.term == descriptor_term:
+                found = True
+                # update protocol details
+                isa_study.design_descriptors[index] = updated_descriptor
+                break
+        if not found:
+            abort(404)
+        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        logger.info('Updated %s', updated_descriptor.term)
+
+        return StudyDesignDescriptorSchema().dump(updated_descriptor)
 
 
 
