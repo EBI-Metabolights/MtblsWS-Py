@@ -6550,6 +6550,1194 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Get Study Publications",
+			"description": null,
+			"item": [
+				{
+					"name": "Get Study Publications - Pub -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "43afb411-5053-4c00-b12b-55ee11a71f11",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has publications\"] = responseBody.has('\"publications\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.publications.length > 0) {",
+									"    var item = jsonData.publications[0];",
+									"    tests[\"JSON response has key 'title'\"] = item.hasOwnProperty('title');",
+									"    tests[\"JSON response key 'title' not Null\"] = item.title;",
+									"    tests[\"JSON response has key 'authorList'\"] = item.hasOwnProperty('authorList');",
+									"    tests[\"JSON response key 'authorList' not Null\"] = item.authorList;",
+									"    tests[\"JSON response has key 'pubMedID'\"] = item.hasOwnProperty('pubMedID');",
+									"    tests[\"JSON response key 'pubMedID' not Null\"] = item.pubMedID;",
+									"    tests[\"JSON response has key 'doi'\"] = item.hasOwnProperty('doi');",
+									"    tests[\"JSON response key 'doi' not Null\"] = item.doi;",
+									"    if (item.status) {",
+									"        var item = item.status",
+									"        tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"        tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"        // tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"        tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"        // tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"        tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"        tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"publications"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publications - Pub - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "0656d02a-f115-4c28-9187-a4300870f574",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has publications\"] = responseBody.has('\"publications\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.publications.length > 0) {",
+									"    var item = jsonData.publications[0];",
+									"    tests[\"JSON response has key 'title'\"] = item.hasOwnProperty('title');",
+									"    tests[\"JSON response key 'title' not Null\"] = item.title;",
+									"    tests[\"JSON response has key 'authorList'\"] = item.hasOwnProperty('authorList');",
+									"    tests[\"JSON response key 'authorList' not Null\"] = item.authorList;",
+									"    tests[\"JSON response has key 'pubMedID'\"] = item.hasOwnProperty('pubMedID');",
+									"    tests[\"JSON response key 'pubMedID' not Null\"] = item.pubMedID;",
+									"    tests[\"JSON response has key 'doi'\"] = item.hasOwnProperty('doi');",
+									"    tests[\"JSON response key 'doi' not Null\"] = item.doi;",
+									"    if (item.status) {",
+									"        var item = item.status",
+									"        tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"        tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"        // tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"        tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"        // tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"        tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"        tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"publications"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publications - Pub - NoAuth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "6f027c76-bff7-41b4-8e57-497be79ddc7b",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has publications\"] = responseBody.has('\"publications\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.publications.length > 0) {",
+									"    var item = jsonData.publications[0];",
+									"    tests[\"JSON response has key 'title'\"] = item.hasOwnProperty('title');",
+									"    tests[\"JSON response key 'title' not Null\"] = item.title;",
+									"    tests[\"JSON response has key 'authorList'\"] = item.hasOwnProperty('authorList');",
+									"    tests[\"JSON response key 'authorList' not Null\"] = item.authorList;",
+									"    tests[\"JSON response has key 'pubMedID'\"] = item.hasOwnProperty('pubMedID');",
+									"    tests[\"JSON response key 'pubMedID' not Null\"] = item.pubMedID;",
+									"    tests[\"JSON response has key 'doi'\"] = item.hasOwnProperty('doi');",
+									"    tests[\"JSON response key 'doi' not Null\"] = item.doi;",
+									"    if (item.status) {",
+									"        var item = item.status",
+									"        tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"        tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"        // tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"        tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"        // tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"        tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"        tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"publications"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publications - Priv -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "eaccd563-853c-4b9d-8765-ce9b7eea3788",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"publications"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publications - Priv - Auth -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "664d669a-6072-45a2-b1b0-5d7ce2c24784",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has publications\"] = responseBody.has('\"publications\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.publications.length > 0) {",
+									"    var item = jsonData.publications[0];",
+									"    tests[\"JSON response has key 'title'\"] = item.hasOwnProperty('title');",
+									"    tests[\"JSON response key 'title' not Null\"] = item.title;",
+									"    tests[\"JSON response has key 'authorList'\"] = item.hasOwnProperty('authorList');",
+									"    tests[\"JSON response key 'authorList' not Null\"] = item.authorList;",
+									"    tests[\"JSON response has key 'pubMedID'\"] = item.hasOwnProperty('pubMedID');",
+									"    tests[\"JSON response key 'pubMedID' not Null\"] = item.pubMedID;",
+									"    tests[\"JSON response has key 'doi'\"] = item.hasOwnProperty('doi');",
+									"    tests[\"JSON response key 'doi' not Null\"] = item.doi;",
+									"    if (item.status) {",
+									"        var item = item.status",
+									"        tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"        tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"        // tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"        tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"        // tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"        tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"        tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"publications"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publications - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "512ec546-9fa3-47fb-bafd-7179eb3ba7c6",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"publications"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publications - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "37c523a0-5f35-402d-9da3-b10297ba9de6",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies//publications",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"",
+								"publications"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publications - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "47335c32-a8ce-421c-86af-11e7fc9e8465",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{BadStudyId}}/publications",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{BadStudyId}}",
+								"publications"
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Get Study Publication",
+			"description": null,
+			"item": [
+				{
+					"name": "Get Study Publication - Pub - GoodId -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a163de15-ebb4-4744-bbb9-e6851396df22",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has publication\"] = responseBody.has('\"publication\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.publication) {",
+									"    var item = jsonData.publication;",
+									"    tests[\"JSON response has key 'title'\"] = item.hasOwnProperty('title');",
+									"    tests[\"JSON response key 'title' not Null\"] = item.title;",
+									"    tests[\"JSON response has key 'authorList'\"] = item.hasOwnProperty('authorList');",
+									"    tests[\"JSON response key 'authorList' not Null\"] = item.authorList;",
+									"    tests[\"JSON response has key 'pubMedID'\"] = item.hasOwnProperty('pubMedID');",
+									"    tests[\"JSON response key 'pubMedID' not Null\"] = item.pubMedID;",
+									"    tests[\"JSON response has key 'doi'\"] = item.hasOwnProperty('doi');",
+									"    tests[\"JSON response key 'doi' not Null\"] = item.doi;",
+									"    if (item.status) {",
+									"        var item = item.status",
+									"        tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"        tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"        // tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"        tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"        // tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"        tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"        tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title={{ValidPublicationId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"publications"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "{{ValidPublicationId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publication - Pub - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "40ac829a-f82d-40a1-a767-4d38acedba4e",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{curator}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title={{BadPubicationId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"publications"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "{{BadPubicationId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publication - Pub - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e0ad3ed4-e8d6-4007-a154-7610085b3b21",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title=''",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PubStudyId}}",
+								"publications"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "''",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publication - Priv - Auth - GoodId -> 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fbcdd577-5951-43b5-8b14-abb7ea893860",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 200\"] = responseCode.code === 200;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Body has publication\"] = responseBody.has('\"publication\":');",
+									"var jsonData = JSON.parse(responseBody);",
+									"if (jsonData.publication) {",
+									"    var item = jsonData.publication;",
+									"    tests[\"JSON response has key 'title'\"] = item.hasOwnProperty('title');",
+									"    tests[\"JSON response key 'title' not Null\"] = item.title;",
+									"    tests[\"JSON response has key 'authorList'\"] = item.hasOwnProperty('authorList');",
+									"    tests[\"JSON response key 'authorList' not Null\"] = item.authorList;",
+									"    tests[\"JSON response has key 'pubMedID'\"] = item.hasOwnProperty('pubMedID');",
+									"    tests[\"JSON response key 'pubMedID' not Null\"] = item.pubMedID;",
+									"    tests[\"JSON response has key 'doi'\"] = item.hasOwnProperty('doi');",
+									"    tests[\"JSON response key 'doi' not Null\"] = item.doi;",
+									"    if (item.status) {",
+									"        var item = item.status",
+									"        tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+									"        tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+									"        tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+									"        // tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+									"        tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+									"        // tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+									"        tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+									"        tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+									"    }",
+									"}",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{ValidPublicationId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"publications"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "{{ValidPublicationId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publication - Priv - Auth - BadId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "24ad7f96-f3e5-4218-a70b-56742b4f431f",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{BadPubicationId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"publications"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "{{BadPubicationId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publication - Priv - Auth - NullId -> 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "5ea785e3-4d4f-4a81-9739-2337f890f61f",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 404\"] = responseCode.code === 404;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{userTokenOK}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title=''",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"publications"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "''",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publication - Priv -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "4af0ac33-8e70-4d86-9249-2f6c165f91d0",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{ValidPublicationId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"publications"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "{{ValidPublicationId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				},
+				{
+					"name": "Get Study Publication - Priv - NoAuth -> 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "adbd2a9a-299f-429e-a919-b594cef8a726",
+								"type": "text/javascript",
+								"exec": [
+									"tests[\"Status code is 403\"] = responseCode.code === 403;",
+									"",
+									"// Header",
+									"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+									"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+									"",
+									"// Body",
+									"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+									"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+									"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+									"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+									"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "None"
+							},
+							{
+								"key": "user_token",
+								"value": "{{WrongAuth}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Study title\"\n}"
+						},
+						"url": {
+							"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{ValidPublicationId}}",
+							"host": [
+								"{{ws-py-server}}{{ws-py-port}}"
+							],
+							"path": [
+								"mtbls",
+								"ws",
+								"studies",
+								"{{PrivStudyId}}",
+								"publications"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "{{ValidPublicationId}}",
+									"equals": true
+								}
+							]
+						},
+						"description": null
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "f3df7f22-8ee0-4535-b502-5a175c7c1894",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "851bf978-c1c5-4398-866c-78e3cc2c6ae7",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
 		}
 	],
 	"event": [

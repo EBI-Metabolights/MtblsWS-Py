@@ -5609,6 +5609,1036 @@
 					"_postman_isSubFolder": true
 				}
 			]
+		},
+		{
+			"name": "Update Study Publication",
+			"description": null,
+			"item": [
+				{
+					"name": "Pub",
+					"description": "",
+					"item": [
+						{
+							"name": "Update Study Publication - Pub - Auth - GoodId -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "e61fa728-bee5-4cb0-91b9-665076c1fc93",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has publication\"] = responseBody.has('\"publication\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.publication) {",
+											"    var item = jsonData.publication;",
+											"    tests[\"JSON response has key 'title'\"] = item.hasOwnProperty('title');",
+											"    tests[\"JSON response key 'title' not Null\"] = item.title;",
+											"    tests[\"JSON response has key 'authorList'\"] = item.hasOwnProperty('authorList');",
+											"    tests[\"JSON response key 'authorList' not Null\"] = item.authorList;",
+											"    tests[\"JSON response has key 'pubMedID'\"] = item.hasOwnProperty('pubMedID');",
+											"    tests[\"JSON response key 'pubMedID' not Null\"] = item.pubMedID;",
+											"    tests[\"JSON response has key 'doi'\"] = item.hasOwnProperty('doi');",
+											"    tests[\"JSON response key 'doi' not Null\"] = item.doi;",
+											"    if (item.status) {",
+											"        var item = item.status",
+											"        tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+											"        tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+											"        tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+											"        // tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+											"        tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+											"        // tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+											"        tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"        tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"    }",
+											"}",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication- Pub - Auth - NoData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "dee94f9f-0322-4f62-a9bd-40f803577015",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "None"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Pub - Auth - MissingRequiredData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "31a6edae-3171-4aa5-984d-36163ef809d3",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Pub - NoToken -> 401",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "40a5536a-2166-46de-ac0b-ac368ddd5308",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 401\"] = responseCode.code === 401;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Pub - NoAuth -> 403",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "8af9bec2-98af-43ac-9f17-e15afe3e1d73",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 403\"] = responseCode.code === 403;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{WrongAuth}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Pub - Auth - BadId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "3b907742-75b4-4065-897f-550dc2cd6d9a",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title={{BadPubicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{BadPubicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Pub - Auth - NullId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "9532321a-fff0-4812-810a-c22dd8c99b6a",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PubStudyId}}/publications?title=",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PubStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "Priv",
+					"description": "",
+					"item": [
+						{
+							"name": "Update Study Publication - Priv - Auth - GoodId -> 200",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "824c6a4c-0559-4c49-92d8-79fae7fd6922",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 200\"] = responseCode.code === 200;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Body has publication\"] = responseBody.has('\"publication\":');",
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.publication) {",
+											"    var item = jsonData.publication;",
+											"    tests[\"JSON response has key 'title'\"] = item.hasOwnProperty('title');",
+											"    tests[\"JSON response key 'title' not Null\"] = item.title;",
+											"    tests[\"JSON response has key 'authorList'\"] = item.hasOwnProperty('authorList');",
+											"    tests[\"JSON response key 'authorList' not Null\"] = item.authorList;",
+											"    tests[\"JSON response has key 'pubMedID'\"] = item.hasOwnProperty('pubMedID');",
+											"    tests[\"JSON response key 'pubMedID' not Null\"] = item.pubMedID;",
+											"    tests[\"JSON response has key 'doi'\"] = item.hasOwnProperty('doi');",
+											"    tests[\"JSON response key 'doi' not Null\"] = item.doi;",
+											"    if (item.status) {",
+											"        var item = item.status",
+											"        tests[\"JSON response has key 'annotationValue'\"] = item.hasOwnProperty('annotationValue');",
+											"        tests[\"JSON response key 'annotationValue' not Null\"] = item.annotationValue;",
+											"        tests[\"JSON response has key 'termSource'\"] = item.hasOwnProperty('termSource');",
+											"        // tests[\"JSON response key 'termSource' not Null\"] = item.termSource;",
+											"        tests[\"JSON response has key 'termAccession'\"] = item.hasOwnProperty('termAccession');",
+											"        // tests[\"JSON response key 'termAccession' not Null\"] = item.termAccession;",
+											"        tests[\"JSON response has key 'comments'\"] = item.hasOwnProperty('comments');",
+											"        tests[\"JSON response key 'comments' not Null\"] = item.comments;",
+											"    }",
+											"}",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Priv - Auth - NoData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "84dc4fcc-724b-48d6-9aa0-dc22fd7e1bb2",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "None"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Priv - Auth - MissingRequiredData -> 400",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "055f0000-6182-4e61-99ad-1c71d7577abb",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 400\"] = responseCode.code === 400;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Priv - NoToken -> 401",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "3e9ce16b-8d1e-4500-8299-643eced71c81",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 401\"] = responseCode.code === 401;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Priv - NoAuth -> 403",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "d1f7f528-e3ed-497d-9d4b-70f3226d0fc2",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 403\"] = responseCode.code === 403;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{WrongAuth}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{ValidPublicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{ValidPublicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Priv - Auth - BadId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "640064a4-16f9-42cc-9429-9d4c3d23e55b",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title={{BadPubicationId}}",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "{{BadPubicationId}}",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						},
+						{
+							"name": "Update Study Publication - Priv - Auth - NullId -> 404",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "47de0e35-2af6-416f-bff5-29bd3bd361f6",
+										"type": "text/javascript",
+										"exec": [
+											"tests[\"Status code is 404\"] = responseCode.code === 404;",
+											"",
+											"// Header",
+											"tests[\"Access-Control-Allow-Origin is present\"] = responseHeaders.hasOwnProperty(\"Access-Control-Allow-Origin\");",
+											"tests[\"Content-Type is present\"] = responseHeaders.hasOwnProperty(\"Content-Type\");",
+											"",
+											"// Body",
+											"tests[\"Error is NOT null\"] = !(responseBody.has('\"err\": null'));",
+											"tests[\"Message is NOT null\"] = !(responseBody.has('\"message\": null'));",
+											"tests[\"Body does NOT contain publications\"] = !(responseBody.has('\"publications\":'));",
+											"tests[\"Body does NOT contain publication\"] = !(responseBody.has('\"publication\":'));",
+											"tests[\"Body matches string\"] = !responseBody.has(\"null\");",
+											""
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "user_token",
+										"value": "{{curator}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"publication\": {\n    \"title\": \"Test-Publication-Title\",\n    \"authorList\": \"Doe J, Smith B\",\n    \"pubMedID\": \"12345678\",\n    \"doi\": \"10.1234/12345678\",\n    \"status\": {\n      \"annotationValue\": \"Published\",\n      \"termSource\": null,\n      \"termAccession\": \"\",\n      \"comments\": []\n    },\n    \"comments\": []\n  }\n}\n"
+								},
+								"url": {
+									"raw": "{{ws-py-server}}{{ws-py-port}}/mtbls/ws/studies/{{PrivStudyId}}/publications?title=",
+									"host": [
+										"{{ws-py-server}}{{ws-py-port}}"
+									],
+									"path": [
+										"mtbls",
+										"ws",
+										"studies",
+										"{{PrivStudyId}}",
+										"publications"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "",
+											"equals": true
+										}
+									]
+								},
+								"description": null
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				}
+			]
 		}
 	],
 	"event": [
