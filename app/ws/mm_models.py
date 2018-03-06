@@ -227,16 +227,24 @@ class PublicationSchema(Schema):
     # title                         (str):
     # status                        (str, OntologyAnnotation):
     # comments                      (list, Comment):
-    pubmed_id = fields.Str(load_from='pubmed_id', dump_to='pubMedID')
+    class Meta:
+        strict = True
+        ordered = True
+
+    title = fields.Str(required=True)
+    author_list = fields.Str(many=True, load_from='authorList', dump_to='authorList')
+    pubmed_id = fields.Str(load_from='pubMedID', dump_to='pubMedID')
     doi = fields.Str()
-    author_list = fields.Str(many=True, load_from='author_list', dump_to='authorList')
-    title = fields.Str()
     status = fields.Nested(OntologyAnnotationSchema)
     comments = fields.Nested(CommentSchema, many=True)
 
+    @post_load
+    def make_obj(self, data):
+        return Publication(**data)
+
     # add an envelope to responses
     @post_dump(pass_many=True)
-    def wrap(self, data, many):
+    def set_envelop(self, data, many):
         key = 'publications' if many else 'publication'
         return {
             key: data
