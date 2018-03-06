@@ -38,6 +38,19 @@ class WsTests(unittest.TestCase):
     def check_body_common(self, body):
         self.assertIsNotNone(body)
 
+    def check_OntologySource_class(self, obj):
+        self.assertIsNotNone(obj['name'])
+        self.assertIsNotNone(obj['description'])
+        self.assertIsNotNone(obj['file'])
+        self.assertIsNotNone(obj['version'])
+
+    def check_OntologyAnnotation_class(self, obj):
+        self.assertIsNotNone(obj['annotationValue'])
+        if obj['termSource']:
+            self.check_OntologySource_class(obj['termSource'])
+        self.assertIsNotNone(obj['termAccession'])
+        self.assertIsNotNone(obj['comments'])
+
 
 # ############################################
 # All tests that UPDATE data below this point
@@ -417,9 +430,7 @@ class UpdateStudyContactTests(WsTests):
         self.assertIsNotNone(obj['fax'])
         self.assertIsNotNone(obj['comments'])
         for role in obj['roles']:
-            self.assertIsNotNone(role['annotationValue'])
-            self.assertIsNotNone(role['termAccession'])
-            self.assertIsNotNone(role['comments'])
+            self.check_OntologyAnnotation_class(role)
 
     def pre_create_contact(self, url):
         request = urllib.request.Request(url + '/contacts',
@@ -681,14 +692,23 @@ class UpdateStudyProtocolTests(WsTests):
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
 
+    def check_ProtocolParameter_class(self, obj):
+        if obj['parameterName']:
+            self.check_OntologyAnnotation_class(obj['parameterName'])
+        self.assertIsNotNone(obj['comments'])
+
     def check_Protocol_class(self, obj):
         self.assertIsNotNone(obj['name'])
-        self.assertIsNotNone(obj['protocolType'])
+        if obj['protocolType']:
+            self.check_OntologyAnnotation_class(obj['protocolType'])
         self.assertIsNotNone(obj['description'])
         self.assertIsNotNone(obj['uri'])
         self.assertIsNotNone(obj['version'])
-        self.assertIsNotNone(obj['parameters'])
-        self.assertIsNotNone(obj['components'])
+        for param in obj['parameters']:
+            self.check_ProtocolParameter_class(param)
+        if obj['components']:
+            self.check_OntologyAnnotation_class(obj['components'])
+        self.assertIsNotNone(obj['comments'])
 
     def pre_create_protocol(self, url):
         request = urllib.request.Request(url + '/protocols',
@@ -950,9 +970,10 @@ class UpdateStudyFactorTests(WsTests):
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
 
-    def check_Factor_class(self, obj):
+    def check_StudyFactor_class(self, obj):
         self.assertIsNotNone(obj['factorName'])
-        self.assertIsNotNone(obj['factorType'])
+        if obj['factorType']:
+            self.check_OntologyAnnotation_class(obj['factorType'])
         self.assertIsNotNone(obj['comments'])
 
     def pre_create_factor(self, url):
@@ -987,7 +1008,7 @@ class UpdateStudyFactorTests(WsTests):
             self.assertIn('factor', body)
             j_resp = json.loads(body)
             self.assertIsNotNone(j_resp['factor'])
-            self.check_Factor_class(j_resp['factor'])
+            self.check_StudyFactor_class(j_resp['factor'])
 
     # Update Study Factor - Pub - Auth - NoData -> 400
     def test_update_Factor_pub_auth_noData(self):
@@ -1106,7 +1127,7 @@ class UpdateStudyFactorTests(WsTests):
             self.assertIn('factor', body)
             j_resp = json.loads(body)
             self.assertIsNotNone(j_resp['factor'])
-            self.check_Factor_class(j_resp['factor'])
+            self.check_StudyFactor_class(j_resp['factor'])
 
     # Update Study Factor - Priv - Auth - NoData -> 400
     def test_update_Factor_priv_auth_noData(self):
@@ -1215,12 +1236,6 @@ class UpdateStudyDesignDescriptorTests(WsTests):
     def tearDown(self):
         time.sleep(1)  # sleep time in seconds
 
-    def check_DesignDescriptor_class(self, obj):
-        self.assertIsNotNone(obj['annotationValue'])
-        self.assertIsNotNone(obj['termSource'])
-        self.assertIsNotNone(obj['termAccession'])
-        self.assertIsNotNone(obj['comments'])
-
     def pre_create_descriptor(self, url):
         request = urllib.request.Request(url + '/descriptors',
                                          data=self.valid_data, method='POST')
@@ -1253,7 +1268,7 @@ class UpdateStudyDesignDescriptorTests(WsTests):
             self.assertIn('studyDesignDescriptor', body)
             j_resp = json.loads(body)
             self.assertIsNotNone(j_resp['studyDesignDescriptor'])
-            self.check_DesignDescriptor_class(j_resp['studyDesignDescriptor'])
+            self.check_OntologyAnnotation_class(j_resp['studyDesignDescriptor'])
 
     # Update Study Design Descriptor - Pub - Auth - NoData -> 400
     def test_update_descriptor_pub_auth_noData(self):
@@ -1372,7 +1387,7 @@ class UpdateStudyDesignDescriptorTests(WsTests):
             self.assertIn('studyDesignDescriptor', body)
             j_resp = json.loads(body)
             self.assertIsNotNone(j_resp['studyDesignDescriptor'])
-            self.check_DesignDescriptor_class(j_resp['studyDesignDescriptor'])
+            self.check_OntologyAnnotation_class(j_resp['studyDesignDescriptor'])
 
     # Update Study Design Descriptor - Priv - Auth - NoData -> 400
     def test_update_descriptor_priv_auth_noData(self):
@@ -1457,6 +1472,275 @@ class UpdateStudyDesignDescriptorTests(WsTests):
     def test_update_descriptor_priv_auth_nullId(self):
         request = urllib.request.Request(url_priv_id + '/descriptors'
                                          + '?annotationValue=',
+                                         data=self.valid_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+
+class UpdateStudyPublicationTests(WsTests):
+
+    valid_id = instance.config.VALID_ID_PUBLICATION
+    bad_id = instance.config.BAD_ID_PUBLICATION
+    valid_data = instance.config.TEST_DATA_VALID_PUBLICATION
+    missing_data = instance.config.TEST_DATA_MISSING_PUBLICATION
+    no_data = b''
+
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    def check_Publication_class(self, obj):
+        self.assertIsNotNone(obj['title'])
+        self.assertIsNotNone(obj['authorList'])
+        self.assertIsNotNone(obj['pubMedID'])
+        self.assertIsNotNone(obj['doi'])
+        if obj['status']:
+            self.check_OntologyAnnotation_class(obj['status'])
+        self.assertIsNotNone(obj['comments'])
+
+    def pre_create_publication(self, url):
+        request = urllib.request.Request(url + '/publications',
+                                         data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    # Update Study Publication - Pub - Auth - GoodId -> 200
+    def test_update_Publication_pub_auth(self):
+        # first, create the publication to ensure it will exists
+        self.pre_create_publication(url_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to update the publication
+        request = urllib.request.Request(url_pub_id + '/publications'
+                                         + '?title=' + self.valid_id,
+                                         data=self.valid_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('publication', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['publication'])
+            self.check_Publication_class(j_resp['publication'])
+
+    # Update Study Publication - Pub - Auth - NoData -> 400
+    def test_update_Publication_pub_auth_noData(self):
+        request = urllib.request.Request(url_pub_id + '/publications'
+                                         + '?title=' + self.valid_id,
+                                         data=self.no_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # Update Study Publication - Pub - Auth - MissingRequiredData -> 400
+    def test_update_Publication_pub_auth_missingData(self):
+        request = urllib.request.Request(url_pub_id + '/publications'
+                                         + '?title=' + self.valid_id,
+                                         data=self.missing_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # Update Study Publication - Pub - NoToken -> 401
+    def test_update_Publication_pub_noToken(self):
+        request = urllib.request.Request(url_pub_id + '/publications'
+                                         + '?title=' + self.valid_id,
+                                         data=self.valid_data, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Publication - Pub - NoAuth -> 403
+    def test_update_Publication_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/publications'
+                                         + '?title=' + self.valid_id,
+                                         data=self.valid_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Publication - Pub - Auth - BadId -> 404
+    def test_update_Publication_pub_auth_badId(self):
+        request = urllib.request.Request(url_pub_id + '/publications'
+                                         + '?title=' + self.bad_id,
+                                         data=self.valid_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Publication - Pub - Auth - NullId -> 404
+    def test_update_Publication_pub_auth_nullId(self):
+        request = urllib.request.Request(url_pub_id + '/publications'
+                                         + '?title=',
+                                         data=self.valid_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Publication - Priv - Auth - GoodId -> 200
+    def test_update_Publication_priv_auth(self):
+        # first, create the publication to ensure it will exists
+        self.pre_create_publication(url_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to update the publication
+        request = urllib.request.Request(url_priv_id + '/publications'
+                                         + '?title=' + self.valid_id,
+                                         data=self.valid_data, method='PUT'
+                                         )
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('publication', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['publication'])
+            self.check_Publication_class(j_resp['publication'])
+
+    # Update Study Publication - Priv - Auth - NoData -> 400
+    def test_update_Publication_priv_auth_noData(self):
+        request = urllib.request.Request(url_priv_id + '/publications'
+                                         + '?title=' + self.valid_id,
+                                         data=self.no_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # Update Study Publication - Priv - Auth - MissingRequiredData -> 400
+    def test_update_Publication_priv_auth_missingData(self):
+        request = urllib.request.Request(url_priv_id + '/publications'
+                                         + '?title=' + self.valid_id,
+                                         data=self.missing_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # Update Study Publication - Priv - NoToken -> 401
+    def test_update_Publication_priv_noToken(self):
+        request = urllib.request.Request(url_priv_id + '/publications'
+                                         + '?title=' + self.valid_id,
+                                         data=self.valid_data, method='PUT')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # Update Study Publication - Priv - NoAuth -> 403
+    def test_update_Publication_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/publications'
+                                         + '?title=',
+                                         data=self.valid_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Update Study Publication - Priv - Auth - BadId -> 404
+    def test_update_Publication_priv_auth_badId(self):
+        request = urllib.request.Request(url_priv_id + '/publications'
+                                         + '?title=' + self.bad_id,
+                                         data=self.valid_data, method='PUT')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # Update Study Publication - Priv - Auth - NullId -> 404
+    def test_update_Publication_priv_auth_nullId(self):
+        request = urllib.request.Request(url_priv_id + '/publications'
+                                         + '?title=',
                                          data=self.valid_data, method='PUT')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
