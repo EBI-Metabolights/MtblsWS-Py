@@ -16,12 +16,6 @@ url_pub_id = url_base + "/" + public_study_id
 url_priv_id = url_base + "/" + private_study_id
 url_null_id = url_base + "/"
 url_wrong_id = url_base + bad_study_id
-public_source_id = instance.config.TEST_PUB_SOURCE_ID
-private_source_id = instance.config.TEST_PRIV_SOURCE_ID
-bad_source_id = instance.config.TEST_BAD_SOURCE_ID
-public_sample_id = instance.config.TEST_PUB_SAMPLE_ID
-private_sample_id = instance.config.TEST_PRIV_SAMPLE_ID
-bad_sample_id = instance.config.TEST_BAD_SAMPLE_ID
 
 
 class WsTests(unittest.TestCase):
@@ -50,10 +44,15 @@ class WsTests(unittest.TestCase):
         self.assertIsNotNone(obj['termAccession'])
         self.assertIsNotNone(obj['comments'])
 
+    def check_Characteristic_class(self, obj):
+        if obj['category']:
+            self.check_OntologyAnnotation_class(obj['category'])
+        if obj['value']:
+            self.check_OntologyAnnotation_class(obj['value'])
+        if obj['unit']:
+            self.check_OntologyAnnotation_class(obj['unit'])
+        self.assertIsNotNone(obj['comments'])
 
-# ############################################
-# All tests that ADD data below this point
-# ############################################
 
 class PostSingleStudyTests(WsTests):
     """
@@ -1022,7 +1021,7 @@ class PostNewStudyDesignDescriptorTests(WsTests):
 
     def pre_delete_descriptor(self, url):
         request = urllib.request.Request(url + '/descriptors'
-                                         + '?annotationValue=' + self.valid_id,
+                                         + '?term=' + self.valid_id,
                                          method='DELETE')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -1107,7 +1106,7 @@ class PostNewStudyDesignDescriptorTests(WsTests):
     # New Study Design Descriptor - Pub - Auth - ExtraQueryParams -> 400
     def test_add_descriptor_pub_auth_extraParams(self):
         request = urllib.request.Request(url_pub_id + '/descriptors'
-                                         + '?annotationValue=' + self.valid_id,
+                                         + '?term=' + self.valid_id,
                                          data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -1224,7 +1223,7 @@ class PostNewStudyDesignDescriptorTests(WsTests):
     # New Study Design Descriptor - Priv - Auth - ExtraQueryParams -> 400
     def test_add_descriptor_priv_auth_extraParams(self):
         request = urllib.request.Request(url_priv_id + '/descriptors'
-                                         + '?annotationValue=' + self.valid_id,
+                                         + '?term=' + self.valid_id,
                                          data=self.valid_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', auth_id)
@@ -1533,6 +1532,286 @@ class PostNewStudyPublicationTests(WsTests):
     def test_add_Publication_priv_noAuth(self):
         request = urllib.request.Request(url_priv_id + '/publications',
                                          data=self.valid_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+
+class PostNewStudySourceTests(WsTests):
+
+    # ToDo change for correct values
+    # valid_id = instance.config.VALID_ID_SOURCE
+    bad_id = instance.config.BAD_ID_SOURCE
+    valid_pub_id = instance.config.VALID_PUB_ID_SOURCE
+    valid_priv_id = instance.config.VALID_PRIV_ID_SOURCE
+    # valid_data = instance.config.TEST_DATA_VALID_SOURCE
+    valid_pub_data = instance.config.TEST_DATA_PUB_VALID_SOURCE
+    valid_priv_data = instance.config.TEST_DATA_PRIV_VALID_SOURCE
+    missing_data = instance.config.TEST_DATA_MISSING_SOURCE
+    no_data = b''
+
+    def tearDown(self):
+        time.sleep(1)  # sleep time in seconds
+
+    def check_Source_class(self, obj):
+        self.assertIsNotNone(obj['name'])
+        for characteristic in obj['characteristics']:
+            self.check_Characteristic_class(characteristic)
+        self.assertIsNotNone(obj['comments'])
+
+    def pre_create_source(self, url, data):
+        request = urllib.request.Request(url + '/sources',
+                                         data=data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 409:
+                raise Exception(err)
+
+    def pre_delete_source(self, url, valid_id):
+        request = urllib.request.Request(url + '/sources'
+                                         + '?name=' + valid_id,
+                                         method='DELETE')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise Exception(err)
+
+    # New Study Source - Pub - Auth - NewData -> 200
+    def test_add_Source_pub_auth_newData(self):
+        # first, delete the source to ensure it won't exists
+        self.pre_delete_source(url_pub_id, self.valid_pub_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the source
+        request = urllib.request.Request(url_pub_id + '/sources',
+                                         data=self.valid_pub_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('source', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['source'])
+            self.check_Source_class(j_resp['source'])
+
+    # New Study Source - Pub - Auth - ExistingSource -> 409
+    def test_add_Source_pub_auth_duplicateData(self):
+        # first, create the source to ensure it will exists
+        self.pre_create_source(url_pub_id, self.valid_pub_data)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the source
+        request = urllib.request.Request(url_pub_id + '/sources',
+                                         data=self.valid_pub_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 409)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('CONFLICT', err.msg)
+            self.assertEqual('CONFLICT', err.reason)
+
+    # New Study Source - Pub - Auth - NoData -> 400
+    def test_add_Source_pub_auth_noData(self):
+        request = urllib.request.Request(url_pub_id + '/sources',
+                                         data=self.no_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Source - Pub - Auth - MissingRequiredData -> 400
+    def test_add_Source_pub_auth_missingData(self):
+        request = urllib.request.Request(url_pub_id + '/sources',
+                                         data=self.missing_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Source - Pub - Auth - ExtraQueryParams -> 400
+    def test_add_Source_pub_auth_extraParams(self):
+        request = urllib.request.Request(url_pub_id + '/sources'
+                                         + '?name=' + self.valid_pub_id,
+                                         data=self.valid_pub_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Source - Pub - NoToken -> 401
+    def test_add_Source_pub_auth_noToken(self):
+        request = urllib.request.Request(url_pub_id + '/sources',
+                                         data=self.valid_pub_data, method='POST')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # New Study Source - Pub - NoAuth -> 403
+    def test_add_Source_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/sources',
+                                         data=self.valid_pub_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # New Study Source - Priv - Auth - NewData -> 200
+    def test_add_Source_priv_auth_newData(self):
+        # first, delete the source to ensure it won't exists
+        self.pre_delete_source(url_priv_id, self.valid_priv_id)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the source
+        request = urllib.request.Request(url_priv_id + '/sources',
+                                         data=self.valid_priv_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('source', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['source'])
+            self.check_Source_class(j_resp['source'])
+
+    # New Study Source - Priv - Auth - ExistingSource -> 409
+    def test_add_Source_priv_auth_duplicateData(self):
+        # first, create the source to ensure it will exists
+        self.pre_create_source(url_priv_id, self.valid_priv_data)
+        time.sleep(1)  # sleep time in seconds
+
+        # then, try to add the source
+        request = urllib.request.Request(url_priv_id + '/sources',
+                                         data=self.valid_priv_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 409)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('CONFLICT', err.msg)
+            self.assertEqual('CONFLICT', err.reason)
+
+    # New Study Source - Priv - Auth - NoData -> 400
+    def test_add_Source_priv_auth_noData(self):
+        request = urllib.request.Request(url_priv_id + '/sources',
+                                         data=self.no_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Source - Priv - Auth - MissingRequiredData -> 400
+    def test_add_Source_priv_auth_missingData(self):
+        request = urllib.request.Request(url_priv_id + '/sources',
+                                         data=self.missing_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Source - Priv - Auth - ExtraQueryParams -> 400
+    def test_add_Source_priv_auth_extraParams(self):
+        request = urllib.request.Request(url_priv_id + '/sources'
+                                         + '?name=' + self.valid_priv_id,
+                                         data=self.valid_priv_data, method='POST')
+        self.add_common_headers(request)
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 400)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('BAD REQUEST', err.msg)
+            self.assertEqual('BAD REQUEST', err.reason)
+
+    # New Study Source - Priv - NoToken -> 401
+    def test_add_Source_priv_auth_noToken(self):
+        request = urllib.request.Request(url_priv_id + '/sources',
+                                         data=self.valid_priv_data, method='POST')
+        self.add_common_headers(request)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 401)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('UNAUTHORIZED', err.msg)
+            self.assertEqual('UNAUTHORIZED', err.reason)
+
+    # New Study Source - Priv - NoAuth -> 403
+    def test_add_Source_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/sources',
+                                         data=self.valid_priv_data, method='POST')
         self.add_common_headers(request)
         request.add_header('user_token', wrong_auth_token)
         try:

@@ -18,7 +18,11 @@ class CommentSchema(Schema):
         return Comment(**data)
 
 
-class OntologySourceSchema(Schema):
+class IsaSchema(Schema):
+    comments = fields.Nested(CommentSchema, many=True)
+
+
+class OntologySourceSchema(IsaSchema):
     # marshmallow schema for ISA-API class OntologySource
     #
     # name                          (str):
@@ -33,14 +37,13 @@ class OntologySourceSchema(Schema):
     file = fields.String()
     version = fields.String()
     description = fields.String()
-    comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
     def make_obj(self, data):
         return OntologySource(**data)
 
 
-class OntologyAnnotationSchema(Schema):
+class OntologyAnnotationSchema(IsaSchema):
     # marshmallow schema for ISA-API class OntologyAnnotation
     #
     # term                          (str):
@@ -48,21 +51,21 @@ class OntologyAnnotationSchema(Schema):
     # term_accession                (str):
     # comments                      (list, Comment):
     class Meta:
-        # strict = True
+        strict = True
         ordered = True
 
-    term = fields.String(load_from='annotationValue', dump_to='annotationValue')
+    term = fields.String(required=True,
+                         load_from='annotationValue', dump_to='annotationValue')
     term_source = fields.Nested(OntologySourceSchema, load_from='termSource', dump_to='termSource',
                                 required=False, allow_none=True)
     term_accession = fields.String(load_from='termAccession', dump_to='termAccession')
-    comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
     def make_obj(self, data):
         return OntologyAnnotation(**data)
 
 
-class PersonSchema(Schema):
+class PersonSchema(IsaSchema):
     # marshmallow schema for ISA-API class Person
     #
     # last_name -> lastName         (str):
@@ -83,7 +86,6 @@ class PersonSchema(Schema):
     last_name = fields.Str(required=True, load_from='lastName', dump_to='lastName')
     email = fields.Email(required=True)
     affiliation = fields.Str(required=True)
-    comments = fields.Nested(CommentSchema, many=True)
     address = fields.Str()
     fax = fields.Str()
     mid_initials = fields.Str(load_from='midInitials', dump_to='midInitials')
@@ -103,7 +105,7 @@ class PersonSchema(Schema):
         }
 
 
-class ProtocolParameterSchema(Schema):
+class ProtocolParameterSchema(IsaSchema):
     # marshmallow schema for ISA-API class ProtocolParameter
     #
     # parameter_name -> parameterName   (OntologyAnnotation):
@@ -114,14 +116,13 @@ class ProtocolParameterSchema(Schema):
 
     parameter_name = fields.Nested(OntologyAnnotationSchema, required=True,
                                    load_from='parameterName', dump_to='parameterName')
-    comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
     def make_obj(self, data):
         return ProtocolParameter(**data)
 
 
-class ProtocolSchema(Schema):
+class ProtocolSchema(IsaSchema):
     # marshmallow schema for ISA-API class Protocol
     #
     # name                              (str):
@@ -130,7 +131,7 @@ class ProtocolSchema(Schema):
     # uri                               (str):
     # version                           (str):
     # parameters                        (list, ProtocolParameter):
-    # components                        (list, OntologyAnnotation):
+    # components                        (list, str | OntologyAnnotation):
     # comments                          (list, comment):
     class Meta:
         strict = True
@@ -144,7 +145,6 @@ class ProtocolSchema(Schema):
     version = fields.Str()
     parameters = fields.Nested(ProtocolParameterSchema, missing=None, many=True)
     components = fields.Nested(OntologyAnnotationSchema, missing=None, many=True)
-    comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
     def make_obj(self, data):
@@ -159,7 +159,7 @@ class ProtocolSchema(Schema):
         }
 
 
-class StudyFactorSchema(Schema):
+class StudyFactorSchema(IsaSchema):
     # marshmallow schema for ISA-API class StudyFactor
     #
     # name -> factorName        (str):
@@ -173,7 +173,6 @@ class StudyFactorSchema(Schema):
                       load_from='factorName', dump_to='factorName')
     factor_type = fields.Nested(OntologyAnnotationSchema, missing=None,
                                 load_from='factorType', dump_to='factorType')
-    comments = fields.Nested(CommentSchema, missing=None, many=True)
 
     @post_load
     def make_obj(self, data):
@@ -188,26 +187,30 @@ class StudyFactorSchema(Schema):
         }
 
 
-class StudyDesignDescriptorSchema(Schema):
-    # marshmallow schema for ISA-API class OntologyAnnotation
+class FactorValueSchema(IsaSchema):
+    # marshmallow schema for ISA-API class Sample
     #
-    # term                          (str):
-    # term_source                   (OntologySource):
-    # term_accession                (str):
-    # comments                      (list, Comment):
+    # factor_name -> category   (StudyFactor):
+    # value                     (str, int, float, OntologyAnnotation):
+    # unit                      (OntologyAnnotation):
+    # comments                  (list, Comment):
     class Meta:
         strict = True
         ordered = True
 
-    term = fields.String(required=True, load_from='annotationValue', dump_to='annotationValue')
-    term_source = fields.Nested(OntologySourceSchema, load_from='termSource', dump_to='termSource',
-                                required=False, allow_none=True)
-    term_accession = fields.String(load_from='termAccession', dump_to='termAccession')
-    comments = fields.Nested(CommentSchema, many=True)
+    factor_name = fields.Nested(StudyFactorSchema, required=True,
+                                load_from='category', dump_to='category')
+    value = fields.Nested(OntologyAnnotationSchema, required=True)
+    unit = fields.Nested(OntologyAnnotationSchema, required=False, allow_none=True)
 
     @post_load
     def make_obj(self, data):
-        return OntologyAnnotation(**data)
+        return FactorValue(**data)
+
+
+class StudyDesignDescriptorSchema(OntologyAnnotationSchema):
+    # Basically an ISA-API class OntologyAnnotation, but with
+    # especial envelop tags when dumped
 
     # add an envelope to responses
     @post_dump(pass_many=True)
@@ -218,7 +221,7 @@ class StudyDesignDescriptorSchema(Schema):
         }
 
 
-class PublicationSchema(Schema):
+class PublicationSchema(IsaSchema):
     # marshmallow schema for ISA-API class Publication
     #
     # pubmed_id -> pubMedID         (str):
@@ -236,7 +239,6 @@ class PublicationSchema(Schema):
     pubmed_id = fields.Str(load_from='pubMedID', dump_to='pubMedID')
     doi = fields.Str()
     status = fields.Nested(OntologyAnnotationSchema)
-    comments = fields.Nested(CommentSchema, many=True)
 
     @post_load
     def make_obj(self, data):
@@ -251,7 +253,58 @@ class PublicationSchema(Schema):
         }
 
 
-class StudySchema(Schema):
+class CharacteristicSchema(IsaSchema):
+    # marshmallow schema for ISA-API class Characteristic
+    # material_attribute_value_schema.json in ISA-Model v1.0
+    #
+    # category  (OntologyAnnotation):
+    # value     (str, int, float, OntologyAnnotation):
+    # unit      (list, OntologyAnnotation):
+    # comments  (list, Comment):
+    class Meta:
+        strict = True
+        ordered = True
+
+    category = fields.Nested(OntologyAnnotationSchema, required=True)
+    value = fields.Nested(OntologyAnnotationSchema, required=True)
+    unit = fields.Nested(OntologyAnnotationSchema, required=False, allow_none=True)
+
+    @post_load
+    def make_obj(self, data):
+        return Characteristic(**data)
+
+
+class StudySourceSchema(IsaSchema):
+    # marshmallow schema for ISA-API class Source
+    #
+    # name              (str):
+    # characteristics   (list, OntologyAnnotation):
+    # comments          (list, Comment):
+    class Meta:
+        strict = True
+        ordered = True
+
+    name = fields.Str(required=True)
+    characteristics = fields.Nested(CharacteristicSchema, many=True)
+
+    @post_load
+    def make_obj(self, data):
+        return Source(**data)
+
+    # add an envelope to responses
+    @post_dump(pass_many=True)
+    def set_envelop(self, data, many):
+        key = 'sources' if many else 'source'
+        return {
+            key: data
+        }
+
+
+
+
+class StudySchema(IsaSchema):
+    # marshmallow schema for ISA-API class Study
+    #
     pass
 
 
@@ -267,6 +320,7 @@ class IsaInvestigationSchema(Schema):
     # publications                                              (list, StudyPublications):
     # ontology_source_references -> ontologySourceReferences    (list, OntologyAnnotation):
     # studies                                                   (list, Study):
+    # "comments": [],
     class Meta:
         ordered = True
 
