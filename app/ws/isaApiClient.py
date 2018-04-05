@@ -66,14 +66,12 @@ class IsaApiClient:
         :param pub_rel_date: 
         :return: an ISA-JSON representation of the Study
         """
-
         # investigation file
         investigation = Investigation(filename="i_investigation.txt")
         investigation.title = title
         investigation.description = description
         investigation.submission_date = sub_date
         investigation.public_release_date = pub_rel_date
-
         # study file
         study = Study(filename="s_study.txt")
         study.identifier = "s1"
@@ -82,16 +80,11 @@ class IsaApiClient:
         study.submission_date = sub_date
         study.public_release_date = pub_rel_date
         investigation.studies.append(study)
-
         # assay file
         assay = Assay(filename="a_assay.txt")
-        extraction_protocol = Protocol(name='extraction', protocol_type=OntologyAnnotation(term="material extraction"))
-        study.protocols.append(extraction_protocol)
-        sequencing_protocol = Protocol(name='sequencing', protocol_type=OntologyAnnotation(term="material sequencing"))
-        study.protocols.append(sequencing_protocol)
         study.assays.append(assay)
 
-        return json.dumps(investigation, cls=ISAJSONEncoder, sort_keys=True, indent=4, separators=(',', ': '))
+        return investigation
 
     def get_isa_study(self, study_id, api_key, skip_load_tables=False):
         """
@@ -116,15 +109,15 @@ class IsaApiClient:
             return isa_study, isa_inv, std_path
 
     def write_isa_study(self, inv_obj, api_key, std_path,
-                        save_audit_copy=True, save_audit_samples=False, save_audit_assays=False):
+                        save_investigation_copy=True, save_samples_copy=False, save_assays_copy=False):
         """
         Write back an ISA-API Investigation object directly into ISA-Tab files
         :param inv_obj: ISA-API Investigation object
         :param api_key: User API key for accession check
         :param std_path: file system path to destination folder
-        :param save_audit_copy: Keep track of changes saving a copy of the unmodified i_*.txt file
-        :param save_audit_samples: Keep track of changes saving a copy of the unmodified s_*.txt file
-        :param save_audit_assays: Keep track of changes saving a copy of the unmodified a_*.txt file
+        :param save_investigation_copy: Keep track of changes saving a copy of the unmodified i_*.txt file
+        :param save_samples_copy: Keep track of changes saving a copy of the unmodified s_*.txt file
+        :param save_assays_copy: Keep track of changes saving a copy of the unmodified a_*.txt file
         :return:
         """
         # dest folder name is a timestamp
@@ -133,13 +126,13 @@ class IsaApiClient:
         dest_path = new_timestamped_folder(update_path)
 
         # make a copy before applying changes
-        if save_audit_copy:
+        if save_investigation_copy:
             src_file = os.path.join(std_path, self.inv_filename)
             dest_file = os.path.join(dest_path, self.inv_filename)
             logger.info("Copying %s to %s", src_file, dest_file)
             copy_file(src_file, dest_file)
 
-        if save_audit_samples:
+        if save_samples_copy:
             for sample_file in glob.glob(os.path.join(std_path, "s_*.txt")):
                 sample_file_name = os.path.basename(sample_file)
                 src_file = sample_file
@@ -147,7 +140,7 @@ class IsaApiClient:
                 logger.info("Copying %s to %s", src_file, dest_file)
                 copy_file(src_file, dest_file)
 
-        if save_audit_assays:
+        if save_assays_copy:
             for assay_file in glob.glob(os.path.join(std_path, "a_*.txt")):
                 assay_file_name = os.path.basename(assay_file)
                 src_file = assay_file

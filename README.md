@@ -8,10 +8,11 @@ Branch: Master
 Docker Hub: [/mtblsws-py](https://hub.docker.com/r/jrmacias/mtblsws-py/)
 
 Using  
-- [ISA-API](https://github.com/ISA-tools/isa-api) >= 0.7.0, 
-- [Flask](http://flask.pocoo.org/),
-- [Flask-RESTful](https://flask-restful.readthedocs.io/),
+- [ISA-API](https://github.com/ISA-tools/isa-api) >= 0.9.0 
+- [Flask](http://flask.pocoo.org/)
+- [Flask-RESTful](https://flask-restful.readthedocs.io/)
 - [flask-restful-swagger](https://github.com/rantav/flask-restful-swagger)
+- [marshmallow](https://marshmallow.readthedocs.io/en/latest/index.html)
 - [Flask-CORS](http://flask-cors.readthedocs.io/en/latest/api.html)
 
 

@@ -4,3 +4,4 @@ flask-restful-swagger
 Flask-Cors
 isatools
 mzml2isa
+marshmallow
