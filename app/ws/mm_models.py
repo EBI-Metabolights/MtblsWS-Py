@@ -99,10 +99,11 @@ class PersonSchema(IsaSchema):
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
-        key = 'contacts' if many else 'contact'
-        return {
-            key: data
-        }
+        if 'contact' in self.context:
+            key = 'contacts' if many else 'contact'
+            return {
+                key: data
+            }
 
 
 class ProtocolParameterSchema(IsaSchema):
@@ -153,7 +154,7 @@ class ProtocolSchema(IsaSchema):
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
-        if not self.context:
+        if 'protocol' in self.context:
             key = 'protocols' if many else 'protocol'
             return {
                 key: data
@@ -182,7 +183,7 @@ class StudyFactorSchema(IsaSchema):
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
-        if not self.context:
+        if 'factor' in self.context:
             key = 'factors' if many else 'factor'
             return {
                 key: data
@@ -239,10 +240,11 @@ class StudyDesignDescriptorSchema(OntologyAnnotationSchema):
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
-        key = 'studyDesignDescriptors' if many else 'studyDesignDescriptor'
-        return {
-            key: data
-        }
+        if 'descriptor' in self.context:
+            key = 'studyDesignDescriptors' if many else 'studyDesignDescriptor'
+            return {
+                key: data
+            }
 
 
 class PublicationSchema(IsaSchema):
@@ -318,7 +320,7 @@ class SourceSchema(IsaSchema):
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
-        if not self.context:
+        if 'source' in self.context:
             key = 'sources' if many else 'source'
             return {
                 key: data
@@ -350,10 +352,11 @@ class SampleSchema(IsaSchema):
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
-        key = 'samples' if many else 'sample'
-        return {
-            key: data
-        }
+        if 'sample' in self.context:
+            key = 'samples' if many else 'sample'
+            return {
+                key: data
+            }
 
 
 class ParameterValueSchema(IsaSchema):
@@ -403,10 +406,11 @@ class MaterialSchema(IsaSchema):
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
-        key = 'otherMaterials' if many else 'otherMaterial'
-        return {
-            key: data
-        }
+        if 'other_material' in self.context:
+            key = 'otherMaterials' if many else 'otherMaterial'
+            return {
+                key: data
+            }
 
 
 class DataFileSchema(IsaSchema):
@@ -484,10 +488,11 @@ class ProcessSchema(IsaSchema):
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
-        key = 'processes' if many else 'process'
-        return {
-            key: data
-        }
+        if 'process' in self.context:
+            key = 'processes' if many else 'process'
+            return {
+                key: data
+            }
 
 
 class StudySchema(IsaSchema):
