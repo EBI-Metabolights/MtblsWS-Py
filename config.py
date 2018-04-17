@@ -24,3 +24,11 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 
 UPDATE_PATH_SUFFIX = "audit"
+
+DEBUG_STUDIES_PATH = ''
+
+# Calling the Java-based MTBLS WS
+# ************
+# TEST
+MTBLS_WS_HOST = "http://ves-ebi-8d"
+MTBLS_WS_PORT = ":8080"
