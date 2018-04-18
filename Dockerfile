@@ -1,6 +1,8 @@
 FROM ubuntu:16.04
+LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
+
 RUN apt-get -y update \
-    && apt-get -y install git iputils-ping nano \
+    && apt-get -y install git \
     && apt-get -y install python3 python3-dev python3-pip \
     && pip3 install --upgrade pip
 
