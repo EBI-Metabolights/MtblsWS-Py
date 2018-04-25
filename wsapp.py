@@ -37,7 +37,7 @@ def initialize_app(flask_app):
                   "http://ves-ebi-8d:8080",
                   "http://ves-ebi-8d.ebi.ac.uk:8080"
                   },
-         methods={"GET, HEAD, POST, OPTIONS, PUT"}
+         methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
 
     res_path = app.config.get('RESOURCES_PATH')
