@@ -37,10 +37,10 @@ class OntologySourceSchema(IsaSchema):
     class Meta:
         ordered = True
 
-    name = fields.String()
-    file = fields.String()
-    version = fields.String()
-    description = fields.String()
+    name = fields.String(required=False, allow_none=True)
+    file = fields.String(required=False, allow_none=True)
+    version = fields.String(required=False, allow_none=True)
+    description = fields.String(required=False, allow_none=True)
 
     @post_load
     def make_obj(self, data):
