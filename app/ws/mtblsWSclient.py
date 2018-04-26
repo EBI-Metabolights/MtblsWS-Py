@@ -149,14 +149,7 @@ class WsClient:
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.post(url, data='{"token":"' + user_token + '"}')
         if resp.status_code != 200:
-            if resp.status_code == 401:
-                abort(401)
-            if resp.status_code == 403:
-                abort(403)
-            if resp.status_code == 404:
-                abort(404)
-            if resp.status_code == 500:
-                abort(500)
+            abort(resp.status_code)
 
         user = resp.headers.get('user')
         jwt = resp.headers.get('jwt')

@@ -481,6 +481,11 @@ class StudyDescription(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+
+        logger.debug('Request headers   : %s', request.headers)
+        logger.debug('Request data      : %s', request.data)
+        logger.debug('Request data-utf8 : %s', request.data.decode('utf-8'))
+
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
@@ -2056,7 +2061,7 @@ class StudyDescriptors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "term",
+                "name": "annotationValue",
                 "description": "Design Descriptor annotation value",
                 "required": False,
                 "allowEmptyValue": True,
@@ -2106,11 +2111,11 @@ class StudyDescriptors(Resource):
             user_token = request.headers['user_token']
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('term', help='Design Descriptor value')
+        parser.add_argument('annotationValue', help='Design Descriptor value')
         obj_term = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_term = args['term']
+            obj_term = args['annotationValue']
 
         logger.info('Getting Study Design Descriptors for %s, using API-Key %s', study_id, user_token)
         # check for access rights
@@ -3443,74 +3448,74 @@ class StudySources(Resource):
 
 class StudySamples(Resource):
 
-    # @swagger.operation(
-    #     summary='Add new Study Sample',
-    #     notes='Add new Study Sample to a Study.',
-    #     parameters=[
-    #         {
-    #             "name": "study_id",
-    #             "description": "MTBLS Identifier",
-    #             "required": True,
-    #             "allowMultiple": False,
-    #             "paramType": "path",
-    #             "dataType": "string"
-    #         },
-    #         {
-    #             "name": "user_token",
-    #             "description": "User API token",
-    #             "paramType": "header",
-    #             "type": "string",
-    #             "required": True,
-    #             "allowMultiple": False
-    #         },
-    #         {
-    #             "name": "sample",
-    #             "description": 'Study Sample in ISA-JSON format.',
-    #             "paramType": "body",
-    #             "type": "string",
-    #             "format": "application/json",
-    #             "required": True,
-    #             "allowMultiple": False
-    #         },
-    #         {
-    #             "name": "save_audit_copy",
-    #             "description": "Keep track of changes saving a copy of the unmodified files.",
-    #             "paramType": "header",
-    #             "type": "Boolean",
-    #             "defaultValue": True,
-    #             "format": "application/json",
-    #             "required": False,
-    #             "allowMultiple": False
-    #         }
-    #     ],
-    #     responseMessages=[
-    #         {
-    #             "code": 200,
-    #             "message": "OK."
-    #         },
-    #         {
-    #             "code": 400,
-    #             "message": "Bad Request. Server could not understand the request due to malformed syntax."
-    #         },
-    #         {
-    #             "code": 401,
-    #             "message": "Unauthorized. Access to the resource requires user authentication."
-    #         },
-    #         {
-    #             "code": 403,
-    #             "message": "Forbidden. Access to the study is not allowed for this user."
-    #         },
-    #         {
-    #             "code": 404,
-    #             "message": "Not found. The requested identifier is not valid or does not exist."
-    #         },
-    #         {
-    #             "code": 409,
-    #             "message": "Conflict. The request could not be completed due to a conflict"
-    #                        " with the current state of study. This is usually issued to prevent duplications."
-    #         }
-    #     ]
-    # )
+    @swagger.operation(
+        summary='Add new Study Sample',
+        notes='Add new Study Sample to a Study.',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "sample",
+                "description": 'Study Sample in ISA-JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
     def post(self, study_id):
         # param validation
         if study_id is None:
@@ -3796,3 +3801,92 @@ class StudyOtherMaterials(Resource):
             logger.info('Got %s', obj.name)
             return sch.dump(obj)
 
+
+class StudyAssays(Resource):
+    @swagger.operation(
+        summary="Get Study Assays",
+        notes="""Get Study Assays.
+                 <br>
+                 Use assay name as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        # parser = reqparse.RequestParser()
+        # parser.add_argument('name', help='Study Sample name')
+        obj_name = None
+        # if request.args:
+        #     args = parser.parse_args(req=request)
+        #     obj_name = args['name']
+
+        logger.info('Getting Assays for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        obj_list = isa_study.assays
+        # Using context to avoid envelop tags in contained objects
+        sch = AssaySchema()
+        sch.context['assay'] = Assay()
+        if obj_name is None:
+            # return a list of objs
+            logger.info('Got %s assays', len(obj_list))
+            return sch.dump(obj_list, many=True)
+        else:
+            # return a single obj
+            found = False
+            for index, obj in enumerate(obj_list):
+                if obj.name == obj_name:
+                    found = True
+                    break
+            if not found:
+                abort(404)
+            logger.info('Got %s', obj.name)
+            return sch.dump(obj)
