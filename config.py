@@ -24,3 +24,11 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 
 UPDATE_PATH_SUFFIX = "audit"
+
+CORS_HOSTS = "http://localhost:8000",\
+             "http://localhost:4200",\
+             "http://localhost:8080",\
+             "http://localhost.ebi.ac.uk:8080",\
+             "http://wwwdev.ebi.ac.uk",\
+             "http://ves-ebi-8d:8080",\
+             "http://ves-ebi-8d.ebi.ac.uk:8080"
