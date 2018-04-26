@@ -1,4 +1,4 @@
-import logging
+import config
 from flask import request, jsonify
 from flask_restful import Resource, abort, marshal_with, reqparse
 from marshmallow import ValidationError
@@ -17,6 +17,14 @@ Manage MTBLS studies from ISA-Tab files using ISA-API
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
+
+
+# Allow for a more detailed logging when on DEBUG mode
+def log_request(request):
+
+    if config.DEBUG:
+        logger.debug('REQUEST HEADERS -> %s', request.headers)
+        logger.debug('REQUEST BODY    -> %s', request.data)
 
 
 class IsaJsonStudy(Resource):
@@ -67,6 +75,7 @@ class IsaJsonStudy(Resource):
     )
     @marshal_with(Investigation_api_model, envelope='investigation')
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -101,6 +110,7 @@ class IsaJsonStudies(Resource):
         ]
     )
     def get(self):
+        log_request(request)
         logger.info('Getting all public studies')
         pub_list = wsc.get_public_studies()
         logger.info('... found %d public studies', len(pub_list['content']))
@@ -150,6 +160,7 @@ class IsaJsonStudies(Resource):
     )
     @marshal_with(Investigation_api_model, envelope='investigation')
     def post(self):
+        log_request(request)
         # User authentication
         if "user_token" not in request.headers:
             abort(401)
@@ -232,6 +243,7 @@ class StudyTitle(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -313,6 +325,7 @@ class StudyTitle(Resource):
         ]
     )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -393,6 +406,7 @@ class StudyDescription(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -474,6 +488,7 @@ class StudyDescription(Resource):
         ]
     )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -577,6 +592,7 @@ class StudyContacts(Resource):
         ]
     )
     def post(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -688,6 +704,7 @@ class StudyContacts(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -802,6 +819,7 @@ class StudyContacts(Resource):
             ]
         )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -926,6 +944,7 @@ class StudyContacts(Resource):
         ]
     )
     def delete(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1044,6 +1063,7 @@ class StudyProtocols(Resource):
         ]
     )
     def post(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1157,6 +1177,7 @@ class StudyProtocols(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1256,6 +1277,7 @@ class StudyProtocols(Resource):
         ]
     )
     def delete(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1374,6 +1396,7 @@ class StudyProtocols(Resource):
             ]
         )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1504,6 +1527,7 @@ class StudyFactors(Resource):
         ]
     )
     def post(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1617,6 +1641,7 @@ class StudyFactors(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1716,6 +1741,7 @@ class StudyFactors(Resource):
         ]
     )
     def delete(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1834,6 +1860,7 @@ class StudyFactors(Resource):
             ]
         )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1964,6 +1991,7 @@ class StudyDescriptors(Resource):
         ]
     )
     def post(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -2078,6 +2106,7 @@ class StudyDescriptors(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -2181,6 +2210,7 @@ class StudyDescriptors(Resource):
         ]
     )
     def delete(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -2303,6 +2333,7 @@ class StudyDescriptors(Resource):
             ]
         )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -2433,6 +2464,7 @@ class StudyPublications(Resource):
         ]
     )
     def post(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -2546,6 +2578,7 @@ class StudyPublications(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -2650,6 +2683,7 @@ class StudyPublications(Resource):
         ]
     )
     def delete(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -2771,6 +2805,7 @@ class StudyPublications(Resource):
             ]
         )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -2887,6 +2922,7 @@ class StudyProcesses(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -3000,6 +3036,7 @@ class StudySources(Resource):
     #     ]
     # )
     def post(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -3117,6 +3154,7 @@ class StudySources(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -3221,6 +3259,7 @@ class StudySources(Resource):
     #     ]
     # )
     def delete(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -3347,6 +3386,7 @@ class StudySources(Resource):
     #         ]
     #     )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -3486,6 +3526,7 @@ class StudySamples(Resource):
     #     ]
     # )
     def post(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -3629,6 +3670,7 @@ class StudySamples(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -3729,6 +3771,7 @@ class StudyOtherMaterials(Resource):
         ]
     )
     def get(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
