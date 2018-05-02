@@ -78,5 +78,4 @@ ssl/
 /app.pid
 /tests/.pytest_cache/
 tests/.pytest_cache/
-/examples/
 examples/

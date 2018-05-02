@@ -29,14 +29,7 @@ def initialize_app(flask_app):
     configure_app(flask_app)
 
     CORS(app, resources={r'/mtbls/ws/*'},
-         origins={"http://localhost:8000",
-                  "http://localhost:4200",
-                  "http://localhost:8080",
-                  "http://localhost.ebi.ac.uk:8080",
-                  "http://wwwdev.ebi.ac.uk",
-                  "http://ves-ebi-8d:8080",
-                  "http://ves-ebi-8d.ebi.ac.uk:8080"
-                  },
+         origins={config.CORS_HOSTS},
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
 
