@@ -76,3 +76,5 @@ ssl/
 # files for keeping PID
 /app-pid.old
 /app.pid
+
+examples/

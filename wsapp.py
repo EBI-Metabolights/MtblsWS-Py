@@ -29,23 +29,19 @@ def initialize_app(flask_app):
     configure_app(flask_app)
 
     CORS(app, resources={r'/mtbls/ws/*'},
-         origins={"http://localhost:8000",
-                  "http://localhost:4200",
-                  "http://localhost:8080",
-                  "http://localhost.ebi.ac.uk:8080",
-                  "http://wwwdev.ebi.ac.uk",
-                  "http://ves-ebi-8d:8080",
-                  "http://ves-ebi-8d.ebi.ac.uk:8080"
-                  },
-         methods={"GET, HEAD, POST, OPTIONS, PUT"}
+         origins={app.config.get('CORS_HOSTS')},
+         methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
 
     res_path = app.config.get('RESOURCES_PATH')
     api = swagger.docs(Api(app),
+                       description='MtblsWS-Py : MetaboLights Python-based REST service',
                        apiVersion=app.config.get('API_VERSION'),
                        basePath=app.config.get('WS_APP_BASE_LINK'),
                        api_spec_url=app.config.get('API_DOC'),
-                       resourcePath=res_path)
+                       resourcePath=res_path
+                       )
+
     api.add_resource(About, res_path)
     api.add_resource(MtblsStudy, res_path + "/study/<string:study_id>")
     api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
@@ -65,7 +61,6 @@ def initialize_app(flask_app):
     api.add_resource(StudySource, res_path + "/study/<string:study_id>/sources/<string:source_name>")
     api.add_resource(StudySamples, res_path + "/study/<string:study_id>/samples")
     api.add_resource(StudySample, res_path + "/study/<string:study_id>/samples/<string:sample_name>")
-
 
 
 def main():
