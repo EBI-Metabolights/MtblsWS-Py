@@ -5,6 +5,7 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
+from flask import current_app as app
 
 """
 ISA Study
@@ -15,6 +16,16 @@ Manage MTBLS studies from ISA-Tab files using ISA-API
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
+
+
+def log_request(request_obj):
+    if app.config.get('DEBUG'):
+        if app.config.get('DEBUG_LOG_HEADERS'):
+            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
+        if app.config.get('DEBUG_LOG_BODY'):
+            logger.debug('REQUEST BODY    -> %s', request_obj.data)
+        if app.config.get('DEBUG_LOG_JSON'):
+            logger.debug('REQUEST JSON    -> %s', request_obj.json)
 
 
 class StudyPubList(Resource):
@@ -245,6 +256,7 @@ class StudyTitle(Resource):
         ]
     )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -409,6 +421,7 @@ class StudyDescription(Resource):
         ]
     )
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -490,6 +503,7 @@ class StudyNew(Resource):
         POST a new ISA-JSON Study 
         :return: an ISA-JSON representation of the Study
         """
+        log_request(request)
         # User authentication
         if "user_token" not in request.headers:
             abort(401)
@@ -658,6 +672,7 @@ class StudyProtocols(Resource):
     )
     @marshal_with(Protocol_api_model, envelope='StudyProtocols')
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -842,6 +857,7 @@ class StudyContacts(Resource):
     )
     @marshal_with(Person_api_model, envelope='StudyContacts')
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1009,6 +1025,7 @@ class StudyFactors(Resource):
     )
     @marshal_with(StudyFactor_api_model, envelope='StudyFactors')
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1177,6 +1194,7 @@ class StudyDescriptors(Resource):
     )
     @marshal_with(OntologyAnnotation_api_model, envelope='StudyDescriptors')
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1344,6 +1362,7 @@ class StudyPublications(Resource):
     )
     @marshal_with(StudyPublications_api_model, envelope='publications')
     def put(self, study_id):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1664,6 +1683,7 @@ class StudySource(Resource):
     )
     @marshal_with(StudySource_api_model, envelope='Updated_source')
     def put(self, study_id, source_name):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
@@ -1928,6 +1948,7 @@ class StudySample(Resource):
     )
     @marshal_with(StudySample_api_model, envelope='Updated_sample')
     def put(self, study_id, sample_name):
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
