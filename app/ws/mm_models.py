@@ -195,6 +195,10 @@ class StudyFactorSchema(IsaSchema):
 
 
 class ValueField(fields.Field):
+    class Meta:
+        strict = True
+        ordered = True
+
     def _serialize(self, value, attr, obj):
         if isinstance(value, (int, float, str)):
             return value
@@ -277,10 +281,11 @@ class PublicationSchema(IsaSchema):
     # add an envelope to responses
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
-        key = 'publications' if many else 'publication'
-        return {
-            key: data
-        }
+        if 'publication' in self.context:
+            key = 'publications' if many else 'publication'
+            return {
+                key: data
+            }
 
 
 class CharacteristicSchema(IsaSchema):
@@ -304,18 +309,29 @@ class CharacteristicSchema(IsaSchema):
         return Characteristic(**data)
 
 
-class SourceSchema(IsaSchema):
-    # marshmallow schema for ISA-API class Source
+class MaterialSchema(IsaSchema):
+    # marshmallow schema for ISA-API class generic Material
+    # This is base for SourceSchema, SampleSchema and OtherMaterialSchema
     #
-    # name              (str)
-    # characteristics   (list: OntologyAnnotation)
-    # comments          (list: Comment)
+    # name                              (str)
+    # type                              (str, ["Extract Name", "Labeled Extract Name"])
+    # characteristics                   (list: Characteristic)
+    # comments                          (list: Material)
     class Meta:
         strict = True
         ordered = True
 
     name = fields.Str(required=True)
+    type = fields.Str()
     characteristics = fields.Nested(CharacteristicSchema, many=True)
+
+
+class SourceSchema(MaterialSchema):
+    # marshmallow schema for ISA-API class Source
+    #
+    # name              (str)
+    # characteristics   (list: OntologyAnnotation)
+    # comments          (list: Comment)
 
     @post_load
     def make_obj(self, data):
@@ -331,7 +347,7 @@ class SourceSchema(IsaSchema):
             }
 
 
-class SampleSchema(IsaSchema):
+class SampleSchema(MaterialSchema):
     # marshmallow schema for ISA-API class Sample
     #
     # name                              (str)
@@ -339,12 +355,7 @@ class SampleSchema(IsaSchema):
     # factor_values -> factorValues     (FactorValues)
     # derives_from                      (Source)
     # comments                          (list: Comment)
-    class Meta:
-        strict = True
-        ordered = True
 
-    name = fields.Str(required=True)
-    characteristics = fields.Nested(CharacteristicSchema, many=True)
     factor_values = fields.Nested(FactorValueSchema, many=True,
                                   load_from='factorValues', dump_to='factorValues')
     derives_from = fields.Nested(SourceSchema, many=True)
@@ -363,7 +374,61 @@ class SampleSchema(IsaSchema):
             }
 
 
-# ToDo re-enable when ISA-API issue #304 is solved
+class OtherMaterialSchema(MaterialSchema):
+    # marshmallow schema for ISA-API class OtherMaterial
+    #
+    # name                              (str)
+    # type                              (str, ["Extract Name", "Labeled Extract Name"])
+    # characteristics                   (list: Characteristic)
+    # factor_values -> factorValues     (FactorValues)
+    # derives_from                      (Source)
+    # comments                          (list: Comment)
+
+    factor_values = fields.Nested(FactorValueSchema, many=True,
+                                  load_from='factorValues', dump_to='factorValues')
+    derives_from = fields.Nested('self', many=True)
+
+    @post_load
+    def make_obj(self, data):
+        return Material(**data)
+
+    # add an envelope to responses
+    @post_dump(pass_many=True)
+    def set_envelop(self, data, many):
+        if 'other_material' in self.context:
+            key = 'otherMaterials' if many else 'otherMaterial'
+            return {
+                key: data
+            }
+
+
+class DataFileSchema(IsaSchema):
+    # marshmallow schema for ISA-API class DataFile
+    #
+    # filename                          (str)
+    # label                             (str)
+    # generated_from -> generatedFrom   (list:FactorValues)
+    # comments                          (list: Comment)
+
+    filename = fields.Str(required=True)
+    label = fields.Str()
+    generated_from = fields.Nested(SampleSchema, many=True,
+                                   dump_to='generatedFrom')
+
+    @post_load
+    def make_obj(self, data):
+        return DataFile(**data)
+
+    # add an envelope to responses
+    @post_dump(pass_many=True)
+    def set_envelop(self, data, many):
+        if 'dataFile' in self.context:
+            key = 'dataFiles' if many else 'dataFile'
+            return {
+                key: data
+            }
+
+
 # https://github.com/ISA-tools/isa-api/issues/304
 # class ParameterValueSchema(IsaSchema):
 class ParameterValueSchema(Schema):
@@ -384,40 +449,6 @@ class ParameterValueSchema(Schema):
     @post_load
     def make_obj(self, data):
         return ParameterValue(**data)
-
-
-class MaterialSchema(IsaSchema):
-    # marshmallow schema for ISA-API class Material
-    #
-    # name                              (str)
-    # type                              (str, ["Extract Name", "Labeled Extract Name"])
-    # characteristics                   (list: Characteristic)
-    # factor_values -> factorValues     (FactorValues)
-    # derives_from                      (Source)
-    # comments                          (list: Material)
-    class Meta:
-        strict = True
-        ordered = True
-
-    name = fields.Str(required=True)
-    type = fields.Str()
-    characteristics = fields.Nested(CharacteristicSchema, many=True)
-    factor_values = fields.Nested(FactorValueSchema, many=True,
-                                  load_from='factorValues', dump_to='factorValues')
-    derives_from = fields.Nested('self', many=True)
-
-    @post_load
-    def make_obj(self, data):
-        return Material(**data)
-
-    # add an envelope to responses
-    @post_dump(pass_many=True)
-    def set_envelop(self, data, many):
-        if 'other_material' in self.context:
-            key = 'otherMaterials' if many else 'otherMaterial'
-            return {
-                key: data
-            }
 
 
 class DataFileSchema(IsaSchema):
@@ -444,20 +475,25 @@ class InputOutpuField(fields.Field):
     def _serialize(self, value, attr, obj):
 
         if isinstance(value, list):
-            val = value[0]
-            if isinstance(val, Source):
-                return {
-                    'name': val.name,
-                    'characteristics': val.characteristics,
-                    'comments': val.comments
-                }
+            obj_list = list()
+            for val in value:
+                if isinstance(value[0], Sample):
+                    obj_list
+                    return {
+                        'name': val.name,
+                        'characteristics': val.characteristics,
+                        # 'factor_values': val.factor_values,
+                        'derives_from': val.derives_from,
+                        'comments': val.comments
+
+                    }
+            return obj_list
 
         if isinstance(value, Material):
-            return MaterialSchema.dump(obj)
+            return OtherMaterialSchema.dump(obj)
         if isinstance(value, Source):
             return SourceSchema.dump(obj)
-        if isinstance(value, Sample):
-            return SampleSchema.dump(obj)
+
         if isinstance(value, DataFile):
             return DataFileSchema.dump(obj)
 
@@ -467,7 +503,7 @@ class InputOutpuField(fields.Field):
         if isinstance(val, (int, float, str)):
             return value
         if isinstance(val, OntologyAnnotation):
-            return MaterialSchema().load(val)
+            return OtherMaterialSchema().load(val)
 
 
 class ProcessSchema(IsaSchema):
@@ -493,14 +529,16 @@ class ProcessSchema(IsaSchema):
                                       load_from='executesProtocol', dump_to='executesProtocol')
     date = fields.Str()
     performer = fields.Str()
+
     parameter_values = fields.Nested(ParameterValueSchema, many=True,
                                      load_from='parameterValues', dump_to='parameterValues')
+
     prev_process = fields.Nested('self',
                                  load_from='previousProcess', dump_to='previousProcess')
     next_process = fields.Nested('self',
                                  load_from='nextProcess', dump_to='nextProcess')
-    inputs = InputOutpuField(many=True)
-    outputs = InputOutpuField(many=True)
+    inputs = fields.Nested(SampleSchema, many=True)
+    outputs = fields.Nested(SampleSchema, many=True)
 
     @post_load
     def make_obj(self, data):
@@ -548,7 +586,7 @@ class AssaySchema(IsaSchema):
                                      load_from='processSequence', dump_to='processSequence')
     sources = fields.Nested(SourceSchema, many=True)
     samples = fields.Nested(SampleSchema, many=True)
-    other_material = fields.Nested(MaterialSchema, many=True,
+    other_material = fields.Nested(OtherMaterialSchema, many=True,
                                    load_from='otherMaterials', dump_to='otherMaterials')
     characteristic_categories = fields.Nested(OntologyAnnotationSchema, many=True,
                                               load_from='characteristicCategories', dump_to='characteristicCategories')
@@ -571,11 +609,41 @@ class AssaySchema(IsaSchema):
 class StudySchema(IsaSchema):
     # marshmallow schema for ISA-API class Study
     #
-    pass
+
+    identifier = fields.Str()
+    filename = fields.Str()
+    title = fields.Str()
+    description = fields.Str()
+    submission_date = fields.Str(dump_to='submissionDate')
+    public_release_date = fields.Str(dump_to='publicReleaseDate')
+    contacts = fields.Nested(PersonSchema, many=True, dump_to='people')
+    design_descriptors = fields.Nested(StudyDesignDescriptorSchema, many=True,
+                                       dump_to='studyDesignDescriptors')
+    publications = fields.Nested(PublicationSchema, many=True)
+    factors = fields.Nested(FactorValueSchema, many=True)
+    protocols = fields.Nested(ProtocolSchema, many=True)
+    assays = fields.Nested(AssaySchema, many=True)
+    sources = fields.Nested(SourceSchema, many=True)
+    samples = fields.Nested(SampleSchema, many=True)
+    other_materials = fields.Nested(OtherMaterialSchema, many=True,
+                                    dump_to='otherMaterials')
+    process_sequence = fields.Nested(ProcessSchema, many=True,
+                                     dump_to='processSequence')
+    characteristic_categories = fields.Nested(OntologyAnnotationSchema, many=True,
+                                              dump_to='characteristicCategories')
+    units = fields.Nested(OntologyAnnotationSchema, many=True)
+
+    # add an envelope to responses
+    @post_dump(pass_many=True)
+    def set_envelop(self, data, many):
+        if 'study' in self.context:
+            key = 'studies' if many else 'study'
+            return {
+                key: data
+            }
 
 
-class IsaInvestigationSchema(Schema):
-    # id_ -> id                                                 (str)
+class IsaInvestigationSchema(IsaSchema):
     # identifier                                                (str)
     # title                                                     (str)
     # description                                               (str)
@@ -586,20 +654,26 @@ class IsaInvestigationSchema(Schema):
     # publications                                              (list: StudyPublications)
     # ontology_source_references -> ontologySourceReferences    (list: OntologyAnnotation)
     # studies                                                   (list: Study)
-    # "comments": [],
-    class Meta:
-        ordered = True
+    # comments                                                  (list: Comment)
 
     id_ = fields.Str()
     identifier = fields.Str()
     title = fields.Str()
     description = fields.Str()
-    submissionDate = fields.Str()
-    public_release_date = fields.Str(dump_to='public_release_date')
+    submission_date = fields.Str(dump_to='submissionDate')
+    public_release_date = fields.Str(dump_to='publicReleaseDate')
     filename = fields.Str()
     contacts = fields.Nested(PersonSchema, many=True, dump_to='people')
     publications = fields.Nested(PublicationSchema, many=True)
-    ontology_source_references = fields.Nested(OntologyAnnotationSchema, many=True,
+    ontology_source_references = fields.Nested(OntologySourceSchema, many=True,
                                                dump_to='ontologySourceReferences')
     studies = fields.Nested(StudySchema, many=True)
-    comments = fields.Nested(CommentSchema, many=True)
+
+    # add an envelope to responses
+    @post_dump(pass_many=True)
+    def set_envelop(self, data, many):
+        if 'investigation' in self.context:
+            key = 'investigation' if many else 'investigation'
+            return {
+                key: data
+            }

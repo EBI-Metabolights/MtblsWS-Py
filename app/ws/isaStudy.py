@@ -196,6 +196,82 @@ class IsaJsonStudies(Resource):
         return inv_obj, 201
 
 
+class IsaInvestigation(Resource):
+
+    @swagger.operation(
+        summary="Get ISA Investigation",
+        notes="Get the whole ISA Investigation in a single JSON.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help='Study Sample name')
+        obj_name = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            obj_name = args['name']
+
+        logger.info('Getting Investigation %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        # Using context to avoid envelop tags in contained objects
+        sch = IsaInvestigationSchema()
+        sch.context['investigation'] = Investigation()
+        logger.info('Got %s', isa_inv)
+        return sch.dump(isa_inv)
+
+
 class StudyTitle(Resource):
 
     @swagger.operation(
@@ -3488,74 +3564,74 @@ class StudySources(Resource):
 
 class StudySamples(Resource):
 
-    @swagger.operation(
-        summary='Add new Study Sample',
-        notes='Add new Study Sample to a Study.',
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "sample",
-                "description": 'Study Sample in ISA-JSON format.',
-                "paramType": "body",
-                "type": "string",
-                "format": "application/json",
-                "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "save_audit_copy",
-                "description": "Keep track of changes saving a copy of the unmodified files.",
-                "paramType": "header",
-                "type": "Boolean",
-                "defaultValue": True,
-                "format": "application/json",
-                "required": False,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            },
-            {
-                "code": 409,
-                "message": "Conflict. The request could not be completed due to a conflict"
-                           " with the current state of study. This is usually issued to prevent duplications."
-            }
-        ]
-    )
+    # @swagger.operation(
+    #     summary='Add new Study Sample',
+    #     notes='Add new Study Sample to a Study.',
+    #     parameters=[
+    #         {
+    #             "name": "study_id",
+    #             "description": "MTBLS Identifier",
+    #             "required": True,
+    #             "allowMultiple": False,
+    #             "paramType": "path",
+    #             "dataType": "string"
+    #         },
+    #         {
+    #             "name": "user_token",
+    #             "description": "User API token",
+    #             "paramType": "header",
+    #             "type": "string",
+    #             "required": True,
+    #             "allowMultiple": False
+    #         },
+    #         {
+    #             "name": "sample",
+    #             "description": 'Study Sample in ISA-JSON format.',
+    #             "paramType": "body",
+    #             "type": "string",
+    #             "format": "application/json",
+    #             "required": True,
+    #             "allowMultiple": False
+    #         },
+    #         {
+    #             "name": "save_audit_copy",
+    #             "description": "Keep track of changes saving a copy of the unmodified files.",
+    #             "paramType": "header",
+    #             "type": "Boolean",
+    #             "defaultValue": True,
+    #             "format": "application/json",
+    #             "required": False,
+    #             "allowMultiple": False
+    #         }
+    #     ],
+    #     responseMessages=[
+    #         {
+    #             "code": 200,
+    #             "message": "OK."
+    #         },
+    #         {
+    #             "code": 400,
+    #             "message": "Bad Request. Server could not understand the request due to malformed syntax."
+    #         },
+    #         {
+    #             "code": 401,
+    #             "message": "Unauthorized. Access to the resource requires user authentication."
+    #         },
+    #         {
+    #             "code": 403,
+    #             "message": "Forbidden. Access to the study is not allowed for this user."
+    #         },
+    #         {
+    #             "code": 404,
+    #             "message": "Not found. The requested identifier is not valid or does not exist."
+    #         },
+    #         {
+    #             "code": 409,
+    #             "message": "Conflict. The request could not be completed due to a conflict"
+    #                        " with the current state of study. This is usually issued to prevent duplications."
+    #         }
+    #     ]
+    # )
     def post(self, study_id):
         log_request(request)
         # param validation
@@ -3604,38 +3680,14 @@ class StudySamples(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        obj_list = isa_study.samples
+        obj_list = isa_study.assays[0].samples
         # check for Study Sample added already
         for index, obj in enumerate(obj_list):
             if obj.name == new_obj.name:
                 abort(409)
 
         # add Study Sample
-        pre_source = isa_study.sources[0]
-        source = Source(name='New-Source',
-                        characteristics=pre_source.characteristics,
-                        comments=[Comment(name='created', value='Created with MtblsWs-Py')]
-                        )
-        protocol = isa_study.get_prot('Sample collection')
-        pre_sample = isa_study.samples[0]
-        sample = Sample(name='New-Sample',
-                        factor_values=pre_sample.factor_values,
-                        characteristics=pre_sample.characteristics,
-                        derives_from=source,
-                        comments=[Comment(name='created', value='Created with MtblsWs-Py')]
-                        )
-        new_obj = Process(name='New-Process',
-                          executes_protocol=protocol,
-                          date_=None,
-                          performer=None,
-                          parameter_values=None,
-                          inputs=[source],
-                          outputs=[sample],
-                          comments=[Comment(name='created', value='Created with MtblsWs-Py')]
-                          )
-
-        # obj_list.append(new_obj)
-        isa_study.process_sequence.append(new_obj)
+        obj_list.append(new_obj)
 
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
@@ -3643,7 +3695,7 @@ class StudySamples(Resource):
                             save_samples_copy=True, save_assays_copy=True)
         logger.info('Added %s', new_obj.name)
 
-        return ProcessSchema().dump(new_obj)
+        return SampleSchema().dump(new_obj)
 
     @swagger.operation(
         summary="Get Study Samples",
@@ -3826,7 +3878,7 @@ class StudyOtherMaterials(Resource):
 
         obj_list = isa_study.other_material
         # Using context to avoid envelop tags in contained objects
-        sch = MaterialSchema()
+        sch = OtherMaterialSchema()
         sch.context['other_material'] = Material()
         if obj_name is None:
             # return a list of objs
@@ -3850,7 +3902,7 @@ class StudyAssays(Resource):
         summary="Get Study Assays",
         notes="""Get Study Assays.
                  <br>
-                 Use assay name as a query parameter to filter out.""",
+                 Use assay filename as a query parameter to filter out.""",
         parameters=[
             {
                 "name": "study_id",
@@ -3858,6 +3910,15 @@ class StudyAssays(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "filename",
+                "description": "Study Assay filename",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
                 "dataType": "string"
             },
             {
@@ -3901,12 +3962,12 @@ class StudyAssays(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
         # query validation
-        # parser = reqparse.RequestParser()
-        # parser.add_argument('name', help='Study Sample name')
+        parser = reqparse.RequestParser()
+        parser.add_argument('filename', help='Study Assay filename')
         obj_name = None
-        # if request.args:
-        #     args = parser.parse_args(req=request)
-        #     obj_name = args['name']
+        if request.args:
+            args = parser.parse_args(req=request)
+            obj_name = args['filename']
 
         logger.info('Getting Assays for %s, using API-Key %s', study_id, user_token)
         # check for access rights
