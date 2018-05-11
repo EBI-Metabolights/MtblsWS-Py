@@ -7,6 +7,8 @@ from app.ws.mm_models import *
 from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
 from flask_restful_swagger import swagger
+import logging.config
+
 
 """
 ISA Study
