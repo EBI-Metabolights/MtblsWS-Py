@@ -353,12 +353,13 @@ class SampleSchema(MaterialSchema):
     # name                              (str)
     # characteristics                   (list: Characteristic)
     # factor_values -> factorValues     (FactorValues)
-    # derives_from                      (Source)
+    # derives_from -> devivesFrom       (Source)
     # comments                          (list: Comment)
 
     factor_values = fields.Nested(FactorValueSchema, many=True,
                                   load_from='factorValues', dump_to='factorValues')
-    derives_from = fields.Nested(SourceSchema, many=True)
+    derives_from = fields.Nested(SourceSchema, many=True,
+                                 dump_to='devivesFrom')
 
     @post_load
     def make_obj(self, data):
@@ -386,7 +387,8 @@ class OtherMaterialSchema(MaterialSchema):
 
     factor_values = fields.Nested(FactorValueSchema, many=True,
                                   load_from='factorValues', dump_to='factorValues')
-    derives_from = fields.Nested('self', many=True)
+    derives_from = fields.Nested('self', many=True,
+                                 dump_to='generatedFrom')
 
     @post_load
     def make_obj(self, data):
@@ -464,7 +466,7 @@ class InputOutpuField(fields.Field):
                         'name': val.name,
                         'characteristics': val.characteristics,
                         # 'factor_values': val.factor_values,
-                        'derives_from': val.derives_from,
+                        'derivesFrom': val.derives_from,
                         'comments': val.comments
 
                     }
