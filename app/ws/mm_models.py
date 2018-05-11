@@ -407,7 +407,7 @@ class DataFileSchema(IsaSchema):
     #
     # filename                          (str)
     # label                             (str)
-    # generated_from -> generatedFrom   (list:FactorValues)
+    # generated_from -> generatedFrom   (list: [Source, Sample])
     # comments                          (list: Comment)
 
     filename = fields.Str(required=True)
@@ -449,25 +449,6 @@ class ParameterValueSchema(Schema):
     @post_load
     def make_obj(self, data):
         return ParameterValue(**data)
-
-
-class DataFileSchema(IsaSchema):
-    # marshmallow schema for ISA-API class DataFile
-    #
-    # filename              (str)
-    # label                 (str, ['Array Data File' or 'Raw Data File'])
-    # generated_from        (list: [Source, Sample])
-    class Meta:
-        strict = True
-        ordered = True
-
-    filename = fields.Str(required=True)
-    label = fields.Str()
-    generated_from = fields.Nested(SampleSchema, many=True)
-
-    @post_load
-    def make_obj(self, data):
-        return DataFile(**data)
 
 
 class InputOutpuField(fields.Field):
