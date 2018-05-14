@@ -353,13 +353,13 @@ class SampleSchema(MaterialSchema):
     # name                              (str)
     # characteristics                   (list: Characteristic)
     # factor_values -> factorValues     (FactorValues)
-    # derives_from -> devivesFrom       (Source)
+    # derives_from -> derivesFrom       (Source)
     # comments                          (list: Comment)
 
     factor_values = fields.Nested(FactorValueSchema, many=True,
                                   load_from='factorValues', dump_to='factorValues')
     derives_from = fields.Nested(SourceSchema, many=True,
-                                 dump_to='devivesFrom')
+                                 dump_to='derivesFrom')
 
     @post_load
     def make_obj(self, data):
@@ -446,7 +446,7 @@ class ParameterValueSchema(Schema):
 
     category = fields.Nested(ProtocolParameterSchema, required=True)
     value = ValueField(attribute='value')
-    unit = fields.Nested(OntologyAnnotationSchema, many=True)
+    unit = fields.Nested(OntologyAnnotationSchema, many=True, allow_none=True)
 
     @post_load
     def make_obj(self, data):
@@ -510,8 +510,8 @@ class ProcessSchema(IsaSchema):
     name = fields.Str(required=True)
     executes_protocol = fields.Nested(ProtocolSchema,
                                       load_from='executesProtocol', dump_to='executesProtocol')
-    date = fields.Str()
-    performer = fields.Str()
+    date = fields.Str(allow_none=True)
+    performer = fields.Str(allow_none=True)
 
     parameter_values = fields.Nested(ParameterValueSchema, many=True,
                                      load_from='parameterValues', dump_to='parameterValues')
@@ -603,7 +603,7 @@ class StudySchema(IsaSchema):
     design_descriptors = fields.Nested(StudyDesignDescriptorSchema, many=True,
                                        dump_to='studyDesignDescriptors')
     publications = fields.Nested(PublicationSchema, many=True)
-    factors = fields.Nested(FactorValueSchema, many=True)
+    factors = fields.Nested(StudyFactorSchema, many=True)
     protocols = fields.Nested(ProtocolSchema, many=True)
     assays = fields.Nested(AssaySchema, many=True)
     sources = fields.Nested(SourceSchema, many=True)
