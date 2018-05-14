@@ -611,7 +611,8 @@ class StudySchema(IsaSchema):
     other_materials = fields.Nested(OtherMaterialSchema, many=True,
                                     dump_to='otherMaterials')
     process_sequence = fields.Nested(ProcessSchema, many=True,
-                                     dump_to='processSequence')
+                                     exclude=('prev_process', 'next_process'),
+                                     load_from='processSequence', dump_to='processSequence')
     characteristic_categories = fields.Nested(OntologyAnnotationSchema, many=True,
                                               dump_to='characteristicCategories')
     units = fields.Nested(OntologyAnnotationSchema, many=True)
