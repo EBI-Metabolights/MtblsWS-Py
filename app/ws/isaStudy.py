@@ -9,7 +9,6 @@ from app.ws.models import *
 from flask_restful_swagger import swagger
 import logging.config
 
-
 """
 ISA Study
 
@@ -23,7 +22,6 @@ wsc = WsClient()
 
 # Allow for a more detailed logging when on DEBUG mode
 def log_request(request):
-
     if config.DEBUG:
         logger.debug('REQUEST HEADERS -> %s', request.headers)
         logger.debug('REQUEST BODY    -> %s', request.data)
@@ -882,28 +880,28 @@ class StudyContacts(Resource):
             }
         ],
         responseMessages=[
-                {
-                    "code": 200,
-                    "message": "OK."
-                },
-                {
-                    "code": 400,
-                    "message": "Bad Request. Server could not understand the request due to malformed syntax."
-                },
-                {
-                    "code": 401,
-                    "message": "Unauthorized. Access to the resource requires user authentication."
-                },
-                {
-                    "code": 403,
-                    "message": "Forbidden. Access to the study is not allowed for this user."
-                },
-                {
-                    "code": 404,
-                    "message": "Not found. The requested identifier is not valid or does not exist."
-                }
-            ]
-        )
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
     def put(self, study_id):
         log_request(request)
         # param validation
@@ -1467,28 +1465,28 @@ class StudyProtocols(Resource):
             }
         ],
         responseMessages=[
-                {
-                    "code": 200,
-                    "message": "OK."
-                },
-                {
-                    "code": 400,
-                    "message": "Bad Request. Server could not understand the request due to malformed syntax."
-                },
-                {
-                    "code": 401,
-                    "message": "Unauthorized. Access to the resource requires user authentication."
-                },
-                {
-                    "code": 403,
-                    "message": "Forbidden. Access to the study is not allowed for this user."
-                },
-                {
-                    "code": 404,
-                    "message": "Not found. The requested identifier is not valid or does not exist."
-                }
-            ]
-        )
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
     def put(self, study_id):
         log_request(request)
         # param validation
@@ -1939,28 +1937,28 @@ class StudyFactors(Resource):
             }
         ],
         responseMessages=[
-                {
-                    "code": 200,
-                    "message": "OK."
-                },
-                {
-                    "code": 400,
-                    "message": "Bad Request. Server could not understand the request due to malformed syntax."
-                },
-                {
-                    "code": 401,
-                    "message": "Unauthorized. Access to the resource requires user authentication."
-                },
-                {
-                    "code": 403,
-                    "message": "Forbidden. Access to the study is not allowed for this user."
-                },
-                {
-                    "code": 404,
-                    "message": "Not found. The requested identifier is not valid or does not exist."
-                }
-            ]
-        )
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
     def put(self, study_id):
         log_request(request)
         # param validation
@@ -2416,28 +2414,28 @@ class StudyDescriptors(Resource):
             }
         ],
         responseMessages=[
-                {
-                    "code": 200,
-                    "message": "OK."
-                },
-                {
-                    "code": 400,
-                    "message": "Bad Request. Server could not understand the request due to malformed syntax."
-                },
-                {
-                    "code": 401,
-                    "message": "Unauthorized. Access to the resource requires user authentication."
-                },
-                {
-                    "code": 403,
-                    "message": "Forbidden. Access to the study is not allowed for this user."
-                },
-                {
-                    "code": 404,
-                    "message": "Not found. The requested identifier is not valid or does not exist."
-                }
-            ]
-        )
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
     def put(self, study_id):
         log_request(request)
         # param validation
@@ -2888,28 +2886,28 @@ class StudyPublications(Resource):
             }
         ],
         responseMessages=[
-                {
-                    "code": 200,
-                    "message": "OK."
-                },
-                {
-                    "code": 400,
-                    "message": "Bad Request. Server could not understand the request due to malformed syntax."
-                },
-                {
-                    "code": 401,
-                    "message": "Unauthorized. Access to the resource requires user authentication."
-                },
-                {
-                    "code": 403,
-                    "message": "Forbidden. Access to the study is not allowed for this user."
-                },
-                {
-                    "code": 404,
-                    "message": "Not found. The requested identifier is not valid or does not exist."
-                }
-            ]
-        )
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
     def put(self, study_id):
         log_request(request)
         # param validation
@@ -3156,8 +3154,7 @@ class AssayProcesses(Resource):
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
-
-        if assay_num > len(isa_study.assays)-1:
+        if assay_num > len(isa_study.assays) - 1:
             abort(404)
 
         obj_list = isa_study.assays[assay_num].process_sequence
@@ -4010,6 +4007,7 @@ class StudyOtherMaterials(Resource):
 
 
 class StudyAssays(Resource):
+
     @swagger.operation(
         summary="Get Study Assays",
         notes="""Get Study Assays.
@@ -4025,13 +4023,14 @@ class StudyAssays(Resource):
                 "dataType": "string"
             },
             {
-                "name": "filename",
-                "description": "Study Assay filename",
+                "name": "list_only",
+                "description": "List filenames only",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "boolean",
+                "default": True
             },
             {
                 "name": "user_token",
@@ -4075,11 +4074,11 @@ class StudyAssays(Resource):
             user_token = request.headers['user_token']
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('filename', help='Study Assay filename')
-        obj_name = None
+        parser.add_argument('list_only', help='List filenames only')
+        list_only = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['filename']
+            list_only = args['list_only']
 
         logger.info('Getting Assays for %s, using API-Key %s', study_id, user_token)
         # check for access rights
@@ -4087,22 +4086,97 @@ class StudyAssays(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        obj_list = isa_study.assays
         # Using context to avoid envelop tags in contained objects
         sch = AssaySchema()
         sch.context['assay'] = Assay()
-        if obj_name is None:
-            # return a list of objs
-            logger.info('Got %s assays', len(obj_list))
-            return sch.dump(obj_list, many=True)
-        else:
-            # return a single obj
-            found = False
-            for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
-                    found = True
-                    break
-            if not found:
-                abort(404)
-            logger.info('Got %s', obj.name)
-            return sch.dump(obj)
+        logger.info('Got %s assays', len(isa_study.assays))
+        if list_only in ['true', 'True']:
+            sch = AssaySchema(only=['filename'])
+            sch.context['assay'] = Assay()
+        return sch.dump(isa_study.assays, many=True)
+
+
+class StudyAssay(Resource):
+
+    @swagger.operation(
+        summary="Get Study Assay",
+        notes="""Get Study Assay.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "assay_id",
+                "description": "Assay number",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id, assay_id):
+        # param validation
+        if study_id is None:
+            abort(404)
+        if study_id is None:
+            abort(404)
+        try:
+            assay_num = int(assay_id) - 1
+        except ValueError:
+            abort(404)
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+
+        logger.info('Getting Assay %s for %s, using API-Key %s', assay_id, study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        if assay_num < 0 or \
+                assay_num > len(isa_study.assays) - 1:
+            abort(404)
+        isa_assay = isa_study.assays[assay_num]
+        # Using context to avoid envelop tags in contained objects
+        sch = AssaySchema()
+        sch.context['assay'] = Assay()
+        logger.info('Got %s', isa_assay.filename)
+        return sch.dump(isa_assay)
