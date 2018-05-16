@@ -432,7 +432,7 @@ class StudyTitle(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.title = new_title
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Applied %s', new_title)
         return jsonify({"title": new_title})
 
@@ -599,7 +599,7 @@ class StudyDescription(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.description = new_description
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Applied %s', new_description)
         return jsonify({"description": new_description})
 
@@ -726,7 +726,7 @@ class StudyContacts(Resource):
         # add contact
         isa_study.contacts.append(new_contact)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_contact.email)
 
         return PersonSchema().dump(new_contact)
@@ -959,7 +959,7 @@ class StudyContacts(Resource):
         if not person_found:
             abort(404)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_contact.email)
 
         return PersonSchema().dump(updated_contact)
@@ -1072,7 +1072,7 @@ class StudyContacts(Resource):
         if not person_found:
             abort(404)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', person.email)
 
         return PersonSchema().dump(person)
@@ -1202,7 +1202,7 @@ class StudyProtocols(Resource):
         # add obj
         isa_study.protocols.append(new_obj)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_obj.name)
 
         return ProtocolSchema().dump(new_obj)
@@ -1410,7 +1410,7 @@ class StudyProtocols(Resource):
         # remove object
         isa_study.protocols.remove(obj)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', obj.name)
 
         return ProtocolSchema().dump(obj)
@@ -1544,7 +1544,7 @@ class StudyProtocols(Resource):
         if not found:
             abort(404)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_protocol.name)
 
         return ProtocolSchema().dump(updated_protocol)
@@ -1674,7 +1674,7 @@ class StudyFactors(Resource):
         # add obj
         isa_study.factors.append(new_obj)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_obj.name)
 
         return StudyFactorSchema().dump(new_obj)
@@ -1882,7 +1882,7 @@ class StudyFactors(Resource):
         # remove object
         isa_study.factors.remove(obj)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', obj.name)
 
         return StudyFactorSchema().dump(obj)
@@ -2016,7 +2016,7 @@ class StudyFactors(Resource):
         if not found:
             abort(404)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_factor.name)
 
         return StudyFactorSchema().dump(updated_factor)
@@ -2147,7 +2147,7 @@ class StudyDescriptors(Resource):
         # add Study Descriptor
         isa_study.design_descriptors.append(new_obj)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_obj.term)
 
         return StudyDesignDescriptorSchema().dump(new_obj)
@@ -2359,7 +2359,7 @@ class StudyDescriptors(Resource):
         if not found:
             abort(404)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', obj.term)
 
         return StudyDesignDescriptorSchema().dump(obj)
@@ -2493,7 +2493,7 @@ class StudyDescriptors(Resource):
         if not found:
             abort(404)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_descriptor.term)
 
         return StudyDesignDescriptorSchema().dump(updated_descriptor)
@@ -2623,7 +2623,7 @@ class StudyPublications(Resource):
         # add Study Publication
         isa_study.publications.append(new_publication)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_publication.title)
 
         return PublicationSchema().dump(new_publication)
@@ -2831,7 +2831,7 @@ class StudyPublications(Resource):
         if not found:
             abort(404)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', publication.title)
 
         return PublicationSchema().dump(publication)
@@ -2965,7 +2965,7 @@ class StudyPublications(Resource):
         if not found:
             abort(404)
         logging.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_audit_copy)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_publication.title)
 
         return PublicationSchema().dump(updated_publication)
@@ -3051,6 +3051,116 @@ class StudyProcesses(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
         obj_list = isa_study.process_sequence
+        # obj_list = isa_study.assays[0].process_sequence
+        # Using context to avoid envelop tags in contained objects
+        sch = ProcessSchema()
+        sch.context['process'] = Process()
+        if obj_name is None:
+            # return a list of objs
+            logger.info('Got %s processes', len(obj_list))
+            return sch.dump(obj_list, many=True)
+        else:
+            # return a single obj
+            found = False
+            for index, obj in enumerate(obj_list):
+                if obj.name == obj_name:
+                    found = True
+                    break
+            if not found:
+                abort(404)
+            logger.info('Got %s', obj.name)
+            return sch.dump(obj)
+
+
+class AssayProcesses(Resource):
+
+    @swagger.operation(
+        summary="Get Assay Processes",
+        notes="""Get Assay Processes.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "assay_id",
+                "description": "Assay Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id, assay_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+        if assay_id is None:
+            abort(404)
+        try:
+            assay_num = int(assay_id)
+        except ValueError:
+            abort(404)
+        if assay_num < 0:
+            abort(404)
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help='Study Source name')
+        obj_name = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            obj_name = args['name']
+
+        logger.info('Getting Study Processes for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        if assay_num > len(isa_study.assays)-1:
+            abort(404)
+
+        obj_list = isa_study.assays[assay_num].process_sequence
         # Using context to avoid envelop tags in contained objects
         sch = ProcessSchema()
         sch.context['process'] = Process()
