@@ -506,19 +506,19 @@ class ProcessSchema(IsaSchema):
         strict = True
         ordered = True
 
-    id_ = fields.Str()
     name = fields.Str(required=True)
     executes_protocol = fields.Nested(ProtocolSchema,
-                                      load_from='executesProtocol', dump_to='executesProtocol')
+                                      load_from='executesProtocol', dump_to='executesProtocol').name
     date = fields.Str(allow_none=True)
     performer = fields.Str(allow_none=True)
-
     parameter_values = fields.Nested(ParameterValueSchema, many=True,
                                      load_from='parameterValues', dump_to='parameterValues')
 
     prev_process = fields.Nested('self',
+                                 exclude=('prev_process', 'next_process'),
                                  load_from='previousProcess', dump_to='previousProcess')
     next_process = fields.Nested('self',
+                                 exclude=('prev_process', 'next_process'),
                                  load_from='nextProcess', dump_to='nextProcess')
     inputs = fields.Nested(SampleSchema, many=True)
     outputs = fields.Nested(SampleSchema, many=True)
@@ -597,11 +597,11 @@ class StudySchema(IsaSchema):
     filename = fields.Str()
     title = fields.Str()
     description = fields.Str()
-    submission_date = fields.Str(dump_to='submissionDate')
-    public_release_date = fields.Str(dump_to='publicReleaseDate')
-    contacts = fields.Nested(PersonSchema, many=True, dump_to='people')
+    submission_date = fields.Str(load_from='submissionDate', dump_to='submissionDate')
+    public_release_date = fields.Str(load_from='publicReleaseDate', dump_to='publicReleaseDate')
+    contacts = fields.Nested(PersonSchema, many=True, load_from='people', dump_to='people')
     design_descriptors = fields.Nested(StudyDesignDescriptorSchema, many=True,
-                                       dump_to='studyDesignDescriptors')
+                                       load_from='studyDesignDescriptors', dump_to='studyDesignDescriptors')
     publications = fields.Nested(PublicationSchema, many=True)
     factors = fields.Nested(StudyFactorSchema, many=True)
     protocols = fields.Nested(ProtocolSchema, many=True)
@@ -609,13 +609,16 @@ class StudySchema(IsaSchema):
     sources = fields.Nested(SourceSchema, many=True)
     samples = fields.Nested(SampleSchema, many=True)
     other_materials = fields.Nested(OtherMaterialSchema, many=True,
-                                    dump_to='otherMaterials')
+                                    load_from='otherMaterials', dump_to='otherMaterials')
     process_sequence = fields.Nested(ProcessSchema, many=True,
-                                     exclude=('prev_process', 'next_process'),
                                      load_from='processSequence', dump_to='processSequence')
     characteristic_categories = fields.Nested(OntologyAnnotationSchema, many=True,
-                                              dump_to='characteristicCategories')
+                                              load_from='characteristicCategories', dump_to='characteristicCategories')
     units = fields.Nested(OntologyAnnotationSchema, many=True)
+
+    @post_load
+    def make_obj(self, data):
+        return Study(**data)
 
     # add an envelope to responses
     @post_dump(pass_many=True)
@@ -640,18 +643,21 @@ class IsaInvestigationSchema(IsaSchema):
     # studies                                                   (list: Study)
     # comments                                                  (list: Comment)
 
-    id_ = fields.Str()
     identifier = fields.Str()
     title = fields.Str()
     description = fields.Str()
-    submission_date = fields.Str(dump_to='submissionDate')
-    public_release_date = fields.Str(dump_to='publicReleaseDate')
+    submission_date = fields.Str(load_from='submissionDate', dump_to='submissionDate')
+    public_release_date = fields.Str(load_from='publicReleaseDate', dump_to='publicReleaseDate')
     filename = fields.Str()
-    contacts = fields.Nested(PersonSchema, many=True, dump_to='people')
+    contacts = fields.Nested(PersonSchema, many=True, load_from='people', dump_to='people')
     publications = fields.Nested(PublicationSchema, many=True)
     ontology_source_references = fields.Nested(OntologySourceSchema, many=True,
-                                               dump_to='ontologySourceReferences')
+                                               load_from='ontologySourceReferences', dump_to='ontologySourceReferences')
     studies = fields.Nested(StudySchema, many=True)
+
+    @post_load
+    def make_obj(self, data):
+        return Investigation(**data)
 
     # add an envelope to responses
     @post_dump(pass_many=True)
