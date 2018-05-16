@@ -4010,9 +4010,7 @@ class StudyAssays(Resource):
 
     @swagger.operation(
         summary="Get Study Assays",
-        notes="""Get Study Assays.
-                 <br>
-                 Use assay filename as a query parameter to filter out.""",
+        notes="""Get Study Assay list.""",
         parameters=[
             {
                 "name": "study_id",
