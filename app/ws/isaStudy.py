@@ -4029,7 +4029,8 @@ class StudyAssays(Resource):
                 "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "boolean",
+                "type": "Boolean",
+                "defaultValue": True,
                 "default": True
             },
             {
