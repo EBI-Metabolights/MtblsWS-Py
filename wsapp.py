@@ -1,9 +1,9 @@
 import logging.config
-import config
 from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
+from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.mtbls_maf import MtblsMAF
 from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import *
