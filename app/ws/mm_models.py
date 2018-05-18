@@ -531,7 +531,7 @@ class ProcessSchema(IsaSchema):
     @post_dump(pass_many=True)
     def set_envelop(self, data, many):
         if 'process' in self.context:
-            key = 'processes' if many else 'process'
+            key = 'processSequence'
             return {
                 key: data
             }
