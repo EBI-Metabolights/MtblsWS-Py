@@ -212,12 +212,10 @@ class ValueField(fields.Field):
             return val
 
     def _deserialize(self, value, attr, data):
-        # str, int or float
-        val = data.get(attr)
-        if isinstance(val, (int, float, str)):
+        if 'annotationValue' in value:
+            return OntologyAnnotationSchema().load(value).data
+        else:
             return value
-        if isinstance(val, OntologyAnnotation):
-            return OntologyAnnotationSchema().load(val)
 
 
 class FactorValueSchema(IsaSchema):
@@ -288,7 +286,7 @@ class PublicationSchema(IsaSchema):
             }
 
 
-class CharacteristicSchema(IsaSchema):
+class MaterialAttributeValueSchema(IsaSchema):
     # marshmallow schema for ISA-API class Characteristic
     # material_attribute_value_schema.json in ISA-Model v1.0
     #
@@ -323,7 +321,7 @@ class MaterialSchema(IsaSchema):
 
     name = fields.Str(required=True)
     type = fields.Str()
-    characteristics = fields.Nested(CharacteristicSchema, many=True)
+    characteristics = fields.Nested(MaterialAttributeValueSchema, many=True)
 
 
 class SourceSchema(MaterialSchema):

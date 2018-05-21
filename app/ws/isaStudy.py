@@ -352,7 +352,7 @@ class StudyTitle(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.title = new_title
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Applied %s', new_title)
         return jsonify({"title": new_title})
@@ -519,7 +519,7 @@ class StudyDescription(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         isa_study.description = new_description
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Applied %s', new_description)
         return jsonify({"description": new_description})
@@ -646,7 +646,7 @@ class StudyContacts(Resource):
                 abort(409)
         # add contact
         isa_study.contacts.append(new_contact)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_contact.email)
 
@@ -879,7 +879,7 @@ class StudyContacts(Resource):
                 break
         if not person_found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_contact.email)
 
@@ -992,7 +992,7 @@ class StudyContacts(Resource):
                 break
         if not person_found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', person.email)
 
@@ -1122,7 +1122,7 @@ class StudyProtocols(Resource):
             abort(409)
         # add obj
         isa_study.protocols.append(new_obj)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_obj.name)
 
@@ -1330,7 +1330,7 @@ class StudyProtocols(Resource):
             abort(404)
         # remove object
         isa_study.protocols.remove(obj)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', obj.name)
 
@@ -1464,7 +1464,7 @@ class StudyProtocols(Resource):
                 break
         if not found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_protocol.name)
 
@@ -1594,7 +1594,7 @@ class StudyFactors(Resource):
             abort(409)
         # add obj
         isa_study.factors.append(new_obj)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_obj.name)
 
@@ -1802,7 +1802,7 @@ class StudyFactors(Resource):
             abort(404)
         # remove object
         isa_study.factors.remove(obj)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', obj.name)
 
@@ -1936,7 +1936,7 @@ class StudyFactors(Resource):
                 break
         if not found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_factor.name)
 
@@ -2067,7 +2067,7 @@ class StudyDescriptors(Resource):
                 abort(409)
         # add Study Descriptor
         isa_study.design_descriptors.append(new_obj)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_obj.term)
 
@@ -2279,7 +2279,7 @@ class StudyDescriptors(Resource):
                 break
         if not found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', obj.term)
 
@@ -2413,7 +2413,7 @@ class StudyDescriptors(Resource):
                 break
         if not found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_descriptor.term)
 
@@ -2543,7 +2543,7 @@ class StudyPublications(Resource):
                 abort(409)
         # add Study Publication
         isa_study.publications.append(new_publication)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_publication.title)
 
@@ -2751,7 +2751,7 @@ class StudyPublications(Resource):
                 break
         if not found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', publication.title)
 
@@ -2885,7 +2885,7 @@ class StudyPublications(Resource):
                 break
         if not found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_publication.title)
 
@@ -3017,7 +3017,7 @@ class StudySources(Resource):
                 abort(409)
         # add Study Source
         obj_list.append(new_obj)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
                             save_samples_copy=True, save_assays_copy=True)
@@ -3250,7 +3250,7 @@ class StudySources(Resource):
                 break
         if not found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
                             save_samples_copy=True, save_assays_copy=True)
@@ -3258,80 +3258,80 @@ class StudySources(Resource):
 
         return SourceSchema().dump(obj)
 
-    # @swagger.operation(
-    #     summary='Update Study Source',
-    #     notes="""Update Study Source.
-    #           <br>
-    #           Use source name as a query parameter to filter out.""",
-    #     parameters=[
-    #         {
-    #             "name": "study_id",
-    #             "description": "MTBLS Identifier",
-    #             "required": True,
-    #             "allowMultiple": False,
-    #             "paramType": "path",
-    #             "dataType": "string"
-    #         },
-    #         {
-    #             "name": "name",
-    #             "description": "Study Source name",
-    #             "required": True,
-    #             "allowEmptyValue": False,
-    #             "allowMultiple": False,
-    #             "paramType": "query",
-    #             "dataType": "string"
-    #         },
-    #         {
-    #             "name": "user_token",
-    #             "description": "User API token",
-    #             "paramType": "header",
-    #             "type": "string",
-    #             "required": True,
-    #             "allowMultiple": False
-    #         },
-    #         {
-    #             "name": "protocol",
-    #             "description": 'Study Source in ISA-JSON format.',
-    #             "paramType": "body",
-    #             "type": "string",
-    #             "format": "application/json",
-    #             "required": True,
-    #             "allowMultiple": False
-    #         },
-    #         {
-    #             "name": "save_audit_copy",
-    #             "description": "Keep track of changes saving a copy of the unmodified files.",
-    #             "paramType": "header",
-    #             "type": "Boolean",
-    #             "defaultValue": True,
-    #             "format": "application/json",
-    #             "required": False,
-    #             "allowMultiple": False
-    #         }
-    #     ],
-    #     responseMessages=[
-    #             {
-    #                 "code": 200,
-    #                 "message": "OK."
-    #             },
-    #             {
-    #                 "code": 400,
-    #                 "message": "Bad Request. Server could not understand the request due to malformed syntax."
-    #             },
-    #             {
-    #                 "code": 401,
-    #                 "message": "Unauthorized. Access to the resource requires user authentication."
-    #             },
-    #             {
-    #                 "code": 403,
-    #                 "message": "Forbidden. Access to the study is not allowed for this user."
-    #             },
-    #             {
-    #                 "code": 404,
-    #                 "message": "Not found. The requested identifier is not valid or does not exist."
-    #             }
-    #         ]
-    #     )
+    @swagger.operation(
+        summary='Update Study Source',
+        notes="""Update Study Source.
+              <br>
+              Use source name as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "name",
+                "description": "Study Source name",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "source",
+                "description": 'Study Source in ISA-JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+                {
+                    "code": 200,
+                    "message": "OK."
+                },
+                {
+                    "code": 400,
+                    "message": "Bad Request. Server could not understand the request due to malformed syntax."
+                },
+                {
+                    "code": 401,
+                    "message": "Unauthorized. Access to the resource requires user authentication."
+                },
+                {
+                    "code": 403,
+                    "message": "Forbidden. Access to the study is not allowed for this user."
+                },
+                {
+                    "code": 404,
+                    "message": "Not found. The requested identifier is not valid or does not exist."
+                }
+            ]
+        )
     def put(self, study_id):
         log_request(request)
         # param validation
@@ -3380,20 +3380,18 @@ class StudySources(Resource):
 
         obj_list = isa_study.sources
         found = False
-        for index, obj in enumerate(obj_list):
-            if obj.name == obj_name:
-                found = True
-                # update source details
-                obj_list[index] = updated_obj
-
-                obj_list[index].name = updated_obj.name
-                obj_list[index].characteristics = list(updated_obj.characteristics)
-                obj_list[index].comments = list(updated_obj.comments)
-
-                break
+        for i, proc in enumerate(isa_study.process_sequence):
+            for index, src in enumerate(proc.inputs):
+                if isinstance(src, Source):
+                    if src.name == obj_name:
+                        found = True
+                        proc.inputs[index] = Source(name=updated_obj.name,
+                                                    characteristics=updated_obj.characteristics,
+                                                    comments=updated_obj.comments)
+                        break
         if not found:
             abort(404)
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
                             save_samples_copy=True, save_assays_copy=True)
@@ -3529,7 +3527,7 @@ class StudySamples(Resource):
         # add Study Sample
         obj_list.append(new_obj)
 
-        logging.info("A copy of the previous files will %s saved", save_msg_str)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
                             save_samples_copy=True, save_assays_copy=True)
