@@ -7,6 +7,7 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
+import logging
 
 
 logger = logging.getLogger('wslog')
