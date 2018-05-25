@@ -316,10 +316,9 @@ class MaterialSchema(IsaSchema):
     # characteristics                   (list: Characteristic)
     # comments                          (list: Material)
     class Meta:
-        strict = True
         ordered = True
 
-    name = fields.Str(required=True)
+    name = fields.Str(allow_none=True)
     type = fields.Str()
     characteristics = fields.Nested(MaterialAttributeValueSchema, many=True)
 
@@ -451,40 +450,40 @@ class ParameterValueSchema(Schema):
         return ParameterValue(**data)
 
 
-class InputOutpuField(fields.Field):
-
-    def _serialize(self, value, attr, obj):
-
-        if isinstance(value, list):
-            obj_list = list()
-            for val in value:
-                if isinstance(value[0], Sample):
-                    obj_list
-                    return {
-                        'name': val.name,
-                        'characteristics': val.characteristics,
-                        # 'factor_values': val.factor_values,
-                        'derivesFrom': val.derives_from,
-                        'comments': val.comments
-
-                    }
-            return obj_list
-
-        if isinstance(value, Material):
-            return OtherMaterialSchema.dump(obj)
-        if isinstance(value, Source):
-            return SourceSchema.dump(obj)
-
-        if isinstance(value, DataFile):
-            return DataFileSchema.dump(obj)
-
-    def _deserialize(self, value, attr, data):
-        # str, int or float
-        val = data.get(attr)
-        if isinstance(val, (int, float, str)):
-            return value
-        if isinstance(val, OntologyAnnotation):
-            return OtherMaterialSchema().load(val)
+# class InputOutpuField(fields.Field):
+#
+#     def _serialize(self, value, attr, obj):
+#
+#         if isinstance(value, list):
+#             obj_list = list()
+#             for val in value:
+#                 if isinstance(value[0], Sample):
+#                     obj_list
+#                     return {
+#                         'name': val.name,
+#                         'characteristics': val.characteristics,
+#                         # 'factor_values': val.factor_values,
+#                         'derivesFrom': val.derives_from,
+#                         'comments': val.comments
+#
+#                     }
+#             return obj_list
+#
+#         if isinstance(value, Material):
+#             return OtherMaterialSchema.dump(obj)
+#         if isinstance(value, Source):
+#             return SourceSchema.dump(obj)
+#
+#         if isinstance(value, DataFile):
+#             return DataFileSchema.dump(obj)
+#
+#     def _deserialize(self, value, attr, data):
+#         # str, int or float
+#         val = data.get(attr)
+#         if isinstance(val, (int, float, str)):
+#             return value
+#         if isinstance(val, OntologyAnnotation):
+#             return OtherMaterialSchema().load(val)
 
 
 class ProcessSchema(IsaSchema):
@@ -504,20 +503,21 @@ class ProcessSchema(IsaSchema):
         strict = True
         ordered = True
 
-    name = fields.Str(required=True)
-    executes_protocol = fields.Nested(ProtocolSchema,
-                                      load_from='executesProtocol', dump_to='executesProtocol').name
+    name = fields.Str(allow_none=True)
+    executes_protocol = fields.Nested(ProtocolSchema,only='name',
+                                      load_from='executesProtocol', dump_to='executesProtocol')
     date = fields.Str(allow_none=True)
     performer = fields.Str(allow_none=True)
     parameter_values = fields.Nested(ParameterValueSchema, many=True,
                                      load_from='parameterValues', dump_to='parameterValues')
-
-    prev_process = fields.Nested('self',
-                                 exclude=('prev_process', 'next_process'),
-                                 load_from='previousProcess', dump_to='previousProcess')
-    next_process = fields.Nested('self',
-                                 exclude=('prev_process', 'next_process'),
-                                 load_from='nextProcess', dump_to='nextProcess')
+    # prev_process = fields.Nested('self',
+    #                              exclude=('prev_process', 'next_process'),
+    #                              load_from='previousProcess', dump_to='previousProcess',
+    #                              allow_none=True)
+    # next_process = fields.Nested('self',
+    #                              exclude=('prev_process', 'next_process'),
+    #                              load_from='nextProcess', dump_to='nextProcess',
+    #                              allow_none=True)
     inputs = fields.Nested(SampleSchema, many=True)
     outputs = fields.Nested(SampleSchema, many=True)
 
@@ -565,7 +565,7 @@ class AssaySchema(IsaSchema):
     process_sequence = fields.Nested(ProcessSchema, many=True,
                                      exclude=('prev_process', 'next_process'),
                                      load_from='processSequence', dump_to='processSequence')
-    sources = fields.Nested(SourceSchema, many=True)
+    sources = fields.Nested(SourceSchema, many=True, allow_none=True)
     samples = fields.Nested(SampleSchema, many=True)
     other_material = fields.Nested(OtherMaterialSchema, many=True,
                                    load_from='otherMaterials', dump_to='otherMaterials')
@@ -603,15 +603,15 @@ class StudySchema(IsaSchema):
     publications = fields.Nested(PublicationSchema, many=True)
     factors = fields.Nested(StudyFactorSchema, many=True)
     protocols = fields.Nested(ProtocolSchema, many=True)
-    assays = fields.Nested(AssaySchema, many=True)
+    # assays = fields.Nested(AssaySchema, many=True)
     sources = fields.Nested(SourceSchema, many=True)
     samples = fields.Nested(SampleSchema, many=True)
-    other_materials = fields.Nested(OtherMaterialSchema, many=True,
-                                    load_from='otherMaterials', dump_to='otherMaterials')
-    process_sequence = fields.Nested(ProcessSchema, many=True,
-                                     load_from='processSequence', dump_to='processSequence')
-    characteristic_categories = fields.Nested(OntologyAnnotationSchema, many=True,
-                                              load_from='characteristicCategories', dump_to='characteristicCategories')
+    # other_materials = fields.Nested(OtherMaterialSchema, many=True,
+    #                                 load_from='otherMaterials', dump_to='otherMaterials')
+    # process_sequence = fields.Nested(ProcessSchema, many=True,
+    #                                  load_from='processSequence', dump_to='processSequence')
+    # characteristic_categories = fields.Nested(OntologyAnnotationSchema, many=True,
+    #                                           load_from='characteristicCategories', dump_to='characteristicCategories')
     units = fields.Nested(OntologyAnnotationSchema, many=True)
 
     @post_load

@@ -2628,10 +2628,14 @@ class StudyPublications(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
 
+        obj_list = isa_study.publications
+        # Using context to avoid envelop tags in contained objects
+        sch = PublicationSchema()
+        sch.context['publication'] = Publication()
         if obj_title is None:
             # return a list of publications
             logger.info('Got %s publications', len(isa_study.publications))
-            return PublicationSchema().dump(isa_study.publications, many=True)
+            return sch.dump(obj_list, many=True)
         else:
             # return a single publication
             found = False
@@ -2642,7 +2646,7 @@ class StudyPublications(Resource):
             if not found:
                 abort(404)
             logger.info('Got %s', obj.title)
-            return PublicationSchema().dump(obj)
+            return sch.dump(obj)
 
     @swagger.operation(
         summary='Delete Study Publication',
@@ -3400,6 +3404,149 @@ class StudySamples(Resource):
                 abort(404)
             logger.info('Got %s', obj.name)
             return sch.dump(obj)
+
+    @swagger.operation(
+        summary='Update Study Sample',
+        notes="""Update Study Sample.
+              <br>
+              Use sample name as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "name",
+                "description": "Study Sample name",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "source",
+                "description": 'Study Sample in ISA-JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+                {
+                    "code": 200,
+                    "message": "OK."
+                },
+                {
+                    "code": 400,
+                    "message": "Bad Request. Server could not understand the request due to malformed syntax."
+                },
+                {
+                    "code": 401,
+                    "message": "Unauthorized. Access to the resource requires user authentication."
+                },
+                {
+                    "code": 403,
+                    "message": "Forbidden. Access to the study is not allowed for this user."
+                },
+                {
+                    "code": 404,
+                    "message": "Not found. The requested identifier is not valid or does not exist."
+                }
+            ]
+        )
+    def put(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help="Study Sample name")
+        args = parser.parse_args()
+        obj_name = args['name']
+        if obj_name is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # body content validation
+        updated_obj = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['sample']
+            # if partial=True missing fields will be ignored
+            result = SampleSchema().load(data, partial=False)
+            updated_obj = result.data
+        except (ValidationError, Exception) as err:
+            abort(400)
+
+        # update Study Source details
+        logger.info('Updating Study Sample details for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        obj_list = isa_study.samples
+        found = False
+        for i, proc in enumerate(isa_study.process_sequence):
+            for index, src in enumerate(proc.outputs):
+                if isinstance(src, Sample):
+                    if src.name == obj_name:
+                        found = True
+                        proc.outputs[index] = Sample(name=updated_obj.name,
+                                                     characteristics=updated_obj.characteristics,
+                                                     factor_values=updated_obj.factor_values,
+                                                     derives_from=updated_obj.derives_from,
+                                                     comments=updated_obj.comments)
+                        break
+        if not found:
+            abort(404)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path,
+                            save_investigation_copy=save_audit_copy,
+                            save_samples_copy=True, save_assays_copy=True)
+        logger.info('Updated %s', updated_obj.name)
+
+        return SampleSchema().dump(updated_obj)
 
 
 class StudyOtherMaterials(Resource):
