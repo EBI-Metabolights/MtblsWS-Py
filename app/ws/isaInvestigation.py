@@ -200,4 +200,6 @@ class IsaInvestigation(Resource):
                             save_samples_copy=save_audit_copy, save_assays_copy=save_audit_copy)
         logger.info('Updated %s', updated_inv.title)
 
-        return IsaInvestigationSchema().dump(updated_inv)
+        sch = IsaInvestigationSchema()
+        sch.context['investigation'] = Investigation()
+        return sch.dump(updated_inv)

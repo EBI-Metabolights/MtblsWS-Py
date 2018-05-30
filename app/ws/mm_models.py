@@ -203,9 +203,10 @@ class ValueField(fields.Field):
         if isinstance(value, (int, float, str)):
             return value
         if isinstance(value, OntologyAnnotation):
+            tersource = OntologySourceSchema().dump(value.term_source).data if value.term_source else None
             val = {
                 'annotationValue': value.term,
-                'termSource': OntologySourceSchema(many=False).dump(value.term_source, many=False).data,
+                'termSource': tersource,
                 'termAccession': value.term_accession,
                 'comments': value.comments
             }
