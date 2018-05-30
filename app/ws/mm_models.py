@@ -319,7 +319,7 @@ class MaterialSchema(IsaSchema):
         ordered = True
 
     name = fields.Str(allow_none=True)
-    type = fields.Str()
+    type = fields.Str(allow_none=True)
     characteristics = fields.Nested(MaterialAttributeValueSchema, many=True)
 
 
@@ -356,7 +356,7 @@ class SampleSchema(MaterialSchema):
     factor_values = fields.Nested(FactorValueSchema, many=True,
                                   load_from='factorValues', dump_to='factorValues')
     derives_from = fields.Nested(SourceSchema, many=True,
-                                 dump_to='derivesFrom')
+                                 load_from='derivesFrom', dump_to='derivesFrom')
 
     @post_load
     def make_obj(self, data):
@@ -603,15 +603,16 @@ class StudySchema(IsaSchema):
     publications = fields.Nested(PublicationSchema, many=True)
     factors = fields.Nested(StudyFactorSchema, many=True)
     protocols = fields.Nested(ProtocolSchema, many=True)
-    # assays = fields.Nested(AssaySchema, many=True)
+    assays = fields.Nested(AssaySchema, many=True)
     sources = fields.Nested(SourceSchema, many=True)
     samples = fields.Nested(SampleSchema, many=True)
-    # other_materials = fields.Nested(OtherMaterialSchema, many=True,
-    #                                 load_from='otherMaterials', dump_to='otherMaterials')
-    # process_sequence = fields.Nested(ProcessSchema, many=True,
-    #                                  load_from='processSequence', dump_to='processSequence')
-    # characteristic_categories = fields.Nested(OntologyAnnotationSchema, many=True,
-    #                                           load_from='characteristicCategories', dump_to='characteristicCategories')
+    other_materials = fields.Nested(OtherMaterialSchema, many=True,
+                                    load_from='otherMaterials', dump_to='otherMaterials')
+    process_sequence = fields.Nested(ProcessSchema, many=True,
+                                     load_from='processSequence', dump_to='processSequence')
+    characteristic_categories = fields.Nested(OntologyAnnotationSchema, many=True,
+                                              load_from='characteristicCategories',
+                                              dump_to='characteristicCategories')
     units = fields.Nested(OntologyAnnotationSchema, many=True)
 
     @post_load
