@@ -182,6 +182,8 @@ class IsaInvestigation(Resource):
             result = IsaInvestigationSchema().load(data, partial=True)
             updated_inv = result.data
         except (ValidationError, Exception) as err:
+            for arg in err.args:
+                print(arg)
             abort(400)
 
         # update Study details
@@ -200,4 +202,6 @@ class IsaInvestigation(Resource):
                             save_samples_copy=save_audit_copy, save_assays_copy=save_audit_copy)
         logger.info('Updated %s', updated_inv.title)
 
-        return IsaInvestigationSchema().dump(updated_inv)
+        sch = IsaInvestigationSchema()
+        sch.context['investigation'] = Investigation()
+        return sch.dump(updated_inv)

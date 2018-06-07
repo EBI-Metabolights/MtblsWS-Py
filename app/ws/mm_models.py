@@ -203,9 +203,10 @@ class ValueField(fields.Field):
         if isinstance(value, (int, float, str)):
             return value
         if isinstance(value, OntologyAnnotation):
+            termsource = OntologySourceSchema().dump(value.term_source).data if value.term_source else None
             val = {
                 'annotationValue': value.term,
-                'termSource': OntologySourceSchema(many=False).dump(value.term_source, many=False).data,
+                'termSource': termsource,
                 'termAccession': value.term_accession,
                 'comments': value.comments
             }
@@ -295,7 +296,6 @@ class MaterialAttributeValueSchema(IsaSchema):
     # unit      (list: OntologyAnnotation)
     # comments  (list: Comment)
     class Meta:
-        strict = True
         ordered = True
 
     category = fields.Nested(OntologyAnnotationSchema, required=True)
@@ -307,28 +307,15 @@ class MaterialAttributeValueSchema(IsaSchema):
         return Characteristic(**data)
 
 
-class MaterialSchema(IsaSchema):
-    # marshmallow schema for ISA-API class generic Material
-    # This is base for SourceSchema, SampleSchema and OtherMaterialSchema
-    #
-    # name                              (str)
-    # type                              (str, ["Extract Name", "Labeled Extract Name"])
-    # characteristics                   (list: Characteristic)
-    # comments                          (list: Material)
-    class Meta:
-        ordered = True
-
-    name = fields.Str(allow_none=True)
-    type = fields.Str(allow_none=True)
-    characteristics = fields.Nested(MaterialAttributeValueSchema, many=True)
-
-
-class SourceSchema(MaterialSchema):
+class SourceSchema(IsaSchema):
     # marshmallow schema for ISA-API class Source
     #
     # name              (str)
     # characteristics   (list: OntologyAnnotation)
     # comments          (list: Comment)
+
+    name = fields.Str()
+    characteristics = fields.Nested(MaterialAttributeValueSchema, many=True)
 
     @post_load
     def make_obj(self, data):
@@ -344,7 +331,7 @@ class SourceSchema(MaterialSchema):
             }
 
 
-class SampleSchema(MaterialSchema):
+class SampleSchema(IsaSchema):
     # marshmallow schema for ISA-API class Sample
     #
     # name                              (str)
@@ -353,6 +340,8 @@ class SampleSchema(MaterialSchema):
     # derives_from -> derivesFrom       (Source)
     # comments                          (list: Comment)
 
+    name = fields.Str()
+    characteristics = fields.Nested(MaterialAttributeValueSchema, many=True)
     factor_values = fields.Nested(FactorValueSchema, many=True,
                                   load_from='factorValues', dump_to='factorValues')
     derives_from = fields.Nested(SourceSchema, many=True,
@@ -372,20 +361,22 @@ class SampleSchema(MaterialSchema):
             }
 
 
-class OtherMaterialSchema(MaterialSchema):
+class OtherMaterialSchema(IsaSchema):
     # marshmallow schema for ISA-API class OtherMaterial
     #
     # name                              (str)
     # type                              (str, ["Extract Name", "Labeled Extract Name"])
     # characteristics                   (list: Characteristic)
-    # factor_values -> factorValues     (FactorValues)
-    # derives_from                      (Source)
     # comments                          (list: Comment)
 
-    factor_values = fields.Nested(FactorValueSchema, many=True,
-                                  load_from='factorValues', dump_to='factorValues')
-    derives_from = fields.Nested('self', many=True,
-                                 dump_to='generatedFrom')
+    name = fields.Str(allow_none=True)
+    type_ = fields.Str(allow_none=True)
+    characteristics = fields.Nested(MaterialAttributeValueSchema, many=True,
+                                    load_from='type', dump_to='type')
+    # factor_values = fields.Nested(FactorValueSchema, many=True,
+    #                               load_from='factorValues', dump_to='factorValues')
+    # derives_from = fields.Nested('self', many=True,
+    #                              load_from='derivesFrom', dump_to='derivesFrom')
 
     @post_load
     def make_obj(self, data):
@@ -412,7 +403,7 @@ class DataFileSchema(IsaSchema):
     filename = fields.Str(required=True)
     label = fields.Str()
     generated_from = fields.Nested(SampleSchema, many=True,
-                                   dump_to='generatedFrom')
+                                   load_from='generatedFrom', dump_to='generatedFrom')
 
     @post_load
     def make_obj(self, data):
@@ -450,40 +441,36 @@ class ParameterValueSchema(Schema):
         return ParameterValue(**data)
 
 
-# class InputOutpuField(fields.Field):
-#
-#     def _serialize(self, value, attr, obj):
-#
-#         if isinstance(value, list):
-#             obj_list = list()
-#             for val in value:
-#                 if isinstance(value[0], Sample):
-#                     obj_list
-#                     return {
-#                         'name': val.name,
-#                         'characteristics': val.characteristics,
-#                         # 'factor_values': val.factor_values,
-#                         'derivesFrom': val.derives_from,
-#                         'comments': val.comments
-#
-#                     }
-#             return obj_list
-#
-#         if isinstance(value, Material):
-#             return OtherMaterialSchema.dump(obj)
-#         if isinstance(value, Source):
-#             return SourceSchema.dump(obj)
-#
-#         if isinstance(value, DataFile):
-#             return DataFileSchema.dump(obj)
-#
-#     def _deserialize(self, value, attr, data):
-#         # str, int or float
-#         val = data.get(attr)
-#         if isinstance(val, (int, float, str)):
-#             return value
-#         if isinstance(val, OntologyAnnotation):
-#             return OtherMaterialSchema().load(val)
+class InputOutputField(fields.Field):
+    class Meta:
+        strict = True
+        ordered = True
+
+    def _serialize(self, value, attr, obj):
+        val = list()
+        for item in value:
+            if isinstance(item, Source):
+                val.append(SourceSchema().dump(item).data)
+            elif isinstance(item, Sample):
+                val.append(SampleSchema().dump(item).data)
+            elif isinstance(item, Material):
+                val.append(OtherMaterialSchema().dump(item).data)
+            elif isinstance(item, DataFile):
+                val.append(DataFileSchema().dump(item).data)
+            return val
+
+    def _deserialize(self, value, attr, data):
+        val = list()
+        for item in value:
+            if 'filename' in item:
+                val.append(DataFileSchema().load(item).data)
+            elif 'derivesFrom' in item:
+                val.append(SampleSchema().load(item).data)
+            elif 'type' in item:
+                val.append(OtherMaterialSchema().load(item).data)
+            else:
+                val.append(SourceSchema().load(item).data)
+        return val
 
 
 class ProcessSchema(IsaSchema):
@@ -504,9 +491,9 @@ class ProcessSchema(IsaSchema):
         ordered = True
 
     name = fields.Str(allow_none=True)
-    executes_protocol = fields.Nested(ProtocolSchema,only='name',
+    executes_protocol = fields.Nested(ProtocolSchema,
                                       load_from='executesProtocol', dump_to='executesProtocol')
-    date = fields.Str(allow_none=True)
+    date_ = fields.Str(allow_none=True, load_from='date', dump_to='date')
     performer = fields.Str(allow_none=True)
     parameter_values = fields.Nested(ParameterValueSchema, many=True,
                                      load_from='parameterValues', dump_to='parameterValues')
@@ -518,8 +505,8 @@ class ProcessSchema(IsaSchema):
     #                              exclude=('prev_process', 'next_process'),
     #                              load_from='nextProcess', dump_to='nextProcess',
     #                              allow_none=True)
-    inputs = fields.Nested(SampleSchema, many=True)
-    outputs = fields.Nested(SampleSchema, many=True)
+    inputs = InputOutputField(allow_none=True,)
+    outputs = InputOutputField(allow_none=True,)
 
     @post_load
     def make_obj(self, data):
@@ -551,7 +538,6 @@ class AssaySchema(IsaSchema):
     # units                                                     (list: OntologyAnnotation)
     # comments                                                  (list: Comment)
     class Meta:
-        strict = True
         ordered = True
 
     measurement_type = fields.Nested(OntologyAnnotationSchema,
@@ -562,10 +548,10 @@ class AssaySchema(IsaSchema):
     filename = fields.Str()
     data_files = fields.Nested(DataFileSchema, many=True,
                                load_from='dataFiles', dump_to='dataFiles')
-    process_sequence = fields.Nested(ProcessSchema, many=True,
-                                     exclude=('prev_process', 'next_process'),
-                                     load_from='processSequence', dump_to='processSequence')
-    sources = fields.Nested(SourceSchema, many=True, allow_none=True)
+    # process_sequence = fields.Nested(ProcessSchema, many=True,
+    #                                  exclude=('prev_process', 'next_process'),
+    #                                  load_from='processSequence', dump_to='processSequence')
+    # sources = fields.Nested(SourceSchema, many=True, allow_none=True)
     samples = fields.Nested(SampleSchema, many=True)
     other_material = fields.Nested(OtherMaterialSchema, many=True,
                                    load_from='otherMaterials', dump_to='otherMaterials')
