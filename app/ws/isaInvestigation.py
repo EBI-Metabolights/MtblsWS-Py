@@ -182,6 +182,8 @@ class IsaInvestigation(Resource):
             result = IsaInvestigationSchema().load(data, partial=True)
             updated_inv = result.data
         except (ValidationError, Exception) as err:
+            for arg in err.args:
+                print(arg)
             abort(400)
 
         # update Study details
