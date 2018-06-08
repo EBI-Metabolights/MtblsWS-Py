@@ -1,11 +1,13 @@
 import logging.config
-import config
 from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
+from app.ws.mtbls_maf import MtblsMAF
 from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import *
+from app.ws.isaInvestigation import IsaInvestigation
+from app.ws.isaAssay import *
 
 """
 MTBLS WS-Py
@@ -28,7 +30,7 @@ def initialize_app(flask_app):
     configure_app(flask_app)
 
     CORS(app, resources={r'/mtbls/ws/*'},
-         origins={config.CORS_HOSTS},
+         origins={app.config.get('CORS_HOSTS')},
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
 
@@ -43,9 +45,12 @@ def initialize_app(flask_app):
 
     api.add_resource(About, res_path)
 
+    # Investigation
     api.add_resource(IsaJsonStudies, res_path + "/studies")
     api.add_resource(MtblsStudy, res_path + "/mtbls_studies/<string:study_id>")
-    api.add_resource(IsaJsonStudy, res_path + "/studies/<string:study_id>")
+
+    # api.add_resource(IsaJsonStudy, res_path + "/studies/<string:study_id>")
+    api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     api.add_resource(StudyDescription, res_path + "/studies/<string:study_id>/description")
     api.add_resource(StudyContacts, res_path + "/studies/<string:study_id>/contacts"
@@ -55,12 +60,22 @@ def initialize_app(flask_app):
     api.add_resource(StudyDescriptors, res_path + "/studies/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/studies/<string:study_id>/publications")
 
-    api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processes")
+    api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
+
+    # some methods not yet implemented
+    # Study
     api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
     api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
-    api.add_resource(StudyOtherMaterials, res_path + "/studies/<string:study_id>/othermaterials")
+    api.add_resource(StudyOtherMaterials, res_path + "/studies/<string:study_id>/otherMaterials")
+    api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
+    # Assay
+    api.add_resource(StudyAssays, res_path + "/studies/<string:study_id>/assays")
+    api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays/<string:assay_id>")
 
-    # api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
+    api.add_resource(AssaySources, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/sources")
+    api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/samples")
+    api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/otherMaterials")
+    api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/processSequence")
 
 
 def main():

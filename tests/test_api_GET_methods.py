@@ -133,7 +133,7 @@ class WsTests(unittest.TestCase):
             self.check_Comment_Class(comment)
 
     def check_Value_field(self, obj):
-        if ['name', 'termSource'] in obj:
+        if 'termSource' in obj:
             self.check_OntologyAnnotation_class(obj)
         else:
             self.assertIsNotNone(obj)
@@ -143,15 +143,20 @@ class WsTests(unittest.TestCase):
             self.check_ProtocolParameter_class(obj['category'])
         if obj['value']:
             self.check_Value_field(obj['value'])
-        for unit in obj['unit']:
-            self.check_OntologyAnnotation_class(unit)
-        for comment in obj['comments']:
-            self.check_Comment_Class(comment)
+        if obj['unit']:
+            for unit in obj['unit']:
+                self.check_OntologyAnnotation_class(unit)
+        # ToDo re-enable when ISA-API issue #304 is solved
+        # https://github.com/ISA-tools/isa-api/issues/304
+        # for comment in obj['comments']:
+        #     self.check_Comment_Class(comment)
 
     def check_DataFile_class(self, obj):
         self.assertIsNotNone(obj['filename'])
         self.assertIsNotNone(obj['label'])
-        self.check_Source_class(obj['generated_from'])
+        # self.check_Source_class(obj['generated_from'])
+        for item in obj['generated_from']:
+            self.check_Sample_class(item)
 
     def check_InputOutput_field(self, obj):
         if 'filename' in obj:
@@ -173,18 +178,52 @@ class WsTests(unittest.TestCase):
             self.assertIsNotNone(obj['performer'])
         for paramVal in obj['parameterValues']:
             self.check_ParameterValue_class(paramVal)
-        if obj['prev_process']:
-            self.check_Process_class(obj['prev_process'])
-        if obj['next_process']:
-            self.check_Process_class(obj['next_process'])
+        if 'previousProcess' in obj:
+            self.check_Process_class(obj['previousProcess'])
+        if 'nextProcess' in obj:
+            self.check_Process_class(obj['nextProcess'])
         if obj['inputs']:
-            for _input_ in obj['inputs']:
-                self.check_InputOutput_field(_input_)
+            for item in obj['inputs']:
+                self.check_InputOutput_field(item)
         if obj['outputs']:
-            for _output_ in obj['outputs']:
-                self.check_InputOutput_field(_output_)
+            for item in obj['outputs']:
+                self.check_InputOutput_field(item)
         for comment in obj['comments']:
             self.check_Comment_Class(comment)
+
+    def check_Data_class(self, obj):
+        self.assertIsNotNone(obj['name'])
+        self.assertIsNotNone(obj['type'])
+
+    def check_Assay_class(self, obj):
+
+        if obj['measurementType']:
+            self.check_OntologyAnnotation_class(obj['measurementType'])
+        if obj['technologyType']:
+            self.check_OntologyAnnotation_class(obj['technologyType'])
+        self.assertIsNotNone(obj['technologyPlatform'])
+        self.assertIsNotNone(obj['filename'])
+        for item in obj['dataFiles']:
+            self.check_DataFile_class(item)
+        for item in obj['processSequence']:
+            self.check_Process_class(item)
+        if obj['sources']:
+            for item in obj['sources']:
+                self.check_Source_class(item)
+        if obj['samples']:
+            for item in obj['samples']:
+                self.check_Sample_class(item)
+        if obj['otherMaterials']:
+            for item in obj['otherMaterials']:
+                self.check_Material_class(item)
+        if obj['units']:
+            for item in obj['units']:
+                self.check_OntologyAnnotation_class(item)
+        if obj['characteristicCategories']:
+            for item in obj['characteristicCategories']:
+                self.check_OntologyAnnotation_class(item)
+        for item in obj['comments']:
+            self.check_Comment_Class(item)
 
 
 class AboutTests(WsTests):
@@ -2744,6 +2783,133 @@ class GetStudyProcessesTests(WsTests):
     # GET Study Processes - BadId -> 404
     def test_get_processes_badId(self):
         request = urllib.request.Request(url_wrong_id + '/processes', method='GET')
+        request.add_header('user_token', auth_id)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+
+class GetStudyAssaysTests(WsTests):
+
+    # ToDo change for correct values
+    # valid_id = instance.config.VALID_ID_SAMPLE
+    bad_id = instance.config.BAD_ID_SAMPLE
+    valid_pub_id = instance.config.VALID_PUB_ID_SAMPLE
+    valid_priv_id = instance.config.VALID_PRIV_ID_SAMPLE
+    # valid_data = instance.config.TEST_DATA_VALID_SAMPLE
+    valid_pub_data = instance.config.TEST_DATA_PUB_VALID_SAMPLE
+    valid_priv_data = instance.config.TEST_DATA_PRIV_VALID_SAMPLE
+    missing_data = instance.config.TEST_DATA_MISSING_SAMPLE
+    no_data = b''
+
+    # Get Study Assays - Pub -> 200
+    def test_get_assays(self):
+        request = urllib.request.Request(url_pub_id + '/assays', method='GET')
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('assays', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['assays'])
+            for obj in j_resp['assays']:
+                self.check_Assay_class(obj)
+
+    # Get Study Assays - Pub - Auth -> 200
+    def test_get_assays_pub_auth(self):
+        request = urllib.request.Request(url_pub_id + '/assays', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('assays', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['assays'])
+            for obj in j_resp['assays']:
+                self.check_Assay_class(obj)
+
+    # Get Study Assays - Pub - NoAuth -> 200
+    def test_get_assays_pub_noAuth(self):
+        request = urllib.request.Request(url_pub_id + '/assays', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('assays', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['assays'])
+            for obj in j_resp['assays']:
+                self.check_Assay_class(obj)
+
+    # Get Study Assays - Priv -> 403
+    def test_get_assays_priv(self):
+        request = urllib.request.Request(url_priv_id + '/assays', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # Get Study Assays - Priv - Auth -> 200
+    def test_get_assays_priv_auth(self):
+        request = urllib.request.Request(url_priv_id + '/assays', method='GET')
+        request.add_header('user_token', auth_id)
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.code, 200)
+            header = response.info()
+            self.check_header_common(header)
+            body = response.read().decode('utf-8')
+            self.check_body_common(body)
+            self.assertIn('assays', body)
+            j_resp = json.loads(body)
+            self.assertIsNotNone(j_resp['assays'])
+            for obj in j_resp['assays']:
+                self.check_Assay_class(obj)
+
+    # Get Study Assays - Priv - NoAuth -> 403
+    def test_get_assays_priv_noAuth(self):
+        request = urllib.request.Request(url_priv_id + '/assays', method='GET')
+        request.add_header('user_token', wrong_auth_token)
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 403)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('FORBIDDEN', err.msg)
+            self.assertEqual('FORBIDDEN', err.reason)
+
+    # GET Study Assays - NullId -> 404
+    def test_get_assays_nullId(self):
+        request = urllib.request.Request(url_null_id + '/assays', method='GET')
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as err:
+            self.assertEqual(err.code, 404)
+            self.check_header_common(err.headers)
+            self.check_body_common(err.read().decode('utf-8'))
+            self.assertEqual('NOT FOUND', err.msg)
+            self.assertEqual('NOT FOUND', err.reason)
+
+    # GET Study Assays - BadId -> 404
+    def test_get_assays_badId(self):
+        request = urllib.request.Request(url_wrong_id + '/assays', method='GET')
         request.add_header('user_token', auth_id)
         try:
             urllib.request.urlopen(request)
