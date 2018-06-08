@@ -19,8 +19,7 @@ Using
 
 Using the REST service
 --------------------------
-To see what REST calls you can make and how to format your queries, have a look at the on-line
-[Swagger UI API documentation](http://www.ebi.ac.uk:5000/mtbls/ws/api/spec.html).
+To see what REST calls you can make and how to format your queries, have a look at the on-line Swagger UI API documentation. Once your WS is up and runnig point a web browser to http://localhost:5000/mtbls/ws/api/spec.html.
 
 Please contact the [MetaboLights Team](http://www.ebi.ac.uk/metabolights/contact)  for further information.
 
