@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 from flask import request, abort, send_file
@@ -55,9 +56,11 @@ class IsaTabInvestigation(Resource):
 
         logger.info('Getting ISA-Tab Investigation file for MTBLS Study %s, using API-Key %s', study_id, user_token)
         location = wsc.get_study_location(study_id, user_token)
-        file = os.path.join(location, "i_Investigation.txt")
+        file_path = glob.glob(os.path.join(location, "i_*.txt"))[0]
+        inv_filename = os.path.basename(file_path)
         try:
-            return send_file(file, cache_timeout=-1)
+            return send_file(file_path, cache_timeout=-1,
+                             as_attachment=True, attachment_filename=inv_filename)
         except OSError as err:
             logger.error(err)
             abort(404)
