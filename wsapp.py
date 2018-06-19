@@ -3,6 +3,7 @@ from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
+from app.ws.isaTabInvestigation import IsaTabInvestigation
 from app.ws.mtbls_maf import MtblsMAF
 from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import *
@@ -46,6 +47,7 @@ def initialize_app(flask_app):
     api.add_resource(About, res_path)
 
     # Investigation
+    api.add_resource(IsaTabInvestigation, res_path + "/mtbls_studies/<string:study_id>/isa-tab/investigation")
     api.add_resource(IsaJsonStudies, res_path + "/studies")
     api.add_resource(MtblsStudy, res_path + "/mtbls_studies/<string:study_id>")
 
