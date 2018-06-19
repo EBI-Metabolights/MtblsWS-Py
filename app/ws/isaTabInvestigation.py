@@ -56,4 +56,4 @@ class IsaTabInvestigation(Resource):
         logger.info('Getting ISA-Tab Investigation file for MTBLS Study %s, using API-Key %s', study_id, user_token)
         location = wsc.get_study_location(study_id, user_token)
         file = os.path.join(location, "i_Investigation.txt")
-        return send_file(file)
+        return send_file(file, cache_timeout=-1)
