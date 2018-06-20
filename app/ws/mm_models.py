@@ -548,10 +548,10 @@ class AssaySchema(IsaSchema):
     filename = fields.Str()
     data_files = fields.Nested(DataFileSchema, many=True,
                                load_from='dataFiles', dump_to='dataFiles')
-    # process_sequence = fields.Nested(ProcessSchema, many=True,
-    #                                  exclude=('prev_process', 'next_process'),
-    #                                  load_from='processSequence', dump_to='processSequence')
-    # sources = fields.Nested(SourceSchema, many=True, allow_none=True)
+    process_sequence = fields.Nested(ProcessSchema, many=True,
+                                     exclude=('prev_process', 'next_process'),
+                                     load_from='processSequence', dump_to='processSequence')
+    sources = fields.Nested(SourceSchema, many=True, allow_none=True)
     samples = fields.Nested(SampleSchema, many=True)
     other_material = fields.Nested(OtherMaterialSchema, many=True,
                                    load_from='otherMaterials', dump_to='otherMaterials')
