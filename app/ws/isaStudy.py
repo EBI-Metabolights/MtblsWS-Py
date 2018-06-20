@@ -24,7 +24,10 @@ def log_request(request_obj):
         if app.config.get('DEBUG_LOG_BODY'):
             logger.debug('REQUEST BODY    -> %s', request_obj.data)
         if app.config.get('DEBUG_LOG_JSON'):
-            logger.debug('REQUEST JSON    -> %s', request_obj.json)
+            try:
+                logger.debug('REQUEST JSON    -> %s', request_obj.json)
+            except:
+                logger.debug('REQUEST JSON    -> EMPTY')
 
 
 class IsaJsonStudy(Resource):
