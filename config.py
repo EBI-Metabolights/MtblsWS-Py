@@ -41,3 +41,5 @@ CORS_HOSTS = "http://localhost:8000",\
              "http://wwwdev.ebi.ac.uk",\
              "http://ves-ebi-8d:8080",\
              "http://ves-ebi-8d.ebi.ac.uk:8080"
+
+DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"

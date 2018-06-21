@@ -2,6 +2,7 @@ import config
 from flask import request, jsonify
 from flask_restful import Resource, abort, marshal_with, reqparse
 from marshmallow import ValidationError
+from app.ws import utils
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import *
 from app.ws.mtblsWSclient import WsClient
@@ -3551,6 +3552,110 @@ class StudySamples(Resource):
         logger.info('Updated %s', updated_obj.name)
 
         return SampleSchema().dump(updated_obj)
+
+    @swagger.operation(
+        summary='Delete Study Samples',
+        notes="""Remove all Samples marked to be deleted.
+              <br>
+              This method does not use the ISA-API. Instead, it access directly the ISA-Tab s_*.txt files
+              in the MetaboLights Study folder and removes all rows marked to be deleted.
+              Sample names must be prefixed with __TO_BE_DELETED__<samplename>
+              <br><br>
+              <b>NOTE:</b> No other actions (removing assays or raw data files) are done, so 
+              it may result with some orphan objects left in the study.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            # {
+            #     "name": "name",
+            #     "description": "Study Sample name",
+            #     "required": True,
+            #     "allowEmptyValue": False,
+            #     "allowMultiple": False,
+            #     "paramType": "query",
+            #     "dataType": "string"
+            # },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def delete(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # delete sample
+        logger.info('Deleting all marked Samples for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
+        location = wsc.get_study_location(study_id, user_token)
+        try:
+            removed_lines = utils.remove_samples_from_isatab(location)
+        except Exception:
+            abort(500)
+        return {'removed_lines': removed_lines}
 
 
 class StudyOtherMaterials(Resource):
