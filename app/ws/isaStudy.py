@@ -3572,31 +3572,12 @@ class StudySamples(Resource):
                 "paramType": "path",
                 "dataType": "string"
             },
-            # {
-            #     "name": "name",
-            #     "description": "Study Sample name",
-            #     "required": True,
-            #     "allowEmptyValue": False,
-            #     "allowMultiple": False,
-            #     "paramType": "query",
-            #     "dataType": "string"
-            # },
             {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "save_audit_copy",
-                "description": "Keep track of changes saving a copy of the unmodified files.",
-                "paramType": "header",
-                "type": "Boolean",
-                "defaultValue": True,
-                "format": "application/json",
-                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -3635,22 +3616,14 @@ class StudySamples(Resource):
         else:
             abort(401)
 
-        # check for keeping copies
-        save_audit_copy = False
-        save_msg_str = "NOT be"
-        if "save_audit_copy" in request.headers and \
-                request.headers["save_audit_copy"].lower() == 'true':
-            save_audit_copy = True
-            save_msg_str = "be"
-
-        # delete sample
-        logger.info('Deleting all marked Samples for %s, using API-Key %s', study_id, user_token)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
 
-        logger.info("A copy of the previous files will %s saved", save_msg_str)
+        # delete samples
+        logger.info('Deleting all marked Samples for %s, using API-Key %s', study_id, user_token)
         location = wsc.get_study_location(study_id, user_token)
+        removed_lines = 0
         try:
             removed_lines = utils.remove_samples_from_isatab(location)
         except Exception:
