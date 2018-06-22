@@ -478,7 +478,7 @@ class ProcessSchema(IsaSchema):
     #
     # name                                      (str)
     # executes_protocol -> executesProtocol     (Protocol)
-    # date_                                     (str)
+    # date_ -> date                             (str)
     # performer                                 (str)
     # parameter_values -> parameterValues       (list: ParameterValues)
     # prev_process -> previousProcess           (Process)
