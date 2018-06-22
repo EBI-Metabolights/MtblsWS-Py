@@ -1,12 +1,17 @@
+import glob
+import logging
 import os
-from shutil import copyfile
+import shutil
 import time
+from flask import current_app as app
 
 """
 Utils
 
 Misc of utils
 """
+
+logger = logging.getLogger('wslog')
 
 
 def get_timestamp():
@@ -35,13 +40,40 @@ def copy_file(source, destiny):
     :param destiny: string containing the path to the source file, including filename
     :return:
     """
-    # TODO check source exists, and log accordingly
-    # TODO check destiny exists, and log accordingly
-    # copy origin to destiny
     try:
-        copyfile(source, destiny)
+        # copy origin to destiny
+        logger.info("Copying %s to %s", source, destiny)
+        shutil.copyfile(source, destiny)
     except Exception:
-        # TODO , add logging
         raise
 
-    return
+
+def remove_samples_from_isatab(std_path):
+
+    # dest folder name is a timestamp
+    update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
+    update_path = os.path.join(std_path, update_path_suffix)
+    dest_path = new_timestamped_folder(update_path)
+    # check for all samples
+    for sample_file in glob.glob(os.path.join(std_path, "s_*.txt")):
+        src_file = sample_file
+        filename = os.path.basename(sample_file)
+        dest_file = os.path.join(dest_path, filename)
+        logger.info("Moving %s to %s", src_file, dest_file)
+        shutil.move(src_file, dest_file)
+
+        # remove tagged lines
+        tag = app.config.get('DELETED_SAMPLES_PREFIX_TAG')
+        backup_file = dest_file.strip('.txt') + '.bak'
+        removed_lines = 0
+        with open(dest_file, "r") as infile:
+            with open(src_file, "w+") as outfile:
+                for line in infile:
+                    if tag in line:
+                        with open(backup_file, "a+") as backupfile:
+                            backupfile.write(line)
+                            removed_lines += 1
+                    else:
+                        outfile.write(line)
+
+    return removed_lines

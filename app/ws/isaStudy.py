@@ -2,6 +2,7 @@ import config
 from flask import request, jsonify
 from flask_restful import Resource, abort, marshal_with, reqparse
 from marshmallow import ValidationError
+from app.ws import utils
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import *
 from app.ws.mtblsWSclient import WsClient
@@ -9,6 +10,7 @@ from app.ws.models import *
 from flask_restful_swagger import swagger
 from flask import current_app as app
 import logging
+import time
 
 
 logger = logging.getLogger('wslog')
@@ -24,7 +26,10 @@ def log_request(request_obj):
         if app.config.get('DEBUG_LOG_BODY'):
             logger.debug('REQUEST BODY    -> %s', request_obj.data)
         if app.config.get('DEBUG_LOG_JSON'):
-            logger.debug('REQUEST JSON    -> %s', request_obj.json)
+            try:
+                logger.debug('REQUEST JSON    -> %s', request_obj.json)
+            except:
+                logger.debug('REQUEST JSON    -> EMPTY')
 
 
 class IsaJsonStudy(Resource):
@@ -3158,74 +3163,74 @@ class StudySources(Resource):
 
 class StudySamples(Resource):
 
-    # @swagger.operation(
-    #     summary='Add new Study Sample',
-    #     notes='Add new Study Sample to a Study.',
-    #     parameters=[
-    #         {
-    #             "name": "study_id",
-    #             "description": "MTBLS Identifier",
-    #             "required": True,
-    #             "allowMultiple": False,
-    #             "paramType": "path",
-    #             "dataType": "string"
-    #         },
-    #         {
-    #             "name": "user_token",
-    #             "description": "User API token",
-    #             "paramType": "header",
-    #             "type": "string",
-    #             "required": True,
-    #             "allowMultiple": False
-    #         },
-    #         {
-    #             "name": "sample",
-    #             "description": 'Study Sample in ISA-JSON format.',
-    #             "paramType": "body",
-    #             "type": "string",
-    #             "format": "application/json",
-    #             "required": True,
-    #             "allowMultiple": False
-    #         },
-    #         {
-    #             "name": "save_audit_copy",
-    #             "description": "Keep track of changes saving a copy of the unmodified files.",
-    #             "paramType": "header",
-    #             "type": "Boolean",
-    #             "defaultValue": True,
-    #             "format": "application/json",
-    #             "required": False,
-    #             "allowMultiple": False
-    #         }
-    #     ],
-    #     responseMessages=[
-    #         {
-    #             "code": 200,
-    #             "message": "OK."
-    #         },
-    #         {
-    #             "code": 400,
-    #             "message": "Bad Request. Server could not understand the request due to malformed syntax."
-    #         },
-    #         {
-    #             "code": 401,
-    #             "message": "Unauthorized. Access to the resource requires user authentication."
-    #         },
-    #         {
-    #             "code": 403,
-    #             "message": "Forbidden. Access to the study is not allowed for this user."
-    #         },
-    #         {
-    #             "code": 404,
-    #             "message": "Not found. The requested identifier is not valid or does not exist."
-    #         },
-    #         {
-    #             "code": 409,
-    #             "message": "Conflict. The request could not be completed due to a conflict"
-    #                        " with the current state of study. This is usually issued to prevent duplications."
-    #         }
-    #     ]
-    # )
+    @swagger.operation(
+        summary='Add new Study Sample',
+        notes='Add new Study Sample to a Study.',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "sample",
+                "description": 'Study Sample in ISA-JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
     def post(self, study_id):
         log_request(request)
         # param validation
@@ -3256,40 +3261,61 @@ class StudySamples(Resource):
             save_msg_str = "be"
 
         # body content validation
-        new_obj = None
+        new_sample = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
+            # TODO change to allow multiple samples
             data = data_dict['sample']
             # if partial=True missing fields will be ignored
             result = SampleSchema().load(data, partial=False)
-            new_obj = result.data
+            new_sample = result.data
         except (ValidationError, Exception) as err:
             abort(400)
 
         # Add new Study Sample
         logger.info('Adding new Sample %s to %s, using API-Key %s',
-                    new_obj.name, study_id, user_token)
+                    new_sample.name, study_id, user_token)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        obj_list = isa_study.assays[0].samples
-        # check for Study Sample added already
-        for index, obj in enumerate(obj_list):
-            if obj.name == new_obj.name:
+        # check for existing Samples
+        sample_list = isa_study.samples
+        for index, sample in enumerate(sample_list):
+            if sample.name == new_sample.name:
                 abort(409)
 
-        # add Study Sample
-        obj_list.append(new_obj)
+        # add Sources to the Study
+        # apparently duplications are handled by the API, so no checking
+        for source in new_sample.derives_from:
+            isa_study.sources.append(source)
+        isa_study.samples.append(new_sample)
 
+        # check for existing Protocol
+        sc_protocol = None
+        for prot in isa_study.protocols:
+            if prot.name == 'Sample collection':
+                sc_protocol = prot
+                break
+        # if not found, create a new one
+        if not sc_protocol:
+            sc_protocol = Protocol(name='Sample collection', protocol_type=OntologyAnnotation(term='Sample collection'))
+
+        # add the ProcessSequence
+        sc_process = Process(name=new_sample.name, executes_protocol=sc_protocol, inputs=new_sample.derives_from,
+                             outputs=[new_sample],
+                             comments=[Comment(name='Created', value=time.strftime("%Y%m%d%H%M%S"))])
+        isa_study.process_sequence.append(sc_process)
+
+        # persist everything
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
                             save_samples_copy=True, save_assays_copy=True)
-        logger.info('Added %s', new_obj.name)
+        logger.info('Added %s', new_sample.name)
 
-        return SampleSchema().dump(new_obj)
+        return SampleSchema().dump(new_sample)
 
     @swagger.operation(
         summary="Get Study Samples",
@@ -3549,6 +3575,83 @@ class StudySamples(Resource):
 
         return SampleSchema().dump(updated_obj)
 
+    @swagger.operation(
+        summary='Delete Study Samples',
+        notes="""Remove all Samples marked to be deleted.
+              <br>
+              This method does not use the ISA-API. Instead, it access directly the ISA-Tab s_*.txt files
+              in the MetaboLights Study folder and removes all rows marked to be deleted.
+              Sample names must be prefixed with __TO_BE_DELETED__<samplename>
+              <br><br>
+              <b>NOTE:</b> No other actions (removing assays or raw data files) are done, so 
+              it may result with some orphan objects left in the study.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def delete(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+
+        # delete samples
+        logger.info('Deleting all marked Samples for %s, using API-Key %s', study_id, user_token)
+        location = wsc.get_study_location(study_id, user_token)
+        removed_lines = 0
+        try:
+            removed_lines = utils.remove_samples_from_isatab(location)
+        except Exception:
+            abort(500)
+        return {'removed_lines': removed_lines}
+
 
 class StudyOtherMaterials(Resource):
 
@@ -3769,7 +3872,7 @@ class StudyProcesses(Resource):
             # return a list of objs
             logger.info('Got %s processes', len(obj_list))
             if list_only in ['true', 'True']:
-                sch = ProcessSchema(only=['name'])
+                sch = ProcessSchema(only=['name', 'date', 'executes_protocol.name'])
                 sch.context['process'] = Process()
             return sch.dump(obj_list, many=True)
         else:
