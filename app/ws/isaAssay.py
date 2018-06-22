@@ -319,7 +319,7 @@ class AssayProcesses(Resource):
             # return a list of objs
             logger.info('Got %s processes', len(obj_list))
             if list_only in ['true', 'True']:
-                sch = ProcessSchema(only=['name'])
+                sch = ProcessSchema(only=['name', 'date', 'executes_protocol.name'])
                 sch.context['process'] = Process()
             return sch.dump(obj_list, many=True)
         else:
