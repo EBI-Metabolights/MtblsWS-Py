@@ -370,9 +370,10 @@ class OtherMaterialSchema(IsaSchema):
     # comments                          (list: Comment)
 
     name = fields.Str(allow_none=True)
-    type_ = fields.Str(allow_none=True)
-    characteristics = fields.Nested(MaterialAttributeValueSchema, many=True,
-                                    load_from='type', dump_to='type')
+    # needed two separate fields due to clash with reserved words
+    type_ = fields.Str(allow_none=True, load_from='typeMaterial')
+    type = fields.Str(allow_none=True, dump_to='typeMaterial')
+    characteristics = fields.Nested(MaterialAttributeValueSchema, many=True)
     # factor_values = fields.Nested(FactorValueSchema, many=True,
     #                               load_from='factorValues', dump_to='factorValues')
     # derives_from = fields.Nested('self', many=True,
