@@ -9,6 +9,7 @@ from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
+from app.ws.ontology import *
 
 """
 MTBLS WS-Py
@@ -80,7 +81,7 @@ def initialize_app(flask_app):
     api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/processSequence")
 
     # Add ontology resources
-    api.add_resource(Ontoly, res_path + "/studies/<string:study_id>/ontology")
+    api.add_resource(Ontology, res_path + "/studies/ontology")
 
 
 def main():
