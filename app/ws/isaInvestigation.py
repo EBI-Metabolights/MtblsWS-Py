@@ -1,8 +1,8 @@
+import json
 from flask import request
 from flask_restful import Resource, abort, reqparse
 from marshmallow import ValidationError
 from app.ws.mm_models import *
-from app.ws.models import *
 from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
