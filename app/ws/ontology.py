@@ -10,11 +10,11 @@ from flask import current_app as app
 from flask import request, jsonify
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
-from owlready2 import get_ontology
+# from owlready2 import get_ontology
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import *
+# from app.ws.ontology_info import *
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
