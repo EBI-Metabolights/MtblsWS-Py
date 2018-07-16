@@ -88,7 +88,7 @@ class PersonSchema(IsaSchema):
 
     first_name = fields.Str(required=True, load_from='firstName', dump_to='firstName')
     last_name = fields.Str(required=True, load_from='lastName', dump_to='lastName')
-    email = fields.Email(required=True)
+    email = fields.Str(required=True)
     affiliation = fields.Str(required=True)
     address = fields.Str()
     fax = fields.Str()
