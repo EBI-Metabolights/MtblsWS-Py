@@ -9,7 +9,7 @@ from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
-# from app.ws.ontology import *
+from app.ws.ontology import *
 
 """
 MTBLS WS-Py
