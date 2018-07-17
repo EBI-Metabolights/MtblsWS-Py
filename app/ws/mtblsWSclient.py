@@ -106,7 +106,7 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Getting the status of the Study, using API-Key %s', study_id, user_token)
+        logger.info('Getting the status of the Study %s, using API-Key %s', study_id, user_token)
         study = self.get_study(study_id, user_token)
         std_status = study["content"]["studyStatus"]
         logger.info('... found Study is %s', std_status)
