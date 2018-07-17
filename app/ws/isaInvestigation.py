@@ -95,11 +95,17 @@ class IsaInvestigation(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        # Using context to avoid envelop tags in contained objects
-        sch = IsaInvestigationSchema()
-        sch.context['investigation'] = Investigation()
-        logger.info('Got %s', isa_inv)
-        return sch.dump(isa_inv)
+        logger.info('Got %s', isa_inv.identifier)
+
+        response = dict(mtblsStudy={},
+                        isaInvestigation={},
+                        validation={})
+        response['mtblsStudy']['studyStatus'] = wsc.get_study_status(study_id, user_token)
+        response['isaInvestigation'] = IsaInvestigationSchema().dump(isa_inv).data
+        response['validation']['errors'] = []
+        response['validation']['warnings'] = []
+
+        return response
 
     @swagger.operation(
         summary="Update Study",

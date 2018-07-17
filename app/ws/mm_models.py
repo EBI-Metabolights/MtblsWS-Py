@@ -636,12 +636,3 @@ class IsaInvestigationSchema(IsaSchema):
     @post_load
     def make_obj(self, data):
         return Investigation(**data)
-
-    # add an envelope to responses
-    @post_dump(pass_many=True)
-    def set_envelop(self, data, many):
-        if 'investigation' in self.context:
-            key = 'investigation' if many else 'investigation'
-            return {
-                key: data
-            }
