@@ -654,7 +654,8 @@ class StudyContacts(Resource):
         # check for number of comments
         # this is a workaround for ISA-API not handling properly comments in Person()
         # causing the investigation tab file being saved empty or corrupt
-        self.check_number_comments(isa_study.contacts[0], new_contact)
+        if len(isa_study.contacts) > 0:
+            self.check_number_comments(isa_study.contacts[0], new_contact)
 
         # add contact
         isa_study.contacts.append(new_contact)
@@ -893,7 +894,8 @@ class StudyContacts(Resource):
         # check for number of comments
         # this is a workaround for ISA-API not handling properly comments in Person()
         # causing the investigation tab file being saved empty or corrupt
-        self.check_number_comments(isa_study.contacts[0], updated_contact)
+        if len(isa_study.contacts) > 0:
+            self.check_number_comments(isa_study.contacts[0], updated_contact)
 
         person_found = False
         for index, person in enumerate(isa_study.contacts):
