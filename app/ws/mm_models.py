@@ -374,10 +374,6 @@ class OtherMaterialSchema(IsaSchema):
     type_ = fields.Str(allow_none=True, load_from='typeMaterial')
     type = fields.Str(allow_none=True, dump_to='typeMaterial')
     characteristics = fields.Nested(MaterialAttributeValueSchema, many=True)
-    # factor_values = fields.Nested(FactorValueSchema, many=True,
-    #                               load_from='factorValues', dump_to='factorValues')
-    # derives_from = fields.Nested('self', many=True,
-    #                              load_from='derivesFrom', dump_to='derivesFrom')
 
     @post_load
     def make_obj(self, data):
@@ -420,8 +416,6 @@ class DataFileSchema(IsaSchema):
             }
 
 
-# https://github.com/ISA-tools/isa-api/issues/304
-# class ParameterValueSchema(IsaSchema):
 class ParameterValueSchema(Schema):
     # marshmallow schema for ISA-API class ParameterValue
     #
@@ -498,14 +492,12 @@ class ProcessSchema(IsaSchema):
     performer = fields.Str(allow_none=True)
     parameter_values = fields.Nested(ParameterValueSchema, many=True,
                                      load_from='parameterValues', dump_to='parameterValues')
-    # prev_process = fields.Nested('self',
-    #                              exclude=('prev_process', 'next_process'),
-    #                              load_from='previousProcess', dump_to='previousProcess',
-    #                              allow_none=True)
-    # next_process = fields.Nested('self',
-    #                              exclude=('prev_process', 'next_process'),
-    #                              load_from='nextProcess', dump_to='nextProcess',
-    #                              allow_none=True)
+    prev_process = fields.Nested('self', only=['executes_protocol.name'],
+                                 load_from='previousProcess', dump_to='previousProcess',
+                                 allow_none=True)
+    next_process = fields.Nested('self', only=['executes_protocol.name'],
+                                 load_from='nextProcess', dump_to='nextProcess',
+                                 allow_none=True)
     inputs = InputOutputField(allow_none=True,)
     outputs = InputOutputField(allow_none=True,)
 
@@ -644,12 +636,3 @@ class IsaInvestigationSchema(IsaSchema):
     @post_load
     def make_obj(self, data):
         return Investigation(**data)
-
-    # add an envelope to responses
-    @post_dump(pass_many=True)
-    def set_envelop(self, data, many):
-        if 'investigation' in self.context:
-            key = 'investigation' if many else 'investigation'
-            return {
-                key: data
-            }
