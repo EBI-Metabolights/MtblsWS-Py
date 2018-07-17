@@ -3,18 +3,21 @@
 # 05/07/2018, 15:05
 # Tag:
 # Description:
-import json
 import logging
 
 from flask import current_app as app
 from flask import request, jsonify
+
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
-from owlready2 import get_ontology
+import json
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import *
+
+# from owlready2 import get_ontology
+# from app.ws.ontology_info import *
+
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -87,156 +90,155 @@ class Ontology(Resource):
 
         logger.info('Getting Ontology term %s', term)
 
-        s = '''{
-            "OntologyTerm": [
-            {
-                "annotationValue": "Contract Principal Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Grant Principal Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Funded Principal Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Principal Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Co-Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Coordinating Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Grant Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Protocol Lead Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Site Representative Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Subinvestigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Investigator by Role in Study",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            },
-            {
-                "annotationValue": "Study Site Investigator",
-                "comments": [],
-                "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
-                "termSource": {
-                    "comments": [],
-                    "description": "Experimental Factor Ontology",
-                    "file": "http://data.bioontology.org/ontologies/EFO",
-                    "name": "EFO",
-                    "version": "132"
-                }
-            }
-        ]
-        }'''
-
-        return json.loads(s)
+        res = """{
+                  "OntologyTerm": [
+                    {
+                      "annotationValue": "Contract Principal Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Grant Principal Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Funded Principal Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Principal Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Co-Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Coordinating Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Grant Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Protocol Lead Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Site Representative Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Subinvestigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Investigator by Role in Study",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    },
+                    {
+                      "annotationValue": "Study Site Investigator",
+                      "comments": [],
+                      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739",
+                      "termSource": {
+                        "comments": [],
+                        "description": "Experimental Factor Ontology",
+                        "file": "http://data.bioontology.org/ontologies/EFO",
+                        "name": "EFO",
+                        "version": "132"
+                      }
+                    }
+                  ]
+                }"""
+        return json.loads(res)
 
         # onto = get_ontology('./tests/ncit.owl').load()
         # res = information(onto).get_subs(term)
