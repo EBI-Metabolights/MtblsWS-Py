@@ -63,6 +63,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyFactors, res_path + "/studies/<string:study_id>/factors")
     api.add_resource(StudyDescriptors, res_path + "/studies/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/studies/<string:study_id>/publications")
+    api.add_resource(StudyReleaseDateAndStatus, res_path + "/studies/<string:study_id>/releaseDateAndStatus")
 
     #Metabolite Annotation File (MAF)
     api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
@@ -74,6 +75,7 @@ def initialize_app(flask_app):
     api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
     api.add_resource(StudyOtherMaterials, res_path + "/studies/<string:study_id>/otherMaterials")
     api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
+
     # Assay
     api.add_resource(StudyAssays, res_path + "/studies/<string:study_id>/assays")
     api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays/<string:assay_id>")

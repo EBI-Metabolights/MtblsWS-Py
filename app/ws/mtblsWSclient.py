@@ -1,6 +1,7 @@
 import os
 import logging
 import requests
+import datetime
 from flask_restful import abort
 from flask import current_app as app
 
@@ -47,6 +48,16 @@ class WsClient:
         update_folder = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), update_folder.strip('/'))
         logger.info('... found updates folder %s', update_folder)
         return update_folder
+
+    def get_study_status_and_release_date(self, study_id, user_token):
+        study_json = self.get_study(study_id, user_token)
+        std_status = study_json["content"]["studyStatus"]
+        release_date = study_json["content"]["studyPublicReleaseDate"]
+        # 2012-02-14 00:00:00.0
+        readable = datetime.datetime.fromtimestamp(release_date).isoformat()
+
+        return [std_status, readable]
+
 
     def get_study(self, study_id, user_token):
         """
