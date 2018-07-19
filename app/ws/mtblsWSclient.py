@@ -1,7 +1,7 @@
 import os
 import logging
 import requests
-import datetime
+from datetime import datetime
 from flask_restful import abort
 from flask import current_app as app
 
@@ -54,7 +54,7 @@ class WsClient:
         std_status = study_json["content"]["studyStatus"]
         release_date = study_json["content"]["studyPublicReleaseDate"]
         # 2012-02-14 00:00:00.0
-        readable = datetime.datetime.fromtimestamp(release_date).isoformat()
+        readable =  datetime.fromtimestamp(release_date/1000).strftime('%Y-%m-%d %H:%M:%S.%f')
 
         return [std_status, readable]
 
