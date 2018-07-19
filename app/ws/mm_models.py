@@ -201,6 +201,8 @@ class ValueField(fields.Field):
 
     def _serialize(self, value, attr, obj):
         if isinstance(value, (int, float, str)):
+            if isinstance(value, str) and not len(value) > 0:
+                return None
             return value
         if isinstance(value, OntologyAnnotation):
             termsource = OntologySourceSchema().dump(value.term_source).data if value.term_source else None
