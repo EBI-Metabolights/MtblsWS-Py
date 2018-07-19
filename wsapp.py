@@ -5,6 +5,7 @@ from flask_cors import CORS
 from app.ws.about import About
 from app.ws.isaTabInvestigation import IsaTabInvestigation
 from app.ws.mtbls_maf import MtblsMAF
+from app.ws.mtbls_maf import ReadMaf
 from app.ws.mtbls_study import MtblsStudy
 from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
@@ -63,7 +64,9 @@ def initialize_app(flask_app):
     api.add_resource(StudyDescriptors, res_path + "/studies/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/studies/<string:study_id>/publications")
 
+    #Metabolite Annotation File (MAF)
     api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
+    api.add_resource(ReadMaf, res_path + "/study/<string:study_id>/maf/<string:file_name>")
 
     # some methods not yet implemented
     # Study
