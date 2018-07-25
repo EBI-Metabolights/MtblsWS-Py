@@ -548,12 +548,6 @@ class StudyContacts(Resource):
             if person.email == new_contact.email:
                 abort(409)
 
-        # check for number of comments
-        # this is a workaround for ISA-API not handling properly comments in Person()
-        # causing the investigation tab file being saved empty or corrupt
-        if len(isa_study.contacts) > 0:
-            self.check_number_comments(isa_study.contacts[0], new_contact)
-
         # add contact
         isa_study.contacts.append(new_contact)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
@@ -561,13 +555,6 @@ class StudyContacts(Resource):
         logger.info('Added %s', new_contact.email)
 
         return PersonSchema().dump(new_contact)
-
-    def check_number_comments(self, contactA, contactB):
-        # Number of comments in all contacts MUSt be the same
-        if len(contactA.comments) != len(contactB.comments):
-            # returning a malformed request error
-            logger.error("Malformed query: All contacts must have same number of comments.")
-            abort(400)
 
     @swagger.operation(
         summary="Get Study Contacts",
