@@ -133,7 +133,9 @@ class Ontology(Resource):
                 else:
                     res_cls.append(find_factor(clses,term))
 
+            print('cate')
 
+        # ---------------- ROLES------------------------------
             if branch == 'roles':  # go sub
                 for cls in clses:
                     if str(cls.label[0]) == term:
