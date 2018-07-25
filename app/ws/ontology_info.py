@@ -1,8 +1,8 @@
-# testing
+# onto_info
 # Created by JKChang
-# 26/06/2018, 14:09
+# 25/07/2018, 11:18
 # Tag:
-# Description: 
+# Description:
 
 class information():
     ''' basic information of entities'''
@@ -11,72 +11,55 @@ class information():
         '''initialization'''
         self.onto = onto
 
-    def get_subs(self, txt):
-        print('matching %s subclass..' %txt)
-        '''return list of sub classes'''
+    def get_subs(self, cls):
+        '''return list of sub classes -> list'''
+        print('matching subs of %s' % cls.label)
         sub = []
-        try:
-            onto_c = self.onto.search_one(label=txt)
-            list_subs(onto_c, sub)
-            return [list(x)[0] for x in sub if len(x) > 0]
-        except:
-            try:
-                onto_c = self.onto.search_one(iri=txt)
-                list_subs(onto_c, sub)
-                return [list(x)[0] for x in sub if len(x) > 0]
-            except:
-                print('can not find %s' % txt)
-                pass
+        list_subs(cls, sub)
+        # print(type(sub[0]))
+        return sub
 
-    def get_supers(self, txt):
-        print('matching %s superclass..' % txt)
+    def get_supers(self, cls):
         ''''return list of super classes'''
+        print('matching sups of %s ' % cls.label)
         sup = []
-        try:
-            onto_c = self.onto.search_one(label=txt)
-            list_supers(onto_c, sup)
-            return [list(x)[0] for x in sup if len(x) > 0]
-        except:
-            try:
-                onto_c = self.onto.search_one(iri=txt)
-                list_subs(onto_c, sup)
-                return [list(x)[0] for x in sup if len(x) > 0]
-            except:
-                print('can not find %s' % txt)
-                pass
+        list_supers(cls, sup)
+        return [x for x in sup if len(x.label) > 0]
 
-    def sub_count(self, class_label):
-        print('counting %s subclass..' % class_label)
+    def sub_count(self, cls):
         '''return subclass count'''
-        res = self.get_subs(class_label)
-        return len(res)
+        print('counting subclass of %s..' % cls.label)
+        return len(self.get_subs(cls))
 
-    def super_count(self, class_label):
-        print('counting %s superclass..' % class_label)
-        '''return superclass count'''
-        res = self.get_supers(class_label)
-        return len(res)
+    def sup_count(self, cls):
+        '''return subclass count'''
+        print('counting superclass of %s..' % cls.label)
+        return len(self.get_supers(cls))
 
-    def get_iri(self, class_label):
-        try:
-            onto_c = self.onto.search_one(label=class_label)
-            # print('matching %s ..' %class_label)
-            return onto_c.iri
-        except:
-            pass
+    def get_iri(self, cls):
+        return cls.iri
+
+    def get_factors(self,cls):
+        return list(cls.seeAlso)
 
 
 def list_supers(onto_c, sup):
-    if onto_c.label == '':
+    if onto_c.label == '' or onto_c.iri == 'http://www.w3.org/2002/07/owl#Thing':
         return
     for parent in onto_c.is_a:
-        list_supers(parent, sup)
-        sup.append(parent.label)
+        try:
+            list_supers(parent, sup)
+            sup.append(parent)
+        except:
+            continue
 
 
 def list_subs(onto_c, sub):
-    if onto_c.label == '':
+    if onto_c.label == '' or onto_c.iri == 'http://www.w3.org/2002/07/owl#Thing':
         return
     for children in onto_c.subclasses():
-        list_subs(children, sub)
-        sub.append(children.label)
+        try:
+            list_subs(children, sub)
+            sub.append(children)
+        except:
+            continue
