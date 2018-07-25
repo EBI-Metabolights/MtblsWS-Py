@@ -840,12 +840,6 @@ class StudyContacts(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
 
-        # check for number of comments
-        # this is a workaround for ISA-API not handling properly comments in Person()
-        # causing the investigation tab file being saved empty or corrupt
-        if len(isa_study.contacts) > 0:
-            self.check_number_comments(isa_study.contacts[0], updated_contact)
-
         person_found = False
         for index, person in enumerate(isa_study.contacts):
             if person.email == email:
