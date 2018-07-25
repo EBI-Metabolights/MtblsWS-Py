@@ -44,7 +44,7 @@ class Ontology(Resource):
             {
                 "name": "term",
                 "description": "Ontology term",
-                "required": True,
+                "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -87,14 +87,12 @@ class Ontology(Resource):
     def get(self):
         log_request(request)
         parser = reqparse.RequestParser()
+
         parser.add_argument('term', help="Ontology term")
         term = None
-
         if request.args:
             args = parser.parse_args(req=request)
             term = args['term']
-        if not term:
-            abort(400)
 
         parser.add_argument('branch', help='Starting branch of ontology')
         branch = None
@@ -102,7 +100,7 @@ class Ontology(Resource):
             args = parser.parse_args(req=request)
             branch = args['branch']
 
-
+        # --------------- Onto init ----------------------------
         logger.info('Getting Ontology term %s', term)
 
         onto = get_ontology('./tests/Metabolights.owl').load()
@@ -116,7 +114,7 @@ class Ontology(Resource):
             clses = info.get_subs(start_cls)
 
 
-            if branch == 'factors':  # go seeAlso
+            if branch == 'factors' and term != None:  # go seeAlso
                 def find_factor(cluster, query):
                     for cls in cluster:
                         try:
@@ -133,23 +131,30 @@ class Ontology(Resource):
                 else:
                     res_cls.append(find_factor(clses,term))
 
-            print('cate')
+            elif branch == 'factors' and term == None:
+                res_cls = clses
 
         # ---------------- ROLES------------------------------
-            if branch == 'roles':  # go sub
+            if branch == 'roles' and term != None:  # go sub
                 for cls in clses:
                     if str(cls.label[0]) == term:
                         res = info.get_subs(cls)
                         res.append(cls)
                         res_cls = res
                         break
+            elif branch == 'roles' and term == None:
+                res_cls = clses
 
 
-            if branch == 'taxonomy':  # go super
+
+            if branch == 'taxonomy'and term != None:  # go super
                 for cls in clses:
                     if str(cls.label[0]) == term:
                         res = info.get_supers(cls)
                         res_cls = res
+            elif branch == 'taxonomy' and term == None:
+                res_cls = clses
+
 
         response = []
 
