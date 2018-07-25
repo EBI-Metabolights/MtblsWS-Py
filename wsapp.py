@@ -1,11 +1,11 @@
+import config
 import logging.config
 from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
-from app.ws.isaTabInvestigation import IsaTabInvestigation
 from app.ws.mtbls_maf import MetaboliteAnnotationFile, MtblsMAFSearch
-from app.ws.mtbls_study import MtblsStudy
+from app.ws.mtblsStudy import IsaTabInvestigation, MtblsStudies
 from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
@@ -46,12 +46,11 @@ def initialize_app(flask_app):
 
     api.add_resource(About, res_path)
 
-    # Investigation
-    api.add_resource(IsaTabInvestigation, res_path + "/mtbls_studies/<string:study_id>/isa-tab/investigation")
-    api.add_resource(IsaJsonStudies, res_path + "/studies")
-    api.add_resource(MtblsStudy, res_path + "/mtbls_studies/<string:study_id>")
+    # MTBLS studies
+    api.add_resource(MtblsStudies, res_path + "/studies")
+    api.add_resource(IsaTabInvestigation, res_path + "/studies/<string:study_id>/isa-tab/investigation")
 
-    # api.add_resource(IsaJsonStudy, res_path + "/studies/<string:study_id>")
+    # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     api.add_resource(StudyDescription, res_path + "/studies/<string:study_id>/description")
