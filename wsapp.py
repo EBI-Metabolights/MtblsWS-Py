@@ -4,8 +4,8 @@ from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
+from app.ws.mtbls_maf import MetaboliteAnnotationFile, MtblsMAFSearch
 from app.ws.mtblsStudy import IsaTabInvestigation, MtblsStudies
-from app.ws.mtbls_maf import MtblsMAF
 from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
@@ -26,7 +26,6 @@ logger = logging.getLogger('wslog')
 def configure_app(flask_app):
     flask_app.config.from_object(config)
     flask_app.config.from_pyfile('config.py', silent=True)
-
 
 def initialize_app(flask_app):
     configure_app(flask_app)
@@ -61,8 +60,11 @@ def initialize_app(flask_app):
     api.add_resource(StudyFactors, res_path + "/studies/<string:study_id>/factors")
     api.add_resource(StudyDescriptors, res_path + "/studies/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/studies/<string:study_id>/publications")
+    api.add_resource(StudyReleaseDateAndStatus, res_path + "/studies/<string:study_id>/releaseDateAndStatus")
 
-    api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
+    #Metabolite Annotation File (MAF)
+    api.add_resource(MtblsMAFSearch, res_path + "/maf_search/<string:search_type>")
+    api.add_resource(MetaboliteAnnotationFile, res_path + "/study/<string:study_id>/maf/<string:annotation_file_name>")
 
     # some methods not yet implemented
     # Study
@@ -70,6 +72,7 @@ def initialize_app(flask_app):
     api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
     api.add_resource(StudyOtherMaterials, res_path + "/studies/<string:study_id>/otherMaterials")
     api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
+
     # Assay
     api.add_resource(StudyAssays, res_path + "/studies/<string:study_id>/assays")
     api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays/<string:assay_id>")

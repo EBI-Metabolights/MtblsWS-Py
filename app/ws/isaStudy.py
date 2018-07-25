@@ -261,6 +261,71 @@ class StudyTitle(Resource):
         return jsonify({"title": new_title})
 
 
+class StudyReleaseDateAndStatus(Resource):
+
+    @swagger.operation(
+        summary="Get Study Release Date and Status",
+        notes="Get Study Release Date and Status.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting Study details for %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+
+        return jsonify({"releaseDateAndStatus": wsc.get_study_status_and_release_date(study_id, user_token)})
+
+
+
 class StudyDescription(Resource):
 
     @swagger.operation(

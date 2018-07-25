@@ -1,6 +1,7 @@
 import os
 import logging
 import requests
+from datetime import datetime
 from flask_restful import abort
 from flask import current_app as app
 
@@ -48,6 +49,19 @@ class WsClient:
         logger.info('... found updates folder %s', update_folder)
         return update_folder
 
+    def get_study_status_and_release_date(self, study_id, user_token):
+        study_json = self.get_study(study_id, user_token)
+        std_status = study_json["content"]["studyStatus"]
+        release_date = study_json["content"]["studyPublicReleaseDate"]
+        # 2012-02-14 00:00:00.0
+        readable =  datetime.fromtimestamp(release_date/1000).strftime('%Y-%m-%d %H:%M:%S.%f')
+
+        return [std_status, readable]
+
+    def get_sample_names(self, study_id, user_token):
+        sample_json = self.get
+
+
     def get_study(self, study_id, user_token):
         """
         Get the JSON object for a MTBLS study
@@ -93,6 +107,30 @@ class WsClient:
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/assay/" + assay_id + "/jsonmaf"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.get(url, headers={"user_token": user_token})
+        if resp.status_code != 200:
+            abort(resp.status_code)
+
+        json_resp = resp.json()
+        return json_resp
+
+    def get_maf_search(self, search_type, search_value):
+        """
+        Get the JSON object for a given MAF for a MTBLS study
+        by calling current Java-based WS
+            {{server}}{{port}}/metabolights/webservice/genericcompoundsearch/{search_type}/{search_value}
+
+        :param search_type: The type of search to preform. 'name','databaseid','smiles','inchi'
+        :param search_value: The actual value to search for
+        """
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/genericcompoundsearch/" + search_type
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        if search_type == 'name' or search_type == 'databaseid':
+            resp = requests.get(url + "/" + search_value, headers={"body": search_value})
+
+        if search_type == 'inchi' or search_type == 'smiles':
+            bytes_search = search_value.encode()
+            resp = requests.post(url, data={search_type: bytes_search})
+
         if resp.status_code != 200:
             abort(resp.status_code)
 
