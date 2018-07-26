@@ -1,4 +1,3 @@
-import config
 from flask import request, jsonify
 from flask_restful import Resource, abort, marshal_with, reqparse
 from marshmallow import ValidationError
@@ -97,108 +96,6 @@ class IsaJsonStudy(Resource):
         str_inv = json.dumps({'investigation': isa_obj}, default=serialize_investigation, sort_keys=True)
         logger.info('... found Study: %s %s', isa_obj.get('title'), isa_obj.get('identifier'))
         return isa_obj
-
-
-class IsaJsonStudies(Resource):
-    @swagger.operation(
-        summary="Get all Studies",
-        notes="Get a list of all public Studies.",
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
-    def get(self):
-        log_request(request)
-        logger.info('Getting all public studies')
-        pub_list = wsc.get_public_studies()
-        logger.info('... found %d public studies', len(pub_list['content']))
-        return jsonify(pub_list)
-
-    @swagger.operation(
-        summary="Create new Study",
-        notes="Create new Study.",
-        nickname="New Study",
-        parameters=[
-            {
-                "name": "study",
-                "description": "Study in ISA-JSON format",
-                "paramType": "body",
-                "type": "string",
-                "format": "application/json",
-                "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 201,
-                "message": "Created."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            }
-        ]
-    )
-    @marshal_with(Investigation_api_model, envelope='investigation')
-    def post(self):
-        log_request(request)
-        # User authentication
-        if "user_token" not in request.headers:
-            abort(401)
-        user_token = request.headers["user_token"]
-
-        if not wsc.is_user_token_valid(user_token):
-            abort(403)
-
-        # body content validation
-        if request.data is None or request.json is None:
-            abort(400)
-
-        # read inv data from request body
-        data_dict = request.get_json(force=True)
-        # data_dict = json.loads(request.data.decode('utf-8'))
-        try:
-            title = data_dict['title']
-            description = data_dict['description']
-            sub_date = data_dict['submissionDate']
-            pub_rel_date = data_dict['publicReleaseDate']
-        except Exception as inst:
-            logger.warning('Malformed request. Some of the required fields are missing')
-            abort(400)
-
-        logger.info('Creating a new Study.')
-        inv_obj = iac.create_new_study(title=title,
-                                       description=description,
-                                       sub_date=sub_date,
-                                       pub_rel_date=pub_rel_date)
-        logger.info('New Study, title: %s, desc.: %s, pub.rel.date: %s',
-                    title, description, pub_rel_date)
-
-        return inv_obj, 201
 
 
 class StudyTitle(Resource):
@@ -716,12 +613,6 @@ class StudyContacts(Resource):
             if person.email == new_contact.email:
                 abort(409)
 
-        # check for number of comments
-        # this is a workaround for ISA-API not handling properly comments in Person()
-        # causing the investigation tab file being saved empty or corrupt
-        if len(isa_study.contacts) > 0:
-            self.check_number_comments(isa_study.contacts[0], new_contact)
-
         # add contact
         isa_study.contacts.append(new_contact)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
@@ -729,13 +620,6 @@ class StudyContacts(Resource):
         logger.info('Added %s', new_contact.email)
 
         return PersonSchema().dump(new_contact)
-
-    def check_number_comments(self, contactA, contactB):
-        # Number of comments in all contacts MUSt be the same
-        if len(contactA.comments) != len(contactB.comments):
-            # returning a malformed request error
-            logger.error("Malformed query: All contacts must have same number of comments.")
-            abort(400)
 
     @swagger.operation(
         summary="Get Study Contacts",
@@ -955,12 +839,6 @@ class StudyContacts(Resource):
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
-
-        # check for number of comments
-        # this is a workaround for ISA-API not handling properly comments in Person()
-        # causing the investigation tab file being saved empty or corrupt
-        if len(isa_study.contacts) > 0:
-            self.check_number_comments(isa_study.contacts[0], updated_contact)
 
         person_found = False
         for index, person in enumerate(isa_study.contacts):

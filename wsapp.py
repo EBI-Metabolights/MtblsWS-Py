@@ -1,12 +1,11 @@
+import config
 import logging.config
 from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
-from app.ws.isaTabInvestigation import IsaTabInvestigation
-from app.ws.mtbls_maf import MtblsMAF
-from app.ws.mtbls_maf import ReadMaf
-from app.ws.mtbls_study import MtblsStudy
+from app.ws.mtbls_maf import MetaboliteAnnotationFile, MtblsMAFSearch
+from app.ws.mtblsStudy import IsaTabInvestigation, MtblsStudies
 from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
@@ -28,7 +27,6 @@ def configure_app(flask_app):
     flask_app.config.from_object(config)
     flask_app.config.from_pyfile('config.py', silent=True)
 
-
 def initialize_app(flask_app):
     configure_app(flask_app)
 
@@ -48,12 +46,11 @@ def initialize_app(flask_app):
 
     api.add_resource(About, res_path)
 
-    # Investigation
-    api.add_resource(IsaTabInvestigation, res_path + "/mtbls_studies/<string:study_id>/isa-tab/investigation")
-    api.add_resource(IsaJsonStudies, res_path + "/studies")
-    api.add_resource(MtblsStudy, res_path + "/mtbls_studies/<string:study_id>")
+    # MTBLS studies
+    api.add_resource(MtblsStudies, res_path + "/studies")
+    api.add_resource(IsaTabInvestigation, res_path + "/studies/<string:study_id>/isa-tab/investigation")
 
-    # api.add_resource(IsaJsonStudy, res_path + "/studies/<string:study_id>")
+    # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     api.add_resource(StudyDescription, res_path + "/studies/<string:study_id>/description")
@@ -66,8 +63,8 @@ def initialize_app(flask_app):
     api.add_resource(StudyReleaseDateAndStatus, res_path + "/studies/<string:study_id>/releaseDateAndStatus")
 
     #Metabolite Annotation File (MAF)
-    api.add_resource(MtblsMAF, res_path + "/study/<string:study_id>/assay/<string:assay_id>/maf")
-    api.add_resource(ReadMaf, res_path + "/study/<string:study_id>/maf/<string:file_name>")
+    api.add_resource(MtblsMAFSearch, res_path + "/maf_search/<string:search_type>")
+    api.add_resource(MetaboliteAnnotationFile, res_path + "/study/<string:study_id>/maf/<string:annotation_file_name>")
 
     # some methods not yet implemented
     # Study

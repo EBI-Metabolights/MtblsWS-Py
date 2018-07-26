@@ -58,6 +58,9 @@ class WsClient:
 
         return [std_status, readable]
 
+    def get_sample_names(self, study_id, user_token):
+        sample_json = self.get
+
 
     def get_study(self, study_id, user_token):
         """
@@ -110,6 +113,30 @@ class WsClient:
         json_resp = resp.json()
         return json_resp
 
+    def get_maf_search(self, search_type, search_value):
+        """
+        Get the JSON object for a given MAF for a MTBLS study
+        by calling current Java-based WS
+            {{server}}{{port}}/metabolights/webservice/genericcompoundsearch/{search_type}/{search_value}
+
+        :param search_type: The type of search to preform. 'name','databaseid','smiles','inchi'
+        :param search_value: The actual value to search for
+        """
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/genericcompoundsearch/" + search_type
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        if search_type == 'name' or search_type == 'databaseid':
+            resp = requests.get(url + "/" + search_value, headers={"body": search_value})
+
+        if search_type == 'inchi' or search_type == 'smiles':
+            bytes_search = search_value.encode()
+            resp = requests.post(url, data={search_type: bytes_search})
+
+        if resp.status_code != 200:
+            abort(resp.status_code)
+
+        json_resp = resp.json()
+        return json_resp
+
     def get_study_status(self, study_id, user_token):
         """
         Get the status of the Study: PUBLIC, INCURATION, ...
@@ -117,7 +144,7 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Getting the status of the Study, using API-Key %s', study_id, user_token)
+        logger.info('Getting the status of the Study %s, using API-Key %s', study_id, user_token)
         study = self.get_study(study_id, user_token)
         std_status = study["content"]["studyStatus"]
         logger.info('... found Study is %s', std_status)
