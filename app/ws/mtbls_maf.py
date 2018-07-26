@@ -15,6 +15,18 @@ logger = logging.getLogger('wslog')
 wsc = WsClient()
 
 
+# Convert panda DataFrame to json tuples object
+def totuples(df):
+    d = [
+        dict([
+            (colname, row[i])
+            for i, colname in enumerate(df.columns)
+        ])
+        for row in df.values
+    ]
+    return {'mafdata': d}
+
+
 class MtblsMAFSearch(Resource):
     """Get MAF from studies (assays)"""
     @swagger.operation(
@@ -122,7 +134,7 @@ class MetaboliteAnnotationFile(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["NMR", "MS"]
+                "enum": ["MS", "NMR"]
             },
             {
                 "name": "user_token",
@@ -236,19 +248,8 @@ class MetaboliteAnnotationFile(Resource):
         # Write the new empty columns back in the file
         maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
-        df_dict = self.totuples(maf_df.reset_index())
+        df_dict = totuples(maf_df.reset_index())
         return df_dict
-
-    # Convert panda DataFrame to json tuples object
-    def totuples(self, df):
-        d = [
-            dict([
-                (colname, row[i])
-                for i, colname in enumerate(df.columns)
-            ])
-            for row in df.values
-        ]
-        return {'mafdata': d}
 
     """Create MAF for a given study"""
     @swagger.operation(
@@ -266,7 +267,7 @@ class MetaboliteAnnotationFile(Resource):
             },
             {
                 "name": "annotation_file_name",
-                "description": "Assay file name",
+                "description": "Metabolite Annotation File name",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
@@ -326,7 +327,7 @@ class MetaboliteAnnotationFile(Resource):
     )
     def put(self, study_id, annotation_file_name):
         """
-        Get MAF from from MetaboLights API
+        Update MAF cells
         :param study_id: MTBLS study identifier
         :param annotation_file_name. The file name of the MAF for a given assay
         :param row_num. The row number of the cell to update
@@ -357,7 +358,7 @@ class MetaboliteAnnotationFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
 
         study_path = wsc.get_study_location(study_id, user_token)
@@ -392,3 +393,201 @@ class MetaboliteAnnotationFile(Resource):
         return df_dict
 
 
+class AddAnnotationRow(Resource):
+    @swagger.operation(
+        summary="Add a new row to the given annotation file",
+        nickname="Add MAF row",
+        notes="Update a Metabolite Annotation File (MAF) for a given Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "annotation_file_name",
+                "description": "Metabolite Annotation File name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "new_row",
+                "description": "The row to add to the annotation file",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "body",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The MAF has been updated."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self, study_id, annotation_file_name):
+        """
+        Add MAF row
+        :param study_id: MTBLS study identifier
+        :param annotation_file_name. The file name of the MAF for a given assay
+        :param new_row. JSON representation of the new row to add
+        :return: a JSON representation of the MTBLS Study object
+        """
+
+        data_dict = json.loads(request.data.decode('utf-8'))
+        new_row = data_dict['mafdata']
+        for element in new_row:
+            element.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
+
+        # param validation
+        if study_id is None or annotation_file_name is None or new_row is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+
+        study_path = wsc.get_study_location(study_id, user_token)
+        annotation_file_name = study_path + "/" + annotation_file_name
+
+        maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
+        maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
+        maf_df = maf_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet
+
+        # Write the new row back in the file
+        maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
+
+        df_dict = totuples(maf_df.reset_index())
+        return df_dict
+
+
+class DeleteAnnotationRow(Resource):
+    @swagger.operation(
+        summary="Delete a row to the given annotation file",
+        nickname="Delete MAF row",
+        notes="Update a Metabolite Annotation File (MAF) for a given Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "annotation_file_name",
+                "description": "Metabolite Annotation File name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "row_num",
+                "description": "The row number to remove",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "integer"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The MAF has been updated."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self, study_id, annotation_file_name):
+        """
+        Add MAF row
+        :param study_id: MTBLS study identifier
+        :param annotation_file_name. The file name of the MAF for a given assay
+        :param row_num. The row number of the cell to remove
+        :return: a JSON representation of the MTBLS Study object
+        """
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('row_num', help="The row number of the cell to remove (exclude header)")
+        row_num = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            row_num = args['row_num']
+
+        # param validation
+        if study_id is None or annotation_file_name is None or row_num is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+
+        study_path = wsc.get_study_location(study_id, user_token)
+        annotation_file_name = study_path + "/" + annotation_file_name
+
+        maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
+        maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
+        maf_df = maf_df.drop(maf_df.index[int(row_num)])  # Drop a row in the spreadsheet
+
+        # Write the updated file
+        maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
+
+        df_dict = totuples(maf_df.reset_index())
+        return df_dict
