@@ -173,8 +173,8 @@ class Ontology(Resource):
                 }'''
 
             d = json.loads(temp)
-            d['annotationValue'] = cls.label
-            d['name'] = cls.namespace.name
+            d['annotationValue'] = str(cls.label[0])
+            d['name'] = str(cls.namespace.name)
             response.append(d)
 
         # response = [{'SubClass': x} for x in res]
