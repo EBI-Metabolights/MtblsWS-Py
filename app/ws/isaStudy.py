@@ -3394,10 +3394,9 @@ class StudySamples(Resource):
             return sch.dump(obj)
 
     @swagger.operation(
-        summary='Update Study Sample',
-        notes="""Update Study Sample.
-              <br>
-              Use sample name as a query parameter to filter out.""",
+        summary='Update Study Samples',
+        notes="""Only existing Samples will be updated, unknown will be ignored. 
+        To change name, only one sample can be processed at a time.""",
         parameters=[
             {
                 "name": "study_id",
@@ -3409,9 +3408,9 @@ class StudySamples(Resource):
             },
             {
                 "name": "name",
-                "description": "Study Sample name",
-                "required": True,
-                "allowEmptyValue": False,
+                "description": "Study Sample name. Leave empty if updating more than one sample.",
+                "required": False,
+                "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
@@ -3425,8 +3424,8 @@ class StudySamples(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "sample",
-                "description": 'Study Sample in ISA-JSON format.',
+                "name": "samples",
+                "description": 'Study Sample list in ISA-JSON format.',
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
@@ -3477,8 +3476,8 @@ class StudySamples(Resource):
         parser.add_argument('name', help="Study Sample name")
         args = parser.parse_args()
         obj_name = args['name']
-        if obj_name is None:
-            abort(404)
+        # if obj_name is None:
+        #     abort(404)
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -3496,45 +3495,80 @@ class StudySamples(Resource):
             save_msg_str = "be"
 
         # body content validation
-        updated_obj = None
+        # updated_obj = None
+        new_samples = list()
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            data = data_dict['sample']
+            data = data_dict['samples']
             # if partial=True missing fields will be ignored
-            result = SampleSchema().load(data, partial=False)
-            updated_obj = result.data
+            result = SampleSchema().load(data, many=True, partial=False)
+            # updated_obj = result.data
+            new_samples = result.data
+            if len(new_samples) == 0:
+                logger.warning("No valid data provided.")
+                abort(400)
         except (ValidationError, Exception) as err:
+            logger.warning("Bad format JSON request.", err)
             abort(400)
 
-        # update Study Source details
-        logger.info('Updating Study Sample details for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        obj_list = isa_study.samples
-        found = False
-        for i, proc in enumerate(isa_study.process_sequence):
-            for index, src in enumerate(proc.outputs):
-                if isinstance(src, Sample):
-                    if src.name == obj_name:
-                        found = True
-                        proc.outputs[index] = Sample(name=updated_obj.name,
-                                                     characteristics=updated_obj.characteristics,
-                                                     factor_values=updated_obj.factor_values,
-                                                     derives_from=updated_obj.derives_from,
-                                                     comments=updated_obj.comments)
-                        break
-        if not found:
-            abort(404)
+        updated_samples = list()
+        # single sample
+        if obj_name:
+            # param name should be used only to update name for a single study
+            if obj_name and len(new_samples) > 1:
+                logger.warning("Requesting name update for more than one sample")
+                abort(400)
+
+            logger.info('Updating Study Samples details for %s,', study_id)
+            new_sample = new_samples[0]
+            if self.update_sample(isa_study, new_sample.name, new_sample):
+                updated_samples.append(new_sample)
+
+        # multiple samples
+        else:
+            logger.info('Updating details for %d Study Samples', len(new_samples))
+            for i, new_sample in enumerate(new_samples):
+                if self.update_sample(isa_study, new_sample.name, new_sample):
+                    updated_samples.append(new_sample)
+
+        # check if all samples were updated
+        warns = ''
+        if len(updated_samples) != len(new_samples):
+            warns = 'Some of the requested samples were not updated. ' \
+                    + str(len(updated_samples)) + ' out of ' + str(len(new_samples))
+            logger.warning(warns)
+
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
-                            save_samples_copy=True, save_assays_copy=True)
-        logger.info('Updated %s', updated_obj.name)
+                            save_samples_copy=save_audit_copy, save_assays_copy=save_audit_copy)
 
-        return SampleSchema().dump(updated_obj)
+        sch = SampleSchema(many=True)
+        sch.context['sample'] = Sample()
+        try:
+            resp = sch.dump(updated_samples)
+        except (ValidationError, Exception) as err:
+            logger.warning("Bad Sample format", err)
+        return extended_response(resp.data, resp.errors, warns)
+
+    def update_sample(self, isa_study, sample_name, new_sample):
+        updated = list()
+        for i, process in enumerate(isa_study.process_sequence):
+            for ii, sample in enumerate(process.outputs):
+                if isinstance(sample, Sample) and sample.name == sample_name:
+                    process.outputs[ii] = Sample(name=new_sample.name,
+                                                 characteristics=new_sample.characteristics,
+                                                 factor_values=new_sample.factor_values,
+                                                 derives_from=new_sample.derives_from,
+                                                 comments=new_sample.comments)
+                    logger.info('Updated sample: %s', new_sample.name)
+                    return True
+        return False
 
     @swagger.operation(
         summary='Delete Study Samples',
@@ -3612,6 +3646,13 @@ class StudySamples(Resource):
         except Exception:
             abort(500)
         return {'removed_lines': removed_lines}
+
+
+def extended_response(data=None, errs=None, warns=None):
+    ext_resp = {"data": data if data else list(),
+                "errors": errs if errs else list(),
+                "warnings": warns if warns else list()}
+    return ext_resp
 
 
 class StudyOtherMaterials(Resource):
