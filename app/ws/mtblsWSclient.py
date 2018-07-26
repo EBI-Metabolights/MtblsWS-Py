@@ -214,7 +214,7 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Checking for user permisions in MTBLS WS')
+        logger.info('Checking for user permisions in MTBLS WS for Study %s, using API-Key %s', study_id, user_token)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/getPermissions"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.post(url,
