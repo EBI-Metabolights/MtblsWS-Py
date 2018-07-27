@@ -31,6 +31,13 @@ def log_request(request_obj):
                 logger.debug('REQUEST JSON    -> EMPTY')
 
 
+def extended_response(data=None, errs=None, warns=None):
+    ext_resp = {"data": data if data else list(),
+                "errors": errs if errs else list(),
+                "warnings": warns if warns else list()}
+    return ext_resp
+
+
 class IsaJsonStudy(Resource):
     @swagger.operation(
         summary="Get Study",
@@ -323,7 +330,6 @@ class StudyReleaseDateAndStatus(Resource):
             abort(403)
 
         return jsonify({"releaseDateAndStatus": wsc.get_study_status_and_release_date(study_id, user_token)})
-
 
 
 class StudyDescription(Resource):
@@ -3646,13 +3652,6 @@ class StudySamples(Resource):
         except Exception:
             abort(500)
         return {'removed_lines': removed_lines}
-
-
-def extended_response(data=None, errs=None, warns=None):
-    ext_resp = {"data": data if data else list(),
-                "errors": errs if errs else list(),
-                "warnings": warns if warns else list()}
-    return ext_resp
 
 
 class StudyOtherMaterials(Resource):
