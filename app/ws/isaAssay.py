@@ -24,6 +24,15 @@ def log_request(request_obj):
             logger.debug('REQUEST JSON    -> %s', request_obj.json)
 
 
+def extended_response(data=None, errs=None, warns=None):
+    ext_resp = {"data": data if data else list(),
+                "errors": errs if errs else list(),
+                "warnings": warns if warns else list()}
+    return ext_resp
+
+
+# res_path = /studies/<string:study_id>/assays
+# http://host:500/mtbls/ws/studies/MTBLS10/assays?list_only=true
 class StudyAssays(Resource):
 
     @swagger.operation(
@@ -113,6 +122,8 @@ class StudyAssays(Resource):
         return sch.dump(isa_study.assays, many=True)
 
 
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>
+# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1
 class StudyAssay(Resource):
 
     @swagger.operation(
@@ -199,6 +210,8 @@ class StudyAssay(Resource):
         return sch.dump(isa_assay)
 
 
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>/processSequence
+# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/processSequence?list_only=true
 class AssayProcesses(Resource):
 
     @swagger.operation(
@@ -225,7 +238,16 @@ class AssayProcesses(Resource):
             },
             {
                 "name": "name",
-                "description": "Study Process name",
+                "description": "Process name",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "prot_name",
+                "description": "Protocol name",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -293,12 +315,15 @@ class AssayProcesses(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Assay Processes name')
+        parser.add_argument('prot_name', help='Protocol name')
         parser.add_argument('list_only', help='List names only')
         list_only = None
         obj_name = None
+        prot_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name']
+            prot_name = args['prot_name']
             list_only = args['list_only']
 
         logger.info('Getting Processes for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
@@ -315,18 +340,19 @@ class AssayProcesses(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = ProcessSchema()
         sch.context['process'] = Process()
-        if obj_name is None:
+        if not obj_name and not prot_name:
             # return a list of objs
             logger.info('Got %s processes', len(obj_list))
             if list_only in ['true', 'True']:
-                sch = ProcessSchema(only=['name', 'date', 'executes_protocol.name'])
+                sch = ProcessSchema(only=['name', 'date', 'executes_protocol.name',
+                                          'prev_process', 'next_process'])
                 sch.context['process'] = Process()
             return sch.dump(obj_list, many=True)
         else:
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name == obj_name or obj.executes_protocol.name == prot_name:
                     found = True
                     break
             if not found:
@@ -335,82 +361,10 @@ class AssayProcesses(Resource):
             return sch.dump(obj)
 
 
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>/sources
+# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/sources?list_only=true
 class AssaySources(Resource):
 
-    @swagger.operation(
-        summary="Get Assay Sources",
-        notes="""Get Assay Sources.
-              <br>
-              Use source name as a query parameter to filter out.""",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "assay_id",
-                "description": "Assay number",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "name",
-                "description": "Study Source name",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
-            {
-                "name": "list_only",
-                "description": "List names only",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "default": True
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": False,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
     def get(self, study_id, assay_id):
         log_request(request)
         # param validation
@@ -605,82 +559,10 @@ class AssaySamples(Resource):
             return sch.dump(obj)
 
 
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>/otherMaterials
+# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/otherMaterials?list_only=true
 class AssayOtherMaterials(Resource):
 
-    @swagger.operation(
-        summary="Get Assay Other Materials",
-        notes="""Get Assay Other Materials.
-              <br>
-              Use sample name as a query parameter to filter out.""",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "assay_id",
-                "description": "Assay number",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "name",
-                "description": "Assay Material name",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
-            {
-                "name": "list_only",
-                "description": "List names only",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "default": True
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": False,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
     def get(self, study_id, assay_id):
         log_request(request)
         # param validation

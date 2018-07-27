@@ -4176,7 +4176,16 @@ class StudyProcesses(Resource):
             },
             {
                 "name": "name",
-                "description": "Study Process name",
+                "description": "Process name",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "prot_name",
+                "description": "Protocol name",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -4238,12 +4247,15 @@ class StudyProcesses(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Study Processes name')
+        parser.add_argument('prot_name', help='Protocol name')
         parser.add_argument('list_only', help='List names only')
         list_only = None
         obj_name = None
+        prot_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name']
+            prot_name = args['prot_name']
             list_only = args['list_only']
 
         logger.info('Getting Study Processes for %s', study_id)
@@ -4256,7 +4268,7 @@ class StudyProcesses(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = ProcessSchema()
         sch.context['process'] = Process()
-        if obj_name is None:
+        if not obj_name and not prot_name:
             # return a list of objs
             logger.info('Got %s processes', len(obj_list))
             if list_only in ['true', 'True']:
@@ -4267,7 +4279,7 @@ class StudyProcesses(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name == obj_name or obj.executes_protocol.name == prot_name:
                     found = True
                     break
             if not found:
