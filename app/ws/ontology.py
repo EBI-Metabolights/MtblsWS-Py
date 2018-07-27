@@ -8,7 +8,7 @@ import logging
 
 from flask import current_app as app
 from flask import request, jsonify
-from flask_restful import Resource, abort, reqparse
+from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from owlready2 import get_ontology
 
@@ -58,7 +58,8 @@ class Ontology(Resource):
                 "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "string"
+                "dataType": "string",
+                "enum": ["factors", "roles", "taxonomy", "characteristics", "publication"]
             }
         ],
         responseMessages=[
@@ -100,54 +101,52 @@ class Ontology(Resource):
             args = parser.parse_args(req=request)
             branch = args['branch']
 
-        # --------------- Onto init ----------------------------
+        # Onto loading
         logger.info('Getting Ontology term %s', term)
 
         onto = get_ontology('./tests/Metabolights.owl').load()
         info = information(onto)
 
-        # ---------------- FACTORS------------------------------
+        # Loading branch
         res_cls = []
-
-        if branch == 'factors' or branch == 'roles' or branch == 'taxonomy':
+        if branch:
             start_cls = onto.search_one(label=branch)
             clses = info.get_subs(start_cls)
 
+            # Factors
+            def find_factor(cluster, query):
+                for cls in cluster:
+                    try:
+                        factors = info.get_factors(cls)
+                        if query in factors:
+                            return cls
+                    except:
+                        pass
+                print('No factors for %s' % query)
+                return None
 
-            if branch == 'factors' and term != None:  # go seeAlso
-                def find_factor(cluster, query):
-                    for cls in cluster:
-                        try:
-                            factors = info.get_factors(cls)
-                            if query in factors:
-                                return cls
-                        except:
-                            pass
-                    print('No factors for %s' % query)
-                    return None
-
-                if onto.search_one(label = term):
-                    res_cls.append(onto.search_one(label = term))
+            if branch == "factors":
+                if term:
+                    if onto.search_one(label=term):
+                        res_cls.append(onto.search_one(label=term))
+                    else:
+                        res_cls.append(find_factor(clses, term))
                 else:
-                    res_cls.append(find_factor(clses,term))
+                    res_cls = clses
 
-            elif branch == 'factors' and term == None:
-                res_cls = clses
+            # Roles / Characteristics/ Publication"]
+            if branch in ["roles", "characteristics", "publication"]:  # go sub
+                if term:
+                      for cls in clses:
+                        if str(cls.label[0]) == term:
+                            subs = info.get_subs(cls)
+                            res_cls = subs + [cls]
+                            break
+                else:
+                    res_cls = clses
 
-        # ---------------- ROLES------------------------------
-            if branch == 'roles' and term != None:  # go sub
-                for cls in clses:
-                    if str(cls.label[0]) == term:
-                        res = info.get_subs(cls)
-                        res.append(cls)
-                        res_cls = res
-                        break
-            elif branch == 'roles' and term == None:
-                res_cls = clses
-
-
-
-            if branch == 'taxonomy'and term != None:  # go super
+            # ---------------- taxonomy------------------------------
+            if branch == 'taxonomy' and term != None:  # go super
                 for cls in clses:
                     if str(cls.label[0]) == term:
                         res = info.get_supers(cls)
@@ -179,5 +178,3 @@ class Ontology(Resource):
 
         # response = [{'SubClass': x} for x in res]
         return jsonify({"OntologyTerm": response})
-
-
