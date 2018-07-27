@@ -31,6 +31,13 @@ def log_request(request_obj):
                 logger.debug('REQUEST JSON    -> EMPTY')
 
 
+def extended_response(data=None, errs=None, warns=None):
+    ext_resp = {"data": data if data else list(),
+                "errors": errs if errs else list(),
+                "warnings": warns if warns else list()}
+    return ext_resp
+
+
 class IsaJsonStudy(Resource):
     @swagger.operation(
         summary="Get Study",
@@ -88,7 +95,7 @@ class IsaJsonStudy(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info('Getting ISA-JSON Study %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting ISA-JSON Study %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -154,7 +161,7 @@ class StudyTitle(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info('Getting Study title for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Study title for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -249,7 +256,7 @@ class StudyTitle(Resource):
             save_msg_str = "be"
 
         # update study title
-        logger.info('Updating Study title for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Study title for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -325,7 +332,6 @@ class StudyReleaseDateAndStatus(Resource):
         return jsonify({"releaseDateAndStatus": wsc.get_study_status_and_release_date(study_id, user_token)})
 
 
-
 class StudyDescription(Resource):
 
     @swagger.operation(
@@ -382,7 +388,7 @@ class StudyDescription(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info('Getting Study description for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Study description for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -481,7 +487,7 @@ class StudyDescription(Resource):
             save_msg_str = "be"
 
         # update study description
-        logger.info('Updating Study description for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Study description for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -603,7 +609,7 @@ class StudyContacts(Resource):
             abort(400)
 
         # Add new contact
-        logger.info('Adding new Contact %s for %s, using API-Key %s', new_contact.email, study_id, user_token)
+        logger.info('Adding new Contact %s for %s', new_contact.email, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -694,7 +700,7 @@ class StudyContacts(Resource):
             args = parser.parse_args(req=request)
             email = args['email']
 
-        logger.info('Getting Contacts %s for Study %s, using API-Key %s', email, study_id, user_token)
+        logger.info('Getting Contacts %s for Study %s', email, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -834,7 +840,7 @@ class StudyContacts(Resource):
             abort(400)
 
         # update contact details
-        logger.info('Updating Contact details for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Contact details for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -948,7 +954,7 @@ class StudyContacts(Resource):
             save_msg_str = "be"
 
         # delete contact
-        logger.info('Deleting contact %s for %s, using API-Key %s', email, study_id, user_token)
+        logger.info('Deleting contact %s for %s', email, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -1080,7 +1086,7 @@ class StudyProtocols(Resource):
             abort(400)
 
         # Add new protocol
-        logger.info('Adding new Protocol %s for %s, using API-Key %s', new_obj.name, study_id, user_token)
+        logger.info('Adding new Protocol %s for %s', new_obj.name, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -1170,7 +1176,7 @@ class StudyProtocols(Resource):
             args = parser.parse_args(req=request)
             obj_name = args['name']
 
-        logger.info('Getting Study protocols for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Study protocols for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -1289,7 +1295,7 @@ class StudyProtocols(Resource):
             save_msg_str = "be"
 
         # delete protocol
-        logger.info('Deleting protocol %s for %s, using API-Key %s', obj_name, study_id, user_token)
+        logger.info('Deleting protocol %s for %s', obj_name, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -1420,7 +1426,7 @@ class StudyProtocols(Resource):
             abort(400)
 
         # update protocol details
-        logger.info('Updating Protocol details for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Protocol details for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -1552,7 +1558,7 @@ class StudyFactors(Resource):
             abort(400)
 
         # Add new Study Factor
-        logger.info('Adding new Study Factor %s for %s, using API-Key %s', new_obj.name, study_id, user_token)
+        logger.info('Adding new Study Factor %s for %s', new_obj.name, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -1642,7 +1648,7 @@ class StudyFactors(Resource):
             args = parser.parse_args(req=request)
             obj_name = args['name']
 
-        logger.info('Getting Study Factors for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Study Factors for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -1761,7 +1767,7 @@ class StudyFactors(Resource):
             save_msg_str = "be"
 
         # delete Study Factor
-        logger.info('Deleting Study Factor %s for %s, using API-Key %s', obj_name, study_id, user_token)
+        logger.info('Deleting Study Factor %s for %s', obj_name, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -1892,7 +1898,7 @@ class StudyFactors(Resource):
             abort(400)
 
         # update Study Factor details
-        logger.info('Updating Study Factor details for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Study Factor details for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -2024,8 +2030,7 @@ class StudyDescriptors(Resource):
             abort(400)
 
         # Add new Study Descriptor
-        logger.info('Adding new Study Design Descriptor %s for %s, using API-Key %s',
-                    new_obj.term, study_id, user_token)
+        logger.info('Adding new Study Design Descriptor %s for %s', new_obj.term, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -2115,7 +2120,7 @@ class StudyDescriptors(Resource):
             args = parser.parse_args(req=request)
             obj_term = args['annotationValue']
 
-        logger.info('Getting Study Design Descriptors for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Study Design Descriptors for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -2234,7 +2239,7 @@ class StudyDescriptors(Resource):
             save_msg_str = "be"
 
         # delete Study Design Descriptor
-        logger.info('Deleting Study Design Descriptor %s for %s, using API-Key %s', obj_term, study_id, user_token)
+        logger.info('Deleting Study Design Descriptor %s for %s', obj_term, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -2369,7 +2374,7 @@ class StudyDescriptors(Resource):
             abort(400)
 
         # update Study Design Descriptor details
-        logger.info('Updating Study Design Descriptor details for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Study Design Descriptor details for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -2501,8 +2506,7 @@ class StudyPublications(Resource):
             abort(400)
 
         # Add new Publication
-        logger.info('Adding new Publication %s for %s, using API-Key %s',
-                    new_publication.title, study_id, user_token)
+        logger.info('Adding new Publication %s for %s', new_publication.title, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -2592,7 +2596,7 @@ class StudyPublications(Resource):
             args = parser.parse_args(req=request)
             obj_title = args['title']
 
-        logger.info('Getting Study Publications for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Study Publications for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -2711,7 +2715,7 @@ class StudyPublications(Resource):
             save_msg_str = "be"
 
         # delete publication
-        logger.info('Deleting Study Publication %s for %s, using API-Key %s', publication_title, study_id, user_token)
+        logger.info('Deleting Study Publication %s for %s', publication_title, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -2845,7 +2849,7 @@ class StudyPublications(Resource):
             abort(400)
 
         # update Study Publication details
-        logger.info('Updating Study Publication details for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Study Publication details for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -2954,7 +2958,7 @@ class StudySources(Resource):
             obj_name = args['name']
             list_only = args['list_only']
 
-        logger.info('Getting Study Sources for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Study Sources for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -3097,7 +3101,7 @@ class StudySources(Resource):
             abort(400)
 
         # update Study Source details
-        logger.info('Updating Study Source details for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Study Source details for %s', study_id, user_token)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -3237,8 +3241,7 @@ class StudySamples(Resource):
             abort(400)
 
         # Add new Study Sample
-        logger.info('Adding new Sample %s to %s, using API-Key %s',
-                    new_sample.name, study_id, user_token)
+        logger.info('Adding new Sample %s to %s', new_sample.name, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -3367,7 +3370,7 @@ class StudySamples(Resource):
             obj_name = args['name']
             list_only = args['list_only']
 
-        logger.info('Getting Samples for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Samples for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -3397,10 +3400,9 @@ class StudySamples(Resource):
             return sch.dump(obj)
 
     @swagger.operation(
-        summary='Update Study Sample',
-        notes="""Update Study Sample.
-              <br>
-              Use sample name as a query parameter to filter out.""",
+        summary='Update Study Samples',
+        notes="""Only existing Samples will be updated, unknown will be ignored. 
+        To change name, only one sample can be processed at a time.""",
         parameters=[
             {
                 "name": "study_id",
@@ -3412,9 +3414,9 @@ class StudySamples(Resource):
             },
             {
                 "name": "name",
-                "description": "Study Sample name",
-                "required": True,
-                "allowEmptyValue": False,
+                "description": "Study Sample name. Leave empty if updating more than one sample.",
+                "required": False,
+                "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
@@ -3428,8 +3430,8 @@ class StudySamples(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "sample",
-                "description": 'Study Sample in ISA-JSON format.',
+                "name": "samples",
+                "description": 'Study Sample list in ISA-JSON format.',
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
@@ -3480,8 +3482,8 @@ class StudySamples(Resource):
         parser.add_argument('name', help="Study Sample name")
         args = parser.parse_args()
         obj_name = args['name']
-        if obj_name is None:
-            abort(404)
+        # if obj_name is None:
+        #     abort(404)
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -3499,45 +3501,80 @@ class StudySamples(Resource):
             save_msg_str = "be"
 
         # body content validation
-        updated_obj = None
+        # updated_obj = None
+        new_samples = list()
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            data = data_dict['sample']
+            data = data_dict['samples']
             # if partial=True missing fields will be ignored
-            result = SampleSchema().load(data, partial=False)
-            updated_obj = result.data
+            result = SampleSchema().load(data, many=True, partial=False)
+            # updated_obj = result.data
+            new_samples = result.data
+            if len(new_samples) == 0:
+                logger.warning("No valid data provided.")
+                abort(400)
         except (ValidationError, Exception) as err:
+            logger.warning("Bad format JSON request.", err)
             abort(400)
 
-        # update Study Source details
-        logger.info('Updating Study Sample details for %s, using API-Key %s', study_id, user_token)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        obj_list = isa_study.samples
-        found = False
-        for i, proc in enumerate(isa_study.process_sequence):
-            for index, src in enumerate(proc.outputs):
-                if isinstance(src, Sample):
-                    if src.name == obj_name:
-                        found = True
-                        proc.outputs[index] = Sample(name=updated_obj.name,
-                                                     characteristics=updated_obj.characteristics,
-                                                     factor_values=updated_obj.factor_values,
-                                                     derives_from=updated_obj.derives_from,
-                                                     comments=updated_obj.comments)
-                        break
-        if not found:
-            abort(404)
+        updated_samples = list()
+        # single sample
+        if obj_name:
+            # param name should be used only to update name for a single study
+            if obj_name and len(new_samples) > 1:
+                logger.warning("Requesting name update for more than one sample")
+                abort(400)
+
+            logger.info('Updating Study Samples details for %s,', study_id)
+            new_sample = new_samples[0]
+            if self.update_sample(isa_study, new_sample.name, new_sample):
+                updated_samples.append(new_sample)
+
+        # multiple samples
+        else:
+            logger.info('Updating details for %d Study Samples', len(new_samples))
+            for i, new_sample in enumerate(new_samples):
+                if self.update_sample(isa_study, new_sample.name, new_sample):
+                    updated_samples.append(new_sample)
+
+        # check if all samples were updated
+        warns = ''
+        if len(updated_samples) != len(new_samples):
+            warns = 'Some of the requested samples were not updated. ' \
+                    + str(len(updated_samples)) + ' out of ' + str(len(new_samples))
+            logger.warning(warns)
+
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
-                            save_samples_copy=True, save_assays_copy=True)
-        logger.info('Updated %s', updated_obj.name)
+                            save_samples_copy=save_audit_copy, save_assays_copy=save_audit_copy)
 
-        return SampleSchema().dump(updated_obj)
+        sch = SampleSchema(many=True)
+        sch.context['sample'] = Sample()
+        try:
+            resp = sch.dump(updated_samples)
+        except (ValidationError, Exception) as err:
+            logger.warning("Bad Sample format", err)
+        return extended_response(resp.data, resp.errors, warns)
+
+    def update_sample(self, isa_study, sample_name, new_sample):
+        updated = list()
+        for i, process in enumerate(isa_study.process_sequence):
+            for ii, sample in enumerate(process.outputs):
+                if isinstance(sample, Sample) and sample.name == sample_name:
+                    process.outputs[ii] = Sample(name=new_sample.name,
+                                                 characteristics=new_sample.characteristics,
+                                                 factor_values=new_sample.factor_values,
+                                                 derives_from=new_sample.derives_from,
+                                                 comments=new_sample.comments)
+                    logger.info('Updated sample: %s', new_sample.name)
+                    return True
+        return False
 
     @swagger.operation(
         summary='Delete Study Samples',
@@ -3607,7 +3644,7 @@ class StudySamples(Resource):
             abort(403)
 
         # delete samples
-        logger.info('Deleting all marked Samples for %s, using API-Key %s', study_id, user_token)
+        logger.info('Deleting all marked Samples for %s', study_id)
         location = wsc.get_study_location(study_id, user_token)
         removed_lines = 0
         try:
@@ -3728,8 +3765,7 @@ class StudyOtherMaterials(Resource):
             abort(400)
 
         # Add new Study Material
-        logger.info('Adding new Material %s to %s, using API-Key %s',
-                    new_material.name, study_id, user_token)
+        logger.info('Adding new Material %s to %s', new_material.name, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -3840,7 +3876,7 @@ class StudyOtherMaterials(Resource):
             obj_name = args['name']
             list_only = args['list_only']
 
-        logger.info('Getting Other Materials for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Other Materials for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -3962,7 +3998,7 @@ class StudyOtherMaterials(Resource):
             save_msg_str = "be"
 
         # delete Other Materials
-        logger.info('Deleting Study Material %s for %s, using API-Key %s', obj_name, study_id, user_token)
+        logger.info('Deleting Study Material %s for %s', obj_name, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -4098,7 +4134,7 @@ class StudyOtherMaterials(Resource):
             abort(400)
 
         # update Study Material details
-        logger.info('Updating Study Material details for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Study Material details for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -4210,7 +4246,7 @@ class StudyProcesses(Resource):
             obj_name = args['name']
             list_only = args['list_only']
 
-        logger.info('Getting Study Processes for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Study Processes for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
