@@ -1054,7 +1054,7 @@ class StudyProtocols(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Protocol name")
         args = parser.parse_args()
-        obj_name = args['name']
+        obj_name = args['name'].lower() if args['name'] else None
         # No protocol param allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
@@ -1174,7 +1174,7 @@ class StudyProtocols(Resource):
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            obj_name = args['name'].lower() if args['name'] else None
 
         logger.info('Getting Study protocols for %s', study_id)
         # check for access rights
@@ -1186,7 +1186,7 @@ class StudyProtocols(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = ProtocolSchema()
         sch.context['protocol'] = Protocol()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s protocols', len(obj_list))
             return sch.dump(obj_list, many=True)
@@ -1194,7 +1194,7 @@ class StudyProtocols(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
@@ -1276,8 +1276,8 @@ class StudyProtocols(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Protocol name", location="args")
         args = parser.parse_args()
-        obj_name = args['name']
-        if obj_name is None:
+        obj_name = args['name'].lower() if args['name'] else None
+        if not obj_name:
             abort(404)
         # User authentication
         user_token = None
@@ -1395,8 +1395,8 @@ class StudyProtocols(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Protocol name")
         args = parser.parse_args()
-        name = args['name']
-        if name is None:
+        obj_name = args['name'].lower() if args['name'] else None
+        if not obj_name:
             abort(404)
         # User authentication
         user_token = None
@@ -1433,7 +1433,7 @@ class StudyProtocols(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
         found = False
         for index, protocol in enumerate(isa_study.protocols):
-            if protocol.name == name:
+            if protocol.name.lower() == obj_name:
                 found = True
                 # update protocol details
                 isa_study.protocols[index] = updated_protocol
@@ -1526,7 +1526,7 @@ class StudyFactors(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Study Factor name")
         args = parser.parse_args()
-        obj_name = args['name']
+        obj_name = args['name'].lower() if args['name'] else None
         # No params allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
@@ -1646,7 +1646,7 @@ class StudyFactors(Resource):
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            obj_name = args['name'].lower() if args['name'] else None
 
         logger.info('Getting Study Factors for %s', study_id)
         # check for access rights
@@ -1658,7 +1658,7 @@ class StudyFactors(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = StudyFactorSchema()
         sch.context['factor'] = StudyFactor()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s factors', len(obj_list))
             return sch.dump(obj_list, many=True)
@@ -1666,7 +1666,7 @@ class StudyFactors(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
@@ -1748,8 +1748,8 @@ class StudyFactors(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Factor name", location="args")
         args = parser.parse_args()
-        obj_name = args['name']
-        if obj_name is None:
+        obj_name = args['name'].lower() if args['name'] else None
+        if not obj_name:
             abort(404)
         # User authentication
         user_token = None
@@ -2955,7 +2955,7 @@ class StudySources(Resource):
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            obj_name = args['name'].lower() if args['name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Study Sources for %s', study_id)
@@ -2968,7 +2968,7 @@ class StudySources(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = SourceSchema()
         sch.context['source'] = Source()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s sources', len(obj_list))
             if list_only:
@@ -2979,7 +2979,7 @@ class StudySources(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
@@ -3070,8 +3070,8 @@ class StudySources(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Study Source name")
         args = parser.parse_args()
-        obj_name = args['name']
-        if obj_name is None:
+        obj_name = args['name'].lower() if args['name'] else None
+        if not obj_name:
             abort(404)
         # User authentication
         user_token = None
@@ -3112,7 +3112,7 @@ class StudySources(Resource):
         for i, proc in enumerate(isa_study.process_sequence):
             for index, src in enumerate(proc.inputs):
                 if isinstance(src, Source):
-                    if src.name == obj_name:
+                    if src.name.lower() == obj_name:
                         found = True
                         proc.inputs[index] = Source(name=updated_obj.name,
                                                     characteristics=updated_obj.characteristics,
@@ -3208,7 +3208,7 @@ class StudySamples(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Study Sample name")
         args = parser.parse_args()
-        obj_name = args['name']
+        obj_name = args['name'].lower() if args['name'] else None
         # No params allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
@@ -3367,7 +3367,7 @@ class StudySamples(Resource):
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            obj_name = args['name'].lower() if args['name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Samples for %s', study_id)
@@ -3380,7 +3380,7 @@ class StudySamples(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = SampleSchema()
         sch.context['sample'] = Sample()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s samples', len(obj_list))
             if list_only:
@@ -3391,7 +3391,7 @@ class StudySamples(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
@@ -3481,9 +3481,7 @@ class StudySamples(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Study Sample name")
         args = parser.parse_args()
-        obj_name = args['name']
-        # if obj_name is None:
-        #     abort(404)
+        obj_name = args['name'].lower() if args['name'] else None
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -3526,21 +3524,21 @@ class StudySamples(Resource):
         # single sample
         if obj_name:
             # param name should be used only to update name for a single study
-            if obj_name and len(new_samples) > 1:
+            if len(new_samples) > 1:
                 logger.warning("Requesting name update for more than one sample")
                 abort(400)
 
             logger.info('Updating Study Samples details for %s,', study_id)
             new_sample = new_samples[0]
-            if self.update_sample(isa_study, new_sample.name, new_sample):
-                updated_samples.append(new_sample)
+            if self.update_sample(isa_study, obj_name, new_sample):
+                updated_samples.append(new_sample.name)
 
         # multiple samples
         else:
             logger.info('Updating details for %d Study Samples', len(new_samples))
             for i, new_sample in enumerate(new_samples):
-                if self.update_sample(isa_study, new_sample.name, new_sample):
-                    updated_samples.append(new_sample)
+                if self.update_sample(isa_study, new_sample.name.lower(), new_sample):
+                    updated_samples.append(new_sample.name)
 
         # check if all samples were updated
         warns = ''
@@ -3566,7 +3564,7 @@ class StudySamples(Resource):
         updated = list()
         for i, process in enumerate(isa_study.process_sequence):
             for ii, sample in enumerate(process.outputs):
-                if isinstance(sample, Sample) and sample.name == sample_name:
+                if isinstance(sample, Sample) and sample.name.lower() == sample_name:
                     process.outputs[ii] = Sample(name=new_sample.name,
                                                  characteristics=new_sample.characteristics,
                                                  factor_values=new_sample.factor_values,
@@ -3734,6 +3732,7 @@ class StudyOtherMaterials(Resource):
         parser.add_argument('name', help="Material Sample name")
         args = parser.parse_args()
         obj_name = args['name']
+        obj_name = args['name'].lower() if args['name'] else None
         # No params allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
@@ -3873,7 +3872,7 @@ class StudyOtherMaterials(Resource):
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            obj_name = args['name'].lower() if args['name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Other Materials for %s', study_id)
@@ -3886,7 +3885,7 @@ class StudyOtherMaterials(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = OtherMaterialSchema()
         sch.context['other_material'] = Material()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s Materials', len(obj_list))
             if list_only:
@@ -3897,7 +3896,7 @@ class StudyOtherMaterials(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
@@ -3979,8 +3978,8 @@ class StudyOtherMaterials(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Material name", location="args")
         args = parser.parse_args()
-        obj_name = args['name']
-        if obj_name is None:
+        obj_name = args['name'].lower() if args['name'] else None
+        if not obj_name:
             abort(404)
         # User authentication
         user_token = None
@@ -4007,7 +4006,7 @@ class StudyOtherMaterials(Resource):
         obj_list = isa_study.other_material
         found = False
         for index, material in enumerate(obj_list):
-            if material.name == obj_name:
+            if material.name.lower() == obj_name:
                 found = True
                 # delete material
                 del isa_study.other_material[index]
@@ -4103,8 +4102,8 @@ class StudyOtherMaterials(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Study Material name")
         args = parser.parse_args()
-        obj_name = args['name']
-        if obj_name is None:
+        obj_name = args['name'].lower() if args['name'] else None
+        if not obj_name:
             abort(404)
         # User authentication
         user_token = None
@@ -4143,7 +4142,7 @@ class StudyOtherMaterials(Resource):
         obj_list = isa_study.other_material
         found = False
         for index, material in enumerate(obj_list):
-            if material.name == obj_name:
+            if material.name.lower() == obj_name:
                 found = True
                 # update study
                 isa_study.other_material[index] = updated_obj
@@ -4254,7 +4253,7 @@ class StudyProcesses(Resource):
         prot_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            obj_name = args['name'].lower() if args['name'] else None
             prot_name = args['prot_name']
             list_only = False if args['list_only'].lower() != 'true' else True
 
@@ -4279,7 +4278,7 @@ class StudyProcesses(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name or obj.executes_protocol.name == prot_name:
+                if obj.name.lower() == obj_name or obj.executes_protocol.name.lower() == prot_name:
                     found = True
                     break
             if not found:
