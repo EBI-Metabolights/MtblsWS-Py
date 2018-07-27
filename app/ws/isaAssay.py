@@ -101,10 +101,10 @@ class StudyAssays(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('list_only', help='List filenames only')
-        list_only = None
+        list_only = True
         if request.args:
             args = parser.parse_args(req=request)
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Assays for %s, using API-Key %s', study_id, user_token)
         # check for access rights
@@ -116,7 +116,7 @@ class StudyAssays(Resource):
         sch = AssaySchema()
         sch.context['assay'] = Assay()
         logger.info('Got %s assays', len(isa_study.assays))
-        if list_only in ['true', 'True']:
+        if list_only:
             sch = AssaySchema(only=['filename'])
             sch.context['assay'] = Assay()
         return extended_response(sch.dump(isa_study.assays, many=True))
@@ -317,14 +317,14 @@ class AssayProcesses(Resource):
         parser.add_argument('name', help='Assay Processes name')
         parser.add_argument('prot_name', help='Protocol name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         prot_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name'].lower() if args['name'] else None
             prot_name = args['prot_name'].lower() if args['prot_name'] else None
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Processes for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
         # check for access rights
@@ -343,7 +343,7 @@ class AssayProcesses(Resource):
         if not obj_name and not prot_name:
             # return a list of objs
             logger.info('Got %s processes', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = ProcessSchema(only=('name', 'date', 'executes_protocol.name',
                                           'prev_process', 'next_process'))
                 sch.context['process'] = Process()
@@ -385,12 +385,12 @@ class AssaySources(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Study Sample name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name'].lower() if args['name'] else None
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Assay Sources for %s in %s, using API-Key %s', assay_id, study_id, user_token)
         # check for access rights
@@ -409,7 +409,7 @@ class AssaySources(Resource):
         if not obj_name:
             # return a list of objs
             logger.info('Got %s sources', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = SourceSchema(only=['name'])
                 sch.context['source'] = Source()
             return extended_response(sch.dump(obj_list, many=True))
@@ -519,12 +519,12 @@ class AssaySamples(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Assay Sample name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name'].lower() if args['name'] else None
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Samples for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
         # check for access rights
@@ -543,7 +543,7 @@ class AssaySamples(Resource):
         if not obj_name:
             # return a list of objs
             logger.info('Got %s samples', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = SampleSchema(only=['name'])
                 sch.context['sample'] = Sample()
             return extended_response(sch.dump(obj_list, many=True))
@@ -583,12 +583,12 @@ class AssayOtherMaterials(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Assay Other Materials name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name'].lower() if args['name'] else None
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Other Materials for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
         # check for access rights
@@ -607,7 +607,7 @@ class AssayOtherMaterials(Resource):
         if not obj_name:
             # return a list of objs
             logger.info('Got %s Materials', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = OtherMaterialSchema(only=['name'])
                 sch.context['other_material'] = Material()
             return extended_response(sch.dump(obj_list, many=True))
