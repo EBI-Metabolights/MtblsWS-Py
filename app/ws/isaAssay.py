@@ -119,7 +119,7 @@ class StudyAssays(Resource):
         if list_only in ['true', 'True']:
             sch = AssaySchema(only=['filename'])
             sch.context['assay'] = Assay()
-        return sch.dump(isa_study.assays, many=True)
+        return extended_response(sch.dump(isa_study.assays, many=True))
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>
@@ -207,7 +207,7 @@ class StudyAssay(Resource):
         sch = AssaySchema()
         sch.context['assay'] = Assay()
         logger.info('Got %s', isa_assay.filename)
-        return sch.dump(isa_assay)
+        return extended_response(sch.dump(isa_assay))
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/processSequence
@@ -347,7 +347,7 @@ class AssayProcesses(Resource):
                 sch = ProcessSchema(only=['name', 'date', 'executes_protocol.name',
                                           'prev_process', 'next_process'])
                 sch.context['process'] = Process()
-            return sch.dump(obj_list, many=True)
+            return extended_response(sch.dump(obj_list, many=True))
         else:
             # return a single obj
             found = False
@@ -358,7 +358,7 @@ class AssayProcesses(Resource):
             if not found:
                 abort(404)
             logger.info('Got %s', obj.name)
-            return sch.dump(obj)
+            return extended_response(sch.dump(obj))
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/sources
@@ -411,7 +411,7 @@ class AssaySources(Resource):
             if list_only in ['true', 'True']:
                 sch = SourceSchema(only=['name'])
                 sch.context['source'] = Source()
-            return sch.dump(obj_list, many=True)
+            return extended_response(sch.dump(obj_list, many=True))
         else:
             # return a single obj
             found = False
@@ -422,7 +422,7 @@ class AssaySources(Resource):
             if not found:
                 abort(404)
             logger.info('Got %s', obj.name)
-            return sch.dump(obj)
+            return extended_response(sch.dump(obj))
 
 
 class AssaySamples(Resource):
@@ -545,7 +545,7 @@ class AssaySamples(Resource):
             if list_only in ['true', 'True']:
                 sch = SampleSchema(only=['name'])
                 sch.context['sample'] = Sample()
-            return sch.dump(obj_list, many=True)
+            return extended_response(sch.dump(obj_list, many=True))
         else:
             # return a single obj
             found = False
@@ -556,7 +556,7 @@ class AssaySamples(Resource):
             if not found:
                 abort(404)
             logger.info('Got %s', obj.name)
-            return sch.dump(obj)
+            return extended_response(sch.dump(obj))
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/otherMaterials
@@ -609,7 +609,7 @@ class AssayOtherMaterials(Resource):
             if list_only in ['true', 'True']:
                 sch = OtherMaterialSchema(only=['name'])
                 sch.context['other_material'] = Material()
-            return sch.dump(obj_list, many=True)
+            return extended_response(sch.dump(obj_list, many=True))
         else:
             # return a single obj
             found = False
@@ -620,5 +620,5 @@ class AssayOtherMaterials(Resource):
             if not found:
                 abort(404)
             logger.info('Got %s', obj.name)
-            return sch.dump(obj)
+            return extended_response(sch.dump(obj))
 
