@@ -322,8 +322,8 @@ class AssayProcesses(Resource):
         prot_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
-            prot_name = args['prot_name']
+            obj_name = args['name'].lower() if args['name'] else None
+            prot_name = args['prot_name'].lower() if args['prot_name'] else None
             list_only = args['list_only']
 
         logger.info('Getting Processes for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
@@ -344,15 +344,16 @@ class AssayProcesses(Resource):
             # return a list of objs
             logger.info('Got %s processes', len(obj_list))
             if list_only in ['true', 'True']:
-                sch = ProcessSchema(only=['name', 'date', 'executes_protocol.name',
-                                          'prev_process', 'next_process'])
+                sch = ProcessSchema(only=('name', 'date', 'executes_protocol.name',
+                                          'prev_process', 'next_process'))
                 sch.context['process'] = Process()
             return extended_response(sch.dump(obj_list, many=True))
         else:
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name or obj.executes_protocol.name == prot_name:
+                if obj.name.lower() == obj_name \
+                        or obj.executes_protocol.name.lower() == prot_name:
                     found = True
                     break
             if not found:
@@ -388,7 +389,7 @@ class AssaySources(Resource):
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            obj_name = args['name'].lower() if args['name'] else None
             list_only = args['list_only']
 
         logger.info('Getting Assay Sources for %s in %s, using API-Key %s', assay_id, study_id, user_token)
@@ -405,7 +406,7 @@ class AssaySources(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = SourceSchema()
         sch.context['source'] = Source()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s sources', len(obj_list))
             if list_only in ['true', 'True']:
@@ -416,7 +417,7 @@ class AssaySources(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
@@ -522,7 +523,7 @@ class AssaySamples(Resource):
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            obj_name = args['name'].lower() if args['name'] else None
             list_only = args['list_only']
 
         logger.info('Getting Samples for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
@@ -539,7 +540,7 @@ class AssaySamples(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = SampleSchema()
         sch.context['sample'] = Sample()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s samples', len(obj_list))
             if list_only in ['true', 'True']:
@@ -550,7 +551,7 @@ class AssaySamples(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
@@ -586,7 +587,7 @@ class AssayOtherMaterials(Resource):
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            obj_name = args['name'].lower() if args['name'] else None
             list_only = args['list_only']
 
         logger.info('Getting Other Materials for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
@@ -603,7 +604,7 @@ class AssayOtherMaterials(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = OtherMaterialSchema()
         sch.context['other_material'] = Material()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s Materials', len(obj_list))
             if list_only in ['true', 'True']:
@@ -614,7 +615,7 @@ class AssayOtherMaterials(Resource):
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
