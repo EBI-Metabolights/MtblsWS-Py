@@ -2951,12 +2951,12 @@ class StudySources(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Study Sample name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name']
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Study Sources for %s', study_id)
         # check for access rights
@@ -2971,7 +2971,7 @@ class StudySources(Resource):
         if obj_name is None:
             # return a list of objs
             logger.info('Got %s sources', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = SourceSchema(only=['name'])
                 sch.context['source'] = Source()
             return sch.dump(obj_list, many=True)
@@ -3363,12 +3363,12 @@ class StudySamples(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Study Sample name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name']
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Samples for %s', study_id)
         # check for access rights
@@ -3383,7 +3383,7 @@ class StudySamples(Resource):
         if obj_name is None:
             # return a list of objs
             logger.info('Got %s samples', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = SampleSchema(only=['name'])
                 sch.context['sample'] = Sample()
             return sch.dump(obj_list, many=True)
@@ -3869,12 +3869,12 @@ class StudyOtherMaterials(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Study Other Materials name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name']
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Other Materials for %s', study_id)
         # check for access rights
@@ -3889,7 +3889,7 @@ class StudyOtherMaterials(Resource):
         if obj_name is None:
             # return a list of objs
             logger.info('Got %s Materials', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = OtherMaterialSchema(only=['name'])
                 sch.context['other_material'] = Material()
             return sch.dump(obj_list, many=True)
@@ -4249,14 +4249,14 @@ class StudyProcesses(Resource):
         parser.add_argument('name', help='Study Processes name')
         parser.add_argument('prot_name', help='Protocol name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         prot_name = None
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name']
             prot_name = args['prot_name']
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Study Processes for %s', study_id)
         # check for access rights
@@ -4271,7 +4271,7 @@ class StudyProcesses(Resource):
         if not obj_name and not prot_name:
             # return a list of objs
             logger.info('Got %s processes', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = ProcessSchema(only=['name', 'date', 'executes_protocol.name'])
                 sch.context['process'] = Process()
             return sch.dump(obj_list, many=True)
