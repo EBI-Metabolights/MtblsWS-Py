@@ -4254,7 +4254,7 @@ class StudyProcesses(Resource):
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name'].lower() if args['name'] else None
-            prot_name = args['prot_name']
+            prot_name = args['prot_name'].lower() if args['prot_name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Study Processes for %s', study_id)
@@ -4271,7 +4271,7 @@ class StudyProcesses(Resource):
             # return a list of objs
             logger.info('Got %s processes', len(obj_list))
             if list_only:
-                sch = ProcessSchema(only=['name', 'date', 'executes_protocol.name'])
+                sch = ProcessSchema(only=('name', 'date', 'executes_protocol.name'))
                 sch.context['process'] = Process()
             return sch.dump(obj_list, many=True)
         else:
@@ -4283,5 +4283,5 @@ class StudyProcesses(Resource):
                     break
             if not found:
                 abort(404)
-            logger.info('Got %s', obj.name)
+            logger.info('Got %s', prot_name if prot_name else obj_name)
             return sch.dump(obj)
