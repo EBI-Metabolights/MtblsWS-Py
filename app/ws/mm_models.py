@@ -494,14 +494,14 @@ class ProcessSchema(IsaSchema):
     performer = fields.Str(allow_none=True)
     parameter_values = fields.Nested(ParameterValueSchema, many=True,
                                      load_from='parameterValues', dump_to='parameterValues')
-    prev_process = fields.Nested('self', only=['executes_protocol.name'],
+    prev_process = fields.Nested('self', only=('name', 'executes_protocol.name'),
                                  load_from='previousProcess', dump_to='previousProcess',
                                  allow_none=True)
-    next_process = fields.Nested('self', only=['executes_protocol.name'],
+    next_process = fields.Nested('self', only=('name', 'executes_protocol.name'),
                                  load_from='nextProcess', dump_to='nextProcess',
                                  allow_none=True)
-    inputs = InputOutputField(allow_none=True,)
-    outputs = InputOutputField(allow_none=True,)
+    inputs = InputOutputField(allow_none=True)
+    outputs = InputOutputField(allow_none=True)
 
     @post_load
     def make_obj(self, data):
@@ -544,7 +544,20 @@ class AssaySchema(IsaSchema):
     data_files = fields.Nested(DataFileSchema, many=True,
                                load_from='dataFiles', dump_to='dataFiles')
     process_sequence = fields.Nested(ProcessSchema, many=True,
-                                     exclude=('prev_process', 'next_process'),
+                                     only=('name',
+                                           'date_', 'performer',
+                                           'parameter_values',
+                                           'executes_protocol',
+                                           'prev_process',
+                                           # 'prev_process.name',
+                                           # 'prev_process.executes_protocol.name',
+                                           'next_process',
+                                           # 'next_process.name',
+                                           # 'next_process.executes_protocol.name',
+                                           'inputs',
+                                           'outputs',
+                                           'comments'
+                                           ),
                                      load_from='processSequence', dump_to='processSequence')
     sources = fields.Nested(SourceSchema, many=True, allow_none=True)
     samples = fields.Nested(SampleSchema, many=True)
@@ -553,6 +566,9 @@ class AssaySchema(IsaSchema):
     characteristic_categories = fields.Nested(OntologyAnnotationSchema, many=True,
                                               load_from='characteristicCategories', dump_to='characteristicCategories')
     units = fields.Nested(OntologyAnnotationSchema, many=True)
+
+    graph = fields.Str()
+
 
     @post_load
     def make_obj(self, data):
