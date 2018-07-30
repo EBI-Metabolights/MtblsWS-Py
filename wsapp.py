@@ -5,7 +5,7 @@ from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
 from app.ws.mtbls_maf import MetaboliteAnnotationFile, MtblsMAFSearch, AddAnnotationRow, DeleteAnnotationRow
-from app.ws.mtblsStudy import IsaTabInvestigation, MtblsStudies
+from app.ws.mtblsStudy import IsaTabInvestigation, MtblsStudies, StudyFiles
 from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
@@ -49,6 +49,7 @@ def initialize_app(flask_app):
     # MTBLS studies
     api.add_resource(MtblsStudies, res_path + "/studies")
     api.add_resource(IsaTabInvestigation, res_path + "/studies/<string:study_id>/isa-tab/investigation")
+    api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/isa-tab/study_files")
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")

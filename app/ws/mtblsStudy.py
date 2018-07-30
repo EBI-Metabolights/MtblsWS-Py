@@ -7,6 +7,7 @@ from flask.json import jsonify
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import get_all_files
 
 
 logger = logging.getLogger('wslog')
@@ -103,3 +104,53 @@ class IsaTabInvestigation(Resource):
         except OSError as err:
             logger.error(err)
             abort(404)
+
+
+class StudyFiles(Resource):
+
+    @swagger.operation(
+        summary="Get a list of all files in a study folder",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('Getting list of all files for MTBLS Study %s, using API-Key %s', study_id, user_token)
+        location = wsc.get_study_location(study_id, user_token)
+        all_files = get_all_files(location)
+        return jsonify({"files": all_files})
+
