@@ -77,3 +77,8 @@ def remove_samples_from_isatab(std_path):
                         outfile.write(line)
 
     return removed_lines
+
+
+def get_all_files(path):
+    files = os.listdir(path)
+    return files
