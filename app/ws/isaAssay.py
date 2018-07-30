@@ -199,6 +199,8 @@ class StudyAssay(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
+        print(isa_study.graph)
+
         if assay_num < 0 or \
                 assay_num > len(isa_study.assays) - 1:
             abort(404)
@@ -218,7 +220,7 @@ class AssayProcesses(Resource):
         summary="Get Assay Processes",
         notes="""Get Assay Processes.
                   <br>
-                  Use process name as a query parameter to filter out.""",
+                  Use process or protocol name as query parameter for specific searching.""",
         parameters=[
             {
                 "name": "study_id",
@@ -337,29 +339,22 @@ class AssayProcesses(Resource):
             abort(404)
         isa_assay = isa_study.assays[assay_num]
         obj_list = isa_assay.process_sequence
-        # Using context to avoid envelop tags in contained objects
-        sch = ProcessSchema()
-        sch.context['process'] = Process()
+        found = list()
         if not obj_name and not prot_name:
-            # return a list of objs
-            logger.info('Got %s processes', len(obj_list))
-            if list_only:
-                sch = ProcessSchema(only=('name', 'date', 'executes_protocol.name',
-                                          'prev_process', 'next_process'))
-                sch.context['process'] = Process()
-            return extended_response(sch.dump(obj_list, many=True))
+            found = obj_list
         else:
-            # return a single obj
-            found = False
-            for index, obj in enumerate(obj_list):
-                if obj.name.lower() == obj_name \
-                        or obj.executes_protocol.name.lower() == prot_name:
-                    found = True
-                    break
-            if not found:
-                abort(404)
-            logger.info('Got %s', obj.name)
-            return extended_response(sch.dump(obj))
+            for index, proto in enumerate(obj_list):
+                if proto.name.lower() == obj_name \
+                        or proto.executes_protocol.name.lower() == prot_name:
+                    found.append(proto)
+        if not len(found) > 0:
+            abort(404)
+        logger.info('Found %d protocols', len(found))
+
+        sch = ProcessSchema(many=True)
+        if list_only:
+            sch = ProcessSchema(only=('name', 'executes_protocol.name',), many=True)
+        return extended_response(data={'processSequence': sch.dump(found).data})
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/sources
