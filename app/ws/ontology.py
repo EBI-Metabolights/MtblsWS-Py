@@ -10,7 +10,7 @@ from flask import current_app as app
 from flask import request, jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from owlready2 import get_ontology
+from owlready2 import *
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -60,6 +60,17 @@ class Ontology(Resource):
                 "paramType": "query",
                 "dataType": "string",
                 "enum": ["factors", "roles", "taxonomy", "characteristics", "publication"]
+            },
+
+            {
+                "name": "mapping",
+                "description": "starting branch of ontology",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["typo", "exact"]
             }
         ],
         responseMessages=[
@@ -100,6 +111,12 @@ class Ontology(Resource):
         if request.args:
             args = parser.parse_args(req=request)
             branch = args['branch']
+
+        parser.add_argument('mapping', help='Mapping approcaches')
+        mapping = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            mapping = args['mapping']
 
         # Onto loading
         logger.info('Getting Ontology term %s', term)
@@ -145,14 +162,34 @@ class Ontology(Resource):
                 else:
                     res_cls = clses
 
-            # ---------------- taxonomy------------------------------
-            if branch == 'taxonomy' and term != None:  # go super
-                for cls in clses:
-                    if str(cls.label[0]) == term:
-                        res = info.get_supers(cls)
-                        res_cls = res
-            elif branch == 'taxonomy' and term == None:
+            # taxonomy
+            if branch == 'taxonomy' and term != None:
+                if not mapping:
+                    try:
+                        res_cls.append(onto.search_one(label=term))
+                    except:
+                        print("can't find the term")
+                        pass
+                elif mapping == 'typo':
+                    try:
+                        c = onto.search_one(label=term)
+                        map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasRelatedSynonym']
+                        res_cls = list(map[c])
+                    except:
+                        print("can't find the term")
+                        pass
+
+                elif mapping == 'exact':
+                    try:
+                        c = onto.search_one(label=term)
+                        map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
+                        res_cls = list(map[c])
+                    except:
+                        print("can't find the term")
+                        pass
+            else:
                 res_cls = clses
+
 
 
         response = []
@@ -172,8 +209,13 @@ class Ontology(Resource):
                 }'''
 
             d = json.loads(temp)
-            d['annotationValue'] = str(cls.label[0])
-            d['name'] = str(cls.namespace.name)
+            try:
+                d['annotationValue'] = str(cls.label[0])
+                d['name'] = str(cls.namespace.name)
+            except:
+                d['annotationValue'] = cls
+                d['name'] = mapping
+
             response.append(d)
 
         # response = [{'SubClass': x} for x in res]
