@@ -106,7 +106,7 @@ class StudyAssays(Resource):
             args = parser.parse_args(req=request)
             list_only = False if args['list_only'].lower() != 'true' else True
 
-        logger.info('Getting Assays for %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Assays for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -193,7 +193,7 @@ class StudyAssay(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
 
-        logger.info('Getting Assay %s for %s, using API-Key %s', assay_id, study_id, user_token)
+        logger.info('Getting Assay %s for %s', assay_id, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -328,7 +328,7 @@ class AssayProcesses(Resource):
             prot_name = args['prot_name'].lower() if args['prot_name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
 
-        logger.info('Getting Processes for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
+        logger.info('Getting Processes for Assay %s in %s', assay_id, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -387,7 +387,7 @@ class AssaySources(Resource):
             obj_name = args['name'].lower() if args['name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
 
-        logger.info('Getting Assay Sources for %s in %s, using API-Key %s', assay_id, study_id, user_token)
+        logger.info('Getting Assay Sources for %s in %s', assay_id, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -521,7 +521,7 @@ class AssaySamples(Resource):
             obj_name = args['name'].lower() if args['name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
 
-        logger.info('Getting Samples for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
+        logger.info('Getting Samples for Assay %s in %s', assay_id, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -585,7 +585,7 @@ class AssayOtherMaterials(Resource):
             obj_name = args['name'].lower() if args['name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
 
-        logger.info('Getting Other Materials for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
+        logger.info('Getting Other Materials for Assay %s in %s', assay_id, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -618,3 +618,133 @@ class AssayOtherMaterials(Resource):
             logger.info('Got %s', obj.name)
             return extended_response(sch.dump(obj))
 
+
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>/dataFiles
+# http://host:5005/mtbls/ws/studies/MTBLS2/assays/1/dataFiles?list_only=false
+class AssayDataFiles(Resource):
+    @swagger.operation(
+        summary="Get Assay Data File",
+        notes="""Get Assay Data File.
+                  <br>
+                  Use file name as query parameter for specific searching.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "assay_id",
+                "description": "Assay number",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "name",
+                "description": "Data File name",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "list_only",
+                "description": "List names only",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "default": True
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id, assay_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+        if assay_id is None:
+            abort(404)
+        try:
+            assay_num = int(assay_id) - 1
+        except ValueError:
+            abort(404)
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', help='Assay Processes name')
+        parser.add_argument('list_only', help='List names only')
+        list_only = True
+        obj_name = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            obj_name = args['name'].lower() if args['name'] else None
+            list_only = False if args['list_only'].lower() != 'true' else True
+
+        logger.info('Getting Data Files for Assay %s in %s', assay_id, study_id)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        if assay_num < 0 or \
+                assay_num > len(isa_study.assays) - 1:
+            abort(404)
+        isa_assay = isa_study.assays[assay_num]
+        obj_list = isa_assay.data_files
+        found = list()
+        if not obj_name:
+            found = obj_list
+        else:
+            for index, obj in enumerate(obj_list):
+                if obj.filename.lower() == obj_name :
+                    found.append(obj)
+        if not len(found) > 0:
+            abort(404)
+        logger.info('Found %d data files', len(found))
+
+        sch = DataFileSchema(many=True)
+        if list_only:
+            sch = DataFileSchema(only=('filename',), many=True)
+        return extended_response(data={'dataFiles': sch.dump(found).data})

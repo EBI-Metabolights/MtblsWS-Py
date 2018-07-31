@@ -86,6 +86,7 @@ def initialize_app(flask_app):
     api.add_resource(AssaySources, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/sources")
     api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/samples")
     api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/otherMaterials")
+    api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/dataFiles")
     api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/processSequence")
 
     # Add ontology resources
