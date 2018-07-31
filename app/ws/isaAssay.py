@@ -199,8 +199,6 @@ class StudyAssay(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        print(isa_study.graph)
-
         if assay_num < 0 or \
                 assay_num > len(isa_study.assays) - 1:
             abort(404)
@@ -217,8 +215,8 @@ class StudyAssay(Resource):
 class AssayProcesses(Resource):
 
     @swagger.operation(
-        summary="Get Assay Processes",
-        notes="""Get Assay Processes.
+        summary="Get Assay Process Sequence",
+        notes="""Get Assay Process Sequence.
                   <br>
                   Use process or protocol name as query parameter for specific searching.""",
         parameters=[
@@ -559,6 +557,80 @@ class AssaySamples(Resource):
 # http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/otherMaterials?list_only=true
 class AssayOtherMaterials(Resource):
 
+    @swagger.operation(
+        summary="Get Assay Other Materials",
+        notes="""Get Assay Other Materials.
+                  <br>
+                  Use sample name as a query parameter to filter out.""",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "assay_id",
+                "description": "Assay number",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "name",
+                "description": "Assay Material name",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "list_only",
+                "description": "List names only",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "default": True
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
     def get(self, study_id, assay_id):
         log_request(request)
         # param validation
@@ -591,11 +663,11 @@ class AssayOtherMaterials(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        obj_list = isa_study.other_material
         if assay_num < 0 or \
                 assay_num > len(isa_study.assays) - 1:
             abort(404)
         isa_assay = isa_study.assays[assay_num]
+        obj_list = isa_assay.other_material
         # Using context to avoid envelop tags in contained objects
         sch = OtherMaterialSchema()
         sch.context['other_material'] = Material()
