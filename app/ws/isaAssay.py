@@ -24,6 +24,15 @@ def log_request(request_obj):
             logger.debug('REQUEST JSON    -> %s', request_obj.json)
 
 
+def extended_response(data=None, errs=None, warns=None):
+    ext_resp = {"data": data if data else list(),
+                "errors": errs if errs else list(),
+                "warnings": warns if warns else list()}
+    return ext_resp
+
+
+# res_path = /studies/<string:study_id>/assays
+# http://host:500/mtbls/ws/studies/MTBLS10/assays?list_only=true
 class StudyAssays(Resource):
 
     @swagger.operation(
@@ -92,10 +101,10 @@ class StudyAssays(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('list_only', help='List filenames only')
-        list_only = None
+        list_only = True
         if request.args:
             args = parser.parse_args(req=request)
-            list_only = args['list_only']
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Assays for %s, using API-Key %s', study_id, user_token)
         # check for access rights
@@ -107,12 +116,14 @@ class StudyAssays(Resource):
         sch = AssaySchema()
         sch.context['assay'] = Assay()
         logger.info('Got %s assays', len(isa_study.assays))
-        if list_only in ['true', 'True']:
+        if list_only:
             sch = AssaySchema(only=['filename'])
             sch.context['assay'] = Assay()
-        return sch.dump(isa_study.assays, many=True)
+        return extended_response(sch.dump(isa_study.assays, many=True))
 
 
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>
+# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1
 class StudyAssay(Resource):
 
     @swagger.operation(
@@ -188,6 +199,8 @@ class StudyAssay(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
+        print(isa_study.graph)
+
         if assay_num < 0 or \
                 assay_num > len(isa_study.assays) - 1:
             abort(404)
@@ -196,16 +209,18 @@ class StudyAssay(Resource):
         sch = AssaySchema()
         sch.context['assay'] = Assay()
         logger.info('Got %s', isa_assay.filename)
-        return sch.dump(isa_assay)
+        return extended_response(sch.dump(isa_assay))
 
 
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>/processSequence
+# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/processSequence?list_only=true
 class AssayProcesses(Resource):
 
     @swagger.operation(
         summary="Get Assay Processes",
         notes="""Get Assay Processes.
                   <br>
-                  Use process name as a query parameter to filter out.""",
+                  Use process or protocol name as query parameter for specific searching.""",
         parameters=[
             {
                 "name": "study_id",
@@ -225,7 +240,16 @@ class AssayProcesses(Resource):
             },
             {
                 "name": "name",
-                "description": "Study Process name",
+                "description": "Process name",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "prot_name",
+                "description": "Protocol name",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -293,13 +317,16 @@ class AssayProcesses(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Assay Processes name')
+        parser.add_argument('prot_name', help='Protocol name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
+        prot_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
-            list_only = args['list_only']
+            obj_name = args['name'].lower() if args['name'] else None
+            prot_name = args['prot_name'].lower() if args['prot_name'] else None
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Processes for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
         # check for access rights
@@ -312,105 +339,28 @@ class AssayProcesses(Resource):
             abort(404)
         isa_assay = isa_study.assays[assay_num]
         obj_list = isa_assay.process_sequence
-        # Using context to avoid envelop tags in contained objects
-        sch = ProcessSchema()
-        sch.context['process'] = Process()
-        if obj_name is None:
-            # return a list of objs
-            logger.info('Got %s processes', len(obj_list))
-            if list_only in ['true', 'True']:
-                sch = ProcessSchema(only=['name', 'date', 'executes_protocol.name'])
-                sch.context['process'] = Process()
-            return sch.dump(obj_list, many=True)
+        found = list()
+        if not obj_name and not prot_name:
+            found = obj_list
         else:
-            # return a single obj
-            found = False
-            for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
-                    found = True
-                    break
-            if not found:
-                abort(404)
-            logger.info('Got %s', obj.name)
-            return sch.dump(obj)
+            for index, proto in enumerate(obj_list):
+                if proto.name.lower() == obj_name \
+                        or proto.executes_protocol.name.lower() == prot_name:
+                    found.append(proto)
+        if not len(found) > 0:
+            abort(404)
+        logger.info('Found %d protocols', len(found))
+
+        sch = ProcessSchema(many=True)
+        if list_only:
+            sch = ProcessSchema(only=('name', 'executes_protocol.name',), many=True)
+        return extended_response(data={'processSequence': sch.dump(found).data})
 
 
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>/sources
+# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/sources?list_only=true
 class AssaySources(Resource):
 
-    @swagger.operation(
-        summary="Get Assay Sources",
-        notes="""Get Assay Sources.
-              <br>
-              Use source name as a query parameter to filter out.""",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "assay_id",
-                "description": "Assay number",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "name",
-                "description": "Study Source name",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
-            {
-                "name": "list_only",
-                "description": "List names only",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "default": True
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": False,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
     def get(self, study_id, assay_id):
         log_request(request)
         # param validation
@@ -430,12 +380,12 @@ class AssaySources(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Study Sample name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
-            list_only = args['list_only']
+            obj_name = args['name'].lower() if args['name'] else None
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Assay Sources for %s in %s, using API-Key %s', assay_id, study_id, user_token)
         # check for access rights
@@ -451,24 +401,24 @@ class AssaySources(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = SourceSchema()
         sch.context['source'] = Source()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s sources', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = SourceSchema(only=['name'])
                 sch.context['source'] = Source()
-            return sch.dump(obj_list, many=True)
+            return extended_response(sch.dump(obj_list, many=True))
         else:
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
                 abort(404)
             logger.info('Got %s', obj.name)
-            return sch.dump(obj)
+            return extended_response(sch.dump(obj))
 
 
 class AssaySamples(Resource):
@@ -564,12 +514,12 @@ class AssaySamples(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Assay Sample name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
-            list_only = args['list_only']
+            obj_name = args['name'].lower() if args['name'] else None
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Samples for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
         # check for access rights
@@ -585,102 +535,30 @@ class AssaySamples(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = SampleSchema()
         sch.context['sample'] = Sample()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s samples', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = SampleSchema(only=['name'])
                 sch.context['sample'] = Sample()
-            return sch.dump(obj_list, many=True)
+            return extended_response(sch.dump(obj_list, many=True))
         else:
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
                 abort(404)
             logger.info('Got %s', obj.name)
-            return sch.dump(obj)
+            return extended_response(sch.dump(obj))
 
 
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>/otherMaterials
+# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/otherMaterials?list_only=true
 class AssayOtherMaterials(Resource):
 
-    @swagger.operation(
-        summary="Get Assay Other Materials",
-        notes="""Get Assay Other Materials.
-              <br>
-              Use sample name as a query parameter to filter out.""",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "assay_id",
-                "description": "Assay number",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "name",
-                "description": "Assay Material name",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
-            {
-                "name": "list_only",
-                "description": "List names only",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "default": True
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": False,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
     def get(self, study_id, assay_id):
         log_request(request)
         # param validation
@@ -700,12 +578,12 @@ class AssayOtherMaterials(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help='Assay Other Materials name')
         parser.add_argument('list_only', help='List names only')
-        list_only = None
+        list_only = True
         obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
-            list_only = args['list_only']
+            obj_name = args['name'].lower() if args['name'] else None
+            list_only = False if args['list_only'].lower() != 'true' else True
 
         logger.info('Getting Other Materials for Assay %s in %s, using API-Key %s', assay_id, study_id, user_token)
         # check for access rights
@@ -721,22 +599,22 @@ class AssayOtherMaterials(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = OtherMaterialSchema()
         sch.context['other_material'] = Material()
-        if obj_name is None:
+        if not obj_name:
             # return a list of objs
             logger.info('Got %s Materials', len(obj_list))
-            if list_only in ['true', 'True']:
+            if list_only:
                 sch = OtherMaterialSchema(only=['name'])
                 sch.context['other_material'] = Material()
-            return sch.dump(obj_list, many=True)
+            return extended_response(sch.dump(obj_list, many=True))
         else:
             # return a single obj
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.name == obj_name:
+                if obj.name.lower() == obj_name:
                     found = True
                     break
             if not found:
                 abort(404)
             logger.info('Got %s', obj.name)
-            return sch.dump(obj)
+            return extended_response(sch.dump(obj))
 
