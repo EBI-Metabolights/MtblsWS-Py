@@ -80,3 +80,4 @@ ssl/
 /tests/.pytest_cache/
 tests/.pytest_cache/
 examples/
+venv37
