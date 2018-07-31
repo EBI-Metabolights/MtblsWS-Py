@@ -4,8 +4,8 @@ from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
-from app.ws.mtbls_maf import MetaboliteAnnotationFile, MtblsMAFSearch, AddAnnotationRow, DeleteAnnotationRow
-from app.ws.mtblsStudy import IsaTabInvestigation, MtblsStudies, StudyFiles
+from app.ws.mtbls_maf import MetaboliteAnnotationFile, MtblsMAFSearch, AddAnnotationRow, DeleteAnnotationRow, ReadMetaboliteAnnotationFile
+from app.ws.mtblsStudy import IsaTabInvestigation, MtblsStudies, StudyFiles, AllocateAccession
 from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
@@ -50,6 +50,8 @@ def initialize_app(flask_app):
     api.add_resource(MtblsStudies, res_path + "/studies")
     api.add_resource(IsaTabInvestigation, res_path + "/studies/<string:study_id>/isa-tab/investigation")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/isa-tab/study_files")
+    api.add_resource(AllocateAccession, res_path + "/studies/create_study")
+
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
@@ -65,7 +67,8 @@ def initialize_app(flask_app):
 
     #Metabolite Annotation File (MAF)
     api.add_resource(MtblsMAFSearch, res_path + "/maf_search/<string:search_type>")
-    api.add_resource(MetaboliteAnnotationFile, res_path + "/study/<string:study_id>/maf/<string:annotation_file_name>")
+    api.add_resource(ReadMetaboliteAnnotationFile, res_path + "/study/<string:study_id>/maf/<string:annotation_file_name>")
+    api.add_resource(MetaboliteAnnotationFile, res_path + "/study/<string:study_id>/maf_update/<string:annotation_file_name>")
     api.add_resource(AddAnnotationRow, res_path + "/study/<string:study_id>/maf_add_row/<string:annotation_file_name>")
     api.add_resource(DeleteAnnotationRow, res_path + "/study/<string:study_id>/maf_delete_row/<string:annotation_file_name>")
 

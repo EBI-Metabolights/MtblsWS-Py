@@ -1,13 +1,15 @@
 import glob
 import logging
 import os
+import time
 from flask import current_app as app
 from flask import request, abort, send_file
 from flask.json import jsonify
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_all_files
+from app.ws.utils import get_all_files, get_year_plus_one
+from distutils.dir_util import copy_tree
 
 
 logger = logging.getLogger('wslog')
@@ -149,8 +151,108 @@ class StudyFiles(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+
         logger.info('Getting list of all files for MTBLS Study %s, using API-Key %s', study_id, user_token)
         location = wsc.get_study_location(study_id, user_token)
         all_files = get_all_files(location)
         return jsonify({"files": all_files})
+
+
+class AllocateAccession(Resource):
+
+    @swagger.operation(
+        summary="Create a new study and accession number",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Existing Study Identifier to clone. Will clone standard LC-MS study if no parameter given",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('study_id', help="The row number of the cell to remove (exclude header)")
+        study_id = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            study_id = args['study_id']
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # param validation
+        if study_id is None:
+            study_id = 'MTBLS121'  # This is the standard LC-MS study. This is private but safe for all to clone
+        else:
+            if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+                abort(403)
+
+        if user_token is None:
+            abort(404)
+
+        study_date = get_year_plus_one()
+        logger.info('Creating a new MTBLS Study (cloned from %s) with release date %s, using API-Key %s', study_id, study_date, user_token)
+        new_folder_name = user_token + '~~' + study_date + '~' + 'new_study_requested'
+
+        study_to_clone = wsc.get_study_location(study_id, user_token)
+        queue_folder = wsc.get_queue_folder()
+        existing_studies = wsc.get_all_studies_for_user(user_token)
+
+        # copy the study onto the queue folder
+        copy_tree(study_to_clone, os.path.join(queue_folder.decode("utf-8"), new_folder_name))  # copy the entire folder to the queue
+
+        # get a list of the users private studies to see if a new study has been created. Have to query on a regular basis
+        new_studies = wsc.get_all_studies_for_user(user_token)
+
+        while existing_studies == new_studies:
+            time.sleep(2)
+            new_studies = wsc.get_all_studies_for_user(user_token)
+
+        # Ok, now there is a new private study for the user
+
+        # Tidy up the response strings before converting to lists
+        new_studies_list = new_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
+        existing_studies_list = existing_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
+
+        # return the new entry, i.e. difference between the two lists
+        diff = list(set(new_studies_list) - set(existing_studies_list))
+
+        return jsonify({"new_study": diff})
+
 
