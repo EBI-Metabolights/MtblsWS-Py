@@ -454,7 +454,7 @@ class InputOutputField(fields.Field):
                 val.append(OtherMaterialSchema().dump(item).data)
             elif isinstance(item, DataFile):
                 val.append(DataFileSchema().dump(item).data)
-            return val
+        return val
 
     def _deserialize(self, value, attr, data):
         val = list()
