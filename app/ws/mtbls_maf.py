@@ -73,7 +73,7 @@ class MtblsMAFSearch(Resource):
     )
     def get(self, search_type):
         """
-        Get MAF from from MetaboLights WS
+        Get compound information from MetaboLights Java WS
         :param search_type: The type of data to search for
         :return: a JSON representation of the MTBLS Search object
         """
@@ -99,7 +99,7 @@ class MtblsMAFSearch(Resource):
 class MetaboliteAnnotationFile(Resource):
     """Get MAF from filesystem"""
     @swagger.operation(
-        summary="Read and update MAF for a MTBLS study using filename",
+        summary="Read, and add missing samples for a MAF for a MTBLS study",
         nickname="Get MAF for a given MTBLS Assay",
         notes="Get a given Metabolite Annotation File for a MTBLS Study with in JSON format.",
         parameters=[
@@ -589,5 +589,88 @@ class DeleteAnnotationRow(Resource):
         # Write the updated file
         maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
+        df_dict = totuples(maf_df.reset_index())
+        return df_dict
+
+
+class ReadMetaboliteAnnotationFile(Resource):
+    """Get MAF from filesystem"""
+    @swagger.operation(
+        summary="Read MAF for a MTBLS study using filename",
+        nickname="Get MAF for a given MTBLS Assay",
+        notes="Get a given Metabolite Annotation File for a MTBLS Study with in JSON format.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "annotation_file_name",
+                "description": "Metabolite Annotation File name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Metabolite Annotation File (MAF) is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id, annotation_file_name):
+        """
+        Get MAF from from MetaboLights API
+        :param study_id: MTBLS study identifier
+        :param annotation_file_name: The metabolite annotation file name for the given study_id
+        :return: a JSON representation of the MTBLS MAF object
+        """
+
+        # param validation
+        if study_id is None or annotation_file_name is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        logger.info('MAF: Getting ISA-JSON Study %s, using API-Key %s', study_id, user_token)
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+
+        study_path = wsc.get_study_location(study_id, user_token)
+        annotation_file_name = study_path + "/" + annotation_file_name
+        # Get the MAF table or create a new one if it does not already exist
+        maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
+        # Get rid of empty numerical values
+        maf_df = maf_df.replace(np.nan, '', regex=True)
         df_dict = totuples(maf_df.reset_index())
         return df_dict

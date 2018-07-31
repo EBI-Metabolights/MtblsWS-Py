@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import time
+import datetime
 from flask import current_app as app
 
 """
@@ -20,6 +21,16 @@ def get_timestamp():
     :return: %Y%m%d%H%M%S - full year, two digit month, day, 24 hour, minutes and seconds
     """
     return time.strftime("%Y%m%d%H%M%S")
+
+
+def get_year_plus_one():
+    """
+    Get a string with the current date 20170302
+    :return: %Y%m%d - full year, two digit month, day
+    """
+    today = datetime.date.today()
+    now = datetime.date(today.year + 1, today.month, today.day)
+    return now.strftime("%Y%m%d")
 
 
 def new_timestamped_folder(path):
