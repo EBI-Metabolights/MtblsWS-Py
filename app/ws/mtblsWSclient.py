@@ -181,6 +181,17 @@ class WsClient:
         logger.info('... found %d public studies', len(json_resp['content']))
         return json_resp
 
+    def get_all_studies_for_user(self, user_token):
+        logger.info('Getting all studies for user_token ' + user_token)
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken?userToken="+user_token
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        resp = requests.get(url)
+        if resp.status_code != 200:
+            abort(resp.status_code)
+
+        text_resp = resp.text
+        return text_resp
+
     def is_user_token_valid(self, user_token):
         logger.info('Checking for user credentials in MTBLS-Labs')
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/labs/" + "authenticateToken"
@@ -231,4 +242,15 @@ class WsClient:
         write_access = cont['write']
         logger.info('... found permissions for reading: %s and writing: %s', read_access, write_access)
         return read_access, write_access
+
+    def get_queue_folder(self):
+        logger.info('Getting get queue upload folder for this server')
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/getQueueFolder"
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        resp = requests.get(url)
+        if resp.status_code != 200:
+            abort(resp.status_code)
+
+        text_resp = resp.content
+        return text_resp
 
