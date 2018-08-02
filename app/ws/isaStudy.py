@@ -1773,7 +1773,8 @@ class StudyFactors(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
 
-        obj = isa_study.get_factor(obj_name)
+        # obj = isa_study.get_factor(obj_name)
+        obj = self.get_factor(isa_study.factors, obj_name)
         if not obj:
             abort(404)
         # remove object
@@ -1782,7 +1783,19 @@ class StudyFactors(Resource):
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', obj.name)
 
-        return StudyFactorSchema().dump(obj)
+        sch = StudyFactorSchema()
+        sch.context['factor'] = StudyFactor()
+        try:
+            resp = sch.dump(obj)
+        except (ValidationError, Exception) as err:
+            logger.warning("Bad Study Factor format", err)
+        return extended_response(data=resp.data, errs=resp.errors)
+
+    def get_factor(self, factor_list, factor_name):
+        for factor in factor_list:
+            if factor.name.lower() == factor_name.lower():
+                return factor
+        return None
 
     @swagger.operation(
         summary='Update Study Factor',
