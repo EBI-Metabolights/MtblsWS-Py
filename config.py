@@ -12,11 +12,11 @@ WS_APP_DESCRIPTION = "MetaboLights Python-based REST WebService"
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
 
-WS_APP_VERSION = "0.12.5"
+WS_APP_VERSION = "0.12.6"
 RESOURCES_PATH = "/mtbls/ws"
 
 # Increment only when the API changes
-API_VERSION = "0.12.1"
+API_VERSION = "0.12.2"
 API_DOC = RESOURCES_PATH + "/api/spec"
 
 STATIC_FOLDER = os.path.join(PROJECT_PATH, "static")
