@@ -1773,7 +1773,8 @@ class StudyFactors(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
 
-        obj = isa_study.get_factor(obj_name)
+        # obj = isa_study.get_factor(obj_name)
+        obj = self.get_factor(isa_study.factors, obj_name)
         if not obj:
             abort(404)
         # remove object
@@ -1782,7 +1783,19 @@ class StudyFactors(Resource):
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', obj.name)
 
-        return StudyFactorSchema().dump(obj)
+        sch = StudyFactorSchema()
+        sch.context['factor'] = StudyFactor()
+        try:
+            resp = sch.dump(obj)
+        except (ValidationError, Exception) as err:
+            logger.warning("Bad Study Factor format", err)
+        return extended_response(data=resp.data, errs=resp.errors)
+
+    def get_factor(self, factor_list, factor_name):
+        for factor in factor_list:
+            if factor.name.lower() == factor_name.lower():
+                return factor
+        return None
 
     @swagger.operation(
         summary='Update Study Factor',
@@ -3232,57 +3245,85 @@ class StudySamples(Resource):
         new_sample = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            # TODO change to allow multiple samples
-            data = data_dict['sample']
-            # if partial=True missing fields will be ignored
-            result = SampleSchema().load(data, partial=False)
-            new_sample = result.data
+            data = data_dict['samples']
+            result = SampleSchema().load(data, partial=False, many=True)
+            new_samples = result.data
         except (ValidationError, Exception) as err:
             abort(400)
 
         # Add new Study Sample
-        logger.info('Adding new Sample %s to %s', new_sample.name, study_id)
+        logger.info('Adding new Samples to %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        # check for existing Samples
-        sample_list = isa_study.samples
-        for index, sample in enumerate(sample_list):
-            if sample.name == new_sample.name:
-                abort(409)
+        added_samples = list()
+        for ndx, sample in enumerate(new_samples):
+            # existing names will be ignored
+            if not self.get_sample(isa_study.samples, sample.name):
+                # add sources
+                # there should be only one, but just in case
+                for source in sample.derives_from:
+                    if not self.get_source(isa_study.sources, source.name):
+                        isa_study.sources.append(source)
+                # add protocol
+                protocol = self.get_protocol(isa_study.protocols, 'Sample collection')
+                # if not found, create a new one
+                if not protocol:
+                    protocol = Protocol(name='Sample collection',
+                                        protocol_type=OntologyAnnotation(term='Sample collection'))
+                # add sample
+                isa_study.samples.append(new_sample)
 
-        # add Sources to the Study
-        # apparently duplications are handled by the API, so no checking
-        for source in new_sample.derives_from:
-            isa_study.sources.append(source)
-        isa_study.samples.append(new_sample)
+                # add processSequence
+                process = Process(name=sample.name,
+                                  executes_protocol=protocol,
+                                  inputs=sample.derives_from,
+                                  outputs=[sample],
+                                  comments=sample.comments)
+                isa_study.process_sequence.append(process)
 
-        # check for existing Protocol
-        sc_protocol = None
-        for prot in isa_study.protocols:
-            if prot.name == 'Sample collection':
-                sc_protocol = prot
-                break
-        # if not found, create a new one
-        if not sc_protocol:
-            sc_protocol = Protocol(name='Sample collection', protocol_type=OntologyAnnotation(term='Sample collection'))
+                added_samples.append(sample)
+                logger.info('Added %s', sample.name)
 
-        # add the ProcessSequence
-        sc_process = Process(name=new_sample.name, executes_protocol=sc_protocol, inputs=new_sample.derives_from,
-                             outputs=[new_sample],
-                             comments=[Comment(name='Created', value=time.strftime("%Y%m%d%H%M%S"))])
-        isa_study.process_sequence.append(sc_process)
+        # check if all samples were added
+        warn = ''
+        if len(added_samples) != len(new_samples):
+            warn = 'Some of the samples were not added. ' \
+                    'Added ' + str(len(added_samples)) + ' out of ' + str(len(new_samples))
+            logger.warning(warn)
 
-        # persist everything
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
                             save_samples_copy=True, save_assays_copy=True)
-        logger.info('Added %s', new_sample.name)
 
-        return SampleSchema().dump(new_sample)
+        sch = SampleSchema(many=True)
+        sch.context['sample'] = Sample()
+        try:
+            resp = sch.dump(added_samples)
+        except (ValidationError, Exception) as err:
+            logger.warning("Bad Sample format", err)
+        return extended_response(resp.data, resp.errors, warn)
+
+    def get_source(self, source_list, source_name):
+        for source in source_list:
+            if source.name.lower() == source_name.lower():
+                return source
+        return None
+
+    def get_sample(self, sample_list, sample_name):
+        for sample in sample_list:
+            if sample.name.lower() == sample_name.lower():
+                return sample
+        return None
+
+    def get_protocol(self, protocol_list, protocol_name):
+        for protocol in protocol_list:
+            if protocol.name.lower() == protocol_name.lower():
+                return protocol
+        return None
 
     @swagger.operation(
         summary="Get Study Samples",
@@ -3543,8 +3584,8 @@ class StudySamples(Resource):
         # check if all samples were updated
         warns = ''
         if len(updated_samples) != len(new_samples):
-            warns = 'Some of the requested samples were not updated. ' \
-                    + str(len(updated_samples)) + ' out of ' + str(len(new_samples))
+            warns = 'Some of the samples were not updated. ' \
+                    'Updated ' + str(len(updated_samples)) + ' out of ' + str(len(new_samples))
             logger.warning(warns)
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
