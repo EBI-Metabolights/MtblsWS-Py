@@ -4201,10 +4201,10 @@ class StudyOtherMaterials(Resource):
 
 class StudyProcesses(Resource):
     @swagger.operation(
-        summary="Get Study Processes",
-        notes="""Get Study Processes.
+        summary="Get Study Process Sequence",
+        notes="""Get Study Process Sequence.
                   <br>
-                  Use process name as a query parameter to filter out.""",
+                  Use process or protocol name as query parameter for specific searching.""",
         parameters=[
             {
                 "name": "study_id",
