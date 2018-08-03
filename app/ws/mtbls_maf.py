@@ -650,6 +650,7 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         # param validation
         if study_id is None or annotation_file_name is None:
+            logger.info('No study_id and/or annotation file name given')
             abort(404)
 
         # User authentication
@@ -664,6 +665,7 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         study_path = wsc.get_study_location(study_id, user_token)
         annotation_file_name = study_path + "/" + annotation_file_name
+        logger.info('Trying to load MAF (%s) for Study %s', annotation_file_name, study_id)
         # Get the MAF table or create a new one if it does not already exist
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         # Get rid of empty numerical values
