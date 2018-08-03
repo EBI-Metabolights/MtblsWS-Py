@@ -263,3 +263,5 @@ class WsClient:
         if resp.status_code != 200:
             abort(resp.status_code)
 
+        return resp.status_code
+

@@ -67,10 +67,10 @@ def initialize_app(flask_app):
 
     #Metabolite Annotation File (MAF)
     api.add_resource(MtblsMAFSearch, res_path + "/maf_search/<string:search_type>")
-    api.add_resource(ReadMetaboliteAnnotationFile, res_path + "/study/<string:study_id>/maf/<string:annotation_file_name>")
-    api.add_resource(MetaboliteAnnotationFile, res_path + "/study/<string:study_id>/maf_update/<string:annotation_file_name>")
-    api.add_resource(AddAnnotationRow, res_path + "/study/<string:study_id>/maf_add_row/<string:annotation_file_name>")
-    api.add_resource(DeleteAnnotationRow, res_path + "/study/<string:study_id>/maf_delete_row/<string:annotation_file_name>")
+    api.add_resource(ReadMetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
+    api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf_update/<string:annotation_file_name>")
+    api.add_resource(AddAnnotationRow, res_path + "/studies/<string:study_id>/maf_add_row/<string:annotation_file_name>")
+    api.add_resource(DeleteAnnotationRow, res_path + "/studies/<string:study_id>/maf_delete_row/<string:annotation_file_name>")
 
     # some methods not yet implemented
     # Study

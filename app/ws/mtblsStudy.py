@@ -258,7 +258,7 @@ class AllocateAccession(Resource):
 
         study_id = diff[0]
 
-        wsc.create_upload_folder(study_id)
+        status = wsc.create_upload_folder(study_id)
 
         return jsonify({"new_study": diff})
 
