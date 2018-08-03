@@ -182,9 +182,9 @@ class WsClient:
         return json_resp
 
     def get_all_studies_for_user(self, user_token):
-        logger.info('Getting all studies for user_token ' + user_token)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken?userToken="+user_token
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        logger.info('Getting all studies for user_token %s using url %s', user_token, url)
         resp = requests.get(url)
         if resp.status_code != 200:
             abort(resp.status_code)
