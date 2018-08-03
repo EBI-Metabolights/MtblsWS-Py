@@ -164,7 +164,7 @@ class StudyFiles(Resource):
 class AllocateAccession(Resource):
 
     @swagger.operation(
-        summary="Create a new study and accession number",
+        summary="Create a new study and upload folder",
         parameters=[
             {
                 "name": "study_id",
@@ -194,7 +194,7 @@ class AllocateAccession(Resource):
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
             },
             {
                 "code": 404,
@@ -207,6 +207,7 @@ class AllocateAccession(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('study_id', help="The row number of the cell to remove (exclude header)")
         study_id = None
+
         if request.args:
             args = parser.parse_args(req=request)
             study_id = args['study_id']
@@ -224,7 +225,7 @@ class AllocateAccession(Resource):
                 abort(403)
 
         if user_token is None:
-            abort(404)
+            abort(403)
 
         study_date = get_year_plus_one()
         logger.info('Creating a new MTBLS Study (cloned from %s) with release date %s, using API-Key %s', study_id, study_date, user_token)
@@ -241,17 +242,23 @@ class AllocateAccession(Resource):
         new_studies = wsc.get_all_studies_for_user(user_token)
 
         while existing_studies == new_studies:
+            logger.info('Checking if the new study has been processed by the queue, API-Key %s', user_token)
             time.sleep(2)
             new_studies = wsc.get_all_studies_for_user(user_token)
 
-        # Ok, now there is a new private study for the user
+        logger.info('Ok, now there is a new private study for the user, API-Key %s', user_token)
 
         # Tidy up the response strings before converting to lists
         new_studies_list = new_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
         existing_studies_list = existing_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
 
+        logger.info('returning the new study, %s', user_token)
         # return the new entry, i.e. difference between the two lists
         diff = list(set(new_studies_list) - set(existing_studies_list))
+
+        study_id = diff[0]
+
+        wsc.create_upload_folder(study_id)
 
         return jsonify({"new_study": diff})
 

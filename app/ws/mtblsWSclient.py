@@ -254,3 +254,12 @@ class WsClient:
         text_resp = resp.content
         return text_resp
 
+    def create_upload_folder(self, study_id):
+        logger.info('Creating a new study upload folder for Study %s', study_id)
+        resource = app.config.get('WS_APP_BASE_LINK') + "/" + study_id + "/files/requestFtpFolder"
+        # https://www.ebi.ac.uk/metabolights/<STUDY>/files/requestFtpFolder
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        resp = requests.get(url)
+        if resp.status_code != 200:
+            abort(resp.status_code)
+

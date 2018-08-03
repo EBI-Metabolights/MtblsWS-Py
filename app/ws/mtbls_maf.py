@@ -55,11 +55,7 @@ class MtblsMAFSearch(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The search result is returned, JSON format."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
+                "message": "OK. The metabolite search result is returned"
             },
             {
                 "code": 403,
