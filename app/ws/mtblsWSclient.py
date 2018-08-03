@@ -182,9 +182,9 @@ class WsClient:
         return json_resp
 
     def get_all_studies_for_user(self, user_token):
-        logger.info('Getting all studies for user_token ' + user_token)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken?userToken="+user_token
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        logger.info('Getting all studies for user_token %s using url %s', user_token, url)
         resp = requests.get(url)
         if resp.status_code != 200:
             abort(resp.status_code)
@@ -253,4 +253,15 @@ class WsClient:
 
         text_resp = resp.content
         return text_resp
+
+    def create_upload_folder(self, study_id):
+        logger.info('Creating a new study upload folder for Study %s', study_id)
+        resource = app.config.get('WS_APP_BASE_LINK') + "/" + study_id + "/files/requestFtpFolder"
+        # https://www.ebi.ac.uk/metabolights/<STUDY>/files/requestFtpFolder
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        resp = requests.get(url)
+        if resp.status_code != 200:
+            abort(resp.status_code)
+
+        return resp.status_code
 
