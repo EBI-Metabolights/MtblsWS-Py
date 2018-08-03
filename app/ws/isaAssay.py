@@ -123,7 +123,7 @@ class StudyAssays(Resource):
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>
-# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1
+# http://host:port/mtbls/ws/studies/MTBLS10/assays/1
 class StudyAssay(Resource):
 
     @swagger.operation(
@@ -211,7 +211,7 @@ class StudyAssay(Resource):
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/processSequence
-# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/processSequence?list_only=true
+# http://host:port/mtbls/ws/studies/MTBLS10/assays/1/processSequence?list_only=true
 class AssayProcesses(Resource):
 
     @swagger.operation(
@@ -257,12 +257,23 @@ class AssayProcesses(Resource):
             {
                 "name": "list_only",
                 "description": "List names only",
-                "required": False,
-                "allowEmptyValue": True,
+                "required": True,
+                "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
+                "default": True
+            },
+            {
+                "name": "use_default_values",
+                "description": "Provide default values when empty",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
                 "default": True
             },
             {
@@ -317,14 +328,17 @@ class AssayProcesses(Resource):
         parser.add_argument('name', help='Assay Processes name')
         parser.add_argument('prot_name', help='Protocol name')
         parser.add_argument('list_only', help='List names only')
+        parser.add_argument('use_default_values', help='Provide default values when empty')
         list_only = True
         obj_name = None
         prot_name = None
+        use_default_values = False
         if request.args:
             args = parser.parse_args(req=request)
             obj_name = args['name'].lower() if args['name'] else None
             prot_name = args['prot_name'].lower() if args['prot_name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
+            use_default_values = False if args['use_default_values'].lower() != 'true' else True
 
         logger.info('Getting Processes for Assay %s in %s', assay_id, study_id)
         # check for access rights
@@ -338,6 +352,7 @@ class AssayProcesses(Resource):
         isa_assay = isa_study.assays[assay_num]
         obj_list = isa_assay.process_sequence
         found = list()
+        warns = []
         if not obj_name and not prot_name:
             found = obj_list
         else:
@@ -345,18 +360,68 @@ class AssayProcesses(Resource):
                 if proto.name.lower() == obj_name \
                         or proto.executes_protocol.name.lower() == prot_name:
                     found.append(proto)
-        if not len(found) > 0:
+        if not found:
             abort(404)
         logger.info('Found %d protocols', len(found))
 
+        # use default values
+        if use_default_values:
+            set_default_proc_name(obj_list, warns)
+
+            proc_list = get_first_process(obj_list)
+            set_default_output(isa_assay, proc_list, warns)
+
         sch = ProcessSchema(many=True)
         if list_only:
-            sch = ProcessSchema(only=('name', 'executes_protocol.name',), many=True)
-        return extended_response(data={'processSequence': sch.dump(found).data})
+            sch = ProcessSchema(only=('name', 'executes_protocol.name',
+                                      'prev_process.executes_protocol.name',
+                                      'next_process.executes_protocol.name'), many=True)
+        return extended_response(data={'processSequence': sch.dump(found).data},
+                                 warns=warns)
+
+
+def set_default_output(isa_assay, proc_list, warns):
+        for i, proc in enumerate(proc_list):
+            # check Extraction outputs
+            if proc.executes_protocol.name == 'Extraction':
+                if not proc.outputs:
+                    # take inputs from next process
+                    if proc.next_process.inputs:
+                        proc.outputs = proc.next_process.inputs
+                        warns.append({'message': 'Using  ' + proc.next_process.name if proc.next_process.name else proc.next_process.executes_protocol.name + ' inputs' + ' as outputs for ' + proc.name})
+                    # create from self inputs
+                    elif proc.inputs:
+                        # create output
+                        for input in proc.inputs:
+                            if isinstance(input, Sample):
+                                extract = Extract(name=input.name + '_' + 'Extract',
+                                                  comments=[{'name': 'Inferred',
+                                                             'value': 'Value was missing in ISA-Tab, '
+                                                                      'so building from Sample name.'}])
+                                proc.outputs.append(extract)
+                                isa_assay.other_material.append(extract)
+                                warns.append({'message': 'Created new Extract ' + extract.name})
+
+
+def set_default_proc_name(obj_list, warns):
+    for i, proc in enumerate(obj_list):
+        if not proc.name:
+            proc.name = 'Process' + '_' + proc.executes_protocol.name
+            warns.append({'message': 'Added name to Process ' + proc.name})
+
+
+def get_first_process(proc_list):
+    procs = list()
+    for i, proc in enumerate(proc_list):
+        print(i, proc.name, ' - ', proc.executes_protocol.name,
+              ' -> ', proc.next_process.name, proc.next_process.executes_protocol.name)
+        if not proc.prev_process:
+            procs.append(proc)
+    return procs
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/sources
-# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/sources?list_only=true
+# http://host:port/mtbls/ws/studies/MTBLS10/assays/1/sources?list_only=true
 class AssaySources(Resource):
 
     def get(self, study_id, assay_id):
@@ -419,6 +484,8 @@ class AssaySources(Resource):
             return extended_response(sch.dump(obj))
 
 
+# res_path = /studies/<string:study_id>/assays/<string:assay_id>/samples
+# http://host:port/mtbls/ws/studies/MTBLS10/assays/1/samples?list_only=true
 class AssaySamples(Resource):
 
     @swagger.operation(
@@ -554,7 +621,7 @@ class AssaySamples(Resource):
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/otherMaterials
-# http://host:5005/mtbls/ws/studies/MTBLS10/assays/1/otherMaterials?list_only=true
+# http://host:port/mtbls/ws/studies/MTBLS10/assays/1/otherMaterials?list_only=true
 class AssayOtherMaterials(Resource):
 
     @swagger.operation(
@@ -692,7 +759,7 @@ class AssayOtherMaterials(Resource):
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/dataFiles
-# http://host:5005/mtbls/ws/studies/MTBLS2/assays/1/dataFiles?list_only=false
+# http://host:port/mtbls/ws/studies/MTBLS2/assays/1/dataFiles?list_only=false
 class AssayDataFiles(Resource):
     @swagger.operation(
         summary="Get Assay Data File",
@@ -812,7 +879,7 @@ class AssayDataFiles(Resource):
             for index, obj in enumerate(obj_list):
                 if obj.filename.lower() == obj_name :
                     found.append(obj)
-        if not len(found) > 0:
+        if not found:
             abort(404)
         logger.info('Found %d data files', len(found))
 
