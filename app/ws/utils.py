@@ -92,8 +92,16 @@ def remove_samples_from_isatab(std_path):
 
 def get_all_files(path):
     try:
-        files = os.listdir(path)
+        files = get_file_information(path)
     except:
-        files = []
-
+        files = []  # The upload folder for this study does not exist, this is normal
     return files
+
+
+def get_file_information(directory):
+    file_list = []
+    for i in os.listdir(directory):
+        dt = time.gmtime(os.path.getmtime(os.path.join(directory, i)))
+        file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
+        file_list.append(i + ': ' + file_time)  # [file: created date and time]
+    return file_list
