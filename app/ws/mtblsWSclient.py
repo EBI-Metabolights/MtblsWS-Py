@@ -203,7 +203,6 @@ class WsClient:
             abort(resp.status_code)
 
         text_resp = resp.text
-        logger.info('Found:' + resp.text)
         return text_resp
 
     def is_user_token_valid(self, user_token):
