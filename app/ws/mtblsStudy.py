@@ -156,9 +156,12 @@ class StudyFiles(Resource):
             abort(403)
 
         logger.info('Getting list of all files for MTBLS Study %s, using API-Key %s', study_id, user_token)
-        location = wsc.get_study_location(study_id, user_token)
-        all_files = get_all_files(location)
-        return jsonify({"files": all_files})
+        study_location = wsc.get_study_location(study_id, user_token)
+        study_obfuscation =  wsc.get_study_obfuscation(study_id, user_token)
+        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + study_obfuscation
+        study_files = get_all_files(study_location)
+        upload_files = get_all_files(upload_location)
+        return jsonify({'studyFiles': study_files, 'uploadFiles': upload_files})
 
 
 class AllocateAccession(Resource):

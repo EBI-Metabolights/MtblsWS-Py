@@ -91,5 +91,9 @@ def remove_samples_from_isatab(std_path):
 
 
 def get_all_files(path):
-    files = os.listdir(path)
+    try:
+        files = os.listdir(path)
+    except:
+        files = []
+
     return files

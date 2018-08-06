@@ -30,6 +30,19 @@ class WsClient:
         location = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), location.strip('/'))
         return location
 
+    def get_study_obfuscation(self, study_id, user_token):
+        """
+        Get the obfuscation code of the study files in the File System
+
+        :param study_id: Identifier of the study in MetaboLights
+        :param user_token: User API token. Used to check for permissions
+        """
+        logger.info('Getting actual location for Study %s on the filesystem, using API-Key %s', study_id, user_token)
+        study = self.get_study(study_id, user_token)
+        obfuscationCode = study["content"]["obfuscationCode"]
+        logger.info('... found study obfuscationCode %s', obfuscationCode)
+        return obfuscationCode
+
     def get_study_updates_location(self, study_id, user_token):
         """
         Get location for output updates in a MetaboLights study.

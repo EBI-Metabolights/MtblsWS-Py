@@ -12,7 +12,7 @@ WS_APP_DESCRIPTION = "MetaboLights Python-based REST WebService"
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
 
-WS_APP_VERSION = "0.12.8"
+WS_APP_VERSION = "0.12.9"
 RESOURCES_PATH = "/mtbls/ws"
 
 # Increment only when the API changes
@@ -23,6 +23,7 @@ STATIC_FOLDER = os.path.join(PROJECT_PATH, "static")
 TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
+MTBLS_FTP_ROOT = "/ebi/ftp/private/mtblight/prod/"
 
 UPDATE_PATH_SUFFIX = "audit"
 
