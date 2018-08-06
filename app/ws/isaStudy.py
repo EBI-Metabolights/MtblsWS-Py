@@ -3241,7 +3241,7 @@ class StudySamples(Resource):
             save_msg_str = "be"
 
         # body content validation
-        new_sample = None
+        new_samples = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['samples']
@@ -3273,7 +3273,7 @@ class StudySamples(Resource):
                     protocol = Protocol(name='Sample collection',
                                         protocol_type=OntologyAnnotation(term='Sample collection'))
                 # add sample
-                isa_study.samples.append(new_sample)
+                isa_study.samples.append(sample)
 
                 # add processSequence
                 process = Process(name=sample.name,
