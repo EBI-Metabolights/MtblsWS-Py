@@ -5,6 +5,7 @@ import shutil
 import time
 import datetime
 from flask import current_app as app
+from collections import namedtuple
 
 """
 Utils
@@ -100,8 +101,8 @@ def get_all_files(path):
 
 def get_file_information(directory):
     file_list = []
-    for i in os.listdir(directory):
-        dt = time.gmtime(os.path.getmtime(os.path.join(directory, i)))
+    for file_name in os.listdir(directory):
+        dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
         file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
-        file_list.append(i + ': ' + file_time)  # [file: created date and time]
+        file_list.append({"file": file_name, "createdAt": file_time})
     return file_list
