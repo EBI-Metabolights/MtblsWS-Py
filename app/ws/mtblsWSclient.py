@@ -268,7 +268,7 @@ class WsClient:
         return text_resp
 
     def create_upload_folder(self, study_id):
-        resource = app.config.get('WS_APP_BASE_LINK') + "/" + study_id + "/files/requestFtpFolder"
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/" + study_id + "/files/requestFtpFolder"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
         resp = requests.get(url)
