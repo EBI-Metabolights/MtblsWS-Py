@@ -16,7 +16,7 @@ wsc = WsClient()
 
 
 # Convert panda DataFrame to json tuples object
-def totuples(df):
+def totuples(df, text):
     d = [
         dict([
             (colname, row[i])
@@ -24,7 +24,18 @@ def totuples(df):
         ])
         for row in df.values
     ]
-    return {'mafdata': d}
+    return {text: d}
+
+
+def get_maf_header(maf_df):
+    # Get an indexed header row
+    df_header = pd.DataFrame(list(maf_df))  # Get the header row only
+    df_header = df_header.reset_index().to_dict(orient='list')
+    mapping = {}
+    print(df_header)
+    for i in range(0, len(df_header['index'])):
+        mapping[df_header[0][i]] = df_header['index'][i]
+    return mapping
 
 
 class MtblsMAFSearch(Resource):
@@ -229,17 +240,13 @@ class MetaboliteAnnotationFile(Resource):
         # Write the new empty columns back in the file
         maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
-        # add an indexed header row
-        # Return maf_header
+        # Get an indexed header row
+        df_header = get_maf_header(maf_df)
 
-        # Return maf_data
-        df_dict = totuples(maf_df.reset_index())
-        return df_dict
+        # Get the rows from the maf
+        df_data_dict = totuples(maf_df.reset_index(), 'rows')
 
-    def column_index(df, query_cols):
-        cols = df.columns.values
-        sidx = np.argsort(cols)
-        return sidx[np.searchsorted(cols, query_cols, sorter=sidx)]
+        return {'mafHeader': df_header, 'mafData': df_data_dict}
 
     """Create MAF for a given study"""
     @swagger.operation(
@@ -448,8 +455,13 @@ class ReadMetaboliteAnnotationFile(Resource):
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         # Get rid of empty numerical values
         maf_df = maf_df.replace(np.nan, '', regex=True)
-        df_dict = totuples(maf_df.reset_index())
-        return df_dict
+
+        df_data_dict = totuples(maf_df.reset_index(), 'rows')
+
+        # Get an indexed header row
+        df_header = get_maf_header(maf_df)
+
+        return {'mafHeader': df_header, 'mafData': df_data_dict}
 
     @swagger.operation(
         summary="Add a new row to the given annotation file",
@@ -538,8 +550,13 @@ class ReadMetaboliteAnnotationFile(Resource):
         # Write the new row back in the file
         maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
-        df_dict = totuples(maf_df.reset_index())
-        return df_dict
+        df_data_dict = totuples(maf_df.reset_index(), 'rows')
+
+        # Get an indexed header row
+        df_header = get_maf_header(maf_df)
+
+        return {'mafHeader': df_header, 'mafData': df_data_dict}
+
 
     @swagger.operation(
         summary="Delete a row of the given annotation file",
@@ -630,6 +647,11 @@ class ReadMetaboliteAnnotationFile(Resource):
         # Write the updated file
         maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
-        df_dict = totuples(maf_df.reset_index())
-        return df_dict
+        df_data_dict = totuples(maf_df.reset_index(), 'rows')
+
+        # Get an indexed header row
+        df_header = get_maf_header(maf_df)
+
+        return {'mafHeader': df_header, 'mafData': df_data_dict}
+
 
