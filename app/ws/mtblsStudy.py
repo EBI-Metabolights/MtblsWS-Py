@@ -205,7 +205,7 @@ class AllocateAccession(Resource):
             }
         ]
     )
-    def get(self):
+    def post(self):
 
         parser = reqparse.RequestParser()
         parser.add_argument('study_id', help="The row number of the cell to remove (exclude header)")
@@ -249,7 +249,7 @@ class AllocateAccession(Resource):
 
         while existing_studies == new_studies:
             logger.info('Checking if the new study has been processed by the queue, API-Key %s', user_token)
-            time.sleep(2)
+            time.sleep(5)  # Have to check every so many secounds to see if the queue has finished
             new_studies = wsc.get_all_studies_for_user(user_token)
 
         logger.info('Ok, now there is a new private study for the user, API-Key %s', user_token)
@@ -263,10 +263,68 @@ class AllocateAccession(Resource):
         diff = list(set(new_studies_list) - set(existing_studies_list))
 
         study_id = diff[0]
+        status = wsc.create_upload_folder(study_id, user_token)
+        # logger.info('Study upload folder creation status: ' + status)
 
-        status = wsc.create_upload_folder(study_id)
-        logger.info('Study upload folder creation status: ' + status)
+        return {"new_study": study_id}
 
-        return jsonify({"new_study": diff})
 
+class CreateUploadFolder(Resource):
+    @swagger.operation(
+        summary="Create a new study upload folder",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Existing Study Identifier to add an upload folder to",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        # param validation
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+
+        logger.info('Creating a new study upload folder for study %s for the user, API-Key %s', study_id, user_token)
+        status = wsc.create_upload_folder(study_id, user_token)
+
+        return jsonify('message: ', status)
 

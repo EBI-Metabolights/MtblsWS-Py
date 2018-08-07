@@ -581,11 +581,11 @@ class ReadMetaboliteAnnotationFile(Resource):
             },
             {
                 "name": "row_num",
-                "description": "The row number to remove",
+                "description": "The row number(s) to remove, comma separated if more than one",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
-                "dataType": "integer"
+                "dataType": "string"
             },
             {
                 "name": "user_token",
@@ -615,14 +615,13 @@ class ReadMetaboliteAnnotationFile(Resource):
             }
         ]
     )
-    def put(self, study_id, annotation_file_name):
+    def delete(self, study_id, annotation_file_name):
 
+        # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('row_num', help="The row number of the cell to remove (exclude header)")
-        row_num = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            row_num = args['row_num']
+        parser.add_argument('row_num', help="The row number of the cell(s) to remove (exclude header)", location="args")
+        args = parser.parse_args()
+        row_num = args['row_num']
 
         # param validation
         if study_id is None or annotation_file_name is None or row_num is None:
@@ -642,7 +641,9 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
-        maf_df = maf_df.drop(maf_df.index[int(row_num)])  # Drop a row in the spreadsheet
+        row_nums = row_num.split(",")
+        for num in row_nums:
+            maf_df = maf_df.drop(maf_df.index[int(num)])  # Drop row(s) in the spreadsheet
 
         # Write the updated file
         maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)

@@ -5,7 +5,7 @@ from flask_restful import Api
 from flask_cors import CORS
 from app.ws.about import About
 from app.ws.mtbls_maf import *
-from app.ws.mtblsStudy import IsaTabInvestigation, MtblsStudies, StudyFiles, AllocateAccession
+from app.ws.mtblsStudy import *
 from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
@@ -51,6 +51,7 @@ def initialize_app(flask_app):
     api.add_resource(IsaTabInvestigation, res_path + "/studies/<string:study_id>/isa-tab/investigation")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/isa-tab/study_files")
     api.add_resource(AllocateAccession, res_path + "/studies/create_study")
+    api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create_upload_folder")
 
 
     # ISA Investigation

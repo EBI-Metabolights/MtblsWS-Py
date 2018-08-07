@@ -1,7 +1,7 @@
 import os
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, time
 from flask_restful import abort
 from flask import current_app as app
 
@@ -87,7 +87,7 @@ class WsClient:
         logger.info('Getting JSON object for Study %s, using API-Key %s', study_id, user_token)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url, headers={"user_token": user_token})
+        resp = requests.get(url, timeout=5, headers={"user_token": user_token})
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -119,7 +119,7 @@ class WsClient:
         logger.info('Getting JSON object for MAF for Study %s (Assay %s), using API-Key %s', study_id, assay_id, user_token)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/assay/" + assay_id + "/jsonmaf"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url, headers={"user_token": user_token})
+        resp = requests.get(url, timeout=5, headers={"user_token": user_token})
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -138,7 +138,7 @@ class WsClient:
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/genericcompoundsearch/" + search_type
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         if search_type == 'name' or search_type == 'databaseid':
-            resp = requests.get(url + "/" + search_value, headers={"body": search_value})
+            resp = requests.get(url + "/" + search_value, timeout=5, headers={"body": search_value})
 
         if search_type == 'inchi' or search_type == 'smiles':
             bytes_search = search_value.encode()
@@ -186,7 +186,7 @@ class WsClient:
         logger.info('Getting all public studies')
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/list"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=5)
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -195,10 +195,10 @@ class WsClient:
         return json_resp
 
     def get_all_studies_for_user(self, user_token):
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken?userToken="+user_token
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         logger.info('Getting all studies for user_token %s using url %s', user_token, url)
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=5, data='{"token":"' + user_token + '"}', headers={"user_token": user_token})
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -209,7 +209,7 @@ class WsClient:
         logger.info('Checking for user credentials in MTBLS-Labs')
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/labs/" + "authenticateToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.post(url, data='{"token":"' + user_token + '"}')
+        resp = requests.post(url, timeout=5, data='{"token":"' + user_token + '"}')
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -241,10 +241,16 @@ class WsClient:
         logger.info('Checking for user permisions in MTBLS WS for Study %s, using API-Key %s', study_id, user_token)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/getPermissions"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.post(url,
-                             headers={"content-type": "application/x-www-form-urlencoded",
-                                      "cache-control": "no-cache"},
-                             data="token=" + (user_token or ''))
+        try:
+            resp = requests.post(
+                url,
+                headers={"content-type": "application/x-www-form-urlencoded",
+                         "cache-control": "no-cache"},
+                data="token=" + (user_token or ''))
+        except:
+            logger.info("Connection refused by the server..")
+            time.sleep(1)  # Have to wait a short while before trying again //TODO, fix the tomcats
+
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -260,20 +266,26 @@ class WsClient:
         logger.info('Getting get queue upload folder for this server')
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/getQueueFolder"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=5)
         if resp.status_code != 200:
             abort(resp.status_code)
 
         text_resp = resp.content
         return text_resp
 
-    def create_upload_folder(self, study_id):
+    def create_upload_folder(self, study_id, user_token):
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + "/metabolights/" + study_id + "/files/requestFtpFolder"
         logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
-        resp = requests.get(url)
+
+        resp = requests.post(
+            url,
+            timeout=5,
+            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache", "user_token": user_token, "token": user_token},
+            data="token=" + (user_token or ''))
+
         if resp.status_code != 200:
             abort(resp.status_code)
 
         logger.info('Study upload folder for %s has been created', study_id)
-        return {'Study ' + study_id + ' has been successfully created'}
+        return 'Study upload folder for ' + study_id + ' has been successfully created'
 
