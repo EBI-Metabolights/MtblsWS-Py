@@ -38,6 +38,10 @@ def get_maf_header(maf_df):
     return mapping
 
 
+def insert_row(idx, df, df_insert):
+    return df.iloc[:idx, ].append(df_insert, ignore_index=True).append(df.iloc[idx:, ]).reset_index(drop=True)
+
+
 class MtblsMAFSearch(Resource):
     """Get MAF from studies (assays)"""
     @swagger.operation(
@@ -672,10 +676,9 @@ class ReadMetaboliteAnnotationFile(Resource):
                 row_index_int is None
 
             if row_index_int is not None:
-                maf_df = maf_df.drop(maf_df.index[row_index_int])  # Remove the old row from the spreadsheet
                 # pop the "index:n" from the new_row before updating
                 row.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
-                maf_df = maf_df.append(row, ignore_index=True)  # Add new row to the spreadsheet
+                maf_df = insert_row(row_index_int, maf_df, row)  # Update the row in the spreadsheet
 
         # Write the new row back in the file
         maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
