@@ -781,6 +781,9 @@ class ReadMetaboliteAnnotationFile(Resource):
         # Write the updated file
         maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
+        # To be sure we read the file again
+        maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
+
         df_data_dict = totuples(maf_df.reset_index(), 'rows')
 
         # Get an indexed header row
