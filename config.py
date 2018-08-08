@@ -14,6 +14,7 @@ WS_APP_DESCRIPTION = "MetaboLights Python-based REST WebService"
 
 WS_APP_VERSION = "0.12.12"
 RESOURCES_PATH = "/metabolights/ws"
+CORS_RESOURCES_PATH = RESOURCES_PATH + "/*"
 
 # Increment only when the API changes
 API_VERSION = "0.12.2"

@@ -27,10 +27,11 @@ def configure_app(flask_app):
     flask_app.config.from_object(config)
     flask_app.config.from_pyfile('config.py', silent=True)
 
+
 def initialize_app(flask_app):
     configure_app(flask_app)
 
-    CORS(app, resources={r'/metabolights/ws/*'},
+    CORS(app, resources={app.config.get('CORS_RESOURCES_PATH')},
          origins={app.config.get('CORS_HOSTS')},
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
