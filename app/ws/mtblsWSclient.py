@@ -274,7 +274,8 @@ class WsClient:
         return text_resp
 
     def create_upload_folder(self, study_id, user_token):
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + "/metabolights/" + study_id + "/files/requestFtpFolder"
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/requestFtpFolderOnApiKey"
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
 
         resp = requests.post(

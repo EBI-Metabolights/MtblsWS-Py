@@ -522,14 +522,22 @@ class ReadMetaboliteAnnotationFile(Resource):
     )
     def post(self, study_id, annotation_file_name):
 
-        data_dict = json.loads(request.data.decode('utf-8'))
-        new_row = data_dict['mafdata']
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            new_row = data_dict['mafdata']  # Use "index:n" element from the (JSON) row, this is the original row number
+        except (KeyError):
+            new_row = None
+
+        if new_row is None:
+            abort(404, "Please provide valid data for updated new row(s). "
+                       "The JSON string has to have a 'mafdata' element")
+
         for element in new_row:
             element.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
 
         # param validation
-        if study_id is None or annotation_file_name is None or new_row is None:
-            abort(404)
+        if study_id is None or annotation_file_name is None:
+            abort(404, 'Please provide valid parameters for study identifier and annotation file name')
 
         # User authentication
         user_token = None
@@ -557,6 +565,127 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         return {'mafHeader': df_header, 'mafData': df_data_dict}
 
+    @swagger.operation(
+        summary="Update existing rows in the given annotation file",
+        nickname="Update MAF rows",
+        notes="Update rows in the Metabolite Annotation File (MAF) for a given Study.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "annotation_file_name",
+                "description": "Metabolite Annotation File name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "new_row",
+                "description": "The row(s) to update in the annotation file",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "body",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The MAF has been updated."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found or missing parameters. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self, study_id, annotation_file_name):
+
+        # param validation
+        if study_id is None or annotation_file_name is None:
+            abort(404, 'Please provide valid parameters for study identifier and annotation file name')
+
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            new_rows = data_dict['mafdata']  # Use "index:n" element from the (JSON) row, this is the original row number
+        except (KeyError):
+            new_rows = None
+
+        if new_rows is None:
+            abort(404, "Please provide valid data for updated new row(s). "
+                       "The JSON string has to have a 'mafdata' element")
+
+        for row in new_rows:
+            try:
+                row_index = row['index']  # Check if we have a value in the row number(s)
+            except (KeyError):
+                row_index = None
+
+            if new_rows is None or row_index is None:
+                abort(404, "Please provide valid data for the updated row(s). "
+                           "The JSON string has to have an 'index:n' element in each (JSON) row, "
+                           "this is the original row number. The header row can not be updated")
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+
+        study_path = wsc.get_study_location(study_id, user_token)
+        annotation_file_name = study_path + "/" + annotation_file_name
+
+        maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
+        maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
+        # TODO, loop through mafdata elements, remove row add the new row
+
+        for row in new_rows:
+            try:
+                row_index_int = int(row['index'])
+            except:
+                row_index_int is None
+
+            if row_index_int is not None:
+                maf_df = maf_df.drop(maf_df.index[row_index_int])  # Remove the old row from the spreadsheet
+                # pop the "index:n" from the new_row before updating
+                row.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
+                maf_df = maf_df.append(row, ignore_index=True)  # Add new row to the spreadsheet
+
+        # Write the new row back in the file
+        maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
+
+        df_data_dict = totuples(maf_df.reset_index(), 'rows')
+
+        # Get an indexed header row
+        df_header = get_maf_header(maf_df)
+
+        return {'mafHeader': df_header, 'mafData': df_data_dict}
 
     @swagger.operation(
         summary="Delete a row of the given annotation file",
@@ -643,6 +772,8 @@ class ReadMetaboliteAnnotationFile(Resource):
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
         row_nums = row_num.split(",")
         for num in row_nums:
+            if int(num) == int(0):  # Don't delete the header row
+                continue
             maf_df = maf_df.drop(maf_df.index[int(num)])  # Drop row(s) in the spreadsheet
 
         # Write the updated file
