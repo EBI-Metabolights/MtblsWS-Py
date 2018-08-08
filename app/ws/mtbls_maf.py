@@ -676,6 +676,7 @@ class ReadMetaboliteAnnotationFile(Resource):
                 row_index_int is None
 
             if row_index_int is not None:
+                maf_df = maf_df.drop(maf_df.index[row_index_int])  # Remove the old row from the spreadsheet
                 # pop the "index:n" from the new_row before updating
                 row.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
                 maf_df = insert_row(row_index_int, maf_df, row)  # Update the row in the spreadsheet
@@ -775,8 +776,6 @@ class ReadMetaboliteAnnotationFile(Resource):
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
         row_nums = row_num.split(",")
         for num in row_nums:
-            if int(num) == int(0):  # Don't delete the header row
-                continue
             maf_df = maf_df.drop(maf_df.index[int(num)])  # Drop row(s) in the spreadsheet
 
         # Write the updated file
