@@ -775,8 +775,12 @@ class ReadMetaboliteAnnotationFile(Resource):
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
         row_nums = row_num.split(",")
-        for num in row_nums:
-            maf_df = maf_df.drop(maf_df.index[int(num)])  # Drop row(s) in the spreadsheet
+
+        # Need to remove the highest row number first as the DataFrame dynamically re-orders when one row is removed
+        sorted_num_rows = [int(x) for x in row_nums]
+        sorted_num_rows.sort(reverse=True)
+        for num in sorted_num_rows:
+            maf_df = maf_df.drop(maf_df.index[num])  # Drop row(s) in the spreadsheet
 
         # Write the updated file
         maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
