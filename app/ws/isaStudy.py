@@ -3257,6 +3257,7 @@ class StudySamples(Resource):
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
+        added_process = list()
         added_samples = list()
         for ndx, sample in enumerate(new_samples):
             # existing names will be ignored
@@ -3282,6 +3283,7 @@ class StudySamples(Resource):
                                   outputs=[sample],
                                   comments=sample.comments)
                 isa_study.process_sequence.append(process)
+                added_process.append(process)
 
                 added_samples.append(sample)
                 logger.info('Added %s', sample.name)
@@ -3298,13 +3300,9 @@ class StudySamples(Resource):
                             save_investigation_copy=save_audit_copy,
                             save_samples_copy=True, save_assays_copy=True)
 
-        sch = SampleSchema(many=True)
-        sch.context['sample'] = Sample()
-        try:
-            resp = sch.dump(added_samples)
-        except (ValidationError, Exception) as err:
-            logger.warning("Bad Sample format", err)
-        return extended_response(resp.data, resp.errors, warn)
+        sch = ProcessSchema(many=True)
+        return extended_response(data={'processSequence': sch.dump(added_process).data},
+                                 warns=warn)
 
     def get_source(self, source_list, source_name):
         for source in source_list:
