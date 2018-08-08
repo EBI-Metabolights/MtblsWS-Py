@@ -139,12 +139,27 @@ class StudyAssay(Resource):
                 "dataType": "string"
             },
             {
-                "name": "assay_id",
-                "description": "Assay number",
-                "required": True,
+                "name": "filename",
+                "description": "Assay file name",
+                "required": False,
+                "allowEmptyValue": True,
                 "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
+                "paramType": "query",
+                "dataType": "string",
+                "type": "string",
+                "defaultValue": "",
+                "default": "",
+            },
+            {
+                "name": "list_only",
+                "description": "List filenames only",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "default": True
             },
             {
                 "name": "user_token",
@@ -178,36 +193,54 @@ class StudyAssay(Resource):
             }
         ]
     )
-    def get(self, study_id, assay_id):
+    def get(self, study_id):
         # param validation
         if study_id is None:
-            abort(404)
-        if study_id is None:
-            abort(404)
-        try:
-            assay_num = int(assay_id) - 1
-        except ValueError:
             abort(404)
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('filename', help='Assay file name')
+        parser.add_argument('list_only', help='List names only')
+        obj_name = None
+        list_only = True
+        if request.args:
+            args = parser.parse_args(req=request)
+            obj_name = args['filename'].lower() if args['filename'] else None
+            list_only = True if args['list_only'].lower() == 'true' else False
 
-        logger.info('Getting Assay %s for %s', assay_id, study_id)
+        logger.info('Getting Assay %s for %s', obj_name, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        if assay_num < 0 or \
-                assay_num > len(isa_study.assays) - 1:
+        obj_list = isa_study.assays
+        found = list()
+        warns = []
+        if not obj_name:
+            found = obj_list
+        else:
+            assay = get_assay(obj_list, obj_name)
+            if assay:
+                found.append(assay)
+        if not found:
             abort(404)
-        isa_assay = isa_study.assays[assay_num]
-        # Using context to avoid envelop tags in contained objects
-        sch = AssaySchema()
-        sch.context['assay'] = Assay()
-        logger.info('Got %s', isa_assay.filename)
-        return extended_response(sch.dump(isa_assay))
+        logger.info('Found %d assays', len(found))
+
+        sch = AssaySchema(many=True)
+        if list_only:
+            sch = AssaySchema(only=('filename',), many=True)
+        return extended_response(data={'assays': sch.dump(found).data})
+
+
+def get_assay(assay_list, filename):
+    for indx, assay in enumerate(assay_list):
+        if assay.filename.lower() == filename:
+            return assay
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/processSequence

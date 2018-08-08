@@ -82,8 +82,8 @@ def initialize_app(flask_app):
     api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
 
     # Assay
-    api.add_resource(StudyAssays, res_path + "/studies/<string:study_id>/assays")
-    api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays/<string:assay_id>")
+    # api.add_resource(StudyAssays, res_path + "/studies/<string:study_id>/assays")
+    api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
 
     api.add_resource(AssaySources, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/sources")
     api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/samples")

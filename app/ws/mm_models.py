@@ -575,13 +575,13 @@ class AssaySchema(IsaSchema):
         return Assay(**data)
 
     # add an envelope to responses
-    @post_dump(pass_many=True)
-    def set_envelop(self, data, many):
-        if 'assay' in self.context:
-            key = 'assays' if many else 'assay'
-            return {
-                key: data
-            }
+    # @post_dump(pass_many=True)
+    # def set_envelop(self, data, many):
+    #     if 'assay' in self.context:
+    #         key = 'assays' if many else 'assay'
+    #         return {
+    #             key: data
+    #         }
 
 
 class StudySchema(IsaSchema):
