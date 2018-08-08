@@ -30,7 +30,7 @@ def configure_app(flask_app):
 def initialize_app(flask_app):
     configure_app(flask_app)
 
-    CORS(app, resources={r'/mtbls/ws/*'},
+    CORS(app, resources={r'/metabolights/ws/*'},
          origins={app.config.get('CORS_HOSTS')},
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
