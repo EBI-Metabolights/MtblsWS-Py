@@ -12,7 +12,7 @@ WS_APP_DESCRIPTION = "MetaboLights Python-based REST WebService"
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
 
-WS_APP_VERSION = "0.12.13"
+WS_APP_VERSION = "0.12.14"
 RESOURCES_PATH = "/metabolights/ws"
 CORS_RESOURCES_PATH = RESOURCES_PATH + "/*"
 
