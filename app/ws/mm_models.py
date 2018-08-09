@@ -381,14 +381,14 @@ class OtherMaterialSchema(IsaSchema):
     def make_obj(self, data):
         return Material(**data)
 
-    # add an envelope to responses
-    @post_dump(pass_many=True)
-    def set_envelop(self, data, many):
-        if 'other_material' in self.context:
-            key = 'otherMaterials' if many else 'otherMaterial'
-            return {
-                key: data
-            }
+    # # add an envelope to responses
+    # @post_dump(pass_many=True)
+    # def set_envelop(self, data, many):
+    #     if 'other_material' in self.context:
+    #         key = 'otherMaterials' if many else 'otherMaterial'
+    #         return {
+    #             key: data
+    #         }
 
 
 class DataFileSchema(IsaSchema):
