@@ -37,8 +37,6 @@ def get_assay(assay_list, filename):
             return assay
 
 
-# res_path = /studies/<string:study_id>/assays
-# http://host:port/metabolights/ws/studies/MTBLS2/assays?filename=a_mtbl2_metabolite%20profiling_mass%20spectrometry.txt&list_only=true
 class StudyAssay(Resource):
     @swagger.operation(
         summary="Get Study Assay",
@@ -148,15 +146,13 @@ class StudyAssay(Resource):
         return extended_response(data={'assays': sch.dump(found).data})
 
 
-# res_path = /studies/<string:study_id>/assays/<string:assay_id>/processSequence
-# http://host:port/mtbls/ws/studies/MTBLS10/assays/1/processSequence?list_only=true
 class AssayProcesses(Resource):
 
     @swagger.operation(
         summary="Get Assay Process Sequence",
         notes="""Get Assay Process Sequence.
                   <br>
-                  Use process or protocol name as query parameter for specific searching.""",
+                  Use assay filename, process or protocol name to filter results.""",
         parameters=[
             {
                 "name": "study_id",
@@ -167,15 +163,16 @@ class AssayProcesses(Resource):
                 "dataType": "string"
             },
             {
-                "name": "assay_id",
-                "description": "Assay number",
-                "required": True,
+                "name": "assay_filename",
+                "description": "Assay filename",
+                "required": False,
+                "allowEmptyValue": True,
                 "allowMultiple": False,
-                "paramType": "path",
+                "paramType": "query",
                 "dataType": "string"
             },
             {
-                "name": "name",
+                "name": "process_name",
                 "description": "Process name",
                 "required": False,
                 "allowEmptyValue": True,
@@ -184,7 +181,7 @@ class AssayProcesses(Resource):
                 "dataType": "string"
             },
             {
-                "name": "prot_name",
+                "name": "protocol_name",
                 "description": "Protocol name",
                 "required": False,
                 "allowEmptyValue": True,
@@ -246,16 +243,10 @@ class AssayProcesses(Resource):
             }
         ]
     )
-    def get(self, study_id, assay_id):
+    def get(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404)
-        if assay_id is None:
-            abort(404)
-        try:
-            assay_num = int(assay_id) - 1
-        except ValueError:
             abort(404)
         # User authentication
         user_token = None
@@ -263,51 +254,62 @@ class AssayProcesses(Resource):
             user_token = request.headers['user_token']
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Assay Processes name')
-        parser.add_argument('prot_name', help='Protocol name')
+        parser.add_argument('assay_filename', help='Assay filename')
+        assay_filename = None
+        parser.add_argument('process_name', help='Assay Processes name')
+        process_name = None
+        parser.add_argument('protocol_name', help='Protocol name')
+        protocol_name = None
         parser.add_argument('list_only', help='List names only')
-        parser.add_argument('use_default_values', help='Provide default values when empty')
         list_only = True
-        obj_name = None
-        prot_name = None
+        parser.add_argument('use_default_values', help='Provide default values when empty')
         use_default_values = False
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
-            prot_name = args['prot_name'].lower() if args['prot_name'] else None
-            list_only = False if args['list_only'].lower() != 'true' else True
-            use_default_values = False if args['use_default_values'].lower() != 'true' else True
+            assay_filename = args['assay_filename'].lower() if args['assay_filename'] else None
+            process_name = args['process_name'].lower() if args['process_name'] else None
+            protocol_name = args['protocol_name'].lower() if args['protocol_name'] else None
+            list_only = True if args['list_only'].lower() == 'true' else False
+            use_default_values = True if args['use_default_values'].lower() == 'true' else False
 
-        logger.info('Getting Processes for Assay %s in %s', assay_id, study_id)
+        logger.info('Getting Processes for Assay %s in %s', assay_filename, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        if assay_num < 0 or \
-                assay_num > len(isa_study.assays) - 1:
-            abort(404)
-        isa_assay = isa_study.assays[assay_num]
-        obj_list = isa_assay.process_sequence
-        found = list()
+        assay_list = list()
         warns = []
-        if not obj_name and not prot_name:
-            found = obj_list
+        if not assay_filename:
+            assay_list = isa_study.assays
+            warns.append({'message': 'No Assay filename provided, so merging ProcessSequence for all assays.'})
         else:
-            for index, proto in enumerate(obj_list):
-                if proto.name.lower() == obj_name \
-                        or proto.executes_protocol.name.lower() == prot_name:
-                    found.append(proto)
-        if not found:
+            assay = get_assay(isa_study.assays, assay_filename)
+            if assay:
+                assay_list.append(assay)
+        if not assay_list:
             abort(404)
-        logger.info('Found %d protocols', len(found))
 
-        # use default values
-        if use_default_values:
-            set_default_proc_name(obj_list, warns)
+        found = list()
+        for assay in assay_list:
+            process_list = assay.process_sequence
+            if not process_name and not protocol_name:
+                found = process_list
+            else:
+                for index, proto in enumerate(process_list):
+                    if proto.name.lower() == process_name or \
+                            proto.executes_protocol.name.lower() == protocol_name:
+                        found.append(proto)
+            if not found:
+                abort(404)
+            logger.info('Found %d protocols', len(assay_list))
 
-            proc_list = get_first_process(obj_list)
-            set_default_output(isa_assay, proc_list, warns)
+            # use default values
+            if use_default_values:
+                set_default_proc_name(process_list, warns)
+
+                proc_list = get_first_process(process_list)
+                set_default_output(assay, proc_list, warns)
 
         sch = ProcessSchema(many=True)
         if list_only:
@@ -326,7 +328,7 @@ def set_default_output(isa_assay, proc_list, warns):
                     # take inputs from next process
                     if proc.next_process.inputs:
                         proc.outputs = proc.next_process.inputs
-                        warns.append({'message': 'Using  ' + proc.next_process.name if proc.next_process.name else proc.next_process.executes_protocol.name + ' inputs' + ' as outputs for ' + proc.name})
+                        warns.append({'message': 'Using ' + (proc.next_process.name if proc.next_process.name else proc.next_process.executes_protocol.name) + ' inputs' + ' as outputs for ' + proc.name})
                     # create from self inputs
                     elif proc.inputs:
                         # create output
@@ -351,22 +353,18 @@ def set_default_proc_name(obj_list, warns):
 def get_first_process(proc_list):
     procs = list()
     for i, proc in enumerate(proc_list):
-        print(i, proc.name, ' - ', proc.executes_protocol.name,
-              ' -> ', proc.next_process.name, proc.next_process.executes_protocol.name)
         if not proc.prev_process:
             procs.append(proc)
     return procs
 
 
-# res_path = /studies/<string:study_id>/assays/<string:assay_id>/samples
-# http://host:port/mtbls/ws/studies/MTBLS10/assays/1/samples?list_only=true
 class AssaySamples(Resource):
 
     @swagger.operation(
         summary="Get Assay Samples",
         notes="""Get Assay Samples.
                   <br>
-                  Use assay filename and / or sample name to filter results.""",
+                  Use assay filename or sample name to filter results.""",
         parameters=[
             {
                 "name": "study_id",
@@ -458,7 +456,7 @@ class AssaySamples(Resource):
             args = parser.parse_args(req=request)
             assay_filename = args['assay_filename'].lower() if args['assay_filename'] else None
             sample_name = args['name'].lower() if args['name'] else None
-            list_only = False if args['list_only'].lower() != 'true' else True
+            list_only = True if args['list_only'].lower() == 'true' else False
 
         logger.info('Getting Samples for Assay %s in %s', assay_filename, study_id)
         # check for access rights
@@ -497,15 +495,13 @@ class AssaySamples(Resource):
         return extended_response(data={'samples': sch.dump(found).data}, warns=warns)
 
 
-# res_path = /studies/<string:study_id>/assays/<string:assay_id>/otherMaterials
-# http://host:port/mtbls/ws/studies/MTBLS10/assays/1/otherMaterials?list_only=true
 class AssayOtherMaterials(Resource):
 
     @swagger.operation(
         summary="Get Assay Other Materials",
         notes="""Get Assay Other Materials.
                   <br>
-                  Use assay filename and / or material name to filter results.""",
+                  Use assay filename or material name to filter results.""",
         parameters=[
             {
                 "name": "study_id",
@@ -597,7 +593,7 @@ class AssayOtherMaterials(Resource):
             args = parser.parse_args(req=request)
             assay_filename = args['assay_filename'].lower() if args['assay_filename'] else None
             obj_name = args['name'].lower() if args['name'] else None
-            list_only = False if args['list_only'].lower() != 'true' else True
+            list_only = True if args['list_only'].lower() == 'true' else False
 
         logger.info('Getting Other Materials for Assay %s in %s', assay_filename, study_id)
         # check for access rights
@@ -636,8 +632,6 @@ class AssayOtherMaterials(Resource):
         return extended_response(data={'otherMaterials': sch.dump(found).data}, warns=warns)
 
 
-# res_path = /studies/<string:study_id>/assays/<string:assay_id>/dataFiles
-# http://host:port/mtbls/ws/studies/MTBLS2/assays/1/dataFiles?list_only=false
 class AssayDataFiles(Resource):
     @swagger.operation(
         summary="Get Assay Data File",
@@ -735,7 +729,7 @@ class AssayDataFiles(Resource):
             args = parser.parse_args(req=request)
             assay_filename = args['assay_filename'].lower() if args['assay_filename'] else None
             data_filename = args['data_filename'].lower() if args['data_filename'] else None
-            list_only = False if args['list_only'].lower() != 'true' else True
+            list_only = True if args['list_only'].lower() == 'true' else False
 
         logger.info('Getting Data Files for Assay %s in %s', assay_filename, study_id)
         # check for access rights
@@ -747,7 +741,7 @@ class AssayDataFiles(Resource):
         warns = []
         if not assay_filename:
             assay_list = isa_study.assays
-            warns.append({'message': 'No Assay filename provided, so merging datafiles for all assays.'})
+            warns.append({'message': 'No Assay filename provided, so merging Data files for all assays.'})
         else:
             assay = get_assay(isa_study.assays, assay_filename)
             if assay:

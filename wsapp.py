@@ -89,7 +89,7 @@ def initialize_app(flask_app):
     api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/samples")
     api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/otherMaterials")
     api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/dataFiles")
-    api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/processSequence")
+    api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/processSequence")
 
     # Add ontology resources
     api.add_resource(Ontology, res_path + "/studies/ontology")
