@@ -266,6 +266,9 @@ class WsClient:
         logger.info('Getting queue upload folder for this server')
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/getQueueFolder"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+
+        logger.info('Getting queue upload folder for this server, using url ' + url)
+
         resp = requests.get(url, timeout=5)
         if resp.status_code != 200:
             abort(resp.status_code)
