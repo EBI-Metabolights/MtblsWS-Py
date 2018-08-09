@@ -274,19 +274,20 @@ class WsClient:
         return text_resp
 
     def create_upload_folder(self, study_id, user_token):
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/requestFtpFolderOnApiKey"
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
 
         resp = requests.post(
             url,
             timeout=5,
-            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache", "user_token": user_token, "token": user_token},
+            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
             data="token=" + (user_token or ''))
 
         if resp.status_code != 200:
             abort(resp.status_code)
 
         logger.info('Study upload folder for %s has been created', study_id)
-        return 'Study upload folder for ' + study_id + ' has been successfully created'
+        message = resp.text
+        return message
 
