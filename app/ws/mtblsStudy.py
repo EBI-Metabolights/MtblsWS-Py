@@ -239,9 +239,9 @@ class AllocateAccession(Resource):
         existing_studies = wsc.get_all_studies_for_user(user_token)
         logger.info('Found the following studies: ' + existing_studies + ' for user API-Key %s', user_token)
 
-        logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name + ', to the queue folder ' + queue_folder.decode("utf-8"))
+        logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name + ', to the queue folder ' + queue_folder)
         # copy the study onto the queue folder
-        copy_tree(study_to_clone, os.path.join(queue_folder.decode("utf-8"), new_folder_name))  # copy the entire folder to the queue
+        copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the entire folder to the queue
 
         logger.info('Folder successfully added to the queue')
         # get a list of the users private studies to see if a new study has been created. Have to query on a regular basis

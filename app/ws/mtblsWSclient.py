@@ -263,21 +263,24 @@ class WsClient:
         return read_access, write_access
 
     def get_queue_folder(self):
-        logger.info('Getting queue upload folder for this server')
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/getQueueFolder"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
 
         logger.info('Getting queue upload folder for this server, using url ' + url)
-        resp = requests.get(url)
+        try:
+            resp = requests.get(url)
+        except:
+            logger.info('Call to url %s failed with %s', url, resp.text)
 
-        logger.info('Using url %s, we got the following response code from MetaboLights ', url, resp.status_code)
+        logger.info('Using url %s, we got the following response code from MetaboLights %s', url, resp.status_code)
         if resp.status_code != 200:
             abort(resp.status_code)
 
         text_resp = resp.content
-        logger.info('Found queue upload folder for this server as:' + text_resp)
+        str_resp = text_resp.decode("utf-8")
+        logger.info('Found queue upload folder for this server as:' + str_resp)
 
-        return text_resp
+        return str_resp
 
     def create_upload_folder(self, study_id, user_token):
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
