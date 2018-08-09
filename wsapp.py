@@ -69,12 +69,13 @@ def initialize_app(flask_app):
 
     #Metabolite Annotation File (MAF)
     api.add_resource(MtblsMAFSearch, res_path + "/maf/search/<string:search_type>")
-    api.add_resource(ReadMetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
-    api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validated/<string:annotation_file_name>")
+    api.add_resource(ReadMetaboliteAnnotationFile,
+                     res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
+    api.add_resource(MetaboliteAnnotationFile,
+                     res_path + "/studies/<string:study_id>/maf/validated/<string:annotation_file_name>")
     #  api.add_resource(AddAnnotationRow, res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
     # api.add_resource(DeleteAnnotationRow, res_path + "/studies/<string:study_id>/maf/entry/<string:annotation_file_name>")
 
-    # some methods not yet implemented
     # Study
     api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
     api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
@@ -82,14 +83,11 @@ def initialize_app(flask_app):
     api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
 
     # Assay
-    api.add_resource(StudyAssays, res_path + "/studies/<string:study_id>/assays")
-    api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays/<string:assay_id>")
-
-    api.add_resource(AssaySources, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/sources")
-    api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/samples")
-    api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/otherMaterials")
-    api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/dataFiles")
-    api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/<string:assay_id>/processSequence")
+    api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
+    api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/samples")
+    api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/otherMaterials")
+    api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/dataFiles")
+    api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/processSequence")
 
     # Add ontology resources
     api.add_resource(Ontology, res_path + "/studies/ontology")
