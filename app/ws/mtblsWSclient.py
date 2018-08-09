@@ -198,12 +198,12 @@ class WsClient:
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         logger.info('Getting all studies for user_token %s using url %s', user_token, url)
-        resp = requests.get(url, data='{"token":"' + user_token + '"}')
+        resp = requests.post(url, data='{"token":"' + user_token + '"}', headers={"user_token": user_token})
         if resp.status_code != 200:
             abort(resp.status_code)
 
         text_resp = resp.text
-        logger.info('Found the following studies %s', text_resp.decode("utf-8"))
+        logger.info('Found the following studies %s', text_resp)
         return text_resp
 
     def is_user_token_valid(self, user_token):
