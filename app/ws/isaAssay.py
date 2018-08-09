@@ -54,7 +54,7 @@ class StudyAssay(Resource):
             },
             {
                 "name": "filename",
-                "description": "Assay file name",
+                "description": "Assay filename",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -114,7 +114,7 @@ class StudyAssay(Resource):
             user_token = request.headers['user_token']
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('filename', help='Assay file name')
+        parser.add_argument('filename', help='Assay filename')
         filename = None
         parser.add_argument('list_only', help='List names only')
         list_only = True
@@ -358,77 +358,15 @@ def get_first_process(proc_list):
     return procs
 
 
-# res_path = /studies/<string:study_id>/assays/<string:assay_id>/sources
-# http://host:port/mtbls/ws/studies/MTBLS10/assays/1/sources?list_only=true
-class AssaySources(Resource):
-
-    def get(self, study_id, assay_id):
-        log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-        if assay_id is None:
-            abort(404)
-        try:
-            assay_num = int(assay_id) - 1
-        except ValueError:
-            abort(404)
-        # User authentication
-        user_token = None
-        if 'user_token' in request.headers:
-            user_token = request.headers['user_token']
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Study Sample name')
-        parser.add_argument('list_only', help='List names only')
-        list_only = True
-        obj_name = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
-            list_only = False if args['list_only'].lower() != 'true' else True
-
-        logger.info('Getting Assay Sources for %s in %s', assay_id, study_id)
-        # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
-            abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
-
-        if assay_num < 0 or \
-                assay_num > len(isa_study.assays) - 1:
-            abort(404)
-        isa_assay = isa_study.assays[assay_num]
-        obj_list = isa_assay.sources
-        # Using context to avoid envelop tags in contained objects
-        sch = SourceSchema()
-        sch.context['source'] = Source()
-        if not obj_name:
-            # return a list of objs
-            logger.info('Got %s sources', len(obj_list))
-            if list_only:
-                sch = SourceSchema(only=['name'])
-                sch.context['source'] = Source()
-            return extended_response(sch.dump(obj_list, many=True))
-        else:
-            # return a single obj
-            found = False
-            for index, obj in enumerate(obj_list):
-                if obj.name.lower() == obj_name:
-                    found = True
-                    break
-            if not found:
-                abort(404)
-            logger.info('Got %s', obj.name)
-            return extended_response(sch.dump(obj))
-
-
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/samples
 # http://host:port/mtbls/ws/studies/MTBLS10/assays/1/samples?list_only=true
 class AssaySamples(Resource):
 
     @swagger.operation(
         summary="Get Assay Samples",
-        notes="""Get Assay Samples.""",
+        notes="""Get Assay Samples.
+                  <br>
+                  Use assay filename and / or sample name to filter results.""",
         parameters=[
             {
                 "name": "study_id",
@@ -439,11 +377,12 @@ class AssaySamples(Resource):
                 "dataType": "string"
             },
             {
-                "name": "assay_id",
-                "description": "Assay number",
-                "required": True,
+                "name": "assay_filename",
+                "description": "Assay filename",
+                "required": False,
+                "allowEmptyValue": True,
                 "allowMultiple": False,
-                "paramType": "path",
+                "paramType": "query",
                 "dataType": "string"
             },
             {
@@ -498,16 +437,10 @@ class AssaySamples(Resource):
             }
         ]
     )
-    def get(self, study_id, assay_id):
+    def get(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404)
-        if assay_id is None:
-            abort(404)
-        try:
-            assay_num = int(assay_id) - 1
-        except ValueError:
             abort(404)
         # User authentication
         user_token = None
@@ -515,47 +448,53 @@ class AssaySamples(Resource):
             user_token = request.headers['user_token']
         # query validation
         parser = reqparse.RequestParser()
+        parser.add_argument('assay_filename', help='Assay filename')
+        assay_filename = None
         parser.add_argument('name', help='Assay Sample name')
+        sample_name = None
         parser.add_argument('list_only', help='List names only')
         list_only = True
-        obj_name = None
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name'].lower() if args['name'] else None
+            assay_filename = args['assay_filename'].lower() if args['assay_filename'] else None
+            sample_name = args['name'].lower() if args['name'] else None
             list_only = False if args['list_only'].lower() != 'true' else True
 
-        logger.info('Getting Samples for Assay %s in %s', assay_id, study_id)
+        logger.info('Getting Samples for Assay %s in %s', assay_filename, study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
 
-        if assay_num < 0 or \
-                assay_num > len(isa_study.assays) - 1:
-            abort(404)
-        isa_assay = isa_study.assays[assay_num]
-        obj_list = isa_assay.samples
-        # Using context to avoid envelop tags in contained objects
-        sch = SampleSchema()
-        sch.context['sample'] = Sample()
-        if not obj_name:
-            # return a list of objs
-            logger.info('Got %s samples', len(obj_list))
-            if list_only:
-                sch = SampleSchema(only=['name'])
-                sch.context['sample'] = Sample()
-            return extended_response(sch.dump(obj_list, many=True))
+        assay_list = list()
+        warns = []
+        if not assay_filename:
+            assay_list = isa_study.assays
+            warns.append({'message': 'No Assay filename provided, so merging Samples for all assays.'})
         else:
-            # return a single obj
-            found = False
-            for index, obj in enumerate(obj_list):
-                if obj.name.lower() == obj_name:
-                    found = True
-                    break
+            assay = get_assay(isa_study.assays, assay_filename)
+            if assay:
+                assay_list.append(assay)
+        if not assay_list:
+            abort(404)
+
+        found = list()
+        for assay in assay_list:
+            obj_list = assay.samples
+            if not sample_name:
+                found = obj_list
+            else:
+                for index, obj in enumerate(obj_list):
+                    if obj.name.lower() == sample_name:
+                        found.append(obj)
             if not found:
                 abort(404)
-            logger.info('Got %s', obj.name)
-            return extended_response(sch.dump(obj))
+            logger.info('Found %d Materials', len(assay_list))
+
+        sch = SampleSchema(many=True)
+        if list_only:
+            sch = SampleSchema(only=('name',), many=True)
+        return extended_response(data={'samples': sch.dump(found).data}, warns=warns)
 
 
 # res_path = /studies/<string:study_id>/assays/<string:assay_id>/otherMaterials
@@ -566,7 +505,7 @@ class AssayOtherMaterials(Resource):
         summary="Get Assay Other Materials",
         notes="""Get Assay Other Materials.
                   <br>
-                  Use sample name as a query parameter to filter out.""",
+                  Use assay filename and / or material name to filter results.""",
         parameters=[
             {
                 "name": "study_id",
@@ -578,7 +517,7 @@ class AssayOtherMaterials(Resource):
             },
             {
                 "name": "assay_filename",
-                "description": "Assay file name",
+                "description": "Assay filename",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -648,7 +587,7 @@ class AssayOtherMaterials(Resource):
             user_token = request.headers['user_token']
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('assay_filename', help='Assay file name')
+        parser.add_argument('assay_filename', help='Assay filename')
         assay_filename = None
         parser.add_argument('name', help='Assay Other Materials name')
         obj_name = None
@@ -704,7 +643,7 @@ class AssayDataFiles(Resource):
         summary="Get Assay Data File",
         notes="""Get Assay Data File.
                   <br>
-                  Use file name as query parameter for specific searching.""",
+                  Use filename as query parameter for specific searching.""",
         parameters=[
             {
                 "name": "study_id",
@@ -716,7 +655,7 @@ class AssayDataFiles(Resource):
             },
             {
                 "name": "assay_filename",
-                "description": "Assay file name",
+                "description": "Assay filename",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -786,7 +725,7 @@ class AssayDataFiles(Resource):
             user_token = request.headers['user_token']
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('assay_filename', help='Assay file name')
+        parser.add_argument('assay_filename', help='Assay filename')
         assay_filename = None
         parser.add_argument('data_filename', help='Assay Data File name')
         data_filename = None
