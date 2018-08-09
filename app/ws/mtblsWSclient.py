@@ -289,7 +289,6 @@ class WsClient:
 
         resp = requests.post(
             url,
-            timeout=5,
             headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
             data="token=" + (user_token or ''))
 
@@ -298,4 +297,4 @@ class WsClient:
 
         logger.info('Study upload folder for %s has been created', study_id)
         message = resp.text
-        return message
+        return {message}
