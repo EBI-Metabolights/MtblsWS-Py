@@ -5,7 +5,7 @@ import shutil
 import time
 import datetime
 from flask import current_app as app
-from collections import namedtuple
+from html.parser import HTMLParser
 
 """
 Utils
@@ -106,3 +106,20 @@ def get_file_information(directory):
         file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
         file_list.append({"file": file_name, "createdAt": file_time})
     return file_list
+
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return ''.join(self.fed)
+
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()

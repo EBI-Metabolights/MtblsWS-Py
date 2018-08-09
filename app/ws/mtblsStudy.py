@@ -8,7 +8,7 @@ from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_all_files, get_year_plus_one
+from app.ws.utils import get_all_files, get_year_plus_one, strip_tags
 from distutils.dir_util import copy_tree
 
 
@@ -325,6 +325,7 @@ class CreateUploadFolder(Resource):
 
         logger.info('Creating a new study upload folder for study %s for the user, API-Key %s', study_id, user_token)
         status = wsc.create_upload_folder(study_id, user_token)
+        no_html = strip_tags(status)  # This can alternatively be returned
 
-        return jsonify(status)
+        return status
 
