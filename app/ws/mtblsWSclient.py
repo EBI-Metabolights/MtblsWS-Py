@@ -87,7 +87,7 @@ class WsClient:
         logger.info('Getting JSON object for Study %s, using API-Key %s', study_id, user_token)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url, timeout=5, headers={"user_token": user_token})
+        resp = requests.get(url, headers={"user_token": user_token})
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -119,7 +119,7 @@ class WsClient:
         logger.info('Getting JSON object for MAF for Study %s (Assay %s), using API-Key %s', study_id, assay_id, user_token)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/assay/" + assay_id + "/jsonmaf"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url, timeout=5, headers={"user_token": user_token})
+        resp = requests.get(url, headers={"user_token": user_token})
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -138,7 +138,7 @@ class WsClient:
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/genericcompoundsearch/" + search_type
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         if search_type == 'name' or search_type == 'databaseid':
-            resp = requests.get(url + "/" + search_value, timeout=5, headers={"body": search_value})
+            resp = requests.get(url + "/" + search_value, headers={"body": search_value})
 
         if search_type == 'inchi' or search_type == 'smiles':
             bytes_search = search_value.encode()
@@ -186,7 +186,7 @@ class WsClient:
         logger.info('Getting all public studies')
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/list"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url, timeout=5)
+        resp = requests.get(url)
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -198,7 +198,7 @@ class WsClient:
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         logger.info('Getting all studies for user_token %s using url %s', user_token, url)
-        resp = requests.get(url, timeout=5, data='{"token":"' + user_token + '"}', headers={"user_token": user_token})
+        resp = requests.get(url, data='{"token":"' + user_token + '"}', headers={"user_token": user_token})
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -209,7 +209,7 @@ class WsClient:
         logger.info('Checking for user credentials in MTBLS-Labs')
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/labs/" + "authenticateToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.post(url, timeout=5, data='{"token":"' + user_token + '"}')
+        resp = requests.post(url, data='{"token":"' + user_token + '"}')
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -269,7 +269,7 @@ class WsClient:
 
         logger.info('Getting queue upload folder for this server, using url ' + url)
 
-        resp = requests.get(url, timeout=5)
+        resp = requests.get(url)
         if resp.status_code != 200:
             abort(resp.status_code)
 
@@ -295,4 +295,3 @@ class WsClient:
         logger.info('Study upload folder for %s has been created', study_id)
         message = resp.text
         return message
-
