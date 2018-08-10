@@ -49,8 +49,10 @@ def initialize_app(flask_app):
 
     # MTBLS studies
     api.add_resource(MtblsStudies, res_path + "/studies")
-    api.add_resource(IsaTabInvestigation, res_path + "/studies/<string:study_id>/isa-tab/investigation")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/isa-tab/study_files")
+    api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/isa-tab/investigation")
+    api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/isa-tab/sample")
+    api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/isa-tab/assay")
     api.add_resource(AllocateAccession, res_path + "/studies/create_study")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create_upload_folder")
 

@@ -1,5 +1,5 @@
-from flask import request, jsonify
-from flask_restful import Resource, abort, marshal_with, reqparse
+from flask import request, abort, jsonify
+from flask_restful import Resource, marshal_with, reqparse
 from marshmallow import ValidationError
 from app.ws import utils
 from app.ws.isaApiClient import IsaApiClient
@@ -3439,7 +3439,7 @@ class StudySamples(Resource):
 
     @swagger.operation(
         summary='Update Study Samples',
-        notes="""Only existing Samples will be updated, unknown will be ignored. 
+        notes="""Update a list of Study Samples. Only existing Samples will be updated, unknown will be ignored. 
         To change name, only one sample can be processed at a time.""",
         parameters=[
             {
@@ -3517,9 +3517,14 @@ class StudySamples(Resource):
             abort(404)
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('name', help="Study Sample name")
-        args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        parser.add_argument('name', help='Study Sample name')
+        obj_name = None
+        parser.add_argument('list_only', help='List names only')
+        list_only = True
+        if request.args:
+            args = parser.parse_args(req=request)
+            obj_name = args['name'].lower() if args['name'] else None
+            list_only = True if args['list_only'].lower() == 'true' else False
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -3576,7 +3581,7 @@ class StudySamples(Resource):
             logger.info('Updating details for %d Study Samples', len(new_samples))
             for i, new_sample in enumerate(new_samples):
                 if self.update_sample(isa_study, new_sample.name.lower(), new_sample):
-                    updated_samples.append(new_sample.name)
+                    updated_samples.append(new_sample)
 
         # check if all samples were updated
         warns = ''
@@ -3591,15 +3596,11 @@ class StudySamples(Resource):
                             save_samples_copy=save_audit_copy, save_assays_copy=save_audit_copy)
 
         sch = SampleSchema(many=True)
-        sch.context['sample'] = Sample()
-        try:
-            resp = sch.dump(updated_samples)
-        except (ValidationError, Exception) as err:
-            logger.warning("Bad Sample format", err)
-        return extended_response(resp.data, resp.errors, warns)
+        if list_only:
+            sch = SampleSchema(only=('name',), many=True)
+        return extended_response(data={'samples': sch.dump(updated_samples).data}, warns=warns)
 
     def update_sample(self, isa_study, sample_name, new_sample):
-        updated = list()
         for i, process in enumerate(isa_study.process_sequence):
             for ii, sample in enumerate(process.outputs):
                 if isinstance(sample, Sample) and sample.name.lower() == sample_name:
