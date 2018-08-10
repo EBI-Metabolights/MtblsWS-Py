@@ -11,7 +11,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.13.1"
+WS_APP_VERSION = "0.13.2"
 API_VERSION = "0.13.0"
 
 WS_APP_NAME = "MtblsWS-Py"
@@ -20,7 +20,6 @@ RESOURCES_PATH = "/metabolights/ws"
 CORS_RESOURCES_PATH = RESOURCES_PATH + "/*"
 API_DOC = RESOURCES_PATH + "/api/spec"
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
-MTBLS_FTP_ROOT = "/ebi/ftp/private/mtblight/prod/"
 UPDATE_PATH_SUFFIX = "audit"
 
 CORS_HOSTS = "http://localhost:8000",\
@@ -32,3 +31,8 @@ CORS_HOSTS = "http://localhost:8000",\
              "http://ves-ebi-8d.ebi.ac.uk:8080"
 
 DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"
+
+# These variabled will be overridden in  instance/config.py
+# MTBLS_WS_HOST = "https://www.ebi.ac.uk"
+# MTBLS_WS_PORT = ""
+# MTBLS_FTP_ROOT = "<Folder to private ftp root>"

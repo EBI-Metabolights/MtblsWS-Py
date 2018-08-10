@@ -8,7 +8,7 @@ from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_all_files, get_year_plus_one
+from app.ws.utils import get_all_files, get_year_plus_one, strip_tags
 from distutils.dir_util import copy_tree
 
 
@@ -444,9 +444,9 @@ class AllocateAccession(Resource):
         existing_studies = wsc.get_all_studies_for_user(user_token)
         logger.info('Found the following studies: ' + existing_studies + ' for user API-Key %s', user_token)
 
-        logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name + ', to the queue folder ' + queue_folder.decode("utf-8"))
+        logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name + ', to the queue folder ' + queue_folder)
         # copy the study onto the queue folder
-        copy_tree(study_to_clone, os.path.join(queue_folder.decode("utf-8"), new_folder_name))  # copy the entire folder to the queue
+        copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the entire folder to the queue
 
         logger.info('Folder successfully added to the queue')
         # get a list of the users private studies to see if a new study has been created. Have to query on a regular basis
@@ -530,6 +530,7 @@ class CreateUploadFolder(Resource):
 
         logger.info('Creating a new study upload folder for study %s for the user, API-Key %s', study_id, user_token)
         status = wsc.create_upload_folder(study_id, user_token)
+        no_html = strip_tags(status)  # This can alternatively be returned
 
-        return jsonify(status)
+        return status
 
