@@ -486,10 +486,10 @@ class ProcessSchema(IsaSchema):
     parameter_values = fields.Nested(ParameterValueSchema, many=True,
                                      load_from='parameterValues', dump_to='parameterValues')
     prev_process = fields.Nested('self', only=('name', 'executes_protocol.name'),
-                                 load_from='previousProcess', dump_to='previousProcess',
+                                 dump_to='previousProcess',
                                  allow_none=True)
     next_process = fields.Nested('self', only=('name', 'executes_protocol.name'),
-                                 load_from='nextProcess', dump_to='nextProcess',
+                                 dump_to='nextProcess',
                                  allow_none=True)
     inputs = InputOutputField(allow_none=True)
     outputs = InputOutputField(allow_none=True)
