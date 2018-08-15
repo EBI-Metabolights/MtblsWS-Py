@@ -10,6 +10,7 @@ from app.ws.isaStudy import *
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
 from app.ws.ontology import *
+from app.ws.assay_table import *
 
 """
 MTBLS WS-Py
@@ -73,9 +74,6 @@ def initialize_app(flask_app):
                      res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
     api.add_resource(MetaboliteAnnotationFile,
                      res_path + "/studies/<string:study_id>/maf/validated/<string:annotation_file_name>")
-    #  api.add_resource(AddAnnotationRow, res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
-    # api.add_resource(DeleteAnnotationRow, res_path + "/studies/<string:study_id>/maf/entry/<string:annotation_file_name>")
-
     # Study
     api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
     api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
@@ -88,6 +86,8 @@ def initialize_app(flask_app):
     api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/otherMaterials")
     api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/dataFiles")
     api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/processSequence")
+    api.add_resource(AssayTable, res_path + "/studies/<string:study_id>/assay/tableCell")
+    api.add_resource(ReadAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
 
     # Add ontology resources
     api.add_resource(Ontology, res_path + "/studies/ontology")
