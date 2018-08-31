@@ -8,7 +8,7 @@ from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_all_files, get_year_plus_one, strip_tags
+from app.ws.utils import get_all_files, get_year_plus_one, get_timestamp, strip_tags
 from distutils.dir_util import copy_tree
 
 
@@ -232,7 +232,7 @@ class AllocateAccession(Resource):
 
         study_date = get_year_plus_one()
         logger.info('Creating a new MTBLS Study (cloned from %s) with release date %s, using API-Key %s', study_id, study_date, user_token)
-        new_folder_name = user_token + '~~' + study_date + '~' + 'new_study_requested'
+        new_folder_name = user_token + '~~' + study_date + '~' + 'new_study_requested_' + get_timestamp()
 
         study_to_clone = wsc.get_study_location(study_id, user_token)
         queue_folder = wsc.get_queue_folder()
@@ -243,8 +243,9 @@ class AllocateAccession(Resource):
         # copy the study onto the queue folder
         try:
             copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the entire folder to the queue
+            # There is a bug in copy_tree which prevents you to use the same destination folder twice
         except:
-            return {"new_study": "Could not copy folder into the MetaboLights queue"}
+            return {"new_study": "Could not copy study folder into the MetaboLights queue"}
 
         logger.info('Folder successfully added to the queue')
         # get a list of the users private studies to see if a new study has been created. Have to query on a regular basis
