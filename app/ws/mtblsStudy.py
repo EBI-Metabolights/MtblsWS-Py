@@ -208,7 +208,7 @@ class AllocateAccession(Resource):
     def post(self):
 
         parser = reqparse.RequestParser()
-        parser.add_argument('study_id', help="The row number of the cell to remove (exclude header)")
+        parser.add_argument('study_id', help="Study Identifier")
         study_id = None
 
         if request.args:
@@ -241,7 +241,10 @@ class AllocateAccession(Resource):
 
         logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name + ', to the queue folder ' + queue_folder)
         # copy the study onto the queue folder
-        copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the entire folder to the queue
+        try:
+            copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the entire folder to the queue
+        except:
+            return {"new_study": "Could not copy folder into the MetaboLights queue"}
 
         logger.info('Folder successfully added to the queue')
         # get a list of the users private studies to see if a new study has been created. Have to query on a regular basis
