@@ -245,7 +245,7 @@ class AllocateAccession(Resource):
             copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the entire folder to the queue
             # There is a bug in copy_tree which prevents you to use the same destination folder twice
         except:
-            return {"new_study": "Could not add study into the MetaboLights queue"}
+            return {"error": "Could not add study into the MetaboLights queue"}
 
         logger.info('Folder successfully added to the queue')
         # get a list of the users private studies to see if a new study has been created. Have to query on a regular basis
@@ -253,7 +253,7 @@ class AllocateAccession(Resource):
         number = 0
         while existing_studies == new_studies:
             if number == 10:
-                return {"new_study": "Could not create study, waited too long for the MetaboLights queue to complete. "
+                return {"error": "Could not create study, waited too long for the MetaboLights queue to complete. "
                                      "Please check email"}
 
             logger.info('Checking if the new study has been processed by the queue, API-Key %s', user_token)
