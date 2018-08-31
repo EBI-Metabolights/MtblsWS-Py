@@ -202,6 +202,10 @@ class AllocateAccession(Resource):
             {
                 "code": 404,
                 "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 408,
+                "message": "Request Timeout. The MetaboLights queue took too long to complete."
             }
         ]
     )
@@ -252,9 +256,9 @@ class AllocateAccession(Resource):
         new_studies = wsc.get_all_studies_for_user(user_token)
         number = 0
         while existing_studies == new_studies:
+            number = number + 1
             if number == 10:
-                return {"error": "Could not create study, waited too long for the MetaboLights queue to complete. "
-                                     "Please check email"}
+                abort(408)
 
             logger.info('Checking if the new study has been processed by the queue, API-Key %s', user_token)
             time.sleep(5)  # Have to check every so many secounds to see if the queue has finished
