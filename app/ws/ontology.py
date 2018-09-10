@@ -59,7 +59,7 @@ class Ontology(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["factors", "roles", "taxonomy", "characteristics", "publication"]
+                "enum": ["factors", "roles", "taxonomy", "characteristics", "publication","design descriptor","unit"]
             },
 
             {
@@ -151,8 +151,8 @@ class Ontology(Resource):
                 else:
                     res_cls = clses
 
-            # Roles / Characteristics/ Publication"]
-            if branch in ["roles", "characteristics", "publication"]:  # go sub
+            # Roles / Characteristics/ Publication/design descriptor/unit
+            if branch in ["roles", "characteristics", "publication","design descriptor","unit"]:  # go sub
                 if term:
                       for cls in clses:
                         if str(cls.label[0]) == term:
@@ -200,7 +200,7 @@ class Ontology(Resource):
                     "annotationValue": "investigator",
                     "termSource": {
                         "comments": [],
-                        "name": "EFO",
+                        "name": " ",
                         "file": "http://data.bioontology.org/ontologies/EFO",
                         "version": "132",
                         "description": "Experimental Factor Ontology"
