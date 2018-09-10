@@ -250,7 +250,7 @@ class WsClient:
                 data="token=" + (user_token or ''))
         except:
             logger.info("Connection refused by the server..")
-            time.sleep(1)  # Have to wait a short while before trying again //TODO, fix the tomcats
+            time.sleep(2)  # Have to wait a short while before trying again
 
         if resp.status_code != 200:
             abort(resp.status_code)

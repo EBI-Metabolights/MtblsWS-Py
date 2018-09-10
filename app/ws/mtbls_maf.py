@@ -104,7 +104,7 @@ class MtblsMAFSearch(Resource):
 class MetaboliteAnnotationFile(Resource):
     """Get MAF from filesystem"""
     @swagger.operation(
-        summary="Read, and add missing samples for a MAF for a MTBLS study",
+        summary="Read, and add missing samples for a MAF",
         nickname="Get MAF for a given MTBLS Assay",
         notes="Get a given Metabolite Annotation File for a MTBLS Study with in JSON format.",
         parameters=[
@@ -529,7 +529,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             new_row = data_dict['mafdata']  # Use "index:n" element from the (JSON) row, this is the original row number
-        except (KeyError):
+        except KeyError:
             new_row = None
 
         if new_row is None:

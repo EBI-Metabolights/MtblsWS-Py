@@ -2,8 +2,7 @@ import glob
 import logging
 import os
 import time
-from flask import current_app as app
-from flask import request, abort, send_file
+from flask import current_app as app, request, abort, send_file
 from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
