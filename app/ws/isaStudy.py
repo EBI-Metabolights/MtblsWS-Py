@@ -1309,7 +1309,8 @@ class StudyProtocols(Resource):
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', obj.name)
 
-        return ProtocolSchema().dump(obj)
+        return jsonify(success=True)
+        #return ProtocolSchema().dump(obj)
 
     @swagger.operation(
         summary='Update Study Protocol',
