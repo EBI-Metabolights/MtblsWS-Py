@@ -1275,7 +1275,7 @@ class StudyProtocols(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Protocol name", location="args")
         args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        obj_name = args['name'] if args['name'] else None
         if not obj_name:
             abort(404)
         # User authentication
