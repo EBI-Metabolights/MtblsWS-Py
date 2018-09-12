@@ -142,8 +142,11 @@ class Ontology(Resource):
                             break
 
                       if len(res_cls) == 0:
+                          try:
                             zoomaTerms = getZoomaTerm(term)
                             res_cls = zoomaTerms.keys()
+                          except Exception as e:
+                              logging.error('zooma error' + e)
                 else: #if not keyword return the whole branch
                     res_cls = clses
             # taxonomy
