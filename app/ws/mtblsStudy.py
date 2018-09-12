@@ -52,7 +52,7 @@ class MtblsStudies(Resource):
         return jsonify(pub_list)
 
 
-class IsaTabInvestigation(Resource):
+class IsaTabInvestigationFile(Resource):
 
     @swagger.operation(
         summary="Get ISA-Tab Investigation file",
@@ -63,6 +63,15 @@ class IsaTabInvestigation(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "investigation_filename",
+                "description": "Investigation filename",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
                 "dataType": "string"
             },
             {
@@ -86,25 +95,221 @@ class IsaTabInvestigation(Resource):
         ]
     )
     def get(self, study_id):
-        # log_request(request)
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404)
         # User authentication
         user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('investigation_filename', help='Investigation filename')
+        inv_filename = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            inv_filename = args['investigation_filename'].lower() if args['investigation_filename'] else None
+        if not inv_filename:
+            logger.warning("Missing Investigation filename.")
+            abort(400, "Missing Investigation filename.")
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
 
-        logger.info('Getting ISA-Tab Investigation file for MTBLS Study %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting ISA-Tab Investigation file for %s', study_id)
         location = wsc.get_study_location(study_id, user_token)
-        file_path = glob.glob(os.path.join(location, "i_*.txt"))[0]
-        inv_filename = os.path.basename(file_path)
-        try:
-            return send_file(file_path, cache_timeout=-1,
-                             as_attachment=True, attachment_filename=inv_filename)
-        except OSError as err:
-            logger.error(err)
+        files = glob.glob(os.path.join(location, inv_filename))
+        if files:
+            file_path = files[0]
+            filename = os.path.basename(file_path)
+            try:
+                return send_file(file_path, cache_timeout=-1,
+                                 as_attachment=True, attachment_filename=filename)
+            except OSError as err:
+                logger.error(err)
+                abort(404, "Wrong filename or file could not be read.")
+        else:
+            abort(404, "Wrong filename or file could not be read.")
+
+
+class IsaTabSampleFile(Resource):
+
+    @swagger.operation(
+        summary="Get ISA-Tab Sample file",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "sample_filename",
+                "description": "Sample filename",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
             abort(404)
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('sample_filename', help='Sample filename')
+        sample_filename = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            sample_filename = args['sample_filename'].lower() if args['sample_filename'] else None
+        if not sample_filename:
+            logger.warning("Missing Sample filename.")
+            abort(400, "Missing Sample filename.")
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+
+        logger.info('Getting ISA-Tab Sample file for %s', study_id)
+        location = wsc.get_study_location(study_id, user_token)
+        files = glob.glob(os.path.join(location, sample_filename))
+        if files:
+            file_path = files[0]
+            filename = os.path.basename(file_path)
+            try:
+                return send_file(file_path, cache_timeout=-1,
+                                 as_attachment=True, attachment_filename=filename)
+            except OSError as err:
+                logger.error(err)
+                abort(404, "Wrong filename or file could not be read.")
+        else:
+            abort(404, "Wrong filename or file could not be read.")
+
+
+class IsaTabAssayFile(Resource):
+
+    @swagger.operation(
+        summary="Get ISA-Tab Assay file",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "assay_filename",
+                "description": "Assay filename",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('assay_filename', help='Assay filename')
+        assay_filename = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            assay_filename = args['assay_filename'].lower() if args['assay_filename'] else None
+        if not assay_filename:
+            logger.warning("Missing Assay filename.")
+            abort(400, "Missing Assay filename.")
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+
+        logger.info('Getting ISA-Tab Assay file for %s', study_id)
+        location = wsc.get_study_location(study_id, user_token)
+
+        files = glob.glob(os.path.join(location, assay_filename))
+        if files:
+            file_path = files[0]
+            filename = os.path.basename(file_path)
+            try:
+                return send_file(file_path, cache_timeout=-1,
+                                 as_attachment=True, attachment_filename=filename)
+            except OSError as err:
+                logger.error(err)
+                abort(404, "Wrong filename or file could not be read.")
+        else:
+            abort(404, "Wrong filename or file could not be read.")
 
 
 class StudyFiles(Resource):
