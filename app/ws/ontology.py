@@ -130,38 +130,22 @@ class Ontology(Resource):
             start_cls = onto.search_one(label=branch)
             clses = info.get_subs(start_cls)
 
-            # Factors
-            def find_factor(cluster, query):
-                for cls in cluster:
-                    try:
-                        factors = info.get_factors(cls)
-                        if query in factors:
-                            return cls
-                    except:
-                        pass
-                print('No factors for %s' % query)
-                return None
 
-            if branch == "factors":
-                if term:
-                    if onto.search_one(label=term):
-                        res_cls.append(onto.search_one(label=term))
-                    else:
-                        res_cls.append(find_factor(clses, term))
-                else:
-                    res_cls = clses
 
-            # Roles / Characteristics/ Publication/design descriptor/unit
-            if branch in ["roles", "characteristics", "publication","design descriptor","unit"]:  # go sub
+            # Roles / Characteristics/ Publication/design descriptor/unit/factors
+            if branch in ["roles", "characteristics", "publication","design descriptor","unit","factors"]:  # go sub
                 if term:
                       for cls in clses:
                         if str(cls.label[0]) == term:
                             subs = info.get_subs(cls)
-                            res_cls = subs + [cls]
+                            res_cls = [cls] + subs
                             break
-                else:
-                    res_cls = clses
 
+                      if len(res_cls) == 0:
+                            zoomaTerms = getZoomaTerm(term)
+                            res_cls = zoomaTerms.keys()
+                else: #if not keyword return the whole branch
+                    res_cls = clses
             # taxonomy
             if branch == 'taxonomy' and term != None:
                 if not mapping:
@@ -187,8 +171,8 @@ class Ontology(Resource):
                     except:
                         print("can't find the term")
                         pass
-            else:
-                res_cls = clses
+                else:
+                    res_cls = clses
 
 
 
@@ -220,3 +204,17 @@ class Ontology(Resource):
 
         # response = [{'SubClass': x} for x in res]
         return jsonify({"OntologyTerm": response})
+
+
+def getZoomaTerm(keyword):
+    res = {}
+    url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
+    fp = urllib.request.urlopen(url)
+    content = fp.read()
+    json_str = json.loads(content)
+    for term in json_str:
+        termName = term["annotatedProperty"]['propertyValue']
+        termConfidence = term['confidence']
+        termURL = term['semanticTags']
+        res[termName] = termConfidence
+    return res
