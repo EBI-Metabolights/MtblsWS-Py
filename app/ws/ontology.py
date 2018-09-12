@@ -130,8 +130,6 @@ class Ontology(Resource):
             start_cls = onto.search_one(label=branch)
             clses = info.get_subs(start_cls)
 
-
-
             # Roles / Characteristics/ Publication/design descriptor/unit/factors
             if branch in ["roles", "characteristics", "publication","design descriptor","unit","factors"]:  # go sub
                 if term:
@@ -215,6 +213,7 @@ def getZoomaTerm(keyword):
     fp = urllib.request.urlopen(url)
     content = fp.read()
     json_str = json.loads(content)
+    print(json_str);
     for term in json_str:
         termName = term["annotatedProperty"]['propertyValue']
         termConfidence = term['confidence']
