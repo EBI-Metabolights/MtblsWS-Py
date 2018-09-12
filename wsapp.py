@@ -11,6 +11,7 @@ from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaAssay import *
 from app.ws.ontology import *
 from app.ws.assay_table import *
+from app.ws.sample_table import *
 
 """
 MTBLS WS-Py
@@ -72,13 +73,12 @@ def initialize_app(flask_app):
 
     #Metabolite Annotation File (MAF)
     api.add_resource(MtblsMAFSearch, res_path + "/maf/search/<string:search_type>")
-    api.add_resource(ReadMetaboliteAnnotationFile,
-                     res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
-    api.add_resource(MetaboliteAnnotationFile,
-                     res_path + "/studies/<string:study_id>/maf/validated/<string:annotation_file_name>")
+    api.add_resource(ReadMetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
+    api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validated/<string:annotation_file_name>")
     # Study
     api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
     api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
+    api.add_resource(EditSampleFile, res_path + "/studies/<string:study_id>/samples/<string:sample_file_name>")
     api.add_resource(StudyOtherMaterials, res_path + "/studies/<string:study_id>/otherMaterials")
     api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
 
@@ -89,7 +89,7 @@ def initialize_app(flask_app):
     api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/dataFiles")
     api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/processSequence")
     api.add_resource(AssayTable, res_path + "/studies/<string:study_id>/assay/tableCell")
-    api.add_resource(ReadAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
+    api.add_resource(EditAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
 
     # Add ontology resources
     api.add_resource(Ontology, res_path + "/studies/ontology")
