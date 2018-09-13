@@ -211,7 +211,7 @@ def getZoomaTerm(keyword):
         url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
         ssl._create_default_https_context = ssl._create_unverified_context
         fp = urllib.request.urlopen(url)
-        content = fp.read()
+        content = fp.read().decode('utf8')
         logger.info(content)
         json_str = json.loads(content)
         for term in json_str:
