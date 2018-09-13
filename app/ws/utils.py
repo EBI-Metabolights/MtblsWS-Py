@@ -98,12 +98,14 @@ def get_all_files(path):
         files = []  # The upload folder for this study does not exist, this is normal
     return files
 
+#def map_file_type(file):
 
 def get_file_information(directory):
     file_list = []
     for file_name in os.listdir(directory):
         dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
         file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
+        #file_type =
         file_list.append({"file": file_name, "createdAt": file_time})
     return file_list
 
