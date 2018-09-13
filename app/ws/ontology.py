@@ -132,21 +132,49 @@ class Ontology(Resource):
 
             # Roles / Characteristics/ Publication/design descriptor/unit/factors
             if branch in ["roles", "characteristics", "publication", "design descriptor", "unit", "factors"]:  # go sub
-                if term:
-                    for cls in clses:
-                        if str(cls.label[0]) == term:
-                            subs = info.get_subs(cls)
-                            res_cls = [cls] + subs
-                            break
 
-                    if len(res_cls) == 0:
+                if term: # if term != null
+
+                    done = False
+                    # exact match
+                    if term.lower() in [cls.label[0].lower() for cls in clses]:
+                        subs = info.get_subs(term)
+                        res_cls = [term] + subs
+                        done = True
+
+                    # if not exact match require substring + zooma
+                    if not done:
+                        # substring match / fuzzy match
+                        for cls in clses:
+                            if term.lower() in cls.label[0].lower():
+                                res_cls.append(cls.label[0])
+
                         try:
                             zoomaTerms = getZoomaTerm(term)
-                            res_cls = zoomaTerms.keys()
+                            temp = list(zoomaTerms.keys())
+                            res_cls = res_cls + temp
                         except Exception as e:
-                            logging.error('zooma error' + e)
-                else:  # if not keyword return the whole branch
+                            print(e.args)
+
+                else: # if term == null, return the whole branch
                     res_cls = clses
+
+                #     for cls in clses:
+                #         if str(cls.label[0]) == term:
+                #             subs = info.get_subs(cls)
+                #             res_cls = [cls] + subs
+                #             break
+                #
+                #
+                #     if len(res_cls) == 0:
+                #         try:
+                #             zoomaTerms = getZoomaTerm(term)
+                #             res_cls = zoomaTerms.keys()
+                #         except Exception as e:
+                #             logging.error('zooma error' + e)
+                # else:  # if not keyword return the whole branch
+                #     res_cls = clses
+
             # taxonomy
             if branch == 'taxonomy' and term != None:
                 if not mapping:
@@ -212,7 +240,7 @@ def getZoomaTerm(keyword):
         ssl._create_default_https_context = ssl._create_unverified_context
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf8')
-        logger.info(content)
+        # logger.info(content)
         json_str = json.loads(content)
         for term in json_str:
             termName = term["annotatedProperty"]['propertyValue']
@@ -220,5 +248,5 @@ def getZoomaTerm(keyword):
             termURL = term['semanticTags']
             res[termName] = termConfidence
     except Exception as e:
-        logger.error(e);
+        logger.error(e)
     return res
