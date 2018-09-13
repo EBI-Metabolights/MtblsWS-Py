@@ -450,6 +450,7 @@ class AllocateAccession(Resource):
         logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name + ', to the queue folder ' + queue_folder)
         # copy the study onto the queue folder
         try:
+            logger.info('Attempting to copy ' + study_to_clone + ' to MetaboLights queue folder ' + os.path.join(queue_folder, new_folder_name))
             copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the entire folder to the queue
             # There is a bug in copy_tree which prevents you to use the same destination folder twice
         except:
