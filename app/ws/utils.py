@@ -107,6 +107,10 @@ def map_file_type(file_name):
         return 'text'
     elif file_name == 'audit':
         return 'audit'
+    elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml')):
+        return 'derived'
+    elif file_name.lower().endswith(('.zip', '.gz', '.tar', '.7z', '.z')):
+        return 'compressed_raw'
     elif file_name == 'metexplore_mapping.json':
         return 'internal_mapping'
     else:
