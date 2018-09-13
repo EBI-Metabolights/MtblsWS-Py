@@ -6,4 +6,3 @@ isatools==0.10.1
 mzml2isa==0.5.1
 marshmallow==2.15.0
 owlready2==0.9
-urllib==1.23

@@ -5,6 +5,7 @@
 # Description:
 import json
 import logging
+import ssl
 
 from flask import current_app as app
 from flask import request, jsonify
@@ -210,6 +211,7 @@ class Ontology(Resource):
 def getZoomaTerm(keyword):
     res = {}
     url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
+    ssl._create_default_https_context = ssl._create_unverified_context
     fp = urllib.request.urlopen(url)
     content = fp.read()
     json_str = json.loads(content)
