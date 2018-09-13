@@ -5,7 +5,7 @@
 # Description:
 import json
 import logging
-
+import ssl
 from flask import current_app as app
 from flask import request, jsonify
 from flask_restful import Resource, reqparse
@@ -59,7 +59,7 @@ class Ontology(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["factors", "roles", "taxonomy", "characteristics", "publication","design descriptor","unit"]
+                "enum": ["factors", "roles", "taxonomy", "characteristics", "publication", "design descriptor", "unit"]
             },
 
             {
@@ -131,21 +131,21 @@ class Ontology(Resource):
             clses = info.get_subs(start_cls)
 
             # Roles / Characteristics/ Publication/design descriptor/unit/factors
-            if branch in ["roles", "characteristics", "publication","design descriptor","unit","factors"]:  # go sub
+            if branch in ["roles", "characteristics", "publication", "design descriptor", "unit", "factors"]:  # go sub
                 if term:
-                      for cls in clses:
+                    for cls in clses:
                         if str(cls.label[0]) == term:
                             subs = info.get_subs(cls)
                             res_cls = [cls] + subs
                             break
 
-                      if len(res_cls) == 0:
-                          try:
+                    if len(res_cls) == 0:
+                        try:
                             zoomaTerms = getZoomaTerm(term)
                             res_cls = zoomaTerms.keys()
-                          except Exception as e:
-                              logging.error('zooma error' + e)
-                else: #if not keyword return the whole branch
+                        except Exception as e:
+                            logging.error('zooma error' + e)
+                else:  # if not keyword return the whole branch
                     res_cls = clses
             # taxonomy
             if branch == 'taxonomy' and term != None:
@@ -174,8 +174,6 @@ class Ontology(Resource):
                         pass
                 else:
                     res_cls = clses
-
-
 
         response = []
 
@@ -210,10 +208,10 @@ class Ontology(Resource):
 def getZoomaTerm(keyword):
     res = {}
     url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
+    ssl._create_default_https_context = ssl._create_unverified_context
     fp = urllib.request.urlopen(url)
     content = fp.read()
     json_str = json.loads(content)
-    print(json_str);
     for term in json_str:
         termName = term["annotatedProperty"]['propertyValue']
         termConfidence = term['confidence']
