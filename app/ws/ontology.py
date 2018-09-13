@@ -207,14 +207,18 @@ class Ontology(Resource):
 
 def getZoomaTerm(keyword):
     res = {}
-    url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
-    ssl._create_default_https_context = ssl._create_unverified_context
-    fp = urllib.request.urlopen(url)
-    content = fp.read()
-    json_str = json.loads(content)
-    for term in json_str:
-        termName = term["annotatedProperty"]['propertyValue']
-        termConfidence = term['confidence']
-        termURL = term['semanticTags']
-        res[termName] = termConfidence
+    try:
+        url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
+        ssl._create_default_https_context = ssl._create_unverified_context
+        fp = urllib.request.urlopen(url)
+        content = fp.read()
+        logger.info(content)
+        json_str = json.loads(content)
+        for term in json_str:
+            termName = term["annotatedProperty"]['propertyValue']
+            termConfidence = term['confidence']
+            termURL = term['semanticTags']
+            res[termName] = termConfidence
+    except Exception as e:
+        logger.error(e);
     return res
