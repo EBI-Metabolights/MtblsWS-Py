@@ -98,15 +98,28 @@ def get_all_files(path):
         files = []  # The upload folder for this study does not exist, this is normal
     return files
 
-#def map_file_type(file):
+def map_file_type(file_name):
+    if file_name.startswith(('i_', 'a_', 's_', 'm_')):
+        return 'metadata'
+    elif file_name.lower().endswith(('.xls', '.xlsx', '.csv', '.tsv')):
+        return 'spreadsheet'
+    elif file_name.endswith('.txt'):
+        return 'text'
+    elif file_name == 'audit':
+        return 'audit'
+    elif file_name == 'metexplore_mapping.json':
+        return 'internal_mapping'
+    else:
+        return 'raw'
 
 def get_file_information(directory):
     file_list = []
     for file_name in os.listdir(directory):
-        dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
-        file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
-        #file_type =
-        file_list.append({"file": file_name, "createdAt": file_time})
+        if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
+            dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
+            file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
+            file_type = map_file_type(file_name)
+            file_list.append({"file": file_name, "createdAt": file_time, "type": file_type})
     return file_list
 
 
