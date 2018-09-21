@@ -94,8 +94,12 @@ class EditSampleFile(Resource):
     )
     def get(self, study_id, sample_file_name):
         # param validation
-        if study_id is None or sample_file_name is None:
-            logger.info('No study_id and/or sample file name given')
+        if study_id is None :
+            logger.info('No study_id given')
+            abort(404)
+
+        if sample_file_name is None:
+            logger.info('No sample file name given')
             abort(404)
 
         # User authentication

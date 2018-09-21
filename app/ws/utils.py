@@ -98,9 +98,32 @@ def get_all_files(path):
         files = []  # The upload folder for this study does not exist, this is normal
     return files
 
-def map_file_type(file_name):
+
+def map_file_type(file_name, directory):
+    # Metadata first, current is if the files are present in the investigation and assay files
     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
-        return 'metadata'
+        if file_name.startswith(('a_', 's_')):
+            investigation = os.path.join(directory, 'i_*.txt')
+            for invest_file in glob.glob(investigation):  # Default investigation file pattern
+                if file_name in open(invest_file).read():
+                    if file_name.startswith('a_'):
+                        return 'metadata_assay'
+                    else:
+                        return 'metadata_sample'
+
+        if file_name.startswith('m_'):
+            assay = os.path.join(directory, 'a_*.txt')
+            for assay_file in glob.glob(assay):  # Default investigation file pattern
+                if file_name in open(assay_file).read():
+                    return 'metadata_maf'
+
+        if file_name.startswith('i_'):
+            investigation = os.path.join(directory, 'i_*.txt')
+            for invest_file in glob.glob(investigation):  # Default investigation file pattern
+                if open(invest_file).read():
+                    return 'metadata_investigation'
+
+        return 'metadata_old'
     elif file_name.lower().endswith(('.xls', '.xlsx', '.csv', '.tsv')):
         return 'spreadsheet'
     elif file_name.endswith('.txt'):
@@ -122,7 +145,7 @@ def get_file_information(directory):
         if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
             dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
             file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
-            file_type = map_file_type(file_name)
+            file_type = map_file_type(file_name, directory)
             file_list.append({"file": file_name, "createdAt": file_time, "type": file_type})
     return file_list
 
