@@ -99,45 +99,59 @@ def get_all_files(path):
     return files
 
 
+def is_file_referenced(file_name, directory, isa_tab_file_pattern):
+    isa_tab_file = os.path.join(directory, isa_tab_file_pattern)
+    for ref_file_name in glob.glob(isa_tab_file):
+        if file_name in open(ref_file_name).read():
+            return True
+        else:
+            return False
+
+
 def map_file_type(file_name, directory):
+    active_status = 'active'
+    none_active_status = 'unreferenced'
     # Metadata first, current is if the files are present in the investigation and assay files
     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
-        if file_name.startswith(('a_', 's_')):
-            investigation = os.path.join(directory, 'i_*.txt')
-            for invest_file in glob.glob(investigation):  # Default investigation file pattern
-                if file_name in open(invest_file).read():
-                    if file_name.startswith('a_'):
-                        return 'metadata_assay'
-                    else:
-                        return 'metadata_sample'
-
-        if file_name.startswith('m_'):
-            assay = os.path.join(directory, 'a_*.txt')
-            for assay_file in glob.glob(assay):  # Default investigation file pattern
-                if file_name in open(assay_file).read():
-                    return 'metadata_maf'
-
-        if file_name.startswith('i_'):
+        if file_name.startswith('a_'):
+            if is_file_referenced(file_name, directory, 'i_*.txt'):
+                return 'metadata_assay', active_status
+        elif file_name.startswith('s_'):
+            if is_file_referenced(file_name, directory, 'i_*.txt'):
+                return 'metadata_sample', active_status
+        elif file_name.startswith('m_'):
+            if is_file_referenced(file_name, directory, 'a_*.txt'):
+                return 'metadata_maf', active_status
+        elif file_name.startswith('i_'):
             investigation = os.path.join(directory, 'i_*.txt')
             for invest_file in glob.glob(investigation):  # Default investigation file pattern
                 if open(invest_file).read():
-                    return 'metadata_investigation'
-
-        return 'metadata_old'
+                    return 'metadata_investigation', active_status
+        return 'metadata', 'old'
     elif file_name.lower().endswith(('.xls', '.xlsx', '.csv', '.tsv')):
-        return 'spreadsheet'
+        return 'spreadsheet', active_status
     elif file_name.endswith('.txt'):
-        return 'text'
+        return 'text', active_status
     elif file_name == 'audit':
-        return 'audit'
+        return 'audit', active_status
     elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml')):
-        return 'derived'
+        if is_file_referenced(file_name, directory, 'a_*.txt'):
+            return 'derived', active_status
+        else:
+            return 'derived', none_active_status
     elif file_name.lower().endswith(('.zip', '.gz', '.tar', '.7z', '.z')):
-        return 'compressed_raw'
+        if is_file_referenced(file_name, directory, 'a_*.txt'):
+            return 'compressed', active_status
+        else:
+            return 'compressed', none_active_status
     elif file_name == 'metexplore_mapping.json':
-        return 'internal_mapping'
+        return 'internal_mapping', active_status
     else:
-        return 'raw'
+        if is_file_referenced(file_name, directory, 'a_*.txt'):
+            return 'raw', active_status
+        else:
+            return 'unknown', none_active_status
+
 
 def get_file_information(directory):
     file_list = []
@@ -145,8 +159,8 @@ def get_file_information(directory):
         if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
             dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
             file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
-            file_type = map_file_type(file_name, directory)
-            file_list.append({"file": file_name, "createdAt": file_time, "type": file_type})
+            file_type, status = map_file_type(file_name, directory)
+            file_list.append({"file": file_name, "createdAt": file_time, "type": file_type, "status": status})
     return file_list
 
 
