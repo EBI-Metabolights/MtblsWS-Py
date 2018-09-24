@@ -99,8 +99,9 @@ def get_all_files(path):
     return files
 
 
-def is_file_referenced(file_name, directory, isa_tab_file_pattern):
-    isa_tab_file = os.path.join(directory, isa_tab_file_pattern)
+def is_file_referenced(file_name, directory, isa_tab_file_to_check):
+    isa_tab_file_to_check = isa_tab_file_to_check + '*.txt'
+    isa_tab_file = os.path.join(directory, isa_tab_file_to_check)
     for ref_file_name in glob.glob(isa_tab_file):
         if file_name in open(ref_file_name).read():
             return True
@@ -114,16 +115,16 @@ def map_file_type(file_name, directory):
     # Metadata first, current is if the files are present in the investigation and assay files
     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
         if file_name.startswith('a_'):
-            if is_file_referenced(file_name, directory, 'i_*.txt'):
+            if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_assay', active_status
         elif file_name.startswith('s_'):
-            if is_file_referenced(file_name, directory, 'i_*.txt'):
+            if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_sample', active_status
         elif file_name.startswith('m_'):
-            if is_file_referenced(file_name, directory, 'a_*.txt'):
+            if is_file_referenced(file_name, directory, 'a_'):
                 return 'metadata_maf', active_status
         elif file_name.startswith('i_'):
-            investigation = os.path.join(directory, 'i_*.txt')
+            investigation = os.path.join(directory, 'i_')
             for invest_file in glob.glob(investigation):  # Default investigation file pattern
                 if open(invest_file).read():
                     return 'metadata_investigation', active_status
@@ -135,19 +136,19 @@ def map_file_type(file_name, directory):
     elif file_name == 'audit':
         return 'audit', active_status
     elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml')):
-        if is_file_referenced(file_name, directory, 'a_*.txt'):
+        if is_file_referenced(file_name, directory, 'a_'):
             return 'derived', active_status
         else:
             return 'derived', none_active_status
     elif file_name.lower().endswith(('.zip', '.gz', '.tar', '.7z', '.z')):
-        if is_file_referenced(file_name, directory, 'a_*.txt'):
+        if is_file_referenced(file_name, directory, 'a_'):
             return 'compressed', active_status
         else:
             return 'compressed', none_active_status
     elif file_name == 'metexplore_mapping.json':
         return 'internal_mapping', active_status
     else:
-        if is_file_referenced(file_name, directory, 'a_*.txt'):
+        if is_file_referenced(file_name, directory, 'a_'):
             return 'raw', active_status
         else:
             return 'unknown', none_active_status
