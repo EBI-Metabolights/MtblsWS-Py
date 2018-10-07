@@ -19,7 +19,7 @@ MTBLS WS-Py
 MetaboLights Python-based REST Web Service
 """
 
-app = Flask(__name__, instance_relative_config=True)
+application = Flask(__name__, instance_relative_config=True)
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('wslog')
@@ -33,17 +33,17 @@ def configure_app(flask_app):
 def initialize_app(flask_app):
     configure_app(flask_app)
 
-    CORS(app, resources={app.config.get('CORS_RESOURCES_PATH')},
-         origins={app.config.get('CORS_HOSTS')},
+    CORS(application, resources={application.config.get('CORS_RESOURCES_PATH')},
+         origins={application.config.get('CORS_HOSTS')},
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
 
-    res_path = app.config.get('RESOURCES_PATH')
-    api = swagger.docs(Api(app),
+    res_path = application.config.get('RESOURCES_PATH')
+    api = swagger.docs(Api(application),
                        description='MtblsWS-Py : MetaboLights Python-based REST service',
-                       apiVersion=app.config.get('API_VERSION'),
-                       basePath=app.config.get('WS_APP_BASE_LINK'),
-                       api_spec_url=app.config.get('API_DOC'),
+                       apiVersion=application.config.get('API_VERSION'),
+                       basePath=application.config.get('WS_APP_BASE_LINK'),
+                       api_spec_url=application.config.get('API_DOC'),
                        resourcePath=res_path
                        )
 
@@ -57,7 +57,6 @@ def initialize_app(flask_app):
     api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/isa-tab/assay")
     api.add_resource(AllocateAccession, res_path + "/studies/create_study")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create_upload_folder")
-
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
@@ -96,14 +95,21 @@ def initialize_app(flask_app):
 
 
 def main():
-    initialize_app(app)
+    print("Initialising application")
+    initialize_app(application)
+    logger.info("Starting server %s v%s", application.config.get('WS_APP_NAME'), application.config.get('WS_APP_VERSION'))
+    # application.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG, ssl_context=context)
+    print("Starting application")
+    application.run(host="0.0.0.0", port=application.config.get('PORT'), debug=application.config.get('DEBUG'))
+    logger.info("Finished server %s v%s", application.config.get('WS_APP_NAME'), application.config.get('WS_APP_VERSION'))
 
-    logger.info("Starting server %s v%s", app.config.get('WS_APP_NAME'), app.config.get('WS_APP_VERSION'))
-    # app.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG, ssl_context=context)
-    app.run(host="0.0.0.0", port=app.config.get('PORT'), debug=app.config.get('DEBUG'))
-    logger.info("Finished server %s v%s", app.config.get('WS_APP_NAME'), app.config.get('WS_APP_VERSION'))
 
-
+print ("before main stanza")
 if __name__ == "__main__":
+    print("Setting ssl context for Flask app")
+    context = ('ssl/wsapp.crt', 'ssl/wsapp.key')  # SSL certificate and key files
+    main()
+else:
+    print("Setting ssl context for Gunicorn app")
     context = ('ssl/wsapp.crt', 'ssl/wsapp.key')  # SSL certificate and key files
     main()
