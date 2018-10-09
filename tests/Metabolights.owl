@@ -197,7 +197,7 @@ License. </dc:rights>
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/IAO_0000115">
         <obo:IAO_0000111 xml:lang="en">definition</obo:IAO_0000111>
         <obo:IAO_0000114 rdf:resource="http://purl.obolibrary.org/obo/IAO_0000122"/>
-        <obo:IAO_0000115>English language definitions of what NCI means by the concept. These are limited to 1024 characters. They may also include information about the definition&apos;s source and attribution in a form that can easily be interpreted by software.</obo:IAO_0000115>
+        <obo:IAO_0000115>English language definitions of what NCI means by the concept. These are limited to 1024 characters. They may also include onto_information about the definition&apos;s source and attribution in a form that can easily be interpreted by software.</obo:IAO_0000115>
         <obo:IAO_0000115 xml:lang="en">The official definition, explaining the meaning of a class or property. Shall be Aristotelian, formalized and normalized. Can be augmented with colloquial definitions.</obo:IAO_0000115>
         <obo:IAO_0000116 xml:lang="en">2012-04-05: 
 Barry Smith
@@ -228,7 +228,7 @@ We also have the outstanding issue of how to aim different definitions to differ
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>English language definitions of what NCI means by the concept. These are limited to 1024 characters. They may also include information about the definition&apos;s source and attribution in a form that can easily be interpreted by software.</owl:annotatedTarget>
+        <owl:annotatedTarget>English language definitions of what NCI means by the concept. These are limited to 1024 characters. They may also include onto_information about the definition&apos;s source and attribution in a form that can easily be interpreted by software.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -260,8 +260,8 @@ We also have the outstanding issue of how to aim different definitions to differ
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/IAO_0000117">
         <obo:IAO_0000111 xml:lang="en">term editor</obo:IAO_0000111>
         <obo:IAO_0000114 rdf:resource="http://purl.obolibrary.org/obo/IAO_0000122"/>
-        <obo:IAO_0000115 xml:lang="en">Name of editor entering the term in the file. The term editor is a point of contact for information regarding the term. The term editor may be, but is not always, the author of the definition, which may have been worked upon by several people</obo:IAO_0000115>
-        <obo:IAO_0000116 xml:lang="en">20110707, MC: label update to term editor and definition modified accordingly. See https://github.com/information-artifact-ontology/IAO/issues/115.</obo:IAO_0000116>
+        <obo:IAO_0000115 xml:lang="en">Name of editor entering the term in the file. The term editor is a point of contact for onto_information regarding the term. The term editor may be, but is not always, the author of the definition, which may have been worked upon by several people</obo:IAO_0000115>
+        <obo:IAO_0000116 xml:lang="en">20110707, MC: label update to term editor and definition modified accordingly. See https://github.com/onto_information-artifact-ontology/IAO/issues/115.</obo:IAO_0000116>
         <obo:IAO_0000117 xml:lang="en">PERSON:Daniel Schober</obo:IAO_0000117>
         <obo:IAO_0000119 xml:lang="en">GROUP:OBI:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
         <rdfs:label>term editor</rdfs:label>
@@ -1526,7 +1526,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <!-- http://purl.obolibrary.org/obo/NCIT_P207 -->
 
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_P207">
-        <obo:IAO_0000115>Concept Unique Identifiers, or CUIs, are concept numbers assigned by the National Library of Medicine (NLM). If a concept in any NCI-maintained knowledgebase exists in the NLM Unified Medical Language System (UMLS), NCI includes the NLM CUI among the information we provide about the concept.</obo:IAO_0000115>
+        <obo:IAO_0000115>Concept Unique Identifiers, or CUIs, are concept numbers assigned by the National Library of Medicine (NLM). If a concept in any NCI-maintained knowledgebase exists in the NLM Unified Medical Language System (UMLS), NCI includes the NLM CUI among the onto_information we provide about the concept.</obo:IAO_0000115>
         <obo:NCIT_NHC0>P207</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>UMLS CUI</obo:NCIT_P107>
@@ -1538,7 +1538,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_P207"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>Concept Unique Identifiers, or CUIs, are concept numbers assigned by the National Library of Medicine (NLM). If a concept in any NCI-maintained knowledgebase exists in the NLM Unified Medical Language System (UMLS), NCI includes the NLM CUI among the information we provide about the concept.</owl:annotatedTarget>
+        <owl:annotatedTarget>Concept Unique Identifiers, or CUIs, are concept numbers assigned by the National Library of Medicine (NLM). If a concept in any NCI-maintained knowledgebase exists in the NLM Unified Medical Language System (UMLS), NCI includes the NLM CUI among the onto_information we provide about the concept.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -1610,7 +1610,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <!-- http://purl.obolibrary.org/obo/NCIT_P211 -->
 
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_P211">
-        <obo:IAO_0000115>Contains information that can be used for cross-referencing to relevant entries in the Gene Ontology database including term name, code, and evidence code.</obo:IAO_0000115>
+        <obo:IAO_0000115>Contains onto_information that can be used for cross-referencing to relevant entries in the Gene Ontology database including term name, code, and evidence code.</obo:IAO_0000115>
         <obo:NCIT_NHC0>P211</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>GO Annotation</obo:NCIT_P107>
@@ -1622,7 +1622,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_P211"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>Contains information that can be used for cross-referencing to relevant entries in the Gene Ontology database including term name, code, and evidence code.</owl:annotatedTarget>
+        <owl:annotatedTarget>Contains onto_information that can be used for cross-referencing to relevant entries in the Gene Ontology database including term name, code, and evidence code.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -1638,7 +1638,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <!-- http://purl.obolibrary.org/obo/NCIT_P215 -->
 
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_P215">
-        <obo:IAO_0000115>Indicates the KEGG ID code for a pathway. It can be used to link a KEGG pathway reference to the primary pathway information.</obo:IAO_0000115>
+        <obo:IAO_0000115>Indicates the KEGG ID code for a pathway. It can be used to link a KEGG pathway reference to the primary pathway onto_information.</obo:IAO_0000115>
         <obo:NCIT_NHC0>P215</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>KEGG ID</obo:NCIT_P107>
@@ -1650,7 +1650,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_P215"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>Indicates the KEGG ID code for a pathway. It can be used to link a KEGG pathway reference to the primary pathway information.</owl:annotatedTarget>
+        <owl:annotatedTarget>Indicates the KEGG ID code for a pathway. It can be used to link a KEGG pathway reference to the primary pathway onto_information.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -1666,7 +1666,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <!-- http://purl.obolibrary.org/obo/NCIT_P216 -->
 
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_P216">
-        <obo:IAO_0000115>Indicates the BioCarta ID code for a pathway. It can be used to link a BioCarta pathway reference to the primary pathway information.</obo:IAO_0000115>
+        <obo:IAO_0000115>Indicates the BioCarta ID code for a pathway. It can be used to link a BioCarta pathway reference to the primary pathway onto_information.</obo:IAO_0000115>
         <obo:NCIT_NHC0>P216</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>BioCarta ID</obo:NCIT_P107>
@@ -1678,7 +1678,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_P216"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>Indicates the BioCarta ID code for a pathway. It can be used to link a BioCarta pathway reference to the primary pathway information.</owl:annotatedTarget>
+        <owl:annotatedTarget>Indicates the BioCarta ID code for a pathway. It can be used to link a BioCarta pathway reference to the primary pathway onto_information.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -1834,7 +1834,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <!-- http://purl.obolibrary.org/obo/NCIT_P319 -->
 
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_P319">
-        <obo:IAO_0000115>Contains the FDA Unique Ingredient Identifier, a key component of the new federal drug information model.</obo:IAO_0000115>
+        <obo:IAO_0000115>Contains the FDA Unique Ingredient Identifier, a key component of the new federal drug onto_information model.</obo:IAO_0000115>
         <obo:NCIT_NHC0>P319</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>FDA UNII Code</obo:NCIT_P107>
@@ -1846,7 +1846,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_P319"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>Contains the FDA Unique Ingredient Identifier, a key component of the new federal drug information model.</owl:annotatedTarget>
+        <owl:annotatedTarget>Contains the FDA Unique Ingredient Identifier, a key component of the new federal drug onto_information model.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -1956,7 +1956,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <!-- http://purl.obolibrary.org/obo/NCIT_P325 -->
 
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_P325">
-        <obo:IAO_0000115>English language definitions of what a source other than NCI means by the concept. These are limited to 1024 characters. They include information about the definition&apos;s source in a form that can easily be interpreted by software.</obo:IAO_0000115>
+        <obo:IAO_0000115>English language definitions of what a source other than NCI means by the concept. These are limited to 1024 characters. They include onto_information about the definition&apos;s source in a form that can easily be interpreted by software.</obo:IAO_0000115>
         <obo:NCIT_NHC0>P325</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>[source] Definition</obo:NCIT_P107>
@@ -1968,7 +1968,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_P325"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>English language definitions of what a source other than NCI means by the concept. These are limited to 1024 characters. They include information about the definition&apos;s source in a form that can easily be interpreted by software.</owl:annotatedTarget>
+        <owl:annotatedTarget>English language definitions of what a source other than NCI means by the concept. These are limited to 1024 characters. They include onto_information about the definition&apos;s source in a form that can easily be interpreted by software.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -2727,7 +2727,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <!-- http://purl.obolibrary.org/obo/NCIT_P367 -->
 
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_P367">
-        <obo:IAO_0000115>Indicates the NCI/Nature Pathway Interaction Database ID code for a pathway. It can be used by the NCIt Browser to link a pathway concept to the source pathway information.</obo:IAO_0000115>
+        <obo:IAO_0000115>Indicates the NCI/Nature Pathway Interaction Database ID code for a pathway. It can be used by the NCIt Browser to link a pathway concept to the source pathway onto_information.</obo:IAO_0000115>
         <obo:NCIT_NHC0>P367</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P108>PID_ID</obo:NCIT_P108>
@@ -2738,7 +2738,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_P367"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>Indicates the NCI/Nature Pathway Interaction Database ID code for a pathway. It can be used by the NCIt Browser to link a pathway concept to the source pathway information.</owl:annotatedTarget>
+        <owl:annotatedTarget>Indicates the NCI/Nature Pathway Interaction Database ID code for a pathway. It can be used by the NCIt Browser to link a pathway concept to the source pathway onto_information.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -3198,7 +3198,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <!-- http://purl.obolibrary.org/obo/NCIT_P97 -->
 
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_P97">
-        <obo:IAO_0000115>English language definitions of what NCI means by the concept. These are limited to 1024 characters. They may also include information about the definition&apos;s source and attribution in a form that can easily be interpreted by software.</obo:IAO_0000115>
+        <obo:IAO_0000115>English language definitions of what NCI means by the concept. These are limited to 1024 characters. They may also include onto_information about the definition&apos;s source and attribution in a form that can easily be interpreted by software.</obo:IAO_0000115>
         <obo:NCIT_NHC0>P97</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>Definition</obo:NCIT_P107>
@@ -3213,7 +3213,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <!-- http://purl.obolibrary.org/obo/NCIT_P98 -->
 
     <owl:AnnotationProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_P98">
-        <obo:IAO_0000115>Design notes are notations made by NCI vocabulary curators. They are intended to provide supplemental, unstructured information to the user or additional insight about the concept.</obo:IAO_0000115>
+        <obo:IAO_0000115>Design notes are notations made by NCI vocabulary curators. They are intended to provide supplemental, unstructured onto_information to the user or additional insight about the concept.</obo:IAO_0000115>
         <obo:NCIT_NHC0>P98</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>DesignNote</obo:NCIT_P107>
@@ -3225,7 +3225,7 @@ Add as annotation triples in the granting ontology</obo:IAO_0000115>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_P98"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>Design notes are notations made by NCI vocabulary curators. They are intended to provide supplemental, unstructured information to the user or additional insight about the concept.</owl:annotatedTarget>
+        <owl:annotatedTarget>Design notes are notations made by NCI vocabulary curators. They are intended to provide supplemental, unstructured onto_information to the user or additional insight about the concept.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -8508,9 +8508,9 @@ This annotation property may be replaced with an annotation property from an ext
             <rdf:Description rdf:about="http://purl.obolibrary.org/obo/RO_0000053"/>
             <rdf:Description rdf:about="http://purl.obolibrary.org/obo/RO_0000059"/>
         </owl:propertyChainAxiom>
-        <obo:IAO_0000115>A relation between a material information bearer or material genetic sequence bearer and generically dependent continuant that carries information or sequence content that the bearer encodes</obo:IAO_0000115>
+        <obo:IAO_0000115>A relation between a material onto_information bearer or material genetic sequence bearer and generically dependent continuant that carries onto_information or sequence content that the bearer encodes</obo:IAO_0000115>
         <obo:IAO_0000118>materializes</obo:IAO_0000118>
-        <rdfs:comment>Shortcut relation expanding to bearer_of some (concretizes some . . . ), linking a material information bearer or sequence macromolecule to some ICE or GDC sequence.</rdfs:comment>
+        <rdfs:comment>Shortcut relation expanding to bearer_of some (concretizes some . . . ), linking a material onto_information bearer or sequence macromolecule to some ICE or GDC sequence.</rdfs:comment>
         <rdfs:label>bears_concretization_of</rdfs:label>
     </owl:ObjectProperty>
     
@@ -8571,7 +8571,7 @@ This annotation property may be replaced with an annotation property from an ext
         <owl:inverseOf rdf:resource="http://purl.obolibrary.org/obo/GENO_0000253"/>
         <obo:IAO_0000112>A geno:intrinnsic genotype &apos;specifies&apos; a SO:genome.
 A geno:karyotype &apos;specifies&apos; a geno:karyotype feature collection.</obo:IAO_0000112>
-        <obo:IAO_0000115>A relationship between an information content entity representing a specification, and the entity it specifies.</obo:IAO_0000115>
+        <obo:IAO_0000115>A relationship between an onto_information content entity representing a specification, and the entity it specifies.</obo:IAO_0000115>
         <rdfs:label>obsolete_specifies</rdfs:label>
     </owl:ObjectProperty>
     
@@ -9226,7 +9226,7 @@ Used in GENO to describe physical context of materialized sequence features that
     <owl:ObjectProperty rdf:about="http://purl.obolibrary.org/obo/GENO_0000767">
         <rdfs:subPropertyOf rdf:resource="http://www.geneontology.org/formats/oboInOwl#ObsoleteProperty"/>
         <obo:IAO_0000115>A relation linking a sequence feature to its component Position that represents an identifying criteria for sequence feature instances.</obo:IAO_0000115>
-        <obo:IAO_0000116>For representing positional data, we advocate use of the FALDO model, which links to positional information through an instance of a Region class that represents the mapping of the feature onto some reference sequence.  The positional_component property in GENO is meant primarily to formalize the identity criteria or sequence features and qualified sequence features, to illustrate the distinction between them.</obo:IAO_0000116>
+        <obo:IAO_0000116>For representing positional data, we advocate use of the FALDO model, which links to positional onto_information through an instance of a Region class that represents the mapping of the feature onto some reference sequence.  The positional_component property in GENO is meant primarily to formalize the identity criteria or sequence features and qualified sequence features, to illustrate the distinction between them.</obo:IAO_0000116>
         <rdfs:label xml:lang="en">obsolete_has_position_component</rdfs:label>
     </owl:ObjectProperty>
     
@@ -9614,7 +9614,7 @@ Note that a separate chain is needed to propagate from the variant locus to the 
 
     <owl:ObjectProperty rdf:about="http://purl.obolibrary.org/obo/IAO_0000136">
         <owl:inverseOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0006351"/>
-        <obo:IAO_0000115>is_about is a (currently) primitive relation that relates an information artifact to an entity.</obo:IAO_0000115>
+        <obo:IAO_0000115>is_about is a (currently) primitive relation that relates an onto_information artifact to an entity.</obo:IAO_0000115>
         <rdfs:label>is about</rdfs:label>
         <rdfs:label>is_about</rdfs:label>
     </owl:ObjectProperty>
@@ -9625,7 +9625,7 @@ Note that a separate chain is needed to propagate from the variant locus to the 
 
     <owl:ObjectProperty rdf:about="http://purl.obolibrary.org/obo/IAO_0000219">
         <rdfs:subPropertyOf rdf:resource="http://purl.obolibrary.org/obo/IAO_0000136"/>
-        <obo:IAO_0000115>Denotes is a primitive, instance-level, relation obtaining between an information content entity and some portion of reality. Denotation is what happens when someone creates an information content entity E in order to specifically refer to something. The only relation between E and the thing is that E can be used to &apos;pick out&apos; the thing. This relation connects those two together. Freedictionary.com sense 3: To signify directly; refer to specifically</obo:IAO_0000115>
+        <obo:IAO_0000115>Denotes is a primitive, instance-level, relation obtaining between an onto_information content entity and some portion of reality. Denotation is what happens when someone creates an onto_information content entity E in order to specifically refer to something. The only relation between E and the thing is that E can be used to &apos;pick out&apos; the thing. This relation connects those two together. Freedictionary.com sense 3: To signify directly; refer to specifically</obo:IAO_0000115>
         <obo:IAO_0000116>Consdier if this is the best relation for linking genotypes to the genomic entities they specify.  We could use the more generic &apos;is about&apos;, or define a new &apos;specifies&apos; relation that holds between ICEs and something it specifies the nature or creation of.</obo:IAO_0000116>
         <rdfs:label>denotes</rdfs:label>
     </owl:ObjectProperty>
@@ -11938,7 +11938,7 @@ Note that a separate chain is needed to propagate from the variant locus to the 
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>Expressed In Tissue</obo:NCIT_P107>
         <obo:NCIT_P108>Gene_Product_Expressed_In_Tissue</obo:NCIT_P108>
-        <obo:NCIT_P98>This information is often useful to researchers. However, we no longer curate this information and now favor linking out to externally curated databases. Source database for the link has yet to be decided.</obo:NCIT_P98>
+        <obo:NCIT_P98>This onto_information is often useful to researchers. However, we no longer curate this onto_information and now favor linking out to externally curated databases. Source database for the link has yet to be decided.</obo:NCIT_P98>
         <oboInOwl:hasExactSynonym>Gene_Product_Expressed_In_Tissue</oboInOwl:hasExactSynonym>
         <rdfs:label>Gene_Product_Expressed_In_Tissue</rdfs:label>
     </owl:ObjectProperty>
@@ -11961,19 +11961,19 @@ Note that a separate chain is needed to propagate from the variant locus to the 
     <!-- http://purl.obolibrary.org/obo/NCIT_R50 -->
 
     <owl:ObjectProperty rdf:about="http://purl.obolibrary.org/obo/NCIT_R50">
-        <obo:IAO_0000115>A role used specify information about protein domains or motifs present in a protein that can give insight into protein function. The domain and range for this role are &apos;Gene Product&apos; and &apos;Anatomic Structure, System, or Substance&apos;, respectively.</obo:IAO_0000115>
+        <obo:IAO_0000115>A role used specify onto_information about protein domains or motifs present in a protein that can give insight into protein function. The domain and range for this role are &apos;Gene Product&apos; and &apos;Anatomic Structure, System, or Substance&apos;, respectively.</obo:IAO_0000115>
         <obo:NCIT_NHC0>R50</obo:NCIT_NHC0>
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>Has Structural Domain Or Motif</obo:NCIT_P107>
         <obo:NCIT_P108>Gene_Product_Has_Structural_Domain_Or_Motif</obo:NCIT_P108>
-        <obo:NCIT_P98>We no longer curate this information and now favor linking out to externally curated databases. The source database for the link has yet to be decided.</obo:NCIT_P98>
+        <obo:NCIT_P98>We no longer curate this onto_information and now favor linking out to externally curated databases. The source database for the link has yet to be decided.</obo:NCIT_P98>
         <oboInOwl:hasExactSynonym>Gene_Product_Has_Structural_Domain_Or_Motif</oboInOwl:hasExactSynonym>
         <rdfs:label>Gene_Product_Has_Structural_Domain_Or_Motif</rdfs:label>
     </owl:ObjectProperty>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/NCIT_R50"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget>A role used specify information about protein domains or motifs present in a protein that can give insight into protein function. The domain and range for this role are &apos;Gene Product&apos; and &apos;Anatomic Structure, System, or Substance&apos;, respectively.</owl:annotatedTarget>
+        <owl:annotatedTarget>A role used specify onto_information about protein domains or motifs present in a protein that can give insight into protein function. The domain and range for this role are &apos;Gene Product&apos; and &apos;Anatomic Structure, System, or Substance&apos;, respectively.</owl:annotatedTarget>
         <obo:NCIT_P378>NCI</obo:NCIT_P378>
     </owl:Axiom>
     <owl:Axiom>
@@ -12048,7 +12048,7 @@ Note that a separate chain is needed to propagate from the variant locus to the 
         <obo:NCIT_P106>Conceptual Entity</obo:NCIT_P106>
         <obo:NCIT_P107>Plays Role In Biological Process</obo:NCIT_P107>
         <obo:NCIT_P108>Gene_Product_Plays_Role_In_Biological_Process</obo:NCIT_P108>
-        <obo:NCIT_P98>Considered by most researchers to be essential, definitional information about a gene product.</obo:NCIT_P98>
+        <obo:NCIT_P98>Considered by most researchers to be essential, definitional onto_information about a gene product.</obo:NCIT_P98>
         <oboInOwl:hasExactSynonym>Gene_Product_Plays_Role_In_Biological_Process</oboInOwl:hasExactSynonym>
         <rdfs:label>Gene_Product_Plays_Role_In_Biological_Process</rdfs:label>
     </owl:ObjectProperty>
@@ -12366,7 +12366,7 @@ Note that a separate chain is needed to propagate from the variant locus to the 
     <!-- http://purl.obolibrary.org/obo/RO_0000059 -->
 
     <owl:ObjectProperty rdf:about="http://purl.obolibrary.org/obo/RO_0000059">
-        <obo:IAO_0000112>A journal article is an information artifact that inheres in some number of printed journals. For each copy of the printed journal there is some quality that carries the journal article, such as a pattern of ink. The quality (a specifically dependent continuant) concretizes the journal article (a generically dependent continuant), and both depend on that copy of the printed journal (an independent continuant).</obo:IAO_0000112>
+        <obo:IAO_0000112>A journal article is an onto_information artifact that inheres in some number of printed journals. For each copy of the printed journal there is some quality that carries the journal article, such as a pattern of ink. The quality (a specifically dependent continuant) concretizes the journal article (a generically dependent continuant), and both depend on that copy of the printed journal (an independent continuant).</obo:IAO_0000112>
         <obo:IAO_0000115>A relationship between a specifically dependent continuant and a generically dependent continuant, in which the generically dependent continuant depends on some independent continuant in virtue of the fact that the specifically dependent continuant also depends on that same independent continuant. Multiple specifically dependent continuants can concretize the same generically dependent continuant.</obo:IAO_0000115>
         <rdfs:label xml:lang="en">concretizes</rdfs:label>
     </owl:ObjectProperty>
@@ -12673,7 +12673,7 @@ Note that a separate chain is needed to propagate from the variant locus to the 
         <rdfs:subPropertyOf rdf:resource="http://purl.obolibrary.org/obo/BFO_0000051"/>
         <obo:IAO_0000112>Example 1: a collection of sequences such as a genome being comprised of separate sequences of chromosomes
 
-Example 2: a collection of information entities such as a genotype being comprised of a background component and a variant component</obo:IAO_0000112>
+Example 2: a collection of onto_information entities such as a genotype being comprised of a background component and a variant component</obo:IAO_0000112>
         <obo:IAO_0000115>has member is a mereological relation between a collection and an item.</obo:IAO_0000115>
         <rdfs:label>has member</rdfs:label>
     </owl:ObjectProperty>
@@ -15791,7 +15791,7 @@ Environments include natural environments or exposures, experimentally applied c
     <!-- http://www.ebi.ac.uk/efo/EFO_0001742 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0001742">
-        <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An information entity about the status of a publication describing the experiment.</obo:IAO_0000115>
+        <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An onto_information entity about the status of a publication describing the experiment.</obo:IAO_0000115>
         <obo:IAO_0000117 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Tomasz Adamusiak</obo:IAO_0000117>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">publication</rdfs:label>
     </owl:Class>
@@ -16356,6 +16356,16 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000003">
         <rdfs:label xml:lang="en">taxonomy</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000004 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000004">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742"/>
+        <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">publications that have URL/DOI for an online copy that can be viewed by anyone but is not the final version</obo:IAO_0000115>
+        <rdfs:label xml:lang="en">pre-print</rdfs:label>
     </owl:Class>
     
 
@@ -19038,18 +19048,9 @@ Environments include natural environments or exposures, experimentally applied c
     <owl:NamedIndividual rdf:about="http://purl.obolibrary.org/obo/IAO_0000651">
         <obo:IAO_0000115>Term has undergone final review, is ready for use and included in the release.  It is the final stage of a curated term.</obo:IAO_0000115>
         <obo:IAO_0000117>Person: Jie Zheng</obo:IAO_0000117>
-        <obo:IAO_0000233>https://github.com/information-artifact-ontology/IAO/issues/197</obo:IAO_0000233>
+        <obo:IAO_0000233>https://github.com/onto_information-artifact-ontology/IAO/issues/197</obo:IAO_0000233>
         <rdfs:label xml:lang="en">released</rdfs:label>
     </owl:NamedIndividual>
-    <rdf:Description>
-        <oboInOwl:hasDbXref>
-            <rdf:Description>
-                <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboInOwl:hasURI>
-                <rdfs:label>oboInOwl:cjm</rdfs:label>
-            </rdf:Description>
-        </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">A grouping of terms from an ontology or ontologies. Note that this is not a metaclass - classes are linked to subsets via oboInOwl:inSubset</rdfs:label>
-    </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasDbXref>
             <rdf:Description>
@@ -19066,7 +19067,7 @@ Environments include natural environments or exposures, experimentally applied c
                 <rdfs:label>oboInOwl:cjm</rdfs:label>
             </rdf:Description>
         </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
+        <rdfs:label xml:lang="en">A grouping of terms from an ontology or ontologies. Note that this is not a metaclass - classes are linked to subsets via oboInOwl:inSubset</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasDbXref>
@@ -19078,24 +19079,33 @@ Environments include natural environments or exposures, experimentally applied c
         <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">partition</rdfs:label>
+        <oboInOwl:hasDbXref>
+            <rdf:Description>
+                <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboInOwl:hasURI>
+                <rdfs:label>oboInOwl:cjm</rdfs:label>
+            </rdf:Description>
+        </oboInOwl:hasDbXref>
+        <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.obofoundry.org/wiki/index.php/Definitions</oboInOwl:hasURI>
-        <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
+        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">view</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">slim</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboInOwl:hasURI>
         <rdfs:label>oboFormat:subsetdef</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">slim</rdfs:label>
+        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.obofoundry.org/wiki/index.php/Definitions</oboInOwl:hasURI>
+        <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">view</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+        <rdfs:label xml:lang="en">partition</rdfs:label>
     </rdf:Description>
     
 
@@ -19340,8 +19350,8 @@ Environments include natural environments or exposures, experimentally applied c
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_proximal_side_of</oboInOwl:shorthand>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X proximal_side_of Y &lt;=&gt; if Y is subdivided into distal and proximal portions, X is part_of the proximal portion.</obo:IAO_0000115>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_proximal_side_of</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_proximal_side_of</oboInOwl:id>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_proximal_side_of</rdfs:label>
     </rdf:Description>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000124"/>
@@ -19351,9 +19361,9 @@ Environments include natural environments or exposures, experimentally applied c
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000125">
         <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000125</oboInOwl:hasDbXref>
+        <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</oboInOwl:id>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</rdfs:label>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X distal_side_of Y &lt;=&gt; if Y is subdivided into distal and proximal portions, X is part_of the distal portion.</obo:IAO_0000115>
-        <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</oboInOwl:id>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</oboInOwl:shorthand>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
     </rdf:Description>
