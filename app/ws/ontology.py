@@ -6,6 +6,7 @@
 import json
 import logging
 import ssl
+
 from flask import current_app as app
 from flask import request, jsonify
 from flask_restful import Resource, reqparse
@@ -14,7 +15,8 @@ from owlready2 import *
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import *
+from app.ws.ontology_info import entity
+from app.ws.ontology_info import onto_information
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -38,8 +40,8 @@ def log_request(request_obj):
 class Ontology(Resource):
 
     @swagger.operation(
-        summary="Get ontology information",
-        notes="Get ontology information.",
+        summary="Get ontology onto_information",
+        notes="Get ontology onto_information.",
         parameters=[
             {
                 "name": "term",
@@ -120,92 +122,152 @@ class Ontology(Resource):
 
         # Onto loading
         logger.info('Getting Ontology term %s', term)
-
         onto = get_ontology('./tests/Metabolights.owl').load()
-        info = information(onto)
+        info = onto_information(onto)
 
-        # Loading branch
-        res_cls = []
-        if branch:
+        result = []
+
+        # if only branch, search all branch
+        if not term and branch:
             start_cls = onto.search_one(label=branch)
             clses = info.get_subs(start_cls)
 
-            # Roles / Characteristics/ Publication/design descriptor/unit/factors
-            if branch in ["roles", "characteristics", "publication", "design descriptor", "unit", "factors"]:  # go sub
+            for cls in clses:
+                enti = entity(name=cls.label, iri=cls.namespace, ontoName='MTBLS')
+                result.append(enti)
 
-                if term: # if term != null
+        # if keyword !=  null
+        elif term:
 
-                    done = False
-                    # exact match
-                    if term.lower() in [cls.label[0].lower() for cls in clses]:
-                        subs = info.get_subs(term)
-                        res_cls = [term] + subs
-                        done = True
+            if branch:
+                start_cls = onto.search_one(label=branch)
+                clses = info.get_subs(start_cls)
 
-                    # if not exact match require substring + zooma
-                    if not done:
-                        # substring match / fuzzy match
-                        for cls in clses:
-                            if term.lower() in cls.label[0].lower():
-                                res_cls.append(cls.label[0])
+                res_cls = []
+                # exact match
+                if term.lower() in [cls.label[0].lower() for cls in clses]:
+                    subs = info.get_subs(term)
+                    res_cls = [term] + subs
 
-                        try:
-                            zoomaTerms = getZoomaTerm(term)
-                            temp = list(zoomaTerms.keys())
-                            res_cls = res_cls + temp
-                        except Exception as e:
-                            print(e.args)
+                # fuzzy match
+                if len(result) == 0:
+                    for cls in clses:
+                        if term.lower() in cls.label[0].lower():
+                            res_cls.append(cls.label[0])
 
-                else: # if term == null, return the whole branch
-                    res_cls = clses
+                for cls in res_cls:
+                    enti = entity(name=cls.label[0], iri=cls.iri(), ontoName='MTBLS')
+                    result.append(enti)
 
-                #     for cls in clses:
-                #         if str(cls.label[0]) == term:
-                #             subs = info.get_subs(cls)
-                #             res_cls = [cls] + subs
-                #             break
-                #
-                #
-                #     if len(res_cls) == 0:
-                #         try:
-                #             zoomaTerms = getZoomaTerm(term)
-                #             res_cls = zoomaTerms.keys()
-                #         except Exception as e:
-                #             logging.error('zooma error' + e)
-                # else:  # if not keyword return the whole branch
-                #     res_cls = clses
+            # if branch == null, search whole ontology
+            if len(result) == 0:
+                try:
+                    cls = onto.search_one(label=term)
+                    enti = entity(name=cls.label[0], iri=cls.iri, ontoName='MTBLS')
+                    result.append(enti)
+                except Exception as e:
+                    print(e.args)
+                    print("Can't find query in MTBLS ontology, requesting Zooma")
 
-            # taxonomy
-            if branch == 'taxonomy' and term != None:
-                if not mapping:
-                    try:
-                        res_cls.append(onto.search_one(label=term))
-                    except:
-                        print("can't find the term")
-                        pass
-                elif mapping == 'typo':
-                    try:
-                        c = onto.search_one(label=term)
-                        map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasRelatedSynonym']
-                        res_cls = list(map[c])
-                    except:
-                        print("can't find the term")
-                        pass
+            if len(result) == 0:
+                try:
+                    temp = getZoomaTerm(term)
+                    for term in temp:
+                        if term.Zooma_confidence in ['GOOD','HIGH']:
+                            result.append(term)
+                except  Exception as e:
+                    print(e.args)
+                    print("Can't query it in Zooma, requesting OLS")
 
-                elif mapping == 'exact':
-                    try:
-                        c = onto.search_one(label=term)
-                        map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
-                        res_cls = list(map[c])
-                    except:
-                        print("can't find the term")
-                        pass
-                else:
-                    res_cls = clses
+            if len(result) == 0:
+                try:
+                    result = getOLSTerm(term)
+                except  Exception as e:
+                    print(e.args)
+                    print("Can't query it in OLS, request Bioportal")
+            if len(result) == 0:
+                try:
+                    result = getBioportalTerm(term)
+                except  Exception as e:
+                    print(e.args)
+                    print("Can't query it in Bioportal")
+
+        else:
+            print('Error')
+
+        # Loading branch
+        # res_cls = []
+        # if branch:
+        #     start_cls = onto.search_one(label=branch)
+        #     clses = info.get_subs(start_cls)
+        #
+        #     # Roles / Characteristics/ Publication/design descriptor/unit/factors
+        #     if branch in ["roles", "characteristics", "publication", "design descriptor", "unit", "factors"]:  # go sub
+        #
+        #         if term:  # if term != null
+        #
+        #             done = False
+        #             # exact match
+        #             if term.lower() in [cls.label[0].lower() for cls in clses]:
+        #                 subs = info.get_subs(term)
+        #                 res_cls = [term] + subs
+        #                 done = True
+        #
+        #             # if not exact match require substring + zooma
+        #             if not done:
+        #                 # substring match / fuzzy match
+        #                 for cls in clses:
+        #                     if term.lower() in cls.label[0].lower():
+        #                         res_cls.append(cls.label[0])
+        #
+        #                 # zooma
+        #                 try:
+        #                     zoomaTerms = getZoomaTerm(term)
+        #                     temp = list(zoomaTerms.keys())
+        #                     res_cls = res_cls + temp
+        #                 except Exception as e:
+        #                     print(e.args)
+        #
+        #             # OLS exact matching
+        #
+        #             # Bioportal exact matching
+        #
+        #
+        #
+        #         else:  # if term == null, return the whole branch
+        #             res_cls = clses
+
+            # # taxonomy
+            # if branch == 'taxonomy' and term != None:
+            #     if not mapping:
+            #         try:
+            #             res_cls.append(onto.search_one(label=term))
+            #         except:
+            #             print("can't find the term")
+            #             pass
+            #     elif mapping == 'typo':
+            #         try:
+            #             c = onto.search_one(label=term)
+            #             map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasRelatedSynonym']
+            #             res_cls = list(map[c])
+            #         except:
+            #             print("can't find the term")
+            #             pass
+            #
+            #     elif mapping == 'exact':
+            #         try:
+            #             c = onto.search_one(label=term)
+            #             map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
+            #             res_cls = list(map[c])
+            #         except:
+            #             print("can't find the term")
+            #             pass
+            #     else:
+            #         res_cls = clses
 
         response = []
 
-        for cls in res_cls:
+        for cls in result:
             temp = '''    {
                     "comments": [],
                     "annotationValue": "investigator",
@@ -221,11 +283,11 @@ class Ontology(Resource):
 
             d = json.loads(temp)
             try:
-                d['annotationValue'] = str(cls.label[0])
-                d['name'] = str(cls.namespace.name)
+                d['annotationValue'] = str(cls.name)
+                d['name'] = str(cls.ontoName)
+                d["termAccession"] = str(cls.iri)
             except:
-                d['annotationValue'] = cls
-                d['name'] = mapping
+                pass
 
             response.append(d)
 
@@ -234,19 +296,97 @@ class Ontology(Resource):
 
 
 def getZoomaTerm(keyword):
-    res = {}
+    res = []
     try:
         url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
         ssl._create_default_https_context = ssl._create_unverified_context
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf8')
-        # logger.info(content)
         json_str = json.loads(content)
         for term in json_str:
-            termName = term["annotatedProperty"]['propertyValue']
-            termConfidence = term['confidence']
-            termURL = term['semanticTags']
-            res[termName] = termConfidence
+            iri = term['semanticTags'][0]
+
+            if 'mesh' in iri.lower():
+                ontoName = 'MESH'
+            elif 'nci' in iri.lower():
+                ontoName = 'NCIT'
+            else:
+                ontoName = getOnto_Name(iri)
+
+            enti = entity(name=term["annotatedProperty"]['propertyValue'].title(),
+                          iri=iri,
+                          obo_ID=iri.rsplit('/', 1)[-1],
+                          ontoName=ontoName,
+                          Zooma_confidence=term['confidence'])
+            res.append(enti)
     except Exception as e:
         logger.error(e)
     return res
+
+
+def getOLSTerm(keyword):
+    res = []
+    try:
+        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
+              '&exact=true' \
+              '&groupField=true' \
+              '&queryFields=label,synonym' \
+              '&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix'
+        fp = urllib.request.urlopen(url)
+        content = fp.read()
+        j_content = json.loads(content)
+        responses = j_content["response"]['docs']
+
+        for term in responses:
+            enti = entity(name=term['label'].title(), iri=term['iri'],
+                          obo_ID=term['obo_id'], ontoName=term['ontology_prefix'])
+            res.append(enti)
+            if len(res) >= 5:
+                break
+
+    except Exception as e:
+        logger.error(e)
+    return res
+
+
+def getBioportalTerm(keyword):
+    res = []
+    try:
+        url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+") + '&require_exact_match=true'
+        request = urllib.request.Request(url)
+        request.add_header('Authorization', 'apikey token=c60c5add-63c6-4485-8736-3f495146aee3')
+        response = urllib.request.urlopen(request)
+        content = response.read()
+        j_content = json.loads(content)
+
+        iri_record = []
+
+        for term in j_content['collection']:
+            iri = term['@id']
+            if iri in iri_record:
+                continue
+
+            if 'mesh' in iri.lower():
+                ontoName = 'MESH'
+            elif 'nci' in iri.lower():
+                ontoName = 'NCIT'
+            else:
+                ontoName = getOnto_Name(iri)
+
+            enti = entity(name=term['prefLabel'],
+                          iri=iri,
+                          obo_ID=iri.rsplit('/', 1)[-1],
+                          ontoName=ontoName)
+            res.append(enti)
+            iri_record.append(iri)
+            if len(res) >= 5:
+                break
+    except Exception as e:
+        logger.error(e)
+    return res
+
+
+def getOnto_Name(iri):
+    # get ontology name by giving iri of entity
+    substring = iri.rsplit('/', 1)[-1]
+    return ''.join(x for x in substring if x.isalpha())

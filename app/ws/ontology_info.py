@@ -4,8 +4,8 @@
 # Tag:
 # Description:
 
-class information():
-    ''' basic information of entities'''
+class onto_information():
+    ''' basic onto_information of entities'''
 
     def __init__(self, onto):
         '''initialization'''
@@ -41,6 +41,33 @@ class information():
 
     def get_factors(self,cls):
         return list(cls.seeAlso)
+
+class entity():
+    def __init__(self,name = None, iri = None, obo_ID= None, ontoName = None, Zooma_confidence = None):
+        if name is None:
+            self.name = ''
+        else:
+            self.name = name
+
+        if iri is None:
+            self.iri = ''
+        else:
+            self.iri = iri
+
+        if obo_ID is None:
+            self.obo_ID = ''
+        else:
+            self.obo_ID = obo_ID
+
+        if ontoName is None:
+            self.ontoName = ''
+        else:
+            self.ontoName = ontoName
+
+        if Zooma_confidence is None:
+            self.Zooma_confidence = ''
+        else:
+            self.Zooma_confidence = Zooma_confidence
 
 
 def list_supers(onto_c, sup):
