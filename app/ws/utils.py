@@ -6,6 +6,7 @@ import time
 import datetime
 from flask import current_app as app
 from html.parser import HTMLParser
+import pandas as pd
 
 """
 Utils
@@ -180,3 +181,26 @@ def strip_tags(html):
     s = MLStripper()
     s.feed(html)
     return s.get_data()
+
+
+def get_table_header(table_df):
+    # Get an indexed header row
+    df_header = pd.DataFrame(list(table_df))  # Get the header row only
+    df_header = df_header.reset_index().to_dict(orient='list')
+    mapping = {}
+    print(df_header)
+    for i in range(0, len(df_header['index'])):
+        mapping[df_header[0][i]] = df_header['index'][i]
+    return mapping
+
+
+# Convert panda DataFrame to json tuples object
+def totuples(df, text):
+    d = [
+        dict([
+            (colname, row[i])
+            for i, colname in enumerate(df.columns)
+        ])
+        for row in df.values
+    ]
+    return {text: d}

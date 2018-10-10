@@ -1,8 +1,12 @@
-import logging, json, pandas as pd, numpy as np
-from flask import request, abort, jsonify
+import logging
+import json
+import pandas as pd
+import numpy as np
+from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import get_table_header, totuples
 
 """
 MTBLS Assay Tables
@@ -13,29 +17,6 @@ Manage the Assays from a MTBLS studies.
 logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
-
-
-# Convert panda DataFrame to json tuples object
-def totuples(df, text):
-    d = [
-        dict([
-            (colname, row[i])
-            for i, colname in enumerate(df.columns)
-        ])
-        for row in df.values
-    ]
-    return {text: d}
-
-
-def get_table_header(table_df):
-    # Get an indexed header row
-    df_header = pd.DataFrame(list(table_df))  # Get the header row only
-    df_header = df_header.reset_index().to_dict(orient='list')
-    mapping = {}
-    print(df_header)
-    for i in range(0, len(df_header['index'])):
-        mapping[df_header[0][i]] = df_header['index'][i]
-    return mapping
 
 
 def insert_row(idx, df, df_insert):

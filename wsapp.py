@@ -12,6 +12,7 @@ from app.ws.isaAssay import *
 from app.ws.ontology import *
 from app.ws.assay_table import *
 from app.ws.sample_table import *
+from app.ws.tableColumns import *
 
 """
 MTBLS WS-Py
@@ -89,6 +90,10 @@ def initialize_app(flask_app):
     api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/processSequence")
     api.add_resource(AssayTable, res_path + "/studies/<string:study_id>/assay/tableCell")
     api.add_resource(EditAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
+
+    # Manipulating table columns
+    api.add_resource(SimpleColumns, res_path + "/studies/<string:study_id>/addColumn/<string:file_name>")
+    api.add_resource(ComplexColumns, res_path + "/studies/<string:study_id>/addColumns/<string:file_name>")
 
     # Add ontology resources
     api.add_resource(Ontology, res_path + "/studies/ontology")
