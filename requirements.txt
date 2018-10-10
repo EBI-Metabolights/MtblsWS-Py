@@ -2,7 +2,7 @@ Flask==0.12.2
 Flask-RESTful==0.3.6
 flask-restful-swagger==0.19
 Flask-Cors==3.0.3
-isatools==0.10.1
+isatools==0.10.3
 mzml2isa==0.5.1
-marshmallow==2.15.0
+marshmallow==2.15.6
 owlready2==0.10

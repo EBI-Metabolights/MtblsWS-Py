@@ -421,8 +421,8 @@ class ParameterValueSchema(Schema):
         ordered = True
 
     category = fields.Nested(ProtocolParameterSchema, required=True)
-    value = ValueField(attribute='value')
-    unit = fields.Nested(OntologyAnnotationSchema, many=True, allow_none=True)
+    value = ValueField(attribute='value', required=True)
+    unit = fields.Nested(OntologyAnnotationSchema, allow_none=True)
 
     @post_load
     def make_obj(self, data):
@@ -629,8 +629,7 @@ class IsaInvestigationSchema(IsaSchema):
     filename = fields.Str()
     contacts = fields.Nested(PersonSchema, many=True, load_from='people', dump_to='people')
     publications = fields.Nested(PublicationSchema, many=True)
-    ontology_source_references = fields.Nested(OntologySourceSchema, many=True,
-                                               load_from='ontologySourceReferences', dump_to='ontologySourceReferences')
+    ontology_source_references = fields.Nested(OntologySourceSchema, many=True, load_from='ontologySourceReferences', dump_to='ontologySourceReferences')
     studies = fields.Nested(StudySchema, many=True)
 
     @post_load

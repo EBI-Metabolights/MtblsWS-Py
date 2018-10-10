@@ -106,10 +106,10 @@ def main():
 
 print ("before main stanza")
 if __name__ == "__main__":
-    print("Setting ssl context for Flask app")
+    print("Setting ssl context for Flask server")
     context = ('ssl/wsapp.crt', 'ssl/wsapp.key')  # SSL certificate and key files
     main()
 else:
-    print("Setting ssl context for Gunicorn app")
+    print("Setting ssl context for Gunicorn server")
     context = ('ssl/wsapp.crt', 'ssl/wsapp.key')  # SSL certificate and key files
     main()
