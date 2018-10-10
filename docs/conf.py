@@ -23,7 +23,7 @@ source_suffix = ['.rst', '.md']
 # sys.path.insert(0, os.path.abspath('.'))
 
 
-# -- Project information -----------------------------------------------------
+# -- Project onto_information -----------------------------------------------------
 
 project = 'MetaboLights RESTful Web Services'
 copyright = '2018, Jose, Ken, Chandu, Jiakang'

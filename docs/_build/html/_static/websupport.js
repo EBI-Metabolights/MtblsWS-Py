@@ -471,7 +471,7 @@
     div.find('.rating:first')
       .text(data.rating + ' point' + (data.rating == 1 ? '' : 's'));
 
-    // Send the vote information to the server.
+    // Send the vote onto_information to the server.
     $.ajax({
       type: "POST",
       url: opts.processVoteURL,

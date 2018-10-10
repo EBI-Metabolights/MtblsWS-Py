@@ -45,7 +45,7 @@ def insert_row(idx, df, df_insert):
 class MtblsMAFSearch(Resource):
     """Get MAF from studies (assays)"""
     @swagger.operation(
-        summary="Search for metabolite information to use in the Metabolite Annotation file",
+        summary="Search for metabolite onto_information to use in the Metabolite Annotation file",
         nickname="MAF search",
         notes="Get a given MAF associated with assay {assay_id} for a MTBLS Study with {study_id} in JSON format",
         parameters=[

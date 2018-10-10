@@ -49,7 +49,7 @@ class About(Resource):
         from flask import current_app as app
 
         """Get a basic description of the Web Service"""
-        logger.info('Getting WS-about information')
+        logger.info('Getting WS-about onto_information')
         api = {"ApiVersion": app.config.get('API_VERSION'),
                "ApiDocumentation": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".html",
                "ApiSpecification": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".json"
