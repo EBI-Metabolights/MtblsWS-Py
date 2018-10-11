@@ -133,7 +133,7 @@ class Ontology(Resource):
             clses = info.get_subs(start_cls)
 
             for cls in clses:
-                enti = entity(name=cls.label[0], iri=cls.namespace, ontoName='MTBLS')
+                enti = entity(name=cls.label[0], iri=cls.iri, ontoName='MTBLS')
                 result.append(enti)
 
         # if keyword !=  null
@@ -150,9 +150,9 @@ class Ontology(Resource):
                     subs = info.get_subs(c)
                     res_cls = [c] + subs
 
-                for cls in res_cls:
-                    enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
-                    result.append(enti)
+                    for cls in res_cls:
+                        enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
+                        result.append(enti)
 
                 # fuzzy match
                 if len(result) == 0:
@@ -160,9 +160,9 @@ class Ontology(Resource):
                         if term.lower() in cls.label[0].lower():
                             res_cls.append(cls)
 
-                for cls in res_cls:
-                    enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
-                    result.append(enti)
+                    for cls in res_cls:
+                        enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
+                        result.append(enti)
 
             # if branch == null, search whole ontology
             if len(result) == 0:
