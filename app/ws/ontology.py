@@ -146,17 +146,22 @@ class Ontology(Resource):
                 res_cls = []
                 # exact match
                 if term.lower() in [cls.label[0].lower() for cls in clses]:
-                    subs = info.get_subs(term)
-                    res_cls = [term] + subs
+                    c = onto.search_one(label=term)
+                    subs = info.get_subs(c)
+                    res_cls = [c] + subs
+
+                for cls in res_cls:
+                    enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
+                    result.append(enti)
 
                 # fuzzy match
                 if len(result) == 0:
                     for cls in clses:
                         if term.lower() in cls.label[0].lower():
-                            res_cls.append(cls.label[0])
+                            res_cls.append(cls)
 
                 for cls in res_cls:
-                    enti = entity(name=cls.label[0], iri=cls.iri(), ontoName='MTBLS')
+                    enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
                     result.append(enti)
 
             # if branch == null, search whole ontology
