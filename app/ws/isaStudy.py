@@ -1182,6 +1182,8 @@ class StudyProtocols(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
 
         obj_list = isa_study.protocols
+        for objProt in obj_list:
+            logger.info(objProt.name)
         # Using context to avoid envelop tags in contained objects
         sch = ProtocolSchema()
         sch.context['protocol'] = Protocol()
