@@ -133,7 +133,7 @@ class Ontology(Resource):
             clses = info.get_subs(start_cls)
 
             for cls in clses:
-                enti = entity(name=cls.label, iri=cls.namespace, ontoName='MTBLS')
+                enti = entity(name=cls.label[0], iri=cls.namespace, ontoName='MTBLS')
                 result.append(enti)
 
         # if keyword !=  null
@@ -172,9 +172,10 @@ class Ontology(Resource):
                     result.append(enti)
                 except Exception as e:
                     print(e.args)
-                    print("Can't find query in MTBLS ontology, requesting Zooma")
+
 
             if len(result) == 0:
+                print("Can't find query in MTBLS ontology, requesting Zooma")
                 try:
                     temp = getZoomaTerm(term)
                     for term in temp:
@@ -182,15 +183,17 @@ class Ontology(Resource):
                             result.append(term)
                 except  Exception as e:
                     print(e.args)
-                    print("Can't query it in Zooma, requesting OLS")
+
 
             if len(result) == 0:
+                print("Can't query it in Zooma, requesting OLS")
                 try:
                     result = getOLSTerm(term)
                 except  Exception as e:
                     print(e.args)
-                    print("Can't query it in OLS, request Bioportal")
+
             if len(result) == 0:
+                print("Can't query it in OLS, request Bioportal")
                 try:
                     result = getBioportalTerm(term)
                 except  Exception as e:
@@ -333,10 +336,9 @@ def getOLSTerm(keyword):
     res = []
     try:
         url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
-              '&exact=true' \
               '&groupField=true' \
               '&queryFields=label,synonym' \
-              '&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix'
+              '&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix' # '&exact=true' \
         fp = urllib.request.urlopen(url)
         content = fp.read()
         j_content = json.loads(content)
@@ -357,7 +359,7 @@ def getOLSTerm(keyword):
 def getBioportalTerm(keyword):
     res = []
     try:
-        url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+") + '&require_exact_match=true'
+        url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+") #+ '&require_exact_match=true'
         request = urllib.request.Request(url)
         request.add_header('Authorization', 'apikey token=c60c5add-63c6-4485-8736-3f495146aee3')
         response = urllib.request.urlopen(request)
