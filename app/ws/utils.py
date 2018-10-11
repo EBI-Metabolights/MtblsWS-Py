@@ -126,7 +126,7 @@ def map_file_type(file_name, directory):
                 return 'metadata_maf', active_status
         elif file_name.startswith('i_'):
             investigation = os.path.join(directory, 'i_')
-            for invest_file in glob.glob(investigation):  # Default investigation file pattern
+            for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
                 if open(invest_file).read():
                     return 'metadata_investigation', active_status
         return 'metadata', 'old'
