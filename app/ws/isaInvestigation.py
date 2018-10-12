@@ -93,7 +93,7 @@ class IsaInvestigation(Resource):
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
 
         logger.info('Got %s', isa_inv.identifier)
 
