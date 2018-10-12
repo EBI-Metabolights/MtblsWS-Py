@@ -23,7 +23,7 @@ class WsClient:
         :param study_id: Identifier of the study in MetaboLights
         :param user_token: User API token. Used to check for permissions
         """
-        logger.info('Getting actual location for Study %s on the filesystem, using API-Key %s', study_id, user_token)
+        logger.info('Getting actual location for Study %s on the filesystem', study_id)
         study = self.get_study(study_id, user_token)
         location = study["content"]["studyLocation"]
         logger.info('... found study folder %s', location)
@@ -37,7 +37,7 @@ class WsClient:
         :param study_id: Identifier of the study in MetaboLights
         :param user_token: User API token. Used to check for permissions
         """
-        logger.info('Getting actual location for Study %s on the filesystem, using API-Key %s', study_id, user_token)
+        logger.info('Getting actual location for Study %s on the filesystem', study_id)
         study = self.get_study(study_id, user_token)
         obfuscationCode = study["content"]["obfuscationCode"]
         logger.info('... found study obfuscationCode %s', obfuscationCode)
@@ -51,8 +51,7 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Getting location for output updates for Study %s on the filesystem, using API-Key %s',
-                    study_id, user_token)
+        logger.info('Getting location for output updates for Study %s on the filesystem',study_id)
 
         study = self.get_study(study_id, user_token)
         std_folder = study["content"]["studyLocation"]
@@ -84,7 +83,7 @@ class WsClient:
         :param study_id: Identifier of the study in MetaboLights
         :param user_token: User API token. Used to check for permissions
         """
-        logger.info('Getting JSON object for Study %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting JSON object for Study %s', study_id)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.get(url, headers={"user_token": user_token})
@@ -116,7 +115,7 @@ class WsClient:
         :param assay_id: The number of the assay for the given study_id
         :param user_token: User API token. Used to check for permissions
         """
-        logger.info('Getting JSON object for MAF for Study %s (Assay %s), using API-Key %s', study_id, assay_id, user_token)
+        logger.info('Getting JSON object for MAF for Study %s (Assay %s)', study_id, assay_id)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/assay/" + assay_id + "/jsonmaf"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         resp = requests.get(url, headers={"user_token": user_token})
@@ -157,7 +156,7 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Getting the status of the Study %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting the status of the Study %s', study_id)
         study = self.get_study(study_id, user_token)
         std_status = study["content"]["studyStatus"]
         logger.info('... found Study is %s', std_status)
@@ -170,7 +169,7 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Checking if Study %s is public, using API-Key %s', study_id, user_token)
+        logger.info('Checking if Study %s is public', study_id)
         study = self.get_study(study_id, user_token)
         # Check for
         #   "publicStudy": true
@@ -239,7 +238,7 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Checking for user permisions in MTBLS WS for Study %s, using API-Key %s', study_id, user_token)
+        logger.info('Checking for user permisions in MTBLS WS for Study %s', study_id)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/getPermissions"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         try:

@@ -218,7 +218,7 @@ class EditAssayFile(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info('Assay Table: Getting ISA-JSON Study %s, using API-Key %s', study_id, user_token)
+        logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)

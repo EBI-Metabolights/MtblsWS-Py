@@ -7,9 +7,7 @@ from isatools.convert import isatab2json
 from isatools.isatab import load, dump
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import copy_file, new_timestamped_folder
-import json
 from isatools.model import *
-from isatools.isajson import ISAJSONEncoder
 from flask import current_app as app
 
 """

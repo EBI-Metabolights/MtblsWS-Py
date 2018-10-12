@@ -77,6 +77,9 @@ class IsaInvestigation(Resource):
         # param validation
         if study_id is None:
             abort(404)
+
+        logger.info('    ----    STUDY %s    ----', study_id)
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
@@ -89,7 +92,7 @@ class IsaInvestigation(Resource):
             args = parser.parse_args(req=request)
             obj_name = args['name']
 
-        logger.info('Getting Investigation %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Investigation %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -193,7 +196,7 @@ class IsaInvestigation(Resource):
             abort(400)
 
         # update Study details
-        logger.info('Updating Study Publication details for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Study Publication details for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)

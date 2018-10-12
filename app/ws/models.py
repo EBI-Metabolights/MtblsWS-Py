@@ -1,7 +1,7 @@
 from flask_restful import fields
 from isatools.model import Person, OntologyAnnotation, OntologySource, Protocol
 from isatools.model import ProtocolParameter, StudyFactor, Comment, Publication
-from isatools.model import Sample, Characteristic, FactorValue, Source, Material
+from isatools.model import Sample, Characteristic, FactorValue, Source
 from isatools.model import Investigation
 import json
 
