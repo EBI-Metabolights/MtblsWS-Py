@@ -1,5 +1,5 @@
 import logging, json, pandas as pd, numpy as np
-from flask import request, abort, jsonify
+from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
@@ -190,7 +190,7 @@ class MetaboliteAnnotationFile(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info('MAF: Getting ISA-JSON Study %s, using API-Key %s', study_id, user_token)
+        logger.info('MAF: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -447,7 +447,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info('MAF: Getting ISA-JSON Study %s, using API-Key %s', study_id, user_token)
+        logger.info('MAF: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -795,5 +795,3 @@ class ReadMetaboliteAnnotationFile(Resource):
         df_header = get_table_header(maf_df)
 
         return {'mafHeader': df_header, 'mafData': df_data_dict}
-
-

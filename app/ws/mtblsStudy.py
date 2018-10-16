@@ -68,7 +68,7 @@ class IsaTabInvestigationFile(Resource):
             {
                 "name": "investigation_filename",
                 "description": "Investigation filename",
-                "required": True,
+                "required": False,
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -111,8 +111,9 @@ class IsaTabInvestigationFile(Resource):
             args = parser.parse_args(req=request)
             inv_filename = args['investigation_filename'].lower() if args['investigation_filename'] else None
         if not inv_filename:
-            logger.warning("Missing Investigation filename.")
-            abort(400, "Missing Investigation filename.")
+            logger.warning("Missing Investigation filename. Using default i_Investigation.txt")
+            inv_filename = 'i_Investigation.txt'
+            #abort(400, "Missing Investigation filename.")
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -439,13 +440,13 @@ class AllocateAccession(Resource):
             abort(403)
 
         study_date = get_year_plus_one()
-        logger.info('Creating a new MTBLS Study (cloned from %s) with release date %s, using API-Key %s', study_id, study_date, user_token)
+        logger.info('Creating a new MTBLS Study (cloned from %s) with release date %s', study_id, study_date)
         new_folder_name = user_token + '~~' + study_date + '~' + 'new_study_requested_' + get_timestamp()
 
         study_to_clone = wsc.get_study_location(study_id, user_token)
         queue_folder = wsc.get_queue_folder()
         existing_studies = wsc.get_all_studies_for_user(user_token)
-        logger.info('Found the following studies: ' + existing_studies + ' for user API-Key %s', user_token)
+        logger.info('Found the following studies: ' + existing_studies)
 
         logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name + ', to the queue folder ' + queue_folder)
         # copy the study onto the queue folder
@@ -465,11 +466,11 @@ class AllocateAccession(Resource):
             if number == 10:
                 abort(408)
 
-            logger.info('Checking if the new study has been processed by the queue, API-Key %s', user_token)
+            logger.info('Checking if the new study has been processed by the queue')
             time.sleep(5)  # Have to check every so many secounds to see if the queue has finished
             new_studies = wsc.get_all_studies_for_user(user_token)
 
-        logger.info('Ok, now there is a new private study for the user, API-Key %s', user_token)
+        logger.info('Ok, now there is a new private study for the user')
 
         # Tidy up the response strings before converting to lists
         new_studies_list = new_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
@@ -540,9 +541,8 @@ class CreateUploadFolder(Resource):
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
 
-        logger.info('Creating a new study upload folder for study %s for the user, API-Key %s', study_id, user_token)
+        logger.info('Creating a new study upload folder for study %s for the user', study_id)
         status = wsc.create_upload_folder(study_id, user_token)
-        no_html = strip_tags(status)  # This can alternatively be returned
 
         return status
 

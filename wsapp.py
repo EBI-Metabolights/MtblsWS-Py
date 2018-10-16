@@ -58,6 +58,7 @@ def initialize_app(flask_app):
     api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/isa-tab/assay")
     api.add_resource(AllocateAccession, res_path + "/studies/create_study")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create_upload_folder")
+    api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/copy_from_upload_folder")
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
@@ -94,6 +95,7 @@ def initialize_app(flask_app):
     # Manipulating table columns
     api.add_resource(SimpleColumns, res_path + "/studies/<string:study_id>/addColumn/<string:file_name>")
     api.add_resource(ComplexColumns, res_path + "/studies/<string:study_id>/addColumns/<string:file_name>")
+    api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/updateCell/<string:file_name>")
 
     # Add ontology resources
     api.add_resource(Ontology, res_path + "/studies/ontology")

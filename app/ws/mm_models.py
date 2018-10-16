@@ -1,5 +1,5 @@
 from isatools.model import *
-from marshmallow import Schema, fields, post_load, post_dump, pre_load, pre_dump
+from marshmallow import Schema, fields, post_load, post_dump
 
 
 class CommentSchema(Schema):

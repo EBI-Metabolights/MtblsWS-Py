@@ -41,6 +41,17 @@ class IsaInvestigation(Resource):
                 "dataType": "string"
             },
             {
+                "name": "investigation_only",
+                "description": "Only load the main investigation file?",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "default": True
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -77,23 +88,27 @@ class IsaInvestigation(Resource):
         # param validation
         if study_id is None:
             abort(404)
+
+        logger.info('    ----    STUDY %s    ----', study_id)
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
+
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('name', help='Study Sample name')
-        obj_name = None
+        parser.add_argument('investigation_only', help='Only load the investigation file, or the whole study?')
+        investigation_only = True
         if request.args:
             args = parser.parse_args(req=request)
-            obj_name = args['name']
+            investigation_only = args['investigation_only']
 
-        logger.info('Getting Investigation %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting Investigation %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=investigation_only)
 
         logger.info('Got %s', isa_inv.identifier)
 
@@ -193,7 +208,7 @@ class IsaInvestigation(Resource):
             abort(400)
 
         # update Study details
-        logger.info('Updating Study Publication details for %s, using API-Key %s', study_id, user_token)
+        logger.info('Updating Study Publication details for %s', study_id)
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
