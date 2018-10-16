@@ -2,6 +2,7 @@ import logging
 import pandas as pd
 import numpy as np
 import json
+import re
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -137,17 +138,20 @@ class SimpleColumns(Resource):
         for row_val in range(table_df.shape[0]):
             new_col.append(new_column_default_value)
 
-        table_df.insert(loc=int(new_column_position), column=new_column_name, value=new_col)  # Add new column to the spreadsheet
-
-        # Write the new row back in the file
-        table_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
+        table_df.insert(loc=int(new_column_position), column=new_column_name, value=new_col, allow_duplicates=True)  # Add new column to the spreadsheet
 
         df_data_dict = totuples(table_df.reset_index(), 'rows')
 
         # Get an indexed header row
         df_header = get_table_header(table_df)
 
-        return {'tableHeader': df_header, 'tableData': df_data_dict}
+        # Remove all ".n" numbers at the end of duplicated column names
+        table_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+
+        # Write the new row back in the file
+        table_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
+
+        return {'header': df_header, 'data': df_data_dict}
 
 
 class ComplexColumns(Resource):
@@ -249,16 +253,18 @@ class ComplexColumns(Resource):
             for row_val in range(table_df.shape[0]):
                 new_col.append(new_column_default_value)
 
-            table_df.insert(loc=int(new_column_position), column=new_column_name, value=new_col, allow_duplicates=True)  # Add new column to the spreadsheet
-
-        # Write the new row back in the file
-        table_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
-
-        df_data_dict = totuples(table_df.reset_index(), 'rows')
+            # Add new column to the spreadsheet
+            table_df.insert(loc=int(new_column_position), column=new_column_name, value=new_col, allow_duplicates=True)
 
         # Get an indexed header row
         df_header = get_table_header(table_df)
 
+        # Get all indexed rows
+        df_data_dict = totuples(table_df.reset_index(), 'rows')
+
+        # Remove all ".n" numbers at the end of duplicated column names
+        table_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+        table_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
         return {'header': df_header, 'rows': df_data_dict}
 
 
