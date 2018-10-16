@@ -4,6 +4,7 @@ import requests
 from datetime import datetime, time
 from flask_restful import abort
 from flask import current_app as app
+from flask.json import jsonify
 
 """
 MetaboLights WS client
@@ -295,4 +296,5 @@ class WsClient:
 
         logger.info('Study upload folder for %s has been created', study_id)
         message = resp.text
-        return message
+        return jsonify(message)
+

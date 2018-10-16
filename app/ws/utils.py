@@ -61,6 +61,21 @@ def copy_file(source, destiny):
         raise
 
 
+def copy_files_and_folders(source, destination):
+    """
+      Make a copy of files/folders from origin to destnation. If destination already exists, it will be replaced.
+      :param source:  string containing the full path to the source file, including filename
+      :param destination: string containing the path to the source file, including filename
+      :return:
+      """
+    try:
+        # copy origin to destination
+        logger.info("Copying %s to %s", source, destination)
+        shutil.copy2(source, destination)
+    except Exception:
+        raise
+
+
 def remove_samples_from_isatab(std_path):
 
     # dest folder name is a timestamp

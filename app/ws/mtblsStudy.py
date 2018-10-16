@@ -543,7 +543,6 @@ class CreateUploadFolder(Resource):
 
         logger.info('Creating a new study upload folder for study %s for the user', study_id)
         status = wsc.create_upload_folder(study_id, user_token)
-        no_html = strip_tags(status)  # This can alternatively be returned
 
-        return status
+        return jsonify(status)
 

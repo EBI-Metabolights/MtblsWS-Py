@@ -6,7 +6,7 @@ from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_table_header, totuples
+from app.ws.utils import get_table_header, totuples, copy_files_and_folders
 
 """
 MTBLS Table Columns manipulator
@@ -212,13 +212,13 @@ class ComplexColumns(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_columns = data_dict['tableData']
+            new_columns = data_dict['data']
         except KeyError:
             new_columns = None
 
         if new_columns is None:
             abort(404, "Please provide valid key-value pairs for the new columns."
-                       "The JSON string has to have a 'tableData' element")
+                       "The JSON string has to have a 'data' element")
 
         # param validation
         if study_id is None or file_name is None:
@@ -240,9 +240,9 @@ class ComplexColumns(Resource):
         table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
 
         for column in new_columns:
-            new_column_default_value = column['Value']
-            new_column_name = column['Name']
-            new_column_position = column['Position']
+            new_column_default_value = column['value']
+            new_column_name = column['name']
+            new_column_position = column['index']
 
             #  Need to add values for each existing row (not header)
             new_col = []
@@ -259,7 +259,7 @@ class ComplexColumns(Resource):
         # Get an indexed header row
         df_header = get_table_header(table_df)
 
-        return {'tableHeader': df_header, 'tableData': df_data_dict}
+        return {'header': df_header, 'rows': df_data_dict}
 
 
 class ColumnsRows(Resource):
@@ -328,13 +328,13 @@ class ColumnsRows(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            columns_rows = data_dict['tableData']
+            columns_rows = data_dict['data']
         except KeyError:
             columns_rows = None
 
         if columns_rows is None:
             abort(404, "Please provide valid key-value pairs for the cell value."
-                       "The JSON string has to have a 'tableData' element")
+                       "The JSON string has to have a 'data' element")
 
         # param validation
         if study_id is None or file_name is None:
@@ -356,9 +356,9 @@ class ColumnsRows(Resource):
         table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
 
         for column in columns_rows:
-            cell_value = column['Value']
-            row_index = column['Row']
-            column_index = column['Column']
+            cell_value = column['value']
+            row_index = column['row']
+            column_index = column['column']
             #  Need to add values for column and row (not header)
             try:
                 for row_val in range(table_df.shape[0]):
@@ -374,4 +374,72 @@ class ColumnsRows(Resource):
         # Get an indexed header row
         df_header = get_table_header(table_df)
 
-        return {'tableHeader': df_header, 'tableData': df_data_dict}
+        return {'header': df_header, 'rows': df_data_dict}
+
+
+class CopyFilesFolders(Resource):
+    @swagger.operation(
+        summary="Copy files from upload folder to study folder",
+        nickname="Copy from upload folder",
+        notes="Copies files/folder from the upload directory to the study directory",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. Files/Folders were copied across."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404, 'Please provide valid parameter for study identifier')
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+
+        study_path = wsc.get_study_location(study_id, user_token)
+        upload_path = wsc.create_upload_folder(study_id, user_token)
+
+        copy_files_and_folders(study_path, upload_path)
+
+        return {'Success': 'Copied files from ' + upload_path}
+
+
+
