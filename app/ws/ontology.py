@@ -173,18 +173,18 @@ class Ontology(Resource):
                 except Exception as e:
                     print(e.args)
 
-
+            # Zooma Search
             if len(result) == 0:
                 print("Can't find query in MTBLS ontology, requesting Zooma")
                 try:
                     temp = getZoomaTerm(term)
-                    for term in temp:
-                        if term.Zooma_confidence in ['GOOD','HIGH']:
-                            result.append(term)
+                    for t in temp:
+                        if t.Zooma_confidence in ['GOOD','HIGH']:
+                            result.append(t)
                 except  Exception as e:
                     print(e.args)
 
-
+            # OLS Search
             if len(result) == 0:
                 print("Can't query it in Zooma, requesting OLS")
                 try:
@@ -192,6 +192,7 @@ class Ontology(Resource):
                 except  Exception as e:
                     print(e.args)
 
+            # Bioportal Search
             if len(result) == 0:
                 print("Can't query it in OLS, request Bioportal")
                 try:
@@ -327,6 +328,8 @@ def getZoomaTerm(keyword):
                           ontoName=ontoName,
                           Zooma_confidence=term['confidence'])
             res.append(enti)
+            if len(res) >= 5:
+                break
     except Exception as e:
         logger.error(e)
     return res
@@ -334,7 +337,9 @@ def getZoomaTerm(keyword):
 
 def getOLSTerm(keyword):
     res = []
+    a = keyword
     try:
+        # https://www.ebi.ac.uk/ols/api/search?q=lung&groupField=true&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
         url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
               '&groupField=true' \
               '&queryFields=label,synonym' \
