@@ -16365,7 +16365,7 @@ Environments include natural environments or exposures, experimentally applied c
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000004">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742"/>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">publications that have URL/DOI for an online copy that can be viewed by anyone but is not the final version</obo:IAO_0000115>
-        <rdfs:label xml:lang="en">pre-print</rdfs:label>
+        <rdfs:label xml:lang="en">Preprint</rdfs:label>
     </owl:Class>
     
 
@@ -19058,15 +19058,6 @@ Environments include natural environments or exposures, experimentally applied c
                 <rdfs:label>oboInOwl:cjm</rdfs:label>
             </rdf:Description>
         </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboInOwl:hasDbXref>
-            <rdf:Description>
-                <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboInOwl:hasURI>
-                <rdfs:label>oboInOwl:cjm</rdfs:label>
-            </rdf:Description>
-        </oboInOwl:hasDbXref>
         <rdfs:label xml:lang="en">A grouping of terms from an ontology or ontologies. Note that this is not a metaclass - classes are linked to subsets via oboInOwl:inSubset</rdfs:label>
     </rdf:Description>
     <rdf:Description>
@@ -19076,7 +19067,7 @@ Environments include natural environments or exposures, experimentally applied c
                 <rdfs:label>oboInOwl:cjm</rdfs:label>
             </rdf:Description>
         </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
+        <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasDbXref>
@@ -19088,24 +19079,33 @@ Environments include natural environments or exposures, experimentally applied c
         <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+        <oboInOwl:hasDbXref>
+            <rdf:Description>
+                <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboInOwl:hasURI>
+                <rdfs:label>oboInOwl:cjm</rdfs:label>
+            </rdf:Description>
+        </oboInOwl:hasDbXref>
+        <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">view</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">slim</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboInOwl:hasURI>
-        <rdfs:label>oboFormat:subsetdef</rdfs:label>
+        <rdfs:label xml:lang="en">partition</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.obofoundry.org/wiki/index.php/Definitions</oboInOwl:hasURI>
         <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">partition</rdfs:label>
+        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboInOwl:hasURI>
+        <rdfs:label>oboFormat:subsetdef</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">slim</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">view</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
     </rdf:Description>
     
 
@@ -19350,8 +19350,8 @@ Environments include natural environments or exposures, experimentally applied c
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_proximal_side_of</oboInOwl:shorthand>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X proximal_side_of Y &lt;=&gt; if Y is subdivided into distal and proximal portions, X is part_of the proximal portion.</obo:IAO_0000115>
-        <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_proximal_side_of</oboInOwl:id>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_proximal_side_of</rdfs:label>
+        <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_proximal_side_of</oboInOwl:id>
     </rdf:Description>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000124"/>
@@ -19361,9 +19361,9 @@ Environments include natural environments or exposures, experimentally applied c
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000125">
         <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000125</oboInOwl:hasDbXref>
-        <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</oboInOwl:id>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</rdfs:label>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X distal_side_of Y &lt;=&gt; if Y is subdivided into distal and proximal portions, X is part_of the distal portion.</obo:IAO_0000115>
+        <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</oboInOwl:id>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</oboInOwl:shorthand>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
     </rdf:Description>
