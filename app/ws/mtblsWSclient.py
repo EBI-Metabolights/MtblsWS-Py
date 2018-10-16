@@ -296,5 +296,5 @@ class WsClient:
 
         logger.info('Study upload folder for %s has been created', study_id)
         message = resp.text
-        return jsonify(message)
+        return message
 

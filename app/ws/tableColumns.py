@@ -249,7 +249,7 @@ class ComplexColumns(Resource):
             for row_val in range(table_df.shape[0]):
                 new_col.append(new_column_default_value)
 
-            table_df.insert(loc=int(new_column_position), column=new_column_name, value=new_col)  # Add new column to the spreadsheet
+            table_df.insert(loc=int(new_column_position), column=new_column_name, value=new_col, allow_duplicates=True)  # Add new column to the spreadsheet
 
         # Write the new row back in the file
         table_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
@@ -437,7 +437,7 @@ class CopyFilesFolders(Resource):
         study_path = wsc.get_study_location(study_id, user_token)
         upload_path = wsc.create_upload_folder(study_id, user_token)
 
-        copy_files_and_folders(study_path, upload_path)
+        copy_files_and_folders(study_path, upload_path["message"])
 
         return {'Success': 'Copied files from ' + upload_path}
 
