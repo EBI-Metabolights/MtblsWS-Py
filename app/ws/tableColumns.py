@@ -445,7 +445,7 @@ class CopyFilesFolders(Resource):
         upload_path = data_dict["message"]
         upload_path = upload_path + "/*"
 
-        status, message = copy_files_and_folders(study_path, upload_path)
+        status, message = copy_files_and_folders(upload_path, study_path)
 
         if status:
             return {'Success': 'Copied files from ' + upload_path}
