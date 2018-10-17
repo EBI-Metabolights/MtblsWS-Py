@@ -1,10 +1,9 @@
 import os
 import logging
 import requests
-from datetime import datetime, time
+from datetime import datetime
 from flask_restful import abort
 from flask import current_app as app
-from flask.json import jsonify
 
 """
 MetaboLights WS client
@@ -242,25 +241,27 @@ class WsClient:
         logger.info('Checking for user permisions in MTBLS WS for Study %s', study_id)
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/getPermissions"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        read_access = False
+        write_access = False
         try:
             resp = requests.post(
                 url,
                 headers={"content-type": "application/x-www-form-urlencoded",
                          "cache-control": "no-cache"},
                 data="token=" + (user_token or ''))
+
+            if resp.status_code != 200:
+                abort(resp.status_code)
+
+            json_resp = resp.json()
+            import json
+            cont = json.loads(json_resp['content'])
+            read_access = cont['read']
+            write_access = cont['write']
+            logger.info('... found permissions for reading: %s and writing: %s', read_access, write_access)
         except:
             logger.info("Connection refused by the server..")
-            time.sleep(2)  # Have to wait a short while before trying again
 
-        if resp.status_code != 200:
-            abort(resp.status_code)
-
-        json_resp = resp.json()
-        import json
-        cont = json.loads(json_resp['content'])
-        read_access = cont['read']
-        write_access = cont['write']
-        logger.info('... found permissions for reading: %s and writing: %s', read_access, write_access)
         return read_access, write_access
 
     def get_queue_folder(self):

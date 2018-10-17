@@ -72,8 +72,14 @@ def copy_files_and_folders(source, destination):
         # copy origin to destination
         logger.info("Copying %s to %s", source, destination)
         shutil.copy2(source, destination)
+    except FileNotFoundError:
+        return False, 'No files found under ' + source
+    except IsADirectoryError:
+        return False, 'Please give filename(s), not only upload folder ' + source
     except Exception:
-        raise
+        return False, 'Could not copy files from ' + source
+
+    return True, 'Files successfully copied from '  + source + ' to ' + destination
 
 
 def remove_samples_from_isatab(std_path):
