@@ -447,7 +447,6 @@ class CopyFilesFolders(Resource):
         study_path = wsc.get_study_location(study_id, user_token)
         data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
         upload_path = data_dict["message"]
-        upload_location = app.config.get('MTBLS_FTP_ROOT')
 
         status, message = copy_files_and_folders(upload_path, study_path)
         if status:
