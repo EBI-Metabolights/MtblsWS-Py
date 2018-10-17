@@ -443,14 +443,9 @@ class CopyFilesFolders(Resource):
         study_path = wsc.get_study_location(study_id, user_token)
         data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
         upload_path = data_dict["message"]
-        upload_path = upload_path + "/*"
 
         status, message = copy_files_and_folders(upload_path, study_path)
-
         if status:
             return {'Success': 'Copied files from ' + upload_path}
         else:
             return {'Error': message}
-
-
-
