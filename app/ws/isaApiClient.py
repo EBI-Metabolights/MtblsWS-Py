@@ -1,6 +1,5 @@
 import glob
 import os
-import logging
 import time
 from flask_restful import abort
 from isatools.convert import isatab2json

@@ -117,6 +117,7 @@ class SimpleColumns(Resource):
         # param validation
         if study_id is None or file_name is None:
             abort(404, 'Please provide valid parameters for study identifier and file name')
+        study_id = study_id.upper()
 
         # User authentication
         user_token = None
@@ -227,6 +228,7 @@ class ComplexColumns(Resource):
         # param validation
         if study_id is None or file_name is None:
             abort(404, 'Please provide valid parameters for study identifier and/or file name')
+        study_id = study_id.upper()
 
         # User authentication
         user_token = None
@@ -345,6 +347,7 @@ class ColumnsRows(Resource):
         # param validation
         if study_id is None or file_name is None:
             abort(404, 'Please provide valid parameters for study identifier and/or file name')
+        study_id = study_id.upper()
 
         # User authentication
         user_token = None
@@ -430,6 +433,7 @@ class CopyFilesFolders(Resource):
         # param validation
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
+        study_id = study_id.upper()
 
         # User authentication
         user_token = None
@@ -443,6 +447,7 @@ class CopyFilesFolders(Resource):
         study_path = wsc.get_study_location(study_id, user_token)
         data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
         upload_path = data_dict["message"]
+        upload_location = app.config.get('MTBLS_FTP_ROOT')
 
         status, message = copy_files_and_folders(upload_path, study_path)
         if status:

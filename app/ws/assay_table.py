@@ -115,6 +115,7 @@ class AssayTable(Resource):
         # param validation
         if study_id is None or assay_file_name is None or row_num is None or column_name is None:
             abort(404)
+        study_id = study_id.upper()
 
         # User authentication
         user_token = None
@@ -212,6 +213,7 @@ class EditAssayFile(Resource):
         if study_id is None or assay_file_name is None:
             logger.info('No study_id and/or assay file name given')
             abort(404)
+        study_id = study_id.upper()
 
         # User authentication
         user_token = None
@@ -313,6 +315,7 @@ class EditAssayFile(Resource):
         # param validation
         if study_id is None or assay_file_name is None:
             abort(404, 'Please provide valid parameters for study identifier and assay file name')
+        study_id = study_id.upper()
 
         # User authentication
         user_token = None
@@ -402,6 +405,7 @@ class EditAssayFile(Resource):
         # param validation
         if study_id is None or assay_file_name is None:
             abort(404, 'Please provide valid parameters for study identifier and assay file name')
+        study_id = study_id.upper()
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -529,6 +533,7 @@ class EditAssayFile(Resource):
         # param validation
         if study_id is None or assay_file_name is None or row_num is None:
             abort(404)
+        study_id = study_id.upper()
 
         # User authentication
         user_token = None

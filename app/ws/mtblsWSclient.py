@@ -285,6 +285,7 @@ class WsClient:
     def create_upload_folder(self, study_id, user_token):
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        #upload_location = app.config.get('MTBLS_FTP_ROOT')
         logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
 
         resp = requests.post(

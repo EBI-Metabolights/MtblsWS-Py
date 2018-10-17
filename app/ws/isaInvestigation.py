@@ -88,8 +88,9 @@ class IsaInvestigation(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
 
-        logger.info('    ----    STUDY %s    ----', study_id)
+        logger.info('    ----    LOADING ISA STUDY %s    ----', study_id)
 
         # User authentication
         user_token = None
@@ -178,6 +179,8 @@ class IsaInvestigation(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:

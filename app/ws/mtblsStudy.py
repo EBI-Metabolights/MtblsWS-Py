@@ -2,6 +2,7 @@ import glob
 import logging
 import os
 import time
+import json
 from flask import current_app as app, request, abort, send_file
 from flask.json import jsonify
 from flask_restful import Resource, reqparse
@@ -99,10 +100,13 @@ class IsaTabInvestigationFile(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
+
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('investigation_filename', help='Investigation filename')
@@ -113,7 +117,6 @@ class IsaTabInvestigationFile(Resource):
         if not inv_filename:
             logger.warning("Missing Investigation filename. Using default i_Investigation.txt")
             inv_filename = 'i_Investigation.txt'
-            #abort(400, "Missing Investigation filename.")
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -189,10 +192,13 @@ class IsaTabSampleFile(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
+
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('sample_filename', help='Sample filename')
@@ -203,6 +209,7 @@ class IsaTabSampleFile(Resource):
         if not sample_filename:
             logger.warning("Missing Sample filename.")
             abort(400, "Missing Sample filename.")
+
         # check for access rights
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
@@ -278,10 +285,13 @@ class IsaTabAssayFile(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
+
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('assay_filename', help='Assay filename')
@@ -351,6 +361,9 @@ class StudyFiles(Resource):
         # param validation
         if study_id is None:
             abort(404)
+
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -436,6 +449,8 @@ class AllocateAccession(Resource):
             if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
                 abort(403)
 
+        study_id = study_id.upper()
+
         if user_token is None:
             abort(403)
 
@@ -483,8 +498,11 @@ class AllocateAccession(Resource):
         study_id = diff[0]
         status = wsc.create_upload_folder(study_id, user_token)
         # logger.info('Study upload folder creation status: ' + status)
+        data_dict = json.loads(status)
+        os_upload_path = data_dict["message"]
+        upload_location = os_upload_path.split('/mtblight')  # FTP/Aspera root starts here
 
-        return {"new_study": study_id}
+        return {"new_study": study_id, 'ftp_upload_location': upload_location[1]}
 
 
 class CreateUploadFolder(Resource):
@@ -537,6 +555,8 @@ class CreateUploadFolder(Resource):
         if user_token is None or study_id is None:
             abort(401)
 
+        study_id = study_id.upper()
+
         # param validation
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
             abort(403)
@@ -544,5 +564,9 @@ class CreateUploadFolder(Resource):
         logger.info('Creating a new study upload folder for study %s for the user', study_id)
         status = wsc.create_upload_folder(study_id, user_token)
 
-        return status
+        data_dict = json.loads(status)
+        os_upload_path = data_dict["message"]
+        upload_location = os_upload_path.split('/mtblight')  # FTP/Aspera root starts here
+
+        return {'os_upload_path': os_upload_path, 'ftp_upload_location': upload_location[1]}
 

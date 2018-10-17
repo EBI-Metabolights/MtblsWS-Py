@@ -128,6 +128,8 @@ class StudyAssay(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
@@ -270,6 +272,8 @@ class AssayProcesses(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
@@ -457,11 +461,14 @@ class AssaySamples(Resource):
             }
         ]
     )
+
     def get(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
@@ -615,6 +622,8 @@ class AssaySamples(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
@@ -824,6 +833,8 @@ class AssayOtherMaterials(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
@@ -960,6 +971,8 @@ class AssayDataFiles(Resource):
         # param validation
         if study_id is None:
             abort(404)
+        study_id = study_id.upper()
+
         # User authentication
         user_token = None
         if 'user_token' in request.headers:

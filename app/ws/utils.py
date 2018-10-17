@@ -61,6 +61,31 @@ def copy_file(source, destiny):
         raise
 
 
+def copytree(src, dst, symlinks=False, ignore=None):
+    try:
+        if not os.path.exists(dst):
+            os.makedirs(dst, exist_ok=True)
+        for item in os.listdir(src):
+            s = os.path.join(src, item)
+            d = os.path.join(dst, item)
+            try:
+                time_diff = os.stat(s).st_mtime - os.stat(d).st_mtime
+            except FileNotFoundError:
+                time_diff = 1  # Destination folder does not exist
+
+            if os.path.isdir(d):
+                pass  # We already have this folder
+
+            if int(time_diff) >= 1:
+                if os.path.isdir(s):
+                    shutil.copytree(s, d, symlinks, ignore)
+                elif not os.path.exists(d):
+                    shutil.copy2(s, d)
+
+    except Exception:
+        raise
+
+
 def copy_files_and_folders(source, destination):
     """
       Make a copy of files/folders from origin to destnation. If destination already exists, it will be replaced.
@@ -71,15 +96,16 @@ def copy_files_and_folders(source, destination):
     try:
         # copy origin to destination
         logger.info("Copying %s to %s", source, destination)
-        shutil.copy2(source, destination)
+        copytree(source, destination)
     except FileNotFoundError:
         return False, 'No files found under ' + source
     except IsADirectoryError:
         return False, 'Please give filename(s), not only upload folder ' + source
     except Exception:
+        raise
         return False, 'Could not copy files from ' + source
 
-    return True, 'Files successfully copied from '  + source + ' to ' + destination
+    return True, 'Files successfully copied from ' + source + ' to ' + destination
 
 
 def remove_samples_from_isatab(std_path):
