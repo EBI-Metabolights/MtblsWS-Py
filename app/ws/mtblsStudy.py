@@ -383,7 +383,8 @@ class StudyFiles(Resource):
                     study_location, upload_location)
         study_files = get_all_files(study_location)
         upload_files = get_all_files(upload_location)
-        return jsonify({'studyFiles': study_files, 'upload': upload_files, 'upload_location': upload_location})
+        upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
+        return jsonify({'studyFiles': study_files, 'upload': upload_files, 'upload_location': upload_location[1]})
 
 
 class AllocateAccession(Resource):
@@ -572,5 +573,5 @@ class CreateUploadFolder(Resource):
         os_upload_path = data_dict["message"]
         upload_location = os_upload_path.split('/mtblight')  # FTP/Aspera root starts here
 
-        return {'os_upload_path': os_upload_path, 'ftp_upload_location': upload_location[1]}
+        return {'os_upload_path': os_upload_path, 'upload_location': upload_location[1]}
 
