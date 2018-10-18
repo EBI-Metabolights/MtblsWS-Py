@@ -59,6 +59,8 @@ def initialize_app(flask_app):
     api.add_resource(AllocateAccession, res_path + "/studies/create_study")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create_upload_folder")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/copy_from_upload_folder")
+    api.add_resource(saveAuditFiles, res_path + "/studies/<string:study_id>/create_audit_files")
+
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")

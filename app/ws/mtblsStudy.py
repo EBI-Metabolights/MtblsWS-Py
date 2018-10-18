@@ -8,7 +8,7 @@ from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_all_files, get_year_plus_one, get_timestamp, strip_tags
+from app.ws.utils import get_all_files, get_year_plus_one, get_timestamp, new_timestamped_folder, copy_file
 from distutils.dir_util import copy_tree
 
 
@@ -138,7 +138,6 @@ class IsaTabInvestigationFile(Resource):
 
 
 class IsaTabSampleFile(Resource):
-
     @swagger.operation(
         summary="Get ISA-Tab Sample file",
         parameters=[
@@ -375,10 +374,8 @@ class StudyFiles(Resource):
 
         logger.info('Getting list of all files for MTBLS Study %s', study_id)
         study_location = wsc.get_study_location(study_id, user_token)
-        #study_obfuscation = wsc.get_study_obfuscation(study_id, user_token)
         data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
         upload_location = data_dict["message"]
-        #upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + study_obfuscation  # Todo, read from MTBLS WS
         logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                     study_location, upload_location)
         study_files = get_all_files(study_location)
@@ -575,3 +572,94 @@ class CreateUploadFolder(Resource):
 
         return {'os_upload_path': os_upload_path, 'upload_location': upload_location[1]}
 
+
+class saveAuditFiles(Resource):
+    @swagger.operation(
+        summary="Save a copy of the metadata into an audit folder",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier to create audit record for",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        # param validation
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+            abort(403)
+
+        logger.info('Creating a new study audit folder for study %s', study_id)
+        status, dest_path = write_audit_files(study_id, user_token)
+
+        if status:
+            return {'Success': 'Created audit record for ' + study_id}
+        else:
+            return {'Error': 'Failed to create audit folder ' + dest_path}
+
+
+def write_audit_files(study_id, user_token):
+    """
+    Write back an ISA-API Investigation object directly into ISA-Tab files
+    :param user_token: User API key for accession check
+    :param study_id: Study accession number
+    :return:
+    """
+    # dest folder name is a timestamp
+    update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
+    study_location = wsc.get_study_location(study_id, user_token)
+    update_path = os.path.join(study_location, update_path_suffix)
+    dest_path = new_timestamped_folder(update_path)
+
+    try:
+        # make a copy of ISA-Tab & MAF
+        for isa_file in glob.glob(os.path.join(study_location, "?_*.t*")):
+            isa_file_name = os.path.basename(isa_file)
+            src_file = isa_file
+            dest_file = os.path.join(dest_path, isa_file_name)
+            logger.info("Copying %s to %s", src_file, dest_file)
+            copy_file(src_file, dest_file)
+    except:
+        return False, dest_path
+
+    return True, dest_path

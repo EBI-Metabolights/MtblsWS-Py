@@ -114,7 +114,7 @@ class IsaApiClient:
         :param std_path: file system path to destination folder
         :param save_investigation_copy: Keep track of changes saving a copy of the unmodified i_*.txt file
         :param save_samples_copy: Keep track of changes saving a copy of the unmodified s_*.txt file
-        :param save_assays_copy: Keep track of changes saving a copy of the unmodified a_*.txt file
+        :param save_assays_copy: Keep track of changes saving a copy of the unmodified a_*.txt and m_*.tsv files
         :return:
         """
         # dest folder name is a timestamp
@@ -142,6 +142,13 @@ class IsaApiClient:
                 assay_file_name = os.path.basename(assay_file)
                 src_file = assay_file
                 dest_file = os.path.join(dest_path, assay_file_name)
+                logger.info("Copying %s to %s", src_file, dest_file)
+                copy_file(src_file, dest_file)
+            # Also save the MAF
+            for maf in glob.glob(os.path.join(std_path, "m_*.tsv")):
+                maf_file_name = os.path.basename(maf)
+                src_file = maf
+                dest_file = os.path.join(dest_path, maf_file_name)
                 logger.info("Copying %s to %s", src_file, dest_file)
                 copy_file(src_file, dest_file)
 

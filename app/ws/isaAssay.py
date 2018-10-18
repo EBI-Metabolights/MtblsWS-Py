@@ -13,7 +13,6 @@ logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
 
-
 # Allow for a more detailed logging when on DEBUG mode
 def log_request(request_obj):
     if app.config.get('DEBUG'):

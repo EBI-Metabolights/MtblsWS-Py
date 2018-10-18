@@ -46,7 +46,7 @@ class WsClient:
     def get_study_updates_location(self, study_id, user_token):
         """
         Get location for output updates in a MetaboLights study.
-        This is where afected files are copied before applying changes, for audit purposes.
+        This is where affected files are copied before applying changes, for audit purposes.
         :param study_id:
         :param user_token:
         :return:
@@ -285,7 +285,6 @@ class WsClient:
     def create_upload_folder(self, study_id, user_token):
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        #upload_location = app.config.get('MTBLS_FTP_ROOT')
         logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
 
         resp = requests.post(

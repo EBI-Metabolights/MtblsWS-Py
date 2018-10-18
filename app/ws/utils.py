@@ -251,3 +251,4 @@ def totuples(df, text):
         for row in df.values
     ]
     return {text: d}
+
