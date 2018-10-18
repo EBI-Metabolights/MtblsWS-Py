@@ -535,6 +535,7 @@ class StudyContacts(Resource):
                 "paramType": "header",
                 "type": "Boolean",
                 "defaultValue": False,
+                "default": False,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
