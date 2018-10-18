@@ -375,13 +375,15 @@ class StudyFiles(Resource):
 
         logger.info('Getting list of all files for MTBLS Study %s', study_id)
         study_location = wsc.get_study_location(study_id, user_token)
-        study_obfuscation = wsc.get_study_obfuscation(study_id, user_token)
-        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + study_obfuscation  # Todo, read from MTBLS WS
+        #study_obfuscation = wsc.get_study_obfuscation(study_id, user_token)
+        data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
+        upload_location = data_dict["message"]
+        #upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + study_obfuscation  # Todo, read from MTBLS WS
         logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                     study_location, upload_location)
         study_files = get_all_files(study_location)
         upload_files = get_all_files(upload_location)
-        return jsonify({'studyFiles': study_files, 'upload': upload_files})
+        return jsonify({'studyFiles': study_files, 'upload': upload_files, 'upload_location': upload_location})
 
 
 class AllocateAccession(Resource):
@@ -391,7 +393,7 @@ class AllocateAccession(Resource):
         parameters=[
             {
                 "name": "study_id",
-                "description": "Existing Study Identifier to clone. Will clone standard LC-MS study if no parameter given",
+                "description": "Existing Study to clone. Will clone default LC-MS study if no parameter given",
                 "required": False,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -504,7 +506,7 @@ class AllocateAccession(Resource):
         os_upload_path = data_dict["message"]
         upload_location = os_upload_path.split('/mtblight')  # FTP/Aspera root starts here
 
-        return {"new_study": study_id, 'ftp_upload_location': upload_location[1]}
+        return {"new_study": study_id, 'upload_location': upload_location[1]}
 
 
 class CreateUploadFolder(Resource):
