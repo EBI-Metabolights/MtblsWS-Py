@@ -42,7 +42,11 @@ def new_timestamped_folder(path):
     :return:
     """
     new_folder = os.path.join(path, get_timestamp())
-    os.makedirs(new_folder)
+    try:
+        os.makedirs(new_folder)
+    except FileExistsError:
+        logger.info('Audit folder ' + new_folder + ' already exists, will use this folder.')
+
     return new_folder
 
 
