@@ -203,7 +203,7 @@ class StudyTitle(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -430,7 +430,7 @@ class StudyDescription(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -536,7 +536,7 @@ class StudyContacts(Resource):
                 "type": "Boolean",
                 "defaultValue": True,
                 "format": "application/json",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -588,8 +588,6 @@ class StudyContacts(Resource):
         else:
             abort(401)
 
-
-        logger.info('DEBUG request.headers["save_audit_copy"]: ' + request.headers["save_audit_copy"])
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -772,7 +770,7 @@ class StudyContacts(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -898,7 +896,7 @@ class StudyContacts(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -1012,7 +1010,7 @@ class StudyProtocols(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -1241,7 +1239,7 @@ class StudyProtocols(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -1361,7 +1359,7 @@ class StudyProtocols(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -1487,7 +1485,7 @@ class StudyFactors(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -1714,7 +1712,7 @@ class StudyFactors(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -1846,7 +1844,7 @@ class StudyFactors(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -1972,7 +1970,7 @@ class StudyDescriptors(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -2199,7 +2197,7 @@ class StudyDescriptors(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -2322,7 +2320,7 @@ class StudyDescriptors(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -2448,7 +2446,7 @@ class StudyPublications(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -2675,7 +2673,7 @@ class StudyPublications(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -2797,7 +2795,7 @@ class StudyPublications(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -3049,7 +3047,7 @@ class StudySources(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -3182,7 +3180,7 @@ class StudySamples(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -3486,7 +3484,7 @@ class StudySamples(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -3732,7 +3730,7 @@ class StudyOtherMaterials(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -3984,7 +3982,7 @@ class StudyOtherMaterials(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
@@ -4108,7 +4106,7 @@ class StudyOtherMaterials(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False

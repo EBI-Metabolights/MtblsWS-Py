@@ -120,39 +120,40 @@ class IsaApiClient:
         # dest folder name is a timestamp
         update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
         update_path = os.path.join(std_path, update_path_suffix)
-        dest_path = new_timestamped_folder(update_path)
+        if save_investigation_copy or save_samples_copy or save_assays_copy:  # Only create audit folder when requested
+            dest_path = new_timestamped_folder(update_path)
 
-        # make a copy before applying changes
-        if save_investigation_copy:
-            src_file = os.path.join(std_path, self.inv_filename)
-            dest_file = os.path.join(dest_path, self.inv_filename)
-            logger.info("Copying %s to %s", src_file, dest_file)
-            copy_file(src_file, dest_file)
-
-        if save_samples_copy:
-            for sample_file in glob.glob(os.path.join(std_path, "s_*.txt")):
-                sample_file_name = os.path.basename(sample_file)
-                src_file = sample_file
-                dest_file = os.path.join(dest_path, sample_file_name)
+            # make a copy before applying changes
+            if save_investigation_copy:
+                src_file = os.path.join(std_path, self.inv_filename)
+                dest_file = os.path.join(dest_path, self.inv_filename)
                 logger.info("Copying %s to %s", src_file, dest_file)
                 copy_file(src_file, dest_file)
 
-        if save_assays_copy:
-            for assay_file in glob.glob(os.path.join(std_path, "a_*.txt")):
-                assay_file_name = os.path.basename(assay_file)
-                src_file = assay_file
-                dest_file = os.path.join(dest_path, assay_file_name)
-                logger.info("Copying %s to %s", src_file, dest_file)
-                copy_file(src_file, dest_file)
-            # Also save the MAF
-            for maf in glob.glob(os.path.join(std_path, "m_*.tsv")):
-                maf_file_name = os.path.basename(maf)
-                src_file = maf
-                dest_file = os.path.join(dest_path, maf_file_name)
-                logger.info("Copying %s to %s", src_file, dest_file)
-                copy_file(src_file, dest_file)
+            if save_samples_copy:
+                for sample_file in glob.glob(os.path.join(std_path, "s_*.txt")):
+                    sample_file_name = os.path.basename(sample_file)
+                    src_file = sample_file
+                    dest_file = os.path.join(dest_path, sample_file_name)
+                    logger.info("Copying %s to %s", src_file, dest_file)
+                    copy_file(src_file, dest_file)
 
-        logger.info("Writing %s to %s", self.inv_filename, std_path)
-        dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=False)
+            if save_assays_copy:
+                for assay_file in glob.glob(os.path.join(std_path, "a_*.txt")):
+                    assay_file_name = os.path.basename(assay_file)
+                    src_file = assay_file
+                    dest_file = os.path.join(dest_path, assay_file_name)
+                    logger.info("Copying %s to %s", src_file, dest_file)
+                    copy_file(src_file, dest_file)
+                # Also save the MAF
+                for maf in glob.glob(os.path.join(std_path, "m_*.tsv")):
+                    maf_file_name = os.path.basename(maf)
+                    src_file = maf
+                    dest_file = os.path.join(dest_path, maf_file_name)
+                    logger.info("Copying %s to %s", src_file, dest_file)
+                    copy_file(src_file, dest_file)
+
+            logger.info("Writing %s to %s", self.inv_filename, std_path)
+            dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=False)
 
         return

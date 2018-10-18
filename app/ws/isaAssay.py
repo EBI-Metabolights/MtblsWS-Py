@@ -587,7 +587,7 @@ class AssaySamples(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
+                "defaultValue": True,
                 "format": "application/json",
                 "required": False,
                 "allowMultiple": False
