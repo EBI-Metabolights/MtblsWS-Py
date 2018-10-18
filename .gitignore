@@ -81,3 +81,4 @@ ssl/
 tests/.pytest_cache/
 examples/
 venv37
+old_venv37

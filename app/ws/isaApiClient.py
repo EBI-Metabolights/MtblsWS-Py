@@ -153,7 +153,7 @@ class IsaApiClient:
                     logger.info("Copying %s to %s", src_file, dest_file)
                     copy_file(src_file, dest_file)
 
-            logger.info("Writing %s to %s", self.inv_filename, std_path)
-            dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=False)
+        logger.info("Writing %s to %s", self.inv_filename, std_path)
+        dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=False)
 
         return
