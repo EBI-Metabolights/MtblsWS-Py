@@ -534,10 +534,9 @@ class StudyContacts(Resource):
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
                 "type": "Boolean",
-                "defaultValue": False,
-                "default": False,
+                "defaultValue": True,
                 "format": "application/json",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -589,6 +588,8 @@ class StudyContacts(Resource):
         else:
             abort(401)
 
+
+        logger.info('DEBUG request.headers["save_audit_copy"]: ' + request.headers["save_audit_copy"])
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
