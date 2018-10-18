@@ -11,8 +11,10 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.14.3"
+WS_APP_VERSION = "0.14.4"
 API_VERSION = "0.13.0"
+
+MTBLS_FTP_ROOT = "/net/isilon3/ftp_private/mtblight/dev/"
 
 WS_APP_NAME = "MtblsWS-Py"
 WS_APP_DESCRIPTION = "MetaboLights Python-based REST WebService"
