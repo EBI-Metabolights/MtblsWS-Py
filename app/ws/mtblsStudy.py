@@ -373,10 +373,12 @@ class StudyFiles(Resource):
         if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
             abort(403)
 
-        logger.info('Getting list of all files for MTBLS Study %s, using API-Key %s', study_id, user_token)
+        logger.info('Getting list of all files for MTBLS Study %s', study_id)
         study_location = wsc.get_study_location(study_id, user_token)
         study_obfuscation = wsc.get_study_obfuscation(study_id, user_token)
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + study_obfuscation  # Todo, read from MTBLS WS
+        logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
+                    study_location, upload_location)
         study_files = get_all_files(study_location)
         upload_files = get_all_files(upload_location)
         return jsonify({'studyFiles': study_files, 'upload': upload_files})
