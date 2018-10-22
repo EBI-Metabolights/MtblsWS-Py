@@ -8,7 +8,8 @@ from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_all_files, get_year_plus_one, get_timestamp, new_timestamped_folder, copy_file
+from app.ws.utils import get_all_files, get_year_plus_one, get_timestamp, new_timestamped_folder, copy_file, \
+    stream_files_to_browser
 from distutils.dir_util import copy_tree
 
 
@@ -80,7 +81,7 @@ class IsaTabInvestigationFile(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -163,7 +164,7 @@ class IsaTabSampleFile(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -256,7 +257,7 @@ class IsaTabAssayFile(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -340,7 +341,7 @@ class StudyFiles(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -663,3 +664,81 @@ def write_audit_files(study_id, user_token):
         return False, dest_path
 
     return True, dest_path
+
+
+class DownloadFiles(Resource):
+
+    @swagger.operation(
+        summary="Download a given file to the browser",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "file_name",
+                "description": "Comma-separated files you want to download, names only",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+            abort(403)
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('file_name', help='Filename(s)')
+        file_names = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            file_names = args['file_name'].lower() if args['file_name'] else None
+        if not file_names:
+            logger.warning("Missing filename(s).")
+            abort(400, "Missing filename(s).")
+
+        study_location = wsc.get_study_location(study_id, user_token)
+
+       # for file_name in file_names.split(','):
+        #    stream_files_to_browser(study_location, file_name)
+
+        return stream_files_to_browser(study_location, file_names) # jsonify({'Success': 'File(s) downloaded'})

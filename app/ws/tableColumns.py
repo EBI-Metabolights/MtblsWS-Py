@@ -72,7 +72,7 @@ class SimpleColumns(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -190,7 +190,7 @@ class ComplexColumns(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -305,7 +305,7 @@ class ColumnsRows(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],

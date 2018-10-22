@@ -146,7 +146,7 @@ class MetaboliteAnnotationFile(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -303,7 +303,7 @@ class MetaboliteAnnotationFile(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -413,7 +413,7 @@ class ReadMetaboliteAnnotationFile(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -501,7 +501,7 @@ class ReadMetaboliteAnnotationFile(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -603,7 +603,7 @@ class ReadMetaboliteAnnotationFile(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],
@@ -725,7 +725,7 @@ class ReadMetaboliteAnnotationFile(Resource):
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": False,
+                "required": True,
                 "allowMultiple": False
             }
         ],

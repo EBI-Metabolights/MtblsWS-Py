@@ -60,7 +60,7 @@ def initialize_app(flask_app):
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create_upload_folder")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/copy_from_upload_folder")
     api.add_resource(saveAuditFiles, res_path + "/studies/<string:study_id>/create_audit_files")
-
+    # api.add_resource(DownloadFiles, res_path + "/studies/<string:study_id>/download_files") #Not supported in Swagger2
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
