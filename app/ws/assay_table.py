@@ -123,10 +123,12 @@ class AssayTable(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # wsc.get_study_location(study_id, user_token)
         assay_file_name = study_path + "/" + assay_file_name
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
@@ -222,10 +224,12 @@ class EditAssayFile(Resource):
 
         logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         assay_file_name = study_path + "/" + assay_file_name
         logger.info('Trying to load Assay (%s) for Study %s', assay_file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
@@ -323,10 +327,12 @@ class EditAssayFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         assay_file_name = study_path + "/" + assay_file_name
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
@@ -434,10 +440,12 @@ class EditAssayFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         assay_file_name = study_path + "/" + assay_file_name
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
@@ -541,10 +549,12 @@ class EditAssayFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # wsc.get_study_location(study_id, user_token)
         assay_file_name = study_path + "/" + assay_file_name
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')

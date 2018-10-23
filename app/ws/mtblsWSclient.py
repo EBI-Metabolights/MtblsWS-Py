@@ -30,6 +30,21 @@ class WsClient:
         location = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), location.strip('/'))
         return location
 
+    def get_study_location_and_obfuscation_code(self, study_id, user_token):
+        """
+        Get the actual location of the study files in the File System
+
+        :param study_id: Identifier of the study in MetaboLights
+        :param user_token: User API token. Used to check for permissions
+        """
+        logger.info('Getting actual location for Study %s on the filesystem', study_id)
+        study = self.get_study(study_id, user_token)
+        location = study["content"]["studyLocation"]
+        obfuscation_code = study["content"]["obfuscationCode"]
+        logger.info('... found study folder %s', location)
+        location = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), location.strip('/'))
+        return location, obfuscation_code
+
     def get_study_obfuscation(self, study_id, user_token):
         """
         Get the obfuscation code of the study files in the File System
@@ -72,7 +87,6 @@ class WsClient:
 
     def get_sample_names(self, study_id, user_token):
         sample_json = self.get
-
 
     def get_study(self, study_id, user_token):
         """
@@ -243,6 +257,12 @@ class WsClient:
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         read_access = False
         write_access = False
+        obfuscation_code = None
+        study_location = None
+        study_status = None
+        release_date = None
+        submission_date = None
+
         try:
             resp = requests.post(
                 url,
@@ -255,14 +275,19 @@ class WsClient:
 
             json_resp = resp.json()
             import json
-            cont = json.loads(json_resp['content'])
-            read_access = cont['read']
-            write_access = cont['write']
-            logger.info('... found permissions for reading: %s and writing: %s', read_access, write_access)
+            content = json.loads(json_resp['content'])
+            read_access = content['read']
+            write_access = content['write']
+            obfuscation_code = content['obfuscationCode']
+            study_location = content['studyLocation']
+            release_date = content['releaseDate']
+            submission_date = content['submissionDate']
+            study_status = content['studyStatus']
+            logger.info('... found permissions on %s for reading: %s and writing: %s', study_id, read_access, write_access)
         except:
-            logger.info("Connection refused by the server..")
+            logger.info("Connection refused by the server or parameters were missing...")
 
-        return read_access, write_access
+        return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
 
     def get_queue_folder(self):
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/getQueueFolder"

@@ -125,10 +125,12 @@ class SimpleColumns(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         file_name = study_path + "/" + file_name
 
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
@@ -236,10 +238,12 @@ class ComplexColumns(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         file_name = study_path + "/" + file_name
 
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
@@ -355,10 +359,12 @@ class ColumnsRows(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         file_name = study_path + "/" + file_name
 
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
@@ -441,10 +447,12 @@ class CopyFilesFolders(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
         upload_path = data_dict["message"]
 

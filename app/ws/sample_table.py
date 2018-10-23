@@ -86,11 +86,14 @@ class EditSampleFile(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('sample Table: Getting ISA-JSON Study %s, using API-Key %s', study_id, user_token)
+
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         sample_file_name = study_path + "/" + sample_file_name
         logger.info('Trying to load sample (%s) for Study %s', sample_file_name, study_id)
         # Get the sample table or create a new one if it does not already exist
@@ -187,10 +190,12 @@ class EditSampleFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         sample_file_name = study_path + "/" + sample_file_name
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
@@ -297,10 +302,12 @@ class EditSampleFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         sample_file_name = study_path + "/" + sample_file_name
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
@@ -403,10 +410,12 @@ class EditSampleFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # .get_study_location(study_id, user_token)
         sample_file_name = study_path + "/" + sample_file_name
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')

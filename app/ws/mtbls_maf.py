@@ -192,10 +192,12 @@ class MetaboliteAnnotationFile(Resource):
 
         logger.info('MAF: Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # wsc.get_study_location(study_id, user_token)
 
         # Fixed colunm headers to look for in the MAF, defaults to MS
         sample_name = 'Sample Name'
@@ -350,10 +352,12 @@ class MetaboliteAnnotationFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # wsc.get_study_location(study_id, user_token)
         annotation_file_name = study_path + "/" + annotation_file_name
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
@@ -448,11 +452,14 @@ class ReadMetaboliteAnnotationFile(Resource):
             user_token = request.headers["user_token"]
 
         logger.info('MAF: Getting ISA-JSON Study %s', study_id)
+
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path =  study_location  # wsc.get_study_location(study_id, user_token)
         annotation_file_name = study_path + "/" + annotation_file_name
         logger.info('Trying to load MAF (%s) for Study %s', annotation_file_name, study_id)
         # Get the MAF table or create a new one if it does not already exist
@@ -549,10 +556,12 @@ class ReadMetaboliteAnnotationFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # wsc.get_study_location(study_id, user_token)
         annotation_file_name = study_path + "/" + annotation_file_name
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
@@ -659,15 +668,16 @@ class ReadMetaboliteAnnotationFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path =  study_location  # wsc.get_study_location(study_id, user_token)
         annotation_file_name = study_path + "/" + annotation_file_name
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
-        # TODO, loop through mafdata elements, remove row add the new row
 
         for row in new_rows:
             try:
@@ -766,10 +776,12 @@ class ReadMetaboliteAnnotationFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
-        study_path = wsc.get_study_location(study_id, user_token)
+        study_path = study_location  # wsc.get_study_location(study_id, user_token)
         annotation_file_name = study_path + "/" + annotation_file_name
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
