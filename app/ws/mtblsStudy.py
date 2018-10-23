@@ -496,7 +496,7 @@ class AllocateAccession(Resource):
         number = 0
         while existing_studies == new_studies:
             number = number + 1
-            if number == 10:
+            if number == 15:
                 abort(408)
 
             logger.info('Checking if the new study has been processed by the queue')
