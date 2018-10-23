@@ -457,15 +457,15 @@ class AllocateAccession(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
-
         # param validation
         if study_id is None:
             study_id = 'MTBLS121'  # This is the standard LC-MS study. This is private but safe for all to clone
-        else:
-            if not read_access:
-                abort(403)
+
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+
+        if not read_access:
+            abort(403)
 
         study_id = study_id.upper()
 
