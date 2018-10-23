@@ -434,7 +434,7 @@ class CopyFilesFolders(Resource):
             }
         ]
     )
-    def post(self, study_id):
+    def get(self, study_id):
 
         # param validation
         if study_id is None:
