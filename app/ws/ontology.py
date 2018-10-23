@@ -146,7 +146,7 @@ class Ontology(Resource):
                 res_cls = []
                 # exact match
                 if term.lower() in [cls.label[0].lower() for cls in clses]:
-                    c = onto.search_one(label=term)
+                    c = onto.search_one(label=term.lower())
                     subs = info.get_subs(c)
                     res_cls = [c] + subs
 
@@ -167,7 +167,7 @@ class Ontology(Resource):
             # if branch == null, search whole ontology
             if len(result) == 0:
                 try:
-                    cls = onto.search_one(label=term)
+                    cls = onto.search_one(label=term.lower())
                     enti = entity(name=cls.label[0], iri=cls.iri, ontoName='MTBLS')
                     result.append(enti)
                 except Exception as e:
@@ -203,48 +203,6 @@ class Ontology(Resource):
 
         else:
             print('Error')
-
-        # Loading branch
-        # res_cls = []
-        # if branch:
-        #     start_cls = onto.search_one(label=branch)
-        #     clses = info.get_subs(start_cls)
-        #
-        #     # Roles / Characteristics/ Publication/design descriptor/unit/factors
-        #     if branch in ["roles", "characteristics", "publication", "design descriptor", "unit", "factors"]:  # go sub
-        #
-        #         if term:  # if term != null
-        #
-        #             done = False
-        #             # exact match
-        #             if term.lower() in [cls.label[0].lower() for cls in clses]:
-        #                 subs = info.get_subs(term)
-        #                 res_cls = [term] + subs
-        #                 done = True
-        #
-        #             # if not exact match require substring + zooma
-        #             if not done:
-        #                 # substring match / fuzzy match
-        #                 for cls in clses:
-        #                     if term.lower() in cls.label[0].lower():
-        #                         res_cls.append(cls.label[0])
-        #
-        #                 # zooma
-        #                 try:
-        #                     zoomaTerms = getZoomaTerm(term)
-        #                     temp = list(zoomaTerms.keys())
-        #                     res_cls = res_cls + temp
-        #                 except Exception as e:
-        #                     print(e.args)
-        #
-        #             # OLS exact matching
-        #
-        #             # Bioportal exact matching
-        #
-        #
-        #
-        #         else:  # if term == null, return the whole branch
-        #             res_cls = clses
 
             # # taxonomy
             # if branch == 'taxonomy' and term != None:
