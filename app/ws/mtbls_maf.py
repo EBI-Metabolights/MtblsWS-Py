@@ -250,7 +250,7 @@ class MetaboliteAnnotationFile(Resource):
         # Get the rows from the maf
         df_data_dict = totuples(maf_df.reset_index(), 'rows')
 
-        return {'mafHeader': df_header, 'mafData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     """Create MAF for a given study"""
     @swagger.operation(
@@ -379,7 +379,7 @@ class MetaboliteAnnotationFile(Resource):
                 ])
                 for row in df.values
             ]
-            return {'mafdata': d}
+            return {'data': d}
 
         df_dict = totuples(maf_df.reset_index(), row)
 
@@ -468,7 +468,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(maf_df)
 
-        return {'mafHeader': df_header, 'mafData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
         summary="Add a new row to the given annotation file",
@@ -531,13 +531,13 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_row = data_dict['mafdata']  # Use "index:n" element from the (JSON) row, this is the original row number
+            new_row = data_dict['data']  # Use "index:n" element from the (JSON) row, this is the original row number
         except KeyError:
             new_row = None
 
         if new_row is None:
             abort(404, "Please provide valid data for updated new row(s). "
-                       "The JSON string has to have a 'mafdata' element")
+                       "The JSON string has to have a 'data' element")
 
         for element in new_row:
             element.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
@@ -571,7 +571,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(maf_df)
 
-        return {'mafHeader': df_header, 'mafData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
         summary="Update existing rows in the given annotation file",
@@ -638,13 +638,13 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_rows = data_dict['mafdata']  # Use "index:n" element from the (JSON) row, this is the original row number
+            new_rows = data_dict['data']  # Use "index:n" element from the (JSON) row, this is the original row number
         except (KeyError):
             new_rows = None
 
         if new_rows is None:
             abort(404, "Please provide valid data for updated new row(s). "
-                       "The JSON string has to have a 'mafdata' element")
+                       "The JSON string has to have a 'data' element")
 
         for row in new_rows:
             try:
@@ -693,7 +693,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(maf_df)
 
-        return {'mafHeader': df_header, 'mafData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
         summary="Delete a row of the given annotation file",
@@ -799,4 +799,4 @@ class ReadMetaboliteAnnotationFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(maf_df)
 
-        return {'mafHeader': df_header, 'mafData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
