@@ -82,7 +82,6 @@ class WsClient:
         release_date = study_json["content"]["studyPublicReleaseDate"]
         # 2012-02-14 00:00:00.0
         readable = datetime.fromtimestamp(release_date/1000).strftime('%Y-%m-%d %H:%M:%S.%f')
-
         return [std_status, readable]
 
     def get_sample_names(self, study_id, user_token):

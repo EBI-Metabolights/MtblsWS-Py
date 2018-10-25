@@ -758,9 +758,4 @@ class DownloadFiles(Resource):
             logger.warning("Missing filename(s).")
             abort(400, "Missing filename(s).")
 
-        #study_location = wsc.get_study_location(study_id, user_token)
-
-       # for file_name in file_names.split(','):
-        #    stream_files_to_browser(study_location, file_name)
-
-        return stream_files_to_browser(study_location, file_names) # jsonify({'Success': 'File(s) downloaded'})
+        return stream_files_to_browser(study_location, file_names)

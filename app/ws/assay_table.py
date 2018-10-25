@@ -128,8 +128,7 @@ class AssayTable(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # wsc.get_study_location(study_id, user_token)
-        assay_file_name = study_path + "/" + assay_file_name
+        assay_file_name = study_location + "/" + assay_file_name
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
         assay_df = assay_df.replace(np.nan, '', regex=True)
@@ -229,8 +228,7 @@ class EditAssayFile(Resource):
         if not read_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        assay_file_name = study_path + "/" + assay_file_name
+        assay_file_name = study_location + "/" + assay_file_name
         logger.info('Trying to load Assay (%s) for Study %s', assay_file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
@@ -332,8 +330,7 @@ class EditAssayFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        assay_file_name = study_path + "/" + assay_file_name
+        assay_file_name = study_location + "/" + assay_file_name
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
         assay_df = assay_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -445,8 +442,8 @@ class EditAssayFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        assay_file_name = study_path + "/" + assay_file_name
+        # TODO, don't use xNIX notation for file separator
+        assay_file_name = study_location + "/" + assay_file_name
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
         assay_df = assay_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -460,7 +457,7 @@ class EditAssayFile(Resource):
             if row_index_int is not None:
                 assay_df = assay_df.drop(assay_df.index[row_index_int])  # Remove the old row from the spreadsheet
                 # pop the "index:n" from the new_row before updating
-                row.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
+                row.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
                 assay_df = insert_row(row_index_int, assay_df, row)  # Update the row in the spreadsheet
 
         # Write the new row back in the file
@@ -554,8 +551,7 @@ class EditAssayFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # wsc.get_study_location(study_id, user_token)
-        assay_file_name = study_path + "/" + assay_file_name
+        assay_file_name = study_location + "/" + assay_file_name
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
         assay_df = assay_df.replace(np.nan, '', regex=True)  # Remove NaN

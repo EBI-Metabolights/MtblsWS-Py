@@ -93,8 +93,7 @@ class EditSampleFile(Resource):
         if not read_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        sample_file_name = study_path + "/" + sample_file_name
+        sample_file_name = study_location + "/" + sample_file_name
         logger.info('Trying to load sample (%s) for Study %s', sample_file_name, study_id)
         # Get the sample table or create a new one if it does not already exist
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
@@ -106,7 +105,7 @@ class EditSampleFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(sample_df)
 
-        return {'sampleHeader': df_header, 'sampleData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
         summary="Add a new row to the given sample file",
@@ -169,13 +168,13 @@ class EditSampleFile(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_row = data_dict['sampleData']  # Use "index:n" element from the (JSON) row, this is the original row number
+            new_row = data_dict['data']  # Use "index:n" element from the (JSON) row, this is the original row number
         except (KeyError):
             new_row = None
 
         if new_row is None:
             abort(404, "Please provide valid data for updated new row(s). "
-                       "The JSON string has to have a 'sampleData' element")
+                       "The JSON string has to have a 'data' element")
 
         for element in new_row:
             element.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
@@ -195,8 +194,7 @@ class EditSampleFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        sample_file_name = study_path + "/" + sample_file_name
+        sample_file_name = study_location + "/" + sample_file_name
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
         sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -210,7 +208,7 @@ class EditSampleFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(sample_df)
 
-        return {'sampleHeader': df_header, 'sampleData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
         summary="Update existing rows in the given sample file",
@@ -277,13 +275,13 @@ class EditSampleFile(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_rows = data_dict['sampleData']  # Use "index:n" element from the (JSON) row, this is the original row number
+            new_rows = data_dict['data']  # Use "index:n" element from the (JSON) row, this is the original row number
         except (KeyError):
             new_rows = None
 
         if new_rows is None:
             abort(404, "Please provide valid data for updated new row(s). "
-                       "The JSON string has to have a 'sampleData' element")
+                       "The JSON string has to have a 'data' element")
 
         for row in new_rows:
             try:
@@ -307,8 +305,7 @@ class EditSampleFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        sample_file_name = study_path + "/" + sample_file_name
+        sample_file_name = study_location + "/" + sample_file_name
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
         sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -333,7 +330,7 @@ class EditSampleFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(sample_df)
 
-        return {'sampleHeader': df_header, 'sampleData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
         summary="Delete a row of the given sample file",
@@ -415,8 +412,7 @@ class EditSampleFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        sample_file_name = study_path + "/" + sample_file_name
+        sample_file_name = study_location + "/" + sample_file_name
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
         sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -440,4 +436,4 @@ class EditSampleFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(sample_df)
 
-        return {'sampleHeader': df_header, 'sampleData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}

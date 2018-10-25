@@ -26,16 +26,20 @@ class IsaApiClient:
 
         return
 
-    def get_isa_json(self, study_id, api_key):
+    def get_isa_json(self, study_id, api_key, study_location=None):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
         :param api_key: User API key for accession check
+        :param study_location: The filesystem location of the study
         :return: an ISA-API Investigation object
         """
         start = time.time()
 
-        path = self.wsc.get_study_location(study_id, api_key)
+        path = study_location
+        if study_location is None:
+            path = self.wsc.get_study_location(study_id, api_key)
+
         # try the new parser first
         isa_json = None
         try:
@@ -83,16 +87,21 @@ class IsaApiClient:
 
         return investigation
 
-    def get_isa_study(self, study_id, api_key, skip_load_tables=False):
+    def get_isa_study(self, study_id, api_key, skip_load_tables=False, study_location=None):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
         :param api_key: User API key for accession check
         :param skip_load_tables: speed-up reading by skiping loading assay and sample tables
+        :param study_location: filessystem location of the study
         :return: a tuple consisting in ISA-Study obj, ISA-Investigation obj
                 and path to the Study in the file system
         """
-        std_path = self.wsc.get_study_location(study_id, api_key)
+
+        std_path = study_location
+        if study_location is None:  # Only check if we do not have the location
+            std_path = self.wsc.get_study_location(study_id, api_key)
+
         try:
             i_filename = glob.glob(os.path.join(std_path, "i_*.txt"))[0]
             fp = open(i_filename)

@@ -146,9 +146,14 @@ class StudyAssay(Resource):
 
         logger.info('Getting Assay %s for %s', filename, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         obj_list = isa_study.assays
         found = list()
@@ -299,9 +304,14 @@ class AssayProcesses(Resource):
 
         logger.info('Getting Processes for Assay %s in %s', assay_filename, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         assay_list = list()
         warns = []
@@ -488,9 +498,14 @@ class AssaySamples(Resource):
 
         logger.info('Getting Samples for Assay %s in %s', assay_filename, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         assay_list = list()
         warns = []
@@ -668,9 +683,14 @@ class AssaySamples(Resource):
             abort(400, err)
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         logger.info('Updating Samples for Assay %s in %s', assay_filename, study_id)
         assay = get_assay(isa_study.assays, assay_filename)
@@ -701,7 +721,8 @@ class AssaySamples(Resource):
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
-                            save_samples_copy=save_audit_copy, save_assays_copy=save_audit_copy)
+                            save_samples_copy=save_audit_copy,
+                            save_assays_copy=save_audit_copy)
 
         sch = SampleSchema(many=True)
         if list_only:
@@ -854,9 +875,14 @@ class AssayOtherMaterials(Resource):
 
         logger.info('Getting Other Materials for Assay %s in %s', assay_filename, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         assay_list = list()
         warns = []
@@ -992,9 +1018,14 @@ class AssayDataFiles(Resource):
 
         logger.info('Getting Data Files for Assay %s in %s', assay_filename, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         assay_list = list()
         warns = []

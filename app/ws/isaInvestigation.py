@@ -107,9 +107,14 @@ class IsaInvestigation(Resource):
 
         logger.info('Getting Investigation %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=investigation_only)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=investigation_only,
+                                                         study_location=study_location)
 
         logger.info('Got %s', isa_inv.identifier)
 
@@ -213,17 +218,22 @@ class IsaInvestigation(Resource):
         # update Study details
         logger.info('Updating Study Publication details for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        # isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         isa_inv = updated_inv
 
         logging.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
-                            save_samples_copy=save_audit_copy, save_assays_copy=save_audit_copy)
+                            save_samples_copy=save_audit_copy,
+                            save_assays_copy=save_audit_copy)
         logger.info('Updated %s', updated_inv.title)
 
         sch = IsaInvestigationSchema()

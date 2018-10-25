@@ -130,8 +130,7 @@ class SimpleColumns(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        file_name = study_path + "/" + file_name
+        file_name = study_location + "/" + file_name
 
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
         table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -243,8 +242,7 @@ class ComplexColumns(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        file_name = study_path + "/" + file_name
+        file_name = study_location + "/" + file_name
 
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
         table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -364,8 +362,7 @@ class ColumnsRows(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
-        file_name = study_path + "/" + file_name
+        file_name = study_location + "/" + file_name
 
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
         table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -452,11 +449,10 @@ class CopyFilesFolders(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # .get_study_location(study_id, user_token)
         data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
         upload_path = data_dict["message"]
 
-        status, message = copy_files_and_folders(upload_path, study_path)
+        status, message = copy_files_and_folders(upload_path, study_location)
         if status:
             return {'Success': 'Copied files from ' + upload_path}
         else:

@@ -8,7 +8,9 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
 from flask_restful_swagger import swagger
 from flask import current_app as app
+from datetime import datetime
 import logging
+
 
 
 logger = logging.getLogger('wslog')
@@ -96,9 +98,11 @@ class IsaJsonStudy(Resource):
 
         logger.info('Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_obj = iac.get_isa_json(study_id, user_token)
+        isa_obj = iac.get_isa_json(study_id, user_token, study_location=study_location)
         str_inv = json.dumps({'investigation': isa_obj}, default=serialize_investigation, sort_keys=True)
         logger.info('... found Study: %s %s', isa_obj.get('title'), isa_obj.get('identifier'))
         return isa_obj
@@ -162,9 +166,14 @@ class StudyTitle(Resource):
 
         logger.info('Getting Study title for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         title = isa_study.title
         logger.info('Got %s', title)
         return jsonify({"title": title})
@@ -257,9 +266,14 @@ class StudyTitle(Resource):
         # update study title
         logger.info('Updating Study title for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         isa_study.title = new_title
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
@@ -325,10 +339,15 @@ class StudyReleaseDateAndStatus(Resource):
 
         logger.info('Getting Study details for %s, using API-Key %s', study_id, user_token)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-
-        return jsonify({"releaseDateAndStatus": wsc.get_study_status_and_release_date(study_id, user_token)})
+        # Todo, refactor
+        # 2012-02-14 00:00:00.0
+        readable_date = datetime.fromtimestamp(release_date / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')
+        # return jsonify({"releaseDateAndStatus": wsc.get_study_status_and_release_date(study_id, user_token)})
+        return jsonify({"releaseDateAndStatus": [study_status, readable_date]})
 
 
 class StudyDescription(Resource):
@@ -389,9 +408,14 @@ class StudyDescription(Resource):
 
         logger.info('Getting Study description for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         description = isa_study.description
         logger.info('Got %s', description)
         return jsonify({"description": description})
@@ -488,9 +512,14 @@ class StudyDescription(Resource):
         # update study description
         logger.info('Updating Study description for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         isa_study.description = new_description
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
@@ -610,9 +639,14 @@ class StudyContacts(Resource):
         # Add new contact
         logger.info('Adding new Contact %s for %s', new_contact.email, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         # check for contact added already
         for index, person in enumerate(isa_study.contacts):
             if person.email == new_contact.email:
@@ -701,9 +735,13 @@ class StudyContacts(Resource):
 
         logger.info('Getting Contacts %s for Study %s', email, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         obj_list = isa_study.contacts
         # Using context to avoid envelop tags in contained objects
@@ -841,9 +879,13 @@ class StudyContacts(Resource):
         # update contact details
         logger.info('Updating Contact details for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         person_found = False
         for index, person in enumerate(isa_study.contacts):
@@ -955,9 +997,14 @@ class StudyContacts(Resource):
         # delete contact
         logger.info('Deleting contact %s for %s', email, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         person_found = False
         for index, person in enumerate(isa_study.contacts):
             if person.email == email:
@@ -1087,9 +1134,13 @@ class StudyProtocols(Resource):
         # Add new protocol
         logger.info('Adding new Protocol %s for %s', new_obj.name, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         # check for protocol added already
         obj = isa_study.get_prot(obj_name)
@@ -1177,9 +1228,13 @@ class StudyProtocols(Resource):
 
         logger.info('Getting Study protocols for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         obj_list = isa_study.protocols
         for objProt in obj_list:
@@ -1298,9 +1353,13 @@ class StudyProtocols(Resource):
         # delete protocol
         logger.info('Deleting protocol %s for %s', obj_name, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         obj = isa_study.get_prot(obj_name)
         if not obj:
@@ -1430,9 +1489,14 @@ class StudyProtocols(Resource):
         # update protocol details
         logger.info('Updating Protocol details for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         found = False
         for index, protocol in enumerate(isa_study.protocols):
             if protocol.name.lower() == obj_name:
@@ -3138,7 +3202,8 @@ class StudySources(Resource):
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
-                            save_samples_copy=True, save_assays_copy=True)
+                            save_samples_copy=True,
+                            save_assays_copy=True)
         logger.info('Updated %s', updated_obj.name)
 
         return SourceSchema().dump(updated_obj)
@@ -3301,7 +3366,8 @@ class StudySamples(Resource):
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
-                            save_samples_copy=True, save_assays_copy=True)
+                            save_samples_copy=True,
+                            save_assays_copy=True)
 
         sch = ProcessSchema(many=True)
         return extended_response(data={'processSequence': sch.dump(added_process).data},
@@ -3596,7 +3662,8 @@ class StudySamples(Resource):
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
-                            save_samples_copy=save_audit_copy, save_assays_copy=save_audit_copy)
+                            save_samples_copy=save_audit_copy,
+                            save_assays_copy=save_audit_copy)
 
         sch = SampleSchema(many=True)
         if list_only:
@@ -3824,7 +3891,8 @@ class StudyOtherMaterials(Resource):
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
-                            save_samples_copy=True, save_assays_copy=True)
+                            save_samples_copy=True,
+                            save_assays_copy=True)
         logger.info('Added %s', new_material.name)
 
         sch = OtherMaterialSchema()
@@ -4194,7 +4262,8 @@ class StudyOtherMaterials(Resource):
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path,
                             save_investigation_copy=save_audit_copy,
-                            save_samples_copy=True, save_assays_copy=True)
+                            save_samples_copy=True,
+                            save_assays_copy=True)
         logger.info('Updated %s', updated_obj.name)
 
         return SampleSchema().dump(updated_obj)

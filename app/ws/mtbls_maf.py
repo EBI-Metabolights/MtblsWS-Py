@@ -197,8 +197,6 @@ class MetaboliteAnnotationFile(Resource):
         if not read_access:
             abort(403)
 
-        study_path = study_location  # wsc.get_study_location(study_id, user_token)
-
         # Fixed colunm headers to look for in the MAF, defaults to MS
         sample_name = 'Sample Name'
         assay_name = 'MS Assay Name'
@@ -211,8 +209,8 @@ class MetaboliteAnnotationFile(Resource):
 
         col_names = [sample_name, assay_name]
 
-        annotation_file_name = study_path + "/" + annotation_file_name
-        assay_file_name = study_path + "/" + assay_file_name
+        annotation_file_name = study_location + "/" + annotation_file_name
+        assay_file_name = study_location + "/" + assay_file_name
 
         # Get the MAF table or create a new one if it does not already exist
         try:
@@ -357,8 +355,7 @@ class MetaboliteAnnotationFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # wsc.get_study_location(study_id, user_token)
-        annotation_file_name = study_path + "/" + annotation_file_name
+        annotation_file_name = study_location + "/" + annotation_file_name
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)
@@ -459,8 +456,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         if not read_access:
             abort(403)
 
-        study_path =  study_location  # wsc.get_study_location(study_id, user_token)
-        annotation_file_name = study_path + "/" + annotation_file_name
+        annotation_file_name = study_location + "/" + annotation_file_name
         logger.info('Trying to load MAF (%s) for Study %s', annotation_file_name, study_id)
         # Get the MAF table or create a new one if it does not already exist
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
@@ -561,8 +557,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # wsc.get_study_location(study_id, user_token)
-        annotation_file_name = study_path + "/" + annotation_file_name
+        annotation_file_name = study_location + "/" + annotation_file_name
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -673,8 +668,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path =  study_location  # wsc.get_study_location(study_id, user_token)
-        annotation_file_name = study_path + "/" + annotation_file_name
+        annotation_file_name = study_location + "/" + annotation_file_name
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -688,7 +682,7 @@ class ReadMetaboliteAnnotationFile(Resource):
             if row_index_int is not None:
                 maf_df = maf_df.drop(maf_df.index[row_index_int])  # Remove the old row from the spreadsheet
                 # pop the "index:n" from the new_row before updating
-                row.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
+                row.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
                 maf_df = insert_row(row_index_int, maf_df, row)  # Update the row in the spreadsheet
 
         # Write the new row back in the file
@@ -781,8 +775,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         if not write_access:
             abort(403)
 
-        study_path = study_location  # wsc.get_study_location(study_id, user_token)
-        annotation_file_name = study_path + "/" + annotation_file_name
+        annotation_file_name = study_location + "/" + annotation_file_name
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
