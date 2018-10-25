@@ -1,4 +1,5 @@
 import logging, json, pandas as pd, numpy as np
+import re
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -200,13 +201,17 @@ class EditSampleFile(Resource):
         sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
         sample_df = sample_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet
 
-        # Write the new row back in the file
-        sample_df.to_csv(sample_file_name, sep="\t", encoding='utf-8', index=False)
-
-        df_data_dict = totuples(sample_df.reset_index(), 'rows')
-
         # Get an indexed header row
         df_header = get_table_header(sample_df)
+
+        # The data rows
+        df_data_dict = totuples(sample_df.reset_index(), 'rows')
+
+        # Remove all ".n" numbers at the end of duplicated column names
+        sample_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+
+        # Write the new row back in the file
+        sample_df.to_csv(sample_file_name, sep="\t", encoding='utf-8', index=False)
 
         return {'header': df_header, 'data': df_data_dict}
 
@@ -319,16 +324,19 @@ class EditSampleFile(Resource):
             if row_index_int is not None:
                 sample_df = sample_df.drop(sample_df.index[row_index_int])  # Remove the old row from the spreadsheet
                 # pop the "index:n" from the new_row before updating
-                row.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
+                row.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
                 sample_df = insert_row(row_index_int, sample_df, row)  # Update the row in the spreadsheet
-
-        # Write the new row back in the file
-        sample_df.to_csv(sample_file_name, sep="\t", encoding='utf-8', index=False)
 
         df_data_dict = totuples(sample_df.reset_index(), 'rows')
 
         # Get an indexed header row
         df_header = get_table_header(sample_df)
+
+        # Remove all ".n" numbers at the end of duplicated column names
+        sample_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+
+        # Write the new row back in the file
+        sample_df.to_csv(sample_file_name, sep="\t", encoding='utf-8', index=False)
 
         return {'header': df_header, 'data': df_data_dict}
 
@@ -423,6 +431,9 @@ class EditSampleFile(Resource):
         sorted_num_rows.sort(reverse=True)
         for num in sorted_num_rows:
             sample_df = sample_df.drop(sample_df.index[num])  # Drop row(s) in the spreadsheet
+
+        # Remove all ".n" numbers at the end of duplicated column names
+        sample_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
 
         # Write the updated file
         sample_df.to_csv(sample_file_name, sep="\t", encoding='utf-8', index=False)
