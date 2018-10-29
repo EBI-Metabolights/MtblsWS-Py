@@ -11,7 +11,7 @@ from flask import current_app as app
 from flask import request, jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from owlready2 import get_ontology, IRIS, urllib
+from owlready2 import get_ontology, urllib
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -141,12 +141,19 @@ class Ontology(Resource):
 
             if branch:
                 start_cls = onto.search_one(label=branch)
+                cc = onto.search_one(label=term)
                 clses = info.get_subs(start_cls)
 
                 res_cls = []
                 # exact match
                 if term.lower() in [cls.label[0].lower() for cls in clses]:
-                    c = onto.search_one(label=term.lower())
+                    if onto.search_one(label=term.lower()) is not None:
+                        c = onto.search_one(label=term.lower())
+                    elif onto.search_one(label=term.title()) is not None:
+                        c = onto.search_one(label=term.title())
+                    else:
+                        c = onto.search_one(label=term.upper())
+
                     subs = info.get_subs(c)
                     res_cls = [c] + subs
 
@@ -179,7 +186,7 @@ class Ontology(Resource):
                 try:
                     temp = getZoomaTerm(term)
                     for t in temp:
-                        if t.Zooma_confidence in ['GOOD','HIGH']:
+                        if t.Zooma_confidence in ['GOOD', 'HIGH']:
                             result.append(t)
                 except  Exception as e:
                     print(e.args)
@@ -301,7 +308,7 @@ def getOLSTerm(keyword):
         url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
               '&groupField=true' \
               '&queryFields=label,synonym' \
-              '&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix' # '&exact=true' \
+              '&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix'  # '&exact=true' \
         fp = urllib.request.urlopen(url)
         content = fp.read()
         j_content = json.loads(content)
@@ -322,7 +329,7 @@ def getOLSTerm(keyword):
 def getBioportalTerm(keyword):
     res = []
     try:
-        url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+") #+ '&require_exact_match=true'
+        url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")  # + '&require_exact_match=true'
         request = urllib.request.Request(url)
         request.add_header('Authorization', 'apikey token=c60c5add-63c6-4485-8736-3f495146aee3')
         response = urllib.request.urlopen(request)
