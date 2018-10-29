@@ -266,7 +266,7 @@ class Ontology(Resource):
                     "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739"
                 }'''
 
-            d = json.loads(temp)
+            d = json.loads(str(temp))
             try:
                 d['annotationValue'] = str(cls.name)
                 d['name'] = str(cls.ontoName)
