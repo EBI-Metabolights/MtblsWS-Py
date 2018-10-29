@@ -307,7 +307,7 @@ def getZoomaTerm(keyword):
             if len(res) >= 5:
                 break
     except Exception as e:
-        logger.error(e)
+        logger.error('getZooma' +e)
     return res
 
 
@@ -321,7 +321,7 @@ def getOLSTerm(keyword):
               '&queryFields=label,synonym' \
               '&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix'  # '&exact=true' \
         fp = urllib.request.urlopen(url)
-        content = fp.read()
+        content = fp.read().decode('utf-8')
         j_content = json.loads(content)
         responses = j_content["response"]['docs']
 
@@ -333,7 +333,7 @@ def getOLSTerm(keyword):
                 break
 
     except Exception as e:
-        logger.error(e)
+        logger.error('getOLS' + e)
     return res
 
 
@@ -344,7 +344,7 @@ def getBioportalTerm(keyword):
         request = urllib.request.Request(url)
         request.add_header('Authorization', 'apikey token=c60c5add-63c6-4485-8736-3f495146aee3')
         response = urllib.request.urlopen(request)
-        content = response.read()
+        content = response.read().decode('utf-8')
         j_content = json.loads(content)
 
         iri_record = []
@@ -370,7 +370,7 @@ def getBioportalTerm(keyword):
             if len(res) >= 5:
                 break
     except Exception as e:
-        logger.error(e)
+        logger.error('getBioportal' +e)
     return res
 
 
