@@ -531,7 +531,7 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_row = data_dict['data']  # Use "index:n" element from the (JSON) row, this is the original row number
+            new_row = data_dict['data']
         except KeyError:
             new_row = None
 
@@ -539,8 +539,11 @@ class ReadMetaboliteAnnotationFile(Resource):
             abort(404, "Please provide valid data for updated new row(s). "
                        "The JSON string has to have a 'data' element")
 
-        for element in new_row:
-            element.pop('index', None)  #Remove "index:n" element from the (JSON) row, this is the original row number
+        try:
+            for element in new_row:
+                element.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
+        except:
+            logger.info('No index (row num) supplied, ignoring')
 
         # param validation
         if study_id is None or annotation_file_name is None:

@@ -112,7 +112,8 @@ class IsaInvestigation(Resource):
         if not read_access:
             abort(403)
 
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id,
+                                                         user_token,
                                                          skip_load_tables=investigation_only,
                                                          study_location=study_location)
 
