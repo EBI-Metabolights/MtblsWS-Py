@@ -129,6 +129,7 @@ class Ontology(Resource):
 
         # if only branch, search all branch
         if not term and branch:
+
             start_cls = onto.search_one(label=branch)
             clses = info.get_subs(start_cls)
 
@@ -174,8 +175,13 @@ class Ontology(Resource):
             # if branch == null, search whole ontology
             if len(result) == 0:
                 try:
-                    cls = onto.search_one(label=term.lower())
-                    enti = entity(name=cls.label[0], iri=cls.iri, ontoName='MTBLS')
+                    if onto.search_one(label=term.lower()) is not None:
+                        c = onto.search_one(label=term.lower())
+                    elif onto.search_one(label=term.title()) is not None:
+                        c = onto.search_one(label=term.title())
+                    else:
+                        c = onto.search_one(label=term.upper())
+                    enti = entity(name=c.label[0], iri=c.iri, ontoName='MTBLS')
                     result.append(enti)
                 except Exception as e:
                     print(e.args)
@@ -188,7 +194,7 @@ class Ontology(Resource):
                     for t in temp:
                         if t.Zooma_confidence in ['GOOD', 'HIGH']:
                             result.append(t)
-                except  Exception as e:
+                except Exception as e:
                     print(e.args)
 
             # OLS Search
