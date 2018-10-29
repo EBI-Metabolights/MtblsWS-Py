@@ -142,7 +142,6 @@ class Ontology(Resource):
 
             if branch:
                 start_cls = onto.search_one(label=branch)
-                cc = onto.search_one(label=term)
                 clses = info.get_subs(start_cls)
 
                 res_cls = []
@@ -185,10 +184,12 @@ class Ontology(Resource):
                     result.append(enti)
                 except Exception as e:
                     print(e.args)
+                    logger.info(e.args)
 
             # Zooma Search
             if len(result) == 0:
                 print("Can't find query in MTBLS ontology, requesting Zooma")
+                logger.info("Can't find query in MTBLS ontology, requesting Zooma")
                 try:
                     temp = getZoomaTerm(term)
                     for t in temp:
@@ -196,14 +197,17 @@ class Ontology(Resource):
                             result.append(t)
                 except Exception as e:
                     print(e.args)
+                    logger.info(e.args)
 
             # OLS Search
             if len(result) == 0:
                 print("Can't query it in Zooma, requesting OLS")
+                logger.info("Can't query it in Zooma, requesting OLS")
                 try:
                     result = getOLSTerm(term)
                 except  Exception as e:
                     print(e.args)
+                    logger.info(e.args)
 
             # Bioportal Search
             if len(result) == 0:
@@ -212,6 +216,7 @@ class Ontology(Resource):
                     result = getBioportalTerm(term)
                 except  Exception as e:
                     print(e.args)
+                    logger.info(e.args)
                     print("Can't query it in Bioportal")
 
         else:
