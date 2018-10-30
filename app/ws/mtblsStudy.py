@@ -391,11 +391,11 @@ class StudyFiles(Resource):
                     study_location, upload_location)
         study_files = get_all_files(study_location)
         upload_files = get_all_files(upload_location)
-        # upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
+        upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
 
         return jsonify({'studyFiles': study_files,
                         'upload': upload_files,
-                        'upload_location': upload_location,
+                        'upload_location': upload_location[1],
                         'obfuscation_code': obfuscation_code})
 
 
