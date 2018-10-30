@@ -1626,7 +1626,9 @@ class StudyFactors(Resource):
         # Add new Study Factor
         logger.info('Adding new Study Factor %s for %s', new_obj.name, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
 
@@ -1716,9 +1718,13 @@ class StudyFactors(Resource):
 
         logger.info('Getting Study Factors for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         obj_list = isa_study.factors
         # Using context to avoid envelop tags in contained objects
@@ -1835,9 +1841,13 @@ class StudyFactors(Resource):
         # delete Study Factor
         logger.info('Deleting Study Factor %s for %s', obj_name, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         # obj = isa_study.get_factor(obj_name)
         obj = self.get_factor(isa_study.factors, obj_name)
@@ -1979,9 +1989,14 @@ class StudyFactors(Resource):
         # update Study Factor details
         logger.info('Updating Study Factor details for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         found = False
         for index, factor in enumerate(isa_study.factors):
             if factor.name == factor_name:
@@ -2111,9 +2126,14 @@ class StudyDescriptors(Resource):
         # Add new Study Descriptor
         logger.info('Adding new Study Design Descriptor %s for %s', new_obj.term, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         # check for Study Descriptor added already
         for index, obj in enumerate(isa_study.design_descriptors):
@@ -2201,9 +2221,14 @@ class StudyDescriptors(Resource):
 
         logger.info('Getting Study Design Descriptors for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         obj_list = isa_study.design_descriptors
         # Using context to avoid envelop tags in contained objects
@@ -2320,9 +2345,14 @@ class StudyDescriptors(Resource):
         # delete Study Design Descriptor
         logger.info('Deleting Study Design Descriptor %s for %s', obj_term, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         found = False
         for index, obj in enumerate(isa_study.design_descriptors):
@@ -2455,9 +2485,14 @@ class StudyDescriptors(Resource):
         # update Study Design Descriptor details
         logger.info('Updating Study Design Descriptor details for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         found = False
         for index, descriptor in enumerate(isa_study.design_descriptors):
             if descriptor.term == descriptor_term:
@@ -2587,9 +2622,14 @@ class StudyPublications(Resource):
         # Add new Publication
         logger.info('Adding new Publication %s for %s', new_publication.title, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         # check for Publication added already
         for index, publication in enumerate(isa_study.publications):
             if publication.title == new_publication.title:
@@ -2677,9 +2717,14 @@ class StudyPublications(Resource):
 
         logger.info('Getting Study Publications for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         obj_list = isa_study.publications
         # Using context to avoid envelop tags in contained objects
@@ -2796,9 +2841,14 @@ class StudyPublications(Resource):
         # delete publication
         logger.info('Deleting Study Publication %s for %s', publication_title, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         found = False
         for index, publication in enumerate(isa_study.publications):
             if publication.title == publication_title:
@@ -2930,9 +2980,14 @@ class StudyPublications(Resource):
         # update Study Publication details
         logger.info('Updating Study Publication details for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
         found = False
         for index, publication in enumerate(isa_study.publications):
             if publication.title == publication_title:
@@ -3039,9 +3094,14 @@ class StudySources(Resource):
 
         logger.info('Getting Study Sources for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         obj_list = isa_study.sources
         # Using context to avoid envelop tags in contained objects
@@ -3182,9 +3242,14 @@ class StudySources(Resource):
         # update Study Source details
         logger.info('Updating Study Source details for %s', study_id, user_token)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         obj_list = isa_study.sources
         found = False
@@ -3321,9 +3386,14 @@ class StudySamples(Resource):
         # Add new Study Sample
         logger.info('Adding new Samples to %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         added_process = list()
         added_samples = list()
@@ -3479,9 +3549,14 @@ class StudySamples(Resource):
 
         logger.info('Getting Samples for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         obj_list = isa_study.samples
         # Using context to avoid envelop tags in contained objects
@@ -3628,9 +3703,14 @@ class StudySamples(Resource):
             abort(400)
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         updated_samples = list()
         # single sample
@@ -3747,12 +3827,14 @@ class StudySamples(Resource):
             abort(401)
 
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
 
         # delete samples
         logger.info('Deleting all marked Samples for %s', study_id)
-        location = wsc.get_study_location(study_id, user_token)
+        location =  study_location  # wsc.get_study_location(study_id, user_token)
         removed_lines = 0
         try:
             removed_lines = utils.remove_samples_from_isatab(location)
@@ -3875,9 +3957,14 @@ class StudyOtherMaterials(Resource):
         # Add new Study Material
         logger.info('Adding new Material %s to %s', new_material.name, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         # check for existing Material
         material_list = isa_study.other_material
@@ -3987,9 +4074,14 @@ class StudyOtherMaterials(Resource):
 
         logger.info('Getting Other Materials for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         obj_list = isa_study.other_material
         # Using context to avoid envelop tags in contained objects
@@ -4109,9 +4201,14 @@ class StudyOtherMaterials(Resource):
         # delete Other Materials
         logger.info('Deleting Study Material %s for %s', obj_name, study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         obj_list = isa_study.other_material
         found = False
@@ -4245,9 +4342,14 @@ class StudyOtherMaterials(Resource):
         # update Study Material details
         logger.info('Updating Study Material details for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_WRITE]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         obj_list = isa_study.other_material
         found = False
@@ -4370,9 +4472,14 @@ class StudyProcesses(Resource):
 
         logger.info('Getting Study Processes for %s', study_id)
         # check for access rights
-        if not wsc.get_permisions(study_id, user_token)[wsc.CAN_READ]:
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
 
         obj_list = isa_study.process_sequence
         found = list()

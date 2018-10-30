@@ -37,6 +37,7 @@ class IsaApiClient:
         start = time.time()
 
         path = study_location
+        logger.info("Study location is: " + study_location)
         if study_location is None:
             path = self.wsc.get_study_location(study_id, api_key)
 
@@ -99,6 +100,7 @@ class IsaApiClient:
         """
 
         std_path = study_location
+        logger.info("Study location is: " + study_location)
         if study_location is None:  # Only check if we do not have the location
             std_path = self.wsc.get_study_location(study_id, api_key)
 
