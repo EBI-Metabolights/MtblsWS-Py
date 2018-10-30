@@ -87,7 +87,7 @@ class IsaApiClient:
 
         return investigation
 
-    def get_isa_study(self, study_id, api_key, skip_load_tables=False, study_location=None):
+    def get_isa_study(self, study_id, api_key, skip_load_tables=True, study_location=None):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier

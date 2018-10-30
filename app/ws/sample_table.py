@@ -171,11 +171,7 @@ class EditSampleFile(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             new_row = data_dict['data']
         except (KeyError):
-            new_row = None
-
-        if new_row is None:
-            abort(404, "Please provide valid data for updated new row(s). "
-                       "The JSON string has to have a 'data' element")
+            abort(404, "Please provide valid data for updated new row(s). The JSON string has to have a 'data' array")
 
         try:
             for element in new_row:

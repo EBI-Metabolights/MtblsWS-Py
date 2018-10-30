@@ -122,7 +122,7 @@ class IsaInvestigation(Resource):
         response = dict(mtblsStudy={},
                         isaInvestigation={},
                         validation={})
-        response['mtblsStudy']['studyStatus'] = wsc.get_study_status(study_id, user_token)
+        response['mtblsStudy']['studyStatus'] = study_status  # wsc.get_study_status(study_id, user_token)
         response['isaInvestigation'] = IsaInvestigationSchema().dump(isa_inv).data
         response['validation']['errors'] = []
         response['validation']['warnings'] = []
