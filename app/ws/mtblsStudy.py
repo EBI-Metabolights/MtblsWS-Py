@@ -384,7 +384,7 @@ class StudyFiles(Resource):
             abort(403)
 
         logger.info('Getting list of all files for MTBLS Study %s', study_id)
-        upload_location = app.config.get('MTBLS_FTP_ROOT') + "/" + study_id.lower() + "-" + obfuscation_code
+        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
         # data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
         # upload_location = data_dict["message"]
         logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
