@@ -102,6 +102,7 @@ class IsaJsonStudy(Resource):
             wsc.get_permisions(study_id, user_token)
         if not read_access:
             abort(403)
+
         isa_obj = iac.get_isa_json(study_id, user_token, study_location=study_location)
         str_inv = json.dumps({'investigation': isa_obj}, default=serialize_investigation, sort_keys=True)
         logger.info('... found Study: %s %s', isa_obj.get('title'), isa_obj.get('identifier'))
@@ -1630,7 +1631,9 @@ class StudyFactors(Resource):
             wsc.get_permisions(study_id, user_token)
         if not write_access:
             abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=True)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         # check for factor added already
         obj = isa_study.get_factor(obj_name)

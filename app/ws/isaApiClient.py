@@ -36,10 +36,12 @@ class IsaApiClient:
         """
         start = time.time()
 
-        path = study_location
-        logger.info("Study location is: " + study_location)
         if study_location is None:
+            logger.info("Study location is not set, will have load study from filesystem")
             path = self.wsc.get_study_location(study_id, api_key)
+        else:
+            logger.info("Study location is: " + study_location)
+            path = study_location
 
         # try the new parser first
         isa_json = None
@@ -99,10 +101,12 @@ class IsaApiClient:
                 and path to the Study in the file system
         """
 
-        std_path = study_location
-        logger.info("Study location is: " + study_location)
-        if study_location is None:  # Only check if we do not have the location
+        if study_location is None:
+            logger.info("Study location is not set, will have load study from filesystem")
             std_path = self.wsc.get_study_location(study_id, api_key)
+        else:
+            logger.info("Study location is: " + study_location)
+            std_path = study_location
 
         try:
             i_filename = glob.glob(os.path.join(std_path, "i_*.txt"))[0]
