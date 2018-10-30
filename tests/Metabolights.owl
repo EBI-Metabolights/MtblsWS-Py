@@ -146,7 +146,7 @@ License. </dc:rights>
         <obo:IAO_0000114 rdf:resource="http://purl.obolibrary.org/obo/IAO_0000122"/>
         <obo:IAO_0000115 xml:lang="en">The concise, meaningful, and human-friendly name for a class or property preferred by the ontology developers. (US-English)</obo:IAO_0000115>
         <obo:IAO_0000117 xml:lang="en">PERSON:Daniel Schober</obo:IAO_0000117>
-        <obo:IAO_0000119 xml:lang="en">GROUP:OBI:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
+        <obo:IAO_0000119 xml:lang="en">GROUP:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
         <rdfs:label xml:lang="en">editor preferred term</rdfs:label>
     </owl:AnnotationProperty>
     
@@ -159,7 +159,7 @@ License. </dc:rights>
         <obo:IAO_0000114 rdf:resource="http://purl.obolibrary.org/obo/IAO_0000122"/>
         <obo:IAO_0000115 xml:lang="en">A phrase describing how a term should be used and/or a citation to a work which uses it. May also include other kinds of examples that facilitate immediate understanding, such as widely know prototypes or instances of a class, or cases where a relation is said to hold.</obo:IAO_0000115>
         <obo:IAO_0000117 xml:lang="en">PERSON:Daniel Schober</obo:IAO_0000117>
-        <obo:IAO_0000119 xml:lang="en">GROUP:OBI:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
+        <obo:IAO_0000119 xml:lang="en">GROUP:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
         <rdfs:label>example of usage</rdfs:label>
         <rdfs:label xml:lang="en">example of usage</rdfs:label>
     </owl:AnnotationProperty>
@@ -220,7 +220,7 @@ Personally, I am more comfortable weakening definition to documentation, with in
 
 We also have the outstanding issue of how to aim different definitions to different audiences. A clinical audience reading chebi wants a different sort of definition documentation/definition from a chemistry trained audience, and similarly there is a need for a definition that is adequate for an ontologist to work with.  </obo:IAO_0000116>
         <obo:IAO_0000117 xml:lang="en">PERSON:Daniel Schober</obo:IAO_0000117>
-        <obo:IAO_0000119 xml:lang="en">GROUP:OBI:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
+        <obo:IAO_0000119 xml:lang="en">GROUP:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
         <oboInOwl:hasExactSynonym>DEFINITION</oboInOwl:hasExactSynonym>
         <rdfs:label xml:lang="en">definition</rdfs:label>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">definition</rdfs:label>
@@ -248,7 +248,7 @@ We also have the outstanding issue of how to aim different definitions to differ
         <obo:IAO_0000114 rdf:resource="http://purl.obolibrary.org/obo/IAO_0000122"/>
         <obo:IAO_0000115 xml:lang="en">An administrative note intended for its editor. It may not be included in the publication version of the ontology, so it should contain nothing necessary for end users to understand the ontology.</obo:IAO_0000115>
         <obo:IAO_0000117 xml:lang="en">PERSON:Daniel Schober</obo:IAO_0000117>
-        <obo:IAO_0000119 xml:lang="en">GROUP:OBI:&lt;http://purl.obfoundry.org/obo/obi&gt;</obo:IAO_0000119>
+        <obo:IAO_0000119 xml:lang="en">GROUP:&lt;http://purl.obfoundry.org/obo/obi&gt;</obo:IAO_0000119>
         <rdfs:label>editor note</rdfs:label>
         <rdfs:label xml:lang="en">editor note</rdfs:label>
     </owl:AnnotationProperty>
@@ -263,7 +263,7 @@ We also have the outstanding issue of how to aim different definitions to differ
         <obo:IAO_0000115 xml:lang="en">Name of editor entering the term in the file. The term editor is a point of contact for onto_information regarding the term. The term editor may be, but is not always, the author of the definition, which may have been worked upon by several people</obo:IAO_0000115>
         <obo:IAO_0000116 xml:lang="en">20110707, MC: label update to term editor and definition modified accordingly. See https://github.com/onto_information-artifact-ontology/IAO/issues/115.</obo:IAO_0000116>
         <obo:IAO_0000117 xml:lang="en">PERSON:Daniel Schober</obo:IAO_0000117>
-        <obo:IAO_0000119 xml:lang="en">GROUP:OBI:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
+        <obo:IAO_0000119 xml:lang="en">GROUP:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
         <rdfs:label>term editor</rdfs:label>
         <rdfs:label xml:lang="en">term editor</rdfs:label>
     </owl:AnnotationProperty>
@@ -277,7 +277,7 @@ We also have the outstanding issue of how to aim different definitions to differ
         <obo:IAO_0000114 rdf:resource="http://purl.obolibrary.org/obo/IAO_0000125"/>
         <obo:IAO_0000115 xml:lang="en">An alternative name for a class or property which means the same thing as the preferred name (semantically equivalent)</obo:IAO_0000115>
         <obo:IAO_0000117 xml:lang="en">PERSON:Daniel Schober</obo:IAO_0000117>
-        <obo:IAO_0000119 xml:lang="en">GROUP:OBI:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
+        <obo:IAO_0000119 xml:lang="en">GROUP:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
         <rdfs:label xml:lang="en">alternative term</rdfs:label>
     </owl:AnnotationProperty>
     
@@ -291,7 +291,7 @@ We also have the outstanding issue of how to aim different definitions to differ
         <obo:IAO_0000115 xml:lang="en">formal citation, e.g. identifier in external database to indicate / attribute source(s) for the definition. Free text indicate / attribute source(s) for the definition. EXAMPLE: Author Name, URI, MeSH Term C04, PUBMED ID, Wiki uri on 31.01.2007</obo:IAO_0000115>
         <obo:IAO_0000117 xml:lang="en">PERSON:Daniel Schober</obo:IAO_0000117>
         <obo:IAO_0000119 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Discussion on obo-discuss mailing-list, see http://bit.ly/hgm99w</obo:IAO_0000119>
-        <obo:IAO_0000119 xml:lang="en">GROUP:OBI:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
+        <obo:IAO_0000119 xml:lang="en">GROUP:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
         <rdfs:label xml:lang="en">definition source</rdfs:label>
     </owl:AnnotationProperty>
     
@@ -370,7 +370,7 @@ We also have the outstanding issue of how to aim different definitions to differ
         <obo:IAO_0000115 xml:lang="en">For external terms/classes, the ontology from which the term was imported</obo:IAO_0000115>
         <obo:IAO_0000117 xml:lang="en">PERSON:Alan Ruttenberg</obo:IAO_0000117>
         <obo:IAO_0000117 xml:lang="en">PERSON:Melanie Courtot</obo:IAO_0000117>
-        <obo:IAO_0000119 xml:lang="en">GROUP:OBI:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
+        <obo:IAO_0000119 xml:lang="en">GROUP:&lt;http://purl.obolibrary.org/obo/obi&gt;</obo:IAO_0000119>
         <rdfs:label xml:lang="en">imported from</rdfs:label>
     </owl:AnnotationProperty>
     
@@ -8435,7 +8435,7 @@ This annotation property may be replaced with an annotation property from an ext
 
     <owl:ObjectProperty rdf:about="http://purl.obolibrary.org/obo/BSPO_0000100">
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x proximal_to y iff x is closer to the point of attachment with the body than y.</obo:IAO_0000115>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000100</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000100</oboInOwl:hasDbXref>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">proximal_to</oboInOwl:id>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">proximal_to</oboInOwl:shorthand>
@@ -8445,7 +8445,7 @@ This annotation property may be replaced with an annotation property from an ext
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000100"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x proximal_to y iff x is closer to the point of attachment with the body than y.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     
 
@@ -8454,7 +8454,7 @@ This annotation property may be replaced with an annotation property from an ext
 
     <owl:ObjectProperty rdf:about="http://purl.obolibrary.org/obo/BSPO_0000126">
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X in_lateral_side_of Y &lt;=&gt; if X is in_left_side_of Y or X is in_right_side_of Y. X is often, but not always a paired structure</obo:IAO_0000115>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000126</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000126</oboInOwl:hasDbXref>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_lateral_side_of</oboInOwl:id>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_lateral_side_of</oboInOwl:shorthand>
@@ -8474,7 +8474,7 @@ This annotation property may be replaced with an annotation property from an ext
 
     <owl:ObjectProperty rdf:about="http://purl.obolibrary.org/obo/BSPO_0001108">
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X distalmost_part_of Y &lt;=&gt; X is part_of Y and X is adjacent_to the distal boundary of Y</obo:IAO_0000115>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0001108</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0001108</oboInOwl:hasDbXref>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">distalmost_part_of</oboInOwl:id>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">distalmost_part_of</oboInOwl:shorthand>
@@ -14040,7 +14040,7 @@ Environments include natural environments or exposures, experimentally applied c
         <efo:MO_definition_citation rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MO:3</efo:MO_definition_citation>
         <efo:NCI_Thesaurus_definition_citation rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NCIt:C44278</efo:NCI_Thesaurus_definition_citation>
         <efo:NCI_Thesaurus_definition_citation rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NCIt:C68553</efo:NCI_Thesaurus_definition_citation>
-        <efo:NIFSTD_definition_citation rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NIFSTD:birnlex_2015</efo:NIFSTD_definition_citation>
+        <efo:NIFSTD_definition_citation rdf:datatype="http://www.w3.org/2001/XMLSchema#string">birnlex_2015</efo:NIFSTD_definition_citation>
         <efo:SNOMEDCT_definition_citation rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SNOMEDCT:258666001</efo:SNOMEDCT_definition_citation>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">unit</rdfs:label>
     </owl:Class>
@@ -15711,7 +15711,7 @@ Environments include natural environments or exposures, experimentally applied c
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/UPHENO_0001001">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000005"/>
         <obo:IAO_0000116>Stub node that gathers root classes from various taxon-specific phenotype ontologies, as connectors to bringing classes from these ontolgies into the GENO framework.</obo:IAO_0000116>
-        <rdfs:comment>1. From OGMS: A (combination of) quality(ies) of an organism determined by the interaction of its genetic make-up and environment that differentiates specific instances of a species from other instances of the same species (from OGMS, and used in OBI, but treatment as a quality is at odds with previous OBI discussions and their treatemnt of &apos;comparative phenotype assessment, where a phenotype is described as a quality or disposition)
+        <rdfs:comment>1. From OG A (combination of) quality(ies) of an organism determined by the interaction of its genetic make-up and environment that differentiates specific instances of a species from other instances of the same species (from OGMS, and used in OBI, but treatment as a quality is at odds with previous OBI discussions and their treatemnt of &apos;comparative phenotype assessment, where a phenotype is described as a quality or disposition)
 
 2. From OBI calls: quality or disposition inheres in organism or part of an organism towards some growth environment</rdfs:comment>
         <rdfs:label>Phenotype</rdfs:label>
@@ -16390,7 +16390,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000009">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">ADW:Commensal species</rdfs:label>
+        <rdfs:label xml:lang="en">Commensal species</rdfs:label>
     </owl:Class>
     
 
@@ -16399,7 +16399,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000010">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">ADW:Phytoplankton</rdfs:label>
+        <rdfs:label xml:lang="en">Phytoplankton</rdfs:label>
     </owl:Class>
     
 
@@ -16417,7 +16417,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000012">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">AURA:Blood-Brain-Barrier</rdfs:label>
+        <rdfs:label xml:lang="en">Blood-Brain-Barrier</rdfs:label>
     </owl:Class>
     
 
@@ -16426,7 +16426,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000013">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">AURA:Opportunistic-Pathogen</rdfs:label>
+        <rdfs:label xml:lang="en">Opportunistic-Pathogen</rdfs:label>
     </owl:Class>
     
 
@@ -16435,7 +16435,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000014">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">BAO:real-time PCR</rdfs:label>
+        <rdfs:label xml:lang="en">real-time PCR</rdfs:label>
     </owl:Class>
     
 
@@ -16453,7 +16453,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000016">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">BIOMODELS:multi-species biofilm formation</rdfs:label>
+        <rdfs:label xml:lang="en">multi-species biofilm formation</rdfs:label>
     </owl:Class>
     
 
@@ -16471,7 +16471,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000018">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">BTO:urine</rdfs:label>
+        <rdfs:label xml:lang="en">urine</rdfs:label>
     </owl:Class>
     
 
@@ -16507,7 +16507,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000022">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CCO:ABCC5</rdfs:label>
+        <rdfs:label xml:lang="en">ABCC5</rdfs:label>
     </owl:Class>
     
 
@@ -16516,7 +16516,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000023">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CCO:MRP5</rdfs:label>
+        <rdfs:label xml:lang="en">MRP5</rdfs:label>
     </owl:Class>
     
 
@@ -16525,7 +16525,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000024">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CCON:community dynamics</rdfs:label>
+        <rdfs:label xml:lang="en">community dynamics</rdfs:label>
     </owl:Class>
     
 
@@ -16534,7 +16534,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000025">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CCON:species diversity</rdfs:label>
+        <rdfs:label xml:lang="en">species diversity</rdfs:label>
     </owl:Class>
     
 
@@ -16543,7 +16543,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000026">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHEBI:2-hydroxybutyrate</rdfs:label>
+        <rdfs:label xml:lang="en">2-hydroxybutyrate</rdfs:label>
     </owl:Class>
     
 
@@ -16552,7 +16552,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000027">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHEBI:kainic acid</rdfs:label>
+        <rdfs:label xml:lang="en">kainic acid</rdfs:label>
     </owl:Class>
     
 
@@ -16561,7 +16561,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000028">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHEBI:Obestatin</rdfs:label>
+        <rdfs:label xml:lang="en">Obestatin</rdfs:label>
     </owl:Class>
     
 
@@ -16570,7 +16570,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000029">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHEBI:phenylpropanoid</rdfs:label>
+        <rdfs:label xml:lang="en">phenylpropanoid</rdfs:label>
     </owl:Class>
     
 
@@ -16579,7 +16579,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000030">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHEBI:phospholipid</rdfs:label>
+        <rdfs:label xml:lang="en">phospholipid</rdfs:label>
     </owl:Class>
     
 
@@ -16588,7 +16588,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000031">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHEBI:sesquiterpene</rdfs:label>
+        <rdfs:label xml:lang="en">sesquiterpene</rdfs:label>
     </owl:Class>
     
 
@@ -16597,7 +16597,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000032">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHEBI:Vomitoxin</rdfs:label>
+        <rdfs:label xml:lang="en">Vomitoxin</rdfs:label>
     </owl:Class>
     
 
@@ -16606,7 +16606,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000033">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHEBI:wax ester</rdfs:label>
+        <rdfs:label xml:lang="en">wax ester</rdfs:label>
     </owl:Class>
     
 
@@ -16615,7 +16615,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000034">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:capillary electrophoresis-mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">capillary electrophoresis-mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16624,7 +16624,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000035">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:confocal microscopy</rdfs:label>
+        <rdfs:label xml:lang="en">confocal microscopy</rdfs:label>
     </owl:Class>
     
 
@@ -16633,7 +16633,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000036">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:desorption electrospray ionisation mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">desorption electrospray ionisation mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16642,7 +16642,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000037">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:diode array detector</rdfs:label>
+        <rdfs:label xml:lang="en">diode array detector</rdfs:label>
     </owl:Class>
     
 
@@ -16651,7 +16651,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000038">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:fermentation</rdfs:label>
+        <rdfs:label xml:lang="en">fermentation</rdfs:label>
     </owl:Class>
     
 
@@ -16660,7 +16660,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000039">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:Fourier transform ion cyclotron resonance mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">Fourier transform ion cyclotron resonance mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16669,7 +16669,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000040">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:gas chromatography-mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">gas chromatography-mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16678,7 +16678,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000041">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:gas chromatography time-of-flight mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">gas chromatography time-of-flight mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16687,7 +16687,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000042">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:high-performance liquid chromatography-mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">high-performance liquid chromatography-mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16696,7 +16696,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000043">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:high-resolution magic angle spinning</rdfs:label>
+        <rdfs:label xml:lang="en">high-resolution magic angle spinning</rdfs:label>
     </owl:Class>
     
 
@@ -16705,7 +16705,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000044">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:hydrophilic interaction chromatography</rdfs:label>
+        <rdfs:label xml:lang="en">hydrophilic interaction chromatography</rdfs:label>
     </owl:Class>
     
 
@@ -16714,7 +16714,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000045">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:liquid chromatography-tandem mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">liquid chromatography-tandem mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16723,7 +16723,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000046">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:magic angle spinning nuclear magnetic resonance spectroscopy</rdfs:label>
+        <rdfs:label xml:lang="en">magic angle spinning nuclear magnetic resonance spectroscopy</rdfs:label>
     </owl:Class>
     
 
@@ -16732,7 +16732,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000047">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:matrix-assisted laser desorption-ionisation imaging mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">matrix-assisted laser desorption-ionisation imaging mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16741,7 +16741,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000048">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:matrix-assisted laser desorption-ionisation mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">matrix-assisted laser desorption-ionisation mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16750,7 +16750,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000049">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:matrix-assisted laser desorption-ionisation time-of-flight mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">matrix-assisted laser desorption-ionisation time-of-flight mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16759,7 +16759,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000050">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:nuclear magnetic resonance spectroscopy</rdfs:label>
+        <rdfs:label xml:lang="en">nuclear magnetic resonance spectroscopy</rdfs:label>
     </owl:Class>
     
 
@@ -16768,7 +16768,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000051">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:reversed-phase solid-phase extraction</rdfs:label>
+        <rdfs:label xml:lang="en">reversed-phase solid-phase extraction</rdfs:label>
     </owl:Class>
     
 
@@ -16777,7 +16777,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000052">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:solid-phase micro-extraction</rdfs:label>
+        <rdfs:label xml:lang="en">solid-phase micro-extraction</rdfs:label>
     </owl:Class>
     
 
@@ -16786,7 +16786,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000053">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:spiking</rdfs:label>
+        <rdfs:label xml:lang="en">spiking</rdfs:label>
     </owl:Class>
     
 
@@ -16795,7 +16795,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000054">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:tandem mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">tandem mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16804,7 +16804,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000055">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:thermal desorption-gas chromatography mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">thermal desorption-gas chromatography mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16813,7 +16813,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000056">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:time-of-flight mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">time-of-flight mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16822,7 +16822,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000057">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:trimethylsilyl derivatisation</rdfs:label>
+        <rdfs:label xml:lang="en">trimethylsilyl derivatisation</rdfs:label>
     </owl:Class>
     
 
@@ -16831,7 +16831,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000058">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:1H nuclear magnetic resonance spectroscopy</rdfs:label>
+        <rdfs:label xml:lang="en">1H nuclear magnetic resonance spectroscopy</rdfs:label>
     </owl:Class>
     
 
@@ -16840,7 +16840,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000059">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:two-dimensional 1H nuclear magnetic resonance spectroscopy</rdfs:label>
+        <rdfs:label xml:lang="en">two-dimensional 1H nuclear magnetic resonance spectroscopy</rdfs:label>
     </owl:Class>
     
 
@@ -16849,7 +16849,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000060">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:two-dimensional gas chromatography</rdfs:label>
+        <rdfs:label xml:lang="en">two-dimensional gas chromatography</rdfs:label>
     </owl:Class>
     
 
@@ -16867,7 +16867,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000062">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:ultra-performance liquid chromatography-mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">ultra-performance liquid chromatography-mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16876,7 +16876,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000063">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CHMO:imaging mass spectrometry</rdfs:label>
+        <rdfs:label xml:lang="en">imaging mass spectrometry</rdfs:label>
     </owl:Class>
     
 
@@ -16894,7 +16894,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000065">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CO-WHEAT:scab</rdfs:label>
+        <rdfs:label xml:lang="en">scab</rdfs:label>
     </owl:Class>
     
 
@@ -16930,7 +16930,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000069">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">CSEO:Lipidomics</rdfs:label>
+        <rdfs:label xml:lang="en">Lipidomics</rdfs:label>
     </owl:Class>
     
 
@@ -16957,7 +16957,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000072">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">DIAB:hyperosmolarity</rdfs:label>
+        <rdfs:label xml:lang="en">hyperosmolarity</rdfs:label>
     </owl:Class>
     
 
@@ -16984,7 +16984,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000075">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">DOID:breast cancer</rdfs:label>
+        <rdfs:label xml:lang="en">breast cancer</rdfs:label>
     </owl:Class>
     
 
@@ -16993,7 +16993,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000076">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">DOID:colorectal adenocarcinoma</rdfs:label>
+        <rdfs:label xml:lang="en">colorectal adenocarcinoma</rdfs:label>
     </owl:Class>
     
 
@@ -17002,7 +17002,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000077">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">DOID:colorectal cancer</rdfs:label>
+        <rdfs:label xml:lang="en">colorectal cancer</rdfs:label>
     </owl:Class>
     
 
@@ -17011,7 +17011,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000078">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">DOID:ischemia</rdfs:label>
+        <rdfs:label xml:lang="en">ischemia</rdfs:label>
     </owl:Class>
     
 
@@ -17020,7 +17020,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000079">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">DOID:kidney cancer</rdfs:label>
+        <rdfs:label xml:lang="en">kidney cancer</rdfs:label>
     </owl:Class>
     
 
@@ -17029,7 +17029,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000080">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">DOID:liver cancer</rdfs:label>
+        <rdfs:label xml:lang="en">liver cancer</rdfs:label>
     </owl:Class>
     
 
@@ -17038,7 +17038,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000081">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">DOID:lung cancer</rdfs:label>
+        <rdfs:label xml:lang="en">lung cancer</rdfs:label>
     </owl:Class>
     
 
@@ -17047,7 +17047,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000082">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EDAM:Peak detection</rdfs:label>
+        <rdfs:label xml:lang="en">Peak detection</rdfs:label>
     </owl:Class>
     
 
@@ -17056,7 +17056,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000083">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:aging</rdfs:label>
+        <rdfs:label xml:lang="en">aging</rdfs:label>
     </owl:Class>
     
 
@@ -17065,7 +17065,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000084">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:Alzheimers disease</rdfs:label>
+        <rdfs:label xml:lang="en">Alzheimers disease</rdfs:label>
     </owl:Class>
     
 
@@ -17074,7 +17074,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000085">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:Alzheimer&apos;s disease</rdfs:label>
+        <rdfs:label xml:lang="en">Alzheimer&apos;s disease</rdfs:label>
     </owl:Class>
     
 
@@ -17083,7 +17083,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000086">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:arthritis</rdfs:label>
+        <rdfs:label xml:lang="en">arthritis</rdfs:label>
     </owl:Class>
     
 
@@ -17092,7 +17092,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000087">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:biomarker</rdfs:label>
+        <rdfs:label xml:lang="en">biomarker</rdfs:label>
     </owl:Class>
     
 
@@ -17101,7 +17101,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000088">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:cancer</rdfs:label>
+        <rdfs:label xml:lang="en">cancer</rdfs:label>
     </owl:Class>
     
 
@@ -17110,7 +17110,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000089">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:cell culture</rdfs:label>
+        <rdfs:label xml:lang="en">cell culture</rdfs:label>
     </owl:Class>
     
 
@@ -17119,7 +17119,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000090">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:cell line</rdfs:label>
+        <rdfs:label xml:lang="en">cell line</rdfs:label>
     </owl:Class>
     
 
@@ -17128,7 +17128,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000091">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:chronic hepatitis B infection</rdfs:label>
+        <rdfs:label xml:lang="en">chronic hepatitis B infection</rdfs:label>
     </owl:Class>
     
 
@@ -17137,7 +17137,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000092">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:cirrhosis of liver</rdfs:label>
+        <rdfs:label xml:lang="en">cirrhosis of liver</rdfs:label>
     </owl:Class>
     
 
@@ -17146,7 +17146,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000093">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:colorectal cancer</rdfs:label>
+        <rdfs:label xml:lang="en">colorectal cancer</rdfs:label>
     </owl:Class>
     
 
@@ -17155,7 +17155,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000094">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:Crohn&apos;s disease</rdfs:label>
+        <rdfs:label xml:lang="en">Crohn&apos;s disease</rdfs:label>
     </owl:Class>
     
 
@@ -17164,7 +17164,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000095">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:diabetes mellitus</rdfs:label>
+        <rdfs:label xml:lang="en">diabetes mellitus</rdfs:label>
     </owl:Class>
     
 
@@ -17173,7 +17173,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000096">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:drug</rdfs:label>
+        <rdfs:label xml:lang="en">drug</rdfs:label>
     </owl:Class>
     
 
@@ -17182,7 +17182,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000097">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:dry eye syndrome</rdfs:label>
+        <rdfs:label xml:lang="en">dry eye syndrome</rdfs:label>
     </owl:Class>
     
 
@@ -17191,7 +17191,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000098">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:fasting</rdfs:label>
+        <rdfs:label xml:lang="en">fasting</rdfs:label>
     </owl:Class>
     
 
@@ -17200,7 +17200,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000099">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:fever</rdfs:label>
+        <rdfs:label xml:lang="en">fever</rdfs:label>
     </owl:Class>
     
 
@@ -17209,7 +17209,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000100">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:hepatocellular carcinoma</rdfs:label>
+        <rdfs:label xml:lang="en">hepatocellular carcinoma</rdfs:label>
     </owl:Class>
     
 
@@ -17218,7 +17218,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000101">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:high fat diet</rdfs:label>
+        <rdfs:label xml:lang="en">high fat diet</rdfs:label>
     </owl:Class>
     
 
@@ -17227,7 +17227,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000102">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:hyperosmotic salinity response</rdfs:label>
+        <rdfs:label xml:lang="en">hyperosmotic salinity response</rdfs:label>
     </owl:Class>
     
 
@@ -17236,7 +17236,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000103">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:hypertrophy</rdfs:label>
+        <rdfs:label xml:lang="en">hypertrophy</rdfs:label>
     </owl:Class>
     
 
@@ -17245,7 +17245,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000104">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:infection</rdfs:label>
+        <rdfs:label xml:lang="en">infection</rdfs:label>
     </owl:Class>
     
 
@@ -17254,7 +17254,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000105">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:inflammation</rdfs:label>
+        <rdfs:label xml:lang="en">inflammation</rdfs:label>
     </owl:Class>
     
 
@@ -17263,7 +17263,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000106">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:inflammatory bowel disease</rdfs:label>
+        <rdfs:label xml:lang="en">inflammatory bowel disease</rdfs:label>
     </owl:Class>
     
 
@@ -17272,7 +17272,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000107">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:inflammatory response</rdfs:label>
+        <rdfs:label xml:lang="en">inflammatory response</rdfs:label>
     </owl:Class>
     
 
@@ -17281,7 +17281,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000108">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:injury design</rdfs:label>
+        <rdfs:label xml:lang="en">injury design</rdfs:label>
     </owl:Class>
     
 
@@ -17290,7 +17290,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000109">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:malaria</rdfs:label>
+        <rdfs:label xml:lang="en">malaria</rdfs:label>
     </owl:Class>
     
 
@@ -17299,7 +17299,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000110">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:MCF-7</rdfs:label>
+        <rdfs:label xml:lang="en">MCF-7</rdfs:label>
     </owl:Class>
     
 
@@ -17308,7 +17308,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000111">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:metabolic syndrome</rdfs:label>
+        <rdfs:label xml:lang="en">metabolic syndrome</rdfs:label>
     </owl:Class>
     
 
@@ -17317,7 +17317,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000112">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:metabolomic profiling</rdfs:label>
+        <rdfs:label xml:lang="en">metabolomic profiling</rdfs:label>
     </owl:Class>
     
 
@@ -17326,7 +17326,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000113">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:neuroblastoma</rdfs:label>
+        <rdfs:label xml:lang="en">neuroblastoma</rdfs:label>
     </owl:Class>
     
 
@@ -17335,7 +17335,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000114">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:non-alcoholic fatty liver disease</rdfs:label>
+        <rdfs:label xml:lang="en">non-alcoholic fatty liver disease</rdfs:label>
     </owl:Class>
     
 
@@ -17344,7 +17344,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000115">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:obesity</rdfs:label>
+        <rdfs:label xml:lang="en">obesity</rdfs:label>
     </owl:Class>
     
 
@@ -17353,7 +17353,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000116">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:portion of plant tissue</rdfs:label>
+        <rdfs:label xml:lang="en">portion of plant tissue</rdfs:label>
     </owl:Class>
     
 
@@ -17362,7 +17362,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000117">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:Pseudoxanthoma elasticum</rdfs:label>
+        <rdfs:label xml:lang="en">Pseudoxanthoma elasticum</rdfs:label>
     </owl:Class>
     
 
@@ -17371,7 +17371,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000118">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:response to osmotic stress</rdfs:label>
+        <rdfs:label xml:lang="en">response to osmotic stress</rdfs:label>
     </owl:Class>
     
 
@@ -17380,7 +17380,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000119">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:sepsis</rdfs:label>
+        <rdfs:label xml:lang="en">sepsis</rdfs:label>
     </owl:Class>
     
 
@@ -17389,7 +17389,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000120">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:sexual dimorphism</rdfs:label>
+        <rdfs:label xml:lang="en">sexual dimorphism</rdfs:label>
     </owl:Class>
     
 
@@ -17398,7 +17398,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000121">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:software</rdfs:label>
+        <rdfs:label xml:lang="en">software</rdfs:label>
     </owl:Class>
     
 
@@ -17407,7 +17407,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000122">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:stem cell</rdfs:label>
+        <rdfs:label xml:lang="en">stem cell</rdfs:label>
     </owl:Class>
     
 
@@ -17416,7 +17416,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000123">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:time series design</rdfs:label>
+        <rdfs:label xml:lang="en">time series design</rdfs:label>
     </owl:Class>
     
 
@@ -17425,7 +17425,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000124">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">EFO:ulcerative colitis</rdfs:label>
+        <rdfs:label xml:lang="en">ulcerative colitis</rdfs:label>
     </owl:Class>
     
 
@@ -17443,7 +17443,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000126">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">ENVO:coral reef</rdfs:label>
+        <rdfs:label xml:lang="en">coral reef</rdfs:label>
     </owl:Class>
     
 
@@ -17452,7 +17452,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000127">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">ENVO:marine sponge reef</rdfs:label>
+        <rdfs:label xml:lang="en">marine sponge reef</rdfs:label>
     </owl:Class>
     
 
@@ -17461,7 +17461,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000128">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">ENVO:microbial mat</rdfs:label>
+        <rdfs:label xml:lang="en">microbial mat</rdfs:label>
     </owl:Class>
     
 
@@ -17470,7 +17470,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000129">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">ENVO:sea water</rdfs:label>
+        <rdfs:label xml:lang="en">sea water</rdfs:label>
     </owl:Class>
     
 
@@ -17479,7 +17479,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000130">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">ERO:metabolic phenotyping</rdfs:label>
+        <rdfs:label xml:lang="en">metabolic phenotyping</rdfs:label>
     </owl:Class>
     
 
@@ -17533,7 +17533,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000136">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">GO:drug transport</rdfs:label>
+        <rdfs:label xml:lang="en">drug transport</rdfs:label>
     </owl:Class>
     
 
@@ -17542,7 +17542,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000137">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">GO:leaf development</rdfs:label>
+        <rdfs:label xml:lang="en">leaf development</rdfs:label>
     </owl:Class>
     
 
@@ -17551,7 +17551,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000138">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">GO:MAPK phosphatase export from nucleus</rdfs:label>
+        <rdfs:label xml:lang="en">MAPK phosphatase export from nucleus</rdfs:label>
     </owl:Class>
     
 
@@ -17560,7 +17560,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000139">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">GO:neurotransmitter transport</rdfs:label>
+        <rdfs:label xml:lang="en">neurotransmitter transport</rdfs:label>
     </owl:Class>
     
 
@@ -17569,7 +17569,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000140">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">GO:response to salt stress</rdfs:label>
+        <rdfs:label xml:lang="en">response to salt stress</rdfs:label>
     </owl:Class>
     
 
@@ -17578,7 +17578,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000141">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">GO:seed development</rdfs:label>
+        <rdfs:label xml:lang="en">seed development</rdfs:label>
     </owl:Class>
     
 
@@ -17587,7 +17587,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000142">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">GO:type III protein secretion system complex</rdfs:label>
+        <rdfs:label xml:lang="en">type III protein secretion system complex</rdfs:label>
     </owl:Class>
     
 
@@ -17596,7 +17596,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000143">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">HP:Acute kidney injury</rdfs:label>
+        <rdfs:label xml:lang="en">Acute kidney injury</rdfs:label>
     </owl:Class>
     
 
@@ -17605,7 +17605,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000144">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">IDO:parasite host</rdfs:label>
+        <rdfs:label xml:lang="en">parasite host</rdfs:label>
     </owl:Class>
     
 
@@ -17614,7 +17614,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000145">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">IDO:pathogen host</rdfs:label>
+        <rdfs:label xml:lang="en">pathogen host</rdfs:label>
     </owl:Class>
     
 
@@ -17695,7 +17695,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000154">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MEDDRA:Dyslipidaemia</rdfs:label>
+        <rdfs:label xml:lang="en">Dyslipidaemia</rdfs:label>
     </owl:Class>
     
 
@@ -17704,7 +17704,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000155">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Anesthesia</rdfs:label>
+        <rdfs:label xml:lang="en">Anesthesia</rdfs:label>
     </owl:Class>
     
 
@@ -17713,7 +17713,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000156">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:avrPto protein, Pseudomonas syringae</rdfs:label>
+        <rdfs:label xml:lang="en">avrPto protein, Pseudomonas syringae</rdfs:label>
     </owl:Class>
     
 
@@ -17722,7 +17722,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000157">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:BIIE 0246</rdfs:label>
+        <rdfs:label xml:lang="en">BIIE 0246</rdfs:label>
     </owl:Class>
     
 
@@ -17731,7 +17731,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000158">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Caloric Restriction</rdfs:label>
+        <rdfs:label xml:lang="en">Caloric Restriction</rdfs:label>
     </owl:Class>
     
 
@@ -17740,7 +17740,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000159">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Carbon Cycle</rdfs:label>
+        <rdfs:label xml:lang="en">Carbon Cycle</rdfs:label>
     </owl:Class>
     
 
@@ -17749,7 +17749,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000160">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Diet, High-Fat</rdfs:label>
+        <rdfs:label xml:lang="en">Diet, High-Fat</rdfs:label>
     </owl:Class>
     
 
@@ -17758,7 +17758,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000161">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Epidemiologic Studies</rdfs:label>
+        <rdfs:label xml:lang="en">Epidemiologic Studies</rdfs:label>
     </owl:Class>
     
 
@@ -17767,7 +17767,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000162">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Herbivory</rdfs:label>
+        <rdfs:label xml:lang="en">Herbivory</rdfs:label>
     </owl:Class>
     
 
@@ -17776,7 +17776,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000163">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Host-Pathogen Interactions</rdfs:label>
+        <rdfs:label xml:lang="en">Host-Pathogen Interactions</rdfs:label>
     </owl:Class>
     
 
@@ -17785,7 +17785,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000164">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Iridoid Glucosides</rdfs:label>
+        <rdfs:label xml:lang="en">Iridoid Glucosides</rdfs:label>
     </owl:Class>
     
 
@@ -17794,7 +17794,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000165">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Ischemic Preconditioning</rdfs:label>
+        <rdfs:label xml:lang="en">Ischemic Preconditioning</rdfs:label>
     </owl:Class>
     
 
@@ -17803,7 +17803,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000166">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Lipid Droplets</rdfs:label>
+        <rdfs:label xml:lang="en">Lipid Droplets</rdfs:label>
     </owl:Class>
     
 
@@ -17812,7 +17812,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000167">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Lipogenesis</rdfs:label>
+        <rdfs:label xml:lang="en">Lipogenesis</rdfs:label>
     </owl:Class>
     
 
@@ -17821,7 +17821,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000168">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Multivariate Analysis</rdfs:label>
+        <rdfs:label xml:lang="en">Multivariate Analysis</rdfs:label>
     </owl:Class>
     
 
@@ -17830,7 +17830,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000169">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:neuropeptide Y2 receptor</rdfs:label>
+        <rdfs:label xml:lang="en">neuropeptide Y2 receptor</rdfs:label>
     </owl:Class>
     
 
@@ -17839,7 +17839,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000170">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Single-Cell Analysis</rdfs:label>
+        <rdfs:label xml:lang="en">Single-Cell Analysis</rdfs:label>
     </owl:Class>
     
 
@@ -17848,7 +17848,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000171">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Transcription Factors</rdfs:label>
+        <rdfs:label xml:lang="en">Transcription Factors</rdfs:label>
     </owl:Class>
     
 
@@ -17857,7 +17857,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000172">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MESH:Phototrophic Processes</rdfs:label>
+        <rdfs:label xml:lang="en">Phototrophic Processes</rdfs:label>
     </owl:Class>
     
 
@@ -17893,7 +17893,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000176">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MP:cardiac fibrosis</rdfs:label>
+        <rdfs:label xml:lang="en">cardiac fibrosis</rdfs:label>
     </owl:Class>
     
 
@@ -17902,7 +17902,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000177">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MS:data processing software</rdfs:label>
+        <rdfs:label xml:lang="en">data processing software</rdfs:label>
     </owl:Class>
     
 
@@ -17911,7 +17911,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000178">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MS:flow injection analysis</rdfs:label>
+        <rdfs:label xml:lang="en">flow injection analysis</rdfs:label>
     </owl:Class>
     
 
@@ -17920,7 +17920,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000179">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MS:inductively coupled plasma</rdfs:label>
+        <rdfs:label xml:lang="en">inductively coupled plasma</rdfs:label>
     </owl:Class>
     
 
@@ -17929,7 +17929,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000180">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MS:LC-MS label-free quantitation analysis</rdfs:label>
+        <rdfs:label xml:lang="en">LC-MS label-free quantitation analysis</rdfs:label>
     </owl:Class>
     
 
@@ -17938,7 +17938,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000181">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">MS:XCMS</rdfs:label>
+        <rdfs:label xml:lang="en">XCMS</rdfs:label>
     </owl:Class>
     
 
@@ -17983,7 +17983,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000186">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCBITAXON:Agrilus planipennis</rdfs:label>
+        <rdfs:label xml:lang="en">Agrilus planipennis</rdfs:label>
     </owl:Class>
     
 
@@ -17992,7 +17992,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000187">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCBITAXON:Hymenoscyphus fraxineus</rdfs:label>
+        <rdfs:label xml:lang="en">Hymenoscyphus fraxineus</rdfs:label>
     </owl:Class>
     
 
@@ -18001,7 +18001,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000188">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCBITAXON:Pseudomonas syringae pv. tomato str. DC3000</rdfs:label>
+        <rdfs:label xml:lang="en">Pseudomonas syringae pv. tomato str. DC3000</rdfs:label>
     </owl:Class>
     
 
@@ -18010,7 +18010,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000189">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:ABCC6 Gene</rdfs:label>
+        <rdfs:label xml:lang="en">ABCC6 Gene</rdfs:label>
     </owl:Class>
     
 
@@ -18019,7 +18019,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000190">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Algorithm</rdfs:label>
+        <rdfs:label xml:lang="en">Algorithm</rdfs:label>
     </owl:Class>
     
 
@@ -18028,7 +18028,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000191">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Apoptosis</rdfs:label>
+        <rdfs:label xml:lang="en">Apoptosis</rdfs:label>
     </owl:Class>
     
 
@@ -18037,7 +18037,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000192">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Autophagy</rdfs:label>
+        <rdfs:label xml:lang="en">Autophagy</rdfs:label>
     </owl:Class>
     
 
@@ -18046,7 +18046,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000193">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Bariatric Surgery</rdfs:label>
+        <rdfs:label xml:lang="en">Bariatric Surgery</rdfs:label>
     </owl:Class>
     
 
@@ -18055,7 +18055,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000194">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Biomarker</rdfs:label>
+        <rdfs:label xml:lang="en">Biomarker</rdfs:label>
     </owl:Class>
     
 
@@ -18064,7 +18064,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000195">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Bronchoalveolar Lavage Fluid</rdfs:label>
+        <rdfs:label xml:lang="en">Bronchoalveolar Lavage Fluid</rdfs:label>
     </owl:Class>
     
 
@@ -18073,7 +18073,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000196">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Cancer Immunology</rdfs:label>
+        <rdfs:label xml:lang="en">Cancer Immunology</rdfs:label>
     </owl:Class>
     
 
@@ -18082,7 +18082,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000197">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Catheterization</rdfs:label>
+        <rdfs:label xml:lang="en">Catheterization</rdfs:label>
     </owl:Class>
     
 
@@ -18091,7 +18091,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000198">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Chemotherapy</rdfs:label>
+        <rdfs:label xml:lang="en">Chemotherapy</rdfs:label>
     </owl:Class>
     
 
@@ -18100,7 +18100,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000199">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Chronic Obstructive Pulmonary Disease</rdfs:label>
+        <rdfs:label xml:lang="en">Chronic Obstructive Pulmonary Disease</rdfs:label>
     </owl:Class>
     
 
@@ -18109,7 +18109,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000200">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Cigarette Smoking</rdfs:label>
+        <rdfs:label xml:lang="en">Cigarette Smoking</rdfs:label>
     </owl:Class>
     
 
@@ -18118,7 +18118,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000201">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Cohort Study</rdfs:label>
+        <rdfs:label xml:lang="en">Cohort Study</rdfs:label>
     </owl:Class>
     
 
@@ -18127,7 +18127,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000202">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Diabetic Retinopathy</rdfs:label>
+        <rdfs:label xml:lang="en">Diabetic Retinopathy</rdfs:label>
     </owl:Class>
     
 
@@ -18136,7 +18136,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000203">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Diagnosis</rdfs:label>
+        <rdfs:label xml:lang="en">Diagnosis</rdfs:label>
     </owl:Class>
     
 
@@ -18145,7 +18145,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000204">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:DNA Analysis</rdfs:label>
+        <rdfs:label xml:lang="en">DNA Analysis</rdfs:label>
     </owl:Class>
     
 
@@ -18154,7 +18154,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000205">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:DNA-Binding Protein Ikaros</rdfs:label>
+        <rdfs:label xml:lang="en">DNA-Binding Protein Ikaros</rdfs:label>
     </owl:Class>
     
 
@@ -18163,7 +18163,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000206">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Early Detection</rdfs:label>
+        <rdfs:label xml:lang="en">Early Detection</rdfs:label>
     </owl:Class>
     
 
@@ -18172,7 +18172,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000207">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Encephalopathy</rdfs:label>
+        <rdfs:label xml:lang="en">Encephalopathy</rdfs:label>
     </owl:Class>
     
 
@@ -18181,7 +18181,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000208">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Epidemiology</rdfs:label>
+        <rdfs:label xml:lang="en">Epidemiology</rdfs:label>
     </owl:Class>
     
 
@@ -18190,7 +18190,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000209">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Exogenous Obesity</rdfs:label>
+        <rdfs:label xml:lang="en">Exogenous Obesity</rdfs:label>
     </owl:Class>
     
 
@@ -18199,7 +18199,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000210">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Fatty Acid Metabolism</rdfs:label>
+        <rdfs:label xml:lang="en">Fatty Acid Metabolism</rdfs:label>
     </owl:Class>
     
 
@@ -18208,7 +18208,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000211">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Gene Knockout</rdfs:label>
+        <rdfs:label xml:lang="en">Gene Knockout</rdfs:label>
     </owl:Class>
     
 
@@ -18217,7 +18217,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000212">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:H1N1 Influenza</rdfs:label>
+        <rdfs:label xml:lang="en">H1N1 Influenza</rdfs:label>
     </owl:Class>
     
 
@@ -18226,7 +18226,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000213">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Hemorrhagic Shock</rdfs:label>
+        <rdfs:label xml:lang="en">Hemorrhagic Shock</rdfs:label>
     </owl:Class>
     
 
@@ -18235,7 +18235,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000214">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Human Study Subject</rdfs:label>
+        <rdfs:label xml:lang="en">Human Study Subject</rdfs:label>
     </owl:Class>
     
 
@@ -18244,7 +18244,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000215">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Hypoxia</rdfs:label>
+        <rdfs:label xml:lang="en">Hypoxia</rdfs:label>
     </owl:Class>
     
 
@@ -18253,7 +18253,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000216">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Influenza</rdfs:label>
+        <rdfs:label xml:lang="en">Influenza</rdfs:label>
     </owl:Class>
     
 
@@ -18262,7 +18262,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000217">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Latin Square Study</rdfs:label>
+        <rdfs:label xml:lang="en">Latin Square Study</rdfs:label>
     </owl:Class>
     
 
@@ -18271,7 +18271,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000218">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Lipidomics</rdfs:label>
+        <rdfs:label xml:lang="en">Lipidomics</rdfs:label>
     </owl:Class>
     
 
@@ -18280,7 +18280,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000219">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Mouse Model</rdfs:label>
+        <rdfs:label xml:lang="en">Mouse Model</rdfs:label>
     </owl:Class>
     
 
@@ -18289,7 +18289,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000220">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Multidrug Resistance-Associated Protein 6</rdfs:label>
+        <rdfs:label xml:lang="en">Multidrug Resistance-Associated Protein 6</rdfs:label>
     </owl:Class>
     
 
@@ -18298,7 +18298,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000221">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Neurotoxin</rdfs:label>
+        <rdfs:label xml:lang="en">Neurotoxin</rdfs:label>
     </owl:Class>
     
 
@@ -18307,7 +18307,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000222">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Nutrition</rdfs:label>
+        <rdfs:label xml:lang="en">Nutrition</rdfs:label>
     </owl:Class>
     
 
@@ -18316,7 +18316,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000223">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Population Based Study</rdfs:label>
+        <rdfs:label xml:lang="en">Population Based Study</rdfs:label>
     </owl:Class>
     
 
@@ -18325,7 +18325,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000224">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Principal Component Analysis</rdfs:label>
+        <rdfs:label xml:lang="en">Principal Component Analysis</rdfs:label>
     </owl:Class>
     
 
@@ -18334,7 +18334,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000225">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Proteomics</rdfs:label>
+        <rdfs:label xml:lang="en">Proteomics</rdfs:label>
     </owl:Class>
     
 
@@ -18343,7 +18343,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000226">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Resveratrol</rdfs:label>
+        <rdfs:label xml:lang="en">Resveratrol</rdfs:label>
     </owl:Class>
     
 
@@ -18352,7 +18352,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000227">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Statistics</rdfs:label>
+        <rdfs:label xml:lang="en">Statistics</rdfs:label>
     </owl:Class>
     
 
@@ -18361,7 +18361,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000228">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Steatosis</rdfs:label>
+        <rdfs:label xml:lang="en">Steatosis</rdfs:label>
     </owl:Class>
     
 
@@ -18370,7 +18370,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000229">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Tobacco Smoke</rdfs:label>
+        <rdfs:label xml:lang="en">Tobacco Smoke</rdfs:label>
     </owl:Class>
     
 
@@ -18379,7 +18379,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000230">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Tumor Necrosis Factor</rdfs:label>
+        <rdfs:label xml:lang="en">Tumor Necrosis Factor</rdfs:label>
     </owl:Class>
     
 
@@ -18388,7 +18388,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000231">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Twin</rdfs:label>
+        <rdfs:label xml:lang="en">Twin</rdfs:label>
     </owl:Class>
     
 
@@ -18397,7 +18397,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000232">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Type 1 Diabetes Mellitus</rdfs:label>
+        <rdfs:label xml:lang="en">Type 1 Diabetes Mellitus</rdfs:label>
     </owl:Class>
     
 
@@ -18406,7 +18406,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000233">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Type 2 Diabetes Mellitus</rdfs:label>
+        <rdfs:label xml:lang="en">Type 2 Diabetes Mellitus</rdfs:label>
     </owl:Class>
     
 
@@ -18415,7 +18415,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000234">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Variation</rdfs:label>
+        <rdfs:label xml:lang="en">Variation</rdfs:label>
     </owl:Class>
     
 
@@ -18424,7 +18424,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000235">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NCIT:Wine</rdfs:label>
+        <rdfs:label xml:lang="en">Wine</rdfs:label>
     </owl:Class>
     
 
@@ -18433,7 +18433,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000236">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">NIFSTD:Benchmarking dataset</rdfs:label>
+        <rdfs:label xml:lang="en">Benchmarking dataset</rdfs:label>
     </owl:Class>
     
 
@@ -18451,7 +18451,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000238">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">OBI:comparative phenotypic assessment</rdfs:label>
+        <rdfs:label xml:lang="en">comparative phenotypic assessment</rdfs:label>
     </owl:Class>
     
 
@@ -18460,7 +18460,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000239">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">OBI:correlation study objective</rdfs:label>
+        <rdfs:label xml:lang="en">correlation study objective</rdfs:label>
     </owl:Class>
     
 
@@ -18469,7 +18469,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000240">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">OBI:intervention design</rdfs:label>
+        <rdfs:label xml:lang="en">intervention design</rdfs:label>
     </owl:Class>
     
 
@@ -18478,7 +18478,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000241">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">OBI:oral administration</rdfs:label>
+        <rdfs:label xml:lang="en">oral administration</rdfs:label>
     </owl:Class>
     
 
@@ -18487,7 +18487,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000242">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">OBI:software pipeline</rdfs:label>
+        <rdfs:label xml:lang="en">software pipeline</rdfs:label>
     </owl:Class>
     
 
@@ -18496,7 +18496,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000243">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">OBI:species comparison design</rdfs:label>
+        <rdfs:label xml:lang="en">species comparison design</rdfs:label>
     </owl:Class>
     
 
@@ -18505,7 +18505,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000244">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">OBI:stimulus or stress design</rdfs:label>
+        <rdfs:label xml:lang="en">stimulus or stress design</rdfs:label>
     </owl:Class>
     
 
@@ -18568,7 +18568,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000251">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">PO:whole plant development stage</rdfs:label>
+        <rdfs:label xml:lang="en">whole plant development stage</rdfs:label>
     </owl:Class>
     
 
@@ -18613,7 +18613,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000256">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">RCD:Phenolics</rdfs:label>
+        <rdfs:label xml:lang="en">Phenolics</rdfs:label>
     </owl:Class>
     
 
@@ -18640,7 +18640,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000259">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">SBO:systems biology representation</rdfs:label>
+        <rdfs:label xml:lang="en">systems biology representation</rdfs:label>
     </owl:Class>
     
 
@@ -18730,7 +18730,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000269">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">SWEET:Horticulture</rdfs:label>
+        <rdfs:label xml:lang="en">Horticulture</rdfs:label>
     </owl:Class>
     
 
@@ -18739,7 +18739,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000270">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">SWO:Metabolomics</rdfs:label>
+        <rdfs:label xml:lang="en">Metabolomics</rdfs:label>
     </owl:Class>
     
 
@@ -18748,7 +18748,7 @@ Environments include natural environments or exposures, experimentally applied c
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000271">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000006"/>
-        <rdfs:label xml:lang="en">SWO:Systems biology</rdfs:label>
+        <rdfs:label xml:lang="en">Systems biology</rdfs:label>
     </owl:Class>
     
 
@@ -19190,7 +19190,7 @@ Environments include natural environments or exposures, experimentally applied c
         <oboInOwl:created_by rdf:datatype="http://www.w3.org/2001/XMLSchema#string">cjm</oboInOwl:created_by>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x anterior_to y iff x is further along the antero-posterior axis than y, towards the head. An antero-posterior axis is an axis that bisects an organism from head end to opposite end of body or tail: bearer</obo:IAO_0000115>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000096</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000096</oboInOwl:hasDbXref>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">anterior_to</oboInOwl:id>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">anterior_to</rdfs:label>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">anterior_to</oboInOwl:shorthand>
@@ -19200,11 +19200,11 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000096"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x anterior_to y iff x is further along the antero-posterior axis than y, towards the head. An antero-posterior axis is an axis that bisects an organism from head end to opposite end of body or tail: bearer</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000097">
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000097</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000097</oboInOwl:hasDbXref>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">distal_to</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">distal_to</oboInOwl:id>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">distal_to</oboInOwl:shorthand>
@@ -19214,13 +19214,13 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000097"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x distal_to y iff x is further along the proximo-distal axis than y, towards the appendage tip. A proximo-distal axis extends from tip of an appendage (distal) to where it joins the body (proximal).</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000098">
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x dorsal_to y iff x is further along the dorso-ventral axis than y, towards the back. A dorso-ventral axis is an axis that bisects an organism from back (e.g. spinal column) to front (e.g. belly).</obo:IAO_0000115>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">dorsal_to</oboInOwl:shorthand>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000098</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000098</oboInOwl:hasDbXref>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">dorsal_to</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">dorsal_to</oboInOwl:id>
     </rdf:Description>
@@ -19228,14 +19228,14 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000098"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x dorsal_to y iff x is further along the dorso-ventral axis than y, towards the back. A dorso-ventral axis is an axis that bisects an organism from back (e.g. spinal column) to front (e.g. belly).</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000099">
         <efo:alternative_term rdf:datatype="http://www.w3.org/2001/XMLSchema#string">caudal_to</efo:alternative_term>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x posterior_to y iff x is further along the antero-posterior axis than y, towards the body/tail. An antero-posterior axis is an axis that bisects an organism from head end to opposite end of body or tail.</obo:IAO_0000115>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">posterior_to</oboInOwl:shorthand>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000099</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000099</oboInOwl:hasDbXref>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">posterior_to</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">posterior_to</oboInOwl:id>
     </rdf:Description>
@@ -19243,7 +19243,7 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000099"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x posterior_to y iff x is further along the antero-posterior axis than y, towards the body/tail. An antero-posterior axis is an axis that bisects an organism from head end to opposite end of body or tail.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000102">
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ventral_to</rdfs:label>
@@ -19251,19 +19251,19 @@ Environments include natural environments or exposures, experimentally applied c
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x ventral_to y iff x is further along the dorso-ventral axis than y, towards the front. A dorso-ventral axis is an axis that bisects an organism from back (e.g. spinal column) to front (e.g. belly).</obo:IAO_0000115>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ventral_to</oboInOwl:shorthand>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000102</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000102</oboInOwl:hasDbXref>
     </rdf:Description>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000102"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x ventral_to y iff x is further along the dorso-ventral axis than y, towards the front. A dorso-ventral axis is an axis that bisects an organism from back (e.g. spinal column) to front (e.g. belly).</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000107">
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">deep_to</oboInOwl:id>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">deep_to</rdfs:label>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000107</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000107</oboInOwl:hasDbXref>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">deep_to</oboInOwl:shorthand>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Further away from the surface of the organism. Thus, the muscular layer is deep to the skin, but superficial to the intestines.</obo:IAO_0000115>
     </rdf:Description>
@@ -19271,10 +19271,10 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000107"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Further away from the surface of the organism. Thus, the muscular layer is deep to the skin, but superficial to the intestines.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000108">
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000108</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000108</oboInOwl:hasDbXref>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">superficial_to</oboInOwl:id>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Near the outer surface of the organism. Thus, skin is superficial to the muscle layer.</obo:IAO_0000115>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">superficial_to</rdfs:label>
@@ -19285,14 +19285,14 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000108"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Near the outer surface of the organism. Thus, skin is superficial to the muscle layer.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000120">
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_left_side_of</oboInOwl:shorthand>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X in_left_side_of Y &lt;=&gt; if Y is subdivided into left and right portions, X is part_of the left portion.</obo:IAO_0000115>
         <rdfs:seeAlso rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.obolibrary.org/obo/uberon/references/reference_0000014</rdfs:seeAlso>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000120</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000120</oboInOwl:hasDbXref>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_left_side_of</oboInOwl:id>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_left_side_of</rdfs:label>
     </rdf:Description>
@@ -19300,13 +19300,13 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000120"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X in_left_side_of Y &lt;=&gt; if Y is subdivided into left and right portions, X is part_of the left portion.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:PATO_mtg_2009</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPATO_mtg_2009</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000121">
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_right_side_of</oboInOwl:id>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_right_side_of</rdfs:label>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000121</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000121</oboInOwl:hasDbXref>
         <rdfs:seeAlso rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.obolibrary.org/obo/uberon/references/reference_0000014</rdfs:seeAlso>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_right_side_of</oboInOwl:shorthand>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X in_right_side_of Y &lt;=&gt; if Y is subdivided into left and right portions, X is part_of the right portion.</obo:IAO_0000115>
@@ -19315,7 +19315,7 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000121"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X in_right_side_of Y &lt;=&gt; if Y is subdivided into left and right portions, X is part_of the right portion.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:PATO_mtg_2009</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPATO_mtg_2009</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000122">
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_posterior_side_of</oboInOwl:shorthand>
@@ -19323,13 +19323,13 @@ Environments include natural environments or exposures, experimentally applied c
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_posterior_side_of</rdfs:label>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X posterior_side_of Y &lt;=&gt; if Y is subdivided into two anterior and posterior portions, X is part_of the posterior portion.</obo:IAO_0000115>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000122</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000122</oboInOwl:hasDbXref>
     </rdf:Description>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000122"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X posterior_side_of Y &lt;=&gt; if Y is subdivided into two anterior and posterior portions, X is part_of the posterior portion.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:PATO_mtg_2009</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPATO_mtg_2009</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000123">
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X anterior_side_of Y &lt;=&gt; if Y is subdivided into two anterior and posterior portions, X is part_of the anterior portion.</obo:IAO_0000115>
@@ -19337,16 +19337,16 @@ Environments include natural environments or exposures, experimentally applied c
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_anterior_side_of</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_anterior_side_of</oboInOwl:id>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000123</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000123</oboInOwl:hasDbXref>
     </rdf:Description>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000123"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X anterior_side_of Y &lt;=&gt; if Y is subdivided into two anterior and posterior portions, X is part_of the anterior portion.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:PATO_mtg_2009</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPATO_mtg_2009</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000124">
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000124</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000124</oboInOwl:hasDbXref>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_proximal_side_of</oboInOwl:shorthand>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X proximal_side_of Y &lt;=&gt; if Y is subdivided into distal and proximal portions, X is part_of the proximal portion.</obo:IAO_0000115>
@@ -19357,10 +19357,10 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000124"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X proximal_side_of Y &lt;=&gt; if Y is subdivided into distal and proximal portions, X is part_of the proximal portion.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:PATO_mtg_2009</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPATO_mtg_2009</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0000125">
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0000125</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0000125</oboInOwl:hasDbXref>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</rdfs:label>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X distal_side_of Y &lt;=&gt; if Y is subdivided into distal and proximal portions, X is part_of the distal portion.</obo:IAO_0000115>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_distal_side_of</oboInOwl:id>
@@ -19371,10 +19371,10 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0000125"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X distal_side_of Y &lt;=&gt; if Y is subdivided into distal and proximal portions, X is part_of the distal portion.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:PATO_mtg_2009</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPATO_mtg_2009</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0001100">
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0001100</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0001100</oboInOwl:hasDbXref>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_superficial_part_of</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_superficial_part_of</oboInOwl:id>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X superficial_part_of Y &lt;=&gt; if Y is subdivided into two superficial and deep portions, X is part_of the superficial portion.</obo:IAO_0000115>
@@ -19385,13 +19385,13 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0001100"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X superficial_part_of Y &lt;=&gt; if Y is subdivided into two superficial and deep portions, X is part_of the superficial portion.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0001101">
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_deep_part_of</rdfs:label>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X superficial_part_of Y &lt;=&gt; if Y is subdivided into two superficial and deep portions, X is part_of the deep portion.</obo:IAO_0000115>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_deep_part_of</oboInOwl:id>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0001101</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0001101</oboInOwl:hasDbXref>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_deep_part_of</oboInOwl:shorthand>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
     </rdf:Description>
@@ -19399,7 +19399,7 @@ Environments include natural environments or exposures, experimentally applied c
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0001101"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X superficial_part_of Y &lt;=&gt; if Y is subdivided into two superficial and deep portions, X is part_of the deep portion.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0001106">
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">proximalmost_part_of</oboInOwl:id>
@@ -19407,7 +19407,7 @@ Environments include natural environments or exposures, experimentally applied c
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X proximalmost_part_of Y &lt;=&gt; X is part_of Y and X is adjacent_to the proximal boundary of Y</obo:IAO_0000115>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">proximalmost_part_of</oboInOwl:shorthand>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0001106</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0001106</oboInOwl:hasDbXref>
     </rdf:Description>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0001106"/>
@@ -19421,19 +19421,19 @@ Environments include natural environments or exposures, experimentally applied c
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">immediately_deep_to</rdfs:label>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">immediately_deep_to</oboInOwl:shorthand>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0001107</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0001107</oboInOwl:hasDbXref>
     </rdf:Description>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0001107"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
         <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">This relation holds when both the deep_to and ajdacent_to relationship similarly hold.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:cjm</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BScjm</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0001113">
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">preaxialmost_part_of</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">preaxialmost_part_of</oboInOwl:id>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0001113</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0001113</oboInOwl:hasDbXref>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">preaxialmost_part_of</oboInOwl:shorthand>
     </rdf:Description>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0001114">
@@ -19443,7 +19443,7 @@ Environments include natural environments or exposures, experimentally applied c
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x preaxial_to y iff x is further along the preaxial-postaxial axis than y, towards the postaxial side.</obo:IAO_0000115>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">postaxial_to</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">postaxial_to</oboInOwl:id>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0001114</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0001114</oboInOwl:hasDbXref>
     </rdf:Description>
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/BSPO_0001114"/>
@@ -19460,7 +19460,7 @@ Environments include natural environments or exposures, experimentally applied c
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0001115">
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">postaxialmost_part_of</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">postaxialmost_part_of</oboInOwl:id>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0001115</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0001115</oboInOwl:hasDbXref>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">postaxialmost_part_of</oboInOwl:shorthand>
     </rdf:Description>
@@ -19468,7 +19468,7 @@ Environments include natural environments or exposures, experimentally applied c
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">intersects_midsagittal_plane_of</oboInOwl:shorthand>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X intersects_median_plane of iff X crosses the midine plane of Y.</obo:IAO_0000115>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:0005001</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0005001</oboInOwl:hasDbXref>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">intersects_midsagittal_plane_of</oboInOwl:id>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">intersects_midsagittal_plane_of</rdfs:label>
     </rdf:Description>
@@ -19477,7 +19477,7 @@ Environments include natural environments or exposures, experimentally applied c
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">preaxial_to</oboInOwl:id>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">preaxial_to</rdfs:label>
         <efo:alternative_term rdf:datatype="http://www.w3.org/2001/XMLSchema#string">anterior_to (developmentally)</efo:alternative_term>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BSPO:1000000</oboInOwl:hasDbXref>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS1000000</oboInOwl:hasDbXref>
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">x preaxial_to y iff x is further along the preaxial-postaxial axis than y, towards the front.</obo:IAO_0000115>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">preaxial_to</oboInOwl:shorthand>
         <efo:alternative_term rdf:datatype="http://www.w3.org/2001/XMLSchema#string">lateral (radial) to</efo:alternative_term>
@@ -19748,7 +19748,7 @@ Environments include natural environments or exposures, experimentally applied c
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/RO_0002256">
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RO:0002256</oboInOwl:hasDbXref>
-        <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">t1 developmentally_induced_by t2 if there is a process of organ induction (GO:0001759) with t1 and t2 as interacting participants. t2 causes t1 to change its fate from a precursor tissue type T to T&apos;, where T&apos; develops_from T.</obo:IAO_0000115>
+        <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">t1 developmentally_induced_by t2 if there is a process of organ induction (0001759) with t1 and t2 as interacting participants. t2 causes t1 to change its fate from a precursor tissue type T to T&apos;, where T&apos; develops_from T.</obo:IAO_0000115>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">developmentally_induced_by</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">developmentally_induced_by</oboInOwl:id>
         <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">sources for developmentally_induced_by relationships in Uberon: Developmental Biology, Gilbert, 8th edition, figure 6.5(F)</rdfs:comment>
@@ -19757,8 +19757,8 @@ Environments include natural environments or exposures, experimentally applied c
     <owl:Axiom>
         <owl:annotatedSource rdf:resource="http://purl.obolibrary.org/obo/RO_0002256"/>
         <owl:annotatedProperty rdf:resource="http://purl.obolibrary.org/obo/IAO_0000115"/>
-        <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">t1 developmentally_induced_by t2 if there is a process of organ induction (GO:0001759) with t1 and t2 as interacting participants. t2 causes t1 to change its fate from a precursor tissue type T to T&apos;, where T&apos; develops_from T.</owl:annotatedTarget>
-        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GO:0001759</oboInOwl:hasDbXref>
+        <owl:annotatedTarget rdf:datatype="http://www.w3.org/2001/XMLSchema#string">t1 developmentally_induced_by t2 if there is a process of organ induction (0001759) with t1 and t2 as interacting participants. t2 causes t1 to change its fate from a precursor tissue type T to T&apos;, where T&apos; develops_from T.</owl:annotatedTarget>
+        <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0001759</oboInOwl:hasDbXref>
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/RO_0002285">
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">developmentally_replaces</oboInOwl:shorthand>
