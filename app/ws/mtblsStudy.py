@@ -384,17 +384,18 @@ class StudyFiles(Resource):
             abort(403)
 
         logger.info('Getting list of all files for MTBLS Study %s', study_id)
-        data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
-        upload_location = data_dict["message"]
+        upload_location = app.config.get('MTBLS_FTP_ROOT') + "/" + study_id.lower() + "-" + obfuscation_code
+        # data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
+        # upload_location = data_dict["message"]
         logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                     study_location, upload_location)
         study_files = get_all_files(study_location)
         upload_files = get_all_files(upload_location)
-        upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
+        # upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
 
         return jsonify({'studyFiles': study_files,
                         'upload': upload_files,
-                        'upload_location': upload_location[1],
+                        'upload_location': upload_location,
                         'obfuscation_code': obfuscation_code})
 
 
