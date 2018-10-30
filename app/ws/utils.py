@@ -215,7 +215,7 @@ def get_file_information(directory):
             dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
             file_time = time.strftime('%d%m%Y %H%M%S', dt)  # 20180724092134
             file_type, status = map_file_type(file_name, directory)
-            file_list.append({"file": file_name, "createdAt": file_time, "type": file_type, "status": status})
+            file_list.append({"file": file_name, "createdAt": dt, "type": file_type, "status": status})
     return file_list
 
 
