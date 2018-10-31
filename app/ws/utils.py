@@ -86,7 +86,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
             if int(time_diff) >= 1:
                 if os.path.isdir(source):
                     shutil.copytree(source, destination, symlinks, ignore)
-                elif not os.path.exists(destination):
+                else:  # elif not os.path.exists(destination):
                     shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
                     logger.info('Copied file %s to %s', source, destination)
 
