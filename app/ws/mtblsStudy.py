@@ -1,17 +1,12 @@
-import glob
-import logging
-import os
-import time
 import json
-from flask import current_app as app, request, abort, send_file
+from flask import request, abort, send_file
 from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_all_files, get_year_plus_one, get_timestamp, new_timestamped_folder, copy_file, \
-    stream_files_to_browser
+from app.ws.utils import *
 from distutils.dir_util import copy_tree
-
+from operator import itemgetter
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -334,7 +329,7 @@ class IsaTabAssayFile(Resource):
 class StudyFiles(Resource):
 
     @swagger.operation(
-        summary="Get a list of all files in a study folder",
+        summary="Get a list of all files in the study and upload folder(s)",
         parameters=[
             {
                 "name": "study_id",
@@ -391,10 +386,19 @@ class StudyFiles(Resource):
                     study_location, upload_location)
         study_files = get_all_files(study_location)
         upload_files = get_all_files(upload_location)
+
+        # Sort the two lists
+        study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
+
+        # We only want the newer upload files, ignore if they are already copied to the study folder
+        pairs = zip(study_files, upload_files)
+        upload_diff = [upload_files for study_files, upload_files in pairs if study_files != upload_files]
+
         upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
 
         return jsonify({'studyFiles': study_files,
-                        'upload': upload_files,
+                        'upload': upload_diff,
+                        'upload_all': upload_files,
                         'upload_location': upload_location[1],
                         'obfuscation_code': obfuscation_code})
 
