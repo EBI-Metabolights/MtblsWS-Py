@@ -1,7 +1,7 @@
 import os
 
 PORT = 5000
-WS_APP_BASE_LINK = "http://www.ebi.ac.uk/metabolights"
+WS_APP_BASE_LINK = "https://www.ebi.ac.uk/metabolights"
 DEBUG = False
 PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
 STATIC_FOLDER = os.path.join(PROJECT_PATH, "static")

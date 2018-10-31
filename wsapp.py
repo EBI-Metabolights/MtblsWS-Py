@@ -101,6 +101,8 @@ def initialize_app(flask_app):
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/addRows/<string:file_name>")
     api.add_resource(UpdateRows, res_path + "/studies/<string:study_id>/updateRows/<string:file_name>")
     api.add_resource(DeleteRows, res_path + "/studies/<string:study_id>/deleteRows/<string:file_name>")
+    api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
+
 
     # Add ontology resources
     api.add_resource(Ontology, res_path + "/studies/ontology")

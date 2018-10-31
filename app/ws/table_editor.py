@@ -768,90 +768,89 @@ class DeleteRows(Resource):
 
 
 class GetTsvFile(Resource):
-    class EditAssayFile(Resource):
-        @swagger.operation(
-            summary="Get TSV table for a study using assay filename",
-            nickname="Get TSV table for a given study",
-            notes="Get a given TSV table for a MTBLS Study with in JSON format.",
-            parameters=[
-                {
-                    "name": "study_id",
-                    "description": "MTBLS Identifier",
-                    "required": True,
-                    "allowMultiple": False,
-                    "paramType": "path",
-                    "dataType": "string"
-                },
-                {
-                    "name": "file_name",
-                    "description": "TSV file name",
-                    "required": True,
-                    "allowMultiple": False,
-                    "paramType": "path",
-                    "dataType": "string"
-                },
-                {
-                    "name": "user_token",
-                    "description": "User API token",
-                    "paramType": "header",
-                    "type": "string",
-                    "required": True,
-                    "allowMultiple": False
-                }
-            ],
-            responseMessages=[
-                {
-                    "code": 200,
-                    "message": "OK. The TSV table is returned"
-                },
-                {
-                    "code": 401,
-                    "message": "Unauthorized. Access to the resource requires user authentication."
-                },
-                {
-                    "code": 403,
-                    "message": "Forbidden. Access to the study is not allowed for this user."
-                },
-                {
-                    "code": 404,
-                    "message": "Not found. The requested identifier is not valid or does not exist."
-                }
-            ]
-        )
-        def get(self, study_id, file_name):
-            # param validation
-            if study_id is None or file_name is None:
-                logger.info('No study_id and/or TSV file name given')
-                abort(404)
-            study_id = study_id.upper()
+    @swagger.operation(
+        summary="Get TSV table for a study using assay filename",
+        nickname="Get TSV table for a given study",
+        notes="Get a given TSV table for a MTBLS Study with in JSON format.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "file_name",
+                "description": "TSV file name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The TSV table is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id, file_name):
+        # param validation
+        if study_id is None or file_name is None:
+            logger.info('No study_id and/or TSV file name given')
+            abort(404)
+        study_id = study_id.upper()
 
-            # User authentication
-            user_token = None
-            if "user_token" in request.headers:
-                user_token = request.headers["user_token"]
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
 
-            logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
-            # check for access rights
-            read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-                wsc.get_permisions(study_id, user_token)
-            if not read_access:
-                abort(403)
+        logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
+        # check for access rights
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permisions(study_id, user_token)
+        if not read_access:
+            abort(403)
 
-            file_name = study_location + "/" + file_name
+        file_name = study_location + "/" + file_name
 
-            logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
-            # Get the Assay table or create a new one if it does not already exist
-            file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+        logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
+        # Get the Assay table or create a new one if it does not already exist
+        file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
 
-            # Get rid of empty numerical values
-            file_df = file_df.replace(np.nan, '', regex=True)
+        # Get rid of empty numerical values
+        file_df = file_df.replace(np.nan, '', regex=True)
 
-            df_data_dict = totuples(file_df.reset_index(), 'rows')
+        df_data_dict = totuples(file_df.reset_index(), 'rows')
 
-            # Get an indexed header row
-            df_header = get_table_header(file_df)
+        # Get an indexed header row
+        df_header = get_table_header(file_df)
 
-            return {'header': df_header, 'data': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
 
 class CopyFilesFolders(Resource):
