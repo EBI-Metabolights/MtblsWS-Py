@@ -76,7 +76,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
             destination = os.path.join(dst, item)
             try:
                 time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
-                logger.info('The difference in time between %s and %s, is %s', source, destination, time_diff)
+                # logger.info('The difference in time between %s and %s, is %s', source, destination, time_diff)
             except FileNotFoundError:
                 time_diff = 1  # Destination folder does not exist
 
@@ -215,9 +215,11 @@ def get_file_information(directory):
     for file_name in os.listdir(directory):
         if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
             dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
+            raw_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
             file_time = time.strftime('%B %d %Y %H:%M:%S', dt)  # 20180724092134
             file_type, status = map_file_type(file_name, directory)
-            file_list.append({"file": file_name, "createdAt": file_time, "type": file_type, "status": status})
+            file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
+                              "type": file_type, "status": status})
     return file_list
 
 
@@ -293,7 +295,6 @@ def stream_files_to_browser(study_location, file_names):
         #     shutil.copyfileobj(r.raw, f)
 
         # return filename
-
 
 
 class LocalFileAdapter(requests.adapters.BaseAdapter):

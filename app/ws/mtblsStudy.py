@@ -380,8 +380,6 @@ class StudyFiles(Resource):
 
         logger.info('Getting list of all files for MTBLS Study %s', study_id)
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
-        # data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
-        # upload_location = data_dict["message"]
         logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                     study_location, upload_location)
         study_files = get_all_files(study_location)
@@ -391,7 +389,7 @@ class StudyFiles(Resource):
         study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
 
         # We only want the newer upload files, ignore if they are already copied to the study folder
-        upload_diff = [upload_files for study_files, upload_files in zip(study_files, upload_files) if study_files != upload_files]
+        upload_diff = [upload_files for study_files, upload_files in zip(study_files, upload_files) if upload_files != study_files]
 
         upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
 
