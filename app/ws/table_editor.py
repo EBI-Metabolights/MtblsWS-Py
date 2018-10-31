@@ -464,7 +464,7 @@ class AddRows(Resource):
             new_row = None
 
         if new_row is None:
-            abort(404, "Please provide valid data for updated new row(s). "
+            abort(417, "Please provide valid data for updated new row(s). "
                        "The JSON string has to have a 'data' element")
 
         try:

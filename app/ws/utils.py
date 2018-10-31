@@ -86,7 +86,8 @@ def copytree(src, dst, symlinks=False, ignore=None):
                 if os.path.isdir(s):
                     shutil.copytree(s, d, symlinks, ignore)
                 elif not os.path.exists(d):
-                    shutil.copy2(s, d)
+                    shutil.copy2(s, d)  # Should retain all file metadata, ie. timestamps
+                    logger.info('Copied file %s to %s', s, d)
 
     except Exception:
         raise
