@@ -72,23 +72,23 @@ def copytree(src, dst, symlinks=False, ignore=None):
         if not os.path.exists(dst):
             os.makedirs(dst, exist_ok=True)
         for item in os.listdir(src):
-            s = os.path.join(src, item)
-            d = os.path.join(dst, item)
+            source = os.path.join(src, item)
+            destination = os.path.join(dst, item)
             try:
-                time_diff = os.stat(d).st_mtime - os.stat(s).st_mtime
-                logger.info('The difference in time between %s and %s, is %s', s, d, time_diff)
+                time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
+                logger.info('The difference in time between %s and %s, is %s', source, destination, time_diff)
             except FileNotFoundError:
                 time_diff = 1  # Destination folder does not exist
 
-            if os.path.isdir(d):
+            if os.path.isdir(destination):
                 pass  # We already have this folder
 
             if int(time_diff) >= 1:
-                if os.path.isdir(s):
-                    shutil.copytree(s, d, symlinks, ignore)
-                elif not os.path.exists(d):
-                    shutil.copy2(s, d)  # Should retain all file metadata, ie. timestamps
-                    logger.info('Copied file %s to %s', s, d)
+                if os.path.isdir(source):
+                    shutil.copytree(source, destination, symlinks, ignore)
+                elif not os.path.exists(destination):
+                    shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
+                    logger.info('Copied file %s to %s', source, destination)
 
     except Exception:
         raise
