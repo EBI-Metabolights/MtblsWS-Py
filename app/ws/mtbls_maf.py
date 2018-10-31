@@ -471,7 +471,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
-        summary="Add a new row to the given annotation file",
+        summary="Add a new row to the given annotation file <b>(Deprecated)</b>",
         nickname="Add MAF row",
         notes="Update a Metabolite Annotation File (MAF) for a given Study.",
         parameters=[
@@ -577,7 +577,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
-        summary="Update existing rows in the given annotation file",
+        summary="Update existing rows in the given annotation file <b>(Deprecated)</b>",
         nickname="Update MAF rows",
         notes="Update rows in the Metabolite Annotation File (MAF) for a given Study.",
         parameters=[
@@ -699,7 +699,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
-        summary="Delete a row of the given annotation file",
+        summary="Delete a row of the given annotation file <b>(Deprecated)</b>",
         nickname="Delete MAF row",
         notes="Update a Metabolite Annotation File (MAF) for a given Study.",
         parameters=[

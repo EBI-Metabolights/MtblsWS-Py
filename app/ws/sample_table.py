@@ -23,7 +23,7 @@ def insert_row(idx, df, df_insert):
 
 class EditSampleFile(Resource):
     @swagger.operation(
-        summary="Get sample table for a study using sample filename",
+        summary="Get sample table for a study using sample filename <b>(Deprecated)</b>",
         nickname="Get sample table for a given study",
         notes="Get a given sample table for a MTBLS Study with in JSON format.",
         parameters=[
@@ -109,7 +109,7 @@ class EditSampleFile(Resource):
         return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
-        summary="Add a new row to the given sample file",
+        summary="Add a new row to the given sample file <b>(Deprecated)</b>",
         nickname="Add sample table row",
         notes="Update an sample table for a given Study.",
         parameters=[
@@ -215,7 +215,7 @@ class EditSampleFile(Resource):
         return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
-        summary="Update existing rows in the given sample file",
+        summary="Update existing rows in the given sample file <b>(Deprecated)</b>",
         nickname="Update sample rows",
         notes="Update rows in the sample table for a given Study.",
         parameters=[
@@ -340,9 +340,9 @@ class EditSampleFile(Resource):
         return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
-        summary="Delete a row of the given sample file",
+        summary="Delete a row of the given sample file <b>(Deprecated)</b>",
         nickname="Delete sample row",
-        notes="Update an samplefor a given Study.",
+        notes="Update an sample for a given Study.",
         parameters=[
             {
                 "name": "study_id",

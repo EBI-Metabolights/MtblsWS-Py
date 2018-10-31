@@ -12,7 +12,7 @@ from app.ws.isaAssay import *
 from app.ws.ontology import *
 from app.ws.assay_table import *
 from app.ws.sample_table import *
-from app.ws.tableColumns import *
+from app.ws.table_editor import *
 
 """
 MTBLS WS-Py
@@ -94,10 +94,13 @@ def initialize_app(flask_app):
     api.add_resource(AssayTable, res_path + "/studies/<string:study_id>/assay/tableCell")
     api.add_resource(EditAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
 
-    # Manipulating table columns
+    # Manipulating TSV tables
     api.add_resource(SimpleColumns, res_path + "/studies/<string:study_id>/addColumn/<string:file_name>")
     api.add_resource(ComplexColumns, res_path + "/studies/<string:study_id>/addColumns/<string:file_name>")
     api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/updateCell/<string:file_name>")
+    api.add_resource(AddRows, res_path + "/studies/<string:study_id>/addRows/<string:file_name>")
+    api.add_resource(UpdateRows, res_path + "/studies/<string:study_id>/updateRows/<string:file_name>")
+    api.add_resource(DeleteRows, res_path + "/studies/<string:study_id>/deleteRows/<string:file_name>")
 
     # Add ontology resources
     api.add_resource(Ontology, res_path + "/studies/ontology")
@@ -113,7 +116,7 @@ def main():
     logger.info("Finished server %s v%s", application.config.get('WS_APP_NAME'), application.config.get('WS_APP_VERSION'))
 
 
-print ("before main stanza")
+print ("before main")
 if __name__ == "__main__":
     print("Setting ssl context for Flask server")
     context = ('ssl/wsapp.crt', 'ssl/wsapp.key')  # SSL certificate and key files

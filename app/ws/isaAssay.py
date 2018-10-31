@@ -175,7 +175,6 @@ class StudyAssay(Resource):
 
 
 class AssayProcesses(Resource):
-
     @swagger.operation(
         summary="Get Assay Process Sequence",
         notes="""Get Assay Process Sequence.

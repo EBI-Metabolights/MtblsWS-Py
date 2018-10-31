@@ -247,6 +247,15 @@ def get_table_header(table_df):
     return mapping
 
 
+def validate_rows(table_header_df, row):
+    for key, value in row[0].items():
+        if key in table_header_df.columns:
+            pass
+        else:
+            return False, "'" + key + "' is not a valid column name. The cell value passed was '" + value + "'"
+    return True, "All columns exist in file"
+
+
 # Convert panda DataFrame to json tuples object
 def totuples(df, text):
     d = [

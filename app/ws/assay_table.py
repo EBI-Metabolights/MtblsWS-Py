@@ -2,6 +2,7 @@ import logging
 import json
 import pandas as pd
 import numpy as np
+import re
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -140,6 +141,9 @@ class AssayTable(Resource):
         except Exception:
             logger.warning('Could not find row (' + row_num + '( and/or column (' + column_name + ') in the table')
 
+        # Remove all ".n" numbers at the end of duplicated column names
+        assay_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+
         # Write the new empty columns back in the file
         assay_df.to_csv(assay_file_name, sep="\t", encoding='utf-8', index=False)
 
@@ -161,7 +165,7 @@ class AssayTable(Resource):
 
 class EditAssayFile(Resource):
     @swagger.operation(
-        summary="Get Assay table for a study using assay filename",
+        summary="Get Assay table for a study using assay filename <b>(Deprecated)</b>",
         nickname="Get Assay table for a given study",
         notes="Get a given Assay table for a MTBLS Study with in JSON format.",
         parameters=[
@@ -243,7 +247,7 @@ class EditAssayFile(Resource):
         return {'assayHeader': df_header, 'assayData': df_data_dict}
 
     @swagger.operation(
-        summary="Add a new row to the given Assay file",
+        summary="Add a new row to the given Assay file <b>(Deprecated)</b>",
         nickname="Add Assay table row",
         notes="Update an Assay table for a given Study.",
         parameters=[
@@ -339,6 +343,9 @@ class EditAssayFile(Resource):
         assay_df = assay_df.replace(np.nan, '', regex=True)  # Remove NaN
         assay_df = assay_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet
 
+        # Remove all ".n" numbers at the end of duplicated column names
+        assay_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+
         # Write the new row back in the file
         assay_df.to_csv(assay_file_name, sep="\t", encoding='utf-8', index=False)
 
@@ -350,7 +357,7 @@ class EditAssayFile(Resource):
         return {'assayHeader': df_header, 'assayData': df_data_dict}
 
     @swagger.operation(
-        summary="Update existing rows in the given Assay file",
+        summary="Update existing rows in the given Assay file <b>(Deprecated)</b>",
         nickname="Update Assay rows",
         notes="Update rows in the Assay table for a given Study.",
         parameters=[
@@ -463,6 +470,9 @@ class EditAssayFile(Resource):
                 row.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
                 assay_df = insert_row(row_index_int, assay_df, row)  # Update the row in the spreadsheet
 
+        # Remove all ".n" numbers at the end of duplicated column names
+        assay_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+
         # Write the new row back in the file
         assay_df.to_csv(assay_file_name, sep="\t", encoding='utf-8', index=False)
 
@@ -474,9 +484,9 @@ class EditAssayFile(Resource):
         return {'assayHeader': df_header, 'assayData': df_data_dict}
 
     @swagger.operation(
-        summary="Delete a row of the given Assay file",
+        summary="Delete a row of the given Assay file <b>(Deprecated)</b>",
         nickname="Delete Assay row",
-        notes="Update an Assayfor a given Study.",
+        notes="Update an Assay for a given Study.",
         parameters=[
             {
                 "name": "study_id",
@@ -565,6 +575,9 @@ class EditAssayFile(Resource):
         sorted_num_rows.sort(reverse=True)
         for num in sorted_num_rows:
             assay_df = assay_df.drop(assay_df.index[num])  # Drop row(s) in the spreadsheet
+
+        # Remove all ".n" numbers at the end of duplicated column names
+        assay_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
 
         # Write the updated file
         assay_df.to_csv(assay_file_name, sep="\t", encoding='utf-8', index=False)
