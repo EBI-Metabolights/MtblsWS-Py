@@ -265,8 +265,7 @@ class WsClient:
         try:
             resp = requests.post(
                 url,
-                headers={"content-type": "application/x-www-form-urlencoded",
-                         "cache-control": "no-cache"},
+                headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
                 data="token=" + (user_token or ''))
 
             if resp.status_code != 200:
