@@ -75,7 +75,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
             s = os.path.join(src, item)
             d = os.path.join(dst, item)
             try:
-                time_diff = os.stat(s).st_mtime - os.stat(d).st_mtime
+                time_diff = os.stat(d).st_mtime - os.stat(s).st_mtime
                 logger.info('The difference in time between %s and %s, is %s', s, d, time_diff)
             except FileNotFoundError:
                 time_diff = 1  # Destination folder does not exist
