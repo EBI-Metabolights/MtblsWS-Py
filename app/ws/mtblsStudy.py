@@ -391,8 +391,7 @@ class StudyFiles(Resource):
         study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
 
         # We only want the newer upload files, ignore if they are already copied to the study folder
-        pairs = zip(study_files, upload_files)
-        upload_diff = [upload_files for study_files, upload_files in pairs if study_files != upload_files]
+        upload_diff = [upload_files for study_files, upload_files in zip(study_files, upload_files) if study_files != upload_files]
 
         upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
 
