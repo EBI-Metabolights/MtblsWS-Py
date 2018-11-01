@@ -586,7 +586,7 @@ class CreateUploadFolder(Resource):
         if not write_access:
             abort(403)
 
-        logger.info('Creating a new study upload folder for study %s for the user', study_id)
+        logger.info('Creating a new study upload folder for study %s', study_id)
         status = wsc.create_upload_folder(study_id, user_token)
 
         data_dict = json.loads(status)

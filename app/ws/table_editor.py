@@ -917,9 +917,10 @@ class CopyFilesFolders(Resource):
         if not write_access:
             abort(403)
 
-        data_dict = json.loads(wsc.create_upload_folder(study_id, user_token))
+        status = wsc.create_upload_folder(study_id, user_token)
+        data_dict = json.loads(status)
         upload_path = data_dict["message"]
-
+        logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_path, study_location)
         status, message = copy_files_and_folders(upload_path, study_location)
         if status:
             return {'Success': 'Copied files from ' + upload_path}

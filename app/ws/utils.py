@@ -101,6 +101,10 @@ def copy_files_and_folders(source, destination):
       :param destination: string containing the path to the source file, including filename
       :return:
       """
+
+    if source is None or destination is None:
+        return False, "Study or upload folder is not known, aborting"
+
     try:
         # copy origin to destination
         logger.info("Copying %s to %s", source, destination)
