@@ -462,7 +462,7 @@ class AddRows(Resource):
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             new_row = data_dict['data']
-        except (KeyError):
+        except KeyError:
             new_row = None
 
         if new_row is None:

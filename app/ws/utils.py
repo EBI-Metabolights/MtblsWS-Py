@@ -73,9 +73,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
             destination = os.path.join(dst, item)
             try:
                 time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
-                logger.info('Time difference is %s between %s and %s', time_diff, source, destination)
-                time_diff2 = os.stat(source).st_mtime - os.stat(destination).st_mtime
-                logger.info('Time difference2 is %s between %s and %s', time_diff2, source, destination)
+                #logger.info('Time difference is %s between %s and %s', time_diff, source, destination)
 
             except FileNotFoundError:
                 time_diff = 1  # Destination folder does not exist
@@ -103,7 +101,7 @@ def copy_files_and_folders(source, destination):
       """
 
     if source is None or destination is None:
-        return False, "Study or upload folder is not known, aborting"
+        return False, 'Study or upload folder is not known, aborting'
 
     try:
         # copy origin to destination
@@ -130,7 +128,7 @@ def remove_samples_from_isatab(std_path):
         src_file = sample_file
         filename = os.path.basename(sample_file)
         dest_file = os.path.join(dest_path, filename)
-        logger.info("Moving %s to %s", src_file, dest_file)
+        logger.info('Moving %s to %s', src_file, dest_file)
         shutil.move(src_file, dest_file)
 
         # remove tagged lines
@@ -224,7 +222,6 @@ def get_file_information(directory):
             file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
                               "type": file_type, "status": status})
     return file_list
-
 
 def get_table_header(table_df):
     # Get an indexed header row
