@@ -240,7 +240,7 @@ def get_table_header(table_df):
 def validate_rows(table_header_df, row):
     try:
         row.pop('index', None)  # Remove "index:n" element, this is the original row number
-    except KeyError:
+    except TypeError:
         pass  # Don't worry if it's not present
 
     if row[0].items() is not None:
