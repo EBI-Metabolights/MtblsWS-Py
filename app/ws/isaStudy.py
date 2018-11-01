@@ -9,27 +9,12 @@ from app.ws.models import *
 from flask_restful_swagger import swagger
 from flask import current_app as app
 from datetime import datetime
+from app.ws.utils import log_request
 import logging
-
-
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
-
-
-# Allow for a more detailed logging when on DEBUG mode
-def log_request(request_obj):
-    if app.config.get('DEBUG'):
-        if app.config.get('DEBUG_LOG_HEADERS'):
-            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
-        if app.config.get('DEBUG_LOG_BODY'):
-            logger.debug('REQUEST BODY    -> %s', request_obj.data)
-        if app.config.get('DEBUG_LOG_JSON'):
-            try:
-                logger.debug('REQUEST JSON    -> %s', request_obj.json)
-            except:
-                logger.debug('REQUEST JSON    -> EMPTY')
 
 
 def extended_response(data=None, errs=None, warns=None):
@@ -99,7 +84,7 @@ class IsaJsonStudy(Resource):
         logger.info('Getting ISA-JSON Study %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -168,7 +153,7 @@ class StudyTitle(Resource):
         logger.info('Getting Study title for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -268,7 +253,7 @@ class StudyTitle(Resource):
         logger.info('Updating Study title for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -341,13 +326,12 @@ class StudyReleaseDateAndStatus(Resource):
         logger.info('Getting Study details for %s, using API-Key %s', study_id, user_token)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
         # Todo, refactor
         # 2012-02-14 00:00:00.0
         readable_date = datetime.fromtimestamp(release_date / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')
-        # return jsonify({"releaseDateAndStatus": wsc.get_study_status_and_release_date(study_id, user_token)})
         return jsonify({"releaseDateAndStatus": [study_status, readable_date]})
 
 
@@ -410,7 +394,7 @@ class StudyDescription(Resource):
         logger.info('Getting Study description for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -514,7 +498,7 @@ class StudyDescription(Resource):
         logger.info('Updating Study description for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -641,7 +625,7 @@ class StudyContacts(Resource):
         logger.info('Adding new Contact %s for %s', new_contact.email, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -737,7 +721,7 @@ class StudyContacts(Resource):
         logger.info('Getting Contacts %s for Study %s', email, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -881,7 +865,7 @@ class StudyContacts(Resource):
         logger.info('Updating Contact details for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -999,7 +983,7 @@ class StudyContacts(Resource):
         logger.info('Deleting contact %s for %s', email, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -1136,7 +1120,7 @@ class StudyProtocols(Resource):
         logger.info('Adding new Protocol %s for %s', new_obj.name, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -1230,7 +1214,7 @@ class StudyProtocols(Resource):
         logger.info('Getting Study protocols for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -1355,7 +1339,7 @@ class StudyProtocols(Resource):
         logger.info('Deleting protocol %s for %s', obj_name, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -1372,7 +1356,6 @@ class StudyProtocols(Resource):
         logger.info('Deleted %s', obj.name)
 
         return jsonify(success=True)
-        #return ProtocolSchema().dump(obj)
 
     @swagger.operation(
         summary='Update Study Protocol',
@@ -1491,7 +1474,7 @@ class StudyProtocols(Resource):
         logger.info('Updating Protocol details for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -1628,7 +1611,7 @@ class StudyFactors(Resource):
         logger.info('Adding new Study Factor %s for %s', new_obj.name, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -1722,7 +1705,7 @@ class StudyFactors(Resource):
         logger.info('Getting Study Factors for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -1845,7 +1828,7 @@ class StudyFactors(Resource):
         logger.info('Deleting Study Factor %s for %s', obj_name, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -1986,14 +1969,14 @@ class StudyFactors(Resource):
             # if partial=True missing fields will be ignored
             result = StudyFactorSchema().load(data, partial=False)
             updated_factor = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # update Study Factor details
         logger.info('Updating Study Factor details for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -2130,7 +2113,7 @@ class StudyDescriptors(Resource):
         logger.info('Adding new Study Design Descriptor %s for %s', new_obj.term, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -2225,7 +2208,7 @@ class StudyDescriptors(Resource):
         logger.info('Getting Study Design Descriptors for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -2349,7 +2332,7 @@ class StudyDescriptors(Resource):
         logger.info('Deleting Study Design Descriptor %s for %s', obj_term, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -2489,7 +2472,7 @@ class StudyDescriptors(Resource):
         logger.info('Updating Study Design Descriptor details for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -2626,7 +2609,7 @@ class StudyPublications(Resource):
         logger.info('Adding new Publication %s for %s', new_publication.title, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -2721,7 +2704,7 @@ class StudyPublications(Resource):
         logger.info('Getting Study Publications for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -2845,7 +2828,7 @@ class StudyPublications(Resource):
         logger.info('Deleting Study Publication %s for %s', publication_title, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -2984,7 +2967,7 @@ class StudyPublications(Resource):
         logger.info('Updating Study Publication details for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -3098,7 +3081,7 @@ class StudySources(Resource):
         logger.info('Getting Study Sources for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -3246,7 +3229,7 @@ class StudySources(Resource):
         logger.info('Updating Study Source details for %s', study_id, user_token)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -3390,7 +3373,7 @@ class StudySamples(Resource):
         logger.info('Adding new Samples to %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -3553,7 +3536,7 @@ class StudySamples(Resource):
         logger.info('Getting Samples for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -3707,7 +3690,7 @@ class StudySamples(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -3831,7 +3814,7 @@ class StudySamples(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -3961,7 +3944,7 @@ class StudyOtherMaterials(Resource):
         logger.info('Adding new Material %s to %s', new_material.name, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -4078,7 +4061,7 @@ class StudyOtherMaterials(Resource):
         logger.info('Getting Other Materials for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -4205,7 +4188,7 @@ class StudyOtherMaterials(Resource):
         logger.info('Deleting Study Material %s for %s', obj_name, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -4346,7 +4329,7 @@ class StudyOtherMaterials(Resource):
         logger.info('Updating Study Material details for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -4476,7 +4459,7 @@ class StudyProcesses(Resource):
         logger.info('Getting Study Processes for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 

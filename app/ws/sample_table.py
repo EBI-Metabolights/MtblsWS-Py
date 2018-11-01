@@ -1,5 +1,9 @@
-import logging, json, pandas as pd, numpy as np
+import logging
+import json
+import pandas as pd
+import numpy as np
 import re
+import os
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -90,11 +94,11 @@ class EditSampleFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
-        sample_file_name = study_location + "/" + sample_file_name
+        sample_file_name = os.path.join(study_location, sample_file_name)
         logger.info('Trying to load sample (%s) for Study %s', sample_file_name, study_id)
         # Get the sample table or create a new one if it does not already exist
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
@@ -175,7 +179,7 @@ class EditSampleFile(Resource):
 
         try:
             for element in new_row:
-                element.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
+                element.pop('index', None)  # Remove "index:n" element, this is the original row number
         except:
             logger.info('No index (row num) supplied, ignoring')
 
@@ -190,11 +194,11 @@ class EditSampleFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        sample_file_name = study_location + "/" + sample_file_name
+        sample_file_name = os.path.join(study_location, sample_file_name)
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
         sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -279,7 +283,7 @@ class EditSampleFile(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_rows = data_dict['data']  # Use "index:n" element from the (JSON) row, this is the original row number
+            new_rows = data_dict['data']  # Use "index:n" element, this is the original row number
         except (KeyError):
             new_rows = None
 
@@ -305,11 +309,11 @@ class EditSampleFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        sample_file_name = study_location + "/" + sample_file_name
+        sample_file_name = os.path.join(study_location, sample_file_name)
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
         sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -323,7 +327,7 @@ class EditSampleFile(Resource):
             if row_index_int is not None:
                 sample_df = sample_df.drop(sample_df.index[row_index_int])  # Remove the old row from the spreadsheet
                 # pop the "index:n" from the new_row before updating
-                row.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
+                row.pop('index', None)  # Remove "index:n" element, this is the original row number
                 sample_df = insert_row(row_index_int, sample_df, row)  # Update the row in the spreadsheet
 
         df_data_dict = totuples(sample_df.reset_index(), 'rows')
@@ -415,11 +419,11 @@ class EditSampleFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        sample_file_name = study_location + "/" + sample_file_name
+        sample_file_name = os.path.join(study_location, sample_file_name)
 
         sample_df = pd.read_csv(sample_file_name, sep="\t", header=0, encoding='utf-8')
         sample_df = sample_df.replace(np.nan, '', regex=True)  # Remove NaN

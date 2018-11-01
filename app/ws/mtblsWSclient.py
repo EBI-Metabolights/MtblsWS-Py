@@ -237,7 +237,8 @@ class WsClient:
     CAN_READ = 0
     CAN_WRITE = 1
 
-    def get_permisions(self, study_id, user_token):
+    @staticmethod
+    def get_permissions(study_id, user_token):
         """
         Check MTBLS-WS for permissions on this Study for this user
 
@@ -281,13 +282,15 @@ class WsClient:
             release_date = content['releaseDate']
             submission_date = content['submissionDate']
             study_status = content['studyStatus']
-            logger.info('... found permissions on %s for reading: %s and writing: %s', study_id, read_access, write_access)
+            logger.info('... found permissions on %s for reading: %s and writing: %s',
+                        study_id, read_access, write_access)
         except:
             logger.info("Connection refused by the server or parameters were missing...")
 
         return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
 
-    def get_queue_folder(self):
+    @staticmethod
+    def get_queue_folder():
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/getQueueFolder"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
 
@@ -305,8 +308,10 @@ class WsClient:
 
         return str_resp
 
-    def create_upload_folder(self, study_id, user_token):
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
+    @staticmethod
+    def create_upload_folder(study_id, user_token):
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') \
+                   + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
 
@@ -321,4 +326,3 @@ class WsClient:
         logger.info('Study upload folder for %s has been created', study_id)
         message = resp.text
         return message
-

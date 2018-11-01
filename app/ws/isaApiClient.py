@@ -47,10 +47,10 @@ class IsaApiClient:
         isa_json = None
         try:
             isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=True)
-        except Exception as inst:  # on failure, use the old one
+        except Exception:  # on failure, use the old one
             try:
                 isa_json = isatab2json.convert(path, validate_first=False, use_new_parser=False)
-            except Exception as inst:
+            except Exception:
                 # if it fails too
                 if isa_json is None:
                     abort(500)
@@ -61,7 +61,8 @@ class IsaApiClient:
             logger.info('... get_isa_json() processing (II): %s sec.', time.time() - start)
             return isa_json
 
-    def create_new_study(self, title, description, sub_date, pub_rel_date):
+    @staticmethod
+    def create_new_study(title, description, sub_date, pub_rel_date):
         """
         Create a new MTBLS Study
         :param title: 
@@ -160,7 +161,7 @@ class IsaApiClient:
                     dest_file = os.path.join(dest_path, assay_file_name)
                     logger.info("Copying %s to %s", src_file, dest_file)
                     copy_file(src_file, dest_file)
-                # Also save the MAF
+                # Save the MAF
                 for maf in glob.glob(os.path.join(std_path, "m_*.tsv")):
                     maf_file_name = os.path.basename(maf)
                     src_file = maf

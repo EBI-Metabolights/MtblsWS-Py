@@ -115,7 +115,7 @@ class IsaTabInvestigationFile(Resource):
             inv_filename = 'i_Investigation.txt'
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -209,12 +209,12 @@ class IsaTabSampleFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
         logger.info('Getting ISA-Tab Sample file for %s', study_id)
-        location = study_location  # wsc.get_study_location(study_id, user_token)
+        location = study_location
         files = glob.glob(os.path.join(location, sample_filename))
         if files:
             file_path = files[0]
@@ -304,12 +304,11 @@ class IsaTabAssayFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
         logger.info('Getting ISA-Tab Assay file for %s', study_id)
-        # location = wsc.get_study_location(study_id, user_token)
         location = study_location
 
         files = glob.glob(os.path.join(location, assay_filename))
@@ -374,7 +373,7 @@ class StudyFiles(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -389,7 +388,8 @@ class StudyFiles(Resource):
         study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
 
         # We only want the newer upload files, ignore if they are already copied to the study folder
-        upload_diff = [upload_files for study_files, upload_files in zip(study_files, upload_files) if upload_files != study_files]
+        upload_diff = [upload_files for study_files, upload_files
+                       in zip(study_files, upload_files) if upload_files != study_files]
 
         upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
 
@@ -464,7 +464,7 @@ class AllocateAccession(Resource):
             study_id = 'MTBLS121'  # This is the standard LC-MS study. This is private but safe for all to clone
 
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
 
         if not read_access:
             abort(403)
@@ -478,22 +478,24 @@ class AllocateAccession(Resource):
         logger.info('Creating a new MTBLS Study (cloned from %s) with release date %s', study_id, study_date)
         new_folder_name = user_token + '~~' + study_date + '~' + 'new_study_requested_' + get_timestamp()
 
-        study_to_clone = study_location  # wsc.get_study_location(study_id, user_token)
+        study_to_clone = study_location
         queue_folder = wsc.get_queue_folder()
         existing_studies = wsc.get_all_studies_for_user(user_token)
         logger.info('Found the following studies: ' + existing_studies)
 
-        logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name + ', to the queue folder ' + queue_folder)
+        logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name +
+                    ', to the queue folder ' + queue_folder)
         # copy the study onto the queue folder
         try:
-            logger.info('Attempting to copy ' + study_to_clone + ' to MetaboLights queue folder ' + os.path.join(queue_folder, new_folder_name))
-            copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the entire folder to the queue
+            logger.info('Attempting to copy ' + study_to_clone + ' to MetaboLights queue folder ' +
+                        os.path.join(queue_folder, new_folder_name))
+            copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the folder to the queue
             # There is a bug in copy_tree which prevents you to use the same destination folder twice
         except:
             return {"error": "Could not add study into the MetaboLights queue"}
 
         logger.info('Folder successfully added to the queue')
-        # get a list of the users private studies to see if a new study has been created. Have to query on a regular basis
+        # get a list of the users private studies to see if a new study has been created
         new_studies = wsc.get_all_studies_for_user(user_token)
         number = 0
         while existing_studies == new_studies:
@@ -553,7 +555,8 @@ class CreateUploadFolder(Resource):
             },
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication. Please provide a study id and a valid user token"
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
             },
             {
                 "code": 403,
@@ -579,7 +582,7 @@ class CreateUploadFolder(Resource):
 
         # param validation
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -621,7 +624,8 @@ class saveAuditFiles(Resource):
             },
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication. Please provide a study id and a valid user token"
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
             },
             {
                 "code": 403,
@@ -647,7 +651,7 @@ class saveAuditFiles(Resource):
 
         # param validation
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -670,7 +674,6 @@ def write_audit_files(study_location):
     """
     # dest folder name is a timestamp
     update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
-    # study_location = wsc.get_study_location(study_id, user_token)
     update_path = os.path.join(study_location, update_path_suffix)
     dest_path = new_timestamped_folder(update_path)
 
@@ -686,78 +689,3 @@ def write_audit_files(study_location):
         return False, dest_path
 
     return True, dest_path
-
-
-class DownloadFiles(Resource):
-
-    @swagger.operation(
-        summary="Download a given file to the browser",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "Study Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "file_name",
-                "description": "Comma-separated files you want to download, names only",
-                "required": True,
-                "allowEmptyValue": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
-    def get(self, study_id):
-
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
-        if not read_access:
-            abort(403)
-
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('file_name', help='Filename(s)')
-        file_names = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            file_names = args['file_name'].lower() if args['file_name'] else None
-        if not file_names:
-            logger.warning("Missing filename(s).")
-            abort(400, "Missing filename(s).")
-
-        return stream_files_to_browser(study_location, file_names)

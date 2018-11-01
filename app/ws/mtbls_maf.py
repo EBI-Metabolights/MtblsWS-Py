@@ -1,4 +1,4 @@
-import logging, json, pandas as pd, numpy as np
+import logging, json, pandas as pd, numpy as np, os
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -193,7 +193,7 @@ class MetaboliteAnnotationFile(Resource):
         logger.info('MAF: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -209,8 +209,8 @@ class MetaboliteAnnotationFile(Resource):
 
         col_names = [sample_name, assay_name]
 
-        annotation_file_name = study_location + "/" + annotation_file_name
-        assay_file_name = study_location + "/" + assay_file_name
+        annotation_file_name = os.path.join(study_location, annotation_file_name)
+        assay_file_name = os.path.join(study_location, assay_file_name)
 
         # Get the MAF table or create a new one if it does not already exist
         try:
@@ -351,11 +351,11 @@ class MetaboliteAnnotationFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        annotation_file_name = study_location + "/" + annotation_file_name
+        annotation_file_name = os.path.join(study_location, annotation_file_name)
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)
@@ -452,11 +452,11 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
-        annotation_file_name = study_location + "/" + annotation_file_name
+        annotation_file_name = os.path.join(study_location, annotation_file_name)
         logger.info('Trying to load MAF (%s) for Study %s', annotation_file_name, study_id)
         # Get the MAF table or create a new one if it does not already exist
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
@@ -541,7 +541,7 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         try:
             for element in new_row:
-                element.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
+                element.pop('index', None)  # Remove "index:n" element, this is the original row number
         except:
             logger.info('No index (row num) supplied, ignoring')
 
@@ -556,11 +556,11 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        annotation_file_name = study_location + "/" + annotation_file_name
+        annotation_file_name = os.path.join(study_location, annotation_file_name)
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -642,7 +642,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             new_rows = data_dict['data']  # Use "index:n" element from the (JSON) row, this is the original row number
-        except (KeyError):
+        except KeyError:
             new_rows = None
 
         if new_rows is None:
@@ -652,7 +652,7 @@ class ReadMetaboliteAnnotationFile(Resource):
         for row in new_rows:
             try:
                 row_index = row['index']  # Check if we have a value in the row number(s)
-            except (KeyError):
+            except KeyError:
                 row_index = None
 
             if new_rows is None or row_index is None:
@@ -667,11 +667,11 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        annotation_file_name = study_location + "/" + annotation_file_name
+        annotation_file_name = os.path.join(study_location, annotation_file_name)
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -685,7 +685,7 @@ class ReadMetaboliteAnnotationFile(Resource):
             if row_index_int is not None:
                 maf_df = maf_df.drop(maf_df.index[row_index_int])  # Remove the old row from the spreadsheet
                 # pop the "index:n" from the new_row before updating
-                row.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
+                row.pop('index', None)  # Remove "index:n" element, this is the original row number
                 maf_df = insert_row(row_index_int, maf_df, row)  # Update the row in the spreadsheet
 
         # Write the new row back in the file
@@ -774,11 +774,11 @@ class ReadMetaboliteAnnotationFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        annotation_file_name = study_location + "/" + annotation_file_name
+        annotation_file_name = os.path.join(study_location, annotation_file_name)
 
         maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
         maf_df = maf_df.replace(np.nan, '', regex=True)  # Remove NaN

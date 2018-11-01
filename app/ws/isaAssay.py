@@ -13,6 +13,7 @@ logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
 
+
 # Allow for a more detailed logging when on DEBUG mode
 def log_request(request_obj):
     if app.config.get('DEBUG'):
@@ -32,7 +33,7 @@ def extended_response(data=None, errs=None, warns=None):
 
 
 def get_assay(assay_list, filename):
-    for indx, assay in enumerate(assay_list):
+    for index, assay in enumerate(assay_list):
         if assay.filename.lower() == filename:
             return assay
 
@@ -59,6 +60,7 @@ def get_protocol(protocol_list, protocol_name):
 
 
 class StudyAssay(Resource):
+
     @swagger.operation(
         summary="Get Study Assay",
         notes="""Get Study Assay.""",
@@ -147,7 +149,7 @@ class StudyAssay(Resource):
         logger.info('Getting Assay %s for %s', filename, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -157,7 +159,6 @@ class StudyAssay(Resource):
 
         obj_list = isa_study.assays
         found = list()
-        warns = []
         if not filename:
             found = obj_list
         else:
@@ -175,6 +176,7 @@ class StudyAssay(Resource):
 
 
 class AssayProcesses(Resource):
+
     @swagger.operation(
         summary="Get Assay Process Sequence",
         notes="""Get Assay Process Sequence.
@@ -304,7 +306,7 @@ class AssayProcesses(Resource):
         logger.info('Getting Processes for Assay %s in %s', assay_filename, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -355,26 +357,26 @@ class AssayProcesses(Resource):
 
 
 def set_default_output(isa_assay, proc_list, warns):
-        for i, proc in enumerate(proc_list):
-            # check Extraction outputs
-            if proc.executes_protocol.name == 'Extraction':
-                if not proc.outputs:
-                    # take inputs from next process
-                    if proc.next_process.inputs:
-                        proc.outputs = proc.next_process.inputs
-                        warns.append({'message': 'Using ' + (proc.next_process.name if proc.next_process.name else proc.next_process.executes_protocol.name) + ' inputs' + ' as outputs for ' + proc.name})
-                    # create from self inputs
-                    elif proc.inputs:
-                        # create output
-                        for input in proc.inputs:
-                            if isinstance(input, Sample):
-                                extract = Extract(name=input.name + '_' + 'Extract',
-                                                  comments=[{'name': 'Inferred',
-                                                             'value': 'Value was missing in ISA-Tab, '
-                                                                      'so building from Sample name.'}])
-                                proc.outputs.append(extract)
-                                isa_assay.other_material.append(extract)
-                                warns.append({'message': 'Created new Extract ' + extract.name})
+    for i, proc in enumerate(proc_list):
+        # check Extraction outputs
+        if proc.executes_protocol.name == 'Extraction':
+            if not proc.outputs:
+                # take inputs from next process
+                if proc.next_process.inputs:
+                    proc.outputs = proc.next_process.inputs
+                    warns.append({'message': 'Using ' + (proc.next_process.name if proc.next_process.name else proc.next_process.executes_protocol.name) + ' inputs' + ' as outputs for ' + proc.name})
+                # create from self inputs
+                elif proc.inputs:
+                    # create output
+                    for input in proc.inputs:
+                        if isinstance(input, Sample):
+                            extract = Extract(name=input.name + '_' + 'Extract',
+                                              comments=[{'name': 'Inferred',
+                                                         'value': 'Value was missing in ISA-Tab, '
+                                                                  'so building from Sample name.'}])
+                            proc.outputs.append(extract)
+                            isa_assay.other_material.append(extract)
+                            warns.append({'message': 'Created new Extract ' + extract.name})
 
 
 def set_default_proc_name(obj_list, warns):
@@ -469,7 +471,6 @@ class AssaySamples(Resource):
             }
         ]
     )
-
     def get(self, study_id):
         log_request(request)
         # param validation
@@ -498,7 +499,7 @@ class AssaySamples(Resource):
         logger.info('Getting Samples for Assay %s in %s', assay_filename, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -535,7 +536,6 @@ class AssaySamples(Resource):
         if list_only:
             sch = SampleSchema(only=('name',), many=True)
         return extended_response(data={'samples': sch.dump(found).data}, warns=warns)
-
 
     @swagger.operation(
         summary='Update Assay Samples',
@@ -683,7 +683,7 @@ class AssaySamples(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -875,7 +875,7 @@ class AssayOtherMaterials(Resource):
         logger.info('Getting Other Materials for Assay %s in %s', assay_filename, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -915,6 +915,7 @@ class AssayOtherMaterials(Resource):
 
 
 class AssayDataFiles(Resource):
+
     @swagger.operation(
         summary="Get Assay Data File",
         notes="""Get Assay Data File.
@@ -1018,7 +1019,7 @@ class AssayDataFiles(Resource):
         logger.info('Getting Data Files for Assay %s in %s', assay_filename, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 

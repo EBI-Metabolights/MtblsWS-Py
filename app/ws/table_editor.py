@@ -3,11 +3,12 @@ import pandas as pd
 import numpy as np
 import json
 import re
+import os
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_table_header, totuples, copy_files_and_folders, validate_rows
+from app.ws.utils import get_table_header, totuples, copy_files_and_folders, validate_rows, log_request
 
 """
 MTBLS Table Columns manipulator
@@ -130,11 +131,11 @@ class SimpleColumns(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        file_name = study_location + "/" + file_name
+        file_name = os.path.join(study_location, file_name)
 
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
         table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -144,7 +145,8 @@ class SimpleColumns(Resource):
         for row_val in range(table_df.shape[0]):
             new_col.append(new_column_default_value)
 
-        table_df.insert(loc=int(new_column_position), column=new_column_name, value=new_col, allow_duplicates=True)  # Add new column to the spreadsheet
+        # Add new column to the spreadsheet
+        table_df.insert(loc=int(new_column_position), column=new_column_name, value=new_col, allow_duplicates=True)
 
         df_data_dict = totuples(table_df.reset_index(), 'rows')
 
@@ -227,7 +229,7 @@ class ComplexColumns(Resource):
             new_columns = None
 
         if new_columns is None:
-            abort(404, "Please provide valid key-value pairs for the new columns."
+            abort(417, "Please provide valid key-value pairs for the new columns."
                        "The JSON string has to have a 'data' element")
 
         # param validation
@@ -242,11 +244,11 @@ class ComplexColumns(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        file_name = study_location + "/" + file_name
+        file_name = os.path.join(study_location, file_name)
 
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
         table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -362,11 +364,11 @@ class ColumnsRows(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        file_name = study_location + "/" + file_name
+        file_name = os.path.join(study_location, file_name)
 
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
         table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -380,7 +382,7 @@ class ColumnsRows(Resource):
                 for row_val in range(table_df.shape[0]):
                     table_df.iloc[int(row_index), int(column_index)] = cell_value
             except ValueError:
-                abort(417)
+                abort(417, "Unable to find the required 'value', 'row' and 'column' values")
 
         # Write the new row back in the file
         table_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
@@ -456,7 +458,7 @@ class AddRows(Resource):
         ]
     )
     def post(self, study_id, file_name):
-
+        log_request(request)
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             new_row = data_dict['data']
@@ -464,12 +466,11 @@ class AddRows(Resource):
             new_row = None
 
         if new_row is None:
-            abort(417, "Please provide valid data for updated new row(s). "
-                       "The JSON string has to have a 'data' element")
+            abort(417, "Please provide valid data for updated new row(s). The JSON string has to have a 'data' element")
 
         try:
             for element in new_row:
-                element.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
+                element.pop('index', None)  # Remove "index:n" element, this is the original row number
         except:
             logger.info('No index (row num) supplied, ignoring')
 
@@ -485,11 +486,11 @@ class AddRows(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        file_name = study_location + "/" + file_name
+        file_name = os.path.join(study_location, file_name)
 
         file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
         file_df = file_df.replace(np.nan, '', regex=True)  # Remove NaN values
@@ -573,6 +574,10 @@ class UpdateRows(Resource):
                 "message": "Not found or missing parameters. The requested identifier is not valid or does not exist."
             },
             {
+                "code": 406,
+                "message": "Please provide valid parameters for study identifier and TSV file name"
+            },
+            {
                 "code": 417,
                 "message": "The column name given does not exist in the TSV file"
             }
@@ -582,13 +587,13 @@ class UpdateRows(Resource):
 
         # param validation
         if study_id is None or file_name is None:
-            abort(404, 'Please provide valid parameters for study identifier and TSV file name')
+            abort(406, 'Please provide valid parameters for study identifier and TSV file name')
         study_id = study_id.upper()
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             new_rows = data_dict[
-                'data']  # Use "index:n" element from the (JSON) row, this is the original row number
+                'data']  # Use "index:n" element, this is the original row number
         except (KeyError):
             new_rows = None
 
@@ -614,12 +619,11 @@ class UpdateRows(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        # TODO, don't use xNIX notation for file separator
-        file_name = study_location + "/" + file_name
+        file_name = os.path.join(study_location, file_name)
 
         file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
         file_df = file_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -638,7 +642,7 @@ class UpdateRows(Resource):
             if row_index_int is not None:
                 file_df = file_df.drop(file_df.index[row_index_int])  # Remove the old row from the spreadsheet
                 # pop the "index:n" from the new_row before updating
-                row.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
+                row.pop('index', None)  # Remove "index:n" element, this is the original row number
                 file_df = insert_row(row_index_int, file_df, row)  # Update the row in the spreadsheet
 
         # Remove all ".n" numbers at the end of duplicated column names
@@ -733,11 +737,11 @@ class DeleteRows(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        file_name = study_location + "/" + file_name
+        file_name = os.path.join(study_location, file_name)
 
         file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
         file_df = file_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -832,11 +836,11 @@ class GetTsvFile(Resource):
         logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
-        file_name = study_location + "/" + file_name
+        file_name = os.path.join(study_location, file_name)
 
         logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
@@ -909,7 +913,7 @@ class CopyFilesFolders(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 

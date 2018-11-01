@@ -4,10 +4,7 @@ import os
 import shutil
 import time
 import datetime
-import requests
-from urllib.request import url2pathname, urlretrieve
 from flask import current_app as app
-from html.parser import HTMLParser
 import pandas as pd
 
 """
@@ -110,7 +107,6 @@ def copy_files_and_folders(source, destination):
     except IsADirectoryError:
         return False, 'Please give filename(s), not only upload folder ' + source
     except Exception:
-        raise
         return False, 'Could not copy files from ' + source
 
     return True, 'Files successfully copied from ' + source + ' to ' + destination
@@ -223,23 +219,6 @@ def get_file_information(directory):
     return file_list
 
 
-class MLStripper(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.reset()
-        self.fed = []
-    def handle_data(self, d):
-        self.fed.append(d)
-    def get_data(self):
-        return ''.join(self.fed)
-
-
-def strip_tags(html):
-    s = MLStripper()
-    s.feed(html)
-    return s.get_data()
-
-
 def get_table_header(table_df):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
@@ -252,7 +231,18 @@ def get_table_header(table_df):
 
 
 def validate_rows(table_header_df, row):
-    for key, value in row[0].items():
+    try:
+        row.pop('index', None)  # Remove "index:n" element, this is the original row number
+    except:
+        pass  # Don't worry if it's not present
+
+    if row[0].items() is not None:
+        a_row = row[0].items()
+    else:
+        a_row = row.items()
+
+    for key, value in a_row:
+
         if key in table_header_df.columns:
             pass
         else:
@@ -272,80 +262,15 @@ def totuples(df, text):
     return {text: d}
 
 
-def stream_files_to_browser(study_location, file_names):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
-    for file_name in file_names.split(','):
-        url = 'file://' + os.path.join(study_location.strip(), file_name.strip())
-        filename = file_name
-        return urlretrieve(url, filename)
-
-        # r = requests.session()
-        # r.mount('file://', LocalFileAdapter())
-        # r.get(url, stream=True)
-        # with open(filename, 'wb') as f:
-        #     for chunk in r..iter_content(chunk_size=1024):
-        #         if chunk:  # filter out keep-alive new chunks
-        #             f.write(chunk)
-        #             # f.flush() commented by recommendation from J.F.Sebastian
-        # return filename
-
-        # r = requests.get(url, stream=True)
-        # with open(filename, 'wb') as f:
-        #     shutil.copyfileobj(r.raw, f)
-
-        # return filename
-
-
-class LocalFileAdapter(requests.adapters.BaseAdapter):
-    """Protocol Adapter to allow Requests to GET file:// URLs
-
-    @todo: Properly handle non-empty hostname portions.
-    """
-
-    @staticmethod
-    def _chkpath(method, path):
-        """Return an HTTP status for the given filesystem path."""
-        if method.lower() in ('put', 'delete'):
-            return 501, "Not Implemented"  # TODO
-        elif method.lower() not in ('get', 'head'):
-            return 405, "Method Not Allowed"
-        elif os.path.isdir(path):
-            return 400, "Path Not A File"
-        elif not os.path.isfile(path):
-            return 404, "File Not Found"
-        elif not os.access(path, os.R_OK):
-            return 403, "Access Denied"
-        else:
-            return 200, "OK"
-
-    def send(self, req, **kwargs):  # pylint: disable=unused-argument
-        """Return the file specified by the given request
-
-        @type req: C{PreparedRequest}
-        @todo: Should I bother filling `response.headers` and processing
-               If-Modified-Since and friends using `os.stat`?
-        """
-        path = os.path.normcase(os.path.normpath(url2pathname(req.path_url)))
-        response = requests.Response()
-
-        response.status_code, response.reason = self._chkpath(req.method, path)
-        if response.status_code == 200 and req.method.lower() != 'head':
+# Allow for a more detailed logging when on DEBUG mode
+def log_request(request_obj):
+    if app.config.get('DEBUG'):
+        if app.config.get('DEBUG_LOG_HEADERS'):
+            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
+        if app.config.get('DEBUG_LOG_BODY'):
+            logger.debug('REQUEST BODY    -> %s', request_obj.data)
+        if app.config.get('DEBUG_LOG_JSON'):
             try:
-                response.raw = open(path, 'rb')
-            except (OSError, IOError) as err:
-                response.status_code = 500
-                response.reason = str(err)
-
-        if isinstance(req.url, bytes):
-            response.url = req.url.decode('utf-8')
-        else:
-            response.url = req.url
-
-        response.request = req
-        response.connection = self
-
-        return response
-
-    def close(self):
-        pass
+                logger.debug('REQUEST JSON    -> %s', request_obj.json)
+            except:
+                logger.debug('REQUEST JSON    -> EMPTY')

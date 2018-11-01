@@ -1,4 +1,3 @@
-import config
 import logging
 from flask_restful import Resource, fields, marshal_with
 from flask_restful_swagger import swagger

@@ -108,7 +108,7 @@ class IsaInvestigation(Resource):
         logger.info('Getting Investigation %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -220,7 +220,7 @@ class IsaInvestigation(Resource):
         logger.info('Updating Study Publication details for %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 

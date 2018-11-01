@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import numpy as np
 import re
+import os
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -125,11 +126,11 @@ class AssayTable(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        assay_file_name = study_location + "/" + assay_file_name
+        assay_file_name = os.path.join(study_location, assay_file_name)
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
         assay_df = assay_df.replace(np.nan, '', regex=True)
@@ -228,11 +229,11 @@ class EditAssayFile(Resource):
         logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
-        assay_file_name = study_location + "/" + assay_file_name
+        assay_file_name = os.path.join(study_location, assay_file_name)
         logger.info('Trying to load Assay (%s) for Study %s', assay_file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
@@ -244,7 +245,7 @@ class EditAssayFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(assay_df)
 
-        return {'assayHeader': df_header, 'assayData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
         summary="Add a new row to the given Assay file <b>(Deprecated)</b>",
@@ -307,8 +308,8 @@ class EditAssayFile(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_row = data_dict['assayData']
-        except (KeyError):
+            new_row = data_dict['data']
+        except KeyError:
             new_row = None
 
         if new_row is None:
@@ -317,7 +318,7 @@ class EditAssayFile(Resource):
 
         try:
             for element in new_row:
-                element.pop('index', None)  # Remove "index:n" element from the (JSON) row, this is the original row number
+                element.pop('index', None)  # Remove "index:n" element, this is the original row number
         except:
             logger.info('No index (row num) supplied, ignoring')
 
@@ -333,11 +334,11 @@ class EditAssayFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        assay_file_name = study_location + "/" + assay_file_name
+        assay_file_name = os.path.join(study_location, assay_file_name)
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
         assay_df = assay_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -354,7 +355,7 @@ class EditAssayFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(assay_df)
 
-        return {'assayHeader': df_header, 'assayData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
         summary="Update existing rows in the given Assay file <b>(Deprecated)</b>",
@@ -422,8 +423,8 @@ class EditAssayFile(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_rows = data_dict['assayData']  # Use "index:n" element from the (JSON) row, this is the original row number
-        except (KeyError):
+            new_rows = data_dict['data']  # Use "index:n" element, this is the original row number
+        except KeyError:
             new_rows = None
 
         if new_rows is None:
@@ -433,7 +434,7 @@ class EditAssayFile(Resource):
         for row in new_rows:
             try:
                 row_index = row['index']  # Check if we have a value in the row number(s)
-            except (KeyError):
+            except KeyError:
                 row_index = None
 
             if new_rows is None or row_index is None:
@@ -448,15 +449,16 @@ class EditAssayFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        # TODO, don't use xNIX notation for file separator
-        assay_file_name = study_location + "/" + assay_file_name
+        assay_file_name = os.path.join(study_location, assay_file_name)
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
         assay_df = assay_df.replace(np.nan, '', regex=True)  # Remove NaN
+
+        row_index_int = None
 
         for row in new_rows:
             try:
@@ -481,7 +483,7 @@ class EditAssayFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(assay_df)
 
-        return {'assayHeader': df_header, 'assayData': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict}
 
     @swagger.operation(
         summary="Delete a row of the given Assay file <b>(Deprecated)</b>",
@@ -560,11 +562,11 @@ class EditAssayFile(Resource):
 
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permisions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        assay_file_name = study_location + "/" + assay_file_name
+        assay_file_name = os.path.join(study_location, assay_file_name)
 
         assay_df = pd.read_csv(assay_file_name, sep="\t", header=0, encoding='utf-8')
         assay_df = assay_df.replace(np.nan, '', regex=True)  # Remove NaN
@@ -591,6 +593,4 @@ class EditAssayFile(Resource):
         # Get an indexed header row
         df_header = get_table_header(assay_df)
 
-        return {'assayHeader': df_header, 'assayData': df_data_dict}
-
-
+        return {'header': df_header, 'data': df_data_dict}
