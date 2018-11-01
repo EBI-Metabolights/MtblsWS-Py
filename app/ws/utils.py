@@ -73,7 +73,10 @@ def copytree(src, dst, symlinks=False, ignore=None):
             destination = os.path.join(dst, item)
             try:
                 time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
-                # logger.info('The difference in time between %s and %s, is %s', source, destination, time_diff)
+                logger.info('Time difference is %s between %s and %s', time_diff, source, destination)
+                time_diff2 = os.stat(source).st_mtime - os.stat(destination).st_mtime
+                logger.info('Time difference2 is %s between %s and %s', time_diff2, source, destination)
+
             except FileNotFoundError:
                 time_diff = 1  # Destination folder does not exist
 
@@ -233,7 +236,7 @@ def get_table_header(table_df):
 def validate_rows(table_header_df, row):
     try:
         row.pop('index', None)  # Remove "index:n" element, this is the original row number
-    except:
+    except KeyError:
         pass  # Don't worry if it's not present
 
     if row[0].items() is not None:
