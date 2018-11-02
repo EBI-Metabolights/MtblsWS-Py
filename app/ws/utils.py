@@ -234,26 +234,28 @@ def get_table_header(table_df):
     return mapping
 
 
-def validate_rows(table_header_df, row):
+def validate_row(table_header_df, row, http_type):
     try:
         row.pop('index', None)  # Remove "index:n" element, this is the original row number
     except TypeError:
         pass  # Don't worry if it's not present
 
-    if row.items() is not None:
-        a_row = row.items()
-    elif row[0].items() is not None:
-        a_row = row[0].items()
-    else:
-        return False, "Could not find the row"
+    try:
+        if http_type == 'post':
+            if row[0].items() is not None:
+                a_row = row[0].items()
+        elif http_type == 'put':
+            if row.items() is not None:
+                a_row = row.items()
+    except AttributeError:
+        return False, 'Could not find the data for the row'
 
     for key, value in a_row:
-
         if key in table_header_df.columns:
             pass
         else:
             return False, "'" + key + "' is not a valid column name. The cell value passed was '" + value + "'"
-    return True, "All columns exist in file"
+    return True, 'OK. All columns exist in file'
 
 
 # Convert panda DataFrame to json tuples object

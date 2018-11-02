@@ -8,7 +8,7 @@ from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_table_header, totuples, copy_files_and_folders, validate_rows, log_request
+from app.ws.utils import get_table_header, totuples, copy_files_and_folders, validate_row, log_request
 
 """
 MTBLS Table Columns manipulator
@@ -496,7 +496,7 @@ class AddRows(Resource):
         file_df = file_df.replace(np.nan, '', regex=True)  # Remove NaN values
 
         # Validate column names in new rows
-        valid_column_name, message = validate_rows(file_df, new_row)
+        valid_column_name, message = validate_row(file_df, new_row, "post")
         if not valid_column_name:
             abort(417, message)
 
@@ -632,7 +632,7 @@ class AddRows(Resource):
                 row_index_int is None
 
             # Validate column names in new rows
-            valid_column_name, message = validate_rows(file_df, row)
+            valid_column_name, message = validate_row(file_df, row, 'put')
             if not valid_column_name:
                 abort(417, message)
 
