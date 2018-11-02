@@ -166,7 +166,8 @@ class StudyTitle(Resource):
 
     @swagger.operation(
         summary='Update Study Title',
-        notes="Update the title of a Study.",
+        notes="Update the title of a Study."
+              "<pre><code> { \"title\": \"New title of your study. Use publication title if possible\" }</code></pre>",
         parameters=[
             {
                 "name": "study_id",
@@ -407,7 +408,9 @@ class StudyDescription(Resource):
 
     @swagger.operation(
         summary='Update Study Description',
-        notes="Update the description of a Study.",
+        notes="Update the description of a Study."
+              "<pre><code> { \"description\": \"The description of your study. "
+              "Please use the abstract of your paper if possible\" }</code></pre>",
         parameters=[
             {
                 "name": "study_id",

@@ -590,9 +590,8 @@ class AddRows(Resource):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_rows = data_dict[
-                'data']  # Use "index:n" element, this is the original row number
-        except (KeyError):
+            new_rows = data_dict['data']  # Use "index:n" element, this is the original row number
+        except KeyError:
             new_rows = None
 
         if new_rows is None:
@@ -602,7 +601,7 @@ class AddRows(Resource):
         for row in new_rows:
             try:
                 row_index = row['index']  # Check if we have a value in the row number(s)
-            except (KeyError):
+            except KeyError:
                 row_index = None
 
             if new_rows is None or row_index is None:

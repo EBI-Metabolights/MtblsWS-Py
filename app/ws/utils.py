@@ -240,10 +240,12 @@ def validate_rows(table_header_df, row):
     except TypeError:
         pass  # Don't worry if it's not present
 
-    if row[0].items() is not None:
+    if row.items() is not None:
+        a_row = row.items()
+    elif row[0].items() is not None:
         a_row = row[0].items()
     else:
-        a_row = row.items()
+        return False, "Could not find the row"
 
     for key, value in a_row:
 

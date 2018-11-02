@@ -49,7 +49,7 @@ def initialize_app(flask_app):
                        )
 
     api.add_resource(About, res_path)
-    api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query>")
+    api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query_type>")
 
     # MTBLS studies
     api.add_resource(MtblsStudies, res_path + "/studies")

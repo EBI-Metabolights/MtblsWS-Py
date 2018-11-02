@@ -50,7 +50,7 @@ class MtblsMAFSearch(Resource):
         notes="Get a given MAF associated with assay {assay_id} for a MTBLS Study with {study_id} in JSON format",
         parameters=[
             {
-                "name": "query",
+                "name": "query_type",
                 "description": "The type of data to search for",
                 "required": True,
                 "allowMultiple": False,
@@ -82,9 +82,9 @@ class MtblsMAFSearch(Resource):
             }
         ]
     )
-    def get(self, query):
+    def get(self, query_type):
         # param validation
-        if query is None:
+        if query_type is None:
             abort(404)
 
         parser = reqparse.RequestParser()
@@ -97,7 +97,7 @@ class MtblsMAFSearch(Resource):
         if search_value is None:
             abort(404)
 
-        search_res = wsc.get_maf_search(query, search_value)
+        search_res = wsc.get_maf_search(query_type, search_value)
         return search_res
 
 
@@ -107,8 +107,8 @@ class MetaboliteAnnotationFile(Resource):
         summary="Read, and add missing samples for a MAF",
         nickname="Get MAF for a given MTBLS Assay",
         notes="Get a given Metabolite Annotation File for a MTBLS Study with in JSON format. "
-              "<pre> { \"data\":[ {\"assay_file_name\": \"a_some_assay_file.txt\", \"technology\": \"MS\"}]}"
-              "</pre>",
+              "<pre><code> {\"data\":[ {\"assay_file_name\": \"a_some_assay_file.txt\", \"technology\": \"MS\"} ]}"
+              "</code></pre>",
         parameters=[
             {
                 "name": "study_id",
