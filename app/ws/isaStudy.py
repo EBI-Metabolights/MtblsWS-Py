@@ -267,7 +267,7 @@ class StudyTitle(Resource):
         return jsonify({"title": new_title})
 
 
-class StudyReleaseDateAndStatus(Resource):
+class StudyMetaInfo(Resource):
 
     @swagger.operation(
         summary="Get Study Release Date and Status",

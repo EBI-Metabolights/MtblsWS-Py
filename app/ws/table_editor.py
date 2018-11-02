@@ -340,7 +340,7 @@ class ColumnsRows(Resource):
             }
         ]
     )
-    def post(self, study_id, file_name):
+    def put(self, study_id, file_name):
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -516,8 +516,6 @@ class AddRows(Resource):
 
         return {'header': df_header, 'data': df_data_dict}
 
-
-class UpdateRows(Resource):
     @swagger.operation(
         summary="Update existing rows in the given TSV file",
         nickname="Update TSV rows",
@@ -583,7 +581,7 @@ class UpdateRows(Resource):
             }
         ]
     )
-    def post(self, study_id, file_name):
+    def put(self, study_id, file_name):
 
         # param validation
         if study_id is None or file_name is None:
@@ -658,8 +656,6 @@ class UpdateRows(Resource):
 
         return {'header': df_header, 'data': df_data_dict}
 
-
-class DeleteRows(Resource):
     @swagger.operation(
         summary="Delete a row of the given TSV file",
         nickname="Delete TSV row",

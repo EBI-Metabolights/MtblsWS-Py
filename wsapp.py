@@ -49,58 +49,56 @@ def initialize_app(flask_app):
                        )
 
     api.add_resource(About, res_path)
+    api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query>")
 
     # MTBLS studies
     api.add_resource(MtblsStudies, res_path + "/studies")
-    api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/isa-tab/study_files")
-    api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/isa-tab/investigation")
-    api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/isa-tab/sample")
-    api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/isa-tab/assay")
-    api.add_resource(AllocateAccession, res_path + "/studies/create_study")
-    api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create_upload_folder")
-    api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/copy_from_upload_folder")
-    api.add_resource(saveAuditFiles, res_path + "/studies/<string:study_id>/create_audit_files")
-    # api.add_resource(DownloadFiles, res_path + "/studies/<string:study_id>/download_files") #Not supported in Swagger2
+    api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
+    api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
+    api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")
+    api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/assay")
+    api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
+    api.add_resource(AllocateAccession, res_path + "/studies/create")
+    api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create-upload-folder")
+    api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync-files")
+    api.add_resource(saveAuditFiles, res_path + "/studies/<string:study_id>/audit")
+    api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")
 
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
     api.add_resource(StudyDescription, res_path + "/studies/<string:study_id>/description")
-    api.add_resource(StudyContacts, res_path + "/studies/<string:study_id>/contacts"
-                     , res_path + "/studies/<string:study_id>/contacts/")
+    api.add_resource(StudyContacts, res_path + "/studies/<string:study_id>/contacts")
     api.add_resource(StudyProtocols, res_path + "/studies/<string:study_id>/protocols")
     api.add_resource(StudyFactors, res_path + "/studies/<string:study_id>/factors")
     api.add_resource(StudyDescriptors, res_path + "/studies/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/studies/<string:study_id>/publications")
-    api.add_resource(StudyReleaseDateAndStatus, res_path + "/studies/<string:study_id>/releaseDateAndStatus")
 
     #Metabolite Annotation File (MAF)
-    api.add_resource(MtblsMAFSearch, res_path + "/maf/search/<string:search_type>")
-    api.add_resource(ReadMetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
-    api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validated/<string:annotation_file_name>")
+    #api.add_resource(ReadMetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/<string:annotation_file_name>")
+    api.add_resource(MetaboliteAnnotationFile,
+                     res_path + "/studies/<string:study_id>/maf/validate/<string:annotation_file_name>")
+
     # Study
-    api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
-    api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
-    api.add_resource(EditSampleFile, res_path + "/studies/<string:study_id>/samples/<string:sample_file_name>")
-    api.add_resource(StudyOtherMaterials, res_path + "/studies/<string:study_id>/otherMaterials")
-    api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
+    # api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
+    # api.add_resource(StudySamples, res_path + "/studies/<string:study_id>/samples")
+    # api.add_resource(EditSampleFile, res_path + "/studies/<string:study_id>/samples/<string:sample_file_name>")
+    # api.add_resource(StudyOtherMaterials, res_path + "/studies/<string:study_id>/otherMaterials")
+    # api.add_resource(StudyProcesses, res_path + "/studies/<string:study_id>/processSequence")
 
     # Assay
-    api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
-    api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/samples")
-    api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/otherMaterials")
-    api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/dataFiles")
-    api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/processSequence")
-    api.add_resource(AssayTable, res_path + "/studies/<string:study_id>/assay/tableCell")
-    api.add_resource(EditAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
+    # api.add_resource(AssaySamples, res_path + "/studies/<string:study_id>/assays/samples")
+    # api.add_resource(AssayOtherMaterials, res_path + "/studies/<string:study_id>/assays/otherMaterials")
+    # api.add_resource(AssayDataFiles, res_path + "/studies/<string:study_id>/assays/dataFiles")
+    # api.add_resource(AssayProcesses, res_path + "/studies/<string:study_id>/assays/processSequence")
+    # api.add_resource(AssayTable, res_path + "/studies/<string:study_id>/assay/tableCell")
+    # api.add_resource(EditAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
 
     # Manipulating TSV tables
-    api.add_resource(SimpleColumns, res_path + "/studies/<string:study_id>/addColumn/<string:file_name>")
-    api.add_resource(ComplexColumns, res_path + "/studies/<string:study_id>/addColumns/<string:file_name>")
-    api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/updateCell/<string:file_name>")
-    api.add_resource(AddRows, res_path + "/studies/<string:study_id>/addRows/<string:file_name>")
-    api.add_resource(UpdateRows, res_path + "/studies/<string:study_id>/updateRows/<string:file_name>")
-    api.add_resource(DeleteRows, res_path + "/studies/<string:study_id>/deleteRows/<string:file_name>")
+    # api.add_resource(SimpleColumns, res_path + "/studies/<string:study_id>/column/<string:file_name>")
+    api.add_resource(ComplexColumns, res_path + "/studies/<string:study_id>/columns/<string:file_name>")
+    api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/cell/<string:file_name>")
+    api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")
     api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
 
     # Add ontology resources

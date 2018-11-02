@@ -50,7 +50,7 @@ class MtblsMAFSearch(Resource):
         notes="Get a given MAF associated with assay {assay_id} for a MTBLS Study with {study_id} in JSON format",
         parameters=[
             {
-                "name": "search_type",
+                "name": "query",
                 "description": "The type of data to search for",
                 "required": True,
                 "allowMultiple": False,
@@ -82,9 +82,9 @@ class MtblsMAFSearch(Resource):
             }
         ]
     )
-    def get(self, search_type):
+    def get(self, query):
         # param validation
-        if search_type is None:
+        if query is None:
             abort(404)
 
         parser = reqparse.RequestParser()
@@ -97,7 +97,7 @@ class MtblsMAFSearch(Resource):
         if search_value is None:
             abort(404)
 
-        search_res = wsc.get_maf_search(search_type, search_value)
+        search_res = wsc.get_maf_search(query, search_value)
         return search_res
 
 
@@ -106,7 +106,9 @@ class MetaboliteAnnotationFile(Resource):
     @swagger.operation(
         summary="Read, and add missing samples for a MAF",
         nickname="Get MAF for a given MTBLS Assay",
-        notes="Get a given Metabolite Annotation File for a MTBLS Study with in JSON format.",
+        notes="Get a given Metabolite Annotation File for a MTBLS Study with in JSON format. "
+              "<pre> { \"data\":[ {\"assay_file_name\": \"a_some_assay_file.txt\", \"technology\": \"MS\"}]}"
+              "</pre>",
         parameters=[
             {
                 "name": "study_id",
@@ -125,21 +127,12 @@ class MetaboliteAnnotationFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "assay_file_name",
-                "description": "Assay File name",
+                "name": "assay_file_tech",
+                "description": "Assay File name and technology type (MS/NMR)",
                 "required": True,
                 "allowMultiple": False,
-                "paramType": "query",
+                "paramType": "body",
                 "dataType": "string"
-            },
-            {
-                "name": "technology",
-                "description": "Assay technology type, MS or NMR",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["MS", "NMR"]
             },
             {
                 "name": "user_token",
@@ -166,24 +159,34 @@ class MetaboliteAnnotationFile(Resource):
             {
                 "code": 404,
                 "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Incorrect parameters provided"
             }
         ]
     )
-    def get(self, study_id, annotation_file_name):
-        parser = reqparse.RequestParser()
-        parser.add_argument('technology', help="Assay technology type, MS or NMR")
-        parser.add_argument('assay_file_name', help="Assay File name")
-        technology = None
-        assay_file_name = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            technology = args['technology']
-            assay_file_name = args['assay_file_name']
+    def post(self, study_id, annotation_file_name):
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            assay_file_tech = data_dict['data']
+        except KeyError:
+            assay_file_tech = None
 
-        resource_folder = "./resources/"
+        if assay_file_tech is None:
+            abort(417, "Please provide valid data for updated new row(s). "
+                       "The JSON string has to have a surrounding 'data' element")
+
         # param validation
-        if study_id is None or assay_file_name is None or technology is None or annotation_file_name is None:
-            abort(404)
+        if study_id is None or annotation_file_name is None:
+            abort(417)
+
+        assay_file_name = assay_file_tech[0]['assay_file_name']
+        technology = assay_file_tech[0]['assay_file_name']
+
+        # param validation
+        if assay_file_name is None or technology is None:
+            abort(417, 'Please ensure the JSON has "assay_file_name" and "technology" elements')
 
         # User authentication
         user_token = None
@@ -197,7 +200,10 @@ class MetaboliteAnnotationFile(Resource):
         if not read_access:
             abort(403)
 
-        # Fixed colunm headers to look for in the MAF, defaults to MS
+        resource_folder = "./resources/"
+
+
+        # Fixed column headers to look for in the MAF, defaults to MS
         sample_name = 'Sample Name'
         assay_name = 'MS Assay Name'
         annotation_file_template = resource_folder + 'm_metabolite_profiling_mass_spectrometry_v2_maf.tsv'
@@ -249,10 +255,9 @@ class MetaboliteAnnotationFile(Resource):
 
         # Get the rows from the maf
         df_data_dict = totuples(maf_df.reset_index(), 'rows')
-
         return {'header': df_header, 'data': df_data_dict}
 
-    """Create MAF for a given study"""
+    """
     @swagger.operation(
         summary="Update MAF for an assay for a given study",
         nickname="Update MAF",
@@ -384,12 +389,12 @@ class MetaboliteAnnotationFile(Resource):
         df_dict = totuples(maf_df.reset_index(), row)
 
         return df_dict
-
+"""
 
 class ReadMetaboliteAnnotationFile(Resource):
     """Get MAF from filesystem"""
     @swagger.operation(
-        summary="Get MAF for a study using annotation filename",
+        summary="Get MAF for a study using annotation filename <b>(Deprecated)</b>",
         nickname="Get MAF for a given MTBLS Assay",
         notes="Get a given Metabolite Annotation File for a MTBLS Study with in JSON format.",
         parameters=[
