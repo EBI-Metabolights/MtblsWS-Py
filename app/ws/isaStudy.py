@@ -166,8 +166,13 @@ class StudyTitle(Resource):
 
     @swagger.operation(
         summary='Update Study Title',
-        notes="Update the title of a Study."
-              "<pre><code> { \"title\": \"New title of your study. Use publication title if possible\" }</code></pre>",
+        notes="""Update the title of a Study.</p><pre><code> 
+{ 
+    \"title\": \"New title of your study. Use publication title if possible\" 
+}
+
+</code></pre>
+              """,
         parameters=[
             {
                 "name": "study_id",
@@ -408,9 +413,12 @@ class StudyDescription(Resource):
 
     @swagger.operation(
         summary='Update Study Description',
-        notes="Update the description of a Study."
-              "<pre><code> { \"description\": \"The description of your study. "
-              "Please use the abstract of your paper if possible\" }</code></pre>",
+        notes="""Update the description of a Study.</p><pre><code> 
+{ 
+    \"description\": \"The description of your study. Please use the abstract from your paper if possible\" 
+}
+
+</code></pre>""",
         parameters=[
             {
                 "name": "study_id",
@@ -519,7 +527,35 @@ class StudyContacts(Resource):
 
     @swagger.operation(
         summary='Add new Study Contact',
-        notes='Add new Contact to a Study',
+        notes='''Add new Contact to a Study. <pre><code>
+{ 
+  "contact": {
+    "comments": [],
+    "firstName": "Joe",
+    "lastName": "Blogs",
+    "email": "joe.blogs@cam.ac.uk",
+    "affiliation": "University of Cambridge",
+    "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
+    "fax": "01223123456",
+    "midInitials": "A",
+    "phone": "01223234567",
+    "roles": [
+      {
+        "comments": [],
+        "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
+        "annotationValue": "Grant Principal Investigator",
+        "termSource": {
+          "comments": [],
+          "file": "http://data.bioontology.org/ontologies/EFO",
+          "name": "",
+          "version": "132"
+        }
+      }
+    ]
+  } 
+}
+
+</code></pre>''',
         parameters=[
             {
                 "name": "study_id",
@@ -663,6 +699,14 @@ class StudyContacts(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "email",
                 "description": "Contact's email",
                 "required": False,
@@ -670,14 +714,6 @@ class StudyContacts(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -753,9 +789,37 @@ class StudyContacts(Resource):
 
     @swagger.operation(
         summary='Update Study Contact',
-        notes="""Update Contact associated with a Study.
+        notes='''Update Contact associated with a Study.
               <br>
-              Use contact's email as a query parameter to filter out.""",
+              <b>Use contact's email as a parameter to update a single contact.</b><pre><code>
+{ 
+  "contact": {
+    "comments": [],
+    "firstName": "Joe",
+    "lastName": "Blogs",
+    "email": "joe.blogs@cam.ac.uk",
+    "affiliation": "University of Cambridge",
+    "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
+    "fax": "01223123456",
+    "midInitials": "A",
+    "phone": "01223234567",
+    "roles": [
+      {
+        "comments": [],
+        "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
+        "annotationValue": "Grant Principal Investigator",
+        "termSource": {
+          "comments": [],
+          "file": "http://data.bioontology.org/ontologies/EFO",
+          "name": "",
+          "version": "132"
+        }
+      }
+    ]
+  } 
+}
+
+</code></pre>''',
         parameters=[
             {
                 "name": "study_id",
@@ -766,6 +830,14 @@ class StudyContacts(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "email",
                 "description": "Contact's email",
                 "required": True,
@@ -773,14 +845,6 @@ class StudyContacts(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "contact",
@@ -859,9 +923,9 @@ class StudyContacts(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['contact']
             # if partial=True missing fields will be ignored
-            result = PersonSchema().load(data, partial=False)
+            result = PersonSchema().load(data, partial=True)
             updated_contact = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # update contact details
@@ -905,6 +969,14 @@ class StudyContacts(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "email",
                 "description": "Contact's email",
                 "required": True,
@@ -912,14 +984,6 @@ class StudyContacts(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "save_audit_copy",
@@ -1157,6 +1221,14 @@ class StudyProtocols(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Protocol name",
                 "required": False,
@@ -1164,14 +1236,6 @@ class StudyProtocols(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -1261,6 +1325,14 @@ class StudyProtocols(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Protocol name",
                 "required": True,
@@ -1268,14 +1340,6 @@ class StudyProtocols(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "save_audit_copy",
@@ -1375,6 +1439,14 @@ class StudyProtocols(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Protocol name",
                 "required": True,
@@ -1382,14 +1454,6 @@ class StudyProtocols(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "protocol",
@@ -1648,6 +1712,14 @@ class StudyFactors(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Factor name",
                 "required": False,
@@ -1655,14 +1727,6 @@ class StudyFactors(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -1750,6 +1814,14 @@ class StudyFactors(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Factor name",
                 "required": True,
@@ -1757,14 +1829,6 @@ class StudyFactors(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "save_audit_copy",
@@ -1877,6 +1941,14 @@ class StudyFactors(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Factor name",
                 "required": True,
@@ -1884,14 +1956,6 @@ class StudyFactors(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "protocol",
@@ -2151,6 +2215,14 @@ class StudyDescriptors(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "annotationValue",
                 "description": "Design Descriptor annotation value",
                 "required": False,
@@ -2158,14 +2230,6 @@ class StudyDescriptors(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -2254,6 +2318,14 @@ class StudyDescriptors(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "term",
                 "description": "Design Descriptor annotation value",
                 "required": True,
@@ -2261,14 +2333,6 @@ class StudyDescriptors(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "save_audit_copy",
@@ -2373,6 +2437,14 @@ class StudyDescriptors(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "term",
                 "description": "Design Descriptor annotation value",
                 "required": True,
@@ -2380,14 +2452,6 @@ class StudyDescriptors(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "protocol",
@@ -2646,6 +2710,14 @@ class StudyPublications(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "title",
                 "description": "Publication title",
                 "required": False,
@@ -2653,14 +2725,6 @@ class StudyPublications(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -2750,6 +2814,14 @@ class StudyPublications(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "title",
                 "description": "Publication title",
                 "required": True,
@@ -2757,14 +2829,6 @@ class StudyPublications(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "save_audit_copy",
@@ -2868,6 +2932,14 @@ class StudyPublications(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "title",
                 "description": "Publication title",
                 "required": True,
@@ -2875,14 +2947,6 @@ class StudyPublications(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "protocol",
@@ -3010,6 +3074,14 @@ class StudySources(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Study Source name",
                 "required": False,
@@ -3028,14 +3100,6 @@ class StudySources(Resource):
                 "type": "Boolean",
                 "defaultValue": True,
                 "default": True
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -3130,6 +3194,14 @@ class StudySources(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Study Source name",
                 "required": True,
@@ -3137,14 +3209,6 @@ class StudySources(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "source",
@@ -3465,6 +3529,14 @@ class StudySamples(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Study Sample name",
                 "required": False,
@@ -3483,14 +3555,6 @@ class StudySamples(Resource):
                 "type": "Boolean",
                 "defaultValue": True,
                 "default": True
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -3584,6 +3648,14 @@ class StudySamples(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Study Sample name. Leave empty if updating more than one sample.",
                 "required": False,
@@ -3591,14 +3663,6 @@ class StudySamples(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "samples",
@@ -3990,6 +4054,14 @@ class StudyOtherMaterials(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Study Material name",
                 "required": False,
@@ -4008,14 +4080,6 @@ class StudyOtherMaterials(Resource):
                 "type": "Boolean",
                 "defaultValue": True,
                 "default": True
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -4110,6 +4174,14 @@ class StudyOtherMaterials(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Material name",
                 "required": True,
@@ -4117,14 +4189,6 @@ class StudyOtherMaterials(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "save_audit_copy",
@@ -4230,6 +4294,14 @@ class StudyOtherMaterials(Resource):
                 "dataType": "string"
             },
             {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
                 "name": "name",
                 "description": "Study Material name",
                 "required": True,
@@ -4237,14 +4309,6 @@ class StudyOtherMaterials(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
             },
             {
                 "name": "material",

@@ -403,10 +403,11 @@ class StudyFiles(Resource):
 class AllocateAccession(Resource):
     @swagger.operation(
         summary="Create a new study and upload folder",
+        notes='''<b>Will clone default LC-MS study if no parameter given</b>''',
         parameters=[
             {
                 "name": "study_id",
-                "description": "Existing Study to clone. Will clone default LC-MS study if no parameter given",
+                "description": "Existing Study to clone",
                 "required": False,
                 "allowMultiple": False,
                 "paramType": "query",

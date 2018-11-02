@@ -106,9 +106,16 @@ class MetaboliteAnnotationFile(Resource):
     @swagger.operation(
         summary="Read, and add missing samples for a MAF",
         nickname="Get MAF for a given MTBLS Assay",
-        notes="Get a given Metabolite Annotation File for a MTBLS Study with in JSON format. "
-              "<pre><code> {\"data\":[ {\"assay_file_name\": \"a_some_assay_file.txt\", \"technology\": \"MS\"} ]}"
-              "</code></pre>",
+        notes='''Get a given Metabolite Annotation File for a MTBLS Study with in JSON format.<pre><code> 
+{  
+  "data": [ 
+    {
+      "assay_file_name": "a_some_assay_file.txt", 
+      "technology": "MS"
+    } 
+  ]
+}
+</code></pre>''',
         parameters=[
             {
                 "name": "study_id",
