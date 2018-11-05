@@ -131,7 +131,10 @@ class IsaInvestigation(Resource):
 
     @swagger.operation(
         summary="Update Study",
-        notes="Update Study.",
+        notes='''Update Study. </p><pre><code>
+This is a rather complex object to describe here. 
+Please use the GET method above to retrieve the structure of your study prior to submitting this PUT operation.
+        </pre></code>''',
         parameters=[
             {
                 "name": "study",

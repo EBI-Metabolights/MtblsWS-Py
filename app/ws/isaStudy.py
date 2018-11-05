@@ -530,7 +530,6 @@ class StudyContacts(Resource):
         notes='''Add new Contact to a Study. <pre><code>
 { 
   "contact": {
-    "comments": [],
     "firstName": "Joe",
     "lastName": "Blogs",
     "email": "joe.blogs@cam.ac.uk",
@@ -541,11 +540,9 @@ class StudyContacts(Resource):
     "phone": "01223234567",
     "roles": [
       {
-        "comments": [],
         "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
         "annotationValue": "Grant Principal Investigator",
         "termSource": {
-          "comments": [],
           "file": "http://data.bioontology.org/ontologies/EFO",
           "name": "",
           "version": "132"
@@ -794,7 +791,6 @@ class StudyContacts(Resource):
               <b>Use contact's email as a parameter to update a single contact.</b><pre><code>
 { 
   "contact": {
-    "comments": [],
     "firstName": "Joe",
     "lastName": "Blogs",
     "email": "joe.blogs@cam.ac.uk",
@@ -805,11 +801,9 @@ class StudyContacts(Resource):
     "phone": "01223234567",
     "roles": [
       {
-        "comments": [],
         "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
         "annotationValue": "Grant Principal Investigator",
         "termSource": {
-          "comments": [],
           "file": "http://data.bioontology.org/ontologies/EFO",
           "name": "",
           "version": "132"
@@ -1077,7 +1071,44 @@ class StudyProtocols(Resource):
 
     @swagger.operation(
         summary='Add new Study Protocol',
-        notes='Add new Protocol to a Study.',
+        notes='''Add a new Protocol to a Study.
+<pre><code>
+{
+  "protocol": {
+      "name": "Chromatography",
+      "protocolType": {
+        "annotationValue": "Chromatography",
+        "termSource": null,
+        "termAccession": ""
+      },
+      "description": "Describe your chromatography.....",
+      "version": "",
+      "parameters": [
+        {
+          "parameterName": {
+            "annotationValue": "Chromatography Instrument",
+            "termSource": null,
+            "termAccession": ""
+          }
+        },
+        {
+          "parameterName": {
+            "annotationValue": "Column type",
+            "termSource": null,
+            "termAccession": ""
+          }
+        },
+        {
+          "parameterName": {
+            "annotationValue": "Column model",
+            "termSource": null,
+            "termAccession": ""
+          }
+        }
+      ]
+  }
+}
+</pre></code>''',
         parameters=[
             {
                 "name": "study_id",
@@ -1426,9 +1457,39 @@ class StudyProtocols(Resource):
 
     @swagger.operation(
         summary='Update Study Protocol',
-        notes="""Update Study Protocol.
+        notes='''Update Study Protocol.
               <br>
-              Use protocol name as a query parameter to filter out.""",
+              Use protocol name as a query parameter to update a specific protocol.<pre><code>
+{
+  "protocol": {
+    "name": "Extraction",
+    "protocolType": {
+      "annotationValue": "Extraction",
+      "termSource": null,
+      "termAccession": ""
+    },
+    "description": "Please describe how the sample was extracted",
+    "uri": "",
+    "version": "",
+    "parameters": [
+      {
+        "parameterName": {
+          "annotationValue": "Post Extraction",
+          "termSource": null,
+          "termAccession": ""
+        }
+      },
+      {
+        "parameterName": {
+          "annotationValue": "Derivatization",
+          "termSource": null,
+          "termAccession": ""
+        }
+      }
+    ]
+  }
+}
+</pre></code>''',
         parameters=[
             {
                 "name": "study_id",
@@ -1568,7 +1629,22 @@ class StudyFactors(Resource):
 
     @swagger.operation(
         summary='Add new Study Factor',
-        notes='Add new Factor to a Study.',
+        notes='''Add new Factor to a Study.<pre><code>
+{
+  "factor": {
+    "factorName": "Gender",
+    "factorType": {
+      "annotationValue": "Gender",
+      "termSource": {
+        "name": "NCIT",
+        "file": "http://data.bioontology.org/ontologies/NCIT",
+        "version": "34",
+        "description": "National Cancer Institute Thesaurus"
+      },
+      "termAccession": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl"
+    }
+  }
+}</pre></code>''',
         parameters=[
             {
                 "name": "study_id",
@@ -1671,7 +1747,7 @@ class StudyFactors(Resource):
             # if partial=True missing fields will be ignored
             result = StudyFactorSchema().load(data, partial=False)
             new_obj = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # Add new Study Factor
@@ -1701,7 +1777,7 @@ class StudyFactors(Resource):
         summary="Get Study Factors",
         notes="""Get Study Factors.
               <br>
-              Use factor name as a query parameter to filter out.""",
+              Use factor name as a query parameter to filter on a specific factor.""",
         parameters=[
             {
                 "name": "study_id",
@@ -1928,9 +2004,24 @@ class StudyFactors(Resource):
 
     @swagger.operation(
         summary='Update Study Factor',
-        notes="""Update Study Factor.
+        notes='''Update Study Factor.
               <br>
-              Use factor name as a query parameter to filter out.""",
+              Use factor name as a query parameter to update specific factor.<pre><code>
+{
+  "factor": {
+    "factorName": "Gender",
+    "factorType": {
+      "annotationValue": "Gender",
+      "termSource": {
+        "name": "NCIT",
+        "file": "http://data.bioontology.org/ontologies/NCIT",
+        "version": "34",
+        "description": "National Cancer Institute Thesaurus"
+      },
+      "termAccession": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl"
+    }
+  }
+}</pre></code>''',
         parameters=[
             {
                 "name": "study_id",
@@ -1997,6 +2088,10 @@ class StudyFactors(Resource):
             {
                 "code": 404,
                 "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 412,
+                "message": "The JSON provided can not be parsed properly."
             }
         ]
     )
@@ -2034,8 +2129,12 @@ class StudyFactors(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['factor']
             # if partial=True missing fields will be ignored
-            result = StudyFactorSchema().load(data, partial=False)
-            updated_factor = result.data
+            try:
+                result = StudyFactorSchema().load(data, partial=False)
+                updated_factor = result.data
+            except Exception:
+                abort(412)
+
         except (ValidationError, Exception):
             abort(400)
 
@@ -2070,7 +2169,19 @@ class StudyDescriptors(Resource):
 
     @swagger.operation(
         summary='Add new Study Design Descriptor',
-        notes='Add new Design Descriptor to a Study.',
+        notes='''Add new Design Descriptor to a Study. <pre><code>
+{
+  "studyDesignDescriptor": {
+    "annotationValue": "metabolomic profiling",
+    "termSource": {
+      "name": "EFO",
+      "file": "http://data.bioontology.org/ontologies/EFO",
+      "version": "113",
+      "description": "Experimental Factor Ontology"
+    },
+    "termAccession": "http://www.ebi.ac.uk/efo/EFO_0000752"
+  }
+}</code></pre>''',
         parameters=[
             {
                 "name": "study_id",
@@ -2424,9 +2535,21 @@ class StudyDescriptors(Resource):
 
     @swagger.operation(
         summary='Update Study Design Descriptor',
-        notes="""Update Study Design Descriptor.
+        notes='''Update Study Design Descriptor.
               <br>
-              Use descriptor annotation value as a query parameter to filter out.""",
+              Use descriptor annotation value as a query parameter to filter on specific descriptor<pre><code>
+{
+  "studyDesignDescriptor": {
+    "annotationValue": "metabolomic profiling",
+    "termSource": {
+      "name": "EFO",
+      "file": "http://data.bioontology.org/ontologies/EFO",
+      "version": "113",
+      "description": "Experimental Factor Ontology"
+    },
+    "termAccession": "http://www.ebi.ac.uk/efo/EFO_0000752"
+  }
+}</code></pre>''',
         parameters=[
             {
                 "name": "study_id",
@@ -2532,7 +2655,7 @@ class StudyDescriptors(Resource):
             # if partial=True missing fields will be ignored
             result = StudyDesignDescriptorSchema().load(data, partial=False)
             updated_descriptor = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # update Study Design Descriptor details
@@ -2554,7 +2677,7 @@ class StudyDescriptors(Resource):
                 isa_study.design_descriptors[index] = updated_descriptor
                 break
         if not found:
-            abort(404)
+            abort(404, 'The descriptor %s was not found in this study, can not update.', descriptor_term)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_descriptor.term)
@@ -2566,7 +2689,20 @@ class StudyPublications(Resource):
 
     @swagger.operation(
         summary='Add new Study Publication',
-        notes='Add new Publication to a Study.',
+        notes='''Add new Publication to a Study.<pre><code>
+{
+  "publication": {
+    "title": "Publication title",
+    "authorList": "Author1, Author2",
+    "doi": "10.1093/nar/gks1004",
+    "pubMedID": "",
+    "status": {
+      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001796",
+      "annotationValue": "Published",
+      "termSource": null
+    }
+  }
+}</pre></code>''',
         parameters=[
             {
                 "name": "study_id",
@@ -2670,7 +2806,7 @@ class StudyPublications(Resource):
             result = PublicationSchema().load(data, partial=False)
             new_publication = result.data
         except (ValidationError, Exception) as err:
-            abort(400)
+            abort(400, err)
 
         # Add new Publication
         logger.info('Adding new Publication %s for %s', new_publication.title, study_id)
@@ -2919,9 +3055,22 @@ class StudyPublications(Resource):
 
     @swagger.operation(
         summary='Update Study Publication',
-        notes="""Update Study Publication.
+        notes='''Update Study Publication.
               <br>
-              Use publication title as a query parameter to filter out.""",
+              Use publication title as a query parameter to update the correct publication.<pre><code>
+{
+  "publication": {
+    "title": "Updated study title......",
+    "authorList": "Author1, Author2",
+    "doi": "10.1093/nar/gks1004",
+    "pubMedID": "",
+    "status": {
+      "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001796",
+      "annotationValue": "Published",
+      "termSource": null
+    }
+  }
+}</pre></code>''',
         parameters=[
             {
                 "name": "study_id",
@@ -3049,7 +3198,7 @@ class StudyPublications(Resource):
                 isa_study.publications[index] = updated_publication
                 break
         if not found:
-            abort(404)
+            abort(404, 'Could not find the publication title you tried to update')
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_publication.title)
