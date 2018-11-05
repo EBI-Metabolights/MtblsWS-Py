@@ -297,7 +297,11 @@ def getZoomaTerm(keyword):
 
             enti.provenance_uri = provenance_uri
 
-            res.append(enti)
+            if enti.provenance_name =='metabolights':
+                res = [enti] + res
+            else:
+                res.append(enti)
+                
             if len(res) >= 5:
                 break
     except Exception as e:
