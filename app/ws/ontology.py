@@ -64,16 +64,16 @@ class Ontology(Resource):
                 "enum": ["factors", "roles", "taxonomy", "characteristics", "publication", "design descriptor", "unit"]
             },
 
-            {
-                "name": "mapping",
-                "description": "starting branch of ontology",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["typo", "exact"]
-            }
+            # {
+            #     "name": "mapping",
+            #     "description": "starting branch of ontology",
+            #     "required": False,
+            #     "allowEmptyValue": True,
+            #     "allowMultiple": False,
+            #     "paramType": "query",
+            #     "dataType": "string",
+            #     "enum": ["typo", "exact"]
+            # }
         ],
         responseMessages=[
             {
@@ -114,11 +114,11 @@ class Ontology(Resource):
             args = parser.parse_args(req=request)
             branch = args['branch']
 
-        parser.add_argument('mapping', help='Mapping approcaches')
-        mapping = None
-        if request.args:
-            args = parser.parse_args(req=request)
-            mapping = args['mapping']
+        # parser.add_argument('mapping', help='Mapping approcaches')
+        # mapping = None
+        # if request.args:
+        #     args = parser.parse_args(req=request)
+        #     mapping = args['mapping']
 
         # Onto loading
         logger.info('Getting Ontology term %s', term)
@@ -222,34 +222,6 @@ class Ontology(Resource):
         else:
             print('Error')
 
-            # # taxonomy
-            # if branch == 'taxonomy' and term != None:
-            #     if not mapping:
-            #         try:
-            #             res_cls.append(onto.search_one(label=term))
-            #         except:
-            #             print("can't find the term")
-            #             pass
-            #     elif mapping == 'typo':
-            #         try:
-            #             c = onto.search_one(label=term)
-            #             map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasRelatedSynonym']
-            #             res_cls = list(map[c])
-            #         except:
-            #             print("can't find the term")
-            #             pass
-            #
-            #     elif mapping == 'exact':
-            #         try:
-            #             c = onto.search_one(label=term)
-            #             map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
-            #             res_cls = list(map[c])
-            #         except:
-            #             print("can't find the term")
-            #             pass
-            #     else:
-            #         res_cls = clses
-
         response = []
 
         for cls in result:
@@ -258,19 +230,24 @@ class Ontology(Resource):
                     "annotationValue": "investigator",
                     "termSource": {
                         "comments": [],
-                        "name": " ",
-                        "file": "http://data.bioontology.org/ontologies/EFO",
-                        "version": "132",
-                        "description": "Experimental Factor Ontology"
+                        "ontology_name": "",
+                        "file": "",
+                        "provenance_name":"",
+                        "version": "",
+                        "description": ""
                     },
-                    "termAccession": "http://www.ebi.ac.uk/efo/EFO_0001739"
+                    "termAccession": ""
                 }'''
 
             d = json.loads(str(temp))
             try:
                 d['annotationValue'] = str(cls.name)
-                d['name'] = str(cls.ontoName)
                 d["termAccession"] = str(cls.iri)
+                d['termSource']['ontology_name'] = str(cls.ontoName)
+                d['termSource']['file'] = str(cls.provenance_uri)
+                d['termSource']['provenance_name'] = str(cls.provenance_name)
+                d['termSource']['version'] = str(getOnto_version(cls.ontoName))
+                d['termSource']['description'] = str(getOnto_title(cls.ontoName))
             except:
                 pass
 
@@ -283,18 +260,20 @@ class Ontology(Resource):
 def getZoomaTerm(keyword):
     res = []
     try:
-        url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
+        url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
+        # url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
         ssl._create_default_https_context = ssl._create_unverified_context
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf8')
         json_str = json.loads(content)
         for term in json_str:
             iri = term['semanticTags'][0]
-
             if 'mesh' in iri.lower():
                 ontoName = 'MESH'
             elif 'nci' in iri.lower():
                 ontoName = 'NCIT'
+            elif 'bao' in iri.lower():
+                ontoName = 'BAO'
             else:
                 ontoName = getOnto_Name(iri)
 
@@ -303,11 +282,26 @@ def getZoomaTerm(keyword):
                           obo_ID=iri.rsplit('/', 1)[-1],
                           ontoName=ontoName,
                           Zooma_confidence=term['confidence'])
+
+            try:
+                provenance_name = term['derivedFrom']['provenance']['source']['name']
+                provenance_uri = term['derivedFrom']['provenance']['source']['uri']
+            except:
+                provenance_name = ''
+                provenance_uri = ''
+
+            if 'http' not in provenance_name:
+                enti.provenance_name = provenance_name
+            else:
+                enti.provenance_name = ontoName
+
+            enti.provenance_uri = provenance_uri
+
             res.append(enti)
             if len(res) >= 5:
                 break
     except Exception as e:
-        logger.error('getZooma' +e)
+        logger.error('getZooma' + str(e))
     return res
 
 
@@ -326,14 +320,17 @@ def getOLSTerm(keyword):
         responses = j_content["response"]['docs']
 
         for term in responses:
-            enti = entity(name=term['label'].title(), iri=term['iri'],
-                          obo_ID=term['obo_id'], ontoName=term['ontology_prefix'])
+            enti = entity(name=term['label'].title(),
+                          iri=term['iri'],
+                          obo_ID=term['obo_id'],
+                          ontoName=term['ontology_prefix'],
+                          provenance_name=term['ontology_prefix'])
             res.append(enti)
             if len(res) >= 5:
                 break
 
     except Exception as e:
-        logger.error('getOLS' + e)
+        logger.error('getOLS' + str(e))
     return res
 
 
@@ -358,6 +355,8 @@ def getBioportalTerm(keyword):
                 ontoName = 'MESH'
             elif 'nci' in iri.lower():
                 ontoName = 'NCIT'
+            elif 'bao' in iri.lower():
+                ontoName = 'BAO'
             else:
                 ontoName = getOnto_Name(iri)
 
@@ -370,7 +369,7 @@ def getBioportalTerm(keyword):
             if len(res) >= 5:
                 break
     except Exception as e:
-        logger.error('getBioportal' +e)
+        logger.error('getBioportal' + str(e))
     return res
 
 
@@ -378,3 +377,17 @@ def getOnto_Name(iri):
     # get ontology name by giving iri of entity
     substring = iri.rsplit('/', 1)[-1]
     return ''.join(x for x in substring if x.isalpha())
+
+def getOnto_title(pre_fix):
+    url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+    fp = urllib.request.urlopen(url)
+    content = fp.read().decode('utf-8')
+    j_content = json.loads(content)
+    return j_content['config']['title']
+
+def getOnto_version(pre_fix):
+    url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+    fp = urllib.request.urlopen(url)
+    content = fp.read().decode('utf-8')
+    j_content = json.loads(content)
+    return j_content['config']['version']
