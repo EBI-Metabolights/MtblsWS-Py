@@ -43,7 +43,7 @@ class onto_information():
         return list(cls.seeAlso)
 
 class entity():
-    def __init__(self,name = None, iri = None, obo_ID= None, ontoName = None, Zooma_confidence = None):
+    def __init__(self, name = None, iri = None, obo_ID= None, ontoName = None, provenance_name = None, provenance_uri = None, Zooma_confidence = None):
         if name is None:
             self.name = ''
         else:
@@ -63,6 +63,17 @@ class entity():
             self.ontoName = ''
         else:
             self.ontoName = ontoName
+
+        if provenance_name is None:
+            self.provenance_name = ''
+        else:
+            self.provenance_name = provenance_name
+
+        if provenance_uri is None:
+            self.provenance_uri = ''
+        else:
+            self.provenance_uri = provenance_uri
+
 
         if Zooma_confidence is None:
             self.Zooma_confidence = ''
