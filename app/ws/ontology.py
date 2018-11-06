@@ -171,7 +171,12 @@ class Ontology(Resource):
                 # fuzzy match
                 if len(result) == 0:
                     for cls in clses:
-                        if term.lower() in cls.label[0].lower():
+                        if cls.label[0].lower().startswith(term.lower()):
+                            subs = info.get_subs(cls)
+                            res_cls = [cls] + subs
+
+                    for cls in clses:
+                        if term.lower() in cls.label[0].lower() and cls not in res_cls:
                             res_cls.append(cls)
 
                     for cls in res_cls:
