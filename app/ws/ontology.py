@@ -143,45 +143,49 @@ class Ontology(Resource):
         elif term:
             if branch:
                 start_cls = onto.search_one(label=branch)
-                clses = info.get_subs(start_cls)
+            else:
+                start_cls = onto.search_one(iri = 'http://www.w3.org/2002/07/owl#Thing')
 
-                res_cls = []
-                # exact match
-                if term.lower() in [cls.label[0].lower() for cls in clses]:
-                    if onto.search_one(label=term.lower()) is not None:
-                        c = onto.search_one(label=term.lower())
-                    elif onto.search_one(label=term.title()) is not None:
-                        c = onto.search_one(label=term.title())
-                    elif onto.search_one(label=term.capitalize()) is not None:
-                        c = onto.search_one(label=term.capitalize())
-                    elif onto.search_one(label=term.upper()) is not None:
-                        c = onto.search_one(label=term.upper())
-                    else:
-                        for cls in clses:
-                            if cls.label[0].lower() == term.lower():
-                                c = cls
+            clses = info.get_subs(start_cls)
 
-                    subs = info.get_subs(c)
-                    res_cls = [c] + subs
-
-                    for cls in res_cls:
-                        enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
-                        result.append(enti)
-
-                # fuzzy match
-                if len(result) == 0:
+            res_cls = []
+            # exact match
+            if term.lower() in [cls.label[0].lower() for cls in clses]:
+                if onto.search_one(label=term.lower()) is not None:
+                    c = onto.search_one(label=term.lower())
+                elif onto.search_one(label=term.title()) is not None:
+                    c = onto.search_one(label=term.title())
+                elif onto.search_one(label=term.capitalize()) is not None:
+                    c = onto.search_one(label=term.capitalize())
+                elif onto.search_one(label=term.upper()) is not None:
+                    c = onto.search_one(label=term.upper())
+                else:
                     for cls in clses:
-                        if cls.label[0].lower().startswith(term.lower()):
-                            subs = info.get_subs(cls)
-                            res_cls = [cls] + subs
+                        if cls.label[0].lower() == term.lower():
+                            c = cls
 
-                    for cls in clses:
-                        if term.lower() in cls.label[0].lower() and cls not in res_cls:
-                            res_cls.append(cls)
+                subs = info.get_subs(c)
+                res_cls = [c] + subs
 
-                    for cls in res_cls:
-                        enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
-                        result.append(enti)
+                for cls in res_cls:
+                    enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
+                    result.append(enti)
+
+            # fuzzy match
+            if len(result) == 0:
+                for cls in clses:
+                    if cls.label[0].lower().startswith(term.lower()):
+                        res_cls.append(cls)
+                        subs = info.get_subs(cls)
+                        res_cls = res_cls + subs
+
+                for cls in clses:
+                    if term.lower() in cls.label[0].lower() and cls not in res_cls:
+                        res_cls.append(cls)
+
+                for cls in res_cls:
+                    enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
+                    result.append(enti)
 
             # if branch == null, search whole ontology
             if len(result) == 0:
