@@ -64,16 +64,16 @@ class Ontology(Resource):
                 "enum": ["factors", "roles", "taxonomy", "characteristics", "publication", "design descriptor", "unit"]
             },
 
-            # {
-            #     "name": "mapping",
-            #     "description": "starting branch of ontology",
-            #     "required": False,
-            #     "allowEmptyValue": True,
-            #     "allowMultiple": False,
-            #     "paramType": "query",
-            #     "dataType": "string",
-            #     "enum": ["typo", "exact"]
-            # }
+            {
+                "name": "mapping",
+                "description": "starting branch of ontology",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["typo", "exact"]
+            }
         ],
         responseMessages=[
             {
@@ -114,11 +114,11 @@ class Ontology(Resource):
             args = parser.parse_args(req=request)
             branch = args['branch']
 
-        # parser.add_argument('mapping', help='Mapping approcaches')
-        # mapping = None
-        # if request.args:
-        #     args = parser.parse_args(req=request)
-        #     mapping = args['mapping']
+        parser.add_argument('mapping', help='Mapping approcaches')
+        mapping = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            mapping = args['mapping']
 
         # Onto loading
         logger.info('Getting Ontology term %s', term)
@@ -129,7 +129,6 @@ class Ontology(Resource):
 
         # if only branch, search all branch
         if not term and branch:
-
             start_cls = onto.search_one(label=branch)
             clses = info.get_subs(start_cls)
 
@@ -137,9 +136,11 @@ class Ontology(Resource):
                 enti = entity(name=cls.label[0], iri=cls.iri, ontoName='MTBLS')
                 result.append(enti)
 
+            if len(result) > 0:
+                result.insert(0, result.pop())
+
         # if keyword !=  null
         elif term:
-
             if branch:
                 start_cls = onto.search_one(label=branch)
                 clses = info.get_subs(start_cls)
@@ -151,8 +152,14 @@ class Ontology(Resource):
                         c = onto.search_one(label=term.lower())
                     elif onto.search_one(label=term.title()) is not None:
                         c = onto.search_one(label=term.title())
-                    else:
+                    elif onto.search_one(label=term.capitalize()) is not None:
+                        c = onto.search_one(label=term.capitalize())
+                    elif onto.search_one(label=term.upper()) is not None:
                         c = onto.search_one(label=term.upper())
+                    else:
+                        for cls in clses:
+                            if cls.label[0].lower() == term.lower():
+                                c = cls
 
                     subs = info.get_subs(c)
                     res_cls = [c] + subs
@@ -251,6 +258,12 @@ class Ontology(Resource):
             except:
                 pass
 
+            if cls.ontoName == 'MTBLS':
+                d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/'
+                d['termSource']['provenance_name'] = 'metabolights'
+                d['termSource']['version'] = '1.0'
+                d['termSource']['description'] = 'Metabolights Ontology'
+
             response.append(d)
 
         # response = [{'SubClass': x} for x in res]
@@ -260,7 +273,8 @@ class Ontology(Resource):
 def getZoomaTerm(keyword):
     res = []
     try:
-        url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
+        url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',
+                                                                                                                 "+")
         # url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
         ssl._create_default_https_context = ssl._create_unverified_context
         fp = urllib.request.urlopen(url)
@@ -297,11 +311,11 @@ def getZoomaTerm(keyword):
 
             enti.provenance_uri = provenance_uri
 
-            if enti.provenance_name =='metabolights':
+            if enti.provenance_name == 'metabolights':
                 res = [enti] + res
             else:
                 res.append(enti)
-                
+
             if len(res) >= 5:
                 break
     except Exception as e:
@@ -382,16 +396,24 @@ def getOnto_Name(iri):
     substring = iri.rsplit('/', 1)[-1]
     return ''.join(x for x in substring if x.isalpha())
 
+
 def getOnto_title(pre_fix):
-    url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
-    fp = urllib.request.urlopen(url)
-    content = fp.read().decode('utf-8')
-    j_content = json.loads(content)
-    return j_content['config']['title']
+    try:
+        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+        return j_content['config']['title']
+    except:
+        return ''
+
 
 def getOnto_version(pre_fix):
-    url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
-    fp = urllib.request.urlopen(url)
-    content = fp.read().decode('utf-8')
-    j_content = json.loads(content)
-    return j_content['config']['version']
+    try:
+        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+        return j_content['config']['version']
+    except:
+        return ''
