@@ -51,6 +51,9 @@ def initialize_app(flask_app):
     api.add_resource(About, res_path)
     api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query_type>")
 
+    # Add ontology resources
+    api.add_resource(Ontology, res_path + "/studies/ontology")
+
     # MTBLS studies
     api.add_resource(MtblsStudies, res_path + "/studies")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
@@ -100,10 +103,6 @@ def initialize_app(flask_app):
     api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/cell/<string:file_name>")
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")
     api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
-
-    # Add ontology resources
-    api.add_resource(Ontology, res_path + "/studies/ontology")
-
 
 def main():
     print("Initialising application")

@@ -654,7 +654,7 @@ class StudyContacts(Resource):
             # if partial=True missing fields will be ignored
             result = PersonSchema().load(data, partial=False)
             new_contact = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # Add new contact
@@ -1211,7 +1211,7 @@ class StudyProtocols(Resource):
             # if partial=True missing fields will be ignored
             result = ProtocolSchema().load(data, partial=False)
             new_obj = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # Add new protocol
@@ -1595,7 +1595,7 @@ class StudyProtocols(Resource):
             # if partial=True missing fields will be ignored
             result = ProtocolSchema().load(data, partial=False)
             updated_protocol = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # update protocol details
@@ -2284,7 +2284,7 @@ class StudyDescriptors(Resource):
             # if partial=True missing fields will be ignored
             result = StudyDesignDescriptorSchema().load(data, partial=False)
             new_obj = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # Add new Study Descriptor
@@ -2805,8 +2805,8 @@ class StudyPublications(Resource):
             # if partial=True missing fields will be ignored
             result = PublicationSchema().load(data, partial=False)
             new_publication = result.data
-        except (ValidationError, Exception) as err:
-            abort(400, err)
+        except (ValidationError, Exception):
+            abort(400)
 
         # Add new Publication
         logger.info('Adding new Publication %s for %s', new_publication.title, study_id)
@@ -3176,7 +3176,7 @@ class StudyPublications(Resource):
             # if partial=True missing fields will be ignored
             result = PublicationSchema().load(data, partial=False)
             updated_publication = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # update Study Publication details
@@ -3438,7 +3438,7 @@ class StudySources(Resource):
             # if partial=True missing fields will be ignored
             result = SourceSchema().load(data, partial=False)
             updated_obj = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # update Study Source details
@@ -3582,7 +3582,7 @@ class StudySamples(Resource):
             data = data_dict['samples']
             result = SampleSchema().load(data, partial=False, many=True)
             new_samples = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # Add new Study Sample
@@ -4153,7 +4153,7 @@ class StudyOtherMaterials(Resource):
             # if partial=True missing fields will be ignored
             result = OtherMaterialSchema().load(data, partial=False)
             new_material = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # Add new Study Material
@@ -4538,7 +4538,7 @@ class StudyOtherMaterials(Resource):
             # if partial=True missing fields will be ignored
             result = OtherMaterialSchema().load(data, partial=False)
             updated_obj = result.data
-        except (ValidationError, Exception) as err:
+        except (ValidationError, Exception):
             abort(400)
 
         # update Study Material details
