@@ -11,7 +11,7 @@ from flask import current_app as app
 from flask import request, jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from owlready2 import get_ontology, urllib
+from owlready2 import get_ontology, urllib, IRIS
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -147,8 +147,19 @@ class Ontology(Resource):
                 start_cls = onto.search_one(iri='http://www.w3.org/2002/07/owl#Thing')
 
             clses = info.get_subs(start_cls)
-
             res_cls = []
+
+            # taxonomy
+            if branch == 'taxonomy':
+                for cls in clses:
+                    try:
+                        map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
+                        Synonym = list(map[cls])
+                        if term.lower() in [syn.lower() for syn in Synonym]:
+                            res_cls.append(cls)
+                    except:
+                        pass
+
             # exact match
             if term.lower() in [cls.label[0].lower() for cls in clses]:
                 if onto.search_one(label=term.lower()) is not None:
@@ -201,6 +212,9 @@ class Ontology(Resource):
                 except Exception as e:
                     print(e.args)
                     logger.info(e.args)
+
+
+
 
             # Zooma Search
             if len(result) == 0:

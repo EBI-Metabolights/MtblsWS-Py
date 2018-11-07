@@ -157,13 +157,18 @@ def get_all_files(path):
 
 
 def is_file_referenced(file_name, directory, isa_tab_file_to_check):
+    """ There can be more than one assay, so each MAF must be checked against
+    each Assay file. Do not state a MAF as not in use if it's used in the 'other' assay """
+    found = False
     isa_tab_file_to_check = isa_tab_file_to_check + '*.txt'
     isa_tab_file = os.path.join(directory, isa_tab_file_to_check)
     for ref_file_name in glob.glob(isa_tab_file):
+        """ The filename we pass in is found referenced in the metadata (ref_file_name)
+        One possible problem here is of the maf is found in an old assay file, then we will report it as 
+        current """
         if file_name in open(ref_file_name).read():
-            return True
-        else:
-            return False
+            found = True
+    return found
 
 
 def map_file_type(file_name, directory):
@@ -222,6 +227,7 @@ def get_file_information(directory):
             file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
                               "type": file_type, "status": status})
     return file_list
+
 
 def get_table_header(table_df):
     # Get an indexed header row
