@@ -144,7 +144,7 @@ class Ontology(Resource):
             if branch:
                 start_cls = onto.search_one(label=branch)
             else:
-                start_cls = onto.search_one(iri = 'http://www.w3.org/2002/07/owl#Thing')
+                start_cls = onto.search_one(iri='http://www.w3.org/2002/07/owl#Thing')
 
             clses = info.get_subs(start_cls)
 
@@ -239,6 +239,8 @@ class Ontology(Resource):
             print('Error')
 
         response = []
+
+        result = removeDuplicated(result)
 
         for cls in result:
             temp = '''    {
@@ -426,3 +428,22 @@ def getOnto_version(pre_fix):
         return j_content['config']['version']
     except:
         return ''
+
+
+def removeDuplicated(res_list):
+    priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+    res = {}
+    for enti in res_list:
+        term_name = enti.name.lower()
+        onto_name = enti.ontoName
+        prior = priority.get(onto_name, 1000)
+
+        if term_name in res:
+            old_prior = priority.get(res[term_name].ontoName, 999)
+
+            if prior < old_prior:
+                res[term_name] = enti
+        else:
+            res[term_name] = enti
+
+    return list(res.values())
