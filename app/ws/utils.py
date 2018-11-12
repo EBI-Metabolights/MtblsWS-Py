@@ -57,7 +57,8 @@ def copy_file(source, destination):
     :return:
     """
     try:
-        # copy origin to destiny
+        # copy origin to destination
+        os.makedirs(destination, exist_ok=True)
         logger.info("Copying %s to %s", source, destination)
         shutil.copyfile(source, destination)
     except Exception:
