@@ -58,12 +58,12 @@ def copy_file(source, destination):
     """
     try:
         # copy origin to destination
-        os.makedirs(destination, exist_ok=True)
         logger.info("Copying %s to %s", source, destination)
         shutil.copyfile(source, destination)
     except Exception:
         logger.error('Could not create a new folder for the study')
         raise
+
 
 
 def copytree(src, dst, symlinks=False, ignore=None):

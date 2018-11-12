@@ -721,7 +721,7 @@ class CreateAccession(Resource):
         to_path = study_path + study
 
         try:
-            copy_file(from_path, to_path)
+            copy_files_and_folders(from_path, to_path)
         except:
             logger.error('Could not copy files from %s to %s', from_path, to_path)
 
