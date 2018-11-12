@@ -65,19 +65,18 @@ def copy_file(source, destination):
         raise
 
 
-
-def copytree(src, dst, symlinks=False, ignore=None):
+def copytree(src, dst, symlinks=False, ignore=None, metadata=True):
+    # Todo, add a feature to only copy metadata files
     try:
         if not os.path.exists(dst):
             logger.info('Creating a new folder for the study, %s', dst)
             os.makedirs(dst, exist_ok=True)
+
         for item in os.listdir(src):
             source = os.path.join(src, item)
             destination = os.path.join(dst, item)
             try:
                 time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
-                #logger.info('Time difference is %s between %s and %s', time_diff, source, destination)
-
             except FileNotFoundError:
                 time_diff = 1  # Destination folder does not exist
 
@@ -95,11 +94,12 @@ def copytree(src, dst, symlinks=False, ignore=None):
         raise
 
 
-def copy_files_and_folders(source, destination):
+def copy_files_and_folders(source, destination, metabdata):
     """
       Make a copy of files/folders from origin to destnation. If destination already exists, it will be replaced.
       :param source:  string containing the full path to the source file, including filename
       :param destination: string containing the path to the source file, including filename
+      :param metabdata: Copy metadata only, Boolean (default True)
       :return:
       """
 

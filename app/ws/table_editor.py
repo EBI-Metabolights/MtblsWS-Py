@@ -916,7 +916,7 @@ class CopyFilesFolders(Resource):
         data_dict = json.loads(status)
         upload_path = data_dict["message"]
         logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_path, study_location)
-        status, message = copy_files_and_folders(upload_path, study_location)
+        status, message = copy_files_and_folders(upload_path, study_location, False)
         if status:
             return {'Success': 'Copied files from ' + upload_path}
         else:

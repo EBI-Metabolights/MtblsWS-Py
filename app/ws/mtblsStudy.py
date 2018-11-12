@@ -403,11 +403,22 @@ class StudyFiles(Resource):
 class CloneAccession(Resource):
     @swagger.operation(
         summary="Create a new study and upload folder",
-        notes='''<b>Will clone default LC-MS study if no parameter given</b>''',
+        notes='''This will clone the default template LC-MS study if no "study_id" parameter is given
+        If a "to_study_id" (destination study id) is provided, <b>data will be copied into this *existing* study. 
+        Please be aware that data in the destination study will be replaced with metadata files from "study_id"</b>. 
+        If no "to_study_id is provided, a new study will be created for you.''',
         parameters=[
             {
                 "name": "study_id",
-                "description": "Existing Study to clone",
+                "description": "Existing Study to clone from",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "to_study_id",
+                "description": "Existing Study to clone into",
                 "required": False,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -447,79 +458,105 @@ class CloneAccession(Resource):
     )
     def post(self):
 
-        parser = reqparse.RequestParser()
-        parser.add_argument('study_id', help="Study Identifier")
-        study_id = None
-
-        if request.args:
-            args = parser.parse_args(req=request)
-            study_id = args['study_id']
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        if user_token is None:
+            abort(403)
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('study_id', help="Study Identifier")
+        parser.add_argument('to_study_id', help="Study Identifier")
+        study_id = None
+        to_study_id = None
+
+        if request.args:
+            args = parser.parse_args(req=request)
+            study_id = args['study_id']
+            to_study_id = args['to_study_id']
+
         # param validation
         if study_id is None:
             study_id = 'MTBLS121'  # This is the standard LC-MS study. This is private but safe for all to clone
 
+        # Can the user read the study requested?
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
 
+        study_to_clone = study_location
+
+        # Users can safely clone the standard LC-MC study
         if not read_access:
             abort(403)
 
         study_id = study_id.upper()
 
-        if user_token is None:
-            abort(403)
-
-        study_date = get_year_plus_one()
-        logger.info('Creating a new MTBLS Study (cloned from %s) with release date %s', study_id, study_date)
-        new_folder_name = user_token + '~~' + study_date + '~' + 'new_study_requested_' + get_timestamp()
-
+        # This is the existing study
         study_to_clone = study_location
-        queue_folder = wsc.get_queue_folder()
-        existing_studies = wsc.get_all_studies_for_user(user_token)
-        logger.info('Found the following studies: ' + existing_studies)
 
-        logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name +
-                    ', to the queue folder ' + queue_folder)
-        # copy the study onto the queue folder
-        try:
-            logger.info('Attempting to copy ' + study_to_clone + ' to MetaboLights queue folder ' +
+        # If the user did not provide an existing study id to clone into, we create a new study
+        if to_study_id is None:
+            study_date = get_year_plus_one()
+            logger.info('Creating a new MTBLS Study (cloned from %s) with release date %s', study_id, study_date)
+            new_folder_name = user_token + '~~' + study_date + '~' + 'new_study_requested_' + get_timestamp()
+
+            # study_to_clone = study_location
+            queue_folder = wsc.get_queue_folder()
+            existing_studies = wsc.get_all_studies_for_user(user_token)
+            logger.info('Found the following studies: ' + existing_studies)
+
+            logger.info('Adding ' + study_to_clone + ', using name ' + new_folder_name +
+                        ', to the queue folder ' + queue_folder)
+            # copy the study onto the queue folder
+            try:
+                logger.info('Attempting to copy ' + study_to_clone + ' to MetaboLights queue folder ' +
                         os.path.join(queue_folder, new_folder_name))
-            copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the folder to the queue
-            # There is a bug in copy_tree which prevents you to use the same destination folder twice
-        except:
-            return {"error": "Could not add study into the MetaboLights queue"}
+                copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the folder to the queue
+                # There is a bug in copy_tree which prevents you to use the same destination folder twice
+            except:
+                return {"error": "Could not add study into the MetaboLights queue"}
 
-        logger.info('Folder successfully added to the queue')
-        # get a list of the users private studies to see if a new study has been created
-        new_studies = wsc.get_all_studies_for_user(user_token)
-        number = 0
-        while existing_studies == new_studies:
-            number = number + 1
-            if number == 20:  # wait for 20 secounds for the MetaboLights queue to process the study
-                logger.info('Waited to long for the MetaboLights queue, waiting for email now')
-                abort(408)
-
-            logger.info('Checking if the new study has been processed by the queue')
-            time.sleep(5)  # Have to check every so many secounds to see if the queue has finished
+            logger.info('Folder successfully added to the queue')
+            # get a list of the users private studies to see if a new study has been created
             new_studies = wsc.get_all_studies_for_user(user_token)
+            number = 0
+            while existing_studies == new_studies:
+                number = number + 1
+                if number == 20:  # wait for 20 secounds for the MetaboLights queue to process the study
+                    logger.info('Waited to long for the MetaboLights queue, waiting for email now')
+                    abort(408)
 
-        logger.info('Ok, now there is a new private study for the user')
+                logger.info('Checking if the new study has been processed by the queue')
+                time.sleep(5)  # Have to check every so many secounds to see if the queue has finished
+                new_studies = wsc.get_all_studies_for_user(user_token)
 
-        # Tidy up the response strings before converting to lists
-        new_studies_list = new_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
-        existing_studies_list = existing_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
+            logger.info('Ok, now there is a new private study for the user')
 
-        logger.info('returning the new study, %s', user_token)
-        # return the new entry, i.e. difference between the two lists
-        diff = list(set(new_studies_list) - set(existing_studies_list))
+            # Tidy up the response strings before converting to lists
+            new_studies_list = new_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
+            existing_studies_list = existing_studies.replace('[', '').replace(']', '').replace('"', '').split(',')
 
-        study_id = diff[0]
+            logger.info('returning the new study, %s', user_token)
+            # return the new entry, i.e. difference between the two lists
+            diff = list(set(new_studies_list) - set(existing_studies_list))
+
+            study_id = diff[0]
+        else:  # User proved an existing study to clone into
+            # Can the user read the study requested?
+            read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+                wsc.get_permissions(to_study_id, user_token)
+
+            # Can the user write into the given study?
+            if not write_access:
+                abort(403)
+
+            copy_files_and_folders(study_to_clone, study_location, True)
+
+            study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
+
+        # Create an upload folder for all studies anyway
         status = wsc.create_upload_folder(study_id, user_token)
         # logger.info('Study upload folder creation status: ' + status)
         data_dict = json.loads(status)
@@ -669,7 +706,7 @@ class saveAuditFiles(Resource):
 class CreateAccession(Resource):
     @swagger.operation(
         summary="Create a new study",
-        notes='''Create a new empty, without upload folder''',
+        notes='''Create a new study, without upload folder''',
         parameters=[
             {
                 "name": "user_token",
@@ -721,7 +758,7 @@ class CreateAccession(Resource):
         to_path = study_path + study
 
         try:
-            copy_files_and_folders(from_path, to_path)
+            copy_files_and_folders(from_path, to_path, True)
         except:
             logger.error('Could not copy files from %s to %s', from_path, to_path)
 
