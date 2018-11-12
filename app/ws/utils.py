@@ -61,12 +61,14 @@ def copy_file(source, destination):
         logger.info("Copying %s to %s", source, destination)
         shutil.copyfile(source, destination)
     except Exception:
+        logger.error('Could not create a new folder for the study')
         raise
 
 
 def copytree(src, dst, symlinks=False, ignore=None):
     try:
         if not os.path.exists(dst):
+            logger.info('Creating a new folder for the study, %s', dst)
             os.makedirs(dst, exist_ok=True)
         for item in os.listdir(src):
             source = os.path.join(src, item)
