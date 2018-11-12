@@ -400,7 +400,7 @@ class StudyFiles(Resource):
                         'obfuscation_code': obfuscation_code})
 
 
-class AllocateAccession(Resource):
+class CloneAccession(Resource):
     @swagger.operation(
         summary="Create a new study and upload folder",
         notes='''<b>Will clone default LC-MS study if no parameter given</b>''',
@@ -501,7 +501,8 @@ class AllocateAccession(Resource):
         number = 0
         while existing_studies == new_studies:
             number = number + 1
-            if number == 15:
+            if number == 20:  # wait for 20 secounds for the MetaboLights queue to process the study
+                logger.info('Waited to long for the MetaboLights queue, waiting for email now')
                 abort(408)
 
             logger.info('Checking if the new study has been processed by the queue')
@@ -665,6 +666,59 @@ class saveAuditFiles(Resource):
             return {'Error': 'Failed to create audit folder ' + dest_path}
 
 
+class CreateAccession(Resource):
+    @swagger.operation(
+        summary="Create a new study",
+        notes='''Create a new empty, without upload folder''',
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self):
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None:
+            abort(403)
+
+        logger.info('Creating a new MTBLS Study')
+
+        study_message = wsc.add_empty_study(user_token)
+        data_dict = json.loads(study_message)
+        study = data_dict["message"]
+        logger.info('Created new study ' + study)
+
+        return {"new_study": study}
+
+
 def write_audit_files(study_location):
     """
     Write back an ISA-API Investigation object directly into ISA-Tab files
@@ -690,3 +744,5 @@ def write_audit_files(study_location):
         return False, dest_path
 
     return True, dest_path
+
+

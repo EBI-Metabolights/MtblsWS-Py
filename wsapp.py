@@ -51,17 +51,16 @@ def initialize_app(flask_app):
     api.add_resource(About, res_path)
     api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query_type>")
 
-    # Add ontology resources
-    api.add_resource(Ontology, res_path + "/studies/ontology")
-
     # MTBLS studies
     api.add_resource(MtblsStudies, res_path + "/studies")
+    api.add_resource(Ontology, res_path + "/studies/ontology")  # Add ontology resources
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
     api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")
     api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/assay")
     api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
-    api.add_resource(AllocateAccession, res_path + "/studies/create")
+    api.add_resource(CreateAccession, res_path + "/studies/create")
+    api.add_resource(CloneAccession, res_path + "/studies/clone")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create-upload-folder")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync-files")
     api.add_resource(saveAuditFiles, res_path + "/studies/<string:study_id>/audit")

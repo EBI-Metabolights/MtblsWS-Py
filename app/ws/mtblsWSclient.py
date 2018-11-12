@@ -326,3 +326,19 @@ class WsClient:
         logger.info('Study upload folder for %s has been created', study_id)
         message = resp.text
         return message
+
+    @staticmethod
+    def add_empty_study(user_token):
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/createEmptyStudy"
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        logger.info('Creating a new empty study')
+        resp = requests.post(
+            url,
+            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
+            data="token=" + (user_token or ''))
+
+        if resp.status_code != 200:
+            abort(resp.status_code)
+
+        message = resp.text
+        return message

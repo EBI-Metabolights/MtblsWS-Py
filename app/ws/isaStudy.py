@@ -335,10 +335,10 @@ class StudyMetaInfo(Resource):
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
-        # Todo, refactor
+        # Todo, refactor?
         # 2012-02-14 00:00:00.0
-        readable_date = datetime.fromtimestamp(release_date / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')
-        return jsonify({"releaseDateAndStatus": [study_status, readable_date]})
+        #readable_date = datetime.fromtimestamp(release_date / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')
+        return jsonify({"data": ["status:"+study_status, "release-date:"+release_date]})
 
 
 class StudyDescription(Resource):
