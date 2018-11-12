@@ -49,17 +49,17 @@ def new_timestamped_folder(path):
     return new_folder
 
 
-def copy_file(source, destiny):
+def copy_file(source, destination):
     """
-    Make a copy of origin to destiny. If destiny already exists, it will be replaced.
+    Make a copy of origin to destination. If destination already exists, it will be replaced.
     :param source:  string containing the full path to the source file, including filename
-    :param destiny: string containing the path to the source file, including filename
+    :param destination: string containing the path to the source file, including filename
     :return:
     """
     try:
         # copy origin to destiny
-        logger.info("Copying %s to %s", source, destiny)
-        shutil.copyfile(source, destiny)
+        logger.info("Copying %s to %s", source, destination)
+        shutil.copyfile(source, destination)
     except Exception:
         raise
 

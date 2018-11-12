@@ -716,6 +716,15 @@ class CreateAccession(Resource):
         study = data_dict["message"]
         logger.info('Created new study ' + study)
 
+        study_path = app.config.get('STUDY_PATH')
+        from_path = study_path + 'DUMMY'
+        to_path = study_path + study
+
+        try:
+            copy_file(from_path, to_path)
+        except:
+            logger.error('Could not copy files from %s to %s', from_path, to_path)
+
         return {"new_study": study}
 
 

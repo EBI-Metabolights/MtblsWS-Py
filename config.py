@@ -22,6 +22,9 @@ API_DOC = RESOURCES_PATH + "/api/spec"
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 UPDATE_PATH_SUFFIX = "audit"
 
+MTBLS_FILE_BASE = "<some local filesystem>/"
+STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
+
 CORS_HOSTS = "http://localhost:8000",\
              "http://localhost:4200",\
              "http://localhost:8080",\
