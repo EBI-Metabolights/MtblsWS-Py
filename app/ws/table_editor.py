@@ -4,7 +4,7 @@ import numpy as np
 import json
 import re
 import os
-from flask import request, abort
+from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
@@ -490,9 +490,22 @@ class AddRows(Resource):
         if not write_access:
             abort(403)
 
-        file_name = os.path.join(study_location, file_name)
+        if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
+            # check for access rights
+            read_access2, write_access2, obfuscation_code2, study_location2, release_date, submission_date, \
+                study_status = wsc.get_permissions("MTBLS1", user_token)
+            # TODO, add "is curator" to the return values. for now let's just see who can edit MTBLS1 = Curators only
+            if not write_access2:
+                abort(403)
+            file_name = app.config.get('MTBLS_ZOOMA_FILE')
+        else:
+            file_name = os.path.join(study_location, file_name)
 
-        file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+        try:
+            file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+        except FileNotFoundError:
+            abort(400, "The file name was not found")
+
         file_df = file_df.replace(np.nan, '', regex=True)  # Remove NaN values
 
         # Validate column names in new rows
@@ -835,11 +848,23 @@ class GetTsvFile(Resource):
         if not read_access:
             abort(403)
 
-        file_name = os.path.join(study_location, file_name)
+        if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
+            # check for access rights
+            read_access2, write_access2, obfuscation_code2, study_location2, release_date, submission_date, \
+            study_status = wsc.get_permissions("MTBLS1", user_token)
+            # TODO, add "is curator" to the return values. for now let's just see who can edit MTBLS1 = Curators only
+            if not write_access2:
+                abort(403)
+            file_name = app.config.get('MTBLS_ZOOMA_FILE')
+        else:
+            file_name = os.path.join(study_location, file_name)
 
         logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
-        file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+        try:
+            file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+        except FileNotFoundError:
+            abort(400, "The file %s was not found", file_name)
 
         # Get rid of empty numerical values
         file_df = file_df.replace(np.nan, '', regex=True)
