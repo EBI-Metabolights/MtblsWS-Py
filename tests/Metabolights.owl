@@ -16252,6 +16252,25 @@ Environments include natural environments or exposures, experimentally applied c
     
 
 
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000007 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000007">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000001"/>
+        <rdfs:label xml:lang="en">age</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000008 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000008">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000001"/>
+        <oboInOwl:hasExactSynonym rdf:datatype="http://www.w3.org/2001/XMLSchema#string">nmr</oboInOwl:hasExactSynonym>
+        <rdfs:label xml:lang="en">nuclear magnetic resonance</rdfs:label>
+    </owl:Class>
+    
+
+
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000009 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000009">
@@ -18709,6 +18728,15 @@ Environments include natural environments or exposures, experimentally applied c
     
 
 
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000282 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000282">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000001"/>
+        <rdfs:label xml:lang="en">mass</rdfs:label>
+    </owl:Class>
+    
+
+
     <!-- 
     ///////////////////////////////////////////////////////////////////////////////////////
     //
@@ -19241,8 +19269,8 @@ Environments include natural environments or exposures, experimentally applied c
     </owl:Axiom>
     <rdf:Description rdf:about="http://purl.obolibrary.org/obo/BSPO_0001100">
         <obo:IAO_0000115 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">X superficial_part_of Y &lt;=&gt; if Y is subdivided into two superficial and deep portions, X is part_of the superficial portion.</obo:IAO_0000115>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_superficial_part_of</rdfs:label>
         <oboInOwl:id rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_superficial_part_of</oboInOwl:id>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_superficial_part_of</rdfs:label>
         <oboInOwl:hasDbXref rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS0001100</oboInOwl:hasDbXref>
         <oboInOwl:hasOBONamespace rdf:datatype="http://www.w3.org/2001/XMLSchema#string">uberon</oboInOwl:hasOBONamespace>
         <oboInOwl:shorthand rdf:datatype="http://www.w3.org/2001/XMLSchema#string">in_superficial_part_of</oboInOwl:shorthand>

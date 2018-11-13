@@ -150,7 +150,7 @@ class Ontology(Resource):
             res_cls = []
 
             # taxonomy
-            if branch == 'taxonomy':
+            if branch == 'taxonomy' or branch == 'factors':
                 for cls in clses:
                     try:
                         map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
@@ -212,9 +212,6 @@ class Ontology(Resource):
                 except Exception as e:
                     print(e.args)
                     logger.info(e.args)
-
-
-
 
             # Zooma Search
             if len(result) == 0:
