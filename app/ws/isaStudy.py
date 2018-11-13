@@ -656,13 +656,13 @@ class StudyContacts(Resource):
                                                          skip_load_tables=True,
                                                          study_location=study_location)
 
-        contact_emails = None
+        contact_persons = []
 
         for contact in isa_study.contacts:
-            contact_emails.append((contact.firstName+contact.lastName).lower())
+            contact_persons.append((contact.first_name+contact.last_name).lower())
 
         # body content validation
-        new_contacts = None
+        new_contacts = []
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['contacts']
@@ -670,23 +670,41 @@ class StudyContacts(Resource):
 
             for contact in data:
                 # Add new contact
-                logger.info('Adding new Contact %s for %s', new_contact.email, study_id)
                 result = PersonSchema().load(contact, partial=False)
                 new_contact = result.data
-                if (contact_emails.index((new_contact.firstName+new_contact.lastName).lower()) < 0):
+                logger.info('Adding new Contact %s for %s', new_contact.first_name, study_id)
+                if (new_contact.first_name+new_contact.last_name).lower() not in contact_persons:
                     new_contacts.append(new_contact)
 
-        except (ValidationError, Exception):
+        except (ValidationError, Exception) as e:
+            logger.error(e)
             abort(400)
 
         # add contact
-        isa_study.contacts.append(new_contacts)
+        isa_study.contacts = isa_study.contacts + new_contacts
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-        logger.info('Added %s', new_contact.email)
 
-        return PersonSchema().dump(new_contact)
+        obj_list = isa_study.contacts
+        # Using context to avoid envelop tags in contained objects
+        sch = PersonSchema()
+        sch.context['contact'] = Person()
+        if email is None:
+            # return a list of objs
+            logger.info('Got %s contacts', len(obj_list))
+            return sch.dump(obj_list, many=True)
+        else:
+            # return a single obj
+            found = False
+            for index, obj in enumerate(obj_list):
+                if obj.email == email:
+                    found = True
+                    break
+            if not found:
+                abort(404)
+            logger.info('Got %s', obj.email)
+            return sch.dump(obj)
 
     @swagger.operation(
         summary="Get Study Contacts",
