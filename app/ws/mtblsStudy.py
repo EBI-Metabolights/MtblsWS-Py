@@ -49,6 +49,45 @@ class MtblsStudies(Resource):
         return jsonify(pub_list)
 
 
+class MyMtblsStudies(Resource):
+    @swagger.operation(
+        summary="Get all Studies for a user",
+        notes="Get a list of all Studies for a user.",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+        log_request(request)
+
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+
+        logger.info('Getting all studies')
+        pub_list = wsc.get_all_studies_for_user(user_token)
+        existing_studies_list = pub_list.replace('[', '').replace(']', '').replace('"', '').split(',')
+        return jsonify(existing_studies_list)
+
+
 class IsaTabInvestigationFile(Resource):
 
     @swagger.operation(

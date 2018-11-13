@@ -53,6 +53,7 @@ def initialize_app(flask_app):
 
     # MTBLS studies
     api.add_resource(MtblsStudies, res_path + "/studies")
+    api.add_resource(MyMtblsStudies, res_path + "/my-studies")
     api.add_resource(Ontology, res_path + "/studies/ontology")  # Add ontology resources
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")

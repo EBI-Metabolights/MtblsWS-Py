@@ -24,6 +24,7 @@ UPDATE_PATH_SUFFIX = "audit"
 
 MTBLS_FILE_BASE = "<some local filesystem>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
+MTBLS_ZOOMA_FILE ="<some local file>"
 
 CORS_HOSTS = "http://localhost:8000",\
              "http://localhost:4200",\

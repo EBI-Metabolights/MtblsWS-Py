@@ -2844,15 +2844,17 @@ class StudyPublications(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
+        exists = False
         # check for Publication added already
         for index, publication in enumerate(isa_study.publications):
             if publication.title == new_publication.title:
-                abort(409)
+                exists = True
         # add Study Publication
-        isa_study.publications.append(new_publication)
-        logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-        logger.info('Added %s', new_publication.title)
+        if not exists:
+            isa_study.publications.append(new_publication)
+            logger.info("A copy of the previous files will %s saved", save_msg_str)
+            iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+            logger.info('Added %s', new_publication.title)
 
         return PublicationSchema().dump(new_publication)
 
