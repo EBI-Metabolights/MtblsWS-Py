@@ -39,11 +39,13 @@ class onto_information():
     def get_iri(self, cls):
         return cls.iri
 
-    def get_factors(self,cls):
+    def get_factors(self, cls):
         return list(cls.seeAlso)
 
+
 class entity():
-    def __init__(self, name = None, iri = None, obo_ID= None, ontoName = None, provenance_name = None, provenance_uri = None, Zooma_confidence = None):
+    def __init__(self, name=None, iri=None, obo_ID=None, ontoName=None, provenance_name=None, provenance_uri=None,
+                 Zooma_confidence=None):
         if name is None:
             self.name = ''
         else:
@@ -73,7 +75,6 @@ class entity():
             self.provenance_uri = ''
         else:
             self.provenance_uri = provenance_uri
-
 
         if Zooma_confidence is None:
             self.Zooma_confidence = ''
