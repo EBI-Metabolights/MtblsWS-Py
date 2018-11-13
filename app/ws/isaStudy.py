@@ -646,19 +646,6 @@ class StudyContacts(Resource):
             save_audit_copy = True
             save_msg_str = "be"
 
-        # body content validation
-        new_contact = None
-        try:
-            data_dict = json.loads(request.data.decode('utf-8'))
-            data = data_dict['contact']
-            # if partial=True missing fields will be ignored
-            result = PersonSchema().load(data, partial=False)
-            new_contact = result.data
-        except (ValidationError, Exception):
-            abort(400)
-
-        # Add new contact
-        logger.info('Adding new Contact %s for %s', new_contact.email, study_id)
         # check for access rights
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
@@ -668,13 +655,33 @@ class StudyContacts(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
-        # check for contact added already
-        for index, person in enumerate(isa_study.contacts):
-            if person.email == new_contact.email:
-                abort(409)
+
+        contact_emails = None
+
+        for contact in isa_study.contacts:
+            contact_emails.append((contact.firstName+contact.lastName).lower())
+
+        # body content validation
+        new_contacts = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['contacts']
+            # if partial=True missing fields will be ignored
+
+            for contact in data:
+                # Add new contact
+                logger.info('Adding new Contact %s for %s', new_contact.email, study_id)
+                result = PersonSchema().load(contact, partial=False)
+                new_contact = result.data
+                if (contact_emails.index((new_contact.firstName+new_contact.lastName).lower()) < 0):
+                    new_contacts.append(new_contact)
+
+        except (ValidationError, Exception):
+            abort(400)
 
         # add contact
-        isa_study.contacts.append(new_contact)
+        isa_study.contacts.append(new_contacts)
+
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_contact.email)
