@@ -62,23 +62,32 @@ class IsaApiClient:
             return isa_json
 
     @staticmethod
-    def create_new_study(title, description, sub_date, pub_rel_date):
+    def create_new_study(title, description, sub_date, pub_rel_date, mtbls_accession):
         """
         Create a new MTBLS Study
         :param title: 
         :param description: 
         :param sub_date: 
-        :param pub_rel_date: 
+        :param pub_rel_date:
+        :param mtbls_accession:
         :return: an ISA-JSON representation of the Study
         """
+        inv_file_name = 'i_investigation.txt'
+        study_file_name = 's_study.txt'
+        assay_file_name = 'a_assay.txt'
+
+        if mtbls_accession is not None:
+            study_file_name = 's_' + mtbls_accession + '.txt'
+            assay_file_name = 'a_' + mtbls_accession + '.txt'
+
         # investigation file
-        investigation = Investigation(filename="i_investigation.txt")
+        investigation = Investigation(filename=inv_file_name)
         investigation.title = title
         investigation.description = description
         investigation.submission_date = sub_date
         investigation.public_release_date = pub_rel_date
         # study file
-        study = Study(filename="s_study.txt")
+        study = Study(filename=study_file_name)
         study.identifier = "s1"
         study.title = title
         study.description = description
@@ -86,7 +95,7 @@ class IsaApiClient:
         study.public_release_date = pub_rel_date
         investigation.studies.append(study)
         # assay file
-        assay = Assay(filename="a_assay.txt")
+        assay = Assay(filename=assay_file_name)
         study.assays.append(assay)
 
         return investigation

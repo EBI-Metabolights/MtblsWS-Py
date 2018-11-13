@@ -61,6 +61,16 @@ class MyMtblsStudies(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "simple_list",
+                "description": "Only show study id's, not any details?",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -82,10 +92,20 @@ class MyMtblsStudies(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
 
+        show_simple_list = True
+        # header content validation
+        if "simple_list" in request.headers and request.headers["simple_list"].lower() == 'false':
+            show_simple_list = False
+
         logger.info('Getting all studies')
-        pub_list = wsc.get_all_studies_for_user(user_token)
+
+        if show_simple_list:
+            pub_list = wsc.get_all_studies_for_user(user_token)
+        else:
+            pub_list = wsc.get_all_studies_for_user(user_token) # TODO, change to a lite-study representation
+
         existing_studies_list = pub_list.replace('[', '').replace(']', '').replace('"', '').split(',')
-        return jsonify(existing_studies_list)
+        return jsonify({'content': existing_studies_list})
 
 
 class IsaTabInvestigationFile(Resource):
@@ -421,6 +441,10 @@ class StudyFiles(Resource):
         logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                     study_location, upload_location)
         study_files = get_all_files(study_location)
+
+        # Create an upload folder for all studies anyway
+        status = wsc.create_upload_folder(study_id, user_token)
+
         upload_files = get_all_files(upload_location)
 
         # Sort the two lists
@@ -602,7 +626,7 @@ class CloneAccession(Resource):
         os_upload_path = data_dict["message"]
         upload_location = os_upload_path.split('/mtblight')  # FTP/Aspera root starts here
 
-        return {"new_study": study_id, 'upload_location': upload_location[1]}
+        return {'new_study': study_id, 'upload_location': upload_location[1]}
 
 
 class CreateUploadFolder(Resource):
@@ -800,6 +824,8 @@ class CreateAccession(Resource):
             copy_files_and_folders(from_path, to_path, True)
         except:
             logger.error('Could not copy files from %s to %s', from_path, to_path)
+
+        # investigation = create_new_study()
 
         return {"new_study": study}
 
