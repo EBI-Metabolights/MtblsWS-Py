@@ -1,6 +1,7 @@
 import os
 import logging
 import requests
+import json
 from datetime import datetime
 from flask_restful import abort
 from flask import current_app as app
@@ -309,23 +310,34 @@ class WsClient:
         return str_resp
 
     @staticmethod
-    def create_upload_folder(study_id, user_token):
+    def create_upload_folder(study_id, obfuscation_code, user_token):
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') \
-                   + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
+                    + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
 
-        resp = requests.post(
-            url,
-            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-            data="token=" + (user_token or ''))
+        ftp_folder = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
+        os_upload = ftp_folder
 
-        if resp.status_code != 200:
-            abort(resp.status_code)
+        if not os.path.exists(ftp_folder):
+            logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
 
-        logger.info('Study upload folder for %s has been created', study_id)
-        message = resp.text
-        return message
+            resp = requests.post(
+                url,
+                headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
+                data="token=" + (user_token or ''))
+
+            if resp.status_code != 200:
+                abort(resp.status_code)
+
+            logger.info('Study upload folder for %s has been created', study_id)
+            data_dict = json.loads(resp.text)
+            os_upload_path = data_dict["message"]
+            os_upload = os_upload_path
+
+        upload_location = os_upload.split('/mtblight')  # FTP/Aspera root starts here
+        upload_loc = upload_location[1]
+
+        return {'os_upload_path': os_upload, 'upload_location': upload_loc}
 
     @staticmethod
     def add_empty_study(user_token):

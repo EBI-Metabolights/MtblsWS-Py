@@ -7,8 +7,6 @@ from app.ws.mm_models import *
 from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
 from flask_restful_swagger import swagger
-from flask import current_app as app
-from datetime import datetime
 from app.ws.utils import log_request
 import logging
 
@@ -1212,6 +1210,7 @@ class StudyProtocols(Resource):
         # No protocol param allowed, just to prevent confusion with UPDATE
         if obj_name:
             abort(400)
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -1219,6 +1218,12 @@ class StudyProtocols(Resource):
         else:
             # user token is required
             abort(401)
+
+        # check for access rights
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
 
         # check for keeping copies
         save_audit_copy = False
@@ -1241,11 +1246,6 @@ class StudyProtocols(Resource):
 
         # Add new protocol
         logger.info('Adding new Protocol %s for %s', new_obj.name, study_id)
-        # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)

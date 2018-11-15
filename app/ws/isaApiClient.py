@@ -62,14 +62,15 @@ class IsaApiClient:
             return isa_json
 
     @staticmethod
-    def create_new_study(title, description, sub_date, pub_rel_date, mtbls_accession):
+    def create_new_study(title, description, sub_date, pub_rel_date, mtbls_accession, technology):
         """
         Create a new MTBLS Study
         :param title: 
         :param description: 
-        :param sub_date: 
-        :param pub_rel_date:
-        :param mtbls_accession:
+        :param sub_date: Submission date (now)
+        :param pub_rel_date: Public release date
+        :param mtbls_accession: MTBLS id
+        :param technology: MS or NMR
         :return: an ISA-JSON representation of the Study
         """
         inv_file_name = 'i_investigation.txt'
@@ -77,8 +78,8 @@ class IsaApiClient:
         assay_file_name = 'a_assay.txt'
 
         if mtbls_accession is not None:
-            study_file_name = 's_' + mtbls_accession + '.txt'
-            assay_file_name = 'a_' + mtbls_accession + '.txt'
+            study_file_name = 's_' + mtbls_accession + '_' + technology + '.txt'
+            assay_file_name = 'a_' + mtbls_accession + '_' + technology + '.txt'
 
         # investigation file
         investigation = Investigation(filename=inv_file_name)
@@ -88,15 +89,25 @@ class IsaApiClient:
         investigation.public_release_date = pub_rel_date
         # study file
         study = Study(filename=study_file_name)
-        study.identifier = "s1"
+        study.identifier = mtbls_accession
         study.title = title
         study.description = description
         study.submission_date = sub_date
         study.public_release_date = pub_rel_date
-        investigation.studies.append(study)
+
+        # investigation.studies.append(study)
+
+        protocol = Protocol()
+
         # assay file
         assay = Assay(filename=assay_file_name)
+        assay.technology_platform = technology
+        # TODO, ontology term
+        # assay.technology_type = technology
         study.assays.append(assay)
+
+        # Add it all together
+        investigation.studies.append(study)
 
         return investigation
 
@@ -179,6 +190,7 @@ class IsaApiClient:
                     copy_file(src_file, dest_file)
 
         logger.info("Writing %s to %s", self.inv_filename, std_path)
-        dump(inv_obj, std_path, i_file_name=self.inv_filename, skip_dump_tables=False)
+        i_file_name = self.inv_filename
+        dump(inv_obj, std_path, i_file_name=i_file_name, skip_dump_tables=False)
 
         return

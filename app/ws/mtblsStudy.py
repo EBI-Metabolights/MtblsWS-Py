@@ -5,11 +5,13 @@ from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
+from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
 from operator import itemgetter
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
+iac = IsaApiClient()
 
 
 # Allow for a more detailed logging when on DEBUG mode
@@ -441,10 +443,6 @@ class StudyFiles(Resource):
         logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                     study_location, upload_location)
         study_files = get_all_files(study_location)
-
-        # Create an upload folder for all studies anyway
-        status = wsc.create_upload_folder(study_id, user_token)
-
         upload_files = get_all_files(upload_location)
 
         # Sort the two lists
@@ -468,8 +466,7 @@ class CloneAccession(Resource):
         summary="Create a new study and upload folder",
         notes='''This will clone the default template LC-MS study if no "study_id" parameter is given
         If a "to_study_id" (destination study id) is provided, <b>data will be copied into this *existing* study. 
-        Please be aware that data in the destination study will be replaced with metadata files from "study_id"</b>. 
-        If no "to_study_id is provided, a new study will be created for you.''',
+        Please be aware that data in the destination study will be replaced with metadata files from "study_id"</b>.''',
         parameters=[
             {
                 "name": "study_id",
@@ -482,7 +479,7 @@ class CloneAccession(Resource):
             {
                 "name": "to_study_id",
                 "description": "Existing Study to clone into",
-                "required": False,
+                "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
@@ -523,6 +520,9 @@ class CloneAccession(Resource):
 
         # User authentication
         user_token = None
+        bypass = False
+        lcms_default_study = 'MTBLS121'  # This is the standard LC-MS study. This is private but safe for all to clone
+
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
@@ -542,17 +542,18 @@ class CloneAccession(Resource):
 
         # param validation
         if study_id is None:
-            study_id = 'MTBLS121'  # This is the standard LC-MS study. This is private but safe for all to clone
+            study_id = lcms_default_study
+
+        if study_id is lcms_default_study:
+            bypass = True  # Users can safely clone this study, even when passing in MTBLS121
 
         # Can the user read the study requested?
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
 
-        study_to_clone = study_location
-
-        # Users can safely clone the standard LC-MC study
-        if not read_access:
-            abort(403)
+        if not bypass:
+            if not read_access:
+                abort(403)
 
         study_id = study_id.upper()
 
@@ -575,7 +576,7 @@ class CloneAccession(Resource):
             # copy the study onto the queue folder
             try:
                 logger.info('Attempting to copy ' + study_to_clone + ' to MetaboLights queue folder ' +
-                        os.path.join(queue_folder, new_folder_name))
+                            os.path.join(queue_folder, new_folder_name))
                 copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the folder to the queue
                 # There is a bug in copy_tree which prevents you to use the same destination folder twice
             except:
@@ -620,13 +621,9 @@ class CloneAccession(Resource):
             study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
 
         # Create an upload folder for all studies anyway
-        status = wsc.create_upload_folder(study_id, user_token)
-        # logger.info('Study upload folder creation status: ' + status)
-        data_dict = json.loads(status)
-        os_upload_path = data_dict["message"]
-        upload_location = os_upload_path.split('/mtblight')  # FTP/Aspera root starts here
-
-        return {'new_study': study_id, 'upload_location': upload_location[1]}
+        status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
+        upload_location = status["upload_location"]
+        return {'new_study': study_id, 'upload_location': upload_location}
 
 
 class CreateUploadFolder(Resource):
@@ -689,13 +686,75 @@ class CreateUploadFolder(Resource):
             abort(403)
 
         logger.info('Creating a new study upload folder for study %s', study_id)
-        status = wsc.create_upload_folder(study_id, user_token)
+        status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
 
         data_dict = json.loads(status)
         os_upload_path = data_dict["message"]
         upload_location = os_upload_path.split('/mtblight')  # FTP/Aspera root starts here
 
         return {'os_upload_path': os_upload_path, 'upload_location': upload_location[1]}
+
+    @swagger.operation(
+        summary="Create a new study upload folder",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Existing Study Identifier to add an upload folder to",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        # param validation
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        logger.info('Creating a new study upload folder for study %s', study_id)
+        status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
+        return status
 
 
 class saveAuditFiles(Resource):
@@ -769,7 +828,7 @@ class saveAuditFiles(Resource):
 class CreateAccession(Resource):
     @swagger.operation(
         summary="Create a new study",
-        notes='''Create a new study, without upload folder''',
+        notes='''Create a new study, with upload folder''',
         parameters=[
             {
                 "name": "user_token",
@@ -809,25 +868,55 @@ class CreateAccession(Resource):
         if user_token is None:
             abort(403)
 
+        # Need to check that the user is actually an active user, ie the user_token exists
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+        if not read_access:
+            abort(403)
+
         logger.info('Creating a new MTBLS Study')
 
         study_message = wsc.add_empty_study(user_token)
         data_dict = json.loads(study_message)
-        study = data_dict["message"]
-        logger.info('Created new study ' + study)
+        study_acc = data_dict["message"]
+        logger.info('Created new study ' + study_acc)
 
         study_path = app.config.get('STUDY_PATH')
         from_path = study_path + 'DUMMY'
-        to_path = study_path + study
+        to_path = study_path + study_acc
 
         try:
             copy_files_and_folders(from_path, to_path, True)
         except:
             logger.error('Could not copy files from %s to %s', from_path, to_path)
 
-        # investigation = create_new_study()
+        # We should have a new study now, so we need to refresh the local variables based on the new study
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_acc, user_token)
 
-        return {"new_study": study}
+        # The earlier add_empty_study call could still wait to commit
+        if obfuscation_code is None:
+            time.sleep(1)
+            read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+                wsc.get_permissions(study_acc, user_token)
+
+        # Create upload folder
+        status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
+                                                         skip_load_tables=False, study_location=study_location)
+
+        isa_study.identifier = study_acc  # Adding the study identifier
+
+        # Updated the files with the study accession
+        iac.write_isa_study(
+           inv_obj=isa_inv,
+           api_key=user_token,
+           std_path=to_path,
+           save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
+        )
+
+        return {"new_study": study_acc}
 
 
 def write_audit_files(study_location):

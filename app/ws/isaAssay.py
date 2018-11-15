@@ -6,6 +6,7 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
+from app.ws.utils import copy_file
 import logging
 import json
 
@@ -173,6 +174,237 @@ class StudyAssay(Resource):
         if list_only:
             sch = AssaySchema(only=('filename',), many=True)
         return extended_response(data={'assays': sch.dump(found).data})
+
+    @swagger.operation(
+        summary='Register existing assay to a study',
+        notes='''Add an existing assay template to a study.<pre><code>
+{ 
+ "assay": {        
+    "type": "LCMS",
+    "platform" : "Bruker",
+    "columns": [
+            {
+                "name"  : "polarity",
+                "value" : "positive"
+            },
+            {
+                "name"  : "column type",
+                "value" : "hilic"
+            }
+        ]
+    }
+}
+ </pre></code> </p>
+Accepted values:</br>
+- "type" - "LCMS", "GCMS" or "NMR"</br>
+- "polarity" - "positive", "negative" or "alternating"</br>
+- "column type"  - "hilic", "reverse phase", "direct infusion" or ""</br>
+ 
+''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "assay",
+                "description": 'Assay definition in ISA-JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
+    def post(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # check for access rights
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        # check if we should be keeping copies of the metadata
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # body content validation
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['assay']
+            assay_type = data['type']
+            platform = data['platform']
+            columns = data['columns']
+            if assay_type is None:
+                abort(412)
+
+        except (ValidationError, Exception):
+            abort(400, 'Incorrect JSON provided')
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
+                                                         skip_load_tables=True, study_location=study_location)
+
+        assay = create_assay(assay_type, columns, study_id)
+
+        # add obj
+        isa_study.assays.append(assay)
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+
+        return {"success": "The assay was added to study "+study_id, "assay": AssaySchema().dump(assay)}
+
+
+def create_assay(assay_type, columns, study_id):
+
+    profiling = 'metabolite_profiling'
+    ms_extension = '_mass_spectrometry.txt'
+    nmr_extension = '_NMR_spectroscopy.txt'
+    # a_POLARITY-TYPE-COLUMN-ms_metabolite_profiling_mass_spectrometry.txt
+    ms_template_name = 'a_POLARITY-TYPE-COLUMN-ms_' + profiling + ms_extension
+    # a_POLARITY-TYPE-COLUMN-ms_metabolite_profiling_mass_spectrometry.txt
+    nmr_template_name = 'a_ken_positive-lc-ms_' + profiling + nmr_extension
+    file_to_copy = ms_template_name  # default to MS
+
+    polarity = ''
+    column = ''
+    for key_val in columns:
+        if key_val['name'] == 'polarity':
+            polarity = key_val['value']
+
+        if key_val['name'] == 'column model':
+            column = key_val['value']
+
+    a_type = 'undefined'
+    if assay_type == 'LCMS':
+        a_type = 'Liquid Chromatography MS'
+
+    if assay_type == 'GCMS':
+        a_type = 'Gas Chromatography MS'
+
+    # this will be the final name for the copied assay template
+    file_name = 'a_' + polarity + '-' + a_type.replace(' ', '-') + '-' + profiling
+    file_name = file_name.lower()
+
+    assay_platform = a_type + ' - ' + polarity + ' - ' + column
+
+    if "NMR" in assay_type:
+        file_to_copy = nmr_template_name
+        file_name = file_name + nmr_extension
+
+    if "MS" in assay_type:
+        file_name = file_name + ms_extension
+
+    assay = Assay(filename=file_name)
+
+    # technologyType
+    technology = OntologyAnnotation()
+    # measurementType
+    measurement = assay.measurement_type
+    measurement.term = 'metabolite profiling'
+    measurement.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000366'
+
+    if "MS" in assay_type:
+        technology.term = 'mass spectrometry'
+        technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000470'
+    elif "NMR" in assay_type:
+        technology.term = 'NMR spectroscopy'
+        technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000623'
+
+    # termSource to use for technologyType
+    ontology = OntologySource(name='OBI')
+    ontology.version = '22'
+    ontology.file = 'http://data.bioontology.org/ontologies/OBI'
+    ontology.description = 'Ontology for Biomedical Investigations'
+
+    # Add the termSource to the technologyType
+    technology.term_source = ontology
+    # Add the ontology term to the assay.technologyType
+    assay.technology_type = technology
+    # Add the measurementType to the assay.measurementType
+    measurement.term_source = ontology
+    assay.measurement_type = measurement
+
+    assay.technology_platform = assay_platform
+
+    try:
+        result = AssaySchema().load(assay, partial=True)
+    except (ValidationError, Exception):
+        abort(400)
+
+    try:
+        study_path = app.config.get('STUDY_PATH')
+        study_path = study_path
+        copy_file(study_path + 'TEMPLATES/' + file_to_copy,
+                  study_path + study_id + '/' + file_name)
+    except Exception:
+        abort(500, 'Could not copy the assay template')
+    return assay
 
 
 class AssayProcesses(Resource):
