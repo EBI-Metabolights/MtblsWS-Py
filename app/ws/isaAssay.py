@@ -356,7 +356,7 @@ def create_assay(assay_type, columns, study_id):
         if key_val['name'].lower() == 'polarity':
             polarity = key_val['value']
 
-        if key_val['name'].lower() == 'column model':
+        if key_val['name'].lower() == 'column type':
             column = key_val['value']
 
     a_type = 'undefined'
@@ -375,7 +375,7 @@ def create_assay(assay_type, columns, study_id):
     file_name = file_name.replace('--', '-')
 
     assay_platform = a_type + ' - ' + polarity
-    if column is not None:
+    if column != '':
         assay_platform = assay_platform + ' - ' + column
 
     if "NMR" in assay_type:
