@@ -903,18 +903,17 @@ class CreateAccession(Resource):
         # Create upload folder
         status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)
 
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
-                                                         skip_load_tables=False, study_location=study_location)
-
-        isa_study.identifier = study_acc  # Adding the study identifier
-
-        # Updated the files with the study accession
-        iac.write_isa_study(
-           inv_obj=isa_inv,
-           api_key=user_token,
-           std_path=to_path,
-           save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
-        )
+        # if there is an assay file in the folder, we can edit the investigation file
+        # if os.path.isfile('a_*.txt'):
+        #     isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
+        #                                                      skip_load_tables=False, study_location=study_location)
+        #
+        #     isa_study.identifier = study_acc  # Adding the study identifier
+        #     # Updated the files with the study accession
+        #     iac.write_isa_study(
+        #         inv_obj=isa_inv, api_key=user_token, std_path=to_path,
+        #         save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
+        #     )
 
         return {"new_study": study_acc}
 

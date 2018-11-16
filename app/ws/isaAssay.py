@@ -9,6 +9,7 @@ from flask import current_app as app
 from app.ws.utils import copy_file
 import logging
 import json
+import os.path
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -176,12 +177,11 @@ class StudyAssay(Resource):
         return extended_response(data={'assays': sch.dump(found).data})
 
     @swagger.operation(
-        summary='Register existing assay to a study',
-        notes='''Add an existing assay template to a study.<pre><code>
+        summary='Add a new assay',
+        notes='''Add a new assay to a study<pre><code>
 { 
  "assay": {        
     "type": "LCMS",
-    "platform" : "Bruker",
     "columns": [
             {
                 "name"  : "polarity",
@@ -198,7 +198,7 @@ class StudyAssay(Resource):
 Accepted values:</br>
 - "type" - "LCMS", "GCMS" or "NMR"</br>
 - "polarity" - "positive", "negative" or "alternating"</br>
-- "column type"  - "hilic", "reverse phase", "direct infusion" or ""</br>
+- "column type"  - "hilic", "reverse phase" or "direct infusion"</br>
  
 ''',
         parameters=[
@@ -299,8 +299,12 @@ Accepted values:</br>
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['assay']
             assay_type = data['type']
-            platform = data['platform']
-            columns = data['columns']
+            # platform = data['platform']
+            try:
+                columns = data['columns']
+            except:
+                columns = []  # If not provided, ignore
+
             if assay_type is None:
                 abort(412)
 
@@ -310,6 +314,18 @@ Accepted values:</br>
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                          skip_load_tables=True, study_location=study_location)
 
+        # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
+        sample_file_name = isa_study.filename
+        sample_file_name = os.path.join(study_location, sample_file_name)
+        short_sample_file_name = 's_' + study_id.upper() + '.txt'
+        default_sample_file_name = os.path.join(study_location, short_sample_file_name)
+        if os.path.isfile(sample_file_name):
+            if sample_file_name != default_sample_file_name:
+                isa_study.identifier = study_id  # Adding the study identifier
+                os.rename(sample_file_name, default_sample_file_name)
+                isa_study.filename = short_sample_file_name
+
+        # Add the new assay to the investigation file
         assay = create_assay(assay_type, columns, study_id)
 
         # add obj
@@ -323,33 +339,33 @@ Accepted values:</br>
 def create_assay(assay_type, columns, study_id):
 
     profiling = 'metabolite_profiling'
-    ms_extension = '_mass_spectrometry.txt'
-    nmr_extension = '_NMR_spectroscopy.txt'
+    ms_extension = '_mass_spectrometry'
+    nmr_extension = '_NMR_spectroscopy'
     # a_POLARITY-TYPE-COLUMN-ms_metabolite_profiling_mass_spectrometry.txt
-    ms_template_name = 'a_POLARITY-TYPE-COLUMN-ms_' + profiling + ms_extension
+    ms_template_name = app.config.get('MS_ASSAY_TEMPLATE')
     # a_POLARITY-TYPE-COLUMN-ms_metabolite_profiling_mass_spectrometry.txt
-    nmr_template_name = 'a_ken_positive-lc-ms_' + profiling + nmr_extension
+    nmr_template_name = app.config.get('NMR_ASSAY_TEMPLATE')
     file_to_copy = ms_template_name  # default to MS
 
     polarity = ''
     column = ''
     for key_val in columns:
-        if key_val['name'] == 'polarity':
+        if key_val['name'].lower() == 'polarity':
             polarity = key_val['value']
 
-        if key_val['name'] == 'column model':
+        if key_val['name'].lower() == 'column model':
             column = key_val['value']
 
     a_type = 'undefined'
-    if assay_type == 'LCMS':
+    if assay_type.upper() == 'LCMS':
         a_type = 'Liquid Chromatography MS'
 
-    if assay_type == 'GCMS':
+    if assay_type.upper() == 'GCMS':
         a_type = 'Gas Chromatography MS'
 
     # this will be the final name for the copied assay template
-    file_name = 'a_' + polarity + '-' + a_type.replace(' ', '-') + '-' + profiling
-    file_name = file_name.lower()
+    file_name = 'a_' + study_id.upper() + '-' + polarity + '-' + a_type.replace(' ', '-').lower() + '-' + profiling
+    file_name = file_name.replace('--', '-')
 
     assay_platform = a_type + ' - ' + polarity + ' - ' + column
 
@@ -360,6 +376,20 @@ def create_assay(assay_type, columns, study_id):
     if "MS" in assay_type:
         file_name = file_name + ms_extension
 
+    # Has the filename has already been used in another assay?
+    studies_path = app.config.get('STUDY_PATH')  # Root folder for all studies
+    study_path = os.path.join(studies_path, study_id)  # This particular study
+    file_counter = 0
+    assay_file = os.path.join(study_path, file_name + '.txt')
+    file_exists = os.path.isfile(assay_file)
+    while file_exists:
+        file_counter += 1
+        new_file = file_name + '-' + str(file_counter)
+        if not os.path.isfile(os.path.join(study_path, new_file + '.txt')):
+            file_name = new_file
+            break
+
+    file_name = file_name + '.txt'
     assay = Assay(filename=file_name)
 
     # technologyType
@@ -398,12 +428,11 @@ def create_assay(assay_type, columns, study_id):
         abort(400)
 
     try:
-        study_path = app.config.get('STUDY_PATH')
-        study_path = study_path
-        copy_file(study_path + 'TEMPLATES/' + file_to_copy,
-                  study_path + study_id + '/' + file_name)
-    except Exception:
+        copy_file(studies_path + os.path.join('TEMPLATES', file_to_copy),
+                  os.path.join(study_path, file_name))
+    except (FileNotFoundError, Exception):
         abort(500, 'Could not copy the assay template')
+
     return assay
 
 
