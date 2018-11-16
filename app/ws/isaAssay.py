@@ -6,7 +6,7 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
-from app.ws.utils import copy_file, read_tsv, write_tsv
+from app.ws.utils import copy_file, read_tsv, write_tsv, add_new_protocols_from_assay
 import logging
 import json
 import os.path
@@ -315,32 +315,38 @@ Accepted values:</br>
                                                          skip_load_tables=True, study_location=study_location)
 
         # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
-        sample_file_name = isa_study.filename
-        sample_file_name = os.path.join(study_location, sample_file_name)
-        short_sample_file_name = 's_' + study_id.upper() + '.txt'
-        default_sample_file_name = os.path.join(study_location, short_sample_file_name)
-        if os.path.isfile(sample_file_name):
-            if sample_file_name != default_sample_file_name:
-                isa_study.identifier = study_id  # Adding the study identifier
-                os.rename(sample_file_name, default_sample_file_name)
-                isa_study.filename = short_sample_file_name
+        isa_study = update_correct_sample_file_name(isa_study, study_location, study_id)
 
         # Add the new assay to the investigation file
         assay_file_name, assay = create_assay(assay_type, columns, study_id)
 
-        # add obj
+        # add the assay to the study
         isa_study.assays.append(assay)
 
-        message = update_column_values(columns, assay_file_name)
+        message = update_assay_column_values(columns, assay_file_name)
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
+        isa_study = add_new_protocols_from_assay(assay_type,assay_file_name, study_id, isa_study)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
 
         return {"success": "The assay was added to study "+study_id, "assay": AssaySchema().dump(assay)}
 
 
-def create_assay(assay_type, columns, study_id):
+def update_correct_sample_file_name(isa_study, study_location, study_id):
+    sample_file_name = isa_study.filename
+    sample_file_name = os.path.join(study_location, sample_file_name)
+    short_sample_file_name = 's_' + study_id.upper() + '.txt'
+    default_sample_file_name = os.path.join(study_location, short_sample_file_name)
+    if os.path.isfile(sample_file_name):
+        if sample_file_name != default_sample_file_name:
+            isa_study.identifier = study_id  # Adding the study identifier
+            os.rename(sample_file_name, default_sample_file_name)
+            isa_study.filename = short_sample_file_name
 
+    return isa_study
+
+
+def create_assay(assay_type, columns, study_id):
     profiling = 'metabolite_profiling'
     ms_extension = '_mass_spectrometry'
     nmr_extension = '_NMR_spectroscopy'
@@ -349,6 +355,8 @@ def create_assay(assay_type, columns, study_id):
     # a_POLARITY-TYPE-COLUMN-ms_metabolite_profiling_mass_spectrometry.txt
     nmr_template_name = app.config.get('NMR_ASSAY_TEMPLATE')
     file_to_copy = ms_template_name  # default to MS
+    studies_path = app.config.get('STUDY_PATH')  # Root folder for all studies
+    study_path = os.path.join(studies_path, study_id)  # This particular study
 
     polarity = ''
     column = ''
@@ -385,56 +393,8 @@ def create_assay(assay_type, columns, study_id):
     if "MS" in assay_type:
         file_name = file_name + ms_extension
 
-    # Has the filename has already been used in another assay?
-    studies_path = app.config.get('STUDY_PATH')  # Root folder for all studies
-    study_path = os.path.join(studies_path, study_id)  # This particular study
-    file_counter = 0
-    assay_file = os.path.join(study_path, file_name + '.txt')
-    file_exists = os.path.isfile(assay_file)
-    while file_exists:
-        file_counter += 1
-        new_file = file_name + '-' + str(file_counter)
-        if not os.path.isfile(os.path.join(study_path, new_file + '.txt')):
-            file_name = new_file
-            break
-
-    file_name = file_name + '.txt'
-    assay = Assay(filename=file_name)
-
-    # technologyType
-    technology = OntologyAnnotation()
-    # measurementType
-    measurement = assay.measurement_type
-    measurement.term = 'metabolite profiling'
-    measurement.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000366'
-
-    if "MS" in assay_type:
-        technology.term = 'mass spectrometry'
-        technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000470'
-    elif "NMR" in assay_type:
-        technology.term = 'NMR spectroscopy'
-        technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000623'
-
-    # termSource to use for technologyType
-    ontology = OntologySource(name='OBI')
-    ontology.version = '22'
-    ontology.file = 'http://data.bioontology.org/ontologies/OBI'
-    ontology.description = 'Ontology for Biomedical Investigations'
-
-    # Add the termSource to the technologyType
-    technology.term_source = ontology
-    # Add the ontology term to the assay.technologyType
-    assay.technology_type = technology
-    # Add the measurementType to the assay.measurementType
-    measurement.term_source = ontology
-    assay.measurement_type = measurement
-
-    assay.technology_platform = assay_platform
-
-    try:
-        result = AssaySchema().load(assay, partial=True)
-    except (ValidationError, Exception):
-        abort(400)
+    file_name = get_valid_assay_file_name(file_name, study_path)
+    assay = get_new_assay(file_name, assay_platform, assay_type)
 
     try:
         copy_file(studies_path + os.path.join('TEMPLATES', file_to_copy),
@@ -445,7 +405,63 @@ def create_assay(assay_type, columns, study_id):
     return os.path.join(study_path, file_name), assay
 
 
-def update_column_values(columns, assay_file_name):
+def get_valid_assay_file_name(file_name, study_path):
+    # Has the filename has already been used in another assay?
+    file_counter = 0
+    assay_file = os.path.join(study_path, file_name + '.txt')
+    file_exists = os.path.isfile(assay_file)
+    while file_exists:
+        file_counter += 1
+        new_file = file_name + '-' + str(file_counter)
+        if not os.path.isfile(os.path.join(study_path, new_file + '.txt')):
+            file_name = new_file
+            break
+
+    return file_name + '.txt'
+
+
+def get_new_assay(file_name, assay_platform, assay_type):
+    assay = Assay(filename=file_name, technology_platform=assay_platform)
+
+    # technologyType
+    technology = OntologyAnnotation(
+        term_accession='http://purl.obolibrary.org/obo/OBI_0000366',
+        term='metabolite profiling')
+    # measurementType
+    measurement = assay.measurement_type
+
+    if "MS" in assay_type:
+        technology.term = 'mass spectrometry'
+        technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000470'
+    elif "NMR" in assay_type:
+        technology.term = 'NMR spectroscopy'
+        technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000623'
+
+    # termSource to use for technologyType
+    ontology = OntologySource(
+        name='OBI',
+        version='29',
+        file='http://data.bioontology.org/ontologies/OBI',
+        description='Ontology for Biomedical Investigations')
+
+    # Add the termSource to the technologyType
+    technology.term_source = ontology
+    # Add the ontology term to the assay.technologyType
+    assay.technology_type = technology
+    # Add the measurementType to the assay.measurementType
+    measurement.term_source = ontology
+    measurement.term = 'metabolite profiling'
+    assay.measurement_type = measurement
+
+    try:
+        result = AssaySchema().load(assay, partial=True)
+    except (ValidationError, Exception):
+        abort(400)
+
+    return assay
+
+
+def update_assay_column_values(columns, assay_file_name):
 
     # These are the real column headers from the assay file
     assay_col_type = 'Parameter Value[Column type]'

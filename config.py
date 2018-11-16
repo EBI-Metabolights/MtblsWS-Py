@@ -44,3 +44,18 @@ DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"
 # MTBLS_WS_HOST = "https://www.ebi.ac.uk"
 # MTBLS_WS_PORT = ""
 # MTBLS_FTP_ROOT = "<Folder to private ftp root>"
+
+PROTOCOL_PARAMS = [
+    ['NMR', 'Extraction', 'Extraction Method'],
+    ['MS',  'Extraction', 'Derivatization;Post Extraction'],
+    ['NMR', 'NMR sample', 'NMR tube type;Temperature;Sample pH;Solvent'],
+    ['NMR', 'NMR spectroscopy', 'Magnetic field strength;Pulse sequence name;Instrument;NMR Probe;Number of transients'],
+    ['NMR', 'NMR assay', ''],
+    ['MS',  'Data transformation', ''],
+    ['NMR', 'Data transformation', ''],
+    ['MS',  'Chromatography', 'Column type;Column model;Chromatography Instrument'],
+    ['MS',  'Mass spectrometry', 'Scan polarity;Mass analyzer;Ion source;Instrument;Scan m/z range'],
+    ['MS', 'Metabolite identification', ''],
+    ['NMR', 'Metabolite identification', '']
+]
+

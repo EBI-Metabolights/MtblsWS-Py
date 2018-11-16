@@ -1244,6 +1244,7 @@ class StudyProtocols(Resource):
         except (ValidationError, Exception):
             abort(400)
 
+        # TODO, use new utils.add_protcol method
         # Add new protocol
         logger.info('Adding new Protocol %s for %s', new_obj.name, study_id)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,

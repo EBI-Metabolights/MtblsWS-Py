@@ -8,6 +8,8 @@ from flask import current_app as app
 import pandas as pd
 import numpy as np
 import re
+from isatools.model import Protocol, ProtocolParameter
+from app.ws.mm_models import OntologyAnnotation, OntologySource
 
 """
 Utils
@@ -16,6 +18,7 @@ Misc of utils
 """
 
 logger = logging.getLogger('wslog')
+#iac = IsaApiClient()
 
 
 def get_timestamp():
@@ -313,3 +316,47 @@ def write_tsv(dataframe, file_name):
 
     return 'Success. Update file ' + file_name
 
+
+def add_new_protocols_from_assay(assay_type, assay_file_name, study_id, isa_study):
+    # Add new protocol
+    logger.info('Adding new Protocols from %s for %s', assay_file_name, study_id)
+    protocol_params = app.config.get('PROTOCOL_PARAMS')
+    protocols = isa_study.protocols
+
+    for prot_param in protocol_params:
+
+        prot_type = prot_param[0]
+        prot_name = prot_param[1]
+        prot_params = prot_param[2]
+
+        if prot_type not in assay_type:  # Is this protocol for MS or NMR?
+            continue
+
+        # check for protocol added already
+        obj = isa_study.get_prot(prot_name)
+        if obj:
+            continue
+
+        protocol_type = 'mass spectrometry'
+        if assay_type == 'NMR':
+            protocol_type = 'nmr spectroscopy'
+
+        protocol = Protocol(
+            name=prot_name,
+            protocol_type=OntologyAnnotation(term=protocol_type),
+            description='Please update this protocol description')
+
+        for param in prot_params.split(';'):
+            # ontology_source = OntologySource(name=param)
+            # ontology_source.name = param
+            protocol_parameter = ProtocolParameter(parameter_name=OntologyAnnotation(term=param))
+            protocol.parameters.append(protocol_parameter)
+
+
+        # Add the protocol to the protocols list
+        protocols.append(protocol)
+
+        # Add all protocols back into the study
+        #isa_study.protocols.append(protocols)
+
+    return isa_study
