@@ -1,14 +1,12 @@
 import logging
-import pandas as pd
-import numpy as np
 import json
-import re
 import os
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_table_header, totuples, copy_files_and_folders, validate_row, log_request
+from app.ws.utils import get_table_header, totuples, copy_files_and_folders, validate_row, log_request, \
+    read_tsv, write_tsv
 
 """
 MTBLS Table Columns manipulator
@@ -137,8 +135,7 @@ class SimpleColumns(Resource):
 
         file_name = os.path.join(study_location, file_name)
 
-        table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
-        table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
+        table_df = read_tsv(file_name)
 
         #  Need to add values for each existing row (not header)
         new_col = []
@@ -153,13 +150,9 @@ class SimpleColumns(Resource):
         # Get an indexed header row
         df_header = get_table_header(table_df)
 
-        # Remove all ".n" numbers at the end of duplicated column names
-        table_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+        message = write_tsv(table_df, file_name)
 
-        # Write the new row back in the file
-        table_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
-
-        return {'header': df_header, 'data': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict, 'message': message}
 
 
 class ComplexColumns(Resource):
@@ -249,9 +242,7 @@ class ComplexColumns(Resource):
             abort(403)
 
         file_name = os.path.join(study_location, file_name)
-
-        table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
-        table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
+        table_df = read_tsv(file_name)
 
         for column in new_columns:
             new_column_default_value = column['value']
@@ -272,10 +263,9 @@ class ComplexColumns(Resource):
         # Get all indexed rows
         df_data_dict = totuples(table_df.reset_index(), 'rows')
 
-        # Remove all ".n" numbers at the end of duplicated column names
-        table_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
-        table_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
-        return {'header': df_header, 'rows': df_data_dict}
+        message = write_tsv(table_df, file_name)
+
+        return {'header': df_header, 'rows': df_data_dict, 'message': message}
 
 
 class ColumnsRows(Resource):
@@ -369,9 +359,7 @@ class ColumnsRows(Resource):
             abort(403)
 
         file_name = os.path.join(study_location, file_name)
-
-        table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
-        table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
+        table_df = read_tsv(file_name)
 
         for column in columns_rows:
             cell_value = column['value']
@@ -385,14 +373,14 @@ class ColumnsRows(Resource):
                 abort(417, "Unable to find the required 'value', 'row' and 'column' values")
 
         # Write the new row back in the file
-        table_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
+        message = write_tsv(table_df, file_name)
 
         df_data_dict = totuples(table_df.reset_index(), 'rows')
 
         # Get an indexed header row
         df_header = get_table_header(table_df)
 
-        return {'header': df_header, 'rows': df_data_dict}
+        return {'header': df_header, 'rows': df_data_dict, 'message': message}
 
 
 class AddRows(Resource):
@@ -502,11 +490,9 @@ class AddRows(Resource):
             file_name = os.path.join(study_location, file_name)
 
         try:
-            file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+            file_df = read_tsv(file_name)
         except FileNotFoundError:
             abort(400, "The file name was not found")
-
-        file_df = file_df.replace(np.nan, '', regex=True)  # Remove NaN values
 
         # Validate column names in new rows
         valid_column_name, message = validate_row(file_df, new_row, "post")
@@ -515,11 +501,7 @@ class AddRows(Resource):
 
         file_df = file_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet (TSV file)
 
-        # Remove all ".n" numbers at the end of duplicated column names
-        file_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
-
-        # Write the new row back in the file
-        file_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
+        message = write_tsv(file_df, file_name)
 
         # Get an indexed header row
         df_header = get_table_header(file_df)
@@ -527,7 +509,7 @@ class AddRows(Resource):
         # Get the updated data table
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 
-        return {'header': df_header, 'data': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict, 'message': message}
 
     @swagger.operation(
         summary="Update existing rows in the given TSV file",
@@ -635,8 +617,7 @@ class AddRows(Resource):
 
         file_name = os.path.join(study_location, file_name)
 
-        file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
-        file_df = file_df.replace(np.nan, '', regex=True)  # Remove NaN
+        file_df = read_tsv(file_name)
 
         for row in new_rows:
             try:
@@ -655,18 +636,14 @@ class AddRows(Resource):
                 row.pop('index', None)  # Remove "index:n" element, this is the original row number
                 file_df = insert_row(row_index_int, file_df, row)  # Update the row in the spreadsheet
 
-        # Remove all ".n" numbers at the end of duplicated column names
-        file_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
-
-        # Write the new row back in the file
-        file_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
+        message = write_tsv(file_df, file_name)
 
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 
         # Get an indexed header row
         df_header = get_table_header(file_df)
 
-        return {'header': df_header, 'data': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict, 'message': message}
 
     @swagger.operation(
         summary="Delete a row of the given TSV file",
@@ -750,9 +727,8 @@ class AddRows(Resource):
             abort(403)
 
         file_name = os.path.join(study_location, file_name)
+        file_df = read_tsv(file_name)
 
-        file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
-        file_df = file_df.replace(np.nan, '', regex=True)  # Remove NaN
         row_nums = row_num.split(",")
 
         # Need to remove the highest row number first as the DataFrame dynamically re-orders when one row is removed
@@ -761,22 +737,17 @@ class AddRows(Resource):
         for num in sorted_num_rows:
             file_df = file_df.drop(file_df.index[num])  # Drop row(s) in the spreadsheet
 
-        # Remove all ".n" numbers at the end of duplicated column names
-        file_df.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
-
-        # Write the updated file
-        file_df.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
+        message = write_tsv(file_df, file_name)
 
         # To be sure we read the file again
-        file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
-        file_df = file_df.replace(np.nan, '', regex=True)  # Remove NaN
+        file_df = read_tsv(file_name)
 
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 
         # Get an indexed header row
         df_header = get_table_header(file_df)
 
-        return {'header': df_header, 'data': df_data_dict}
+        return {'header': df_header, 'data': df_data_dict, 'message': message}
 
 
 class GetTsvFile(Resource):
@@ -862,12 +833,9 @@ class GetTsvFile(Resource):
         logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
         try:
-            file_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+            file_df = read_tsv(file_name)
         except FileNotFoundError:
             abort(400, "The file %s was not found", file_name)
-
-        # Get rid of empty numerical values
-        file_df = file_df.replace(np.nan, '', regex=True)
 
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 

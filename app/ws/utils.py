@@ -6,6 +6,8 @@ import time
 import datetime
 from flask import current_app as app
 import pandas as pd
+import numpy as np
+import re
 
 """
 Utils
@@ -291,3 +293,23 @@ def log_request(request_obj):
                 logger.debug('REQUEST JSON    -> %s', request_obj.json)
             except:
                 logger.debug('REQUEST JSON    -> EMPTY')
+
+
+def read_tsv(file_name):
+    table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+    table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
+    return table_df
+
+
+def write_tsv(dataframe, file_name):
+    try:
+        # Remove all ".n" numbers at the end of duplicated column names
+        dataframe.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+
+        # Write the new row back in the file
+        dataframe.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
+    except:
+        return 'Error: Could not write/update the file ' + file_name
+
+    return 'Success. Update file ' + file_name
+

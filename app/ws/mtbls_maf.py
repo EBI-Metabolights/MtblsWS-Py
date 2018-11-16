@@ -3,6 +3,7 @@ from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import read_tsv
 
 """
 MTBLS MAF
@@ -234,8 +235,7 @@ class MetaboliteAnnotationFile(Resource):
         maf_df = maf_df.replace(np.nan, '', regex=True)
 
         # Read NMR or MS Assay Name first, if that is empty, use Sample Name
-        assay_df = pd.read_csv(assay_file_name, sep="\t", usecols=col_names, header=0, encoding='utf-8')
-        assay_df = assay_df.replace(np.nan, '', regex=True)
+        assay_df = read_tsv(assay_file_name)
 
         # Get the MS/NMR Assay Name or Sample names from the assay
         assay_sample_names = assay_df[assay_name]

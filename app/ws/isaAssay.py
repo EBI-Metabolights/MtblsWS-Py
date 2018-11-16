@@ -6,7 +6,7 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
-from app.ws.utils import copy_file
+from app.ws.utils import copy_file, read_tsv, write_tsv
 import logging
 import json
 import os.path
@@ -326,10 +326,13 @@ Accepted values:</br>
                 isa_study.filename = short_sample_file_name
 
         # Add the new assay to the investigation file
-        assay = create_assay(assay_type, columns, study_id)
+        assay_file_name, assay = create_assay(assay_type, columns, study_id)
 
         # add obj
         isa_study.assays.append(assay)
+
+        message = update_column_values(columns, assay_file_name)
+
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
 
@@ -363,11 +366,17 @@ def create_assay(assay_type, columns, study_id):
     if assay_type.upper() == 'GCMS':
         a_type = 'Gas Chromatography MS'
 
+    if assay_type.upper() == 'NMR':
+        a_type = 'Nuclear Magnetic Resonance (NMR)'
+
     # this will be the final name for the copied assay template
-    file_name = 'a_' + study_id.upper() + '-' + polarity + '-' + a_type.replace(' ', '-').lower() + '-' + profiling
+    file_name = 'a_' + study_id.upper() + '-' + polarity + '-' + a_type.replace(' ', '-').lower() + '-' \
+                + column.replace(' ', '-').lower() + '-' + profiling
     file_name = file_name.replace('--', '-')
 
-    assay_platform = a_type + ' - ' + polarity + ' - ' + column
+    assay_platform = a_type + ' - ' + polarity
+    if column is not None:
+        assay_platform = assay_platform + ' - ' + column
 
     if "NMR" in assay_type:
         file_to_copy = nmr_template_name
@@ -433,7 +442,46 @@ def create_assay(assay_type, columns, study_id):
     except (FileNotFoundError, Exception):
         abort(500, 'Could not copy the assay template')
 
-    return assay
+    return os.path.join(study_path, file_name), assay
+
+
+def update_column_values(columns, assay_file_name):
+
+    # These are the real column headers from the assay file
+    assay_col_type = 'Parameter Value[Column type]'
+    assay_scan_pol = 'Parameter Value[Scan polarity]'
+    assay_sample_name = 'Sample Name'
+
+    table_df = read_tsv(assay_file_name)
+
+    for key_val in columns:  # These are the values from the JSON passed
+        column_header = key_val['name']
+        cell_value = key_val['value']
+
+        if column_header.lower() == 'polarity':
+            column_index = table_df.columns.get_loc(assay_scan_pol)
+        elif column_header.lower() == 'column type':
+            column_index = table_df.columns.get_loc(assay_col_type)
+        else:
+            column_index = table_df.columns.get_loc(column_header)
+
+        update_cell(table_df, column_index, cell_value)
+
+    # Also update the default sample name, this will trigger validation errors
+    update_cell(table_df, table_df.columns.get_loc(assay_sample_name), '')
+
+    # Write the updated row back in the file
+    message = write_tsv(table_df, assay_file_name)
+
+    return message
+
+
+def update_cell(table_df, column_index, cell_value):
+    try:
+        for row_val in range(table_df.shape[0]):
+            table_df.iloc[int(0), int(column_index)] = cell_value
+    except ValueError:
+        abort(417, "Unable to find the required 'value', 'row' and 'column' values")
 
 
 class AssayProcesses(Resource):
