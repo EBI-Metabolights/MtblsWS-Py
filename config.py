@@ -28,7 +28,7 @@ NMR_ASSAY_TEMPLATE = "file name"
 MTBLS_FILE_BASE = "<some local filesystem>/"
 MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
-MTBLS_ZOOMA_FILE ="<some local file>"
+MTBLS_ZOOMA_FILE = "/Users/jkchang/metabolights_zooma.tsv"
 
 CORS_HOSTS = "http://localhost:8000",\
              "http://localhost:4200",\
