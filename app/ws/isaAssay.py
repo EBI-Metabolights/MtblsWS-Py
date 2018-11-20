@@ -474,14 +474,18 @@ def update_assay_column_values(columns, assay_file_name):
         column_header = key_val['name']
         cell_value = key_val['value']
 
-        if column_header.lower() == 'polarity':
-            column_index = table_df.columns.get_loc(assay_scan_pol)
-        elif column_header.lower() == 'column type':
-            column_index = table_df.columns.get_loc(assay_col_type)
-        else:
-            column_index = table_df.columns.get_loc(column_header)
+        try:
 
-        update_cell(table_df, column_index, cell_value)
+            if column_header.lower() == 'polarity':
+                column_index = table_df.columns.get_loc(assay_scan_pol)
+            elif column_header.lower() == 'column type':
+                column_index = table_df.columns.get_loc(assay_col_type)
+            else:
+                column_index = table_df.columns.get_loc(column_header)
+
+            update_cell(table_df, column_index, cell_value)
+        except:
+            logger.warning('Could not find %s in the assay file', column_header)
 
     # Also update the default sample name, this will trigger validation errors
     update_cell(table_df, table_df.columns.get_loc(assay_sample_name), '')

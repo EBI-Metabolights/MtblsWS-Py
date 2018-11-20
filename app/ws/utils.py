@@ -352,11 +352,7 @@ def add_new_protocols_from_assay(assay_type, assay_file_name, study_id, isa_stud
             protocol_parameter = ProtocolParameter(parameter_name=OntologyAnnotation(term=param))
             protocol.parameters.append(protocol_parameter)
 
-
         # Add the protocol to the protocols list
         protocols.append(protocol)
-
-        # Add all protocols back into the study
-        #isa_study.protocols.append(protocols)
 
     return isa_study
