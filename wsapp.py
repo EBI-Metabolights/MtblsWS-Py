@@ -98,7 +98,7 @@ def initialize_app(flask_app):
     # api.add_resource(EditAssayFile, res_path + "/studies/<string:study_id>/assay/<string:assay_file_name>")
 
     # Manipulating TSV tables
-    # api.add_resource(SimpleColumns, res_path + "/studies/<string:study_id>/column/<string:file_name>")
+    api.add_resource(SimpleColumns, res_path + "/studies/<string:study_id>/column/<string:file_name>")
     api.add_resource(ComplexColumns, res_path + "/studies/<string:study_id>/columns/<string:file_name>")
     api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/cell/<string:file_name>")
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")

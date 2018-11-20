@@ -6,7 +6,9 @@
 import json
 import logging
 import ssl
+import datetime
 
+import pandas as pd
 from flask import current_app as app
 from flask import request, jsonify
 from flask_restful import Resource, reqparse
@@ -213,9 +215,19 @@ class Ontology(Resource):
                     print(e.args)
                     logger.info(e.args)
 
+            # metabolights-zooma.tsv search
+            if len(result) == 0:
+                print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
+                logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
+                try:
+                    result = getMetaboZoomaTerm(term)
+                except Exception as e:
+                    print(e.args)
+                    logger.info(e.args)
+
             # Zooma Search
             if len(result) == 0:
-                print("Can't find query in MTBLS ontology, requesting Zooma")
+                print("Can't find query inmetabolights-zooma.tsv, requesting Zooma")
                 logger.info("Can't find query in MTBLS ontology, requesting Zooma")
                 try:
                     temp = getZoomaTerm(term)
@@ -286,11 +298,51 @@ class Ontology(Resource):
                 d['termSource']['version'] = '1.0'
                 d['termSource']['description'] = 'Metabolights Ontology'
 
+            if cls.provenance_name == 'metabolights-zooma':
+                d['termSource']['version'] = str(datetime.datetime.now().date())
             response.append(d)
 
         # response = [{'SubClass': x} for x in res]
         return jsonify({"OntologyTerm": response})
 
+
+def getMetaboZoomaTerm(keyword):
+    res = []
+    try:
+        try:
+            fileName = app.config.get('MTBLS_ZOOMA_FILE')  # metabolights_zooma.tsv
+            df = pd.read_csv(fileName, sep="\t", header=0, encoding='utf-8')
+            temp = df.loc[df['PROPERTY_VALUE'].str.contains(keyword, case=False)]
+
+            for i in range(len(temp)):
+                iri = temp.iloc[0]['SEMANTIC_TAG']
+                if 'mesh' in iri.lower():
+                    ontoName = 'MESH'
+                elif 'nci' in iri.lower():
+                    ontoName = 'NCIT'
+                elif 'bao' in iri.lower():
+                    ontoName = 'BAO'
+                else:
+                    ontoName = getOnto_Name(iri)
+
+                name = temp.iloc[0]['PROPERTY_VALUE'].title()
+                obo_ID = iri.rsplit('/', 1)[-1]
+                ontoName = ontoName
+
+
+                enti = entity(name=name,
+                              iri=iri,
+                              obo_ID=iri.rsplit('/', 1)[-1],
+                              ontoName=ontoName,
+                              provenance_name='metabolights-zooma',
+                              provenance_uri='https://www.ebi.ac.uk/metabolights/',
+                              Zooma_confidence='High')
+                res.append(enti)
+        except Exception as e:
+            logger.error('Fail to load metabolights-zooma.tsv' + str(e))
+    except Exception as e:
+        logger.error('getMetaboZoomaTerm' + str(e))
+    return res
 
 def getZoomaTerm(keyword):
     res = []
