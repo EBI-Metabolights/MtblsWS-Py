@@ -3,14 +3,15 @@
 # 05/07/2018, 15:05
 # Tag:
 # Description:
+import datetime
 import json
 import logging
 import ssl
-import datetime
 
+import numpy as np
 import pandas as pd
-from flask import current_app as app
-from flask import request, jsonify
+from flask import jsonify
+from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from owlready2 import get_ontology, urllib, IRIS
@@ -19,6 +20,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import entity
 from app.ws.ontology_info import onto_information
+from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -68,7 +70,7 @@ class Ontology(Resource):
 
             {
                 "name": "mapping",
-                "description": "starting branch of ontology",
+                "description": "taxonomy search approach",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -305,6 +307,161 @@ class Ontology(Resource):
         # response = [{'SubClass': x} for x in res]
         return jsonify({"OntologyTerm": response})
 
+    # =========================== put =============================================
+
+    @swagger.operation(
+        summary="Put ontology entity to metabolights-zooma.tsv",
+        notes="Put ontology entity to metabolights-zooma.tsv",
+        parameters=[
+            {
+                "name": "term",
+                "description": "Ontology term",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+
+            {
+                "name": "attribute_name",
+                "description": "Attribute name",
+                "required": True,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit"]
+            },
+
+            {
+                "name": "term_iri",
+                "description": "iri/url of the mapping term",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+
+            {
+                "name": "study_ID",
+                "description": "Study ID of the term",
+                "required": True,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+
+            {
+                "name": "annotator",
+                "description": "annotator's name",
+                "required": True,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self):
+        log_request(request)
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('term', help="Ontology term")
+        term = None
+        parser.add_argument('attribute_name', help='Attribute name')
+        attribute_name = None
+        parser.add_argument('term_iri', help='iri of the mapped term')
+        term_iri = None
+        parser.add_argument('study_ID', help='study_ID')
+        study_ID = None
+        parser.add_argument('annotator', help='annotator name')
+        annotator = None
+
+        if request.args:
+            args = parser.parse_args(req=request)
+            term = args['term']
+            attribute_name = args['attribute_name']
+            term_iri = args['term_iri']
+            study_ID = args['study_ID']
+            annotator = args['annotator']
+
+        if term is None:
+            abort(404, 'Please provide new term name')
+
+        if term_iri is None:
+            abort(404, 'Please provide mapped iri of the new term')
+
+        if study_ID is None or annotator is None:
+            abort(404, 'Please provide valid parameters for study identifier and file name')
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        read_access2, write_access2, obfuscation_code2, study_location2, release_date, submission_date, \
+        study_status = wsc.get_permissions("MTBLS1", user_token)
+        # TODO, add "is curator" to the return values. for now let's just see who can edit MTBLS1 = Curators only
+        if not write_access2:
+            abort(403)
+        file_name = app.config.get('MTBLS_ZOOMA_FILE')
+
+        logger.info('Trying to load metabolights-zooma.tsv file')
+        # Get the Assay table or create a new one if it does not already exist
+        try:
+            table_df = pd.read_csv(file_name, sep="\t", encoding='utf-8')
+            table_df = table_df.replace(np.nan, '', regex=True)
+
+            s2 = pd.Series(
+                [study_ID, '', attribute_name, term, term_iri, annotator,
+                 datetime.datetime.now().strftime('%d/%m/%Y %I:%M')],
+                index=['STUDY',
+                       'BIOENTITY',
+                       'PROPERTY_TYPE',
+                       'PROPERTY_VALUE',
+                       'SEMANTIC_TAG',
+                       'ANNOTATOR',
+                       'ANNOTATION_DATE'])
+
+            table_df = table_df.append(s2, ignore_index=True)
+            table_df.to_csv(file_name, sep="\t", header=True, encoding='utf-8', index=False)
+        except FileNotFoundError:
+            abort(400, "The file %s was not found", file_name)
+
 
 def getMetaboZoomaTerm(keyword):
     res = []
@@ -329,7 +486,6 @@ def getMetaboZoomaTerm(keyword):
                 obo_ID = iri.rsplit('/', 1)[-1]
                 ontoName = ontoName
 
-
                 enti = entity(name=name,
                               iri=iri,
                               obo_ID=iri.rsplit('/', 1)[-1],
@@ -343,6 +499,7 @@ def getMetaboZoomaTerm(keyword):
     except Exception as e:
         logger.error('getMetaboZoomaTerm' + str(e))
     return res
+
 
 def getZoomaTerm(keyword):
     res = []
