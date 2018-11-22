@@ -387,7 +387,20 @@ class AddRows(Resource):
     @swagger.operation(
         summary="Add a new row to the given TSV file",
         nickname="Add TSV table row",
-        notes="Update an TSV table for a given Study.",
+        notes='''Update an TSV table for a given Study.
+        <p>Please make sure you add a value for echo column/cell combination. 
+        Use the GET method to see all the columns for this tsv file<br>
+<pre><code>{
+    "data": {
+        "rows": [
+            {
+                "column name 1": "cell value 1",
+                "column name 2": "cell value 2",
+                "etc": "etc"
+            }
+        ]
+    }
+}</code></pre>''',
         parameters=[
             {
                 "name": "study_id",
@@ -514,7 +527,18 @@ class AddRows(Resource):
     @swagger.operation(
         summary="Update existing rows in the given TSV file",
         nickname="Update TSV rows",
-        notes="Update rows in the TSV file for a given Study.",
+        notes='''Update rows in the TSV file for a given Study.
+        <p>Please make sure you add a value for echo column/cell combination. 
+        Use the GET method to see all the columns for this tsv file<br>
+<pre><code>{
+  "data": [
+    {
+      "column name 1": "cell value 1",
+      "column name 2": "cell value 2",
+      "etc": "etc"
+    }
+  ]
+}</code></pre>''',
         parameters=[
             {
                 "name": "study_id",
@@ -596,7 +620,7 @@ class AddRows(Resource):
         for row in new_rows:
             try:
                 row_index = row['index']  # Check if we have a value in the row number(s)
-            except KeyError:
+            except (KeyError, Exception):
                 row_index = None
 
             if new_rows is None or row_index is None:
