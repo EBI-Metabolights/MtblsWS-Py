@@ -13,6 +13,7 @@ from app.ws.ontology import *
 from app.ws.assay_table import *
 from app.ws.sample_table import *
 from app.ws.table_editor import *
+from app.ws.MapStudies import *
 
 """
 MTBLS WS-Py
@@ -103,6 +104,7 @@ def initialize_app(flask_app):
     api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/cell/<string:file_name>")
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")
     api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
+    api.add_resource(MapStudies, res_path + "/ebi-internal/zooma")
 
 def main():
     print("Initialising application")
