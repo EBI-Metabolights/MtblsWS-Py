@@ -16,7 +16,7 @@ API_VERSION = "0.13.0"
 
 WS_APP_NAME = "MtblsWS-Py"
 WS_APP_DESCRIPTION = "MetaboLights Python-based REST WebService"
-RESOURCES_PATH = "/metabolights/ws"
+RESOURCES_PATH = "/metabolights/swagger/ws"
 CORS_RESOURCES_PATH = RESOURCES_PATH + "/*"
 API_DOC = RESOURCES_PATH + "/api/spec"
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
