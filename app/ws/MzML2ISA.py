@@ -78,10 +78,29 @@ class Convert2ISAtab(Resource):
         outout_folder = study_location
 
         logger.info('Creating a new study upload folder for study %s', study_id)
-        status = convert_to_isa(study_id, input_folder, outout_folder)
-        return status
+        status, message = convert_to_isa(study_id, input_folder, outout_folder)
+        if status:
+            location = study_location
+            files = glob.glob(os.path.join(location, 'i_Investigation.txt'))
+            if files:
+                file_path = files[0]
+                filename = os.path.basename(file_path)
+                try:
+                    return send_file(file_path, cache_timeout=-1,
+                                     as_attachment=True, attachment_filename=filename)
+                except OSError as err:
+                    logger.error(err)
+                    abort(404, "Generated ISA-Tab i_Investigation.txt file could not be read.")
+            else:
+                abort(404, "Generated ISA-Tab i_Investigation.txt file could not be read.")
+        else:
+            return message
 
 
 def convert_to_isa(study_id, input_folder, outout_folder):
-    status = convert(input_folder, outout_folder, study_id)
-    return status
+    try:
+        convert(input_folder, outout_folder, study_id)
+    except(Exception):
+        return False, {"Error": "Could not convert mzML to ISA-Tab study " + study_id}
+
+    return True, {"success": "ISA-Tab files generated for study " + study_id}
