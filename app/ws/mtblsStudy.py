@@ -8,6 +8,7 @@ from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
 from operator import itemgetter
+#from app.ws.db_connection import get_studies_for_user
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -63,16 +64,6 @@ class MyMtblsStudies(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
-            },
-            {
-                "name": "simple_list",
-                "description": "Only show study id's, not any details?",
-                "paramType": "header",
-                "type": "Boolean",
-                "defaultValue": True,
-                "format": "application/json",
-                "required": False,
-                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -94,20 +85,11 @@ class MyMtblsStudies(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
 
-        show_simple_list = True
-        # header content validation
-        if "simple_list" in request.headers and request.headers["simple_list"].lower() == 'false':
-            show_simple_list = False
+        # user_studies = get_studies_for_user(user_token)
 
-        logger.info('Getting all studies')
-
-        if show_simple_list:
-            pub_list = wsc.get_all_studies_for_user(user_token)
-        else:
-            pub_list = wsc.get_all_studies_for_user(user_token) # TODO, change to a lite-study representation
-
+        pub_list = wsc.get_all_studies_for_user(user_token)  # TODO, change to a lite-study representation
         existing_studies_list = pub_list.replace('[', '').replace(']', '').replace('"', '').split(',')
-        return jsonify({'content': existing_studies_list})
+        return jsonify({'data': existing_studies_list})
 
 
 class IsaTabInvestigationFile(Resource):

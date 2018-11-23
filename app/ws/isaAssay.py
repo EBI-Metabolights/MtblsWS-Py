@@ -190,6 +190,10 @@ class StudyAssay(Resource):
             {
                 "name"  : "column type",
                 "value" : "hilic"
+            },
+            {
+                "name"  : "Parameter Value[Instrument]",
+                "value" : "My instrument make and model"
             }
         ]
     }
@@ -199,8 +203,8 @@ Accepted values:</br>
 - "type" - "LCMS", "GCMS" or "NMR"</br>
 - "polarity" - "positive", "negative" or "alternating"</br>
 - "column type"  - "hilic", "reverse phase" or "direct infusion"</br>
- 
-''',
+</br>
+Other columns, like "Parameter Value[Instrument]" must be matches exactly like the header in the assay file''',
         parameters=[
             {
                 "name": "study_id",
