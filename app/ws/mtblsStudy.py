@@ -927,3 +927,148 @@ def write_audit_files(study_location):
     return True, dest_path
 
 
+class AddUser(Resource):
+    @swagger.operation(
+        summary="Add an existing MetaboLights user to a study",
+        notes='''</P><B>Be aware that the user must already exist in MetaboLights.</BR> 
+        Due to GDPR compliance no confirmation if the user really exists will be given</B>''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Existing Study Identifier for generating new ISA-Tab files",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "user_email",
+                "description": "The email of the user you want to add to this study",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Unexpected result."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        user_email = None
+        if "user_email" in request.headers:
+            user_email = request.headers["user_email"]
+
+        if user_token is None or study_id is None or user_email is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        # param validation
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        message = wsc.add_user_to_study(study_id, user_email)
+
+        return message
+
+
+class ReindexStudy(Resource):
+    @swagger.operation(
+        summary="Reindex a MetaboLights study",
+        notes='''Reindexing a MetaboLights study to ensure the search index is up to date''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Existing Study Identifier to index",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        # param validation
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        message = wsc.reindex_study(study_id)
+
+        return message

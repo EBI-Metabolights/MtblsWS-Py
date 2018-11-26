@@ -9,7 +9,9 @@ import pandas as pd
 import numpy as np
 import re
 from isatools.model import Protocol, ProtocolParameter
-from app.ws.mm_models import OntologyAnnotation, OntologySource
+from app.ws.mm_models import OntologyAnnotation
+from lxml import etree
+from mzml2isa.parsing import convert as isa_convert
 
 """
 Utils
@@ -18,8 +20,6 @@ Misc of utils
 """
 
 logger = logging.getLogger('wslog')
-#iac = IsaApiClient()
-
 
 def get_timestamp():
     """
@@ -356,3 +356,92 @@ def add_new_protocols_from_assay(assay_type, assay_file_name, study_id, isa_stud
         protocols.append(protocol)
 
     return isa_study
+
+
+def validate_mzml_files(study_id, obfuscation_code, study_location):
+    upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
+
+    status, result = True, "All mzML files validated in both study and upload folder"
+
+    # Getting xsd schema for validation
+    items = app.config.get('MZML_XSD_SCHEMA')
+    xsd_name = items[0]
+    script_loc = items[1]
+
+    for file_loc in [upload_location, study_location]:  # Check both study and upload location
+        if os.path.isdir(file_loc):  # Only check if the folder exists
+            files = glob.glob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
+            # TODO validate the XSD here, only needed once
+            for file in files:
+                try:
+                    status, result = validate_xml(os.path.join(script_loc, xsd_name), file)
+                    if not status:
+                        return status, result
+                    # Ok, the file validated, so we now copy it file to the study folder
+                    if file_loc == upload_location:
+                        copy_file(file, study_location)
+                        try:
+                            # Rename the file so that we don't have to validate/copy it again
+                            shutil.move(file, file + '.MOVED')
+                        except Exception:
+                            return False, "Could not copy the mzML file " + file
+                except Exception:
+                    return status
+
+    return status, result
+
+
+def validate_xml(xsd, xml):
+
+    xmlschema_doc = etree.parse(xsd)
+    xmlschema = etree.XMLSchema(xmlschema_doc)
+
+    # parse xml
+    try:
+        doc = etree.parse(xml)
+    except IOError:
+        return False, {"Error": "Can not read the file " + xml}
+    except etree.XMLSyntaxError:
+        return False, {"Error": "File " + xml + " is not a valid XML file"}
+
+    # validate against schema
+    try:
+        xmlschema.assertValid(doc)
+        print('XML valid, schema validation ok: ' + xml)
+        return True, "File " + xml + " is a valid XML file"
+    except etree.DocumentInvalid:
+        print('Schema validation error. ' + xml)
+        return False, "Can not validate the file " + xml
+
+
+def to_isa_tab(study_id, input_folder, outout_folder):
+    try:
+        isa_convert(input_folder, outout_folder, study_id)
+    except:
+        return False, "Could not convert mzML to ISA-Tab study " + study_id
+
+    return True, "ISA-Tab files generated for study " + study_id
+
+
+def convert_to_isa(study_location, study_id):
+    input_folder = study_location
+    output_folder = study_location
+
+    status, message = to_isa_tab(study_id, input_folder, output_folder)
+    # if status:
+    #     location = study_location
+    #     files = glob.glob(os.path.join(location, 'i_Investigation.txt'))
+    #     if files:
+    #         file_path = files[0]
+    #         filename = os.path.basename(file_path)
+    #         try:
+    #             return send_file(file_path, cache_timeout=-1,
+    #                              as_attachment=True, attachment_filename=filename)
+    #         except OSError as err:
+    #             logger.error(err)
+    #             return False, "Generated ISA-Tab i_Investigation.txt file could not be read."
+    #     else:
+    #         return False, "Generated ISA-Tab i_Investigation.txt file could not be found."
+    # else:
+    return status, message
+

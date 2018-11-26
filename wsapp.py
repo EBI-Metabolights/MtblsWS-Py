@@ -15,6 +15,7 @@ from app.ws.sample_table import *
 from app.ws.table_editor import *
 from app.ws.MapStudies import *
 from app.ws.MzML2ISA import *
+from app.ws.Partner_utils import Metabolon
 
 """
 MTBLS WS-Py
@@ -104,10 +105,18 @@ def initialize_app(flask_app):
     api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/cell/<string:file_name>")
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")
     api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
+
+    # Direct API consumers/Partners
+
+    api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm-data-upload")
+
+    # EBI utils
     api.add_resource(MapStudies, res_path + "/ebi-internal/zooma")
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
     api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml-to-isatab")
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml_files")
+    api.add_resource(AddUser, res_path + "/ebi-internal/<string:study_id>/user-to-study")
+    api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex-study")
 
 def main():
     print("Initialising application")

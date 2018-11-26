@@ -1,53 +1,13 @@
-from flask import request, abort, send_file
+from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
-from mzml2isa.parsing import convert
-from lxml import etree
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
-
-
-def convert_to_isa(study_id, input_folder, outout_folder):
-    try:
-        convert(input_folder, outout_folder, study_id)
-    except(Exception):
-        return False, {"Error": "Could not convert mzML to ISA-Tab study " + study_id}
-
-    return True, {"success": "ISA-Tab files generated for study " + study_id}
-
-
-def validate_xml(xsd, xml):
-
-    xmlschema_doc = etree.parse(xsd)
-    xmlschema = etree.XMLSchema(xmlschema_doc)
-
-    # parse xml
-    try:
-        doc = etree.parse(xml)
-        print('XML well formed, syntax ok.')
-
-    # check for file IO error
-    except IOError:
-        return False, {"Error": "Can not read the file " + xml}
-
-    # check for XML syntax errors
-    except etree.XMLSyntaxError:
-        return False, {"Error": "File " + xml + " is not a valid XML file"}
-
-    # validate against schema
-    try:
-        xmlschema.assertValid(doc)
-        print('XML valid, schema validation ok: ' + xml)
-        return True, {"Success": "File " + xml + " is a valid XML file"}
-
-    except etree.DocumentInvalid:
-        print('Schema validation error, see error_schema.log')
-        return False, {"Error": "Can not validate the file " + xml}
 
 
 class Convert2ISAtab(Resource):
@@ -90,6 +50,10 @@ class Convert2ISAtab(Resource):
             {
                 "code": 404,
                 "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Unexpected result."
             }
         ]
     )
@@ -111,34 +75,19 @@ class Convert2ISAtab(Resource):
         if not write_access:
             abort(403)
 
-        input_folder = study_location
-        outout_folder = study_location
+        status, message = convert_to_isa(study_location, study_id)
 
-        logger.info('Creating a new study upload folder for study %s', study_id)
-        status, message = convert_to_isa(study_id, input_folder, outout_folder)
-        if status:
-            location = study_location
-            files = glob.glob(os.path.join(location, 'i_Investigation.txt'))
-            if files:
-                file_path = files[0]
-                filename = os.path.basename(file_path)
-                try:
-                    return send_file(file_path, cache_timeout=-1,
-                                     as_attachment=True, attachment_filename=filename)
-                except OSError as err:
-                    logger.error(err)
-                    abort(404, "Generated ISA-Tab i_Investigation.txt file could not be read.")
-            else:
-                abort(404, "Generated ISA-Tab i_Investigation.txt file could not be read.")
-        else:
-            return message
+        if not status:
+            abort(417, message)
+        return message
 
 
 class ValidateMzML(Resource):
     @swagger.operation(
         summary="Validate mzML files",
         notes='''Validating mzML file structure. 
-        This method will validate mzML files in both the study folder and the upload folder''',
+        This method will validate mzML files in both the study folder and the upload folder.
+        Validated files in the study upload location will be moved to the study location''',
         parameters=[
             {
                 "name": "study_id",
@@ -195,25 +144,4 @@ class ValidateMzML(Resource):
         if not write_access:
             abort(403)
 
-        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
-
-        result = {"Success": "All mzML files validated"}
-
-        # Getting xsd schema for validation
-        items = app.config.get('MZML_XSD_SCHEMA')
-        xsd_name = items[0]
-        script_loc = items[1]
-
-        for file_loc in [upload_location, study_location]:  # Check both study and upload location
-
-            if os.path.isdir(file_loc):  # Only check if the folder exists
-                files = glob.glob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
-                for file in files:
-                    try:
-                        status, result = validate_xml(os.path.join(script_loc, xsd_name), file)
-                        if not status:
-                            return result
-                    except Exception:
-                        return result
-
-        return result
+        return validate_mzml_files(study_id, obfuscation_code, study_location)

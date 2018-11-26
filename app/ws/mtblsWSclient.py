@@ -354,3 +354,36 @@ class WsClient:
 
         message = resp.text
         return message
+
+    @staticmethod
+    def reindex_study(study_id):
+        resource = app.config.get('WS_APP_BASE_LINK') + "/indexstudiesaction"
+        #url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        url = resource
+        resp = requests.post(
+            url,
+            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
+            data="study=" + (study_id or ''))
+
+        if resp.status_code != 200:
+            abort(resp.status_code)
+
+        message = resp.text
+        return {"Success": "Study " + study_id + " has been indexed"}
+
+
+    @staticmethod
+    def add_user_to_study(study_id, email):
+        # TODO, new Java ws method to add user to study
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/indexstudiesaction"
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        resp = requests.post(
+            url,
+            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
+            data="study=" + (study_id or ''))
+
+        if resp.status_code != 200:
+            abort(resp.status_code)
+
+        message = resp.text
+        return message
