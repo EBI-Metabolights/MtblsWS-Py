@@ -363,7 +363,7 @@ class WsClient:
         resp = requests.post(
             url,
             headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-            data="study=" + (study_id or ''))
+            data="study=" + study_id + ", action=Index")
 
         if resp.status_code != 200:
             abort(resp.status_code)
