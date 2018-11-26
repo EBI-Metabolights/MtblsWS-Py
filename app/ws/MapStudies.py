@@ -117,8 +117,8 @@ def searchStudies(query, user_token, feature='factor'):
 
 class MapStudies(Resource):
     @swagger.operation(
-        summary="Create a new study",
-        notes='''Create a new study, with upload folder''',
+        summary="Map terms with studies",
+        notes='''Map terms with all public/private MTBLS studies''',
         parameters=[
             {
                 "name": "term",
