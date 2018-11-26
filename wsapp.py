@@ -115,7 +115,7 @@ def initialize_app(flask_app):
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
     api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml-to-isatab")
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml_files")
-    api.add_resource(AddUser, res_path + "/ebi-internal/<string:study_id>/user-to-study")
+    #api.add_resource(AddUser, res_path + "/ebi-internal/<string:study_id>/user-to-study")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex-study")
 
 def main():

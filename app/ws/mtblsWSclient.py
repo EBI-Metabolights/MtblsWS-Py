@@ -356,34 +356,37 @@ class WsClient:
         return message
 
     @staticmethod
-    def reindex_study(study_id):
-        resource = app.config.get('WS_APP_BASE_LINK') + "/indexstudiesaction"
-        #url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        url = resource
+    def reindex_study(study_id, user_token):
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/reindexStudyOnToken"
+        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        logger.info('Reindex study ' + study_id)
         resp = requests.post(
             url,
             headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-            data="study=" + study_id + ", action=Index")
+            data={"token": user_token, "study_id": study_id}
+        )
 
         if resp.status_code != 200:
             abort(resp.status_code)
 
         message = resp.text
-        return {"Success": "Study " + study_id + " has been indexed"}
+        return True, message
 
 
     @staticmethod
     def add_user_to_study(study_id, email):
         # TODO, new Java ws method to add user to study
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/indexstudiesaction"
+        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/reindexStudyOnToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        logger.info('Reindex study ' + study_id)
         resp = requests.post(
             url,
             headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-            data="study=" + (study_id or ''))
+            data={"email": email, "study_id": study_id}
+        )
 
         if resp.status_code != 200:
             abort(resp.status_code)
 
         message = resp.text
-        return message
+        return True, message

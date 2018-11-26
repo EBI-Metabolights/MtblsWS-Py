@@ -1006,7 +1006,7 @@ class AddUser(Resource):
 
         message = wsc.add_user_to_study(study_id, user_email)
 
-        return message
+        return {"Almost there": "This method is not yet implemented"}
 
 
 class ReindexStudy(Resource):
@@ -1048,6 +1048,10 @@ class ReindexStudy(Resource):
             {
                 "code": 404,
                 "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Unexpected result."
             }
         ]
     )
@@ -1069,6 +1073,9 @@ class ReindexStudy(Resource):
         if not write_access:
             abort(403)
 
-        message = wsc.reindex_study(study_id)
+        status, message = wsc.reindex_study(study_id, user_token)
 
-        return message
+        if not status:
+            abort(417, message)
+
+        return {"Success": "Study " + study_id + " has been re-indexed"}
