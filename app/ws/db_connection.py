@@ -4,6 +4,7 @@ import os
 import logging
 import re
 from flask import current_app as app
+from app.ws.utils import get_single_file_information
 
 logger = logging.getLogger('wslog')
 
@@ -54,7 +55,7 @@ def get_all_studies_for_user(user_token):
         except FileNotFoundError:
             logger.error("The file %s was not found", complete_file_name)
 
-        complete_list.append({'accession': study_id, 'release-date': release_date, 'status': status,
+        complete_list.append({'accession': study_id, 'updated': get_single_file_information(complete_file_name), 'releaseDate': release_date, 'status': status,
                               'title': title, 'description': description})
 
     return complete_list

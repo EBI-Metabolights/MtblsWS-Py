@@ -44,7 +44,7 @@ def initialize_app(flask_app):
 
     res_path = application.config.get('RESOURCES_PATH')
     api = swagger.docs(Api(application),
-                       description='MtblsWS-Py : MetaboLights Python-based REST service',
+                       description='MetaboLights RESTful WebService',
                        apiVersion=application.config.get('API_VERSION'),
                        basePath=application.config.get('WS_APP_BASE_LINK'),
                        api_spec_url=application.config.get('API_DOC'),

@@ -237,6 +237,18 @@ def get_file_information(directory):
     return file_list
 
 
+def get_single_file_information(file_name):
+    file_time = ''
+    try:
+        if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
+            dt = time.gmtime(os.path.getmtime(file_name))
+            file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
+    except:
+        logger.info('Could not find file ' + file_name)
+
+    return file_time
+
+
 def get_table_header(table_df):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
