@@ -8,7 +8,7 @@ from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
 from operator import itemgetter
-#from app.ws.db_connection import get_studies_for_user
+from app.ws.db_connection import get_all_studies_for_user
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -54,8 +54,8 @@ class MtblsStudies(Resource):
 
 class MyMtblsStudies(Resource):
     @swagger.operation(
-        summary="Get all Studies for a user",
-        notes="Get a list of all Studies for a user.",
+        summary="Get all private studies for a user",
+        notes="Get a list of all private studies for a user.",
         parameters=[
             {
                 "name": "user_token",
@@ -85,11 +85,46 @@ class MyMtblsStudies(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
 
-        # user_studies = get_studies_for_user(user_token)
-
         pub_list = wsc.get_all_studies_for_user(user_token)  # TODO, change to a lite-study representation
         existing_studies_list = pub_list.replace('[', '').replace(']', '').replace('"', '').split(',')
         return jsonify({'data': existing_studies_list})
+
+
+class MyMtblsStudiesDetailed(Resource):
+    @swagger.operation(
+        summary="Get all studies, with details, for a user",
+        notes="Get a list of all studies for a user. This also includes the status, release date, title and abstract",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+        log_request(request)
+
+        # User authentication
+        user_token = None
+        if 'user_token' in request.headers:
+            user_token = request.headers['user_token']
+
+        user_studies = get_all_studies_for_user(user_token)
+        return jsonify({"data": user_studies})
 
 
 class IsaTabInvestigationFile(Resource):

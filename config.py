@@ -31,7 +31,7 @@ STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
 MTBLS_ZOOMA_FILE = "<local file>"
 MZML_XSD_SCHEMA = ["<local file>","<script location>"]
 
-PARTNER_TEMPLATE_METABOLON='MTBLS study with the template files'
+PARTNER_TEMPLATE_METABOLON = 'MTBLS study with the template files'
 
 CORS_HOSTS = "http://localhost:8000",\
              "http://localhost:4200",\
@@ -62,3 +62,6 @@ PROTOCOL_PARAMS = [
     ['NMR', 'Metabolite identification', '']
 ]
 
+DB_PARAMS = {
+    'database': 'db-name', 'user': 'user-name', 'password': 'user-password', 'host': 'hostname', 'port': 1234
+}
