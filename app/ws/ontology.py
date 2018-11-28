@@ -331,7 +331,8 @@ class Ontology(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit"]
+                "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
+                         "column type", "instruments"]
             },
 
             {
