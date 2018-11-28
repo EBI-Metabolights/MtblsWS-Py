@@ -56,8 +56,8 @@ def initialize_app(flask_app):
 
     # MTBLS studies
     api.add_resource(MtblsStudies, res_path + "/studies")
-    api.add_resource(MyMtblsStudies, res_path + "/user-studies")
-    api.add_resource(MyMtblsStudiesDetailed, res_path + "/user-studies-details")
+    api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
+    api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
     api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")
@@ -65,8 +65,8 @@ def initialize_app(flask_app):
     api.add_resource(StudyAssay, res_path + "/studies/<string:study_id>/assays")
     api.add_resource(CreateAccession, res_path + "/studies/create")
     api.add_resource(CloneAccession, res_path + "/studies/clone")
-    api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/create-upload-folder")
-    api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync-files")
+    api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
+    api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")
     api.add_resource(saveAuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")
 
@@ -109,15 +109,15 @@ def initialize_app(flask_app):
 
     # Direct API consumers/Partners
 
-    api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm-data-upload")
+    api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
 
     # EBI utils
     api.add_resource(MapStudies, res_path + "/ebi-internal/zooma")
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
-    api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml-to-isatab")
-    api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml_files")
+    api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml2isatab")
+    api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate")
     #api.add_resource(AddUser, res_path + "/ebi-internal/<string:study_id>/user-to-study")
-    api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex-study")
+    api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
 
 def main():
     print("Initialising application")
