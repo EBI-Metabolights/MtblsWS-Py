@@ -316,6 +316,40 @@ def read_tsv(file_name):
     return table_df
 
 
+def tidy_template_tsv_row(df):
+    tsv_row = ''
+    row = df.iloc[0]
+    cell_count = 0
+    for cell in row:   # Skip first cell, this is only for our labeling
+        if cell_count > 0:
+            if cell != 'row-end':
+                tsv_row = tsv_row + cell + '\t'
+        cell_count += 1
+    return tsv_row
+
+
+def get_protocols_for_assay(df_row, assay_type):
+    row = df_row.iloc[0]
+    prot_list = []
+
+    for cell in row:
+        if '|' in cell:
+            split_cell = cell.split('|')
+            prot_name = split_cell[0]
+            prot_params = split_cell[1]
+            prot_list.append([assay_type, prot_name, prot_params])
+
+    return prot_list
+
+
+def get_type_for_assay(df_row, assay_type):
+    row = df_row.iloc[0]
+
+    for cell in row:
+        if cell != '' and cell != assay_type + '-assay':  # return first cell that is not the label
+            return cell
+
+
 def write_tsv(dataframe, file_name):
     try:
         # Remove all ".n" numbers at the end of duplicated column names

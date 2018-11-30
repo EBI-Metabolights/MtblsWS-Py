@@ -11,7 +11,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.18.3"
+WS_APP_VERSION = "0.19.0"
 API_VERSION = "0.13.0"
 
 WS_APP_NAME = "MtblsWS-Py"
@@ -21,9 +21,6 @@ CORS_RESOURCES_PATH = RESOURCES_PATH + "/*"
 API_DOC = RESOURCES_PATH + "/api/spec"
 MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 UPDATE_PATH_SUFFIX = "audit"
-
-MS_ASSAY_TEMPLATE = "file name"
-NMR_ASSAY_TEMPLATE = "file name"
 
 MTBLS_FILE_BASE = "<some local filesystem>/"
 MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
@@ -47,20 +44,6 @@ DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"
 # MTBLS_WS_HOST = "https://www.ebi.ac.uk"
 # MTBLS_WS_PORT = ""
 # MTBLS_FTP_ROOT = "<Folder to private ftp root>"
-
-PROTOCOL_PARAMS = [
-    ['NMR', 'Extraction', 'Extraction Method'],
-    ['MS',  'Extraction', 'Derivatization;Post Extraction'],
-    ['NMR', 'NMR sample', 'NMR tube type;Temperature;Sample pH;Solvent'],
-    ['NMR', 'NMR spectroscopy', 'Magnetic field strength;Pulse sequence name;Instrument;NMR Probe;Number of transients'],
-    ['NMR', 'NMR assay', ''],
-    ['MS',  'Data transformation', ''],
-    ['NMR', 'Data transformation', ''],
-    ['MS',  'Chromatography', 'Column type;Column model;Chromatography Instrument'],
-    ['MS',  'Mass spectrometry', 'Scan polarity;Mass analyzer;Ion source;Instrument;Scan m/z range'],
-    ['MS', 'Metabolite identification', ''],
-    ['NMR', 'Metabolite identification', '']
-]
 
 DB_PARAMS = {
     'database': 'db-name', 'user': 'user-name', 'password': 'user-password', 'host': 'hostname', 'port': 1234

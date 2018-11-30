@@ -6,10 +6,12 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
-from app.ws.utils import copy_file, read_tsv, write_tsv, add_new_protocols_from_assay
+from app.ws.utils import read_tsv, write_tsv, add_new_protocols_from_assay, tidy_template_tsv_row, \
+    get_protocols_for_assay, get_type_for_assay
 import logging
 import json
 import os.path
+import csv
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -181,7 +183,7 @@ class StudyAssay(Resource):
         notes='''Add a new assay to a study<pre><code>
 { 
  "assay": {        
-    "type": "LCMS",
+    "type": "LC-MS",
     "columns": [
             {
                 "name"  : "polarity",
@@ -197,13 +199,17 @@ class StudyAssay(Resource):
             }
         ]
     }
-}
- </pre></code> </p>
-Accepted values:</br>
-- "type" - "LCMS", "GCMS" or "NMR"</br>
-- "polarity" - "positive", "negative" or "alternating"</br>
-- "column type"  - "hilic", "reverse phase" or "direct infusion"</br>
+}</pre></code> </p>
+Accepted values for:</br>
+- <b>(mandatory)</b> "type" - "LC-MS", "LC-DAD", "GC-MS", "GCxGC-MS", "GC-FID", "DI-MS", "FIA-MS", "CE-MS", "MALDI-MS", "MSImaging", "MRImaging", "NMR"</br>
+- <b>(optional)</b> "polarity" - "positive", "negative" or "alternating"</br>
+- <b>(optional)</b> "column type"  - "hilic", "reverse phase" or "direct infusion"</br>
 </br>
+<b>Acronyms:</b>  Diode array detection (LC-DAD), Tandem MS (GCxGC-MS), Flame ionisation detector (GC-FID), 
+Direct infusion (DI-MS), Flow injection analysis (FIA-MS), Capillary electrophoresis (CE-MS), 
+Matrix-assisted laser desorption-ionisation imaging mass spectrometry (MALDI-MS), Nuclear magnetic resonance (NMR),
+Magnetic resonance imaging (MRImaging), Mass spec spectrometry (MSImaging)
+</p>
 Other columns, like "Parameter Value[Instrument]" must be matches exactly like the header in the assay file''',
         parameters=[
             {
@@ -352,15 +358,9 @@ def update_correct_sample_file_name(isa_study, study_location, study_id):
 
 def create_assay(assay_type, columns, study_id):
     profiling = 'metabolite_profiling'
-    ms_extension = '_mass_spectrometry'
-    nmr_extension = '_NMR_spectroscopy'
-    # a_POLARITY-TYPE-COLUMN-ms_metabolite_profiling_mass_spectrometry.txt
-    ms_template_name = app.config.get('MS_ASSAY_TEMPLATE')
-    # a_POLARITY-TYPE-COLUMN-ms_metabolite_profiling_mass_spectrometry.txt
-    nmr_template_name = app.config.get('NMR_ASSAY_TEMPLATE')
-    file_to_copy = ms_template_name  # default to MS
     studies_path = app.config.get('STUDY_PATH')  # Root folder for all studies
     study_path = os.path.join(studies_path, study_id)  # This particular study
+    # This contains *all* assay headers and their protocols with parameters
 
     polarity = ''
     column = ''
@@ -371,42 +371,51 @@ def create_assay(assay_type, columns, study_id):
         if key_val['name'].lower() == 'column type':
             column = key_val['value']
 
-    a_type = 'undefined'
-    if assay_type.upper() == 'LCMS':
-        a_type = 'Liquid Chromatography MS'
+    tsv_header_row, tsv_data_row, protocols, a_type = get_assay_headers_and_protcols(assay_type)
 
-    if assay_type.upper() == 'GCMS':
-        a_type = 'Gas Chromatography MS'
-
-    if assay_type.upper() == 'NMR':
-        a_type = 'Nuclear Magnetic Resonance (NMR)'
+    assay_platform = a_type + ' - ' + polarity
+    if column != '':
+        assay_platform = assay_platform + ' - ' + column
 
     # this will be the final name for the copied assay template
     file_name = 'a_' + study_id.upper() + '-' + polarity + '-' + a_type.replace(' ', '-').lower() + '-' \
                 + column.replace(' ', '-').lower() + '-' + profiling
     file_name = file_name.replace('--', '-')
 
-    assay_platform = a_type + ' - ' + polarity
-    if column != '':
-        assay_platform = assay_platform + ' - ' + column
-
-    if "NMR" in assay_type:
-        file_to_copy = nmr_template_name
-        file_name = file_name + nmr_extension
-
-    if "MS" in assay_type:
-        file_name = file_name + ms_extension
-
     file_name = get_valid_assay_file_name(file_name, study_path)
     assay = get_new_assay(file_name, assay_platform, assay_type)
 
-    try:
-        copy_file(studies_path + os.path.join('TEMPLATES', file_to_copy),
-                  os.path.join(study_path, file_name))
-    except (FileNotFoundError, Exception):
-        abort(500, 'Could not copy the assay template')
+    file_name = os.path.join(study_path, file_name)
 
-    return os.path.join(study_path, file_name), assay
+    try:
+        file = open(file_name, 'w')
+        writer = csv.writer(file)
+        writer.writerow(tsv_header_row)
+        writer.writerow(tsv_data_row)
+        file.close()
+        #copy_file(studies_path + os.path.join('TEMPLATES', file_to_copy), os.path.join(study_path, file_name))
+    except (FileNotFoundError, Exception):
+        abort(500, 'Could not write the assay file')
+
+    return file_name, assay
+
+
+def get_assay_headers_and_protcols(assay_type):
+    assay_master_template = './resources/MetaboLightsAssayMaster.tsv'
+    master_df = read_tsv(assay_master_template)
+
+    header_row = master_df.loc[master_df['name'] == assay_type + '-header']
+    data_row = master_df.loc[master_df['name'] == assay_type + '-data']
+    protocol_row = master_df.loc[master_df['name'] == assay_type + '-protocol']
+    assay_type_row = master_df.loc[master_df['name'] == assay_type + '-assay']
+
+    protocols = get_protocols_for_assay(protocol_row, assay_type)
+    assay_desc = get_type_for_assay(assay_type_row, assay_type)
+
+    tsv_header_row = tidy_template_tsv_row(header_row)  # Remove empty cells after end of column definition
+    tsv_data_row = tidy_template_tsv_row(data_row)
+
+    return tsv_header_row, tsv_data_row, protocols, assay_desc
 
 
 def get_valid_assay_file_name(file_name, study_path):
