@@ -65,7 +65,8 @@ class Ontology(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["factors", "roles", "taxonomy", "characteristics", "publication", "design descriptor", "unit"]
+                "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
+                         "column type", "instruments"]
             },
 
             {
@@ -132,7 +133,11 @@ class Ontology(Resource):
         result = []
 
         # if only branch, search all branch
+
         if not term and branch:
+            if branch == 'instruments':
+                result = OLSbranchSearch("*", 'instrument', 'msio')
+
             start_cls = onto.search_one(label=branch)
             clses = info.get_subs(start_cls)
 
@@ -152,6 +157,9 @@ class Ontology(Resource):
 
             clses = info.get_subs(start_cls)
             res_cls = []
+
+            if branch == 'instruments':
+                result = OLSbranchSearch(term,'instrument','msio')
 
             # taxonomy
             if branch == 'taxonomy' or branch == 'factors':
@@ -463,6 +471,32 @@ class Ontology(Resource):
         except FileNotFoundError:
             abort(400, "The file %s was not found", file_name)
 
+def OLSbranchSearch(query, branchName, ontoName):
+    def getStartIRI(start, ontoName):
+        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + start + '&ontology=' + ontoName  # + '&exact=true&queryFields=label'
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        json_str = json.loads(content)
+        # print(json_str['response']['docs'])
+        res = json_str['response']['docs'][0]['iri']
+        # return res
+        return urllib.parse.quote_plus(res)
+    res = []
+    branchIRI = getStartIRI(branchName, ontoName)
+    query = query.replace(' ', '%20')
+    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + query + '&rows=20&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
+    print(url)
+    fp = urllib.request.urlopen(url)
+    content = fp.read().decode('utf-8')
+    json_str = json.loads(content)
+
+    for ele in json_str['response']['docs']:
+        enti = entity(name=ele['label'],
+                      iri=ele['iri'],
+                      obo_ID=ele['short_form'],
+                      ontoName=ele['ontology_prefix'])
+        res.append(enti)
+    return res
 
 def getMetaboZoomaTerm(keyword):
     res = []
