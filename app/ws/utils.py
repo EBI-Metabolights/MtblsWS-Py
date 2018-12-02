@@ -316,16 +316,18 @@ def read_tsv(file_name):
     return table_df
 
 
-def tidy_template_tsv_row(df):
-    tsv_row = ''
+def tidy_template_row(df):
     row = df.iloc[0]
+    new_row = []
     cell_count = 0
-    for cell in row:   # Skip first cell, this is only for our labeling
-        if cell_count > 0:
+    for cell in row:
+        if cell_count > 0:   # Skip first cell, this is only for our labeling
             if cell != 'row-end':
-                tsv_row = tsv_row + cell + '\t'
+                new_row.append(cell)
+            if cell == 'row-end':
+                return new_row  # We have all the columns now
         cell_count += 1
-    return tsv_row
+    return new_row
 
 
 def get_protocols_for_assay(df_row, assay_type):
@@ -363,10 +365,10 @@ def write_tsv(dataframe, file_name):
     return 'Success. Update file ' + file_name
 
 
-def add_new_protocols_from_assay(assay_type, assay_file_name, study_id, isa_study):
+def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, study_id, isa_study):
     # Add new protocol
     logger.info('Adding new Protocols from %s for %s', assay_file_name, study_id)
-    protocol_params = app.config.get('PROTOCOL_PARAMS')
+    # protocol_params = app.config.get('PROTOCOL_PARAMS')
     protocols = isa_study.protocols
 
     for prot_param in protocol_params:

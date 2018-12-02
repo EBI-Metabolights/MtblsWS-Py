@@ -6,7 +6,7 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
-from app.ws.utils import read_tsv, write_tsv, add_new_protocols_from_assay, tidy_template_tsv_row, \
+from app.ws.utils import read_tsv, write_tsv, add_new_protocols_from_assay, tidy_template_row, \
     get_protocols_for_assay, get_type_for_assay
 import logging
 import json
@@ -328,7 +328,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         isa_study = update_correct_sample_file_name(isa_study, study_location, study_id)
 
         # Add the new assay to the investigation file
-        assay_file_name, assay = create_assay(assay_type, columns, study_id)
+        assay_file_name, assay, protocol_params = create_assay(assay_type, columns, study_id)
 
         # add the assay to the study
         isa_study.assays.append(assay)
@@ -336,7 +336,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         message = update_assay_column_values(columns, assay_file_name)
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
-        isa_study = add_new_protocols_from_assay(assay_type,assay_file_name, study_id, isa_study)
+        isa_study = add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, study_id, isa_study)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
 
         return {"success": "The assay was added to study "+study_id, "assay": AssaySchema().dump(assay)}
@@ -371,7 +371,7 @@ def create_assay(assay_type, columns, study_id):
         if key_val['name'].lower() == 'column type':
             column = key_val['value']
 
-    tsv_header_row, tsv_data_row, protocols, a_type = get_assay_headers_and_protcols(assay_type)
+    tidy_header_row, tidy_data_row, protocols, a_type = get_assay_headers_and_protcols(assay_type)
 
     assay_platform = a_type + ' - ' + polarity
     if column != '':
@@ -388,16 +388,15 @@ def create_assay(assay_type, columns, study_id):
     file_name = os.path.join(study_path, file_name)
 
     try:
-        file = open(file_name, 'w')
-        writer = csv.writer(file)
-        writer.writerow(tsv_header_row)
-        writer.writerow(tsv_data_row)
+        file = open(file_name, 'w', encoding="utf-8")
+        writer = csv.writer(file, delimiter="\t", quotechar='\"')
+        writer.writerow(tidy_header_row)
+        writer.writerow(tidy_data_row)
         file.close()
-        #copy_file(studies_path + os.path.join('TEMPLATES', file_to_copy), os.path.join(study_path, file_name))
-    except (FileNotFoundError, Exception):
+    except (FileNotFoundError):
         abort(500, 'Could not write the assay file')
 
-    return file_name, assay
+    return file_name, assay, protocols
 
 
 def get_assay_headers_and_protcols(assay_type):
@@ -412,10 +411,10 @@ def get_assay_headers_and_protcols(assay_type):
     protocols = get_protocols_for_assay(protocol_row, assay_type)
     assay_desc = get_type_for_assay(assay_type_row, assay_type)
 
-    tsv_header_row = tidy_template_tsv_row(header_row)  # Remove empty cells after end of column definition
-    tsv_data_row = tidy_template_tsv_row(data_row)
+    tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
+    tidy_data_row = tidy_template_row(data_row)
 
-    return tsv_header_row, tsv_data_row, protocols, assay_desc
+    return tidy_header_row, tidy_data_row, protocols, assay_desc
 
 
 def get_valid_assay_file_name(file_name, study_path):
