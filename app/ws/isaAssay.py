@@ -360,7 +360,6 @@ def create_assay(assay_type, columns, study_id):
     profiling = 'metabolite_profiling'
     studies_path = app.config.get('STUDY_PATH')  # Root folder for all studies
     study_path = os.path.join(studies_path, study_id)  # This particular study
-    # This contains *all* assay headers and their protocols with parameters
 
     polarity = ''
     column = ''

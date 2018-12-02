@@ -368,7 +368,6 @@ def write_tsv(dataframe, file_name):
 def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, study_id, isa_study):
     # Add new protocol
     logger.info('Adding new Protocols from %s for %s', assay_file_name, study_id)
-    # protocol_params = app.config.get('PROTOCOL_PARAMS')
     protocols = isa_study.protocols
 
     for prot_param in protocol_params:
@@ -395,8 +394,6 @@ def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, s
             description='Please update this protocol description')
 
         for param in prot_params.split(';'):
-            # ontology_source = OntologySource(name=param)
-            # ontology_source.name = param
             protocol_parameter = ProtocolParameter(parameter_name=OntologyAnnotation(term=param))
             protocol.parameters.append(protocol_parameter)
 
