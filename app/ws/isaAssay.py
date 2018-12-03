@@ -437,16 +437,17 @@ def get_new_assay(file_name, assay_platform, assay_type):
     # technologyType
     technology = OntologyAnnotation(
         term_accession='http://purl.obolibrary.org/obo/OBI_0000366',
-        term='metabolite profiling')
+        term='metabolite profiling',
+        term_source='OBI')
     # measurementType
     measurement = assay.measurement_type
 
-    if "MS" in assay_type:
-        technology.term = 'mass spectrometry'
-        technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000470'
-    elif "NMR" in assay_type:
+    if assay_type in ['NMR', 'MRI']:
         technology.term = 'NMR spectroscopy'
         technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000623'
+    else:
+        technology.term = 'mass spectrometry'
+        technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000470'
 
     # termSource to use for technologyType
     ontology = OntologySource(
@@ -461,7 +462,8 @@ def get_new_assay(file_name, assay_platform, assay_type):
     assay.technology_type = technology
     # Add the measurementType to the assay.measurementType
     measurement.term_source = ontology
-    measurement.term = 'metabolite profiling'
+    measurement.term = "metabolite profiling"
+    measurement.term_accession = "http://purl.obolibrary.org/obo/OBI_0000366"
     assay.measurement_type = measurement
 
     try:
