@@ -18753,6 +18753,15 @@ Environments include natural environments or exposures, experimentally applied c
     
 
 
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000285 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000285">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000284"/>
+        <rdfs:label xml:lang="en">direct infusion</rdfs:label>
+    </owl:Class>
+    
+
+
     <!-- 
     ///////////////////////////////////////////////////////////////////////////////////////
     //
@@ -18968,15 +18977,6 @@ Environments include natural environments or exposures, experimentally applied c
                 <rdfs:label>oboInOwl:cjm</rdfs:label>
             </rdf:Description>
         </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">A grouping of terms from an ontology or ontologies. Note that this is not a metaclass - classes are linked to subsets via oboInOwl:inSubset</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboInOwl:hasDbXref>
-            <rdf:Description>
-                <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboInOwl:hasURI>
-                <rdfs:label>oboInOwl:cjm</rdfs:label>
-            </rdf:Description>
-        </oboInOwl:hasDbXref>
         <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
     </rdf:Description>
     <rdf:Description>
@@ -18986,7 +18986,7 @@ Environments include natural environments or exposures, experimentally applied c
                 <rdfs:label>oboInOwl:cjm</rdfs:label>
             </rdf:Description>
         </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
+        <rdfs:label xml:lang="en">A grouping of terms from an ontology or ontologies. Note that this is not a metaclass - classes are linked to subsets via oboInOwl:inSubset</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasDbXref>
@@ -18998,24 +18998,33 @@ Environments include natural environments or exposures, experimentally applied c
         <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">partition</rdfs:label>
+        <oboInOwl:hasDbXref>
+            <rdf:Description>
+                <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboInOwl:hasURI>
+                <rdfs:label>oboInOwl:cjm</rdfs:label>
+            </rdf:Description>
+        </oboInOwl:hasDbXref>
+        <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.obofoundry.org/wiki/index.php/Definitions</oboInOwl:hasURI>
-        <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
+        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">view</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">slim</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboInOwl:hasURI>
         <rdfs:label>oboFormat:subsetdef</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">slim</rdfs:label>
+        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.obofoundry.org/wiki/index.php/Definitions</oboInOwl:hasURI>
+        <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">view</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+        <rdfs:label xml:lang="en">partition</rdfs:label>
     </rdf:Description>
     
 
