@@ -327,8 +327,20 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
         isa_study = update_correct_sample_file_name(isa_study, study_location, study_id)
 
+        # Check if the OBI ontology has already been referenced
+        obi = OntologySource(
+            name='OBI',
+            version='29',
+            file='http://data.bioontology.org/ontologies/OBI',
+            description='Ontology for Biomedical Investigations')
+
+        obi_exists = isa_inv.get_ontology_source_reference("OBI")
+        if obi_exists is None:  # Add the ontology to the investigation
+            ontologies = isa_inv.get_ontology_source_references()
+            ontologies.append(obi)
+
         # Add the new assay to the investigation file
-        assay_file_name, assay, protocol_params = create_assay(assay_type, columns, study_id)
+        assay_file_name, assay, protocol_params = create_assay(assay_type, columns, study_id, obi)
 
         # add the assay to the study
         isa_study.assays.append(assay)
@@ -356,7 +368,7 @@ def update_correct_sample_file_name(isa_study, study_location, study_id):
     return isa_study
 
 
-def create_assay(assay_type, columns, study_id):
+def create_assay(assay_type, columns, study_id, ontology):
     profiling = 'metabolite_profiling'
     studies_path = app.config.get('STUDY_PATH')  # Root folder for all studies
     study_path = os.path.join(studies_path, study_id)  # This particular study
@@ -382,7 +394,7 @@ def create_assay(assay_type, columns, study_id):
     file_name = file_name.replace('--', '-')
 
     file_name = get_valid_assay_file_name(file_name, study_path)
-    assay = get_new_assay(file_name, assay_platform, assay_type)
+    assay = get_new_assay(file_name, assay_platform, assay_type, ontology)
 
     file_name = os.path.join(study_path, file_name)
 
@@ -431,7 +443,7 @@ def get_valid_assay_file_name(file_name, study_path):
     return file_name + '.txt'
 
 
-def get_new_assay(file_name, assay_platform, assay_type):
+def get_new_assay(file_name, assay_platform, assay_type, ontology):
     assay = Assay(filename=file_name, technology_platform=assay_platform)
 
     # technologyType
@@ -448,13 +460,6 @@ def get_new_assay(file_name, assay_platform, assay_type):
     else:
         technology.term = 'mass spectrometry'
         technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000470'
-
-    # termSource to use for technologyType
-    ontology = OntologySource(
-        name='OBI',
-        version='29',
-        file='http://data.bioontology.org/ontologies/OBI',
-        description='Ontology for Biomedical Investigations')
 
     # Add the termSource to the technologyType
     technology.term_source = ontology
