@@ -135,8 +135,6 @@ class Ontology(Resource):
         # if only branch, search all branch
 
         if not term and branch:
-            if branch == 'instruments':
-                result = OLSbranchSearch("*", 'instrument', 'msio')
 
             start_cls = onto.search_one(label=branch)
             clses = info.get_subs(start_cls)
@@ -147,6 +145,14 @@ class Ontology(Resource):
 
             if len(result) > 0:
                 result.insert(0, result.pop())
+
+            if branch == 'instruments':
+                r = OLSbranchSearch("*", 'instrument', 'msio')
+                result = result + r
+
+            if branch == 'column type':
+                r = OLSbranchSearch("*", 'chromatography', 'chmo')
+                result = result + r
 
         # if keyword !=  null
         elif term:
@@ -159,7 +165,10 @@ class Ontology(Resource):
             res_cls = []
 
             if branch == 'instruments':
-                result = OLSbranchSearch(term,'instrument','msio')
+                result = OLSbranchSearch(term, 'instrument', 'msio')
+
+            if branch == 'column type':
+                result = OLSbranchSearch(term, 'chromatography', 'chmo')
 
             # taxonomy
             if branch == 'taxonomy' or branch == 'factors':
@@ -471,9 +480,10 @@ class Ontology(Resource):
         except FileNotFoundError:
             abort(400, "The file %s was not found", file_name)
 
+
 def OLSbranchSearch(query, branchName, ontoName):
     def getStartIRI(start, ontoName):
-        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + start + '&ontology=' + ontoName  # + '&exact=true&queryFields=label'
+        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + start + '&ontology=' + ontoName + '&queryFields=label'
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         json_str = json.loads(content)
@@ -481,10 +491,11 @@ def OLSbranchSearch(query, branchName, ontoName):
         res = json_str['response']['docs'][0]['iri']
         # return res
         return urllib.parse.quote_plus(res)
+
     res = []
     branchIRI = getStartIRI(branchName, ontoName)
     query = query.replace(' ', '%20')
-    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + query + '&rows=20&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
+    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + query + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
     print(url)
     fp = urllib.request.urlopen(url)
     content = fp.read().decode('utf-8')
@@ -497,6 +508,7 @@ def OLSbranchSearch(query, branchName, ontoName):
                       ontoName=ele['ontology_prefix'])
         res.append(enti)
     return res
+
 
 def getMetaboZoomaTerm(keyword):
     res = []
