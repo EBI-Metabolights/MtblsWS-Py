@@ -7,7 +7,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
 from app.ws.utils import read_tsv, write_tsv, add_new_protocols_from_assay, tidy_template_row, \
-    get_protocols_for_assay, get_type_for_assay
+    get_protocols_for_assay, get_type_for_assay, update_correct_sample_file_name
 import logging
 import json
 import os.path
@@ -352,20 +352,6 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
 
         return {"success": "The assay was added to study "+study_id, "assay": AssaySchema().dump(assay)}
-
-
-def update_correct_sample_file_name(isa_study, study_location, study_id):
-    sample_file_name = isa_study.filename
-    sample_file_name = os.path.join(study_location, sample_file_name)
-    short_sample_file_name = 's_' + study_id.upper() + '.txt'
-    default_sample_file_name = os.path.join(study_location, short_sample_file_name)
-    if os.path.isfile(sample_file_name):
-        if sample_file_name != default_sample_file_name:
-            isa_study.identifier = study_id  # Adding the study identifier
-            os.rename(sample_file_name, default_sample_file_name)
-            isa_study.filename = short_sample_file_name
-
-    return isa_study
 
 
 def create_assay(assay_type, columns, study_id, ontology):

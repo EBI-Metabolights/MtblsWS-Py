@@ -490,3 +490,17 @@ def convert_to_isa(study_location, study_id):
     # else:
     return status, message
 
+
+def update_correct_sample_file_name(isa_study, study_location, study_id):
+    isa_study.identifier = study_id  # Adding the study identifier
+    sample_file_name = isa_study.filename
+    sample_file_name = os.path.join(study_location, sample_file_name)
+    short_sample_file_name = 's_' + study_id.upper() + '.txt'
+    default_sample_file_name = os.path.join(study_location, short_sample_file_name)
+    if os.path.isfile(sample_file_name):
+        if sample_file_name != default_sample_file_name:
+            isa_study.identifier = study_id  # Adding the study identifier
+            os.rename(sample_file_name, default_sample_file_name)
+            isa_study.filename = short_sample_file_name
+
+    return isa_study
