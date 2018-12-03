@@ -316,6 +316,42 @@ def read_tsv(file_name):
     return table_df
 
 
+def tidy_template_row(df):
+    row = df.iloc[0]
+    new_row = []
+    cell_count = 0
+    for cell in row:
+        if cell_count > 0:   # Skip first cell, this is only for our labeling
+            if cell != 'row-end':
+                new_row.append(cell)
+            if cell == 'row-end':
+                return new_row  # We have all the columns now
+        cell_count += 1
+    return new_row
+
+
+def get_protocols_for_assay(df_row, assay_type):
+    row = df_row.iloc[0]
+    prot_list = []
+
+    for cell in row:
+        if '|' in cell:
+            split_cell = cell.split('|')
+            prot_name = split_cell[0]
+            prot_params = split_cell[1]
+            prot_list.append([assay_type, prot_name, prot_params])
+
+    return prot_list
+
+
+def get_type_for_assay(df_row, assay_type):
+    row = df_row.iloc[0]
+
+    for cell in row:
+        if cell != '' and cell != assay_type + '-assay':  # return first cell that is not the label
+            return cell
+
+
 def write_tsv(dataframe, file_name):
     try:
         # Remove all ".n" numbers at the end of duplicated column names
@@ -329,10 +365,9 @@ def write_tsv(dataframe, file_name):
     return 'Success. Update file ' + file_name
 
 
-def add_new_protocols_from_assay(assay_type, assay_file_name, study_id, isa_study):
+def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, study_id, isa_study):
     # Add new protocol
     logger.info('Adding new Protocols from %s for %s', assay_file_name, study_id)
-    protocol_params = app.config.get('PROTOCOL_PARAMS')
     protocols = isa_study.protocols
 
     for prot_param in protocol_params:
@@ -359,8 +394,6 @@ def add_new_protocols_from_assay(assay_type, assay_file_name, study_id, isa_stud
             description='Please update this protocol description')
 
         for param in prot_params.split(';'):
-            # ontology_source = OntologySource(name=param)
-            # ontology_source.name = param
             protocol_parameter = ProtocolParameter(parameter_name=OntologyAnnotation(term=param))
             protocol.parameters.append(protocol_parameter)
 
