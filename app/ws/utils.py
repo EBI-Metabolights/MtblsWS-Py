@@ -415,7 +415,7 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
 
     for file_loc in [upload_location, study_location]:  # Check both study and upload location
         if os.path.isdir(file_loc):  # Only check if the folder exists
-            files = glob.iglob(os.path.join(file_loc, '*.mzML', recursive=True))  # Are there mzML files there?
+            files = glob.iglob(os.path.join(file_loc, '*.mzML'), recursive=True)  # Are there mzML files there?
             # TODO validate the XSD here, only needed once
             for file in files:
                 try:
