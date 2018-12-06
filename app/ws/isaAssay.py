@@ -375,9 +375,9 @@ def create_assay(assay_type, columns, study_id, ontology):
         assay_platform = assay_platform + ' - ' + column
 
     # this will be the final name for the copied assay template
-    file_name = 'a_' + study_id.upper() + '-' + polarity + '-' + a_type.replace(' ', '-').lower() + '-' \
-                + column.replace(' ', '-').lower() + '-' + profiling
-    file_name = file_name.replace('--', '-')
+    file_name = 'a_' + study_id.upper() + '_' + assay_type + '_' + polarity + '_' + column.replace(' ', '-').lower() \
+                + '_' + profiling
+    #file_name = file_name.replace('__', '_')
 
     file_name = get_valid_assay_file_name(file_name, study_path)
     assay = get_new_assay(file_name, assay_platform, assay_type, ontology)
