@@ -415,10 +415,11 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
 
     for file_loc in [upload_location, study_location]:  # Check both study and upload location
         if os.path.isdir(file_loc):  # Only check if the folder exists
-            files = glob.glob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
+            files = glob.glob(os.path.join(file_loc, '*.mzML', recursive=True))  # Are there mzML files there?
             # TODO validate the XSD here, only needed once
             for file in files:
                 try:
+                    logger.info('Validating mzML file ' + file)
                     status, result = validate_xml(os.path.join(script_loc, xsd_name), file)
                     if not status:
                         return status, result
@@ -426,6 +427,7 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
                     if file_loc == upload_location:
                         copy_file(file, study_location)
                         try:
+                            logger.info('Moving mzML file "' + file + '" into study location ' + study_location)
                             # Rename the file so that we don't have to validate/copy it again
                             shutil.move(file, file + '.MOVED')
                         except Exception:
@@ -492,7 +494,7 @@ def convert_to_isa(study_location, study_id):
 
 
 def update_correct_sample_file_name(isa_study, study_location, study_id):
-    isa_study.identifier = study_id  # Adding the study identifier
+    #isa_study.identifier = study_id  # Adding the study identifier
     sample_file_name = isa_study.filename
     sample_file_name = os.path.join(study_location, sample_file_name)
     short_sample_file_name = 's_' + study_id.upper() + '.txt'
@@ -500,7 +502,7 @@ def update_correct_sample_file_name(isa_study, study_location, study_id):
     if os.path.isfile(sample_file_name):
         if sample_file_name != default_sample_file_name:
             isa_study.identifier = study_id  # Adding the study identifier
-            os.rename(sample_file_name, default_sample_file_name)
-            isa_study.filename = short_sample_file_name
+            os.rename(sample_file_name, default_sample_file_name)  # Rename the sample file
+            isa_study.filename = short_sample_file_name  # Add the new filename to the investigation
 
     return isa_study
