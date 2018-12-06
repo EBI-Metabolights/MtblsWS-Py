@@ -428,11 +428,12 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
                         return status, result
                     # Ok, the file validated, so we now copy it file to the study folder
                     if file_loc == upload_location:
-                        copy_file(file, study_location)
+                        shutil.copy(file, study_location)
+                        #copy_file(file, study_location)
                         try:
                             logger.info('Moving mzML file "' + file + '" into study location ' + study_location)
                             # Rename the file so that we don't have to validate/copy it again
-                            shutil.move(file, file + '.MOVED')
+                            shutil.move(file, file + ".MOVED")
                         except Exception:
                             return False, "Could not copy the mzML file " + file
                 except Exception:
