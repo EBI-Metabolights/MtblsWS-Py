@@ -776,7 +776,7 @@ class AddRows(Resource):
 
 class GetTsvFile(Resource):
     @swagger.operation(
-        summary="Get TSV table for a study using assay filename",
+        summary="Get TSV table for a study using filename",
         nickname="Get TSV table for a given study",
         notes="Get a given TSV table for a MTBLS Study with in JSON format.",
         parameters=[
@@ -859,7 +859,7 @@ class GetTsvFile(Resource):
         try:
             file_df = read_tsv(file_name)
         except FileNotFoundError:
-            abort(400, "The file %s was not found", file_name)
+            abort(400, "The file " + file_name + " was not found")
 
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 
