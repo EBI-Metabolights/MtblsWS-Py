@@ -925,13 +925,20 @@ class CreateAccession(Resource):
                                                          skip_load_tables=True, study_location=study_location)
 
         # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
-        isa_study = update_correct_sample_file_name(isa_study, study_location, study_acc)
+        isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_acc)
 
         # Updated the files with the study accession
         iac.write_isa_study(
             inv_obj=isa_inv, api_key=user_token, std_path=to_path,
             save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
         )
+
+        # For ISA-API to correctly save a set of ISA documents, we need to have one dummy sample row
+        file_name = os.path.join(study_location, sample_file_name)
+        sample_df = read_tsv(file_name)
+        sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row
+        write_tsv(sample_df, file_name)
+
 
         return {"new_study": study_acc}
 

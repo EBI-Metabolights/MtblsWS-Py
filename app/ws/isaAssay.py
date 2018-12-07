@@ -325,7 +325,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                                                          skip_load_tables=True, study_location=study_location)
 
         # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
-        isa_study = update_correct_sample_file_name(isa_study, study_location, study_id)
+        isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_id)
 
         # Check if the OBI ontology has already been referenced
         obi = OntologySource(

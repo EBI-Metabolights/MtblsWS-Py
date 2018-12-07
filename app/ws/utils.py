@@ -509,4 +509,4 @@ def update_correct_sample_file_name(isa_study, study_location, study_id):
             os.rename(sample_file_name, default_sample_file_name)  # Rename the sample file
             isa_study.filename = short_sample_file_name  # Add the new filename to the investigation
 
-    return isa_study
+    return isa_study, short_sample_file_name
