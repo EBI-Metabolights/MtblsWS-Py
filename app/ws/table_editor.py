@@ -864,7 +864,7 @@ class GetTsvFile(Resource):
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 
         # Get an indexed header row
-        df_header = get_table_header(file_df)
+        df_header = get_table_header(file_df, assay_type=None)
 
         return {'header': df_header, 'data': df_data_dict}
 
