@@ -830,6 +830,8 @@ class GetTsvFile(Resource):
             logger.info('No study_id and/or TSV file name given')
             abort(404)
         study_id = study_id.upper()
+        file_name_param = file_name  # store the passed filename for simplicity
+
 
         # User authentication
         user_token = None
@@ -864,7 +866,7 @@ class GetTsvFile(Resource):
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 
         # Get an indexed header row
-        df_header = get_table_header(file_df, assay_type=None)
+        df_header = get_table_header(file_df, study_id, file_name_param)
 
         return {'header': df_header, 'data': df_data_dict}
 

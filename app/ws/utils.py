@@ -271,11 +271,18 @@ def get_assay_headers_and_protcols(assay_type):
     return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type
 
 
-def get_table_header(table_df, assay_type):
+def get_table_header(table_df, study_id=None, file_name=None):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
     df_header = df_header.reset_index().to_dict(orient='list')
     mapping = {}
+    assay_type = None
+
+    if file_name is not None and file_name.startswith("a_"):
+        try:
+            assay_type = get_assay_type_from_file_name(study_id, file_name)
+        except:
+            assay_type = None
 
     if assay_type is not None:
         tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_data_mandatory = \
@@ -290,6 +297,17 @@ def get_table_header(table_df, assay_type):
             mapping[df_header[0][i]] = df_header['index'][i]
 
     return mapping
+
+
+def get_assay_type_from_file_name(study_id, file_name):
+    assay_type = None
+    file_name = file_name.replace("a_" + study_id + "_", "")  # Remove study_id and assay refs from filename
+    for file_part in file_name.split("_"):  # Split string on assay
+        #sub_part = file_part.split("_")
+        assay_type = file_part # Only interested in the assay type part
+        break
+
+    return assay_type
 
 
 def validate_row(table_header_df, row, http_type):
