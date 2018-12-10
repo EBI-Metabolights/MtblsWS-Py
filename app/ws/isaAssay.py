@@ -6,8 +6,8 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
-from app.ws.utils import read_tsv, write_tsv, add_new_protocols_from_assay, tidy_template_row, \
-    get_protocols_for_assay, get_type_for_assay, update_correct_sample_file_name
+from app.ws.utils import read_tsv, write_tsv, add_new_protocols_from_assay, update_correct_sample_file_name, \
+    get_assay_headers_and_protcols
 import logging
 import json
 import os.path
@@ -351,7 +351,14 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         isa_study = add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, study_id, isa_study)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
 
-        return {"success": "The assay was added to study "+study_id, "assay": AssaySchema().dump(assay)}
+        protocol_names = ''
+        for prot in protocol_params:
+            protocol_names = protocol_names + prot[1] + ','
+
+        return {"success": "The assay was added to study "+study_id,
+                "protocols": protocol_names.rstrip(','),
+                "filename": assay.filename,
+                "assay": AssaySchema().dump(assay)}
 
 
 def create_assay(assay_type, columns, study_id, ontology):
@@ -368,9 +375,9 @@ def create_assay(assay_type, columns, study_id, ontology):
         if key_val['name'].lower() == 'column type':
             column = key_val['value']
 
-    tidy_header_row, tidy_data_row, protocols, a_type = get_assay_headers_and_protcols(assay_type)
+    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_types = get_assay_headers_and_protcols(assay_type)
 
-    assay_platform = a_type + ' - ' + polarity
+    assay_platform = assay_desc + ' - ' + polarity
     if column != '':
         assay_platform = assay_platform + ' - ' + column
 
@@ -390,28 +397,10 @@ def create_assay(assay_type, columns, study_id, ontology):
         writer.writerow(tidy_header_row)
         writer.writerow(tidy_data_row)
         file.close()
-    except (FileNotFoundError):
+    except (FileNotFoundError, Exception):
         abort(500, 'Could not write the assay file')
 
     return file_name, assay, protocols
-
-
-def get_assay_headers_and_protcols(assay_type):
-    assay_master_template = './resources/MetaboLightsAssayMaster.tsv'
-    master_df = read_tsv(assay_master_template)
-
-    header_row = master_df.loc[master_df['name'] == assay_type + '-header']
-    data_row = master_df.loc[master_df['name'] == assay_type + '-data']
-    protocol_row = master_df.loc[master_df['name'] == assay_type + '-protocol']
-    assay_type_row = master_df.loc[master_df['name'] == assay_type + '-assay']
-
-    protocols = get_protocols_for_assay(protocol_row, assay_type)
-    assay_desc = get_type_for_assay(assay_type_row, assay_type)
-
-    tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
-    tidy_data_row = tidy_template_row(data_row)
-
-    return tidy_header_row, tidy_data_row, protocols, assay_desc
 
 
 def get_valid_assay_file_name(file_name, study_path):

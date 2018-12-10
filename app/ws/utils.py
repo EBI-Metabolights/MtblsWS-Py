@@ -249,14 +249,38 @@ def get_single_file_information(file_name):
     return file_time
 
 
+def get_assay_headers_and_protcols(assay_type):
+    assay_master_template = './resources/MetaboLightsAssayMaster.tsv'
+    master_df = read_tsv(assay_master_template)
+
+    header_row = master_df.loc[master_df['name'] == assay_type + '-header']
+    data_row = master_df.loc[master_df['name'] == assay_type + '-data']
+    protocol_row = master_df.loc[master_df['name'] == assay_type + '-protocol']
+    assay_desc_row = master_df.loc[master_df['name'] == assay_type + '-assay']
+    assay_data_type_row = master_df.loc[master_df['name'] == assay_type + '-type']
+
+    protocols = get_protocols_for_assay(protocol_row, assay_type)
+    assay_desc = get_desc_for_assay(assay_desc_row, assay_type)
+    assay_data_type = get_data_type_for_assay(assay_data_type_row, assay_type)
+
+    tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
+    tidy_data_row = tidy_template_row(data_row)
+
+    return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type
+
+
 def get_table_header(table_df):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
     df_header = df_header.reset_index().to_dict(orient='list')
+
+    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type = get_assay_headers_and_protcols("LC-MS")
+    # df_header['type'] = assay_data_type
+
     mapping = {}
-    print(df_header)
     for i in range(0, len(df_header['index'])):
         mapping[df_header[0][i]] = df_header['index'][i]
+        # mapping[df_header[0][i]] = {"index": df_header['index'][i], "data-type": df_header['type'][i]}
     return mapping
 
 
@@ -344,12 +368,30 @@ def get_protocols_for_assay(df_row, assay_type):
     return prot_list
 
 
-def get_type_for_assay(df_row, assay_type):
+def get_desc_for_assay(df_row, assay_type):
     row = df_row.iloc[0]
 
     for cell in row:
         if cell != '' and cell != assay_type + '-assay':  # return first cell that is not the label
             return cell
+
+
+def get_data_type_for_assay(df_row, assay_type):
+    row = df_row.iloc[0]
+    new_row = []
+
+    for cell in row:
+        if cell == assay_type + '-type':
+            continue  # skip the label
+        else:
+            if cell == '':
+                cell = 'string'  # 'string' is the default value if we have not defined a value
+
+            if cell != 'row-end':
+                new_row.append(cell)
+            if cell == 'row-end':
+                return new_row  # We have all the columns now
+    return new_row
 
 
 def write_tsv(dataframe, file_name):
