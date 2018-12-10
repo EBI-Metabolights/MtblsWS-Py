@@ -258,29 +258,37 @@ def get_assay_headers_and_protcols(assay_type):
     protocol_row = master_df.loc[master_df['name'] == assay_type + '-protocol']
     assay_desc_row = master_df.loc[master_df['name'] == assay_type + '-assay']
     assay_data_type_row = master_df.loc[master_df['name'] == assay_type + '-type']
+    assay_data_mandatory_row = master_df.loc[master_df['name'] == assay_type + '-mandatory']
 
     protocols = get_protocols_for_assay(protocol_row, assay_type)
     assay_desc = get_desc_for_assay(assay_desc_row, assay_type)
     assay_data_type = get_data_type_for_assay(assay_data_type_row, assay_type)
+    assay_mandatory_type = get_mandatory_data_for_assay(assay_data_mandatory_row, assay_type)
 
     tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
     tidy_data_row = tidy_template_row(data_row)
 
-    return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type
+    return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type
 
 
-def get_table_header(table_df):
+def get_table_header(table_df, assay_type):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
     df_header = df_header.reset_index().to_dict(orient='list')
-
-    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type = get_assay_headers_and_protcols("LC-MS")
-    # df_header['type'] = assay_data_type
-
     mapping = {}
-    for i in range(0, len(df_header['index'])):
-        mapping[df_header[0][i]] = df_header['index'][i]
-        # mapping[df_header[0][i]] = {"index": df_header['index'][i], "data-type": df_header['type'][i]}
+
+    if assay_type is not None:
+        tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_data_mandatory = \
+            get_assay_headers_and_protcols(assay_type)
+        df_header['type'] = assay_data_type
+        df_header['mandatory'] = assay_data_mandatory
+        for i in range(0, len(df_header['index'])):
+            mapping[df_header[0][i]] = {"index": df_header['index'][i], "data-type": df_header['type'][i],
+                                        "mandatory": df_header['mandatory'][i]}
+    else:
+        for i in range(0, len(df_header['index'])):
+            mapping[df_header[0][i]] = df_header['index'][i]
+
     return mapping
 
 
@@ -386,6 +394,26 @@ def get_data_type_for_assay(df_row, assay_type):
         else:
             if cell == '':
                 cell = 'string'  # 'string' is the default value if we have not defined a value
+
+            if cell != 'row-end':
+                new_row.append(cell)
+            if cell == 'row-end':
+                return new_row  # We have all the columns now
+    return new_row
+
+
+def get_mandatory_data_for_assay(df_row, assay_type):
+    row = df_row.iloc[0]
+    new_row = []
+
+    for cell in row:
+        if cell == assay_type + '-mandatory':
+            continue  # skip the label
+        else:
+            if cell == '' or cell == 'n':
+                cell = False  # 'False' is the default value if we have not defined a value
+            if cell == 'y':
+                cell = True
 
             if cell != 'row-end':
                 new_row.append(cell)

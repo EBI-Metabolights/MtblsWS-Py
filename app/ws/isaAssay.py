@@ -375,7 +375,8 @@ def create_assay(assay_type, columns, study_id, ontology):
         if key_val['name'].lower() == 'column type':
             column = key_val['value']
 
-    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_types = get_assay_headers_and_protcols(assay_type)
+    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_types, assay_data_mandatory \
+        = get_assay_headers_and_protcols(assay_type)
 
     assay_platform = assay_desc + ' - ' + polarity
     if column != '':
