@@ -376,6 +376,7 @@ class StudyReleaseDate(Resource):
                                                          skip_load_tables=True,
                                                          study_location=study_location)
         isa_inv.public_release_date = new_date
+        isa_study.public_release_date = new_date
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Applied %s', new_date)
