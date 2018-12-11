@@ -14,7 +14,9 @@ iac = IsaApiClient()
 class Metabolon(Resource):
     @swagger.operation(
         summary='Confirm all files are uploaded',
-        notes='''Confirm that all raw/mzML files has been uploaded to this studies upload folder. </BR>
+        notes='''Confirm that all raw/mzML files has been uploaded to this studies upload folder. </br>
+        Files uploaded for clients will be added to the final study before templates are applied</br>
+        </P> 
         This may take some time as mzML validation and conversion to ISA-Tab will now take place''',
         parameters=[
             {
