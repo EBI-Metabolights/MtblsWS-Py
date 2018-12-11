@@ -520,7 +520,7 @@ class AddRows(Resource):
         df_header = get_table_header(file_df)
 
         # Get the updated data table
-        df_data_dict = totuples(file_df.reset_index(), 'rows')
+        df_data_dict = totuples(read_tsv(file_name), 'rows')
 
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
