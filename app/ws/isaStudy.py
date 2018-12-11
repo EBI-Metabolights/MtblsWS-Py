@@ -271,6 +271,117 @@ class StudyTitle(Resource):
         return jsonify({"title": new_title})
 
 
+class StudyReleaseDate(Resource):
+
+    @swagger.operation(
+        summary='Update study release date',
+        notes="""Update the release date of a study.</p><pre><code> 
+{ 
+    \"release_date\": \"2019-05-15\" 
+}
+
+</code></pre>
+              """,
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "release_date",
+                "description": "Release date",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        # body content validation
+        if request.data is None or request.json is None:
+            abort(400)
+        # data_dict = request.get_json(force=True)
+        data_dict = json.loads(request.data.decode('utf-8'))
+        new_date = data_dict['release_date']
+        # check for keeping copies
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # update study title
+        logger.info('Updating Study title for %s', study_id)
+        # check for access rights
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
+        isa_inv.public_release_date = new_date
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        logger.info('Applied %s', new_date)
+        return jsonify({"release_date": new_date})
+
+
 class StudyMetaInfo(Resource):
 
     @swagger.operation(

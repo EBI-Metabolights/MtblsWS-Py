@@ -73,6 +73,7 @@ def initialize_app(flask_app):
     # ISA Investigation
     api.add_resource(IsaInvestigation, res_path + "/studies/<string:study_id>")
     api.add_resource(StudyTitle, res_path + "/studies/<string:study_id>/title")
+    api.add_resource(StudyReleaseDate, res_path + "/studies/<string:study_id>/release-date")
     api.add_resource(StudyDescription, res_path + "/studies/<string:study_id>/description")
     api.add_resource(StudyContacts, res_path + "/studies/<string:study_id>/contacts")
     api.add_resource(StudyProtocols, res_path + "/studies/<string:study_id>/protocols")
