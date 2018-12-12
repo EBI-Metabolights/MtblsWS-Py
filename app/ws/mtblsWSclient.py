@@ -265,7 +265,8 @@ class WsClient:
         release_date = None
         submission_date = None
 
-        # access_studies = check_access_rights(user_token, study_id)
+        role, read_access_, write_access_, obfuscation_code_, study_location_, release_date_, submission_date_, \
+        updated_date_, study_status_ = check_access_rights(user_token, study_id)
 
         try:
             resp = requests.post(
@@ -290,6 +291,12 @@ class WsClient:
                         study_id, read_access, write_access)
         except:
             logger.info("Connection refused by the server or parameters were missing...")
+
+        if read_access_ != read_access:
+            logger.error("ERROR: DB Read access: " + read_access_ + " differs from WS: " + read_access)
+
+        if write_access_ != write_access:
+            logger.error("ERROR: DB Write access: " + write_access_ + " differs from WS: " + write_access)
 
         return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
 

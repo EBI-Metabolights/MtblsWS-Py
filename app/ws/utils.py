@@ -21,12 +21,16 @@ Misc of utils
 
 logger = logging.getLogger('wslog')
 
+date_format = "%Y%m%d%H%M%S"  # 20180724092134
+file_date_format = "'%B %d %Y %H:%M:%S'"  # 20180724092134
+
+
 def get_timestamp():
     """
     Get a string with the current date & time as a timestamp i.e. 20170302143045
     :return: %Y%m%d%H%M%S - full year, two digit month, day, 24 hour, minutes and seconds
     """
-    return time.strftime("%Y%m%d%H%M%S")
+    return time.strftime(date_format)
 
 
 def get_year_plus_one():
@@ -229,8 +233,8 @@ def get_file_information(directory):
     for file_name in os.listdir(directory):
         if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
             dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
-            raw_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
-            file_time = time.strftime('%B %d %Y %H:%M:%S', dt)  # 20180724092134
+            raw_time = time.strftime(date_format, dt)  # 20180724092134
+            file_time = time.strftime(file_date_format, dt)  # 20180724092134
             file_type, status = map_file_type(file_name, directory)
             file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
                               "type": file_type, "status": status})
@@ -242,7 +246,7 @@ def get_single_file_information(file_name):
     try:
         if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
             dt = time.gmtime(os.path.getmtime(file_name))
-            file_time = time.strftime('%Y%m%d%H%M%S', dt)  # 20180724092134
+            file_time = time.strftime(date_format, dt)  # 20180724092134
     except:
         logger.info('Could not find file ' + file_name)
 

@@ -3,6 +3,7 @@ import traceback
 import os
 import logging
 import re
+from datetime import datetime
 from flask import current_app as app
 from app.ws.utils import get_single_file_information
 
@@ -22,33 +23,29 @@ query_studies_user = """
     """
 
 query_user_access_rights = """
-select distinct role, rw, obfuscationcode, releasedate, submissiondate, 
-case when status = 0 then 'Submitted' 
-              when status = 1 then 'In Curation'
-              when status = 2 then 'In Review'
-              when status = 3 then 'Public'
-              else 'Dormant' end as status, 
-acc 
-from
-(  select 'curator' as role, 'rw' as rw, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
-   from studies s
-   where exists (select 1 from users where apitoken = '#user_token#' and role = 1) --user_token
-   and acc = '#study_id#' -- CURATOR --study_id
- union
-   select 'user' as role, 'rw' as rw, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
-   from studies s, study_user su, users u
-   where s.acc = '#study_id#' and s.status = 1 and s.id = su.studyid and su.userid = u.id and  --study_id
-   u.apitoken = '#user_token#' -- USER own data, submitted  --user_token
- union
-   select 'user' as role, 'r' as rw, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
-   from studies s, study_user su, users u
-   where s.acc = '#study_id#' and s.status != 3 and s.id = su.studyid and su.userid = u.id and  --study_id
-   u.apitoken = '#user_token#' -- USER own data, not submitted  --user_token
-union 
-   select 'user' as role, 'r' as rw, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
-   from studies s where acc = '#study_id#' and status = 3 
-   and not exists(select 1 from users where apitoken = '#user_token#' and role = 1)  --user_token
-) study_user_data;
+    select distinct role, read, write, obfuscationcode, releasedate, submissiondate, 
+    case when status = 0 then 'Submitted' when status = 1 then 'In Curation' when status = 2 then 'In Review' 
+         when status = 3 then 'Public' else 'Dormant' end as status, 
+    acc from
+    ( 
+        select 'curator' as role, 'True' as read, 'True' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc from studies s
+        where exists (select 1 from users where apitoken = '#user_token#' and role = 1)
+        and acc = '#study_id#' -- CURATOR
+        union select * from (
+            select 'user' as role, 'True' as read, 'True' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+            from studies s, study_user su, users u
+            where s.acc = '#study_id#' and s.status = 0 and s.id = su.studyid and su.userid = u.id and 
+            u.apitoken = '#user_token#' -- USER own data, submitted
+            union
+            select 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+            from studies s, study_user su, users u
+            where s.acc = '#study_id#' and s.status in (1, 2, 4) and s.id = su.studyid and su.userid = u.id and 
+            u.apitoken = '#user_token#' -- USER own data, in curation, review or dormant
+            union 
+            select 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+            from studies s where acc = '#study_id#' and status = 3) user_data 
+        where not exists(select 1 from users where apitoken = '#user_token#' and role = 1)
+    ) study_user_data;
 """
 
 
@@ -99,22 +96,38 @@ def check_access_rights(user_token, study_id):
 
     study_list = execute_query(query_user_access_rights, user_token, study_id)
     study_location = app.config.get('STUDY_PATH')
+    complete_study_location = os.path.join(study_location, study_id)
+    complete_file_name = os.path.join(complete_study_location, 'i_Investigation.txt')
 
-    complete_list = []
     for i, row in enumerate(study_list):
         role = row[0]
-        rw = row[1]
-        obfuscationcode = row[2]
-        submissiondate = row[3]
-        releasedate = row[4]
-        submissiondate = row[5]
-        status = row[5]
-        acc = row[6]
-        complete_list.append({'user_role': role, 'read_write': rw, 'api_code': api_code,
-                              'obfuscationcode': obfuscationcode, 'releasedate': releasedate,
-                              'submissiondate': submissiondate, 'status': status, 'study_location': study_location})
+        read_access = row[1]
+        if read_access == 'True':
+            read_access = True
+        else:
+            read_access = False
 
-    return complete_list
+        write_access = row[2]
+        if write_access == 'True':
+            write_access = True
+        else:
+            write_access = False
+
+        obfuscation_code = row[3]
+        release_date = row[4]
+        release_date = release_date.strftime("%c")
+        # Todo 'Thu Nov 14 00:00:00 GMT 2019'
+
+        submission_date = row[5]
+        study_status = row[6]
+        acc = row[7]
+
+        updated_date = get_single_file_information(complete_file_name)
+
+        if role == 'curator':
+            break  # The api-code gives you 100% access rights, so no need to check any further
+
+    return role, read_access, write_access, obfuscation_code, complete_study_location, release_date, submission_date, updated_date, study_status
 
 
 def execute_query(query, user_token, study_id=None):
