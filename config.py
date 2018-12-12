@@ -11,7 +11,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.19.1"
+WS_APP_VERSION = "0.19.4"
 API_VERSION = "0.13.0"
 
 WS_APP_NAME = "MtblsWS-Py"

@@ -3,7 +3,7 @@ from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import read_tsv
+from app.ws.utils import create_maf
 
 """
 MTBLS MAF
@@ -208,54 +208,7 @@ class MetaboliteAnnotationFile(Resource):
         if not read_access:
             abort(403)
 
-        resource_folder = "./resources/"
-
-
-        # Fixed column headers to look for in the MAF, defaults to MS
-        sample_name = 'Sample Name'
-        assay_name = 'MS Assay Name'
-        annotation_file_template = resource_folder + 'm_metabolite_profiling_mass_spectrometry_v2_maf.tsv'
-
-        # NMR MAF and assay name
-        if technology == "NMR":
-            annotation_file_template = resource_folder + 'm_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv'
-            assay_name = 'NMR Assay Name'
-
-        col_names = [sample_name, assay_name]
-
-        annotation_file_name = os.path.join(study_location, annotation_file_name)
-        assay_file_name = os.path.join(study_location, assay_file_name)
-
-        # Get the MAF table or create a new one if it does not already exist
-        try:
-            maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
-        except FileNotFoundError:
-            maf_df = pd.read_csv(annotation_file_template, sep="\t", header=0, encoding='utf-8')
-        # Get rid of empty numerical values
-        maf_df = maf_df.replace(np.nan, '', regex=True)
-
-        # Read NMR or MS Assay Name first, if that is empty, use Sample Name
-        assay_df = read_tsv(assay_file_name)
-
-        # Get the MS/NMR Assay Name or Sample names from the assay
-        assay_sample_names = assay_df[assay_name]
-        if assay_sample_names is None:
-            assay_sample_names = assay_df[sample_name]
-
-        # Does the column already exist?
-        for row in assay_sample_names.iteritems():
-            s_name = row[1]  # "database_identifier"
-            try:
-                in_maf = maf_df.columns.get_loc(s_name)
-            except KeyError:
-                in_maf = 0
-
-            if in_maf == 0:
-                # Add the new columns to the MAF
-                maf_df[s_name] = ""
-
-        # Write the new empty columns back in the file
-        maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
+        maf_df = create_maf(technology, study_location, assay_file_name, annotation_file_name)
 
         # Get an indexed header row
         df_header = get_table_header(maf_df)

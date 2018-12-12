@@ -21,6 +21,36 @@ query_studies_user = """
     where s.id = su.studyid and su.userid = u.id and u.apitoken = (%s);
     """
 
+query_user_access_rights = """
+select distinct role, rw, obfuscationcode, releasedate, submissiondate, 
+case when status = 0 then 'Submitted' 
+              when status = 1 then 'In Curation'
+              when status = 2 then 'In Review'
+              when status = 3 then 'Public'
+              else 'Dormant' end as status, 
+acc 
+from
+(  select 'curator' as role, 'rw' as rw, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+   from studies s
+   where exists (select 1 from users where apitoken = '#user_token#' and role = 1) --user_token
+   and acc = '#study_id#' -- CURATOR --study_id
+ union
+   select 'user' as role, 'rw' as rw, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+   from studies s, study_user su, users u
+   where s.acc = '#study_id#' and s.status = 1 and s.id = su.studyid and su.userid = u.id and  --study_id
+   u.apitoken = '#user_token#' -- USER own data, submitted  --user_token
+ union
+   select 'user' as role, 'r' as rw, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+   from studies s, study_user su, users u
+   where s.acc = '#study_id#' and s.status != 3 and s.id = su.studyid and su.userid = u.id and  --study_id
+   u.apitoken = '#user_token#' -- USER own data, not submitted  --user_token
+union 
+   select 'user' as role, 'r' as rw, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+   from studies s where acc = '#study_id#' and status = 3 
+   and not exists(select 1 from users where apitoken = '#user_token#' and role = 1)  --user_token
+) study_user_data;
+"""
+
 
 def get_all_studies_for_user(user_token):
 
@@ -55,19 +85,50 @@ def get_all_studies_for_user(user_token):
         except FileNotFoundError:
             logger.error("The file %s was not found", complete_file_name)
 
-        complete_list.append({'accession': study_id, 'updated': get_single_file_information(complete_file_name), 'releaseDate': release_date, 'status': status,
-                              'title': title, 'description': description})
+        complete_list.append({'accession': study_id,
+                              'updated': get_single_file_information(complete_file_name),
+                              'releaseDate': release_date,
+                              'status': status,
+                              'title': title,
+                              'description': description})
 
     return complete_list
 
 
-def execute_query(query, user_token):
+def check_access_rights(user_token, study_id):
+
+    study_list = execute_query(query_user_access_rights, user_token, study_id)
+    study_location = app.config.get('STUDY_PATH')
+
+    complete_list = []
+    for i, row in enumerate(study_list):
+        role = row[0]
+        rw = row[1]
+        obfuscationcode = row[2]
+        submissiondate = row[3]
+        releasedate = row[4]
+        submissiondate = row[5]
+        status = row[5]
+        acc = row[6]
+        complete_list.append({'user_role': role, 'read_write': rw, 'api_code': api_code,
+                              'obfuscationcode': obfuscationcode, 'releasedate': releasedate,
+                              'submissiondate': submissiondate, 'status': status, 'study_location': study_location})
+
+    return complete_list
+
+
+def execute_query(query, user_token, study_id=None):
     try:
         params = app.config.get('DB_PARAMS')
         conn = psycopg2.connect(**params)
         cursor = conn.cursor()
         query = query.replace('\\', '')
-        cursor.execute(query, [user_token])
+        if study_id is None:
+            cursor.execute(query, [user_token])
+        else:
+            query2 = query_user_access_rights.replace("#user_token#", user_token)
+            query2 = query2.replace("#study_id#", study_id)
+            cursor.execute(query2)
         data = cursor.fetchall()
         conn.close()
 

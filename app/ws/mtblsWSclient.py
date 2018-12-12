@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 from flask_restful import abort
 from flask import current_app as app
+from app.ws.db_connection import check_access_rights
 
 """
 MetaboLights WS client
@@ -263,6 +264,8 @@ class WsClient:
         study_status = None
         release_date = None
         submission_date = None
+
+        # access_studies = check_access_rights(user_token, study_id)
 
         try:
             resp = requests.post(

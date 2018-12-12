@@ -7,7 +7,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
 from app.ws.utils import read_tsv, write_tsv, add_new_protocols_from_assay, update_correct_sample_file_name, \
-    get_assay_headers_and_protcols
+    get_assay_headers_and_protcols, create_maf
 import logging
 import json
 import os.path
@@ -230,7 +230,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             },
             {
                 "name": "assay",
-                "description": 'Assay definition in ISA-JSON format.',
+                "description": 'Assay definition',
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
@@ -340,12 +340,24 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             ontologies.append(obi)
 
         # Add the new assay to the investigation file
-        assay_file_name, assay, protocol_params = create_assay(assay_type, columns, study_id, obi)
+        assay_file_name, assay, protocol_params, overall_technology = create_assay(assay_type, columns, study_id, obi)
 
         # add the assay to the study
         isa_study.assays.append(assay)
 
-        message = update_assay_column_values(columns, assay_file_name)
+        annotation_file_name = ""
+        maf_name = ""
+        try:
+            annotation_file_name = assay_file_name.replace(".txt", "_v2_maf.tsv")
+            for file_part in annotation_file_name.split("/a_"):
+                maf_name = file_part
+
+            maf_name = "m_" + maf_name
+            maf_df = create_maf(overall_technology, study_location, assay_file_name, maf_name)
+        except:
+            logger.error('Could not create MAF for study ' + study_id + ' under assay ' + assay_file_name)
+
+        message = update_assay_column_values(columns, assay_file_name, maf_file_name=maf_name)
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         isa_study = add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, study_id, isa_study)
@@ -358,6 +370,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         return {"success": "The assay was added to study "+study_id,
                 "protocols": protocol_names.rstrip(','),
                 "filename": assay.filename,
+                "maf": maf_name,
                 "assay": AssaySchema().dump(assay)}
 
 
@@ -385,10 +398,9 @@ def create_assay(assay_type, columns, study_id, ontology):
     # this will be the final name for the copied assay template
     file_name = 'a_' + study_id.upper() + '_' + assay_type + '_' + polarity + '_' + column.replace(' ', '-').lower() \
                 + '_' + profiling
-    #file_name = file_name.replace('__', '_')
 
     file_name = get_valid_assay_file_name(file_name, study_path)
-    assay = get_new_assay(file_name, assay_platform, assay_type, ontology)
+    assay, overall_technology = get_new_assay(file_name, assay_platform, assay_type, ontology)
 
     file_name = os.path.join(study_path, file_name)
 
@@ -401,7 +413,7 @@ def create_assay(assay_type, columns, study_id, ontology):
     except (FileNotFoundError, Exception):
         abort(500, 'Could not write the assay file')
 
-    return file_name, assay, protocols
+    return file_name, assay, protocols, overall_technology
 
 
 def get_valid_assay_file_name(file_name, study_path):
@@ -429,13 +441,16 @@ def get_new_assay(file_name, assay_platform, assay_type, ontology):
         term_source='OBI')
     # measurementType
     measurement = assay.measurement_type
+    overall_technology = ""
 
     if assay_type in ['NMR', 'MRI']:
         technology.term = 'NMR spectroscopy'
         technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000623'
+        overall_technology = "NMR"
     else:
         technology.term = 'mass spectrometry'
         technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000470'
+        overall_technology = "MS"
 
     # Add the termSource to the technologyType
     technology.term_source = ontology
@@ -452,15 +467,16 @@ def get_new_assay(file_name, assay_platform, assay_type, ontology):
     except (ValidationError, Exception):
         abort(400)
 
-    return assay
+    return assay, overall_technology
 
 
-def update_assay_column_values(columns, assay_file_name):
+def update_assay_column_values(columns, assay_file_name, maf_file_name=None):
 
     # These are the real column headers from the assay file
     assay_col_type = 'Parameter Value[Column type]'
     assay_scan_pol = 'Parameter Value[Scan polarity]'
     assay_sample_name = 'Sample Name'
+    maf_column_name = 'Metabolite Assignment File'
 
     table_df = read_tsv(assay_file_name)
 
@@ -483,6 +499,10 @@ def update_assay_column_values(columns, assay_file_name):
 
     # Also update the default sample name, this will trigger validation errors
     update_cell(table_df, table_df.columns.get_loc(assay_sample_name), '')
+
+    # Replace the default MAF file_name with the correct one
+    if maf_file_name is not None:
+        update_cell(table_df, table_df.columns.get_loc(maf_column_name), maf_file_name)
 
     # Write the updated row back in the file
     message = write_tsv(table_df, assay_file_name)
