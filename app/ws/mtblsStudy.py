@@ -886,6 +886,7 @@ class CreateAccession(Resource):
             abort(403)
 
         # Need to check that the user is actually an active user, ie the user_token exists
+        # TODO, use the new is_curator flag
         read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
         if not read_access:
@@ -927,6 +928,10 @@ class CreateAccession(Resource):
         # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
         isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_acc)
 
+        # Set publication date to one year in the future
+        study_date = get_year_plus_one(isa_format=True)
+        isa_study.public_release_date = study_date
+
         # Updated the files with the study accession
         iac.write_isa_study(
             inv_obj=isa_inv, api_key=user_token, std_path=to_path,
@@ -938,7 +943,6 @@ class CreateAccession(Resource):
         sample_df = read_tsv(file_name)
         sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row
         write_tsv(sample_df, file_name)
-
 
         return {"new_study": study_acc}
 
