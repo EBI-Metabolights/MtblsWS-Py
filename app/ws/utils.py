@@ -594,7 +594,6 @@ def convert_to_isa(study_location, study_id):
 
 
 def update_correct_sample_file_name(isa_study, study_location, study_id):
-    #isa_study.identifier = study_id  # Adding the study identifier
     sample_file_name = isa_study.filename
     sample_file_name = os.path.join(study_location, sample_file_name)
     short_sample_file_name = 's_' + study_id.upper() + '.txt'
@@ -642,20 +641,24 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     if assay_sample_names is None:
         assay_sample_names = assay_df[sample_name]
 
+    maf_file_changed = False
     # Does the column already exist?
     for row in assay_sample_names.iteritems():
-        s_name = row[1]  # "database_identifier"
-        try:
-            in_maf = maf_df.columns.get_loc(s_name)
-        except KeyError:
-            in_maf = 0
+        s_name = row[1]
+        if s_name != '':
+            maf_file_changed = True
+            try:
+                in_maf = maf_df.columns.get_loc(s_name)
+            except KeyError:
+                in_maf = 0
 
-        if in_maf == 0:
-            # Add the new columns to the MAF
-            maf_df[s_name] = ""
+            if in_maf == 0:
+                # Add the new columns to the MAF
+                maf_df[s_name] = ""
 
     # Write the new empty columns back in the file
-    maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
+    if maf_file_changed:
+        maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
     return maf_df
 
