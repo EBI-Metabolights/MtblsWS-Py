@@ -268,37 +268,38 @@ class WsClient:
         role, read_access_, write_access_, obfuscation_code_, study_location_, release_date_, submission_date_, \
         updated_date_, study_status_ = check_access_rights(user_token, study_id)
 
-        try:
-            resp = requests.post(
-                url,
-                headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-                data="token=" + (user_token or ''))
+        # try:
+        #     resp = requests.post(
+        #         url,
+        #         headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
+        #         data="token=" + (user_token or ''))
+        #
+        #     if resp.status_code != 200:
+        #         abort(resp.status_code)
+        #
+        #     json_resp = resp.json()
+        #     import json
+        #     content = json.loads(json_resp['content'])
+        #     read_access = content['read']
+        #     write_access = content['write']
+        #     obfuscation_code = content['obfuscationCode']
+        #     study_location = content['studyLocation']
+        #     release_date = content['releaseDate']
+        #     submission_date = content['submissionDate']
+        #     study_status = content['studyStatus']
+        #     logger.info('... found permissions on %s for reading: %s and writing: %s',
+        #                 study_id, read_access, write_access)
+        # except:
+        #     logger.info("Connection refused by the server or parameters were missing...")
+        #
+        # # Todo, this is testing only!!!!!
+        # if read_access_ != read_access or write_access_ != write_access:
+        #     logger.error("ERROR: DB Read access: " + str(read_access_) + " differs from WS: " + str(read_access))
+        #     logger.error("ERROR: DB Write access: " + str(write_access_) + " differs from WS: " + str(write_access))
+        logger.info("NEW DB Read access: " + str(read_access_) + ". DB Write access: " + str(write_access_))
+        return read_access_, write_access_, obfuscation_code_, study_location_, release_date_, submission_date_, study_status_
 
-            if resp.status_code != 200:
-                abort(resp.status_code)
-
-            json_resp = resp.json()
-            import json
-            content = json.loads(json_resp['content'])
-            read_access = content['read']
-            write_access = content['write']
-            obfuscation_code = content['obfuscationCode']
-            study_location = content['studyLocation']
-            release_date = content['releaseDate']
-            submission_date = content['submissionDate']
-            study_status = content['studyStatus']
-            logger.info('... found permissions on %s for reading: %s and writing: %s',
-                        study_id, read_access, write_access)
-        except:
-            logger.info("Connection refused by the server or parameters were missing...")
-
-        # Todo, this is testing only!!!!!
-        if read_access_ != read_access or write_access_ != write_access:
-            logger.error("ERROR: DB Read access: " + str(read_access_) + " differs from WS: " + str(read_access))
-            logger.error("ERROR: DB Write access: " + str(write_access_) + " differs from WS: " + str(write_access))
-            return read_access_, write_access_, obfuscation_code_, study_location_, release_date_, submission_date_, study_status_
-
-        return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
+        # return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
 
     @staticmethod
     def get_queue_folder():
@@ -321,6 +322,10 @@ class WsClient:
 
     @staticmethod
     def create_upload_folder(study_id, obfuscation_code, user_token):
+
+        #read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        #    WsClient.get_permissions(study_id, user_token)
+
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') \
                     + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource

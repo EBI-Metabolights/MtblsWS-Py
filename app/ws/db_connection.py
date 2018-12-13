@@ -98,6 +98,15 @@ def check_access_rights(user_token, study_id):
     study_location = app.config.get('STUDY_PATH')
     complete_study_location = os.path.join(study_location, study_id)
     complete_file_name = os.path.join(complete_study_location, 'i_Investigation.txt')
+    isa_date_format = "%Y-%m-%d"
+    role = ""
+    read_access = False
+    write_access = False
+    obfuscation_code = ""
+    release_date = None
+    submission_date = None
+    updated_date = None
+    study_status = ""
 
     for i, row in enumerate(study_list):
         role = row[0]
@@ -116,10 +125,10 @@ def check_access_rights(user_token, study_id):
         obfuscation_code = row[3]
         release_date = row[4]
         # release_date = release_date.strftime("%c") # Todo 'Thu Nov 14 00:00:00 GMT 2019'
-        release_date = release_date.strftime("%Y-%m-%d")
-        
+        release_date = release_date.strftime(isa_date_format)
+
         submission_date = row[5]
-        submission_date = submission_date.strftime("%Y-%m-%d")
+        submission_date = submission_date.strftime(isa_date_format)
         study_status = row[6]
         acc = row[7]
 

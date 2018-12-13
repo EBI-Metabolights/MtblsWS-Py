@@ -23,6 +23,7 @@ logger = logging.getLogger('wslog')
 
 date_format = "%Y%m%d%H%M%S"  # 20180724092134
 file_date_format = "'%B %d %Y %H:%M:%S'"  # 20180724092134
+isa_date_format = "%Y-%m-%d"
 
 
 def get_timestamp():
@@ -40,8 +41,8 @@ def get_year_plus_one(isa_format=False):
     """
     today = datetime.date.today()
     now = datetime.date(today.year + 1, today.month, today.day)
-    if isa_format==True:
-        return now.strftime("%Y-%m-%d")
+    if isa_format:
+        return now.strftime(isa_date_format)
 
     return now.strftime("%Y%m%d")
 
