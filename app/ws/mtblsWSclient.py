@@ -254,9 +254,6 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Checking for user permisions in MTBLS WS for Study %s', study_id)
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/getPermissions"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         read_access = False
         write_access = False
         obfuscation_code = None
@@ -265,9 +262,13 @@ class WsClient:
         release_date = None
         submission_date = None
 
-        role, read_access_, write_access_, obfuscation_code_, study_location_, release_date_, submission_date_, \
-        updated_date_, study_status_ = check_access_rights(user_token, study_id)
+        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            updated_date, study_status = check_access_rights(user_token, study_id)
 
+        # logger.info('Checking for user permisions in MTBLS WS for Study %s', study_id)
+        # resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/getPermissions"
+        # url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        #
         # try:
         #     resp = requests.post(
         #         url,
@@ -292,14 +293,9 @@ class WsClient:
         # except:
         #     logger.info("Connection refused by the server or parameters were missing...")
         #
-        # # Todo, this is testing only!!!!!
-        # if read_access_ != read_access or write_access_ != write_access:
-        #     logger.error("ERROR: DB Read access: " + str(read_access_) + " differs from WS: " + str(read_access))
-        #     logger.error("ERROR: DB Write access: " + str(write_access_) + " differs from WS: " + str(write_access))
-        logger.info("NEW DB Read access: " + str(read_access_) + ". DB Write access: " + str(write_access_))
-        return read_access_, write_access_, obfuscation_code_, study_location_, release_date_, submission_date_, study_status_
+        logger.info("NEW DB Read access: " + str(read_access) + ". DB Write access: " + str(write_access))
 
-        # return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
+        return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
 
     @staticmethod
     def get_queue_folder():

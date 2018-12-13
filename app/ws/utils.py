@@ -645,7 +645,6 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     for row in assay_sample_names.iteritems():
         s_name = row[1]
         if s_name != '':
-            maf_file_changed = True
             try:
                 in_maf = maf_df.columns.get_loc(s_name)
             except KeyError:
