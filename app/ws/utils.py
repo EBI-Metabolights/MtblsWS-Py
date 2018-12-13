@@ -641,7 +641,6 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     if assay_sample_names is None:
         assay_sample_names = assay_df[sample_name]
 
-    maf_file_changed = False
     # Does the column already exist?
     for row in assay_sample_names.iteritems():
         s_name = row[1]
@@ -657,8 +656,7 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
                 maf_df[s_name] = ""
 
     # Write the new empty columns back in the file
-    if maf_file_changed:
-        maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
+    maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
     return maf_df
 
