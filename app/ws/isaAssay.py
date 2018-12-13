@@ -152,13 +152,12 @@ class StudyAssay(Resource):
 
         logger.info('Getting Assay %s for %s', filename, study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                         skip_load_tables=False,
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token, skip_load_tables=False,
                                                          study_location=study_location)
 
         obj_list = isa_study.assays
@@ -348,11 +347,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         annotation_file_name = ""
         maf_name = ""
         try:
-            annotation_file_name = assay_file_name.replace(".txt", "_v2_maf.tsv")
-            for file_part in annotation_file_name.split("/a_"):
-                maf_name = file_part
-
-            maf_name = "m_" + maf_name
+            maf_name = get_maf_name_from_assay_name(assay_file_name)
             maf_df = create_maf(overall_technology, study_location, assay_file_name, maf_name)
         except:
             logger.error('Could not create MAF for study ' + study_id + ' under assay ' + assay_file_name)
@@ -372,6 +367,150 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 "filename": assay.filename,
                 "maf": maf_name,
                 "assay": AssaySchema().dump(assay)}
+
+    @swagger.operation(
+        summary='Delete an assay',
+        notes='''Remove an assay from your study<pre><code>
+{    
+    "filename": "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"
+}</pre></code> ''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "assay",
+                "description": 'Assay definition',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
+    def delete(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        # check if we should be keeping copies of the metadata
+        save_audit_copy = False
+        save_msg_str = "NOT be"
+        if "save_audit_copy" in request.headers and \
+                request.headers["save_audit_copy"].lower() == 'true':
+            save_audit_copy = True
+            save_msg_str = "be"
+
+        # body content validation
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['filename']
+            if data is None:
+                abort(412)
+            assay_file_name = data
+        except (ValidationError, Exception):
+            abort(400, 'Incorrect JSON provided')
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
+                                                         skip_load_tables=True, study_location=study_location)
+        maf_name = None
+        # Remove the assay from the study
+        for assay in isa_study.assays:
+            a_file = assay.filename
+            if assay_file_name == a_file:
+                logger.info("Removing assay " + assay_file_name + " from study " + study_id)
+                isa_study.assays.remove(assay)
+                maf_name = get_maf_name_from_assay_name(a_file)
+
+        logger.info("A copy of the previous files will %s saved", save_msg_str)
+        iac.write_isa_study(isa_inv, user_token, std_path,
+                            save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
+                            save_samples_copy=save_audit_copy)
+
+        try:
+            os.remove(os.path.join(study_location, a_file))
+            if maf_name is not None:
+                os.remove(os.path.join(study_location, maf_name))
+        except:
+            logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
+
+        return {"success": "The assay was removed from study "+study_id}
+
+
+def get_maf_name_from_assay_name(assay_file_name):
+    annotation_file_name = assay_file_name.replace(".txt", "_v2_maf.tsv")
+    for file_part in annotation_file_name.split("/a_"):
+        maf_name = file_part
+
+    maf_name = maf_name.replace("a_", "")
+    maf_name = "m_" + maf_name
+    return maf_name
 
 
 def create_assay(assay_type, columns, study_id, ontology):

@@ -297,7 +297,8 @@ class WsClient:
         # return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
         logger.info("NEW DB Read access: " + str(read_access) + ". DB Write access: " + str(write_access))
 
-        return is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
+        return is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
+            submission_date, study_status
 
     @staticmethod
     def get_queue_folder():
