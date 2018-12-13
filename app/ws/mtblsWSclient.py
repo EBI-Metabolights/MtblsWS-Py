@@ -322,10 +322,6 @@ class WsClient:
 
     @staticmethod
     def create_upload_folder(study_id, obfuscation_code, user_token):
-
-        #read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-        #    WsClient.get_permissions(study_id, user_token)
-
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') \
                     + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource

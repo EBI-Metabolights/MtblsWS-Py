@@ -899,24 +899,24 @@ class CreateAccession(Resource):
         study_acc = data_dict["message"]
         logger.info('Created new study ' + study_acc)
 
+        # We should have a new study now, so we need to refresh the local variables based on the new study
+        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_acc, user_token)
+
         study_path = app.config.get('STUDY_PATH')
         from_path = study_path + 'DUMMY'
-        to_path = study_path + study_acc
+        to_path = study_location
 
         try:
             copy_files_and_folders(from_path, to_path, True)
         except:
             logger.error('Could not copy files from %s to %s', from_path, to_path)
 
-        # We should have a new study now, so we need to refresh the local variables based on the new study
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_acc, user_token)
-
         # The earlier add_empty_study call could still wait to commit
-        if obfuscation_code is None:
-            time.sleep(1)
-            read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-                wsc.get_permissions(study_acc, user_token)
+        # if obfuscation_code is None:
+        #     time.sleep(1)
+        #     read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        #         wsc.get_permissions(study_acc, user_token)
 
         # Create upload folder
         status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)

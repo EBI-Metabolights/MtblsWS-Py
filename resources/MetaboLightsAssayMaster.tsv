@@ -88,4 +88,4 @@ NMR-header	Sample Name	Protocol REF	Parameter Value[Extraction Method]	Extract N
 NMR-data		Extraction			NMR sample																NMR spectroscopy														NMR assay			Data transformation				Metabolite identification		row-end
 NMR-type																																												row-end
 NMR-mandatory	y	y																																										row-end
-NMR-protocol	Sample collection|	Extraction|Extraction Method			NMR sample|NMR tube type;Solvent;Sample pH;Temperature																NMR spectroscopy|Instrument;NMR Probe;Number of transients;Pulse sequence name;Magnetic field strength														NMR assay|			Data transformation|				Metabolite identification|		row-end																																					
+NMR-protocol	Sample collection|	Extraction|Extraction Method			NMR sample|NMR tube type;Solvent;Sample pH;Temperature																NMR spectroscopy|Instrument;NMR Probe;Number of transients;Pulse sequence name;Magnetic field strength														NMR assay|			Data transformation|				Metabolite identification|		row-end
