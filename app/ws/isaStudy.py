@@ -81,8 +81,8 @@ class IsaJsonStudy(Resource):
 
         logger.info('Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -150,8 +150,8 @@ class StudyTitle(Resource):
 
         logger.info('Getting Study title for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -256,7 +256,7 @@ class StudyTitle(Resource):
         # update study title
         logger.info('Updating Study title for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -367,7 +367,7 @@ class StudyReleaseDate(Resource):
         # update study title
         logger.info('Updating Study title for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -441,7 +441,7 @@ class StudyMetaInfo(Resource):
 
         logger.info('Getting Study details for %s, using API-Key %s', study_id, user_token)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -509,7 +509,7 @@ class StudyDescription(Resource):
 
         logger.info('Getting Study description for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -618,7 +618,7 @@ class StudyDescription(Resource):
         # update study description
         logger.info('Updating Study description for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -757,7 +757,7 @@ class StudyContacts(Resource):
             save_msg_str = "be"
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -891,7 +891,7 @@ class StudyContacts(Resource):
 
         logger.info('Getting Contacts %s for Study %s', email, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -1060,7 +1060,7 @@ class StudyContacts(Resource):
         # update contact details
         logger.info('Updating Contact details for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -1178,7 +1178,7 @@ class StudyContacts(Resource):
         # delete contact
         logger.info('Deleting contact %s for %s', email, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -1332,7 +1332,7 @@ class StudyProtocols(Resource):
             abort(401)
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -1449,7 +1449,7 @@ class StudyProtocols(Resource):
 
         logger.info('Getting Study protocols for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -1574,7 +1574,7 @@ class StudyProtocols(Resource):
         # delete protocol
         logger.info('Deleting protocol %s for %s', obj_name, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -1739,7 +1739,7 @@ class StudyProtocols(Resource):
         # update protocol details
         logger.info('Updating Protocol details for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -1891,7 +1891,7 @@ class StudyFactors(Resource):
         # Add new Study Factor
         logger.info('Adding new Study Factor %s for %s', new_obj.name, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -1985,7 +1985,7 @@ class StudyFactors(Resource):
 
         logger.info('Getting Study Factors for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -2108,7 +2108,7 @@ class StudyFactors(Resource):
         # delete Study Factor
         logger.info('Deleting Study Factor %s for %s', obj_name, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -2279,7 +2279,7 @@ class StudyFactors(Resource):
         # update Study Factor details
         logger.info('Updating Study Factor details for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -2428,7 +2428,7 @@ class StudyDescriptors(Resource):
         # Add new Study Descriptor
         logger.info('Adding new Study Design Descriptor %s for %s', new_obj.term, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -2523,7 +2523,7 @@ class StudyDescriptors(Resource):
 
         logger.info('Getting Study Design Descriptors for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -2647,7 +2647,7 @@ class StudyDescriptors(Resource):
         # delete Study Design Descriptor
         logger.info('Deleting Study Design Descriptor %s for %s', obj_term, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -2799,7 +2799,7 @@ class StudyDescriptors(Resource):
         # update Study Design Descriptor details
         logger.info('Updating Study Design Descriptor details for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -2949,7 +2949,7 @@ class StudyPublications(Resource):
         # Add new Publication
         logger.info('Adding new Publication %s for %s', new_publication.title, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -3046,7 +3046,7 @@ class StudyPublications(Resource):
 
         logger.info('Getting Study Publications for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -3170,7 +3170,7 @@ class StudyPublications(Resource):
         # delete publication
         logger.info('Deleting Study Publication %s for %s', publication_title, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -3322,7 +3322,7 @@ class StudyPublications(Resource):
         # update Study Publication details
         logger.info('Updating Study Publication details for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -3436,7 +3436,7 @@ class StudySources(Resource):
 
         logger.info('Getting Study Sources for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -3584,7 +3584,7 @@ class StudySources(Resource):
         # update Study Source details
         logger.info('Updating Study Source details for %s', study_id, user_token)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -3728,7 +3728,7 @@ class StudySamples(Resource):
         # Add new Study Sample
         logger.info('Adding new Samples to %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -3891,7 +3891,7 @@ class StudySamples(Resource):
 
         logger.info('Getting Samples for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -4045,7 +4045,7 @@ class StudySamples(Resource):
             abort(400)
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -4169,7 +4169,7 @@ class StudySamples(Resource):
             abort(401)
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -4299,7 +4299,7 @@ class StudyOtherMaterials(Resource):
         # Add new Study Material
         logger.info('Adding new Material %s to %s', new_material.name, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -4416,7 +4416,7 @@ class StudyOtherMaterials(Resource):
 
         logger.info('Getting Other Materials for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -4543,7 +4543,7 @@ class StudyOtherMaterials(Resource):
         # delete Other Materials
         logger.info('Deleting Study Material %s for %s', obj_name, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -4684,7 +4684,7 @@ class StudyOtherMaterials(Resource):
         # update Study Material details
         logger.info('Updating Study Material details for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -4814,7 +4814,7 @@ class StudyProcesses(Resource):
 
         logger.info('Getting Study Processes for %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)

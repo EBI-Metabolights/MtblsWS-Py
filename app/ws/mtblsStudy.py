@@ -192,7 +192,7 @@ class IsaTabInvestigationFile(Resource):
             logger.warning("Missing Investigation filename. Using default i_Investigation.txt")
             inv_filename = 'i_Investigation.txt'
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -286,7 +286,7 @@ class IsaTabSampleFile(Resource):
             abort(400, "Missing Sample filename.")
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -381,7 +381,7 @@ class IsaTabAssayFile(Resource):
             abort(400, "Missing Assay filename.")
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -450,7 +450,7 @@ class StudyFiles(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -565,7 +565,7 @@ class CloneAccession(Resource):
             bypass = True  # Users can safely clone this study, even when passing in MTBLS121
 
         # Can the user read the study requested?
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
 
         if not bypass:
@@ -626,7 +626,7 @@ class CloneAccession(Resource):
             study_id = diff[0]
         else:  # User proved an existing study to clone into
             # Can the user read the study requested?
-            read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
                 wsc.get_permissions(to_study_id, user_token)
 
             # Can the user write into the given study?
@@ -697,7 +697,7 @@ class CreateUploadFolder(Resource):
         study_id = study_id.upper()
 
         # param validation
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -764,7 +764,7 @@ class CreateUploadFolder(Resource):
         study_id = study_id.upper()
 
         # param validation
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -828,7 +828,7 @@ class saveAuditFiles(Resource):
         study_id = study_id.upper()
 
         # param validation
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -886,8 +886,8 @@ class CreateAccession(Resource):
             abort(403)
 
         # Need to check that the user is actually an active user, ie the user_token exists
-        # TODO, use the new is_curator flag
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        # TODO, return if the user is active
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
         if not read_access:
             abort(403)
@@ -900,7 +900,7 @@ class CreateAccession(Resource):
         logger.info('Created new study ' + study_acc)
 
         # We should have a new study now, so we need to refresh the local variables based on the new study
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_acc, user_token)
 
         study_path = app.config.get('STUDY_PATH')
@@ -915,7 +915,7 @@ class CreateAccession(Resource):
         # The earlier add_empty_study call could still wait to commit
         # if obfuscation_code is None:
         #     time.sleep(1)
-        #     read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        #     is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
         #         wsc.get_permissions(study_acc, user_token)
 
         # Create upload folder
@@ -1046,7 +1046,7 @@ class AddUser(Resource):
         study_id = study_id.upper()
 
         # param validation
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -1115,7 +1115,7 @@ class ReindexStudy(Resource):
         study_id = study_id.upper()
 
         # param validation
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)

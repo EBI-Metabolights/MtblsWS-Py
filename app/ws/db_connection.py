@@ -100,6 +100,7 @@ def check_access_rights(user_token, study_id):
     complete_file_name = os.path.join(complete_study_location, 'i_Investigation.txt')
     isa_date_format = "%Y-%m-%d"
     role = ""
+    is_curator = False
     read_access = False
     write_access = False
     obfuscation_code = ""
@@ -135,9 +136,10 @@ def check_access_rights(user_token, study_id):
         updated_date = get_single_file_information(complete_file_name)
 
         if role == 'curator':
+            is_curator = True
             break  # The api-code gives you 100% access rights, so no need to check any further
 
-    return role, read_access, write_access, obfuscation_code, complete_study_location, release_date, submission_date, updated_date, study_status
+    return is_curator, read_access, write_access, obfuscation_code, complete_study_location, release_date, submission_date, updated_date, study_status
 
 
 def execute_query(query, user_token, study_id=None):

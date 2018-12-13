@@ -152,7 +152,7 @@ class StudyAssay(Resource):
 
         logger.info('Getting Assay %s for %s', filename, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -291,7 +291,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             abort(401)
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -648,7 +648,7 @@ class AssayProcesses(Resource):
 
         logger.info('Getting Processes for Assay %s in %s', assay_filename, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -841,7 +841,7 @@ class AssaySamples(Resource):
 
         logger.info('Getting Samples for Assay %s in %s', assay_filename, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -1025,7 +1025,7 @@ class AssaySamples(Resource):
             abort(400, err)
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -1217,7 +1217,7 @@ class AssayOtherMaterials(Resource):
 
         logger.info('Getting Other Materials for Assay %s in %s', assay_filename, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -1361,7 +1361,7 @@ class AssayDataFiles(Resource):
 
         logger.info('Getting Data Files for Assay %s in %s', assay_filename, study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)

@@ -93,7 +93,7 @@ class EditSampleFile(Resource):
         logger.info('sample Table: Getting ISA-JSON Study %s, using API-Key %s', study_id, user_token)
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -193,7 +193,7 @@ class EditSampleFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -308,7 +308,7 @@ class EditSampleFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -418,7 +418,7 @@ class EditSampleFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)

@@ -128,7 +128,7 @@ class SimpleColumns(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -236,7 +236,7 @@ class ComplexColumns(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -353,7 +353,7 @@ class ColumnsRows(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -486,17 +486,13 @@ class AddRows(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
         if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
-            # check for access rights
-            read_access2, write_access2, obfuscation_code2, study_location2, release_date, submission_date, \
-                study_status = wsc.get_permissions("MTBLS1", user_token)
-            # TODO, add "is curator" to the return values. for now let's just see who can edit MTBLS1 = Curators only
-            if not write_access2:
+            if not is_curator:
                 abort(403)
             file_name = app.config.get('MTBLS_ZOOMA_FILE')
         else:
@@ -634,7 +630,7 @@ class AddRows(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -745,7 +741,7 @@ class AddRows(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -840,17 +836,13 @@ class GetTsvFile(Resource):
 
         logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
         if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
-            # check for access rights
-            read_access2, write_access2, obfuscation_code2, study_location2, release_date, submission_date, \
-            study_status = wsc.get_permissions("MTBLS1", user_token)
-            # TODO, add "is curator" to the return values. for now let's just see who can edit MTBLS1 = Curators only
-            if not write_access2:
+            if not is_curator:
                 abort(403)
             file_name = app.config.get('MTBLS_ZOOMA_FILE')
         else:
@@ -926,7 +918,7 @@ class CopyFilesFolders(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)

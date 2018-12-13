@@ -261,8 +261,9 @@ class WsClient:
         study_status = None
         release_date = None
         submission_date = None
+        is_curator = None
 
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             updated_date, study_status = check_access_rights(user_token, study_id)
 
         # logger.info('Checking for user permisions in MTBLS WS for Study %s', study_id)
@@ -293,9 +294,10 @@ class WsClient:
         # except:
         #     logger.info("Connection refused by the server or parameters were missing...")
         #
+        # return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
         logger.info("NEW DB Read access: " + str(read_access) + ". DB Write access: " + str(write_access))
 
-        return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
+        return is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
 
     @staticmethod
     def get_queue_folder():
@@ -341,7 +343,7 @@ class WsClient:
             os_upload_path = data_dict["message"]
             os_upload = os_upload_path
 
-        upload_location = os_upload.split('/mtblight')  # FTP/Aspera root starts here
+        upload_location = ftp_folder.split('/mtblight')  # FTP/Aspera root starts here
         upload_loc = upload_location[1]
 
         return {'os_upload_path': os_upload, 'upload_location': upload_loc}
