@@ -292,11 +292,11 @@ class WsClient:
         except:
             logger.info("Connection refused by the server or parameters were missing...")
 
-        if read_access_ != read_access:
+        # Todo, this is testing only!!!!!
+        if read_access_ != read_access or write_access_ != write_access:
             logger.error("ERROR: DB Read access: " + str(read_access_) + " differs from WS: " + str(read_access))
-
-        if write_access_ != write_access:
             logger.error("ERROR: DB Write access: " + str(write_access_) + " differs from WS: " + str(write_access))
+            return read_access_, write_access_, obfuscation_code_, study_location_, release_date_, submission_date_, study_status_
 
         return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
 

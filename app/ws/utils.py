@@ -33,13 +33,16 @@ def get_timestamp():
     return time.strftime(date_format)
 
 
-def get_year_plus_one():
+def get_year_plus_one(isa_format=False):
     """
     Get a string with the current date 20170302
     :return: %Y%m%d - full year, two digit month, day
     """
     today = datetime.date.today()
     now = datetime.date(today.year + 1, today.month, today.day)
+    if isa_format==True:
+        return now.strftime("%Y-%m-%d")
+
     return now.strftime("%Y%m%d")
 
 
