@@ -125,7 +125,7 @@ class Ontology(Resource):
             args = parser.parse_args(req=request)
             mapping = args['mapping']
 
-        if term is None:
+        if term is None and branch is None:
             return []
 
 
@@ -141,6 +141,8 @@ class Ontology(Resource):
         if not term and branch:
 
             start_cls = onto.search_one(label=branch)
+            if not start_cls:  # Todo, Fix this
+                return []
             clses = info.get_subs(start_cls)
 
             for cls in clses:
@@ -164,6 +166,9 @@ class Ontology(Resource):
                 start_cls = onto.search_one(label=branch)
             else:
                 start_cls = onto.search_one(iri='http://www.w3.org/2002/07/owl#Thing')
+
+            if not start_cls:  # Todo, Fix this
+                return []
 
             clses = info.get_subs(start_cls)
             res_cls = []
