@@ -125,6 +125,10 @@ class Ontology(Resource):
             args = parser.parse_args(req=request)
             mapping = args['mapping']
 
+        if term is None:
+            return []
+
+
         # Onto loading
         logger.info('Getting Ontology term %s', term)
         onto = get_ontology('./tests/Metabolights.owl').load()
