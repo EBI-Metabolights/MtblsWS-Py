@@ -14,8 +14,8 @@ from app.ws.assay_table import *
 from app.ws.sample_table import *
 from app.ws.table_editor import *
 from app.ws.MapStudies import *
-from app.ws.MzML2ISA import *
-from app.ws.Partner_utils import Metabolon
+from app.ws.mzML2ISA import *
+from app.ws.partner_utils import Metabolon
 
 """
 MTBLS WS-Py

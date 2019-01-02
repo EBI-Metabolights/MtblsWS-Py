@@ -362,11 +362,13 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         for prot in protocol_params:
             protocol_names = protocol_names + prot[1] + ','
 
+        json_assay = AssaySchema().dump(assay)
+
         return {"success": "The assay was added to study "+study_id,
                 "protocols": protocol_names.rstrip(','),
                 "filename": assay.filename,
                 "maf": maf_name,
-                "assay": AssaySchema().dump(assay)}
+                "assay": json_assay[0]}
 
     @swagger.operation(
         summary='Delete an assay',
