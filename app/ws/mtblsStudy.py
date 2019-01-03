@@ -496,10 +496,20 @@ class CloneAccession(Resource):
             {
                 "name": "to_study_id",
                 "description": "Existing Study to clone into",
-                "required": True,
+                "required": False,
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
+            },
+            {
+                "name": "include_raw_data",
+                "description": "Include raw data when cloning a study.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
             },
             {
                 "name": "user_token",
@@ -537,6 +547,7 @@ class CloneAccession(Resource):
 
         # User authentication
         user_token = None
+        include_raw_data = False
         bypass = False
         lcms_default_study = 'MTBLS121'  # This is the standard LC-MS study. This is private but safe for all to clone
 
@@ -545,6 +556,9 @@ class CloneAccession(Resource):
 
         if user_token is None:
             abort(403)
+
+        if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == 'true':
+            include_raw_data = True
 
         parser = reqparse.RequestParser()
         parser.add_argument('study_id', help="Study Identifier")
@@ -594,8 +608,13 @@ class CloneAccession(Resource):
             try:
                 logger.info('Attempting to copy ' + study_to_clone + ' to MetaboLights queue folder ' +
                             os.path.join(queue_folder, new_folder_name))
-                copy_tree(study_to_clone, os.path.join(queue_folder, new_folder_name))  # copy the folder to the queue
-                # There is a bug in copy_tree which prevents you to use the same destination folder twice
+                if include_raw_data:
+                    copy_tree(study_to_clone,
+                              os.path.join(queue_folder, new_folder_name))  # copy the folder to the queue
+                    # There is a bug in copy_tree which prevents you to use the same destination folder twice
+                else:
+                    copy_files_and_folders(study_to_clone,
+                                           os.path.join(queue_folder, new_folder_name), include_raw_data)
             except:
                 return {"error": "Could not add study into the MetaboLights queue"}
 
@@ -633,7 +652,7 @@ class CloneAccession(Resource):
             if not write_access:
                 abort(403)
 
-            copy_files_and_folders(study_to_clone, study_location, True)
+            copy_files_and_folders(study_to_clone, study_location, include_raw_data=include_raw_data)
 
             study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
 

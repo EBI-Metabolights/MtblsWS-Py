@@ -4,6 +4,7 @@ import os
 import shutil
 import time
 import datetime
+import fnmatch
 from flask import current_app as app
 import pandas as pd
 import numpy as np
@@ -78,8 +79,7 @@ def copy_file(source, destination):
         raise
 
 
-def copytree(src, dst, symlinks=False, ignore=None, metadata=True):
-    # Todo, add a feature to only copy metadata files
+def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False):
     try:
         if not os.path.exists(dst):
             logger.info('Creating a new folder for the study, %s', dst)
@@ -88,6 +88,11 @@ def copytree(src, dst, symlinks=False, ignore=None, metadata=True):
         for item in os.listdir(src):
             source = os.path.join(src, item)
             destination = os.path.join(dst, item)
+
+            if not include_raw_data:
+                if item.startswith('i_') or item.startswith('s_') or item.startswith('a_') or item.startswith('m_'):
+                    copy_file(source, destination)
+                    continue
             try:
                 time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
             except FileNotFoundError:
@@ -107,12 +112,12 @@ def copytree(src, dst, symlinks=False, ignore=None, metadata=True):
         raise
 
 
-def copy_files_and_folders(source, destination, metabdata):
+def copy_files_and_folders(source, destination, include_raw_data=True):
     """
       Make a copy of files/folders from origin to destnation. If destination already exists, it will be replaced.
       :param source:  string containing the full path to the source file, including filename
       :param destination: string containing the path to the source file, including filename
-      :param metabdata: Copy metadata only, Boolean (default True)
+      :param include_raw_data: Copy all files or metadata only, Boolean (default True)
       :return:
       """
 
@@ -122,7 +127,7 @@ def copy_files_and_folders(source, destination, metabdata):
     try:
         # copy origin to destination
         logger.info("Copying %s to %s", source, destination)
-        copytree(source, destination)
+        copytree(source, destination, include_raw_data=include_raw_data)
     except FileNotFoundError:
         return False, 'No files found under ' + source
     except IsADirectoryError:
