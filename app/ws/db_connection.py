@@ -125,7 +125,7 @@ def check_access_rights(user_token, study_id):
 
         obfuscation_code = row[3]
         release_date = row[4]
-        # release_date = release_date.strftime("%c") # Todo 'Thu Nov 14 00:00:00 GMT 2019'
+        # release_date = release_date.strftime("%c")
         release_date = release_date.strftime(isa_date_format)
 
         submission_date = row[5]

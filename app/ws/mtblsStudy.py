@@ -905,9 +905,8 @@ class CreateAccession(Resource):
             abort(403)
 
         # Need to check that the user is actually an active user, ie the user_token exists
-        # TODO, return if the user is active
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions('MTBLS1', user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions('MTBLS1', user_token)
         if not read_access:
             abort(403)
 
