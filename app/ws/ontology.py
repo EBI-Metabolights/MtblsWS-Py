@@ -460,10 +460,10 @@ class Ontology(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        read_access2, write_access2, obfuscation_code2, study_location2, release_date, submission_date, \
-        study_status = wsc.get_permissions("MTBLS1", user_token)
-        # TODO, add "is curator" to the return values. for now let's just see who can edit MTBLS1 = Curators only
-        if not write_access2:
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
+            submission_date, study_status = wsc.get_permissions("MTBLS1", user_token)
+
+        if not is_curator:
             abort(403)
         file_name = app.config.get('MTBLS_ZOOMA_FILE')
 
