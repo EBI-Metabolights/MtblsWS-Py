@@ -262,6 +262,12 @@ def get_single_file_information(file_name):
 
 
 def get_assay_headers_and_protcols(assay_type):
+
+    if assay_type is None:
+        logger.error('Assay Type is empty!')
+        return None, None, None, None, None, None
+
+    logger.info(' - get_assay_headers_and_protcols for assay type ' + assay_type)
     assay_master_template = './resources/MetaboLightsAssayMaster.tsv'
     master_df = read_tsv(assay_master_template)
 
@@ -673,7 +679,7 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
         description=onto_desc)
 
     onto_exists = isa_inv.get_ontology_source_reference(onto_name)
-    if onto_exists is None:  # Add the ontology to the investigation
+    if ontoget_protocols_for_assay_exists is None:  # Add the ontology to the investigation
         ontologies = isa_inv.get_ontology_source_references()
         ontologies.append(onto)
 
