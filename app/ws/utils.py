@@ -310,7 +310,7 @@ def get_table_header(table_df, study_id=None, file_name=None):
         except:
             assay_type = None
 
-    if assay_type is not None or assay_type != 'a':
+    if assay_type is not None and assay_type != 'a':
         tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_data_mandatory = \
             get_assay_headers_and_protcols(assay_type)
         df_header['type'] = assay_data_type
