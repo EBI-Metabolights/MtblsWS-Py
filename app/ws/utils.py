@@ -292,7 +292,7 @@ def get_assay_headers_and_protcols(assay_type):
         tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
         tidy_data_row = tidy_template_row(data_row)
     except:
-        logger.error('Cound not read all required template info for this assay type: ' + assay_type)
+        logger.error('Could not retrieve all required template info for this assay type: ' + assay_type)
 
     return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type
 
@@ -310,7 +310,7 @@ def get_table_header(table_df, study_id=None, file_name=None):
         except:
             assay_type = None
 
-    if assay_type is not None:
+    if assay_type is not None or assay_type != 'a':
         tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_data_mandatory = \
             get_assay_headers_and_protcols(assay_type)
         df_header['type'] = assay_data_type
@@ -329,8 +329,7 @@ def get_assay_type_from_file_name(study_id, file_name):
     assay_type = None
     file_name = file_name.replace("a_" + study_id + "_", "")  # Remove study_id and assay refs from filename
     for file_part in file_name.split("_"):  # Split string on assay
-        #sub_part = file_part.split("_")
-        assay_type = file_part # Only interested in the assay type part
+        assay_type = file_part  # Only interested in the assay type part
         break
 
     return assay_type
