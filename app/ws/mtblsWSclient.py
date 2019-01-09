@@ -266,7 +266,7 @@ class WsClient:
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             updated_date, study_status = check_access_rights(user_token, study_id)
 
-        # logger.info('Checking for user permisions in MTBLS WS for Study %s', study_id)
+        # logger.info('Checking for user permissions in MTBLS WS for Study %s', study_id)
         # resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/getPermissions"
         # url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         #

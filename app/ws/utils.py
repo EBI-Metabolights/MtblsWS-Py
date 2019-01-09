@@ -262,12 +262,12 @@ def get_single_file_information(file_name):
 
 
 def get_assay_headers_and_protcols(assay_type):
-    tidy_header_row = None
-    tidy_data_row = None
-    protocols = None
-    assay_desc = None
-    assay_data_type = None
-    assay_mandatory_type = None
+    tidy_header_row = ""
+    tidy_data_row = ""
+    protocols = ""
+    assay_desc = ""
+    assay_data_type = ""
+    assay_mandatory_type = ""
 
     if assay_type is None or assay_type == 'a':
         logger.error('Assay Type is empty or incorrect!')

@@ -99,7 +99,6 @@ def check_access_rights(user_token, study_id):
     complete_study_location = os.path.join(study_location, study_id)
     complete_file_name = os.path.join(complete_study_location, 'i_Investigation.txt')
     isa_date_format = "%Y-%m-%d"
-    role = ""
     is_curator = False
     read_access = False
     write_access = False
