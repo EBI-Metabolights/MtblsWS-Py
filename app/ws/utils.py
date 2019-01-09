@@ -4,12 +4,11 @@ import os
 import shutil
 import time
 import datetime
-import fnmatch
 from flask import current_app as app
 import pandas as pd
 import numpy as np
 import re
-from isatools.model import Protocol, ProtocolParameter
+from isatools.model import Protocol, ProtocolParameter, OntologySource
 from app.ws.mm_models import OntologyAnnotation
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
@@ -664,3 +663,18 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
 
     return maf_df
 
+
+def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, onto_desc):
+    # Check if the OBI ontology has already been referenced
+    onto = OntologySource(
+        name=onto_name,
+        version=onto_version,
+        file=onto_file,
+        description=onto_desc)
+
+    onto_exists = isa_inv.get_ontology_source_reference(onto_name)
+    if onto_exists is None:  # Add the ontology to the investigation
+        ontologies = isa_inv.get_ontology_source_references()
+        ontologies.append(onto)
+
+    return isa_inv, onto
