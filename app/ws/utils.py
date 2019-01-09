@@ -262,10 +262,16 @@ def get_single_file_information(file_name):
 
 
 def get_assay_headers_and_protcols(assay_type):
+    tidy_header_row = None
+    tidy_data_row = None
+    protocols = None
+    assay_desc = None
+    assay_data_type = None
+    assay_mandatory_type = None
 
-    if assay_type is None:
-        logger.error('Assay Type is empty!')
-        return None, None, None, None, None, None
+    if assay_type is None or assay_type == 'a':
+        logger.error('Assay Type is empty or incorrect!')
+        return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type
 
     logger.info(' - get_assay_headers_and_protcols for assay type ' + assay_type)
     assay_master_template = './resources/MetaboLightsAssayMaster.tsv'
@@ -278,13 +284,15 @@ def get_assay_headers_and_protcols(assay_type):
     assay_data_type_row = master_df.loc[master_df['name'] == assay_type + '-type']
     assay_data_mandatory_row = master_df.loc[master_df['name'] == assay_type + '-mandatory']
 
-    protocols = get_protocols_for_assay(protocol_row, assay_type)
-    assay_desc = get_desc_for_assay(assay_desc_row, assay_type)
-    assay_data_type = get_data_type_for_assay(assay_data_type_row, assay_type)
-    assay_mandatory_type = get_mandatory_data_for_assay(assay_data_mandatory_row, assay_type)
-
-    tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
-    tidy_data_row = tidy_template_row(data_row)
+    try:
+        protocols = get_protocols_for_assay(protocol_row, assay_type)
+        assay_desc = get_desc_for_assay(assay_desc_row, assay_type)
+        assay_data_type = get_data_type_for_assay(assay_data_type_row, assay_type)
+        assay_mandatory_type = get_mandatory_data_for_assay(assay_data_mandatory_row, assay_type)
+        tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
+        tidy_data_row = tidy_template_row(data_row)
+    except:
+        logger.error('Cound not read all required template info for this assay type: ' + assay_type)
 
     return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type
 
