@@ -686,7 +686,7 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
         description=onto_desc)
 
     onto_exists = isa_inv.get_ontology_source_reference(onto_name)
-    if ontoget_protocols_for_assay_exists is None:  # Add the ontology to the investigation
+    if onto_exists is None:  # Add the ontology to the investigation
         ontologies = isa_inv.get_ontology_source_references()
         ontologies.append(onto)
 

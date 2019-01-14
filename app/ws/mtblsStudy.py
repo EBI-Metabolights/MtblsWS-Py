@@ -864,7 +864,9 @@ class saveAuditFiles(Resource):
 class CreateAccession(Resource):
     @swagger.operation(
         summary="Create a new study",
-        notes='''Create a new study, with upload folder''',
+        notes='''Create a new study, with upload folder</br>
+        Please note that this includes an empty sample file, which will require at least 
+        one additional data row to be ISA-Tab compliant''',
         parameters=[
             {
                 "name": "user_token",
