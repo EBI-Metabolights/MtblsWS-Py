@@ -254,48 +254,11 @@ class WsClient:
         :param user_token:
         :return:
         """
-        read_access = False
-        write_access = False
-        obfuscation_code = None
-        study_location = None
-        study_status = None
-        release_date = None
-        submission_date = None
-        is_curator = None
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             updated_date, study_status = check_access_rights(user_token, study_id)
 
-        # logger.info('Checking for user permissions in MTBLS WS for Study %s', study_id)
-        # resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/getPermissions"
-        # url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        #
-        # try:
-        #     resp = requests.post(
-        #         url,
-        #         headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-        #         data="token=" + (user_token or ''))
-        #
-        #     if resp.status_code != 200:
-        #         abort(resp.status_code)
-        #
-        #     json_resp = resp.json()
-        #     import json
-        #     content = json.loads(json_resp['content'])
-        #     read_access = content['read']
-        #     write_access = content['write']
-        #     obfuscation_code = content['obfuscationCode']
-        #     study_location = content['studyLocation']
-        #     release_date = content['releaseDate']
-        #     submission_date = content['submissionDate']
-        #     study_status = content['studyStatus']
-        #     logger.info('... found permissions on %s for reading: %s and writing: %s',
-        #                 study_id, read_access, write_access)
-        # except:
-        #     logger.info("Connection refused by the server or parameters were missing...")
-        #
-        # return read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status
-        logger.info("NEW DB Read access: " + str(read_access) + ". DB Write access: " + str(write_access))
+        logger.info("Read access: " + str(read_access) + ". Write access: " + str(write_access))
 
         return is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
             submission_date, study_status

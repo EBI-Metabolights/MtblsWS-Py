@@ -1,1 +1,1 @@
-__author__ = 'jrmacias@ebi.ac.uk'
+__author__ = 'metabolights-help@ebi.ac.uk'
