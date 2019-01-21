@@ -200,14 +200,14 @@ class StudyAssay(Resource):
     }
 }</pre></code> </p>
 Accepted values for:</br>
-- <b>(mandatory)</b> "type" - "LC-MS", "LC-DAD", "GC-MS", "GCxGC-MS", "GC-FID", "DI-MS", "FIA-MS", "CE-MS", "MALDI-MS", "MSImaging", "MRImaging", "NMR"</br>
+- <b>(mandatory)</b> "type" - "LC-MS", "LC-DAD", "GC-MS", "GCxGC-MS", "GC-FID", "DI-MS", "FIA-MS", "CE-MS", "MALDI-MS", "MSImaging", "NMR"</br>
 - <b>(optional)</b> "polarity" - "positive", "negative" or "alternating"</br>
 - <b>(optional)</b> "column type"  - "hilic", "reverse phase" or "direct infusion"</br>
 </br>
 <b>Acronyms:</b>  Diode array detection (LC-DAD), Tandem MS (GCxGC-MS), Flame ionisation detector (GC-FID), 
 Direct infusion (DI-MS), Flow injection analysis (FIA-MS), Capillary electrophoresis (CE-MS), 
 Matrix-assisted laser desorption-ionisation imaging mass spectrometry (MALDI-MS), Nuclear magnetic resonance (NMR),
-Magnetic resonance imaging (MRImaging), Mass spec spectrometry (MSImaging)
+Mass spec spectrometry (MSImaging)
 </p>
 Other columns, like "Parameter Value[Instrument]" must be matches exactly like the header in the assay file''',
         parameters=[
