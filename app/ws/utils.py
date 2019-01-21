@@ -653,8 +653,13 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     # Read NMR or MS Assay Name first, if that is empty, use Sample Name
     assay_df = read_tsv(assay_file_name)
 
+    assay_sample_names = None
     # Get the MS/NMR Assay Name or Sample names from the assay
-    assay_sample_names = assay_df[assay_name]
+    try:
+        assay_sample_names = assay_df[assay_name]
+    except:
+        logger.warning('The assay ' + assay_file_name + ' does not have ' + assay_name + ' defined!')
+
     if assay_sample_names is None:
         assay_sample_names = assay_df[sample_name]
 
