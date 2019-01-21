@@ -326,18 +326,6 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
         isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_id)
 
-        # # Check if the OBI ontology has already been referenced
-        # obi = OntologySource(
-        #     name='OBI',
-        #     version='29',
-        #     file='http://data.bioontology.org/ontologies/OBI',
-        #     description='Ontology for Biomedical Investigations')
-        #
-        # obi_exists = isa_inv.get_ontology_source_reference("OBI")
-        # if obi_exists is None:  # Add the ontology to the investigation
-        #     ontologies = isa_inv.get_ontology_source_references()
-        #     ontologies.append(obi)
-
         isa_inv, obi = add_ontology_to_investigation(isa_inv, 'OBI', '29', 'http://data.bioontology.org/ontologies/OBI',
                                                      'Ontology for Biomedical Investigations')
 
