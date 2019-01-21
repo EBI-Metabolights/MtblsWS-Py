@@ -574,7 +574,7 @@ def get_new_assay(file_name, assay_platform, assay_type, ontology):
     measurement = assay.measurement_type
     overall_technology = ""
 
-    if assay_type in ['NMR', 'MRI']:
+    if assay_type in ['NMR', 'MRImaging']:
         technology.term = 'NMR spectroscopy'
         technology.term_accession = 'http://purl.obolibrary.org/obo/OBI_0000623'
         overall_technology = "NMR"
