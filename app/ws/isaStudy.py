@@ -639,27 +639,29 @@ class StudyContacts(Resource):
         summary='Add new Study Contact',
         notes='''Add new Contact to a Study. <pre><code>
 { 
-  "contact": {
-    "firstName": "Joe",
-    "lastName": "Blogs",
-    "email": "joe.blogs@cam.ac.uk",
-    "affiliation": "University of Cambridge",
-    "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
-    "fax": "01223123456",
-    "midInitials": "A",
-    "phone": "01223234567",
-    "roles": [
-      {
-        "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
-        "annotationValue": "Grant Principal Investigator",
-        "termSource": {
-          "file": "http://data.bioontology.org/ontologies/EFO",
-          "name": "",
-          "version": "132"
+  "contacts": [
+    {
+      "firstName": "Joe",
+      "lastName": "Blogs",
+      "email": "joe.blogs@cam.ac.uk",
+      "affiliation": "University of Cambridge",
+      "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
+      "fax": "01223123456",
+      "midInitials": "A",
+      "phone": "01223234567",
+      "roles": [
+        {
+          "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
+          "annotationValue": "Grant Principal Investigator",
+          "termSource": {
+            "file": "http://data.bioontology.org/ontologies/EFO",
+            "name": "",
+            "version": "132"
+          }
         }
-      }
-    ]
-  } 
+      ]
+    } 
+  ]
 }
 
 </code></pre>''',
