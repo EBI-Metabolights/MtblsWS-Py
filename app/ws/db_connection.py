@@ -3,12 +3,22 @@ import traceback
 import os
 import logging
 import re
-from datetime import datetime
 from flask import current_app as app
 from app.ws.utils import get_single_file_information
 
 logger = logging.getLogger('wslog')
 
+query_all_studies = """
+     select s.acc, 
+     to_char(s.releasedate, 'YYYYMMDD'), 
+     to_char(s.updatedate, 'YYYYMMDD'), 
+     case when s.status = 0 then 'Submitted' 
+                  when s.status = 1 then 'In Curation'
+                  when s.status = 2 then 'In Review'
+                  when s.status = 3 then 'Public'
+                  else 'Dormant' end as status
+    from studies s
+    where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
 query_studies_user = """
     SELECT distinct s.acc, 
@@ -90,6 +100,11 @@ def get_all_studies_for_user(user_token):
                               'description': description})
 
     return complete_list
+
+
+def get_all_studies(user_token):
+    data = execute_query(query_all_studies, user_token)
+    return data
 
 
 def check_access_rights(user_token, study_id):

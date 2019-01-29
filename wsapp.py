@@ -16,6 +16,7 @@ from app.ws.table_editor import *
 from app.ws.MapStudies import *
 from app.ws.mzML2ISA import *
 from app.ws.partner_utils import Metabolon
+from app.ws.jira_update import Jira
 
 """
 MTBLS WS-Py
@@ -119,6 +120,7 @@ def initialize_app(flask_app):
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate")
     #api.add_resource(AddUser, res_path + "/ebi-internal/<string:study_id>/user-to-study")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
+    api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
 
 def main():
     print("Initialising application")

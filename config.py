@@ -48,3 +48,8 @@ DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"
 DB_PARAMS = {
     'database': 'db-name', 'user': 'user-name', 'password': 'user-password', 'host': 'hostname', 'port': 1234
 }
+
+JIRA_PARAMS = {
+    'username': 'jira_username',
+    'password': 'jira_password'
+}
