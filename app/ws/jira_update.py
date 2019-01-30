@@ -100,7 +100,6 @@ class Jira(Resource):
 
 def update_or_create_jira_issue(study_id, user_token, is_curator):
     try:
-
         params = app.config.get('JIRA_PARAMS')
         user_name = params['username']
         password = params['password']
