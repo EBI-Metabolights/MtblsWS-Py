@@ -878,6 +878,16 @@ class CopyFilesFolders(Resource):
                 "dataType": "string"
             },
             {
+                "name": "include_raw_data",
+                "description": "Include raw data file transfer. False = only copy ISA-Tab metadata files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -917,6 +927,11 @@ class CopyFilesFolders(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        # If false, only sync ISA-Tab metadata files
+        include_raw_data = False
+        if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == 'true':
+            include_raw_data = True
+
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
@@ -927,7 +942,7 @@ class CopyFilesFolders(Resource):
         upload_location = status["os_upload_path"]
 
         logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location, study_location)
-        status, message = copy_files_and_folders(upload_location, study_location, False)
+        status, message = copy_files_and_folders(upload_location, study_location, include_raw_data)
         if status:
             return {'Success': 'Copied files from ' + upload_location}
         else:
