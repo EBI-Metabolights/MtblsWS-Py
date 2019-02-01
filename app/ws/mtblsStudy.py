@@ -916,6 +916,7 @@ class CreateAccession(Resource):
 
         study_message, status_code = wsc.add_empty_study(user_token)
         if status_code != 200:
+            logger.error('Failed to create new study!')
             abort(503, "Could not create a new study using the MetaboLights Java Web Service. Details: " + study_message)
 
         data_dict = json.loads(study_message)
