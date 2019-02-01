@@ -88,32 +88,42 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False):
             source = os.path.join(src, item)
             destination = os.path.join(dst, item)
 
-            if not include_raw_data:
-                if item.startswith('i_') or item.startswith('s_') or item.startswith('a_') or item.startswith('m_'):
+            # if item.startswith('i_'):
+            #     continue  # Do NOT copy any i_Investigation files from the upload folder
+
+            if item.startswith('i_') or item.startswith('s_') or item.startswith('a_') or item.startswith('m_'):
+                try:
+                    source_file_time = int(get_single_file_information(source))
+                    desc_file_time = int(get_single_file_information(destination))
+                    diff = source_file_time - desc_file_time
+                except:
+                    diff = 1  # if there is no destination file (in the study folder) then copy the file
+
+                if diff > 0:
                     copy_file(source, destination)
-                    continue
-            try:
-                time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
-            except FileNotFoundError:
-                time_diff = 1  # Destination folder does not exist
+            else:
+                if include_raw_data:
+                    try:
+                        time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
+                    except FileNotFoundError:
+                        time_diff = 1  # Destination folder does not exist
 
-            if os.path.isdir(destination):
-                pass  # We already have this folder
+                    if os.path.isdir(destination):
+                        pass  # We already have this folder
 
-            if int(time_diff) >= 1:
-                if os.path.isdir(source):
-                    shutil.copytree(source, destination, symlinks, ignore)
-                else:  # elif not os.path.exists(destination):
-                    shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
-                    logger.info('Copied file %s to %s', source, destination)
-
+                    if int(time_diff) >= 1:
+                        if os.path.isdir(source):
+                            shutil.copytree(source, destination, symlinks, ignore)
+                        else:  # elif not os.path.exists(destination):
+                            shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
+                            logger.info('Copied file %s to %s', source, destination)
     except Exception:
         raise
 
 
 def copy_files_and_folders(source, destination, include_raw_data=True):
     """
-      Make a copy of files/folders from origin to destnation. If destination already exists, it will be replaced.
+      Make a copy of files/folders from origin to destination. If destination already exists, it will be replaced.
       :param source:  string containing the full path to the source file, including filename
       :param destination: string containing the path to the source file, including filename
       :param include_raw_data: Copy all files or metadata only, Boolean (default True)
