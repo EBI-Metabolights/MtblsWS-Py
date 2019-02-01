@@ -8,7 +8,7 @@ Branch: Master
 Docker Hub: [/mtblsws-py](https://hub.docker.com/r/jrmacias/mtblsws-py/)
 
 Using  
-- [ISA-API](https://github.com/ISA-tools/isa-api) >= 0.10.3 
+- [ISA-API](https://github.com/ISA-tools/isa-api)
 - [Flask](http://flask.pocoo.org/)
 - [Flask-RESTful](https://flask-restful.readthedocs.io/)
 - [flask-restful-swagger](https://github.com/rantav/flask-restful-swagger)

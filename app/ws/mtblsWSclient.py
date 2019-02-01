@@ -323,10 +323,9 @@ class WsClient:
             data="token=" + (user_token or ''))
 
         if resp.status_code != 200:
-            abort(resp.status_code)
+            logger.error('Could not create a new study using the Java web service')
 
-        message = resp.text
-        return message
+        return resp.text, resp.status_code
 
     @staticmethod
     def reindex_study(study_id, user_token):
