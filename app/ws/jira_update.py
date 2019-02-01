@@ -90,7 +90,7 @@ class Jira(Resource):
             abort(403)
 
         logger.info('Creating a new study audit folder for study %s', study_id)
-        status, message = update_or_create_jira_issue(passed_id, user_token, is_curator)
+        status, message, updated_studies_list = update_or_create_jira_issue(passed_id, user_token, is_curator)
 
         if status:
             return {'Success': message}
@@ -103,6 +103,8 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
         params = app.config.get('JIRA_PARAMS')
         user_name = params['username']
         password = params['password']
+
+        updated_studies = []
         try:
             jira = JIRA(options=options, basic_auth=(user_name, password))
         except:
@@ -117,16 +119,18 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
 
         for study in studies:
             study_id = study[0]
-            release_date = study[1]
-            update_date = study[2]
-            study_status = study[3]
+            user_name = study[1]
+            release_date = study[2]
+            update_date = study[3]
+            study_status = study[4]
             issue = []
             summary = None
 
             # Get an issue based on a study accession search pattern
             search_param = "project='" + mtbls_project.key + "' AND summary  ~ '" + study_id + " \\\-\\\ 20*'"
             issues = jira.search_issues(search_param)  # project = MetaboLights AND summary ~ 'MTBLS121 '
-            new_summary = study_id + ' - ' + release_date.replace('-', '') + ' - ' + study_status
+            new_summary = study_id + ' - ' + release_date.replace('-', '') + ' - ' + \
+                          study_status + ' (' + user_name + ')'
             try:
                 if issues:
                     issue = issues[0]
@@ -143,30 +147,89 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
 
             summary = issue.fields.summary  # Follow pattern 'MTBLS123 - YYYYMMDD - Status'
             if summary.startswith('MTBLS') and summary != new_summary:  # Release date or status has changed
-                # Add the 'curation' label if needed
-                labels = issue.fields.labels
-                curation_label = False
-                for i in labels:
-                    if i == 'curation':
-                        curation_label = True
-                        continue
-
-                if not curation_label:
-                    labels.append('curation')
 
                 # Add "Curation" Epic
                 issues_to_add = [issue.key]
+                jira.add_issues_to_epic(curation_epic, issues_to_add)  # Add the Curation Epic
+                labels = maintain_jira_labels(issue, study_status, user_name)
 
                 # Add a comment to the issue.
-                jira.add_comment(issue, 'Set status for study ' + study_id + ' to ' + study_status)
-                jira.add_issues_to_epic(curation_epic, issues_to_add)  # Add the Curation Epic
-                # Change the issue's summary and description.
+                comment_text = 'Status ' + study_status + '. Database update date ' + update_date
+                jira.add_comment(issue, comment_text)
+
+                # Change the issue's summary, comments and description.
                 issue.update(summary=new_summary, fields={"labels": labels}, notify=False)
+                updated_studies.append(study_id)
                 logger.info('Updated Jira case for study ' + study_id)
                 print('Updated Jira case for study ' + study_id)
     except Exception:
-        return False, 'Update failed'
+        return False, 'Update failed', updated_studies
+    return True, 'Ticket(s) updated successfully', updated_studies
 
-    return True, 'Ticket(s) updated successfully'
 
+def maintain_jira_labels(issue, study_status, user_name):
+    # Add the 'curation' label if needed
+    labels = issue.fields.labels
 
+    submitted_flag = False
+    curation_flag = False
+    in_curation_flag = False
+    inreview_flag = False
+    metabolon_flag = False
+    placeholder_flag = False
+    metaspace_flag = False
+    submitted_label = 'submitted'
+    curation_label = 'curation'
+    in_curation_label = 'in_curation'
+    inreview_label = 'in_review'
+    metabolon_label = 'metabolon'
+    placeholder_label = 'placeholder'
+    metaspace_label = 'metaspace'
+
+    for i in labels:
+        if i == submitted_label:
+            submitted_flag = True
+        elif i == curation_label:
+            curation_flag = True
+        elif i == in_curation_label:
+            in_curation_flag = True
+        elif i == inreview_label:
+            inreview_flag = True
+        elif i == metabolon_label:
+            metabolon_flag = True
+        elif i == placeholder_label:
+            placeholder_flag = True
+        elif i == metaspace_label:
+            metaspace_flag = True
+
+    if not curation_flag:  # Do not confuse with the In Curation status, this is a "curator tasks" flag
+        labels.append(curation_label)
+
+    if study_status == 'Submitted' and not submitted_flag:  # The "Submitted" label is not present
+        labels.append(submitted_label)
+
+    if study_status == 'In Curation' and not in_curation_flag:  # The "in_curation" label is not present
+        if submitted_flag:
+            labels.remove(submitted_label)
+        labels.append(in_curation_label)
+
+    if study_status == 'In Review' and not inreview_flag:  # The "in_review" label is not present
+        labels.append(inreview_label)
+        if in_curation_flag:
+            labels.remove(in_curation_label)
+
+    if study_status == 'Public':  # The "in_review" label should now be replaced
+        if inreview_flag:
+            labels.remove(inreview_label)
+        labels.append('public')
+
+    if "Placeholder" in user_name and not placeholder_flag:
+        labels.append(placeholder_label)
+
+    if "Metabolon" in user_name and not metabolon_flag:
+        labels.append(metabolon_label)
+
+    if "Metaspace" in user_name and not metaspace_flag:
+        labels.append(metaspace_label)
+
+    return labels

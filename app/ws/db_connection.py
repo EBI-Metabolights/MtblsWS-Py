@@ -9,15 +9,25 @@ from app.ws.utils import get_single_file_information
 logger = logging.getLogger('wslog')
 
 query_all_studies = """
-     select s.acc, 
-     to_char(s.releasedate, 'YYYYMMDD'), 
-     to_char(s.updatedate, 'YYYYMMDD'), 
-     case when s.status = 0 then 'Submitted' 
-                  when s.status = 1 then 'In Curation'
-                  when s.status = 2 then 'In Review'
-                  when s.status = 3 then 'Public'
-                  else 'Dormant' end as status
-    from studies s
+    select * from (
+        select s.acc, 
+          string_agg(u.firstname || ' ' || u.lastname, ', ') as username, 
+          to_char(s.releasedate, 'YYYYMMDD') as release_date,
+          to_char(s.updatedate, 'YYYYMMDD') as update_date, 
+          case when s.status = 0 then 'Submitted' 
+               when s.status = 1 then 'In Curation'
+               when s.status = 2 then 'In Review'
+               when s.status = 3 then 'Public'
+               else 'Dormant' end as status
+        from 
+          studies s,
+          study_user su,
+          users u
+        where
+           --(date_trunc('day',s.updatedate)>=date_trunc('day',current_date-7)) and
+           s.id = su.studyid and
+           su.userid = u.id
+    group by 1,3,4,5 ) status
     where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
 query_studies_user = """
