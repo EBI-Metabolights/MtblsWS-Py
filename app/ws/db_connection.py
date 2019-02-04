@@ -120,6 +120,8 @@ def get_all_studies(user_token):
 def check_access_rights(user_token, study_id):
 
     study_list = execute_query(query_user_access_rights, user_token, study_id)
+    if study_list is None:
+        return False, False, False, 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR'
     study_location = app.config.get('STUDY_PATH')
     complete_study_location = os.path.join(study_location, study_id)
     complete_file_name = os.path.join(complete_study_location, 'i_Investigation.txt')
@@ -163,7 +165,8 @@ def check_access_rights(user_token, study_id):
             is_curator = True
             break  # The api-code gives you 100% access rights, so no need to check any further
 
-    return is_curator, read_access, write_access, obfuscation_code, complete_study_location, release_date, submission_date, updated_date, study_status
+    return is_curator, read_access, write_access, obfuscation_code, complete_study_location, release_date, \
+           submission_date, updated_date, study_status
 
 
 def execute_query(query, user_token, study_id=None):

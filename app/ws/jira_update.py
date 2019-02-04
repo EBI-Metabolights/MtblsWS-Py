@@ -208,13 +208,15 @@ def maintain_jira_labels(issue, study_status, user_name):
     if study_status == 'Submitted' and not submitted_flag:  # The "Submitted" label is not present
         labels.append(submitted_label)
 
-    if study_status == 'In Curation' and not in_curation_flag:  # The "in_curation" label is not present
+    if study_status == 'In Curation':
+        if not in_curation_flag:  # The "in_curation" label is not present
+            labels.append(in_curation_label)
         if submitted_flag:
             labels.remove(submitted_label)
-        labels.append(in_curation_label)
 
-    if study_status == 'In Review' and not inreview_flag:  # The "in_review" label is not present
-        labels.append(inreview_label)
+    if study_status == 'In Review':
+        if not inreview_flag:  # The "in_review" label is not present
+            labels.append(inreview_label)
         if in_curation_flag:
             labels.remove(in_curation_label)
 
