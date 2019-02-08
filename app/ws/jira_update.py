@@ -223,6 +223,8 @@ def maintain_jira_labels(issue, study_status, user_name):
     if study_status == 'Public':  # The "in_review" label should now be replaced
         if inreview_flag:
             labels.remove(inreview_label)
+        if in_curation_flag:
+            labels.remove(in_curation_label)
         labels.append('public')
 
     if "Placeholder" in user_name and not placeholder_flag:
