@@ -78,7 +78,7 @@ def copy_file(source, destination):
         raise
 
 
-def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False):
+def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, include_investigation_file=True):
     try:
         if not os.path.exists(dst):
             logger.info('Creating a new folder for the study, %s', dst)
@@ -88,8 +88,8 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False):
             source = os.path.join(src, item)
             destination = os.path.join(dst, item)
 
-            # if item.startswith('i_'):
-            #     continue  # Do NOT copy any i_Investigation files from the upload folder
+            if not include_investigation_file and item.startswith('i_'):
+                continue  # Do NOT copy any i_Investigation files from the upload folder
 
             if item.startswith('i_') or item.startswith('s_') or item.startswith('a_') or item.startswith('m_'):
                 try:
@@ -121,12 +121,13 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False):
         raise
 
 
-def copy_files_and_folders(source, destination, include_raw_data=True):
+def copy_files_and_folders(source, destination, include_raw_data=True, include_investigation_file=True):
     """
       Make a copy of files/folders from origin to destination. If destination already exists, it will be replaced.
       :param source:  string containing the full path to the source file, including filename
       :param destination: string containing the path to the source file, including filename
       :param include_raw_data: Copy all files or metadata only, Boolean (default True)
+      :param include_investigation_file: Copy the i_Investigation.txt file, Boolean (default True)
       :return:
       """
 
@@ -136,7 +137,8 @@ def copy_files_and_folders(source, destination, include_raw_data=True):
     try:
         # copy origin to destination
         logger.info("Copying %s to %s", source, destination)
-        copytree(source, destination, include_raw_data=include_raw_data)
+        copytree(source, destination, include_raw_data=include_raw_data,
+                 include_investigation_file=include_investigation_file)
     except FileNotFoundError:
         return False, 'No files found under ' + source
     except IsADirectoryError:

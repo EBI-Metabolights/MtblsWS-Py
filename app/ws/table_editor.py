@@ -942,7 +942,8 @@ class CopyFilesFolders(Resource):
         upload_location = status["os_upload_path"]
 
         logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location, study_location)
-        status, message = copy_files_and_folders(upload_location, study_location, include_raw_data)
+        status, message = copy_files_and_folders(upload_location, study_location,
+                                                 include_raw_data=include_raw_data, include_investigation_file=False)
         if status:
             return {'Success': 'Copied files from ' + upload_location}
         else:

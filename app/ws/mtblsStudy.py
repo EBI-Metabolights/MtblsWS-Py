@@ -614,7 +614,8 @@ class CloneAccession(Resource):
                     # There is a bug in copy_tree which prevents you to use the same destination folder twice
                 else:
                     copy_files_and_folders(study_to_clone,
-                                           os.path.join(queue_folder, new_folder_name), include_raw_data)
+                                           os.path.join(queue_folder, new_folder_name),
+                                           include_raw_data=include_raw_data, include_investigation_file=True)
             except:
                 return {"error": "Could not add study into the MetaboLights queue"}
 
@@ -652,7 +653,8 @@ class CloneAccession(Resource):
             if not write_access:
                 abort(403)
 
-            copy_files_and_folders(study_to_clone, study_location, include_raw_data=include_raw_data)
+            copy_files_and_folders(study_to_clone, study_location,
+                                   include_raw_data=include_raw_data, include_investigation_file=True)
 
             study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
 
@@ -932,7 +934,7 @@ class CreateAccession(Resource):
         to_path = study_location
 
         try:
-            copy_files_and_folders(from_path, to_path, True)
+            copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
         except:
             logger.error('Could not copy files from %s to %s', from_path, to_path)
 
