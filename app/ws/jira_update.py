@@ -108,7 +108,7 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
         try:
             jira = JIRA(options=options, basic_auth=(user_name, password))
         except:
-            return False, 'Could not connect to JIRA server, incorrect username or password?'
+            return False, 'Could not connect to JIRA server, incorrect username or password?', updated_studies
 
         # Get the MetaboLights project
         mtbls_project = jira.project(project)
