@@ -26,6 +26,12 @@ file_date_format = "%B %d %Y %H:%M:%S"  # 20180724092134
 isa_date_format = "%Y-%m-%d"
 
 
+def check_user_token(user_token):
+    if not user_token or user_token is None or len(user_token) < 5:
+        return False
+    return True
+
+
 def get_timestamp():
     """
     Get a string with the current date & time as a timestamp i.e. 20170302143045
@@ -322,18 +328,28 @@ def get_table_header(table_df, study_id=None, file_name=None):
         except:
             assay_type = None
 
-    if assay_type is not None and assay_type != 'a':
+    if assay_type is not None and assay_type != "a":
         tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_data_mandatory = \
             get_assay_headers_and_protcols(assay_type)
         df_header['type'] = assay_data_type
         df_header['mandatory'] = assay_data_mandatory
-        for i in range(0, len(df_header['index'])):
-            mapping[df_header[0][i]] = {"index": df_header['index'][i], "data-type": df_header['type'][i],
-                                        "mandatory": df_header['mandatory'][i]}
-    else:
-        for i in range(0, len(df_header['index'])):
-            mapping[df_header[0][i]] = df_header['index'][i]
+        try:
+            for i in range(0, len(df_header['index'])):
+                mapping[df_header[0][i]] = {"index": df_header['index'][i], "data-type": df_header['type'][i],
+                                            "mandatory": df_header['mandatory'][i]}
+        except:  # Using new assay file pattern, but not correct columns, so try the legacy mapping
+            mapping = get_legacy_assay_mapping(df_header)
 
+    else:  # This means we have an assay file that not created with the new pattern
+        mapping = get_legacy_assay_mapping(df_header)
+
+    return mapping
+
+
+def get_legacy_assay_mapping(df_header):
+    mapping = {}
+    for i in range(0, len(df_header['index'])):
+        mapping[df_header[0][i]] = df_header['index'][i]
     return mapping
 
 

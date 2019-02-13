@@ -905,7 +905,7 @@ class CreateAccession(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        if not user_token or user_token is None:
+        if not user_token:
             abort(403)
 
         # Need to check that the user is actually an active user, ie the user_token exists

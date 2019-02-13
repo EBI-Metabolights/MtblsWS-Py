@@ -4,7 +4,7 @@ import os
 import logging
 import re
 from flask import current_app as app
-from app.ws.utils import get_single_file_information
+from app.ws.utils import get_single_file_information, check_user_token
 
 logger = logging.getLogger('wslog')
 
@@ -120,8 +120,9 @@ def get_all_studies(user_token):
 def check_access_rights(user_token, study_id):
 
     study_list = execute_query(query_user_access_rights, user_token, study_id)
-    if study_list is None:
+    if study_list is None or not check_user_token(user_token):
         return False, False, False, 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR'
+
     study_location = app.config.get('STUDY_PATH')
     complete_study_location = os.path.join(study_location, study_id)
     complete_file_name = os.path.join(complete_study_location, 'i_Investigation.txt')
