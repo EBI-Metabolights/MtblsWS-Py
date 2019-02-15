@@ -560,8 +560,8 @@ def getMetaboZoomaTerm(keyword):
 def getZoomaTerm(keyword):
     res = []
     try:
-        url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',
-                                                                                                                 "+")
+        # url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
+        url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
         # url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
         ssl._create_default_https_context = ssl._create_unverified_context
         fp = urllib.request.urlopen(url)

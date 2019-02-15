@@ -905,7 +905,7 @@ class CreateAccession(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        if user_token is None:
+        if not user_token:
             abort(403)
 
         # Need to check that the user is actually an active user, ie the user_token exists
@@ -918,8 +918,8 @@ class CreateAccession(Resource):
 
         study_message, status_code = wsc.add_empty_study(user_token)
         if status_code != 200:
-            logger.error('Failed to create new study!')
-            abort(503, "Could not create a new study using the MetaboLights Java Web Service. Details: " + study_message)
+            logger.error('Failed to create new study. ' + study_message)
+            abort(503, "Could not create a new study.")
 
         time.sleep(1)  # give the Java WebService time to recover! ;-)
 
