@@ -921,6 +921,8 @@ class CreateAccession(Resource):
             logger.error('Failed to create new study!')
             abort(503, "Could not create a new study using the MetaboLights Java Web Service. Details: " + study_message)
 
+        time.sleep(1)  # give the Java WebService time to recover! ;-)
+
         data_dict = json.loads(study_message)
         study_acc = data_dict["message"]
         logger.info('Created new study ' + study_acc)
@@ -963,6 +965,11 @@ class CreateAccession(Resource):
             inv_obj=isa_inv, api_key=user_token, std_path=to_path,
             save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
         )
+
+        try:
+            wsc.reindex_study(study_acc, user_token)
+        except:
+            logger.info("Could not index study " + study_acc)
 
         # For ISA-API to correctly save a set of ISA documents, we need to have one dummy sample row
         file_name = os.path.join(study_location, sample_file_name)
