@@ -13,7 +13,7 @@ class onto_information():
 
     def get_subs(self, cls):
         '''return list of sub classes -> list'''
-        print('matching subs of %s' % cls.label)
+        # print('matching subs of %s' % cls.label)
         sub = []
         list_subs(cls, sub)
         # print(type(sub[0]))
@@ -21,19 +21,19 @@ class onto_information():
 
     def get_supers(self, cls):
         ''''return list of super classes'''
-        print('matching sups of %s ' % cls.label)
+        # print('matching sups of %s ' % cls.label)
         sup = []
         list_supers(cls, sup)
         return [x for x in sup if len(x.label) > 0]
 
     def sub_count(self, cls):
         '''return subclass count'''
-        print('counting subclass of %s..' % cls.label)
+        # print('counting subclass of %s..' % cls.label)
         return len(self.get_subs(cls))
 
     def sup_count(self, cls):
         '''return subclass count'''
-        print('counting superclass of %s..' % cls.label)
+        # print('counting superclass of %s..' % cls.label)
         return len(self.get_supers(cls))
 
     def get_iri(self, cls):

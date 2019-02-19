@@ -77,7 +77,7 @@ class Ontology(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["typo", "exact"]
+                "enum": ["typo", "exact","fuzzy"]
             }
         ],
         responseMessages=[
@@ -127,7 +127,6 @@ class Ontology(Resource):
 
         if term is None and branch is None:
             return []
-
 
         # Onto loading
         logger.info('Getting Ontology term %s', term)
@@ -237,8 +236,10 @@ class Ontology(Resource):
                         c = onto.search_one(label=term.title())
                     else:
                         c = onto.search_one(label=term.upper())
-                    enti = entity(name=c.label[0], iri=c.iri, ontoName='MTBLS')
-                    result.append(enti)
+
+                    if c is not None:
+                        enti = entity(name=c.label[0], iri=c.iri, ontoName='MTBLS')
+                        result.append(enti)
                 except Exception as e:
                     print(e.args)
                     logger.info(e.args)
@@ -255,12 +256,12 @@ class Ontology(Resource):
 
             # Zooma Search
             if len(result) == 0:
-                print("Can't find query inmetabolights-zooma.tsv, requesting Zooma")
+                print("Can't find query in metabolights-zooma.tsv, requesting Zooma")
                 logger.info("Can't find query in MTBLS ontology, requesting Zooma")
                 try:
                     temp = getZoomaTerm(term)
                     for t in temp:
-                        if t.Zooma_confidence in ['GOOD', 'HIGH']:
+                        if t.Zooma_confidence in ['GOOD', 'HIGH', 'MEDIUM']:
                             result.append(t)
                 except Exception as e:
                     print(e.args)
@@ -461,7 +462,7 @@ class Ontology(Resource):
             user_token = request.headers["user_token"]
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
-            submission_date, study_status = wsc.get_permissions("MTBLS1", user_token)
+        submission_date, study_status = wsc.get_permissions("MTBLS1", user_token)
 
         if not is_curator:
             abort(403)
@@ -519,13 +520,20 @@ def OLSbranchSearch(query, branchName, ontoName):
     return res
 
 
-def getMetaboZoomaTerm(keyword):
+def getMetaboZoomaTerm(keyword, mapping = 'fuzzy'):
     res = []
     try:
         try:
             fileName = app.config.get('MTBLS_ZOOMA_FILE')  # metabolights_zooma.tsv
             df = pd.read_csv(fileName, sep="\t", header=0, encoding='utf-8')
-            temp = df.loc[df['PROPERTY_VALUE'].str.contains(keyword, case=False)]
+
+            if mapping == 'fuzzy':
+                temp1 = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
+                temp2 = df.loc[df['PROPERTY_VALUE'].str.contains(keyword, case=False)]
+                frame = [temp1,temp2]
+                temp = pd.concat(frame).reset_index(drop=True)
+            else:
+                temp = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
 
             for i in range(len(temp)):
                 iri = temp.iloc[0]['SEMANTIC_TAG']
@@ -538,7 +546,8 @@ def getMetaboZoomaTerm(keyword):
                 else:
                     ontoName = getOnto_Name(iri)
 
-                name = temp.iloc[0]['PROPERTY_VALUE'].title()
+                name = ' '.join(
+                    [w.title() if w.islower() else w for w in temp.iloc[0]['PROPERTY_VALUE'].split()])
                 obo_ID = iri.rsplit('/', 1)[-1]
                 ontoName = ontoName
 
@@ -561,7 +570,7 @@ def getZoomaTerm(keyword):
     res = []
     try:
         # url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
-        url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
+        url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
         # url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
         ssl._create_default_https_context = ssl._create_unverified_context
         fp = urllib.request.urlopen(url)
@@ -578,7 +587,10 @@ def getZoomaTerm(keyword):
             else:
                 ontoName = getOnto_Name(iri)
 
-            enti = entity(name=term["annotatedProperty"]['propertyValue'].title(),
+            name = ' '.join(
+                [w.title() if w.islower() else w for w in term["annotatedProperty"]['propertyValue'].split()])
+
+            enti = entity(name=name,
                           iri=iri,
                           obo_ID=iri.rsplit('/', 1)[-1],
                           ontoName=ontoName,
