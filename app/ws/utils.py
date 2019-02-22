@@ -257,20 +257,25 @@ def map_file_type(file_name, directory):
 
 def get_file_information(directory):
     file_list = []
-    timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
-    end_time = time.time() + timeout_secs
-    for file_name in os.listdir(directory):
-        if time.time() > end_time:
-            logger.error('Listing files in folder %s, timed out after %s seconds', directory, timeout_secs)
-            return file_list  # Return after xx seconds regardless
+    try:
+        timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
+        end_time = time.time() + timeout_secs
+        for file_name in os.listdir(directory):
+            if time.time() > end_time:
+                logger.error('Listing files in folder %s, timed out after %s seconds', directory, timeout_secs)
+                return file_list  # Return after xx seconds regardless
 
-        if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
-            dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
-            raw_time = time.strftime(date_format, dt)  # 20180724092134
-            file_time = time.strftime(file_date_format, dt)  # 20180724092134
-            file_type, status = map_file_type(file_name, directory)
-            file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
-                              "type": file_type, "status": status})
+            if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
+                dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
+                raw_time = time.strftime(date_format, dt)  # 20180724092134
+                file_time = time.strftime(file_date_format, dt)  # 20180724092134
+                file_type, status = map_file_type(file_name, directory)
+                file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
+                                  "type": file_type, "status": status})
+    except Exception as e:
+        logger.error('Error in listing files under ' + directory + '. Last file was ' + file_name)
+        logger.error(str(e))
+        
     return file_list
 
 
