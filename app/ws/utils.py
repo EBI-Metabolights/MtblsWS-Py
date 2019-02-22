@@ -190,6 +190,7 @@ def get_all_files(path):
     try:
         files = get_file_information(path)
     except:
+        logger.error('Could not find folder ' + path)
         files = []  # The upload folder for this study does not exist, this is normal
     return files
 
@@ -260,6 +261,7 @@ def get_file_information(directory):
     timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
     for file_name in os.listdir(directory):
         if time.time() < start + timeout_secs:
+            logger.error('Listing files in folder %s, timed out after %s secounds', directory, timeout_secs)
             return file_list  # Return after xx secounds regardless
 
         if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
