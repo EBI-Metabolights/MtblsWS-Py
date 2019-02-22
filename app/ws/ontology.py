@@ -77,7 +77,7 @@ class Ontology(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["typo", "exact","fuzzy"]
+                "enum": ["typo", "exact", "fuzzy"]
             }
         ],
         responseMessages=[
@@ -314,18 +314,18 @@ class Ontology(Resource):
                 d['annotationValue'] = str(cls.name)
                 d["termAccession"] = str(cls.iri)
                 d['termSource']['ontology_name'] = str(cls.ontoName)
-                d['termSource']['file'] = str(cls.provenance_uri)
-                d['termSource']['provenance_name'] = str(cls.provenance_name)
-                d['termSource']['version'] = str(getOnto_version(cls.ontoName))
-                d['termSource']['description'] = str(getOnto_title(cls.ontoName))
+                if cls.ontoName == 'MTBLS':
+                    d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/'
+                    d['termSource']['provenance_name'] = 'metabolights'
+                    d['termSource']['version'] = '1.0'
+                    d['termSource']['description'] = 'Metabolights Ontology'
+                else:
+                    d['termSource']['file'] = str(cls.provenance_uri)
+                    d['termSource']['provenance_name'] = str(cls.provenance_name)
+                    d['termSource']['version'] = str(getOnto_version(cls.ontoName))
+                    d['termSource']['description'] = str(getOnto_title(cls.ontoName))
             except:
                 pass
-
-            if cls.ontoName == 'MTBLS':
-                d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/'
-                d['termSource']['provenance_name'] = 'metabolights'
-                d['termSource']['version'] = '1.0'
-                d['termSource']['description'] = 'Metabolights Ontology'
 
             if cls.provenance_name == 'metabolights-zooma':
                 d['termSource']['version'] = str(datetime.datetime.now().date())
@@ -520,7 +520,7 @@ def OLSbranchSearch(query, branchName, ontoName):
     return res
 
 
-def getMetaboZoomaTerm(keyword, mapping = 'fuzzy'):
+def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
     res = []
     try:
         try:
@@ -530,7 +530,7 @@ def getMetaboZoomaTerm(keyword, mapping = 'fuzzy'):
             if mapping == 'fuzzy':
                 temp1 = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
                 temp2 = df.loc[df['PROPERTY_VALUE'].str.contains(keyword, case=False)]
-                frame = [temp1,temp2]
+                frame = [temp1, temp2]
                 temp = pd.concat(frame).reset_index(drop=True)
             else:
                 temp = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
