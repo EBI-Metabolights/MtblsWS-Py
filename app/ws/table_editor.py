@@ -1,6 +1,8 @@
 import logging
 import json
 import os
+import pandas as pd
+import numpy as np
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -508,7 +510,10 @@ class AddRows(Resource):
         if not valid_column_name:
             abort(417, message)
 
-        file_df = file_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet (TSV file)
+        if new_row[0]:
+            file_df = file_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet (TSV file)
+        else:
+            file_df = file_df.append(pd.Series(), ignore_index=True)
 
         message = write_tsv(file_df, file_name)
 
