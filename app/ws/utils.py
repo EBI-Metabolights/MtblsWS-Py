@@ -8,6 +8,7 @@ from flask import current_app as app
 import pandas as pd
 import numpy as np
 import re
+import io
 from isatools.model import Protocol, ProtocolParameter, OntologySource
 from app.ws.mm_models import OntologyAnnotation
 from lxml import etree
@@ -186,9 +187,9 @@ def remove_samples_from_isatab(std_path):
     return removed_lines
 
 
-def get_all_files(path):
+def get_all_files(path, include_raw_data=False):
     try:
-        files = get_file_information(path)
+        files = get_file_information(path, include_raw_data)
     except:
         logger.error('Could not find folder ' + path)
         files = []  # The upload folder for this study does not exist, this is normal
@@ -205,8 +206,13 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check):
         """ The filename we pass in is found referenced in the metadata (ref_file_name)
         One possible problem here is of the maf is found in an old assay file, then we will report it as 
         current """
-        if file_name in open(ref_file_name).read():
-            found = True
+        try:
+            if file_name in io.open(ref_file_name, 'r', encoding='utf8', errors="ignore").read():
+                found = True
+        except Exception as e:
+            logger.error('File Format error? Cannot read or open file ' + file_name)
+            logger.error(str(e))
+
     return found
 
 
@@ -255,28 +261,44 @@ def map_file_type(file_name, directory):
             return 'unknown', none_active_status
 
 
-def get_file_information(directory):
+def get_file_information(directory, include_raw_data):
     file_list = []
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
         end_time = time.time() + timeout_secs
         for file_name in os.listdir(directory):
+            file_time = None
+            raw_time = None
+            file_type = None
+            status = None
             if time.time() > end_time:
                 logger.error('Listing files in folder %s, timed out after %s seconds', directory, timeout_secs)
                 return file_list  # Return after xx seconds regardless
 
-            if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
-                dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
-                raw_time = time.strftime(date_format, dt)  # 20180724092134
-                file_time = time.strftime(file_date_format, dt)  # 20180724092134
-                file_type, status = map_file_type(file_name, directory)
-                file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
-                                  "type": file_type, "status": status})
+            if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX:
+                if not include_raw_data:  # Only return metadata files
+                    if file_name.startswith(('i_', 'a_', 's_', 'm_')):
+                        file_time, raw_time, file_type, status = get_file_times(directory, file_name)
+                else:
+                    file_time, raw_time, file_type, status = get_file_times(directory, file_name)
+
+                if file_time:
+                    file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
+                                      "type": file_type, "status": status})
     except Exception as e:
         logger.error('Error in listing files under ' + directory + '. Last file was ' + file_name)
         logger.error(str(e))
         
     return file_list
+
+
+def get_file_times(directory, file_name):
+    dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
+    raw_time = time.strftime(date_format, dt)  # 20180724092134
+    file_time = time.strftime(file_date_format, dt)  # 20180724092134
+    file_type, status = map_file_type(file_name, directory)
+
+    return file_time, raw_time, file_type, status
 
 
 def get_single_file_information(file_name):

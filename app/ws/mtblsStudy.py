@@ -417,6 +417,16 @@ class StudyFiles(Resource):
                 "dataType": "string"
             },
             {
+                "name": "include_raw_data",
+                "description": "Include raw data files in the list. False = only list ISA-Tab metadata files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -449,6 +459,11 @@ class StudyFiles(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        # If false, only sync ISA-Tab metadata files
+        include_raw_data = False
+        if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == 'true':
+            include_raw_data = True
+
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
@@ -459,8 +474,8 @@ class StudyFiles(Resource):
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
         logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                     study_location, upload_location)
-        study_files = get_all_files(study_location)
-        upload_files = get_all_files(upload_location)
+        study_files = get_all_files(study_location, include_raw_data)
+        upload_files = get_all_files(upload_location, include_raw_data)
 
         # Sort the two lists
         study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
