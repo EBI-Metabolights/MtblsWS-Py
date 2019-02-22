@@ -257,12 +257,12 @@ def map_file_type(file_name, directory):
 
 def get_file_information(directory):
     file_list = []
-    start = time.time()
     timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
+    end_time = time.time() + timeout_secs
     for file_name in os.listdir(directory):
-        if time.time() < start + timeout_secs:
-            logger.error('Listing files in folder %s, timed out after %s secounds', directory, timeout_secs)
-            return file_list  # Return after xx secounds regardless
+        if time.time() > end_time:
+            logger.error('Listing files in folder %s, timed out after %s seconds', directory, timeout_secs)
+            return file_list  # Return after xx seconds regardless
 
         if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX
             dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
