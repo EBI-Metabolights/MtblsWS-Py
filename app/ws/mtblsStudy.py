@@ -464,7 +464,7 @@ class StudyFiles(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('include_raw_data', help='Include raw data')
-        include_raw_data = False
+        include_raw_data = True
 
         if request.args:
             args = parser.parse_args(req=request)
