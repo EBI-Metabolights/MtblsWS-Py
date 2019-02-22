@@ -275,6 +275,7 @@ def get_file_information(directory):
     except Exception as e:
         logger.error('Error in listing files under ' + directory + '. Last file was ' + file_name)
         logger.error(str(e))
+        
     return file_list
 
 
