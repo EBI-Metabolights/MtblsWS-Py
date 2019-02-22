@@ -53,3 +53,6 @@ JIRA_PARAMS = {
     'username': 'jira_username',
     'password': 'jira_password'
 }
+
+# Timeout in secounds when listing a large folder for files
+FILE_LIST_TIMEOUT = 30
