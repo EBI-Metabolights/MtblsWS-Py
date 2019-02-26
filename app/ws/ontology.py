@@ -192,21 +192,21 @@ class Ontology(Resource):
                     print(e.args)
                     logger.info(e.args)
 
+        else:
+            if 'MTBLS' in queryFields:
+                result += getMetaboTerm(term, branch)
 
-        if 'MTBLS' in queryFields:
-            result += getMetaboTerm(term, branch)
+            if 'MTBLS_Zooma' in queryFields:
+                result += getMetaboZoomaTerm(term, mapping='fuzzy')
 
-        if 'MTBLS_Zooma' in queryFields:
-            result += getMetaboZoomaTerm(term, mapping='fuzzy')
+            if 'Zooma' in queryFields:
+                result += getZoomaTerm(term)
 
-        if 'Zooma' in queryFields:
-            result += getZoomaTerm(term)
+            if 'OLS' in queryFields:
+                result += getOLSTerm(term)
 
-        if 'OLS' in queryFields:
-            result += getOLSTerm(term)
-
-        if 'Bioportal' in queryFields:
-            result += getBioportalTerm(term)
+            if 'Bioportal' in queryFields:
+                result += getBioportalTerm(term)
 
         response = []
 
