@@ -1,9 +1,3 @@
-# onto_info
-# Created by JKChang
-# 25/07/2018, 11:18
-# Tag:
-# Description:
-
 class onto_information():
     ''' basic onto_information of entities'''
 

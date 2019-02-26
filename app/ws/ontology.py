@@ -1,11 +1,7 @@
-# ontology
-# Created by JKChang
-# 05/07/2018, 15:05
-# Tag:
-# Description:
 import datetime
 import json
 import logging
+import re
 import ssl
 
 import numpy as np
@@ -78,7 +74,18 @@ class Ontology(Resource):
                 "paramType": "query",
                 "dataType": "string",
                 "enum": ["typo", "exact", "fuzzy"]
+            },
+
+            {
+                "name": "queryFields",
+                "description": "Specifcy the fields to return, the default is all options: {MTBLS,MTBLS_Zooma,Zooma,OLS, Bioportal}",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
             }
+
         ],
         responseMessages=[
             {
@@ -119,132 +126,38 @@ class Ontology(Resource):
             args = parser.parse_args(req=request)
             branch = args['branch']
 
-        parser.add_argument('mapping', help='Mapping approcaches')
+        parser.add_argument('mapping', help='Mapping approaches')
         mapping = None
         if request.args:
             args = parser.parse_args(req=request)
             mapping = args['mapping']
 
-        if term is None and branch is None:
-            return []
-
-        # Onto loading
-        logger.info('Getting Ontology term %s', term)
-        onto = get_ontology('./tests/Metabolights.owl').load()
-        info = onto_information(onto)
-
-        result = []
-
-        # if only branch, search all branch
-
-        if not term and branch:
-
-            start_cls = onto.search_one(label=branch)
-            if not start_cls:  # Todo, Fix this
-                return []
-            clses = info.get_subs(start_cls)
-
-            for cls in clses:
-                enti = entity(name=cls.label[0], iri=cls.iri, ontoName='MTBLS')
-                result.append(enti)
-
-            if len(result) > 0:
-                result.insert(0, result.pop())
-
-            if branch == 'instruments':
-                r = OLSbranchSearch("*", 'instrument', 'msio')
-                result = result + r
-
-            if branch == 'column type':
-                r = OLSbranchSearch("*", 'chromatography', 'chmo')
-                result = result + r
-
-        # if keyword !=  null
-        elif term:
-            if branch:
-                start_cls = onto.search_one(label=branch)
-            else:
-                start_cls = onto.search_one(iri='http://www.w3.org/2002/07/owl#Thing')
-
-            if not start_cls:  # Todo, Fix this
-                return []
-
-            clses = info.get_subs(start_cls)
-            res_cls = []
-
-            if branch == 'instruments':
-                result = OLSbranchSearch(term, 'instrument', 'msio')
-
-            if branch == 'column type':
-                result = OLSbranchSearch(term, 'chromatography', 'chmo')
-
-            # taxonomy
-            if branch == 'taxonomy' or branch == 'factors':
-                for cls in clses:
-                    try:
-                        map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
-                        Synonym = list(map[cls])
-                        if term.lower() in [syn.lower() for syn in Synonym]:
-                            res_cls.append(cls)
-                    except:
-                        pass
-
-            # exact match
-            if term.lower() in [cls.label[0].lower() for cls in clses]:
-                if onto.search_one(label=term.lower()) is not None:
-                    c = onto.search_one(label=term.lower())
-                elif onto.search_one(label=term.title()) is not None:
-                    c = onto.search_one(label=term.title())
-                elif onto.search_one(label=term.capitalize()) is not None:
-                    c = onto.search_one(label=term.capitalize())
-                elif onto.search_one(label=term.upper()) is not None:
-                    c = onto.search_one(label=term.upper())
-                else:
-                    for cls in clses:
-                        if cls.label[0].lower() == term.lower():
-                            c = cls
-
-                subs = info.get_subs(c)
-                res_cls = [c] + subs
-
-                for cls in res_cls:
-                    enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
-                    result.append(enti)
-
-            # fuzzy match
-            if len(result) == 0:
-                for cls in clses:
-                    if cls.label[0].lower().startswith(term.lower()):
-                        res_cls.append(cls)
-                        subs = info.get_subs(cls)
-                        res_cls = res_cls + subs
-
-                for cls in clses:
-                    if term.lower() in cls.label[0].lower() and cls not in res_cls:
-                        res_cls.append(cls)
-
-                for cls in res_cls:
-                    enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName='MTBLS')
-                    result.append(enti)
-
-            # if branch == null, search whole ontology
-            if len(result) == 0:
+        parser.add_argument('queryFields', help='query Fields')
+        queryFields = None  # ['MTBLS', 'MTBLS_Zooma', 'Zooma','OLS', 'Bioportal']
+        if request.args:
+            args = parser.parse_args(req=request)
+            queryFields = args['queryFields']
+            try:
+                reg = '\{([^}]+)\}'
+                queryFields = re.findall(reg, queryFields)[0].split(',')
+            except:
                 try:
-                    if onto.search_one(label=term.lower()) is not None:
-                        c = onto.search_one(label=term.lower())
-                    elif onto.search_one(label=term.title()) is not None:
-                        c = onto.search_one(label=term.title())
-                    else:
-                        c = onto.search_one(label=term.upper())
-
-                    if c is not None:
-                        enti = entity(name=c.label[0], iri=c.iri, ontoName='MTBLS')
-                        result.append(enti)
+                    queryFields = queryFields.split(',')
                 except Exception as e:
                     print(e.args)
                     logger.info(e.args)
 
-            # metabolights-zooma.tsv search
+        result = []
+
+        if term is None and branch is None:
+            return []
+
+        if queryFields == None:  # if found the term, STOP
+
+            logger.info('Search %s from resources one by one' % term)
+            print('Search %s from resources one by one' % term)
+            result = getMetaboTerm(term, branch)
+
             if len(result) == 0:
                 print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                 logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
@@ -254,41 +167,46 @@ class Ontology(Resource):
                     print(e.args)
                     logger.info(e.args)
 
-            # Zooma Search
             if len(result) == 0:
                 print("Can't find query in metabolights-zooma.tsv, requesting Zooma")
                 logger.info("Can't find query in MTBLS ontology, requesting Zooma")
                 try:
-                    temp = getZoomaTerm(term)
-                    for t in temp:
-                        if t.Zooma_confidence in ['GOOD', 'HIGH', 'MEDIUM']:
-                            result.append(t)
+                    result = getZoomaTerm(term)
                 except Exception as e:
                     print(e.args)
                     logger.info(e.args)
-
-            # OLS Search
             if len(result) == 0:
                 print("Can't query it in Zooma, requesting OLS")
                 logger.info("Can't query it in Zooma, requesting OLS")
                 try:
                     result = getOLSTerm(term)
-                except  Exception as e:
+                except Exception as e:
                     print(e.args)
                     logger.info(e.args)
-
-            # Bioportal Search
             if len(result) == 0:
                 print("Can't query it in OLS, request Bioportal")
+                logger.info("Can't query it in OLS, request Bioportal")
                 try:
                     result = getBioportalTerm(term)
                 except  Exception as e:
                     print(e.args)
                     logger.info(e.args)
-                    print("Can't query it in Bioportal")
 
-        else:
-            print('Error')
+
+        if 'MTBLS' in queryFields:
+            result += getMetaboTerm(term, branch)
+
+        if 'MTBLS_Zooma' in queryFields:
+            result += getMetaboZoomaTerm(term, mapping='fuzzy')
+
+        if 'Zooma' in queryFields:
+            result += getZoomaTerm(term)
+
+        if 'OLS' in queryFields:
+            result += getOLSTerm(term)
+
+        if 'Bioportal' in queryFields:
+            result += getBioportalTerm(term)
 
         response = []
 
@@ -296,18 +214,18 @@ class Ontology(Resource):
 
         for cls in result:
             temp = '''    {
-                    "comments": [],
-                    "annotationValue": "investigator",
-                    "termSource": {
-                        "comments": [],
-                        "ontology_name": "",
-                        "file": "",
-                        "provenance_name":"",
-                        "version": "",
-                        "description": ""
-                    },
-                    "termAccession": ""
-                }'''
+                            "comments": [],
+                            "annotationValue": "investigator",
+                            "termSource": {
+                                "comments": [],
+                                "ontology_name": "",
+                                "file": "",
+                                "provenance_name":"",
+                                "version": "",
+                                "description": ""
+                            },
+                            "termAccession": ""
+                        }'''
 
             d = json.loads(str(temp))
             try:
@@ -316,12 +234,19 @@ class Ontology(Resource):
                 d['termSource']['ontology_name'] = str(cls.ontoName)
                 if cls.ontoName == 'MTBLS':
                     d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/'
-                    d['termSource']['provenance_name'] = 'metabolights'
+                    d['termSource']['provenance_name'] = 'Metabolights'
                     d['termSource']['version'] = '1.0'
                     d['termSource']['description'] = 'Metabolights Ontology'
                 else:
-                    d['termSource']['file'] = str(cls.provenance_uri)
-                    d['termSource']['provenance_name'] = str(cls.provenance_name)
+                    if cls.provenance_uri:
+                        d['termSource']['file'] = str(cls.provenance_uri)
+                    else:
+                        d['termSource']['file'] = str(getOnto_url(cls.ontoName))
+                    if cls.provenance_name:
+                        d['termSource']['provenance_name'] = str(cls.provenance_name)
+                    else:
+                        d['termSource']['provenance_name'] = str(cls.ontoName)
+
                     d['termSource']['version'] = str(getOnto_version(cls.ontoName))
                     d['termSource']['description'] = str(getOnto_title(cls.ontoName))
             except:
@@ -334,161 +259,162 @@ class Ontology(Resource):
         # response = [{'SubClass': x} for x in res]
         return jsonify({"OntologyTerm": response})
 
-    # =========================== put =============================================
 
-    @swagger.operation(
-        summary="Put ontology entity to metabolights-zooma.tsv",
-        notes="Put ontology entity to metabolights-zooma.tsv",
-        parameters=[
-            {
-                "name": "term",
-                "description": "Ontology term",
-                "required": True,
-                "allowEmptyValue": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
+# =========================== put =============================================
 
-            {
-                "name": "attribute_name",
-                "description": "Attribute name",
-                "required": True,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
-                         "column type", "instruments"]
-            },
+@swagger.operation(
+    summary="Put ontology entity to metabolights-zooma.tsv",
+    notes="Put ontology entity to metabolights-zooma.tsv",
+    parameters=[
+        {
+            "name": "term",
+            "description": "Ontology term",
+            "required": True,
+            "allowEmptyValue": False,
+            "allowMultiple": False,
+            "paramType": "query",
+            "dataType": "string"
+        },
 
-            {
-                "name": "term_iri",
-                "description": "iri/url of the mapping term",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
+        {
+            "name": "attribute_name",
+            "description": "Attribute name",
+            "required": True,
+            "allowEmptyValue": True,
+            "allowMultiple": False,
+            "paramType": "query",
+            "dataType": "string",
+            "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
+                     "column type", "instruments"]
+        },
 
-            {
-                "name": "study_ID",
-                "description": "Study ID of the term",
-                "required": True,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
+        {
+            "name": "term_iri",
+            "description": "iri/url of the mapping term",
+            "required": False,
+            "allowEmptyValue": True,
+            "allowMultiple": False,
+            "paramType": "query",
+            "dataType": "string",
+        },
 
-            {
-                "name": "annotator",
-                "description": "annotator's name",
-                "required": True,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
+        {
+            "name": "study_ID",
+            "description": "Study ID of the term",
+            "required": True,
+            "allowEmptyValue": True,
+            "allowMultiple": False,
+            "paramType": "query",
+            "dataType": "string",
+        },
 
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
-    def put(self):
-        log_request(request)
+        {
+            "name": "annotator",
+            "description": "annotator's name",
+            "required": True,
+            "allowEmptyValue": True,
+            "allowMultiple": False,
+            "paramType": "query",
+            "dataType": "string",
+        },
 
-        parser = reqparse.RequestParser()
-        parser.add_argument('term', help="Ontology term")
-        term = None
-        parser.add_argument('attribute_name', help='Attribute name')
-        attribute_name = None
-        parser.add_argument('term_iri', help='iri of the mapped term')
-        term_iri = None
-        parser.add_argument('study_ID', help='study_ID')
-        study_ID = None
-        parser.add_argument('annotator', help='annotator name')
-        annotator = None
+        {
+            "name": "user_token",
+            "description": "User API token",
+            "paramType": "header",
+            "type": "string",
+            "required": True,
+            "allowMultiple": False
+        }
+    ],
+    responseMessages=[
+        {
+            "code": 200,
+            "message": "OK."
+        },
+        {
+            "code": 400,
+            "message": "Bad Request. Server could not understand the request due to malformed syntax."
+        },
+        {
+            "code": 401,
+            "message": "Unauthorized. Access to the resource requires user authentication."
+        },
+        {
+            "code": 403,
+            "message": "Forbidden. Access to the study is not allowed for this user."
+        },
+        {
+            "code": 404,
+            "message": "Not found. The requested identifier is not valid or does not exist."
+        }
+    ]
+)
+def put(self):
+    log_request(request)
 
-        if request.args:
-            args = parser.parse_args(req=request)
-            term = args['term']
-            attribute_name = args['attribute_name']
-            term_iri = args['term_iri']
-            study_ID = args['study_ID']
-            annotator = args['annotator']
+    parser = reqparse.RequestParser()
+    parser.add_argument('term', help="Ontology term")
+    term = None
+    parser.add_argument('attribute_name', help='Attribute name')
+    attribute_name = None
+    parser.add_argument('term_iri', help='iri of the mapped term')
+    term_iri = None
+    parser.add_argument('study_ID', help='study_ID')
+    study_ID = None
+    parser.add_argument('annotator', help='annotator name')
+    annotator = None
 
-        if term is None:
-            abort(404, 'Please provide new term name')
+    if request.args:
+        args = parser.parse_args(req=request)
+        term = args['term']
+        attribute_name = args['attribute_name']
+        term_iri = args['term_iri']
+        study_ID = args['study_ID']
+        annotator = args['annotator']
 
-        if term_iri is None:
-            abort(404, 'Please provide mapped iri of the new term')
+    if term is None:
+        abort(404, 'Please provide new term name')
 
-        if study_ID is None or annotator is None:
-            abort(404, 'Please provide valid parameters for study identifier and file name')
+    if term_iri is None:
+        abort(404, 'Please provide mapped iri of the new term')
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+    if study_ID is None or annotator is None:
+        abort(404, 'Please provide valid parameters for study identifier and file name')
 
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
-        submission_date, study_status = wsc.get_permissions("MTBLS1", user_token)
+    # User authentication
+    user_token = None
+    if "user_token" in request.headers:
+        user_token = request.headers["user_token"]
 
-        if not is_curator:
-            abort(403)
-        file_name = app.config.get('MTBLS_ZOOMA_FILE')
+    is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
+    submission_date, study_status = wsc.get_permissions("MTBLS1", user_token)
 
-        logger.info('Trying to load metabolights-zooma.tsv file')
-        # Get the Assay table or create a new one if it does not already exist
-        try:
-            table_df = pd.read_csv(file_name, sep="\t", encoding='utf-8')
-            table_df = table_df.replace(np.nan, '', regex=True)
+    if not is_curator:
+        abort(403)
+    file_name = app.config.get('MTBLS_ZOOMA_FILE')
 
-            s2 = pd.Series(
-                [study_ID, '', attribute_name, term, term_iri, annotator,
-                 datetime.datetime.now().strftime('%d/%m/%Y %I:%M')],
-                index=['STUDY',
-                       'BIOENTITY',
-                       'PROPERTY_TYPE',
-                       'PROPERTY_VALUE',
-                       'SEMANTIC_TAG',
-                       'ANNOTATOR',
-                       'ANNOTATION_DATE'])
+    logger.info('Trying to load metabolights-zooma.tsv file')
+    # Get the Assay table or create a new one if it does not already exist
+    try:
+        table_df = pd.read_csv(file_name, sep="\t", encoding='utf-8')
+        table_df = table_df.replace(np.nan, '', regex=True)
 
-            table_df = table_df.append(s2, ignore_index=True)
-            table_df.to_csv(file_name, sep="\t", header=True, encoding='utf-8', index=False)
-        except FileNotFoundError:
-            abort(400, "The file %s was not found", file_name)
+        s2 = pd.Series(
+            [study_ID, '', attribute_name, term, term_iri, annotator,
+             datetime.datetime.now().strftime('%d/%m/%Y %I:%M')],
+            index=['STUDY',
+                   'BIOENTITY',
+                   'PROPERTY_TYPE',
+                   'PROPERTY_VALUE',
+                   'SEMANTIC_TAG',
+                   'ANNOTATOR',
+                   'ANNOTATION_DATE'])
+
+        table_df = table_df.append(s2, ignore_index=True)
+        table_df.to_csv(file_name, sep="\t", header=True, encoding='utf-8', index=False)
+    except FileNotFoundError:
+        abort(400, "The file %s was not found", file_name)
 
 
 def OLSbranchSearch(query, branchName, ontoName):
@@ -506,7 +432,7 @@ def OLSbranchSearch(query, branchName, ontoName):
     branchIRI = getStartIRI(branchName, ontoName)
     query = query.replace(' ', '%20')
     url = 'https://www.ebi.ac.uk/ols/api/search?q=' + query + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
-    print(url)
+    # print(url)
     fp = urllib.request.urlopen(url)
     content = fp.read().decode('utf-8')
     json_str = json.loads(content)
@@ -520,7 +446,98 @@ def OLSbranchSearch(query, branchName, ontoName):
     return res
 
 
+def getMetaboTerm(keyword, branch):
+    logger.info('Search %s in Metabolights ontology' % keyword)
+    print('Search "%s" in Metabolights ontology' % keyword)
+    onto = get_ontology('./tests/Metabolights.owl').load()
+    info = onto_information(onto)
+
+    res_cls = []
+    result = []
+    if keyword:
+        if branch:  # term = 1, branch = 1, search term in the branch
+
+            try:
+                start_cls = onto.search_one(label=branch)
+                clses = info.get_subs(start_cls)
+            except Exception as e:
+                print(e.args)
+                return []
+        else:  # term = 1, branch = 0, search term in the whole ontology
+            try:
+                clses = list(onto.classes())
+            except Exception as e:
+                print(e.args)
+                return []
+
+        #  exact match
+        for cls in clses:
+            if keyword.lower() == cls.label[0].lower():
+                subs = info.get_subs(cls)
+                res_cls = [cls] + subs
+
+        # if not exact match, do fuzzy match
+        if len(res_cls) == 0:
+            for cls in clses:
+                if cls.label[0].lower().startswith(keyword.lower()):
+                    res_cls.append(cls)
+                    res_cls += info.get_subs(cls)
+
+        # synonym match
+        if branch == 'taxonomy' or branch == 'factors':
+            for cls in clses:
+                try:
+                    map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
+                    Synonym = list(map[cls])
+                    if keyword.lower() in [syn.lower() for syn in Synonym]:
+                        res_cls.append(cls)
+                except Exception as e:
+                    print(e.args)
+                    pass
+
+        if branch == 'instruments':
+            r = OLSbranchSearch(keyword, 'instrument', 'msio')
+            print()
+
+        if branch == 'column type':
+            result += OLSbranchSearch(keyword, 'chromatography', 'chmo')
+
+    elif keyword is None and branch:  # term = 0, branch = 1, return whole branch
+
+        try:
+            start_cls = onto.search_one(label=branch)
+        except Exception as e:
+            print(e.args)
+            return []
+        res_cls = info.get_subs(start_cls)
+
+        if branch == 'instruments':
+            result += OLSbranchSearch("*", 'instrument', 'msio')
+
+        if branch == 'column type':
+            result += OLSbranchSearch("*", 'chromatography', 'chmo')
+
+    else:  # term = 0, branch = 0, return []
+        return []
+
+    if len(res_cls) > 0:
+        for cls in res_cls:
+            if 'MTBLS' in cls.iri:
+                ontoName = 'MTBLS'
+            else:
+                ontoName = getOnto_Name(cls.iri)
+
+            enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName=ontoName,
+                          provenance_name='Metabolights', provenance_uri='https://www.ebi.ac.uk/metabolights/')
+            result.append(enti)
+        result.insert(0, result.pop())
+
+    return result
+
+
 def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
+    logger.info('Searching Metabolights-zooma.tsv')
+    print('Searching Metabolights-zooma.tsv')
     res = []
     try:
         try:
@@ -567,6 +584,8 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
 
 
 def getZoomaTerm(keyword):
+    logger.info('Requesting Zooma...')
+    print('Requesting Zooma...')
     res = []
     try:
         # url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
@@ -623,6 +642,8 @@ def getZoomaTerm(keyword):
 
 
 def getOLSTerm(keyword):
+    logger.info('Requesting OLS...')
+    print('Requesting OLS...')
     res = []
     a = keyword
     try:
@@ -637,7 +658,9 @@ def getOLSTerm(keyword):
         responses = j_content["response"]['docs']
 
         for term in responses:
-            enti = entity(name=term['label'].title(),
+            name = ' '.join(
+                [w.title() if w.islower() else w for w in term['label'].split()])
+            enti = entity(name=name,
                           iri=term['iri'],
                           obo_ID=term['obo_id'],
                           ontoName=term['ontology_prefix'],
@@ -652,11 +675,13 @@ def getOLSTerm(keyword):
 
 
 def getBioportalTerm(keyword):
+    logger.info('Requesting Bioportal...')
+    print('Requesting Bioportal...')
     res = []
     try:
         url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")  # + '&require_exact_match=true'
         request = urllib.request.Request(url)
-        request.add_header('Authorization', 'apikey token=c60c5add-63c6-4485-8736-3f495146aee3')
+        request.add_header('Authorization', 'apikey token='+ app.config.get('BIOPORTAL_TOKEN'))
         response = urllib.request.urlopen(request)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
@@ -674,6 +699,8 @@ def getBioportalTerm(keyword):
                 ontoName = 'NCIT'
             elif 'bao' in iri.lower():
                 ontoName = 'BAO'
+            elif 'meddra' in iri.lower():
+                ontoName = 'MEDDRA'
             else:
                 ontoName = getOnto_Name(iri)
 
@@ -714,6 +741,17 @@ def getOnto_version(pre_fix):
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
         return j_content['config']['version']
+    except:
+        return ''
+
+
+def getOnto_url(pre_fix):
+    try:
+        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+        return j_content['config']['id']
     except:
         return ''
 
