@@ -170,6 +170,27 @@ def check_access_rights(user_token, study_id):
            submission_date, updated_date, study_status
 
 
+def study_submitters(study_id, user_email, method):
+    if method == 'add':
+        query = 'insert into study_user(userid,studyid) ' \
+                'select u.id, s.id from users u, studies s where u.email = %s and acc=%s;'
+    elif method == 'delete':
+        query = 'delete from study_user su where exists(' \
+                'select u.id, s.id from users u, studies s ' \
+                'where su.userid = u.id and su.studyid = s.id and u.email = %s and acc=%s);'
+
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn = psycopg2.connect(**params)
+        cursor = conn.cursor()
+        cursor.execute(query, (user_email, study_id))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        return False
+
+
 def execute_query(query, user_token, study_id=None):
     try:
         params = app.config.get('DB_PARAMS')
