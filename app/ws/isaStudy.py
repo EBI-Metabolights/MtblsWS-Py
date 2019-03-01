@@ -8,6 +8,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
 from flask_restful_swagger import swagger
 from app.ws.utils import log_request
+from app.ws.db_connection import study_submitters
 import logging
 
 logger = logging.getLogger('wslog')
@@ -4842,3 +4843,218 @@ class StudyProcesses(Resource):
         if list_only:
             sch = ProcessSchema(only=('name', 'executes_protocol.name',), many=True)
         return extended_response(data={'processSequence': sch.dump(found).data})
+
+
+class StudySubmitters(Resource):
+    @swagger.operation(
+        summary='Add new Study Submitters',
+        notes='''Add new Submitter (owner) to a Study. The submitter must already exist in the MetaboLights database.  
+        Due to data protection issues with confirming if an email address exists in MetaboLights, we will always indicate a successful update<pre><code>
+    { 
+      "submitters": [
+        {
+          "email": "joe.blogs@university.ac.uk",
+          "email": "jane.blogs@university.ac.uk"
+        } 
+      ]
+    }
+    </code></pre>''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "submitters",
+                "description": 'details for submitters.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
+    def post(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['submitters']
+            email = "not yet set"
+
+            for submitter in data:
+                email = submitter.get('email')
+                study_submitters(study_id, email, 'add')
+                try:
+                    wsc.reindex_study(study_id, user_token)
+                except:
+                    logger.error("Could not index study " + study_id + " whilst adding user " + submitter)
+
+        except:
+            logger.error("Could not add user " + email + " to study " + study_id)
+
+        return jsonify({"submitters": "Successfully added"})
+
+    @swagger.operation(
+        summary='Delete a Study Submitter',
+        notes='''Delete an existing Submitter (owner) from a Study. The submitter must already exist in the MetaboLights database. 
+        Due to data protection issues with confirming if an email address exists in MetaboLights, we will always indicate a successful deletion<pre><code>
+    { 
+      "submitters": [
+        {
+          "email": "joe.blogs@university.ac.uk",
+          "email": "jane.blogs@university.ac.uk"
+        } 
+      ]
+    }
+    </code></pre>''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "submitters",
+                "description": 'details for submitters.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
+    def delete(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['submitters']
+            email = "not yet set"
+
+            for submitter in data:
+                email = submitter.get('email')
+                study_submitters(study_id, email, 'delete')
+                try:
+                    wsc.reindex_study(study_id, user_token)
+                except:
+                    logger.error("Could not index study " + study_id + " whilst adding user " + submitter)
+
+        except:
+            logger.error("Could not delete user " + email + " from study " + study_id)
+
+        return jsonify({"submitters": "Successfully deleted"})
+
+
+
