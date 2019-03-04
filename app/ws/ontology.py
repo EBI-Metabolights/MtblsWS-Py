@@ -145,7 +145,6 @@ class Ontology(Resource):
                     queryFields = queryFields.split(',')
                 except Exception as e:
                     print(e.args)
-                    logger.info(e.args)
 
         result = []
 
@@ -210,7 +209,7 @@ class Ontology(Resource):
         response = []
 
         a = result
-        if not bool(set(['OLS','Bioportal']) & set(queryFields)):
+        if queryFields and ('OLS' not in queryFields) and ('Bioportal' not in queryFields):
             result = setPriority(result)
             result = reorder(result, term)
         result = removeDuplicated(result)
