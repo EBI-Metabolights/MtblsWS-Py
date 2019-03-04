@@ -39,7 +39,7 @@ class onto_information():
 
 class entity():
     def __init__(self, name=None, iri=None, obo_ID=None, ontoName=None, provenance_name=None, provenance_uri=None,
-                 Zooma_confidence=None):
+                 Zooma_confidence=None, definition = None):
         if name is None:
             self.name = ''
         else:
@@ -74,6 +74,11 @@ class entity():
             self.Zooma_confidence = ''
         else:
             self.Zooma_confidence = Zooma_confidence
+
+        if definition is None:
+            self.definition = ''
+        else:
+            self.definition = definition
 
 
 def list_supers(onto_c, sup):
