@@ -7,7 +7,7 @@ from app.ws.mm_models import *
 from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
 from flask_restful_swagger import swagger
-from app.ws.utils import log_request
+from app.ws.utils import log_request, add_ontology_to_investigation
 from app.ws.db_connection import study_submitters
 import logging
 
@@ -788,6 +788,11 @@ class StudyContacts(Resource):
                 logger.info('Adding new Contact %s for %s', new_contact.first_name, study_id)
                 if (new_contact.first_name+new_contact.last_name).lower() not in contact_persons:
                     new_contacts.append(new_contact)
+                    # Check that the ontology is referenced in the investigation
+                    term_anno = new_contact.roles[0]
+                    term_source = term_anno.term_source
+                    add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                                  term_source.file, term_source.description)
 
         except (ValidationError, Exception) as e:
             logger.error(e)
@@ -1041,6 +1046,13 @@ class StudyContacts(Resource):
             # user token is required
             abort(401)
 
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1048,6 +1060,10 @@ class StudyContacts(Resource):
                 request.headers["save_audit_copy"].lower() == 'true':
             save_audit_copy = True
             save_msg_str = "be"
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
         # body content validation
         updated_contact = None
@@ -1057,19 +1073,18 @@ class StudyContacts(Resource):
             # if partial=True missing fields will be ignored
             result = PersonSchema().load(data, partial=True)
             updated_contact = result.data
+
+            # Check that the ontology is referenced in the investigation
+            term_anno = updated_contact.roles[0]
+            term_source = term_anno.term_source
+            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                          term_source.file, term_source.description)
+
         except (ValidationError, Exception):
             abort(400)
 
         # update contact details
         logger.info('Updating Contact details for %s', study_id)
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                         skip_load_tables=True,
-                                                         study_location=study_location)
 
         person_found = False
         for index, person in enumerate(isa_study.contacts):
@@ -1909,6 +1924,13 @@ class StudyFactors(Resource):
         # add obj
         isa_study.factors.append(new_obj)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
+
+        # Check that the ontology is referenced in the investigation
+        factor_type = new_obj.factor_type
+        term_source = factor_type.term_source
+        add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                      term_source.file, term_source.description)
+
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Added %s', new_obj.name)
 
@@ -2264,23 +2286,6 @@ class StudyFactors(Resource):
             save_audit_copy = True
             save_msg_str = "be"
 
-        # body content validation
-        updated_factor = None
-        try:
-            data_dict = json.loads(request.data.decode('utf-8'))
-            data = data_dict['factor']
-            # if partial=True missing fields will be ignored
-            try:
-                result = StudyFactorSchema().load(data, partial=False)
-                updated_factor = result.data
-            except Exception:
-                abort(412)
-
-        except (ValidationError, Exception):
-            abort(400)
-
-        # update Study Factor details
-        logger.info('Updating Study Factor details for %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
@@ -2290,6 +2295,32 @@ class StudyFactors(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
+
+        # body content validation
+        updated_factor = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['factor']
+            # if partial=True missing fields will be ignored
+            try:
+                result = StudyFactorSchema().load(data, partial=False)
+                updated_factor = result.data
+
+                # Check that the ontology is referenced in the investigation
+                factor_type = updated_factor.factor_type
+                term_source = factor_type.term_source
+                add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                              term_source.file, term_source.description)
+
+            except Exception:
+                abort(412)
+
+        except (ValidationError, Exception):
+            abort(400)
+
+        # update Study Factor details
+        logger.info('Updating Study Factor details for %s', study_id)
+
         found = False
         for index, factor in enumerate(isa_study.factors):
             if factor.name == factor_name:
@@ -2444,6 +2475,12 @@ class StudyDescriptors(Resource):
         for index, obj in enumerate(isa_study.design_descriptors):
             if obj.term == new_obj.term:
                 abort(409)
+
+        # Check that the ontology is referenced in the investigation
+        term_source = new_obj.term_source
+        add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                      term_source.file, term_source.description)
+
         # add Study Descriptor
         isa_study.design_descriptors.append(new_obj)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
@@ -2820,6 +2857,12 @@ class StudyDescriptors(Resource):
         if not found:
             abort(404, 'The descriptor %s was not found in this study, can not update.', descriptor_term)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
+
+        # Check that the ontology is referenced in the investigation
+        term_source = updated_descriptor.term_source
+        add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                      term_source.file, term_source.description)
+
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_descriptor.term)
 
@@ -2960,6 +3003,14 @@ class StudyPublications(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
+
+        # Check that the ontology is referenced in the investigation
+        new_status = new_publication.status
+        term_source = new_status.term_source
+        if term_source:
+            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                          term_source.file, term_source.description)
+
         exists = False
         # check for Publication added already
         for index, publication in enumerate(isa_study.publications):
@@ -3333,6 +3384,13 @@ class StudyPublications(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
+
+        # Check that the ontology is referenced in the investigation
+        new_status = updated_publication.status
+        term_source = new_status.term_source
+        if term_source:
+            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                          term_source.file, term_source.description)
         found = False
         for index, publication in enumerate(isa_study.publications):
             if publication.title == publication_title:
