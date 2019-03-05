@@ -746,6 +746,8 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
 
 def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, onto_desc):
     # Check if the OBI ontology has already been referenced
+    if not onto_name:
+        onto_name = 'N/A'
     onto = OntologySource(
         name=onto_name,
         version=onto_version,

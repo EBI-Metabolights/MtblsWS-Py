@@ -16443,7 +16443,7 @@ Environments include natural environments or exposures, experimentally applied c
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000001 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000001">
-        <rdfs:label xml:lang="en">factors</rdfs:label>
+        <rdfs:label xml:lang="en">factor</rdfs:label>
     </owl:Class>
     
 
@@ -16451,7 +16451,7 @@ Environments include natural environments or exposures, experimentally applied c
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000002 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000002">
-        <rdfs:label xml:lang="en">roles</rdfs:label>
+        <rdfs:label xml:lang="en">role</rdfs:label>
     </owl:Class>
     
 
@@ -16477,7 +16477,7 @@ Environments include natural environments or exposures, experimentally applied c
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000005 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000005">
-        <rdfs:label xml:lang="en">characteristics</rdfs:label>
+        <rdfs:label xml:lang="en">characteristic</rdfs:label>
     </owl:Class>
     
 
@@ -19206,7 +19206,7 @@ Environments include natural environments or exposures, experimentally applied c
                 <rdfs:label>oboInOwl:cjm</rdfs:label>
             </rdf:Description>
         </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
+        <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasDbXref>
@@ -19215,7 +19215,7 @@ Environments include natural environments or exposures, experimentally applied c
                 <rdfs:label>oboInOwl:cjm</rdfs:label>
             </rdf:Description>
         </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
+        <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasDbXref>
@@ -19236,24 +19236,24 @@ Environments include natural environments or exposures, experimentally applied c
         <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">partition</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">slim</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">view</rdfs:label>
+        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboInOwl:hasURI>
+        <rdfs:label>oboFormat:subsetdef</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.obofoundry.org/wiki/index.php/Definitions</oboInOwl:hasURI>
         <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboInOwl:hasURI>
-        <rdfs:label>oboFormat:subsetdef</rdfs:label>
+        <rdfs:label xml:lang="en">view</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">slim</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">partition</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
     </rdf:Description>
     
 

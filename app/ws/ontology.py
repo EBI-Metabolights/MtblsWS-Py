@@ -145,13 +145,11 @@ class Ontology(Resource):
                     queryFields = queryFields.split(',')
                 except Exception as e:
                     print(e.args)
-                    logger.info(e.args)
 
         result = []
 
         if term is None and branch is None:
             return []
-
         if queryFields == None:  # if found the term, STOP
 
             logger.info('Search %s from resources one by one' % term)
@@ -210,6 +208,10 @@ class Ontology(Resource):
 
         response = []
 
+        a = result
+        if queryFields and ('OLS' not in queryFields) and ('Bioportal' not in queryFields):
+            result = setPriority(result)
+            result = reorder(result, term)
         result = removeDuplicated(result)
 
         for cls in result:
@@ -246,6 +248,9 @@ class Ontology(Resource):
                         d['termSource']['provenance_name'] = str(cls.provenance_name)
                     else:
                         d['termSource']['provenance_name'] = str(cls.ontoName)
+
+                    if cls.definition:
+                        d['termSource']['comments'] = str(cls.definition)
 
                     d['termSource']['version'] = str(getOnto_version(cls.ontoName))
                     d['termSource']['description'] = str(getOnto_title(cls.ontoName))
@@ -645,13 +650,13 @@ def getOLSTerm(keyword):
     logger.info('Requesting OLS...')
     print('Requesting OLS...')
     res = []
-    a = keyword
     try:
         # https://www.ebi.ac.uk/ols/api/search?q=lung&groupField=true&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
         url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
               '&groupField=true' \
               '&queryFields=label,synonym' \
-              '&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix'  # '&exact=true' \
+              'fieldList=iri,label,short_form,ontology_name,description,ontology_prefix'\
+              '&rows=30' #&exact=true
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
@@ -660,16 +665,25 @@ def getOLSTerm(keyword):
         for term in responses:
             name = ' '.join(
                 [w.title() if w.islower() else w for w in term['label'].split()])
+
+            try:
+                definition = term['description'][0]
+            except:
+                definition = None
+
+
             enti = entity(name=name,
                           iri=term['iri'],
-                          obo_ID=term['obo_id'],
+                          obo_ID=term['short_form'],
                           ontoName=term['ontology_prefix'],
-                          provenance_name=term['ontology_prefix'])
+                          provenance_name=term['ontology_prefix'],
+                          definition= definition)
             res.append(enti)
-            if len(res) >= 5:
+            if len(res) >= 20:
                 break
 
     except Exception as e:
+        print(e.args)
         logger.error('getOLS' + str(e))
     return res
 
@@ -681,7 +695,7 @@ def getBioportalTerm(keyword):
     try:
         url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")  # + '&require_exact_match=true'
         request = urllib.request.Request(url)
-        request.add_header('Authorization', 'apikey token='+ app.config.get('BIOPORTAL_TOKEN'))
+        request.add_header('Authorization', 'apikey token=' + app.config.get('BIOPORTAL_TOKEN'))
         response = urllib.request.urlopen(request)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
@@ -756,7 +770,7 @@ def getOnto_url(pre_fix):
         return ''
 
 
-def removeDuplicated(res_list):
+def setPriority(res_list):
     priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
     res = {}
     for enti in res_list:
@@ -773,3 +787,23 @@ def removeDuplicated(res_list):
             res[term_name] = enti
 
     return list(res.values())
+
+
+def reorder(res_list, keyword):
+    def sort_key(s, keyword):
+        exact = s.lower() == keyword.lower()
+        start = s.startswith(keyword)
+        partial = keyword in s
+        return exact, start, partial
+
+    res = sorted(res_list, key=lambda x: sort_key(x.name, keyword), reverse=True)
+    return res
+
+def removeDuplicated(res_list):
+    iri_pool = []
+    for res in res_list:
+        if res.iri in iri_pool:
+            res_list.remove(res)
+        else:
+            iri_pool.append(res.iri)
+    return res_list
