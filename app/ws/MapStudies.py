@@ -2,12 +2,6 @@
 # Created by JKChang
 # 21/11/2018, 15:04
 # Tag:
-# Description: 
-
-# mapStudies
-# Created by JKChang
-# 21/11/2018, 13:12
-# Tag:
 # Description: map metabolights_zooma.tsv terms with studies
 
 import json
