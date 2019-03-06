@@ -119,12 +119,16 @@ class Ontology(Resource):
         if request.args:
             args = parser.parse_args(req=request)
             term = args['term']
+            if term:
+                term = term.strip()
 
         parser.add_argument('branch', help='Starting branch of ontology')
         branch = None
         if request.args:
             args = parser.parse_args(req=request)
             branch = args['branch']
+            if branch:
+                branch = branch.strip()
 
         parser.add_argument('mapping', help='Mapping approaches')
         mapping = None
@@ -137,18 +141,19 @@ class Ontology(Resource):
         if request.args:
             args = parser.parse_args(req=request)
             queryFields = args['queryFields']
-            try:
-                reg = '\{([^}]+)\}'
-                queryFields = re.findall(reg, queryFields)[0].split(',')
-            except:
+            if queryFields:
                 try:
-                    queryFields = queryFields.split(',')
-                except Exception as e:
-                    print(e.args)
+                    reg = '\{([^}]+)\}'
+                    queryFields = re.findall(reg, queryFields)[0].split(',')
+                except:
+                    try:
+                        queryFields = queryFields.split(',')
+                    except Exception as e:
+                        print(e.args)
 
         result = []
 
-        if term is None and branch is None:
+        if term in [None, ''] and branch is None:
             return []
         if queryFields == None:  # if found the term, STOP
 
@@ -262,6 +267,7 @@ class Ontology(Resource):
             response.append(d)
 
         # response = [{'SubClass': x} for x in res]
+        print('--' * 30)
         return jsonify({"OntologyTerm": response})
 
 
@@ -422,7 +428,11 @@ def put(self):
         abort(400, "The file %s was not found", file_name)
 
 
-def OLSbranchSearch(query, branchName, ontoName):
+def OLSbranchSearch(keyword, branchName, ontoName):
+    res = []
+    if keyword in [None, '']:
+        return res
+
     def getStartIRI(start, ontoName):
         url = 'https://www.ebi.ac.uk/ols/api/search?q=' + start + '&ontology=' + ontoName + '&queryFields=label'
         fp = urllib.request.urlopen(url)
@@ -433,10 +443,9 @@ def OLSbranchSearch(query, branchName, ontoName):
         # return res
         return urllib.parse.quote_plus(res)
 
-    res = []
     branchIRI = getStartIRI(branchName, ontoName)
-    query = query.replace(' ', '%20')
-    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + query + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
+    keyword = keyword.replace(' ', '%20')
+    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
     # print(url)
     fp = urllib.request.urlopen(url)
     content = fp.read().decode('utf-8')
@@ -459,15 +468,17 @@ def getMetaboTerm(keyword, branch):
 
     res_cls = []
     result = []
-    if keyword:
+    if keyword not in [None, '']:
         if branch:  # term = 1, branch = 1, search term in the branch
-
+            start_cls = onto.search_one(label=branch)
             try:
-                start_cls = onto.search_one(label=branch)
                 clses = info.get_subs(start_cls)
-            except Exception as e:
-                print(e.args)
+            except:
+                logger.info("Can't find a branch called " + branch)
+                print("Can't find a branch called " + branch)
                 return []
+
+
         else:  # term = 1, branch = 0, search term in the whole ontology
             try:
                 clses = list(onto.classes())
@@ -507,14 +518,14 @@ def getMetaboTerm(keyword, branch):
         if branch == 'column type':
             result += OLSbranchSearch(keyword, 'chromatography', 'chmo')
 
-    elif keyword is None and branch:  # term = 0, branch = 1, return whole branch
-
+    elif keyword in [None, ''] and branch:  # term = 0, branch = 1, return whole branch
+        start_cls = onto.search_one(label=branch)
         try:
-            start_cls = onto.search_one(label=branch)
+            res_cls = info.get_subs(start_cls)
         except Exception as e:
-            print(e.args)
+            logger.info("Can't find a branch called" + branch)
+            print("Can't find a branch called" + branch)
             return []
-        res_cls = info.get_subs(start_cls)
 
         if branch == 'instruments':
             result += OLSbranchSearch("*", 'instrument', 'msio')
@@ -544,47 +555,50 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
     logger.info('Searching Metabolights-zooma.tsv')
     print('Searching Metabolights-zooma.tsv')
     res = []
+
+    if keyword in [None, '']:
+        return res
+
     try:
-        try:
-            fileName = app.config.get('MTBLS_ZOOMA_FILE')  # metabolights_zooma.tsv
-            df = pd.read_csv(fileName, sep="\t", header=0, encoding='utf-8')
+        fileName = app.config.get('MTBLS_ZOOMA_FILE')  # metabolights_zooma.tsv
+        df = pd.read_csv(fileName, sep="\t", header=0, encoding='utf-8')
+        df = df.drop_duplicates(subset='PROPERTY_VALUE', keep="last")
 
-            if mapping == 'fuzzy':
-                temp1 = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
-                temp2 = df.loc[df['PROPERTY_VALUE'].str.contains(keyword, case=False)]
-                frame = [temp1, temp2]
-                temp = pd.concat(frame).reset_index(drop=True)
+        if mapping == 'fuzzy':
+            temp1 = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
+            temp2 = df.loc[df['PROPERTY_VALUE'].str.contains(keyword, case=False)]
+            frame = [temp1, temp2]
+            temp = pd.concat(frame).reset_index(drop=True)
+        else:
+            temp = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
+
+        for i in range(len(temp)):
+            iri = temp.iloc[0]['SEMANTIC_TAG']
+            if 'mesh' in iri.lower():
+                ontoName = 'MESH'
+            elif 'nci' in iri.lower():
+                ontoName = 'NCIT'
+            elif 'bao' in iri.lower():
+                ontoName = 'BAO'
             else:
-                temp = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
+                ontoName = getOnto_Name(iri)
 
-            for i in range(len(temp)):
-                iri = temp.iloc[0]['SEMANTIC_TAG']
-                if 'mesh' in iri.lower():
-                    ontoName = 'MESH'
-                elif 'nci' in iri.lower():
-                    ontoName = 'NCIT'
-                elif 'bao' in iri.lower():
-                    ontoName = 'BAO'
-                else:
-                    ontoName = getOnto_Name(iri)
+            name = ' '.join(
+                [w.title() if w.islower() else w for w in temp.iloc[0]['PROPERTY_VALUE'].split()])
+            obo_ID = iri.rsplit('/', 1)[-1]
+            ontoName = ontoName
 
-                name = ' '.join(
-                    [w.title() if w.islower() else w for w in temp.iloc[0]['PROPERTY_VALUE'].split()])
-                obo_ID = iri.rsplit('/', 1)[-1]
-                ontoName = ontoName
-
-                enti = entity(name=name,
-                              iri=iri,
-                              obo_ID=iri.rsplit('/', 1)[-1],
-                              ontoName=ontoName,
-                              provenance_name='metabolights-zooma',
-                              provenance_uri='https://www.ebi.ac.uk/metabolights/',
-                              Zooma_confidence='High')
-                res.append(enti)
-        except Exception as e:
-            logger.error('Fail to load metabolights-zooma.tsv' + str(e))
+            enti = entity(name=name,
+                          iri=iri,
+                          obo_ID=iri.rsplit('/', 1)[-1],
+                          ontoName=ontoName,
+                          provenance_name='metabolights-zooma',
+                          provenance_uri='https://www.ebi.ac.uk/metabolights/',
+                          Zooma_confidence='High')
+            res.append(enti)
     except Exception as e:
-        logger.error('getMetaboZoomaTerm' + str(e))
+        logger.error('Fail to load metabolights-zooma.tsv' + str(e))
+
     return res
 
 
@@ -592,6 +606,10 @@ def getZoomaTerm(keyword):
     logger.info('Requesting Zooma...')
     print('Requesting Zooma...')
     res = []
+
+    if keyword in [None, '']:
+        return res
+
     try:
         # url = 'http://snarf.ebi.ac.uk:8480/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ',"+")
         url = 'https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=' + keyword.replace(' ', "+")
@@ -650,13 +668,17 @@ def getOLSTerm(keyword):
     logger.info('Requesting OLS...')
     print('Requesting OLS...')
     res = []
+
+    if keyword in [None, '']:
+        return res
+
     try:
         # https://www.ebi.ac.uk/ols/api/search?q=lung&groupField=true&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
         url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
               '&groupField=true' \
               '&queryFields=label,synonym' \
-              'fieldList=iri,label,short_form,ontology_name,description,ontology_prefix'\
-              '&rows=30' #&exact=true
+              'fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
+              '&rows=30'  # &exact=true
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
@@ -671,13 +693,12 @@ def getOLSTerm(keyword):
             except:
                 definition = None
 
-
             enti = entity(name=name,
                           iri=term['iri'],
                           obo_ID=term['short_form'],
-                          ontoName=term['ontology_prefix'],
+                          ontoName=term['ontology_name'],
                           provenance_name=term['ontology_prefix'],
-                          definition= definition)
+                          definition=definition)
             res.append(enti)
             if len(res) >= 20:
                 break
@@ -692,6 +713,10 @@ def getBioportalTerm(keyword):
     logger.info('Requesting Bioportal...')
     print('Requesting Bioportal...')
     res = []
+
+    if keyword in [None, '']:
+        return res
+
     try:
         url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")  # + '&require_exact_match=true'
         request = urllib.request.Request(url)
@@ -798,6 +823,7 @@ def reorder(res_list, keyword):
 
     res = sorted(res_list, key=lambda x: sort_key(x.name, keyword), reverse=True)
     return res
+
 
 def removeDuplicated(res_list):
     iri_pool = []

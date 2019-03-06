@@ -9,6 +9,7 @@ class onto_information():
         '''return list of sub classes -> list'''
         # print('matching subs of %s' % cls.label)
         sub = []
+
         list_subs(cls, sub)
         # print(type(sub[0]))
         return sub
@@ -93,7 +94,7 @@ def list_supers(onto_c, sup):
 
 
 def list_subs(onto_c, sub):
-    if onto_c.label == '' and onto_c.iri != 'http://www.w3.org/2002/07/owl#Thing':
+    if onto_c.label and onto_c.label == '' and onto_c.iri != 'http://www.w3.org/2002/07/owl#Thing':
         return
     for children in onto_c.subclasses():
         try:

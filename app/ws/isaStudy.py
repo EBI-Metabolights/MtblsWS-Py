@@ -159,6 +159,7 @@ class StudyTitle(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
+
         title = isa_study.title
         logger.info('Got %s', title)
         return jsonify({"title": title})
