@@ -17,6 +17,7 @@ from app.ws.MapStudies import *
 from app.ws.mzML2ISA import *
 from app.ws.partner_utils import Metabolon
 from app.ws.jira_update import Jira
+from app.ws.study_files import *
 
 """
 MTBLS WS-Py
@@ -60,6 +61,7 @@ def initialize_app(flask_app):
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
     api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
+    api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/match-sample-files")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
     api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")
     api.add_resource(IsaTabAssayFile, res_path + "/studies/<string:study_id>/assay")
