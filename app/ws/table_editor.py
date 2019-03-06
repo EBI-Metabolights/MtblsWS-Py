@@ -885,12 +885,13 @@ class CopyFilesFolders(Resource):
             {
                 "name": "include_raw_data",
                 "description": "Include raw data file transfer. False = only copy ISA-Tab metadata files.",
-                "paramType": "header",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
-                "format": "application/json",
-                "required": False,
-                "allowMultiple": False
+                "default": True
             },
             {
                 "name": "user_token",
@@ -932,10 +933,15 @@ class CopyFilesFolders(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # If false, only sync ISA-Tab metadata files
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('include_raw_data', help='Include raw data')
         include_raw_data = False
-        if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == 'true':
-            include_raw_data = True
+
+        # If false, only sync ISA-Tab metadata files
+        if request.args:
+            args = parser.parse_args(req=request)
+            include_raw_data = False if args['include_raw_data'].lower() != 'true' else True
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
