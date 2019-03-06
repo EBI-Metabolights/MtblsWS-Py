@@ -258,9 +258,13 @@ class SampleStudyFiles(Resource):
         all_files = get_files(get_all_files(study_location, include_raw_data=True)) + \
                     get_files(get_all_files(upload_location, include_raw_data=True))
 
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                         skip_load_tables=False,
-                                                         study_location=study_location)
+        try:
+            isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                             skip_load_tables=False,
+                                                             study_location=study_location)
+        except:
+            abort(500, "Could not load the study metadata files")
+            
         samples_and_files = []
         for sample in isa_study.samples:
             s_name = sample.name
