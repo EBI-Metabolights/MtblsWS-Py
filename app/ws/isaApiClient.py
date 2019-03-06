@@ -191,6 +191,11 @@ class IsaApiClient:
 
         logger.info("Writing %s to %s", self.inv_filename, std_path)
         i_file_name = self.inv_filename
+        study = inv_obj.studies[0]
+        protocols = study.protocols
+        logger.info("DEBUG: Order of protocols are:")
+        for pro in protocols:
+            logger.info(pro.name)
         dump(inv_obj, std_path, i_file_name=i_file_name, skip_dump_tables=False)
 
         return
