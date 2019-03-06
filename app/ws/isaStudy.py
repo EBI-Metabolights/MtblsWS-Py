@@ -159,6 +159,7 @@ class StudyTitle(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
+
         title = isa_study.title
         logger.info('Got %s', title)
         return jsonify({"title": title})
@@ -265,6 +266,11 @@ class StudyTitle(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
+
+        logger.info("DEBUG2: Order of protocols are:")
+        for pro in isa_study.protocols:
+            logger.info(pro.name)
+
         isa_study.title = new_title
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
