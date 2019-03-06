@@ -135,6 +135,11 @@ class IsaApiClient:
             # loading tables also load Samples and Assays
             isa_inv = load(fp, skip_load_tables)
             isa_study = isa_inv.studies[0]
+
+            logger.info("DEBUG3: Order of protocols are:")
+            for pro in isa_study.protocols:
+                logger.info(pro.name)
+
         except IndexError:
             logger.exception("Failed to find Investigation file from %s", study_id, std_path)
             abort(500)
