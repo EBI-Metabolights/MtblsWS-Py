@@ -5,12 +5,12 @@ class onto_information():
         '''initialization'''
         self.onto = onto
 
-    def get_subs(self, cls):
+    def get_subs(self, cls, num=100):
         '''return list of sub classes -> list'''
         # print('matching subs of %s' % cls.label)
         sub = []
 
-        list_subs(cls, sub)
+        list_subs(cls, sub, num)
         # print(type(sub[0]))
         return sub
 
@@ -40,7 +40,7 @@ class onto_information():
 
 class entity():
     def __init__(self, name=None, iri=None, obo_ID=None, ontoName=None, provenance_name=None, provenance_uri=None,
-                 Zooma_confidence=None, definition = None):
+                 Zooma_confidence=None, definition=None):
         if name is None:
             self.name = ''
         else:
@@ -93,12 +93,14 @@ def list_supers(onto_c, sup):
             continue
 
 
-def list_subs(onto_c, sub):
+def list_subs(onto_c, sub, num):
     if onto_c.label and onto_c.label == '' and onto_c.iri != 'http://www.w3.org/2002/07/owl#Thing':
         return
     for children in onto_c.subclasses():
         try:
-            list_subs(children, sub)
+            list_subs(children, sub, num)
+            if len(sub) >= num:
+                return
             sub.append(children)
         except:
             continue

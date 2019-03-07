@@ -521,7 +521,7 @@ def getMetaboTerm(keyword, branch):
     elif keyword in [None, ''] and branch:  # term = 0, branch = 1, return whole branch
         start_cls = onto.search_one(label=branch)
         try:
-            res_cls = info.get_subs(start_cls)
+            res_cls = info.get_subs(start_cls,num=10)
         except Exception as e:
             logger.info("Can't find a branch called" + branch)
             print("Can't find a branch called" + branch)
