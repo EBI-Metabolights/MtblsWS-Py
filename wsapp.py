@@ -70,7 +70,7 @@ def initialize_app(flask_app):
     api.add_resource(CloneAccession, res_path + "/studies/clone")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")
-    api.add_resource(saveAuditFiles, res_path + "/studies/<string:study_id>/audit")
+    api.add_resource(SaveAuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")
 
     # ISA Investigation

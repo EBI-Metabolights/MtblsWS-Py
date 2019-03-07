@@ -264,7 +264,7 @@ class SampleStudyFiles(Resource):
                                                              study_location=study_location)
         except:
             abort(500, "Could not load the study metadata files")
-            
+
         samples_and_files = []
         for sample in isa_study.samples:
             s_name = sample.name

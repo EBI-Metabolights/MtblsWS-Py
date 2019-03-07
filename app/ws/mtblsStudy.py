@@ -7,7 +7,6 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
-from operator import itemgetter
 from app.ws.db_connection import get_all_studies_for_user
 
 logger = logging.getLogger('wslog')
@@ -128,7 +127,6 @@ class MyMtblsStudiesDetailed(Resource):
 
 
 class IsaTabInvestigationFile(Resource):
-
     @swagger.operation(
         summary="Get ISA-Tab Investigation file",
         parameters=[
@@ -164,6 +162,10 @@ class IsaTabInvestigationFile(Resource):
                 "message": "OK."
             },
             {
+                "code": 403,
+                "message": "Study does not exist or your do not have access to this study."
+            },
+            {
                 "code": 404,
                 "message": "Not found. The requested identifier is not valid or does not exist."
             }
@@ -173,13 +175,17 @@ class IsaTabInvestigationFile(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404)
+            abort(401)
+
         study_id = study_id.upper()
 
         # User authentication
         user_token = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
+
+        if user_token is None:
+            abort(401)
 
         # query validation
         parser = reqparse.RequestParser()
@@ -195,7 +201,7 @@ class IsaTabInvestigationFile(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(403)
+            abort(403, "Study does not exist or your do not have access to this study")
 
         logger.info('Getting ISA-Tab Investigation file for %s', study_id)
         location = study_location  # wsc.get_study_location(study_id, user_token)
@@ -208,9 +214,9 @@ class IsaTabInvestigationFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                abort(404, "Wrong filename or file could not be read.")
+                abort(404, "Wrong investigation filename or file could not be read.")
         else:
-            abort(404, "Wrong filename or file could not be read.")
+            abort(404, "Wrong investigation filename or file could not be read.")
 
 
 class IsaTabSampleFile(Resource):
@@ -254,7 +260,7 @@ class IsaTabSampleFile(Resource):
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Study does not exist or your do not have access to this study."
             },
             {
                 "code": 404,
@@ -274,6 +280,9 @@ class IsaTabSampleFile(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
 
+        if user_token is None:
+            abort(401)
+
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('sample_filename', help='Sample filename')
@@ -283,13 +292,13 @@ class IsaTabSampleFile(Resource):
             sample_filename = args['sample_filename'].lower() if args['sample_filename'] else None
         if not sample_filename:
             logger.warning("Missing Sample filename.")
-            abort(400, "Missing Sample filename.")
+            abort(404, "Missing Sample filename.")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(403)
+            abort(401, "Study does not exist or your do not have access to this study.")
 
         logger.info('Getting ISA-Tab Sample file for %s', study_id)
         location = study_location
@@ -302,13 +311,12 @@ class IsaTabSampleFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                abort(404, "Wrong filename or file could not be read.")
+                abort(404, "Wrong sample filename or file could not be read.")
         else:
-            abort(404, "Wrong filename or file could not be read.")
+            abort(404, "Wrong sample filename or file could not be read.")
 
 
 class IsaTabAssayFile(Resource):
-
     @swagger.operation(
         summary="Get ISA-Tab Assay file",
         parameters=[
@@ -349,7 +357,7 @@ class IsaTabAssayFile(Resource):
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Study does not exist or your do not have access to this study."
             },
             {
                 "code": 404,
@@ -369,6 +377,9 @@ class IsaTabAssayFile(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
 
+        if user_token is None:
+            abort(401)
+
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('assay_filename', help='Assay filename')
@@ -378,13 +389,13 @@ class IsaTabAssayFile(Resource):
             assay_filename = args['assay_filename'].lower() if args['assay_filename'] else None
         if not assay_filename:
             logger.warning("Missing Assay filename.")
-            abort(400, "Missing Assay filename.")
+            abort(404, "Missing Assay filename.")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(403)
+            abort(401, "Study does not exist or your do not have access to this study.")
 
         logger.info('Getting ISA-Tab Assay file for %s', study_id)
         location = study_location
@@ -398,9 +409,9 @@ class IsaTabAssayFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                abort(404, "Wrong filename or file could not be read.")
+                abort(404, "Wrong assay filename or file could not be read.")
         else:
-            abort(404, "Wrong filename or file could not be read.")
+            abort(404, "Wrong assay filename or file could not be read.")
 
 
 class CloneAccession(Resource):
@@ -456,7 +467,7 @@ class CloneAccession(Resource):
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Study does not exist or your do not have access to this study."
             },
             {
                 "code": 404,
@@ -480,7 +491,7 @@ class CloneAccession(Resource):
             user_token = request.headers["user_token"]
 
         if user_token is None:
-            abort(403)
+            abort(401)
 
         if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == 'true':
             include_raw_data = True
@@ -509,7 +520,7 @@ class CloneAccession(Resource):
 
         if not bypass:
             if not read_access:
-                abort(403)
+                abort(401, "Study does not exist or your do not have access to this study.")
 
         study_id = study_id.upper()
 
@@ -622,7 +633,7 @@ class CreateUploadFolder(Resource):
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Study does not exist or your do not have access to this study."
             },
             {
                 "code": 404,
@@ -646,7 +657,8 @@ class CreateUploadFolder(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(403)
+            abort(401, "Unauthorized. Access to the resource requires user authentication. "
+                       "Please provide a study id and a valid user token")
 
         logger.info('Creating a new study upload folder for study %s', study_id)
         status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
@@ -705,7 +717,7 @@ class CreateUploadFolder(Resource):
             user_token = request.headers["user_token"]
 
         if user_token is None or study_id is None:
-            abort(401)
+            abort(404)
 
         study_id = study_id.upper()
 
@@ -713,14 +725,14 @@ class CreateUploadFolder(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(403)
+            abort(401)
 
         logger.info('Creating a new study upload folder for study %s', study_id)
         status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
         return status
 
 
-class saveAuditFiles(Resource):
+class SaveAuditFiles(Resource):
     @swagger.operation(
         summary="Save a copy of the metadata into an audit folder",
         parameters=[
@@ -769,7 +781,7 @@ class saveAuditFiles(Resource):
             user_token = request.headers["user_token"]
 
         if user_token is None or study_id is None:
-            abort(401)
+            abort(404)
 
         study_id = study_id.upper()
 
@@ -777,7 +789,8 @@ class saveAuditFiles(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(403)
+            abort(401, "Unauthorized. Write access to the resource requires user authentication. "
+                       "Please provide a study id and a valid user token")
 
         logger.info('Creating a new study audit folder for study %s', study_id)
         status, dest_path = write_audit_files(study_location)
@@ -831,13 +844,13 @@ class CreateAccession(Resource):
             user_token = request.headers["user_token"]
 
         if not user_token:
-            abort(403)
+            abort(404)
 
         # Need to check that the user is actually an active user, ie the user_token exists
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions('MTBLS1', user_token)
         if not read_access:
-            abort(403)
+            abort(401)
 
         logger.info('Creating a new MTBLS Study')
 
@@ -1068,7 +1081,7 @@ class ReindexStudy(Resource):
             user_token = request.headers["user_token"]
 
         if user_token is None or study_id is None:
-            abort(401)
+            abort(404)
 
         study_id = study_id.upper()
 
@@ -1076,11 +1089,13 @@ class ReindexStudy(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(403)
+            abort(401, "Unauthorized. Access to the resource requires user authentication. "
+                        "Please provide a study id and a valid user token")
 
         status, message = wsc.reindex_study(study_id, user_token)
 
         if not status:
             abort(417, message)
 
-        return {"Success": "Study " + study_id + " has been re-indexed"}
+        return {"Success": "Study " + study_id + " has been re-indexed",
+                "read_access": read_access, "write_access": write_access}

@@ -107,7 +107,7 @@ class IsaInvestigation(Resource):
 
         logger.info('Getting Investigation %s', study_id)
         # check for access rights
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -122,7 +122,9 @@ class IsaInvestigation(Resource):
         response = dict(mtblsStudy={},
                         isaInvestigation={},
                         validation={})
-        response['mtblsStudy']['studyStatus'] = study_status  # wsc.get_study_status(study_id, user_token)
+        response['mtblsStudy']['studyStatus'] = study_status
+        response['mtblsStudy']['read_access'] = read_access
+        response['mtblsStudy']['write_access'] = write_access
         response['isaInvestigation'] = IsaInvestigationSchema().dump(isa_inv).data
         response['validation']['errors'] = []
         response['validation']['warnings'] = []
@@ -196,7 +198,8 @@ Please use the GET method above to retrieve the structure of your study prior to
             user_token = request.headers["user_token"]
         else:
             # user token is required
-            abort(401)
+            abort(401, "Study does not exist or your do not have access to this study. "
+                       "Please provide a valid user_token")
 
         # check for keeping copies
         save_audit_copy = False
@@ -222,7 +225,7 @@ Please use the GET method above to retrieve the structure of your study prior to
         # update Study details
         logger.info('Updating Study Publication details for %s', study_id)
         # check for access rights
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
