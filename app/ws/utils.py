@@ -451,7 +451,8 @@ def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, s
 
         protocol = Protocol(
             name=prot_name,
-            protocol_type=OntologyAnnotation(term=protocol_type),
+            # protocol_type=OntologyAnnotation(term=protocol_type),
+            protocol_type=OntologyAnnotation(term=prot_name),
             description='Please update this protocol description')
 
         for param in prot_params.split(';'):

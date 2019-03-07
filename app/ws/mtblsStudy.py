@@ -123,6 +123,7 @@ class MyMtblsStudiesDetailed(Resource):
             user_token = request.headers['user_token']
 
         user_studies = get_all_studies_for_user(user_token)
+
         return jsonify({"data": user_studies})
 
 

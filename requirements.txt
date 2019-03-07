@@ -5,7 +5,7 @@ Flask-Cors==3.0.7
 isatools==0.10.3
 mzml2isa==1.0.1
 marshmallow==2.18.0
-owlready2==0.11
+owlready2==0.14
 gunicorn==19.9.0
 gevent==1.4.0
 psycopg2==2.7.7
