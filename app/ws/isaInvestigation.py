@@ -125,6 +125,9 @@ class IsaInvestigation(Resource):
         response['mtblsStudy']['studyStatus'] = study_status
         response['mtblsStudy']['read_access'] = read_access
         response['mtblsStudy']['write_access'] = write_access
+        response['mtblsStudy']['is_curator'] = is_curator
+        if study_status == "In Review":
+            response['mtblsStudy']['reviewer_link'] = 'reviewer' + obfuscation_code
         response['isaInvestigation'] = IsaInvestigationSchema().dump(isa_inv).data
         response['validation']['errors'] = []
         response['validation']['warnings'] = []

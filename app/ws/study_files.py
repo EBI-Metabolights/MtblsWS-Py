@@ -282,7 +282,7 @@ class SampleStudyFiles(Resource):
                 if f == s:  # File name and sample name is an exact match
                     samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "exact_match"})
                 elif s in f or f in s:  # Sample name appears in the file name, or file name appears in sample name
-                    samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "contains"})
+                    samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "pattern"})
                 elif s_clean in f_clean or f_clean in s_clean:  # Sample name appears in the file name, and other way
                     samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "fuzzy"})
 
