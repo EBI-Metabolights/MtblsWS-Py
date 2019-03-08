@@ -647,3 +647,22 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
         ontologies.append(onto)
 
     return isa_inv, onto
+
+
+def remove_file(file_location, file_name):
+    # Raw files are sometimes actually folders, so need to check if file or folder before removing
+    file_to_delete = os.path.join(file_location, file_name)
+    try:
+        if os.path.exists(file_to_delete):  # First, does the file/folder exist?
+            if os.path.isfile(file_to_delete):  # is it a file?
+                os.remove(file_to_delete)
+            elif os.path.isdir(file_to_delete):  # is it a folder
+                shutil.rmtree(file_to_delete)
+        else:
+            return False, "Can not find file " + file_name
+    except:
+        return False, "Can not delete file " + file_name
+    return True, "File " + file_name + " deleted"
+
+
+

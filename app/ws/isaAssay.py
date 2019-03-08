@@ -7,7 +7,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
 from app.ws.utils import read_tsv, write_tsv, add_new_protocols_from_assay, update_correct_sample_file_name, \
-    get_assay_headers_and_protcols, create_maf, add_ontology_to_investigation
+    get_assay_headers_and_protcols, create_maf, add_ontology_to_investigation, remove_file
 import logging
 import json
 import os.path
@@ -477,7 +477,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             a_file = assay.filename
             if assay_file_name == a_file:
                 logger.info("Removing assay " + assay_file_name + " from study " + study_id)
-                isa_study.assays.remove(assay)
+                isa_study.assays.remove(assay)  # ToDo, remove protocols only a
                 maf_name = get_maf_name_from_assay_name(a_file)
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
@@ -486,9 +486,11 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                             save_samples_copy=save_audit_copy)
 
         try:
-            os.remove(os.path.join(study_location, a_file))
+            remove_file(study_location, a_file)
+            # os.remove(os.path.join(study_location, a_file))
             if maf_name is not None:
-                os.remove(os.path.join(study_location, maf_name))
+                #os.remove(os.path.join(study_location, maf_name))
+                remove_file(study_location, maf_name)
         except:
             logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
 

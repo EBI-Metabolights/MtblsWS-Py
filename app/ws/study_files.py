@@ -6,6 +6,8 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
 from operator import itemgetter
+from marshmallow import ValidationError
+import json
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -287,6 +289,143 @@ class SampleStudyFiles(Resource):
                     samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "fuzzy"})
 
         return jsonify({'sample_files': samples_and_files})
+
+
+class DeleteFiles(Resource):
+    @swagger.operation(
+        summary="Delete files from a given folder",
+        nickname="Delete files",
+        notes='''Delete files and folders from the study and/or upload folder<pre><code>
+{    
+    "files": [
+        {"filename": "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"},
+        {"filename": "Raw-File-001.raw"}
+    ]
+}</pre></code></br> 
+"file_location" is one of: "study" (study folder), "upload" (upload folder) or "both" ''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "files",
+                "description": 'Files to delete',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "file_location",
+                "description": "Location of the file (study, upload, both)",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. Files/Folders were removed."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def delete(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404, 'Please provide valid parameter for study identifier')
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('files', help='files')
+        parser.add_argument('file_location', help='file_location')
+        file_location = 'study'
+        files = None
+
+        if request.args:
+            args = parser.parse_args(req=request)
+            files = args['files'] if args['files'] else None
+            file_location = args['file_location'] if args['file_location'] else None
+
+        # body content validation
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['files']
+            if data is None:
+                abort(412)
+            files = data
+        except (ValidationError, Exception):
+            abort(400, 'Incorrect JSON provided')
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        status = False
+        message = None
+        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
+
+        for file in files:
+            f_name = file["filename"]
+            try:
+                if file_location == "study":
+                    status, message = remove_file(study_location, f_name)
+                elif file_location == "upload":
+                    status, message = remove_file(upload_location, f_name)
+                elif file_location == "both":
+                    s_status, s_message = remove_file(study_location, f_name)
+                    u_status, u_message = remove_file(upload_location, f_name)
+                    if s_status or u_status:
+                        return {'Success': "File " + f_name + " deleted"}
+                    else:
+                        return {'Error': "Can not find and/or delete file " + f_name + " in the study or upload folder"}
+
+                if not status:
+                    return {'Error': message}
+            except:
+                return {'Error': message}
+
+        if status:
+            return {'Success': message}
+        else:
+            return {'Error': message}
 
 
 def clean_name(name):
