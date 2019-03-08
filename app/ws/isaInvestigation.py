@@ -75,7 +75,7 @@ class IsaInvestigation(Resource):
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
+                "message": "Study does not exist or your do not have access to this study."
             },
             {
                 "code": 404,
@@ -110,7 +110,7 @@ class IsaInvestigation(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(403, "Study does not exist or your do not have access to this study.")
+            abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id,
                                                          user_token,

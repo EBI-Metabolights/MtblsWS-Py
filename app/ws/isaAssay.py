@@ -477,7 +477,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             a_file = assay.filename
             if assay_file_name == a_file:
                 logger.info("Removing assay " + assay_file_name + " from study " + study_id)
-                isa_study.assays.remove(assay)  # ToDo, remove protocols only a
+                isa_study.assays.remove(assay)  # ToDo, remove protocols *only* used by this assay
                 maf_name = get_maf_name_from_assay_name(a_file)
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
