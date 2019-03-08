@@ -114,8 +114,8 @@ class StudyFiles(Resource):
         notes='''Delete files and folders from the study and/or upload folder<pre><code>
 {    
     "files": [
-        {"filename": "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"},
-        {"filename": "Raw-File-001.raw"}
+        {"name": "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"},
+        {"name": "Raw-File-001.raw"}
     ]
 }</pre></code></br> 
 "file_location" is one of: "study" (study folder), "upload" (upload folder) or "both" ''',
@@ -219,7 +219,7 @@ class StudyFiles(Resource):
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
 
         for file in files:
-            f_name = file["filename"]
+            f_name = file["name"]
             try:
                 if file_location == "study":
                     status, message = remove_file(study_location, f_name)
