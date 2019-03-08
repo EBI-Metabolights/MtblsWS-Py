@@ -521,7 +521,7 @@ def getMetaboTerm(keyword, branch):
     elif keyword in [None, ''] and branch:  # term = 0, branch = 1, return whole branch
         start_cls = onto.search_one(label=branch)
         try:
-            res_cls = info.get_subs(start_cls,num=10)
+            res_cls = info.get_subs(start_cls, num=10)
         except Exception as e:
             logger.info("Can't find a branch called" + branch)
             print("Can't find a branch called" + branch)
@@ -566,14 +566,17 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
 
         if mapping == 'fuzzy':
             temp1 = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
-            temp2 = df.loc[df['PROPERTY_VALUE'].str.contains(keyword, case=False)]
+            reg = "^" + keyword + "+"
+            temp2 = df.loc[df['PROPERTY_VALUE'].str.contains(reg, case=False)]
             frame = [temp1, temp2]
             temp = pd.concat(frame).reset_index(drop=True)
         else:
             temp = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
 
+        temp = temp.drop_duplicates(subset='PROPERTY_VALUE', keep="last", inplace=False)
+
         for i in range(len(temp)):
-            iri = temp.iloc[0]['SEMANTIC_TAG']
+            iri = temp.iloc[i]['SEMANTIC_TAG']
             if 'mesh' in iri.lower():
                 ontoName = 'MESH'
             elif 'nci' in iri.lower():
@@ -584,9 +587,8 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
                 ontoName = getOnto_Name(iri)
 
             name = ' '.join(
-                [w.title() if w.islower() else w for w in temp.iloc[0]['PROPERTY_VALUE'].split()])
+                [w.title() if w.islower() else w for w in temp.iloc[i]['PROPERTY_VALUE'].split()])
             obo_ID = iri.rsplit('/', 1)[-1]
-            ontoName = ontoName
 
             enti = entity(name=name,
                           iri=iri,
