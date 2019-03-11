@@ -511,6 +511,9 @@ def get_file_information(path, directory=None, include_raw_data=False, study_id=
                     file_time, raw_time, file_type, status = get_file_times(path, file_name)
 
                 if directory:
+                    if file_name.startswith(('i_', 'a_', 's_', 'm_')):
+                        status = 'old'  # metadata files in a sub-directory are not active
+
                     file_name = os.path.join(directory, file_name)
 
                 if file_time:
