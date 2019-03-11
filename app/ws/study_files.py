@@ -38,6 +38,15 @@ class StudyFiles(Resource):
                 "default": True
             },
             {
+                "name": "directory",
+                "description": "List first level of files in a sub-directory",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -74,11 +83,14 @@ class StudyFiles(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('include_raw_data', help='Include raw data')
+        parser.add_argument('directory', help='List files in sub-directory')
         include_raw_data = False
+        directory = None
 
         if request.args:
             args = parser.parse_args(req=request)
             include_raw_data = False if args['include_raw_data'].lower() != 'true' else True
+            directory = args['directory'] if args['directory'] else None
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
@@ -90,8 +102,11 @@ class StudyFiles(Resource):
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
         logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                     study_location, upload_location)
-        study_files = get_all_files(study_location, include_raw_data)
-        upload_files = get_all_files(upload_location, include_raw_data)
+
+        study_files = get_all_files(study_location, directory=directory,
+                                    include_raw_data=include_raw_data, study_id=study_id)
+        upload_files = get_all_files(upload_location, directory=directory,
+                                     include_raw_data=include_raw_data, study_id=study_id)
 
         # Sort the two lists
         study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
@@ -461,41 +476,48 @@ def get_files(file_list):
     return all_files
 
 
-def get_all_files(path, include_raw_data=False):
+def get_all_files(path, directory=None, include_raw_data=False, study_id=None):
     try:
-        files = get_file_information(path, include_raw_data)
+        files = get_file_information(path, directory=directory, include_raw_data=include_raw_data, study_id=study_id)
     except:
         logger.error('Could not find folder ' + path)
         files = []  # The upload folder for this study does not exist, this is normal
     return files
 
 
-def get_file_information(directory, include_raw_data):
+def get_file_information(path, directory=None, include_raw_data=False, study_id=None):
     file_list = []
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
         end_time = time.time() + timeout_secs
-        for file_name in os.listdir(directory):
+
+        if directory:
+            path = os.path.join(path, directory)
+
+        for file_name in os.listdir(path):
             file_time = None
             raw_time = None
             file_type = None
             status = None
             if time.time() > end_time:
-                logger.error('Listing files in folder %s, timed out after %s seconds', directory, timeout_secs)
+                logger.error('Listing files in folder %s, timed out after %s seconds', path, timeout_secs)
                 return file_list  # Return after xx seconds regardless
 
             if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX:
                 if not include_raw_data:  # Only return metadata files
                     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
-                        file_time, raw_time, file_type, status = get_file_times(directory, file_name)
+                        file_time, raw_time, file_type, status = get_file_times(path, file_name)
                 else:
-                    file_time, raw_time, file_type, status = get_file_times(directory, file_name)
+                    file_time, raw_time, file_type, status = get_file_times(path, file_name)
+
+                if directory:
+                    file_name = os.path.join(directory, file_name)
 
                 if file_time:
                     file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
                                       "type": file_type, "status": status})
     except Exception as e:
-        logger.error('Error in listing files under ' + directory + '. Last file was ' + file_name)
+        logger.error('Error in listing files under ' + path + '. Last file was ' + file_name)
         logger.error(str(e))
 
     return file_list

@@ -4,11 +4,11 @@ flask-restful-swagger==0.20.1
 Flask-Cors==3.0.7
 isatools==0.10.3
 mzml2isa==1.0.1
-marshmallow==2.18.0
+marshmallow==2.19.0
 owlready2==0.14
 gunicorn==19.9.0
 gevent==1.4.0
 psycopg2==2.7.7
 psycopg2-binary==2.7.7
-lxml==4.3.0
+lxml==4.3.2
 jira==2.0.0
