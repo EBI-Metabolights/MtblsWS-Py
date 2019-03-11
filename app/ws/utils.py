@@ -649,10 +649,16 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
     return isa_inv, onto
 
 
-def remove_file(file_location, file_name):
+def remove_file(file_location, file_name, allways_remove=False):
     # Raw files are sometimes actually folders, so need to check if file or folder before removing
     file_to_delete = os.path.join(file_location, file_name)
+    # file_status == 'active' of a file is actively used as metadata
+    file_type, file_status = map_file_type(file_name, file_location)
+
     try:
+        if file_type == 'metadata_investigation' or file_type == 'metadata_assay' or file_type == 'metadata_sample' or file_type == 'metadata_maf':
+            if file_status == 'active' and not allways_remove:  # If active metadata and "remove anyway" flag if not set
+                return False, "Can not delete any active metadata files " + file_name
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
             if os.path.isfile(file_to_delete):  # is it a file?
                 os.remove(file_to_delete)
@@ -665,4 +671,67 @@ def remove_file(file_location, file_name):
     return True, "File " + file_name + " deleted"
 
 
+def map_file_type(file_name, directory):
+    active_status = 'active'
+    none_active_status = 'unreferenced'
+    # Metadata first, current is if the files are present in the investigation and assay files
+    if file_name.startswith(('i_', 'a_', 's_', 'm_')):
+        if file_name.startswith('a_'):
+            if is_file_referenced(file_name, directory, 'i_'):
+                return 'metadata_assay', active_status
+        elif file_name.startswith('s_'):
+            if is_file_referenced(file_name, directory, 'i_'):
+                return 'metadata_sample', active_status
+        elif file_name.startswith('m_'):
+            if is_file_referenced(file_name, directory, 'a_'):
+                return 'metadata_maf', active_status
+        elif file_name.startswith('i_'):
+            investigation = os.path.join(directory, 'i_')
+            for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
+                if open(invest_file).read():
+                    return 'metadata_investigation', active_status
+        return 'metadata', 'old'
+    elif file_name.lower().endswith(('.xls', '.xlsx', '.csv', '.tsv')):
+        return 'spreadsheet', active_status
+    elif file_name.endswith('.txt'):
+        return 'text', active_status
+    elif file_name == 'audit':
+        return 'audit', active_status
+    elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml')):
+        if is_file_referenced(file_name, directory, 'a_'):
+            return 'derived', active_status
+        else:
+            return 'derived', none_active_status
+    elif file_name.lower().endswith(('.zip', '.gz', '.tar', '.7z', '.z')):
+        if is_file_referenced(file_name, directory, 'a_'):
+            return 'compressed', active_status
+        else:
+            return 'compressed', none_active_status
+    elif file_name == 'metexplore_mapping.json':
+        return 'internal_mapping', active_status
+    else:
+        if is_file_referenced(file_name, directory, 'a_'):
+            return 'raw', active_status
+        else:
+            return 'unknown', none_active_status
+
+
+def is_file_referenced(file_name, directory, isa_tab_file_to_check):
+    """ There can be more than one assay, so each MAF must be checked against
+    each Assay file. Do not state a MAF as not in use if it's used in the 'other' assay """
+    found = False
+    isa_tab_file_to_check = isa_tab_file_to_check + '*.txt'
+    isa_tab_file = os.path.join(directory, isa_tab_file_to_check)
+    for ref_file_name in glob.glob(isa_tab_file):
+        """ The filename we pass in is found referenced in the metadata (ref_file_name)
+        One possible problem here is of the maf is found in an old assay file, then we will report it as 
+        current """
+        try:
+            if file_name in io.open(ref_file_name, 'r', encoding='utf8', errors="ignore").read():
+                found = True
+        except Exception as e:
+            logger.error('File Format error? Cannot read or open file ' + file_name)
+            logger.error(str(e))
+
+    return found
 

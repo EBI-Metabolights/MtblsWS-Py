@@ -118,7 +118,9 @@ class StudyFiles(Resource):
         {"name": "Raw-File-001.raw"}
     ]
 }</pre></code></br> 
-"file_location" is one of: "study" (study folder), "upload" (upload folder) or "both" ''',
+"file_location" is one of: "study" (study folder), "upload" (upload folder) or "both". </br>
+Please note you can not delete <b>active</b> metadata files (i_*.txt, s_*.txt, a_*.txt and m_*.tsv) 
+without setting the "delete_active_files" parameter to True''',
         parameters=[
             {
                 "name": "study_id",
@@ -145,6 +147,17 @@ class StudyFiles(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
+            },
+            {
+                "name": "delete_active_files",
+                "description": "Allow removal of active metadata files.",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": True
             },
             {
                 "name": "user_token",
@@ -190,13 +203,17 @@ class StudyFiles(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('files', help='files')
         parser.add_argument('file_location', help='file_location')
+        parser.add_argument('delete_active_files', help='Remove active metadata files')
         file_location = 'study'
         files = None
+        allways_remove = False
 
+        # If false, only sync ISA-Tab metadata files
         if request.args:
             args = parser.parse_args(req=request)
             files = args['files'] if args['files'] else None
             file_location = args['file_location'] if args['file_location'] else None
+            allways_remove = False if args['delete_active_files'].lower() != 'true' else True
 
         # body content validation
         try:
@@ -222,12 +239,12 @@ class StudyFiles(Resource):
             f_name = file["name"]
             try:
                 if file_location == "study":
-                    status, message = remove_file(study_location, f_name)
+                    status, message = remove_file(study_location, f_name, allways_remove)
                 elif file_location == "upload":
-                    status, message = remove_file(upload_location, f_name)
+                    status, message = remove_file(upload_location, f_name, allways_remove)
                 elif file_location == "both":
-                    s_status, s_message = remove_file(study_location, f_name)
-                    u_status, u_message = remove_file(upload_location, f_name)
+                    s_status, s_message = remove_file(study_location, f_name, allways_remove)
+                    u_status, u_message = remove_file(upload_location, f_name, allways_remove)
                     if s_status or u_status:
                         return {'Success': "File " + f_name + " deleted"}
                     else:
@@ -242,7 +259,6 @@ class StudyFiles(Resource):
             return {'Success': message}
         else:
             return {'Error': message}
-
 
 
 class CopyFilesFolders(Resource):
@@ -494,66 +510,4 @@ def get_file_times(directory, file_name):
     return file_time, raw_time, file_type, status
 
 
-def map_file_type(file_name, directory):
-    active_status = 'active'
-    none_active_status = 'unreferenced'
-    # Metadata first, current is if the files are present in the investigation and assay files
-    if file_name.startswith(('i_', 'a_', 's_', 'm_')):
-        if file_name.startswith('a_'):
-            if is_file_referenced(file_name, directory, 'i_'):
-                return 'metadata_assay', active_status
-        elif file_name.startswith('s_'):
-            if is_file_referenced(file_name, directory, 'i_'):
-                return 'metadata_sample', active_status
-        elif file_name.startswith('m_'):
-            if is_file_referenced(file_name, directory, 'a_'):
-                return 'metadata_maf', active_status
-        elif file_name.startswith('i_'):
-            investigation = os.path.join(directory, 'i_')
-            for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
-                if open(invest_file).read():
-                    return 'metadata_investigation', active_status
-        return 'metadata', 'old'
-    elif file_name.lower().endswith(('.xls', '.xlsx', '.csv', '.tsv')):
-        return 'spreadsheet', active_status
-    elif file_name.endswith('.txt'):
-        return 'text', active_status
-    elif file_name == 'audit':
-        return 'audit', active_status
-    elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml')):
-        if is_file_referenced(file_name, directory, 'a_'):
-            return 'derived', active_status
-        else:
-            return 'derived', none_active_status
-    elif file_name.lower().endswith(('.zip', '.gz', '.tar', '.7z', '.z')):
-        if is_file_referenced(file_name, directory, 'a_'):
-            return 'compressed', active_status
-        else:
-            return 'compressed', none_active_status
-    elif file_name == 'metexplore_mapping.json':
-        return 'internal_mapping', active_status
-    else:
-        if is_file_referenced(file_name, directory, 'a_'):
-            return 'raw', active_status
-        else:
-            return 'unknown', none_active_status
 
-
-def is_file_referenced(file_name, directory, isa_tab_file_to_check):
-    """ There can be more than one assay, so each MAF must be checked against
-    each Assay file. Do not state a MAF as not in use if it's used in the 'other' assay """
-    found = False
-    isa_tab_file_to_check = isa_tab_file_to_check + '*.txt'
-    isa_tab_file = os.path.join(directory, isa_tab_file_to_check)
-    for ref_file_name in glob.glob(isa_tab_file):
-        """ The filename we pass in is found referenced in the metadata (ref_file_name)
-        One possible problem here is of the maf is found in an old assay file, then we will report it as 
-        current """
-        try:
-            if file_name in io.open(ref_file_name, 'r', encoding='utf8', errors="ignore").read():
-                found = True
-        except Exception as e:
-            logger.error('File Format error? Cannot read or open file ' + file_name)
-            logger.error(str(e))
-
-    return found

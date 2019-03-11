@@ -486,11 +486,11 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                             save_samples_copy=save_audit_copy)
 
         try:
-            remove_file(study_location, a_file)
+            remove_file(study_location, a_file, allways_remove=True)  # We have to remove an active metadata file
             # os.remove(os.path.join(study_location, a_file))
             if maf_name is not None:
                 #os.remove(os.path.join(study_location, maf_name))
-                remove_file(study_location, maf_name)
+                remove_file(study_location, maf_name, allways_remove=True)
         except:
             logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
 
