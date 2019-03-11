@@ -490,25 +490,36 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
 
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                          skip_load_tables=True, study_location=study_location)
-        # Get all unique protocols for the study, ie. any protocol that is only used once
-        unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
-
         # Remove the assay from the study
         for assay in isa_study.assays:
             a_file = assay.filename
 
             if assay_file_name == a_file:
+                logger.info("Removing assay " + assay_file_name + " from study " + study_id)
+
+                # remove protocols *only* used by this assay
+                # Get all unique protocols for the study, ie. any protocol that is only used once
+                unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
+                assay_type = get_assay_type_from_file_name(study_id, assay.filename)
+                tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type = \
+                    get_assay_headers_and_protcols(assay_type)
+
+                for protcol in protocols:
+                    prot_name = protcol[1]
+                    for uprot_name in unique_protocols:
+                        if prot_name == uprot_name:
+                            obj = isa_study.get_prot(prot_name)
+                            if not obj:
+                                abort(404)
+                            # remove object
+                            isa_study.protocols.remove(obj)
+
+                isa_study.assays.remove(assay)
+                maf_name = get_maf_name_from_assay_name(a_file)
                 logger.info("A copy of the previous files will %s saved", save_msg_str)
                 iac.write_isa_study(isa_inv, user_token, std_path,
                                     save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
                                     save_samples_copy=save_audit_copy)
-
-                logger.info("Removing assay " + assay_file_name + " from study " + study_id)
-                isa_study.assays.remove(assay)
-                # ToDo, remove protocols *only* used by this assay
-
-                maf_name = get_maf_name_from_assay_name(a_file)
-
                 try:
                     remove_file(study_location, a_file, allways_remove=True)  # We have to remove active metadata files
                     if maf_name is not None:
