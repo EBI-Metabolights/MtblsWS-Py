@@ -6,8 +6,7 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
-from app.ws.utils import read_tsv, write_tsv, add_new_protocols_from_assay, update_correct_sample_file_name, \
-    get_assay_headers_and_protcols, create_maf, add_ontology_to_investigation, remove_file
+from app.ws.utils import *
 import logging
 import json
 import os.path
@@ -393,6 +392,17 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 "allowMultiple": False
             },
             {
+                "name": "force",
+                "description": "Remove related protocols",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": True
+            },
+            {
                 "name": "save_audit_copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
@@ -445,6 +455,10 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             # user token is required
             abort(401)
 
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('force', help='Remove related protocols')
+
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
@@ -459,6 +473,11 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             save_audit_copy = True
             save_msg_str = "be"
 
+        remove_protocols = False
+        if request.args:
+            args = parser.parse_args(req=request)
+            remove_protocols = False if args['force'].lower() != 'true' else True
+
         # body content validation
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -471,30 +490,63 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
 
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                          skip_load_tables=True, study_location=study_location)
-        maf_name = None
+        # Get all unique protocols for the study, ie. any protocol that is only used once
+        unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
+
         # Remove the assay from the study
         for assay in isa_study.assays:
             a_file = assay.filename
+
             if assay_file_name == a_file:
+                logger.info("A copy of the previous files will %s saved", save_msg_str)
+                iac.write_isa_study(isa_inv, user_token, std_path,
+                                    save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
+                                    save_samples_copy=save_audit_copy)
+
                 logger.info("Removing assay " + assay_file_name + " from study " + study_id)
-                isa_study.assays.remove(assay)  # ToDo, remove protocols *only* used by this assay
+                isa_study.assays.remove(assay)
+                # ToDo, remove protocols *only* used by this assay
+
                 maf_name = get_maf_name_from_assay_name(a_file)
 
-        logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path,
-                            save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
-                            save_samples_copy=save_audit_copy)
-
-        try:
-            remove_file(study_location, a_file, allways_remove=True)  # We have to remove an active metadata file
-            # os.remove(os.path.join(study_location, a_file))
-            if maf_name is not None:
-                #os.remove(os.path.join(study_location, maf_name))
-                remove_file(study_location, maf_name, allways_remove=True)
-        except:
-            logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
+                try:
+                    remove_file(study_location, a_file, allways_remove=True)  # We have to remove active metadata files
+                    if maf_name is not None:
+                        remove_file(study_location, maf_name, allways_remove=True)
+                except:
+                    logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
 
         return {"success": "The assay was removed from study "+study_id}
+
+
+def get_all_unique_protocols_from_study_assays(study_id, assays):
+    all_protocols = []
+    unique_protocols = []
+    all_names = []
+    short_list = []
+
+    try:
+        for assay in assays:
+            assay_type = get_assay_type_from_file_name(study_id, assay.filename)
+            tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type = \
+                get_assay_headers_and_protcols(assay_type)
+            all_protocols = all_protocols + protocols
+    except:
+        return []
+
+    for protocol in all_protocols:
+        all_names.append(protocol[1])
+
+    for prot_name in all_names:
+        unique_protocols.append([prot_name, all_names.count(prot_name)])
+
+    unique_protocols = list(map(list, set(map(lambda i: tuple(i), unique_protocols))))
+
+    for i in unique_protocols:
+        if i[1] == 1:
+            short_list.append(i[0])
+
+    return short_list
 
 
 def get_maf_name_from_assay_name(assay_file_name):

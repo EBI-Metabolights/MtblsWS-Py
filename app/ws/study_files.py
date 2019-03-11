@@ -120,7 +120,7 @@ class StudyFiles(Resource):
 }</pre></code></br> 
 "file_location" is one of: "study" (study folder), "upload" (upload folder) or "both". </br>
 Please note you can not delete <b>active</b> metadata files (i_*.txt, s_*.txt, a_*.txt and m_*.tsv) 
-without setting the "delete_active_files" parameter to True''',
+without setting the "force" parameter to True''',
         parameters=[
             {
                 "name": "study_id",
@@ -140,7 +140,7 @@ without setting the "delete_active_files" parameter to True''',
                 "allowMultiple": False
             },
             {
-                "name": "file_location",
+                "name": "location",
                 "description": "Location of the file (study, upload, both)",
                 "required": False,
                 "allowEmptyValue": True,
@@ -149,7 +149,7 @@ without setting the "delete_active_files" parameter to True''',
                 "dataType": "string",
             },
             {
-                "name": "delete_active_files",
+                "name": "force",
                 "description": "Allow removal of active metadata files.",
                 "required": False,
                 "allowEmptyValue": True,
@@ -187,7 +187,7 @@ without setting the "delete_active_files" parameter to True''',
             }
         ]
     )
-    def delete(self, study_id):
+    def post(self, study_id):
 
         # param validation
         if study_id is None:
@@ -202,8 +202,8 @@ without setting the "delete_active_files" parameter to True''',
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('files', help='files')
-        parser.add_argument('file_location', help='file_location')
-        parser.add_argument('delete_active_files', help='Remove active metadata files')
+        parser.add_argument('location', help='Location')
+        parser.add_argument('force', help='Remove active metadata files')
         file_location = 'study'
         files = None
         allways_remove = False
@@ -212,8 +212,8 @@ without setting the "delete_active_files" parameter to True''',
         if request.args:
             args = parser.parse_args(req=request)
             files = args['files'] if args['files'] else None
-            file_location = args['file_location'] if args['file_location'] else None
-            allways_remove = False if args['delete_active_files'].lower() != 'true' else True
+            file_location = args['location'] if args['location'] else None
+            allways_remove = False if args['force'].lower() != 'true' else True
 
         # body content validation
         try:
