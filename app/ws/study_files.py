@@ -8,6 +8,7 @@ from app.ws.isaApiClient import IsaApiClient
 from operator import itemgetter
 from marshmallow import ValidationError
 import json
+import zipfile
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -455,6 +456,140 @@ class SampleStudyFiles(Resource):
                     samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "fuzzy"})
 
         return jsonify({'sample_files': samples_and_files})
+
+
+class UnzipFiles(Resource):
+    @swagger.operation(
+        summary="Unzip files in the study folder",
+        nickname="Unzip files",
+        notes='''Unzip files in the study folder<pre><code>
+    {    
+        "files": [
+            {"name": "Raw_files1.zip"},
+            {"name": "Folders.zip"}
+        ]
+    }</pre></code>''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "files",
+                "description": 'Files to unzip',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "force",
+                "description": "Remove zip files after extraction",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": True
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. Files unzipped."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404, 'Please provide valid parameter for study identifier')
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('files', help='files')
+        parser.add_argument('force', help='Remove zip files')
+        files = None
+        remove_zip = False
+
+        # If false, only sync ISA-Tab metadata files
+        if request.args:
+            args = parser.parse_args(req=request)
+            files = args['files'] if args['files'] else None
+            remove_zip = False if args['force'].lower() != 'true' else True
+
+        # body content validation
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['files']
+            if data is None:
+                abort(412)
+            files = data
+        except (ValidationError, Exception):
+            abort(400, 'Incorrect JSON provided')
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        for file in files:
+            f_name = file["name"]
+            try:
+                with zipfile.ZipFile(os.path.join(study_location, f_name), "r") as zip_ref:
+                    zip_ref.extractall(study_location)
+            except Exception as e:
+                msg = 'Could not extract zip file ' + f_name
+                logger.error(msg)
+                return {'Error': msg}
+
+            try:
+                if remove_zip:
+                    remove_file(study_location, f_name, allways_remove=True)
+            except:
+                msg = 'Could not remove zip file ' + f_name
+                logger.error(msg)
+                return {'Error': msg}
+
+        ret_msg = 'Files unzipped'
+        if remove_zip:
+            ret_msg = 'Files unzipped and removed'
+
+        return {'Success': ret_msg}
 
 
 def clean_name(name):
