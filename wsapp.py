@@ -18,6 +18,7 @@ from app.ws.mzML2ISA import *
 from app.ws.partner_utils import Metabolon
 from app.ws.jira_update import Jira
 from app.ws.study_files import *
+from app.ws.assay_protocol import *
 
 """
 MTBLS WS-Py
@@ -82,6 +83,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyContacts, res_path + "/studies/<string:study_id>/contacts")
     api.add_resource(StudySubmitters, res_path + "/studies/<string:study_id>/submitters")
     api.add_resource(StudyProtocols, res_path + "/studies/<string:study_id>/protocols")
+    api.add_resource(GetProtocolForAssays, res_path + "/studies/<string:study_id>/protocols/meta")
     api.add_resource(StudyFactors, res_path + "/studies/<string:study_id>/factors")
     api.add_resource(StudyDescriptors, res_path + "/studies/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/studies/<string:study_id>/publications")
