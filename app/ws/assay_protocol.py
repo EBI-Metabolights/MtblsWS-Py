@@ -95,16 +95,17 @@ class GetProtocolForAssays(Resource):
                 except FileNotFoundError:
                     abort(400, "The file " + file_name + " was not found")
 
-                all_rows = totuples(file_df.reset_index(), 'rows')
-                row = all_rows['rows'][0]  # Get row 1
-                row.pop('index')  # Remove the additional 'index' column
+                all_rows_dict = totuples(file_df.reset_index(), 'rows')
+                all_rows = all_rows_dict['rows']
+                row = all_rows_dict['rows'][0]  # Get row 1
+                # row.pop('index')  # Remove the additional 'index' column
 
                 # Next we look for all occurrences of "Protocol REF" columns, as these are the protocol deliminators
                 idx = 0  # This is the index (position) of the column. This is needed for later updates
                 full_column_list = []
                 for key, value in row.items():
 
-                    if key == 'Sample Name':
+                    if key == 'Sample Name' or key == 'index':
                         idx += 1
                         continue  # No need for this as this is not part of an assay protocol, but links to samples
 
@@ -114,15 +115,17 @@ class GetProtocolForAssays(Resource):
                         correct_protocol = False
 
                     if correct_protocol:
-                        # if key.startswith(prot_ref):
-                        #     #idx += 1
-                        #     #continue  #
-                        #     column_list = {"protocol": value}
-                        # else:
                         column_list = {"column": key}
                         # Todo, all unique values in this column, add []
-                        # column_list.update({"data": value})
+                        unique_entries = [value]
 
+                        for row in all_rows:
+                            for key2, value2 in row.items():
+                                if key == key2:
+                                    if value2 not in unique_entries:
+                                        unique_entries.append(value2)
+
+                        column_list.update({"data": unique_entries})
                         column_list.update({"index": str(idx)})
                         full_column_list.append(column_list)
 
