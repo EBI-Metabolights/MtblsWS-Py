@@ -18,16 +18,17 @@ query_all_studies = """
                when s.status = 1 then 'In Curation'
                when s.status = 2 then 'In Review'
                when s.status = 3 then 'Public'
-               else 'Dormant' end as status
+               else 'Dormant' end as status,
+          curator
         from 
           studies s,
           study_user su,
           users u
         where
-           date_trunc('day',s.updatedate)>=date_trunc('day',current_date-7) and
+           date_trunc('day',s.updatedate)>=date_trunc('day',current_date-90) and
            s.id = su.studyid and
            su.userid = u.id
-    group by 1,3,4,5 ) status
+    group by 1,3,4,5,6) status
     where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
 query_studies_user = """

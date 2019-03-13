@@ -123,6 +123,7 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
             release_date = study[2]
             update_date = study[3]
             study_status = study[4]
+            curator = study[5]
             issue = []
             summary = None
 
@@ -146,7 +147,25 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                     continue
 
             summary = issue.fields.summary  # Follow pattern 'MTBLS123 - YYYYMMDD - Status'
-            if summary.startswith('MTBLS') and summary != new_summary:  # Release date or status has changed
+            try:
+                assignee = issue.fields.assignee.name
+            except:
+                assignee = ""
+
+            valid_curator = False
+            jira_curator = ""
+            if curator:
+                if curator.lower() == 'mark':
+                    jira_curator = 'mwilliam'
+                    valid_curator = True
+                elif curator.lower() == 'keeva':
+                    jira_curator = 'keeva'
+                    valid_curator = True
+            else:
+                jira_curator = ""
+
+            # Release date or status has changed, or the assignee (curator) has changed
+            if summary.startswith('MTBLS') and (summary != new_summary or assignee != jira_curator):
 
                 # Add "Curation" Epic
                 issues_to_add = [issue.key]
@@ -159,6 +178,10 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
 
                 # Change the issue's summary, comments and description.
                 issue.update(summary=new_summary, fields={"labels": labels}, notify=False)
+
+                if valid_curator:
+                    issue.update(assignee={'name': jira_curator})
+
                 updated_studies.append(study_id)
                 logger.info('Updated Jira case for study ' + study_id)
                 print('Updated Jira case for study ' + study_id)
