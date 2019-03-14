@@ -1,3 +1,4 @@
+import json
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -12,6 +13,19 @@ iac = IsaApiClient()
 warning = "warning"
 error = "error"
 success = "success"
+
+
+def add_msg(validations, section, message, status):
+    validations.append({section: message, "status": status})
+
+
+def get_validation_rules(validation_schema, sub_part):
+    if validation_schema:
+        study_val = validation_schema['study']
+        val = study_val[sub_part]
+        rules = val['rules'][0]
+    return rules
+
 
 class Validation(Resource):
     @swagger.operation(
@@ -78,13 +92,30 @@ class Validation(Resource):
 
 
 def validate_study(study_id, study_location, user_token):
-    validations = []
-    isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                     skip_load_tables=True,
-                                                     study_location=study_location)
+    all_validations = []
+    validation_schema = None
 
-    status, amber_warning, validations = validate_publication(isa_study, validations)
-    # status, amber_warning, validations = validate_protocols(isa_study, validations)
+    try:
+        validation_schema_file = app.config.get('VALIDATIONS_FILE')
+        with open(validation_schema_file, 'r') as json_file:
+            validation_schema = json.load(json_file)
+    except:
+        all_validations.append({"info": "Could not find the validation schema json file, only basic validation will take place", "status": success})
+
+    # Validate basic ISA-Tab structure
+    isa_study, isa_inv, std_path, validates, amber_warning, isa_validation = \
+        validate_basic_isa_tab(study_id, user_token, study_location)
+    all_validations.append(isa_validation)
+
+    # Validate publications reported on the study
+    status, amber_warning, pub_validation = validate_publication(isa_study, validation_schema)
+    all_validations.append(pub_validation)
+
+    # Validate metadata in ISA-Tab structure
+    validates, amber_warning, isa_meta_validation = validate_isa_tab_metadata(isa_inv, isa_study, validation_schema)
+    all_validations.append(isa_meta_validation)
+
+
     # status, validation.append(validate_protocols())
     # status, validation.append(validate_protocols())
     # status, validation.append(validate_protocols())
@@ -97,17 +128,18 @@ def validate_study(study_id, study_location, user_token):
 
     if status:
         if amber_warning:
-            return {"validation": validations, "study_validation_status": warning}
+            return {"validations": all_validations, "study_validation_status": warning}
         else:
-            return {"validation": validations, "study_validation_status": success}
+            return {"validations": all_validations, "study_validation_status": success}
     else:
-        return {"validation": validations, "study_validation_status": error}
+        return {"validations": all_validations, "study_validation_status": error}
 
 
-def validate_publication(isa_study, validations):
+def validate_publication(isa_study, validation_schema):
     # check for Publication
     validates = True
     amber_warning = False
+    validations = []
 
     if isa_study.publications:
         amber_warning = False
@@ -184,32 +216,148 @@ def validate_publication(isa_study, validations):
         validates = False
 
     if not validates:
-        ret_list = [{"publication": validations, "overall_status": "Validation failed",
-                     "overall_status": error}]
+        ret_list = {"publication": validations, "overall_status": "Validation failed",
+                     "overall_status": error}
     elif amber_warning:
-        ret_list = [{"publication": validations,
+        ret_list = {"publication": validations,
                      "overall_status": "Some optional information is missing for your study",
-                     "overall_status": warning}]
+                     "overall_status": warning}
     else:
-        ret_list = [{"publication": validations, "overall_status": "Successful validation",
-                     "overall_status": success}]
+        ret_list = {"publication": validations, "overall_status": "Successful validation",
+                     "overall_status": success}
 
     return validates, amber_warning, ret_list
 
 
-def validate_protocols(isa_study, validations):
+def validate_basic_isa_tab(study_id, user_token, study_location):
     validates = True
     amber_warning = False
+    validations = []
+
+    isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                     skip_load_tables=False,
+                                                     study_location=study_location)
+
+    if isa_inv:
+        validations.append({"ISA-Tab": "Successfully read the i_Investigation.txt files", "status": success})
+
+        if isa_study:
+            validations.append({"ISA-Tab": "Successfully read the study section of the investigation file",
+                                "status": success})
+        else:
+            validations.append({"ISA-Tab": "Can not read the study section of the investigation file",
+                                "status": error})
+            validates = False
+
+        if isa_study.filename:
+            validations.append({"ISA-Tab": "Successfully found the reference to the sample sheet filename",
+                                "status": success})
+        else:
+            validations.append({"ISA-Tab": "Could not find the reference to the sample sheet filename",
+                                "status": error})
+            validates = False
+
+        if validates:  # Have to have a basic investigation and sample file before we can continue
+            if isa_study.samples:
+                validations.append({"ISA-Tab": "Successfully found one or more samples",
+                                    "status": success})
+            else:
+                validations.append({"ISA-Tab": "Could not find any samples",
+                                    "status": error})
+                validates = False
+
+            if isa_study.assays:
+                validations.append({"ISA-Tab": "Successfully found one or more assays",
+                                    "status": success})
+            else:
+                validations.append({"ISA-Tab": "Could not find any assays",
+                                    "status": error})
+                validates = False
+
+            if isa_study.factors:
+                validations.append({"ISA-Tab": "Successfully found one or more factors",
+                                    "status": success})
+            else:
+                validations.append({"ISA-Tab": "Could not find any factors",
+                                    "status": warning})
+                amber_warning = True
+
+            if isa_study.design_descriptors:
+                validations.append({"ISA-Tab": "Successfully found one or more descriptors",
+                                    "status": success})
+            else:
+                validations.append({"ISA-Tab": "Could not find any study design descriptors",
+                                    "status": error})
+                validates = False
+
+    else:
+        validations.append({"ISA-Tab": "Can not find or read the investigation files", "status": error})
+        validates = False
 
     if not validates:
-        ret_list = [{"protocols": validations, "overall_status": "Validation failed",
-                     "overall_status": error}]
+        ret_list = {"isa-tab": validations, "status_message": "Validation failed",
+                     "overall_status": error}
     elif amber_warning:
-        ret_list = [{"protocols": validations,
-                     "overall_status": "Some optional information is missing for your study",
-                     "overall_status": warning}]
+        ret_list = {"isa-tab": validations,
+                     "status_message": "Some optional information is missing for your study",
+                     "overall_status": warning}
     else:
-        ret_list = [{"protocols": validations, "overall_status": "Successful validation",
-                     "overall_status": success}]
+        ret_list = {"isa-tab": validations, "status_message": "Successful validation",
+                     "overall_status": success}
+
+    return isa_study, isa_inv, std_path, validates, amber_warning, ret_list
+
+
+def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema):
+    validates = True
+    amber_warning = False
+    validations = []
+
+    if validation_schema:
+        title_rules = get_validation_rules(validation_schema, 'title')
+        desc_rules = get_validation_rules(validation_schema, 'description')
+
+    if isa_inv:
+
+        # Title
+        title_val_len = int(title_rules['value'])
+        try:
+            title_len = len(isa_inv.title)
+        except:
+            title_len = 0
+
+        if title_len >= title_val_len:
+            add_msg(validations, "Metadata", "The title length validates", success)
+        else:
+            add_msg(validations, "Metadata", "The title of your study has to be at least " + str(title_val_len) +
+                                             " characters long", error)
+            validates = False
+
+        # Description
+        desc_val_len = int(desc_rules['value'])
+        try:
+            descr_len = len(isa_inv.description)
+        except:
+            descr_len = 0
+
+        if descr_len >= desc_val_len:
+            add_msg(validations, "Metadata", "The length of the description/abstract validates", success)
+        else:
+            add_msg(validations, "Metadata", "The description/abstract of your study has to be at least " +
+                    str(desc_val_len) + " characters long", error)
+            validates = False
+
+    else:
+        add_msg(validations, "Metadata", "Can not find or read the investigation files", error)
+        validates = False
+
+    if not validates:
+        ret_list = {"isa-tab metadata": validations, "status_message": "Validation failed", "overall_status": error}
+    elif amber_warning:
+        ret_list = {"isa-tab metadata": validations,
+                    "status_message": "Some optional information is missing for your study", "overall_status": warning}
+    else:
+        ret_list = {"isa-tab metadata": validations, "status_message": "Successful validation",
+                    "overall_status": success}
 
     return validates, amber_warning, ret_list
