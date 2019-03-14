@@ -103,7 +103,7 @@ def validate_study(study_id, study_location, user_token):
         all_validations.append({"info": "Could not find the validation schema json file, only basic validation will take place", "status": success})
 
     # Validate basic ISA-Tab structure
-    isa_study, isa_inv, std_path, validates, amber_warning, isa_validation = \
+    isa_study, isa_inv, std_path, status, amber_warning, isa_validation = \
         validate_basic_isa_tab(study_id, user_token, study_location)
     all_validations.append(isa_validation)
 
@@ -111,10 +111,9 @@ def validate_study(study_id, study_location, user_token):
     status, amber_warning, pub_validation = validate_publication(isa_study, validation_schema)
     all_validations.append(pub_validation)
 
-    # Validate metadata in ISA-Tab structure
-    validates, amber_warning, isa_meta_validation = validate_isa_tab_metadata(isa_inv, isa_study, validation_schema)
+    # Validate detailed metadata in ISA-Tab structure
+    status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(isa_inv, isa_study, validation_schema)
     all_validations.append(isa_meta_validation)
-
 
     # status, validation.append(validate_protocols())
     # status, validation.append(validate_protocols())
@@ -329,8 +328,7 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema):
         if title_len >= title_val_len:
             add_msg(validations, "Metadata", "The title length validates", success)
         else:
-            add_msg(validations, "Metadata", "The title of your study has to be at least " + str(title_val_len) +
-                                             " characters long", error)
+            add_msg(validations, "Metadata", title_rules['error'], error)
             validates = False
 
         # Description
@@ -341,10 +339,9 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema):
             descr_len = 0
 
         if descr_len >= desc_val_len:
-            add_msg(validations, "Metadata", "The length of the description/abstract validates", success)
+            add_msg(validations, "Metadata", "The length of the description validates", success)
         else:
-            add_msg(validations, "Metadata", "The description/abstract of your study has to be at least " +
-                    str(desc_val_len) + " characters long", error)
+            add_msg(validations, "Metadata", desc_rules['error'], error)
             validates = False
 
     else:
