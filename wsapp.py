@@ -19,6 +19,7 @@ from app.ws.partner_utils import Metabolon
 from app.ws.jira_update import Jira
 from app.ws.study_files import *
 from app.ws.assay_protocol import *
+from app.ws.validation import Validation
 
 """
 MTBLS WS-Py
@@ -124,9 +125,10 @@ def initialize_app(flask_app):
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
     api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml2isatab")
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate")
-    #api.add_resource(AddUser, res_path + "/ebi-internal/<string:study_id>/user-to-study")
+    #Todo api.add_resource(AddUser, res_path + "/ebi-internal/<string:study_id>/submitter")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
+    api.add_resource(Validation, res_path + "/ebi-internal/<string:study_id>/validation")
 
 def main():
     print("Initialising application")
