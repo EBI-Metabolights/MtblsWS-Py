@@ -369,8 +369,8 @@ class ColumnsRows(Resource):
             column_index = column['column']
             #  Need to add values for column and row (not header)
             try:
-                for row_val in range(table_df.shape[0]):
-                    table_df.iloc[int(row_index), int(column_index)] = cell_value
+                #for row_val in range(table_df.shape[0]):
+                table_df.iloc[int(row_index), int(column_index)] = cell_value
             except ValueError:
                 abort(417, "Unable to find the required 'value', 'row' and 'column' values")
 
