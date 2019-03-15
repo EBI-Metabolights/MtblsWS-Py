@@ -285,7 +285,12 @@ def validate_basic_isa_tab(study_id, user_token, study_location):
                                                          study_location=study_location)
     except ValueError:
         err = traceback.format_exc()
-        add_msg(validations, "ISA-Tab", "Critical error: " + err, error)
+        add_msg(validations, "ISA-Tab",
+                "Loading ISA-Tab without sample and assay tables due to critical error: " + err, error)
+        logger.error("Loading ISA-Tab without sample and assay tables due to critical error: " + err)
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
 
     if isa_inv:
         add_msg(validations, "ISA-Tab", "Successfully read the i_Investigation.txt files", success)
