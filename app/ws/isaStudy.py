@@ -4908,7 +4908,7 @@ class StudySubmitters(Resource):
     @swagger.operation(
         summary='Add new Study Submitters',
         notes='''Add new Submitter (owner) to a Study. The submitter must already exist in the MetaboLights database.  
-        Due to data protection issues with confirming if an email address exists in MetaboLights, we will always indicate a successful update<pre><code>
+        Due to GDPR data protection issues with confirming if an email address exists in MetaboLights, we will always indicate a successful update<pre><code>
     { 
       "submitters": [
         {
