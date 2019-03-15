@@ -119,6 +119,7 @@ class Validation(Resource):
 def validate_study(study_id, study_location, user_token):
     all_validations = []
     validation_schema = None
+    error_found = False
 
     try:
         validation_schema_file = app.config.get('VALIDATIONS_FILE')
@@ -131,22 +132,29 @@ def validate_study(study_id, study_location, user_token):
     isa_study, isa_inv, std_path, status, amber_warning, isa_validation = \
         validate_basic_isa_tab(study_id, user_token, study_location)
     all_validations.append(isa_validation)
+    if not status:
+        error_found = True
 
     # Validate publications reported on the study
     status, amber_warning, pub_validation = validate_publication(isa_study, validation_schema)
     all_validations.append(pub_validation)
+    if not status:
+        error_found = True
 
     # Validate detailed metadata in ISA-Tab structure
     status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(isa_inv, isa_study, validation_schema)
     all_validations.append(isa_meta_validation)
+    if not status:
+        error_found = True
+
+    if error_found:
+        return {"validations": all_validations, "study_validation_status": error}
 
     if status:
         if amber_warning:
             return {"validations": all_validations, "study_validation_status": warning}
         else:
             return {"validations": all_validations, "study_validation_status": success}
-    else:
-        return {"validations": all_validations, "study_validation_status": error}
 
 
 def validate_publication(isa_study, validation_schema):
