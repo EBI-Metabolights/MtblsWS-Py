@@ -1,6 +1,7 @@
 import json
+import traceback
 from flask import request, abort
-from flask_restful import Resource, reqparse
+from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
@@ -278,9 +279,13 @@ def validate_basic_isa_tab(study_id, user_token, study_location):
     amber_warning = False
     validations = []
 
-    isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                     skip_load_tables=False,
-                                                     study_location=study_location)
+    try:
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=False,
+                                                         study_location=study_location)
+    except ValueError:
+        err = traceback.format_exc()
+        add_msg(validations, "ISA-Tab", "Critical error: " + err, error)
 
     if isa_inv:
         add_msg(validations, "ISA-Tab", "Successfully read the i_Investigation.txt files", success)
