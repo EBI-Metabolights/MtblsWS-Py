@@ -228,10 +228,11 @@ class Ontology(Resource):
                             "termSource": {
                                 "comments": [],
                                 "ontology_name": "",
+                                "ontology_description": "",
                                 "file": "",
                                 "provenance_name":"",
                                 "version": "",
-                                "ontology_description": "",
+                                "description": "",
                                 "description_url": ""
                             },
                             "termAccession": ""
@@ -258,7 +259,7 @@ class Ontology(Resource):
                         d['termSource']['provenance_name'] = str(cls.ontoName)
 
                     if cls.definition:
-                        d['termSource']['comments'] = str(cls.definition)
+                        d['termSource']['description'] = str(cls.definition)
 
                     d['termSource']['version'] = str(getOnto_version(cls.ontoName))
                     d['termSource']['ontology_description'] = str(getOnto_title(cls.ontoName))
