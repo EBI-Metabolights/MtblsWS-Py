@@ -18,6 +18,8 @@ from app.ws.ontology_info import entity
 from app.ws.ontology_info import onto_information
 from app.ws.utils import log_request
 
+from urllib.parse import quote_plus
+
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
@@ -229,7 +231,8 @@ class Ontology(Resource):
                                 "file": "",
                                 "provenance_name":"",
                                 "version": "",
-                                "description": ""
+                                "ontology_description": "",
+                                "description_url": ""
                             },
                             "termAccession": ""
                         }'''
@@ -243,7 +246,7 @@ class Ontology(Resource):
                     d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/'
                     d['termSource']['provenance_name'] = 'Metabolights'
                     d['termSource']['version'] = '1.0'
-                    d['termSource']['description'] = 'Metabolights Ontology'
+                    d['termSource']['ontology_description'] = 'Metabolights Ontology'
                 else:
                     if cls.provenance_uri:
                         d['termSource']['file'] = str(cls.provenance_uri)
@@ -258,7 +261,8 @@ class Ontology(Resource):
                         d['termSource']['comments'] = str(cls.definition)
 
                     d['termSource']['version'] = str(getOnto_version(cls.ontoName))
-                    d['termSource']['description'] = str(getOnto_title(cls.ontoName))
+                    d['termSource']['ontology_description'] = str(getOnto_title(cls.ontoName))
+                    d['termSource']['description_url'] = str(getDescriptionURL(cls.ontoName,cls.iri))
             except:
                 pass
 
@@ -835,3 +839,8 @@ def removeDuplicated(res_list):
         else:
             iri_pool.append(res.iri)
     return res_list
+
+def getDescriptionURL(ontoName, iri):
+    ir = quote_plus(quote_plus(iri))
+    url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + ontoName + '/terms/' + ir
+    return url
