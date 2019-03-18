@@ -1,5 +1,6 @@
 import json
 import traceback
+import string
 from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -50,6 +51,29 @@ def extract_details(rule):
     except:
         return int(0), "n/a", "n/a", "n/a"
     return val, val_error, val_condition, val_type
+
+
+def return_validations(section, validations, validates, amber_warning):
+    if not validates:
+        ret_list = {section: validations, "status_message": "Validation failed",
+                    "overall_status": error}
+    elif amber_warning:
+        ret_list = {section: validations,
+                    "status_message": "Some optional information is missing for your study",
+                    "overall_status": warning}
+    else:
+        ret_list = {section: validations, "status_message": "Successful validation",
+                    "overall_status": success}
+
+    return validates, amber_warning, ret_list
+
+
+def remove_nonprintable(text):
+    import string
+    # Get the difference of all ASCII characters from the set of printable characters
+    nonprintable = set([chr(i) for i in range(128)]).difference(string.printable)
+    # Use translate to remove all non-printable characters
+    return text.translate({ord(character):None for character in nonprintable})
 
 
 class Validation(Resource):
@@ -154,6 +178,9 @@ def validate_study(study_id, study_location, user_token):
     status, amber_warning, isa_person_validation = validate_contacts(isa_study, validation_schema)
     all_validations.append(isa_person_validation)
 
+    # Validate Protocols
+    status, amber_warning, isa_protocol_validation = validate_protocols(isa_study, validation_schema)
+    all_validations.append(isa_protocol_validation)
 
     if not status:
         error_found = True
@@ -167,6 +194,104 @@ def validate_study(study_id, study_location, user_token):
         return {"validation": {"study_validation_status": warning, "validations": all_validations}}
 
     return {"validation": {"study_validation_status": success, "validations": all_validations}}
+
+
+def validate_protocols(isa_study, validation_schema):
+    # check for Publication
+    validates = True
+    val_section = "protocols"
+    amber_warning = False
+    validations = []
+    protocol_order_list = None
+    is_nmr = False
+    is_ms = False
+    default_prots = []
+
+    if isa_study.assays:
+        for assay in isa_study.assays:
+            assay_type_onto = assay.technology_type
+            if assay_type_onto.term == 'mass spectrometry':
+                is_ms = True
+            elif assay_type_onto.term == 'NMR spectroscopy':
+                is_nmr = True
+
+    # List if standard protocols that should be present
+    if validation_schema:
+        study_val = validation_schema['study']
+        val = study_val['protocols']
+        protocol_order_list = val['default']
+        for prot in protocol_order_list:
+            if is_nmr:
+                if 'NMR ' in prot['technique']:
+                    default_prots.append(prot)
+            elif is_ms:
+                if 'mass ' in prot['technique']:
+                    default_prots.append(prot)
+
+    # protocol order
+    for idx, protocol in enumerate(default_prots):
+        prot_val_name = protocol['title']
+        isa_prot = isa_study.protocols[idx]
+        isa_prot_name = isa_prot.name
+
+        if prot_val_name != isa_prot_name:
+            add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is not in the correct position", warning)
+            amber_warning = True
+        else:
+            add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is in the correct position", success)
+
+
+    name_rules, name_val_description = get_complex_validation_rules(
+        validation_schema, part='protocols', sub_part='protocol', sub_set='name')
+    name_val_len, name_val_error, name_val_condition, name_val_type = extract_details(name_rules)
+
+    desc_rules, desc_val_description = get_complex_validation_rules(
+        validation_schema, part='protocols', sub_part='protocol', sub_set='description')
+    desc_val_len, desc_val_error, desc_val_condition, desc_val_type = extract_details(desc_rules)
+
+    param_rules, param_val_description = get_complex_validation_rules(
+        validation_schema, part='protocols', sub_part='protocol', sub_set='parameterName')
+    param_val_len, param_val_error, param_val_condition, param_val_type = extract_details(param_rules)
+
+    if isa_study.protocols:
+        for protocol in isa_study.protocols:
+            prot_name = protocol.name
+            prot_desc = protocol.description
+            clean_prot_desc = remove_nonprintable(prot_desc)
+            prot_params = protocol.protocol_type
+
+            # non printable characters
+            if prot_desc != clean_prot_desc:
+                add_msg(validations, "Protocol", "Protocol description contains non printable characters",
+                        error, value=prot_desc)
+                validates = False
+            else:
+                add_msg(validations, "Protocol", "Protocol description only contains printable characters",
+                        success, value=prot_desc)
+
+            if len(prot_name) >= name_val_len:
+                add_msg(validations, "Protocol", "Protocol name validates", success, value=prot_name)
+            else:
+                add_msg(validations, "Protocol", name_val_error, error, value=prot_name, desrc=name_val_description)
+                validates = False
+
+            if len(prot_desc) >= desc_val_len:
+                if prot_desc == 'Please update this protocol description':
+                    add_msg(validations, "Protocol", desc_val_error, warning, value=prot_desc,
+                            desrc='Please update this protocol description')
+                    amber_warning = True
+                add_msg(validations, "Protocol", "Protocol description validates", success, value=prot_desc)
+            else:
+                add_msg(validations, "Protocol", desc_val_error, error, value=prot_desc, desrc=desc_val_description)
+                validates = False
+
+            if len(prot_params.term) >= param_val_len:
+                add_msg(validations, "Protocol", "Protocol parameter validates", success, value=prot_params.term)
+            else:
+                add_msg(validations, "Protocol", param_val_error, error, value=prot_params.term, desrc=param_val_description)
+                validates = False
+
+    return return_validations(val_section, validations, validates, amber_warning)
 
 
 def validate_contacts(isa_study, validation_schema):
@@ -382,7 +507,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location):
         err = traceback.format_exc()
         add_msg(validations, "ISA-Tab",
                 "Loading ISA-Tab without sample and assay tables. "
-                "Parameter 'Post Extraction' should be 'Extraction Method' in the 'Extraction' protocol", warning)
+                "Protocol parameters does not match the protocol definition", warning)
         logger.error("Loading ISA-Tab without sample and assay tables due to critical error: " + err)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
