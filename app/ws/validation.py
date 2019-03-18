@@ -120,6 +120,7 @@ def validate_study(study_id, study_location, user_token):
     all_validations = []
     validation_schema = None
     error_found = False
+    warning_found = False
 
     try:
         validation_schema_file = app.config.get('VALIDATIONS_FILE')
@@ -134,27 +135,112 @@ def validate_study(study_id, study_location, user_token):
     all_validations.append(isa_validation)
     if not status:
         error_found = True
+    if amber_warning:
+        warning_found = True
 
     # Validate publications reported on the study
     status, amber_warning, pub_validation = validate_publication(isa_study, validation_schema)
     all_validations.append(pub_validation)
     if not status:
         error_found = True
+    if amber_warning:
+        warning_found = True
 
     # Validate detailed metadata in ISA-Tab structure
     status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(isa_inv, isa_study, validation_schema)
     all_validations.append(isa_meta_validation)
+
+    # Validate Person (authors)
+    status, amber_warning, isa_person_validation = validate_contacts(isa_study, validation_schema)
+    all_validations.append(isa_person_validation)
+
+
     if not status:
         error_found = True
+    if amber_warning:
+        warning_found = True
 
     if error_found:
-        return {"validations": all_validations, "study_validation_status": error}
+        return {"validation": {"study_validation_status": error, "validations": all_validations}}
 
-    if status:
-        if amber_warning:
-            return {"validations": all_validations, "study_validation_status": warning}
-        else:
-            return {"validations": all_validations, "study_validation_status": success}
+    if warning_found:
+        return {"validation": {"study_validation_status": warning, "validations": all_validations}}
+
+    return {"validation": {"study_validation_status": success, "validations": all_validations}}
+
+
+def validate_contacts(isa_study, validation_schema):
+    # check for Publication
+    validates = True
+    amber_warning = False
+    validations = []
+
+    lastName_rules, lastName_val_description = get_complex_validation_rules(
+        validation_schema, part='people', sub_part='person', sub_set='lastName')
+    lastName_val_len, lastName_val_error, lastName_val_condition, lastName_val_type = extract_details(lastName_rules)
+
+    firstName_rules, firstName_val_description = get_complex_validation_rules(
+        validation_schema, part='people', sub_part='person', sub_set='firstName')
+    firstName_val_len, firstName_val_error, firstName_val_condition, firstName_val_type = extract_details(firstName_rules)
+
+    email_rules, email_val_description = get_complex_validation_rules(
+        validation_schema, part='people', sub_part='person', sub_set='email')
+    email_val_len, email_val_error, email_val_condition, email_val_type = extract_details(email_rules)
+
+    affiliation_rules, affiliation_val_description = get_complex_validation_rules(
+        validation_schema, part='people', sub_part='person', sub_set='affiliation')
+    affiliation_val_len, affiliation_val_error, affiliation_val_condition, affiliation_val_type = extract_details(affiliation_rules)
+
+    if isa_study.contacts:
+        for person in isa_study.contacts:
+            last_name = person.last_name
+            first_name = person.first_name
+            email = person.email
+            affiliation = person.affiliation
+
+            if last_name:
+                if len(last_name) >= lastName_val_len:
+                    add_msg(validations, "Person", "Persons last name validates", success)
+                else:
+                    add_msg(validations, "Person", lastName_val_error, error, value=last_name,
+                            desrc=lastName_val_description)
+                    validates = False
+
+            if first_name:
+                if len(first_name) >= firstName_val_len:
+                    add_msg(validations, "Person", "Persons first name validates", success)
+                else:
+                    add_msg(validations, "Person", firstName_val_error, error, value=first_name,
+                            desrc=firstName_val_description)
+                    validates = False
+
+            if email:
+                if len(email) >= email_val_len:
+                    add_msg(validations, "Person", "Persons email validates", success)
+                else:
+                    add_msg(validations, "Person", email_val_error, error, value=email, desrc=email_val_error)
+                    validates = False
+
+            if affiliation:
+                if len(affiliation) >= affiliation_val_len:
+                    add_msg(validations, "Person", "Persons affiliation validates", success)
+                else:
+                    add_msg(validations, "Person", affiliation_val_error, error, value=affiliation,
+                            desrc=affiliation_val_error)
+                    validates = False
+
+    if not validates:
+        ret_list = {"people": validations, "status_message": "Validation failed",
+                    "overall_status": error}
+    elif amber_warning:
+        ret_list = {"people": validations,
+                    "status_message": "Some optional information is missing for your study",
+                    "overall_status": warning}
+    else:
+        ret_list = {"people": validations, "status_message": "Successful validation",
+                    "overall_status": success}
+
+    return validates, amber_warning, ret_list
 
 
 def validate_publication(isa_study, validation_schema):
@@ -218,8 +304,9 @@ def validate_publication(isa_study, validation_schema):
                     add_msg(validations, "Publication DOI", "Found the doi for the publication", success)
                     doi = True
                 else:
-                    add_msg(validations, "Publication DOI", doi_val_error, error, doi)
+                    add_msg(validations, "Publication DOI", doi_val_error, warning, doi)
                     doi = False
+                    amber_warning = True
 
             if not publication.pubmed_id:
                 add_msg(validations, "Publication PubMed ID", pmid_val_description, warning)
@@ -294,7 +381,8 @@ def validate_basic_isa_tab(study_id, user_token, study_location):
     except ValueError:
         err = traceback.format_exc()
         add_msg(validations, "ISA-Tab",
-                "Loading ISA-Tab without sample and assay tables due to critical error: " + err, error)
+                "Loading ISA-Tab without sample and assay tables. "
+                "Parameter 'Post Extraction' should be 'Extraction Method' in the 'Extraction' protocol", warning)
         logger.error("Loading ISA-Tab without sample and assay tables due to critical error: " + err)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
@@ -314,6 +402,22 @@ def validate_basic_isa_tab(study_id, user_token, study_location):
         else:
             add_msg(validations, "ISA-Tab", "Could not find the reference to the sample sheet filename", error)
             validates = False
+
+        # isaconfig
+        if isa_inv.get_comment('Created With Configuration'):
+            create_config = isa_inv.get_comment('Created With Configuration')
+            open_config = None
+            if isa_inv.get_comment('Last Opened With Configuration'):
+                open_config = isa_inv.get_comment('Last Opened With Configuration')
+
+            if 'isaconfig' in create_config.value:
+                add_msg(validations, "ISA-Tab", "Incorrect configuration files used to create the study. "
+                                                "The study may not contain required fields", warning)
+                amber_warning = True
+            if 'isaconfig' in open_config.value:
+                add_msg(validations, "ISA-Tab", "Incorrect configuration files used to edit the study. "
+                                                "The study may not contain required fields", warning)
+                amber_warning = True
 
         if validates:  # Have to have a basic investigation and sample file before we can continue
             if isa_study.samples:
