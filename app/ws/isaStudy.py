@@ -1923,17 +1923,21 @@ class StudyFactors(Resource):
         if obj:
             abort(409)
         # add obj
-        isa_study.factors.append(new_obj)
-        logger.info("A copy of the previous files will %s saved", save_msg_str)
 
-        # Check that the ontology is referenced in the investigation
-        factor_type = new_obj.factor_type
-        term_source = factor_type.term_source
-        add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
-                                      term_source.file, term_source.description)
+        if new_obj.name:
+            isa_study.factors.append(new_obj)
+            logger.info("A copy of the previous files will %s saved", save_msg_str)
 
-        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-        logger.info('Added %s', new_obj.name)
+            # Check that the ontology is referenced in the investigation
+            factor_type = new_obj.factor_type
+            term_source = factor_type.term_source
+            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                          term_source.file, term_source.description)
+
+            iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+            logger.info('Added %s', new_obj.name)
+        else:
+            abort(406, "Please provide a name (factorName) for the factor")
 
         return StudyFactorSchema().dump(new_obj)
 

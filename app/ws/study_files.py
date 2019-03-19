@@ -15,6 +15,29 @@ wsc = WsClient()
 iac = IsaApiClient()
 
 
+def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None, include_raw_data=None):
+    logger.info('Getting list of all files for MTBLS Study %s', study_id)
+    upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
+    logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
+                study_location, upload_location)
+
+    study_files = get_all_files(study_location, directory=directory,
+                                include_raw_data=include_raw_data, study_id=study_id)
+    upload_files = get_all_files(upload_location, directory=directory,
+                                 include_raw_data=include_raw_data, study_id=study_id)
+
+    # Sort the two lists
+    study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
+
+    upload_diff = [dict(i) for i in
+                   {frozenset(row.items()) for row in upload_files} -
+                   {frozenset(row.items()) for row in study_files}]
+
+    upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
+
+    return study_files, upload_files, upload_diff, upload_location
+
+
 class StudyFiles(Resource):
     @swagger.operation(
         summary="Get a list of all files in the study and upload folder(s)",
@@ -99,24 +122,9 @@ class StudyFiles(Resource):
         if not read_access:
             abort(403)
 
-        logger.info('Getting list of all files for MTBLS Study %s', study_id)
-        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
-        logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
-                    study_location, upload_location)
-
-        study_files = get_all_files(study_location, directory=directory,
-                                    include_raw_data=include_raw_data, study_id=study_id)
-        upload_files = get_all_files(upload_location, directory=directory,
-                                     include_raw_data=include_raw_data, study_id=study_id)
-
-        # Sort the two lists
-        study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
-
-        upload_diff = [dict(i) for i in
-                       {frozenset(row.items()) for row in upload_files} -
-                       {frozenset(row.items()) for row in study_files}]
-
-        upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
+        study_files, upload_files, upload_diff, upload_location = \
+            get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
+                                          directory=directory, include_raw_data=include_raw_data)
 
         return jsonify({'studyFiles': study_files,
                         'upload': upload_diff,
