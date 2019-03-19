@@ -183,8 +183,8 @@ def validate_study(study_id, study_location, user_token):
     all_validations.append(isa_protocol_validation)
 
     # Validate Samples
-    status, amber_warning, isa_sample_validation = validate_samples(isa_study, validation_schema)
-    all_validations.append(isa_sample_validation)
+    # status, amber_warning, isa_sample_validation = validate_samples(isa_study, validation_schema)
+    # all_validations.append(isa_sample_validation)
 
     if not status:
         error_found = True
@@ -212,7 +212,7 @@ def validate_samples(isa_study, validation_schema):
         val = study_val['samples']
 
     # Todo, val.default order
-    val.samples
+    #val.samples
 
 
     name_rules, name_val_description = get_complex_validation_rules(
@@ -303,6 +303,7 @@ def validate_protocols(isa_study, validation_schema):
     # protocol order
     for idx, protocol in enumerate(default_prots):
         prot_val_name = protocol['title']
+        isa_prot_name = ""
         try:
             isa_prot = isa_study.protocols[idx]
             isa_prot_name = isa_prot.name
