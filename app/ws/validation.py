@@ -182,6 +182,10 @@ def validate_study(study_id, study_location, user_token):
     status, amber_warning, isa_protocol_validation = validate_protocols(isa_study, validation_schema)
     all_validations.append(isa_protocol_validation)
 
+    # Validate Samples
+    status, amber_warning, isa_sample_validation = validate_samples(isa_study, validation_schema)
+    all_validations.append(isa_sample_validation)
+
     if not status:
         error_found = True
     if amber_warning:
@@ -194,6 +198,74 @@ def validate_study(study_id, study_location, user_token):
         return {"validation": {"study_validation_status": warning, "validations": all_validations}}
 
     return {"validation": {"study_validation_status": success, "validations": all_validations}}
+
+
+def validate_samples(isa_study, validation_schema):
+    # check for Publication
+    validates = True
+    val_section = "samples"
+    amber_warning = False
+    validations = []
+
+    if validation_schema:
+        study_val = validation_schema['study']
+        val = study_val['samples']
+
+    # Todo, val.default order
+    val.samples
+
+
+    name_rules, name_val_description = get_complex_validation_rules(
+        validation_schema, part='samples', sub_part='protocol', sub_set='name')
+    name_val_len, name_val_error, name_val_condition, name_val_type = extract_details(name_rules)
+
+    desc_rules, desc_val_description = get_complex_validation_rules(
+        validation_schema, part='protocols', sub_part='protocol', sub_set='description')
+    desc_val_len, desc_val_error, desc_val_condition, desc_val_type = extract_details(desc_rules)
+
+    param_rules, param_val_description = get_complex_validation_rules(
+        validation_schema, part='protocols', sub_part='protocol', sub_set='parameterName')
+    param_val_len, param_val_error, param_val_condition, param_val_type = extract_details(param_rules)
+
+    if isa_study.protocols:
+        for protocol in isa_study.protocols:
+            prot_name = protocol.name
+            prot_desc = protocol.description
+            clean_prot_desc = remove_nonprintable(prot_desc)
+            prot_params = protocol.protocol_type
+
+            # non printable characters
+            if prot_desc != clean_prot_desc:
+                add_msg(validations, "Protocol", "Protocol description contains non printable characters",
+                        error, value=prot_desc)
+                validates = False
+            else:
+                add_msg(validations, "Protocol", "Protocol description only contains printable characters",
+                        success, value=prot_desc)
+
+            if len(prot_name) >= name_val_len:
+                add_msg(validations, "Protocol", "Protocol name validates", success, value=prot_name)
+            else:
+                add_msg(validations, "Protocol", name_val_error, error, value=prot_name, desrc=name_val_description)
+                validates = False
+
+            if len(prot_desc) >= desc_val_len:
+                if prot_desc == 'Please update this protocol description':
+                    add_msg(validations, "Protocol", desc_val_error, warning, value=prot_desc,
+                            desrc='Please update this protocol description')
+                    amber_warning = True
+                add_msg(validations, "Protocol", "Protocol description validates", success, value=prot_desc)
+            else:
+                add_msg(validations, "Protocol", desc_val_error, error, value=prot_desc, desrc=desc_val_description)
+                validates = False
+
+            if len(prot_params.term) >= param_val_len:
+                add_msg(validations, "Protocol", "Protocol parameter validates", success, value=prot_params.term)
+            else:
+                add_msg(validations, "Protocol", param_val_error, error, value=prot_params.term, desrc=param_val_description)
+                validates = False
+
+    return return_validations(val_section, validations, validates, amber_warning)
 
 
 def validate_protocols(isa_study, validation_schema):
@@ -231,15 +303,20 @@ def validate_protocols(isa_study, validation_schema):
     # protocol order
     for idx, protocol in enumerate(default_prots):
         prot_val_name = protocol['title']
-        isa_prot = isa_study.protocols[idx]
-        isa_prot_name = isa_prot.name
+        try:
+            isa_prot = isa_study.protocols[idx]
+            isa_prot_name = isa_prot.name
 
-        if prot_val_name != isa_prot_name:
-            add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is not in the correct position", warning)
-            amber_warning = True
-        else:
-            add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is in the correct position", success)
-
+            if prot_val_name != isa_prot_name:
+                add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is not in the correct position",
+                        warning)
+                amber_warning = True
+            else:
+                add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is in the correct position",
+                        success)
+        except:
+            add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' was not found", error)
+            
 
     name_rules, name_val_description = get_complex_validation_rules(
         validation_schema, part='protocols', sub_part='protocol', sub_set='name')
