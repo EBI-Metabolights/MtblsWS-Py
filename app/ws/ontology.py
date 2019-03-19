@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import ssl
+from urllib.parse import quote_plus
 
 import numpy as np
 import pandas as pd
@@ -17,8 +18,6 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import entity
 from app.ws.ontology_info import onto_information
 from app.ws.utils import log_request
-
-from urllib.parse import quote_plus
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -240,30 +239,29 @@ class Ontology(Resource):
 
             d = json.loads(str(temp))
             try:
-                d['annotationValue'] = str(cls.name)
-                d["termAccession"] = str(cls.iri)
-                d['termSource']['ontology_name'] = str(cls.ontoName)
+                d['annotationValue'] = cls.name
+                d["termAccession"] = cls.iri
+                d['termSource']['ontology_name'] = cls.ontoName
+
                 if cls.ontoName == 'MTBLS':
                     d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/'
                     d['termSource']['provenance_name'] = 'Metabolights'
                     d['termSource']['version'] = '1.0'
                     d['termSource']['ontology_description'] = 'Metabolights Ontology'
                 else:
-                    if cls.provenance_uri:
-                        d['termSource']['file'] = str(cls.provenance_uri)
-                    else:
-                        d['termSource']['file'] = str(getOnto_url(cls.ontoName))
-                    if cls.provenance_name:
+                    d['termSource']['file'] = cls.provenance_uri
+                    d['termSource']['description'] = cls.definition
+                    fullName, version = getOnto_info(cls.ontoName)
+                    d['termSource']['version'] = version
+                    d['termSource']['ontology_description'] = fullName
+
+                    if cls.provenance_name != '':
                         d['termSource']['provenance_name'] = str(cls.provenance_name)
                     else:
                         d['termSource']['provenance_name'] = str(cls.ontoName)
 
-                    if cls.definition:
-                        d['termSource']['description'] = str(cls.definition)
+                d['termSource']['description_url'] = str(getDescriptionURL(cls.ontoName, cls.iri))
 
-                    d['termSource']['version'] = str(getOnto_version(cls.ontoName))
-                    d['termSource']['ontology_description'] = str(getOnto_title(cls.ontoName))
-                    d['termSource']['description_url'] = str(getDescriptionURL(cls.ontoName,cls.iri))
             except:
                 pass
 
@@ -458,9 +456,13 @@ def OLSbranchSearch(keyword, branchName, ontoName):
 
     for ele in json_str['response']['docs']:
         enti = entity(name=ele['label'],
-                      iri=ele['iri'],
-                      obo_ID=ele['short_form'],
-                      ontoName=ele['ontology_prefix'])
+                      iri=ele['iri'])
+
+        if enti.ontoName == '':
+            enti.ontoName = getOnto_Name(enti.iri)
+        if enti.provenance_uri == '':
+            enti.provenance_uri = getOnto_url(enti.ontoName)
+
         res.append(enti)
     return res
 
@@ -543,13 +545,18 @@ def getMetaboTerm(keyword, branch):
 
     if len(res_cls) > 0:
         for cls in res_cls:
-            if 'MTBLS' in cls.iri:
-                ontoName = 'MTBLS'
-            else:
-                ontoName = getOnto_Name(cls.iri)
 
-            enti = entity(name=cls.label[0], iri=cls.iri, obo_ID=cls.name, ontoName=ontoName,
-                          provenance_name='Metabolights', provenance_uri='https://www.ebi.ac.uk/metabolights/')
+            enti = entity(name=cls.label[0], iri=cls.iri,
+                          provenance_name='Metabolights')
+
+            if 'MTBLS' in cls.iri:
+                enti.ontoName = 'MTBLS'
+
+            if enti.ontoName == '':
+                enti.ontoName = getOnto_Name(enti.iri)
+                enti.provenance_name = getOnto_Name(enti.iri)
+                enti.provenance_uri = getOnto_url(enti.ontoName)
+
             result.append(enti)
         result.insert(0, result.pop())
 
@@ -582,23 +589,12 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
 
         for i in range(len(temp)):
             iri = temp.iloc[i]['SEMANTIC_TAG']
-            if 'mesh' in iri.lower():
-                ontoName = 'MESH'
-            elif 'nci' in iri.lower():
-                ontoName = 'NCIT'
-            elif 'bao' in iri.lower():
-                ontoName = 'BAO'
-            else:
-                ontoName = getOnto_Name(iri)
-
             name = ' '.join(
                 [w.title() if w.islower() else w for w in temp.iloc[i]['PROPERTY_VALUE'].split()])
             obo_ID = iri.rsplit('/', 1)[-1]
 
             enti = entity(name=name,
                           iri=iri,
-                          obo_ID=iri.rsplit('/', 1)[-1],
-                          ontoName=ontoName,
                           provenance_name='metabolights-zooma',
                           provenance_uri='https://www.ebi.ac.uk/metabolights/',
                           Zooma_confidence='High')
@@ -627,37 +623,22 @@ def getZoomaTerm(keyword):
         json_str = json.loads(content)
         for term in json_str:
             iri = term['semanticTags'][0]
-            if 'mesh' in iri.lower():
-                ontoName = 'MESH'
-            elif 'nci' in iri.lower():
-                ontoName = 'NCIT'
-            elif 'bao' in iri.lower():
-                ontoName = 'BAO'
-            else:
-                ontoName = getOnto_Name(iri)
 
             name = ' '.join(
                 [w.title() if w.islower() else w for w in term["annotatedProperty"]['propertyValue'].split()])
 
             enti = entity(name=name,
                           iri=iri,
-                          obo_ID=iri.rsplit('/', 1)[-1],
-                          ontoName=ontoName,
                           Zooma_confidence=term['confidence'])
+
+            if enti.ontoName == '':
+                enti.ontoName = getOnto_Name(iri)
+                enti.provenance_uri = getOnto_url(enti.ontoName)
 
             try:
                 provenance_name = term['derivedFrom']['provenance']['source']['name']
-                provenance_uri = term['derivedFrom']['provenance']['source']['uri']
             except:
-                provenance_name = ''
-                provenance_uri = ''
-
-            if 'http' not in provenance_name:
-                enti.provenance_name = provenance_name
-            else:
-                enti.provenance_name = ontoName
-
-            enti.provenance_uri = provenance_uri
+                provenance_name = enti.ontoName
 
             if enti.provenance_name == 'metabolights':
                 res = [enti] + res
@@ -695,17 +676,13 @@ def getOLSTerm(keyword):
             name = ' '.join(
                 [w.title() if w.islower() else w for w in term['label'].split()])
 
-            try:
-                definition = term['description'][0]
-            except:
-                definition = None
+            enti = entity(name=name, iri=term['iri'])
 
-            enti = entity(name=name,
-                          iri=term['iri'],
-                          obo_ID=term['short_form'],
-                          ontoName=term['ontology_name'],
-                          provenance_name=term['ontology_prefix'],
-                          definition=definition)
+            if enti.ontoName == '':
+                enti.ontoName = term['ontology_name']
+                enti.provenance_name = term['ontology_prefix']
+                enti.provenance_uri = getOnto_url(term['ontology_prefix'])
+
             res.append(enti)
             if len(res) >= 20:
                 break
@@ -748,11 +725,10 @@ def getBioportalTerm(keyword):
             elif 'meddra' in iri.lower():
                 ontoName = 'MEDDRA'
             else:
-                ontoName = getOnto_Name(iri)
+                ontoName = ''
 
             enti = entity(name=term['prefLabel'],
                           iri=iri,
-                          obo_ID=iri.rsplit('/', 1)[-1],
                           ontoName=ontoName)
             res.append(enti)
             iri_record.append(iri)
@@ -763,32 +739,47 @@ def getBioportalTerm(keyword):
     return res
 
 
+def getOnto_info(pre_fix):
+    try:
+        if 'nmr' in pre_fix.lower():
+            onto_id = 'NMRCV'
+        else:
+            onto_id = pre_fix
+
+        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + onto_id
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+        title = j_content['config']['title']
+        version = j_content['config']['version']
+        return title, version
+    except:
+        return '', ''
+
+
 def getOnto_Name(iri):
     # get ontology name by giving iri of entity
-    substring = iri.rsplit('/', 1)[-1]
-    return ''.join(x for x in substring if x.isalpha())
-
-
-def getOnto_title(pre_fix):
     try:
-        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+        url = 'http://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology?iri=' + iri
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
-        return j_content['config']['title']
+        return j_content['_embedded']['terms'][0]['ontology_prefix']
+
     except:
-        return ''
+        substring = iri.rsplit('/', 1)[-1]
+        return ''.join(x for x in substring if x.isalpha())
 
 
-def getOnto_version(pre_fix):
-    try:
-        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
-        fp = urllib.request.urlopen(url)
-        content = fp.read().decode('utf-8')
-        j_content = json.loads(content)
-        return j_content['config']['version']
-    except:
-        return ''
+# def getOnto_version(pre_fix):
+#     try:
+#         url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+#         fp = urllib.request.urlopen(url)
+#         content = fp.read().decode('utf-8')
+#         j_content = json.loads(content)
+#         return j_content['config']['version']
+#     except:
+#         return ''
 
 
 def getOnto_url(pre_fix):
@@ -840,6 +831,7 @@ def removeDuplicated(res_list):
         else:
             iri_pool.append(res.iri)
     return res_list
+
 
 def getDescriptionURL(ontoName, iri):
     ir = quote_plus(quote_plus(iri))

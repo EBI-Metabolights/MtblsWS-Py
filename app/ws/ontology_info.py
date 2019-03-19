@@ -1,3 +1,9 @@
+import json
+from urllib.parse import quote_plus
+
+from owlready2 import urllib
+
+
 class onto_information():
     ''' basic onto_information of entities'''
 
@@ -39,47 +45,53 @@ class onto_information():
 
 
 class entity():
-    def __init__(self, name=None, iri=None, obo_ID=None, ontoName=None, provenance_name=None, provenance_uri=None,
-                 Zooma_confidence=None, definition=None):
-        if name is None:
-            self.name = ''
-        else:
-            self.name = name
+    def __init__(self, name, iri='', ontoName='', provenance_name='', provenance_uri='',
+                 Zooma_confidence='', definition=''):
 
-        if iri is None:
-            self.iri = ''
-        else:
-            self.iri = iri
+        self.name = name
+        self.iri = iri
+        self.provenance_name = provenance_name
+        self.Zooma_confidence = Zooma_confidence
 
-        if obo_ID is None:
-            self.obo_ID = ''
-        else:
-            self.obo_ID = obo_ID
+        try:
+            ir = quote_plus(quote_plus(iri))
+            url = 'http://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology/' + ir
+            fp = urllib.request.urlopen(url)
+            content = fp.read().decode('utf-8')
+            j_content = json.loads(content)
 
-        if ontoName is None:
-            self.ontoName = ''
-        else:
-            self.ontoName = ontoName
+            try:
+                self.ontoName = j_content['_embedded']['terms'][0]['ontology_prefix']
+            except:
+                self.ontoName = ontoName
 
-        if provenance_name is None:
-            self.provenance_name = ''
-        else:
-            self.provenance_name = provenance_name
+            try:
+                self.provenance_uri = j_content['_embedded']['terms'][0]['ontology_iri']
+            except:
+                self.provenance_uri = provenance_uri
 
-        if provenance_uri is None:
-            self.provenance_uri = ''
-        else:
-            self.provenance_uri = provenance_uri
+            try:
+                self.definition = j_content['_embedded']['terms'][0]["description"][0]
+            except:
+                self.definition = definition
 
-        if Zooma_confidence is None:
-            self.Zooma_confidence = ''
-        else:
-            self.Zooma_confidence = Zooma_confidence
+        except:
+            pass
 
-        if definition is None:
-            self.definition = ''
-        else:
-            self.definition = definition
+    def getOntoInfo(self, iri):
+        try:
+            url = 'https://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology?iri=' + iri
+            fp = urllib.request.urlopen(url)
+            content = fp.read().decode('utf-8')
+            j_content = json.loads(content)
+
+            ontoName = j_content['_embedded']['terms'][0]['ontology_prefix']
+            ontoURL = j_content['_embedded']['terms'][0]['ontology_iri']
+            definition = j_content['_embedded']['terms'][0]["description"]
+
+            return ontoName, ontoURL, definition
+        except:
+            return '', '', ''
 
 
 def list_supers(onto_c, sup):
