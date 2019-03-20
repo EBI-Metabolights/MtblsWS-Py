@@ -53,6 +53,7 @@ class entity():
         self.ontoName = ontoName
         self.provenance_name = provenance_name
         self.Zooma_confidence = Zooma_confidence
+        self.definition = definition
 
 
 

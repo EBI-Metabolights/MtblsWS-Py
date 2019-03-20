@@ -223,31 +223,34 @@ class Ontology(Resource):
         for cls in result:
             temp = '''    {
                             "comments": [],
-                            "annotationValue": "investigator",
+                            "annotationValue": "",
+                            "annotationDefinition": "", 
+                            "termAccession": "",
+                            
                             "termSource": {
                                 "comments": [],
-                                "ontology_name": "",
-                                "ontology_description": "",
+                                "name": "",
                                 "file": "",
-                                "provenance_name":"",
+                                "provenanceName": "",
                                 "version": "",
-                                "description": "",
-                                "description_url": ""
-                            },
-                            "termAccession": ""
+                                "description": ""
+                            }                            
                         }'''
 
             d = json.loads(str(temp))
             try:
                 d['annotationValue'] = cls.name
+                d["annotationDefinition"] = cls.definition
                 d["termAccession"] = cls.iri
-                d['termSource']['ontology_name'] = cls.ontoName
+                d['termSource']['name'] = cls.ontoName
+                d['termSource']['provenanceName'] = cls.provenance_name
+
 
                 if cls.ontoName == 'MTBLS':
                     d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/'
-                    d['termSource']['provenance_name'] = 'Metabolights'
+                    d['termSource']['provenanceName'] = 'Metabolights'
                     d['termSource']['version'] = '1.0'
-                    d['termSource']['ontology_description'] = 'Metabolights Ontology'
+                    d['termSource']['description'] = 'Metabolights Ontology'
                 # else:
                 #     d['termSource']['file'] = cls.provenance_uri
                 #     d['termSource']['description'] = cls.definition
@@ -260,7 +263,7 @@ class Ontology(Resource):
                 #     else:
                 #         d['termSource']['provenance_name'] = str(cls.ontoName)
 
-                d['termSource']['description_url'] = str(getDescriptionURL(cls.ontoName, cls.iri))
+                # d['termSource']['description_url'] = str(getDescriptionURL(cls.ontoName, cls.iri))
 
             except:
                 pass
@@ -683,12 +686,20 @@ def getOLSTerm(keyword):
             name = ' '.join(
                 [w.title() if w.islower() else w for w in term['label'].split()])
 
-            enti = entity(name=name, iri=term['iri'])
+            try:
+                definition = term['description'][0]
+            except:
+                definition = ''
 
-            if enti.ontoName == '':
-                enti.ontoName = term['ontology_prefix']
-                enti.provenance_name = term['ontology_prefix']
-                # enti.provenance_uri = getOnto_url(term['ontology_prefix'])
+            try:
+                ontoName = term['ontology_prefix']
+                provenance_name = term['ontology_prefix']
+            except:
+                ontoName = ''
+                provenance_name = ''
+
+            enti = entity(name=name, iri=term['iri'], definition=definition, ontoName=ontoName,
+                          provenance_name=provenance_name)
 
             res.append(enti)
             if len(res) >= 20:
@@ -736,7 +747,7 @@ def getBioportalTerm(keyword):
 
             enti = entity(name=term['prefLabel'],
                           iri=iri,
-                          ontoName=ontoName,provenance_name=ontoName)
+                          ontoName=ontoName, provenance_name=ontoName)
             res.append(enti)
             iri_record.append(iri)
             if len(res) >= 5:
