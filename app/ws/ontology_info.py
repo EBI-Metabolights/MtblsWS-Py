@@ -50,33 +50,37 @@ class entity():
 
         self.name = name
         self.iri = iri
+        self.ontoName = ontoName
         self.provenance_name = provenance_name
         self.Zooma_confidence = Zooma_confidence
 
-        try:
-            ir = quote_plus(quote_plus(iri))
-            url = 'http://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology/' + ir
-            fp = urllib.request.urlopen(url)
-            content = fp.read().decode('utf-8')
-            j_content = json.loads(content)
 
-            try:
-                self.ontoName = j_content['_embedded']['terms'][0]['ontology_prefix']
-            except:
-                self.ontoName = ontoName
 
-            try:
-                self.provenance_uri = j_content['_embedded']['terms'][0]['ontology_iri']
-            except:
-                self.provenance_uri = provenance_uri
 
-            try:
-                self.definition = j_content['_embedded']['terms'][0]["description"][0]
-            except:
-                self.definition = definition
-
-        except:
-            pass
+        # try:
+        #     ir = quote_plus(quote_plus(iri))
+        #     url = 'http://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology/' + ir
+        #     fp = urllib.request.urlopen(url)
+        #     content = fp.read().decode('utf-8')
+        #     j_content = json.loads(content)
+        #
+        #     try:
+        #         self.ontoName = j_content['_embedded']['terms'][0]['ontology_prefix']
+        #     except:
+        #         self.ontoName = ontoName
+        #
+        #     try:
+        #         self.provenance_uri = j_content['_embedded']['terms'][0]['ontology_iri']
+        #     except:
+        #         self.provenance_uri = provenance_uri
+        #
+        #     try:
+        #         self.definition = j_content['_embedded']['terms'][0]["description"][0]
+        #     except:
+        #         self.definition = definition
+        #
+        # except:
+        #     pass
 
     def getOntoInfo(self, iri):
         try:
