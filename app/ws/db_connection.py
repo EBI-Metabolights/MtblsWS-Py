@@ -192,6 +192,36 @@ def study_submitters(study_id, user_email, method):
         return False
 
 
+def override_validations(study_id, method, override=""):
+
+    if method == 'query':
+        query = "select override from studies where acc = '#study_id#';"
+    elif method == 'update':
+        query = "update studies set override = '#override#' where acc = '#study_id#';"
+
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn = psycopg2.connect(**params)
+        cursor = conn.cursor()
+
+        if method == 'query':
+            query = query.replace("#study_id#", study_id.upper())
+            query = query.replace('\\', '')
+            cursor.execute(query)
+            data = cursor.fetchall()
+            conn.close()
+            return data[0]
+        elif method == 'update':
+            query = query.replace("#study_id#", study_id.upper())
+            query = query.replace("#override#", override)
+            query = query.replace('\\', '')
+            cursor.execute(query)
+            conn.commit()
+            conn.close()
+    except Exception as e:
+        return False
+
+
 def execute_query(query, user_token, study_id=None):
     try:
         params = app.config.get('DB_PARAMS')

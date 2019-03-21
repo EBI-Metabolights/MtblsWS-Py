@@ -19,7 +19,7 @@ from app.ws.partner_utils import Metabolon
 from app.ws.jira_update import Jira
 from app.ws.study_files import *
 from app.ws.assay_protocol import *
-from app.ws.validation import Validation
+from app.ws.validation import Validation, OverrideValidation
 
 """
 MTBLS WS-Py
@@ -128,6 +128,7 @@ def initialize_app(flask_app):
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
     api.add_resource(Validation, res_path + "/ebi-internal/<string:study_id>/validation")
+    api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validation/override")
 
 def main():
     print("Initialising application")
