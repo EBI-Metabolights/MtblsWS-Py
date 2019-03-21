@@ -214,10 +214,15 @@ class Ontology(Resource):
 
         response = []
 
-        a = result
-        if queryFields and ('OLS' not in queryFields) and ('Bioportal' not in queryFields):
-            result = setPriority(result)
-            result = reorder(result, term)
+
+        # if queryFields and ('OLS' not in queryFields) and ('Bioportal' not in queryFields):
+        #     priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+        #     result = setPriority(result, priority)
+        #     result = reorder(result, term)
+
+        priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+        result = setPriority(result, priority)
+        result = reorder(result, term)
         result = removeDuplicated(result)
 
         for cls in result:
@@ -244,7 +249,6 @@ class Ontology(Resource):
                 d["termAccession"] = cls.iri
                 d['termSource']['name'] = cls.ontoName
                 d['termSource']['provenanceName'] = cls.provenance_name
-
 
                 if cls.ontoName == 'MTBLS':
                     d['termSource']['file'] = 'https://www.ebi.ac.uk/metabolights/'
@@ -811,8 +815,8 @@ def getOnto_url(pre_fix):
         return ''
 
 
-def setPriority(res_list):
-    priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+def setPriority(res_list, priority):
+    # priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
     res = {}
     for enti in res_list:
         term_name = enti.name.lower()
@@ -832,9 +836,20 @@ def setPriority(res_list):
 
 def reorder(res_list, keyword):
     def sort_key(s, keyword):
-        exact = s.lower() == keyword.lower()
-        start = s.startswith(keyword)
-        partial = keyword in s
+        try:
+            exact = s.lower() == keyword.lower()
+        except:
+            exact = False
+
+        try:
+            start = s.startswith(keyword)
+        except:
+            start = False
+        try:
+            partial = keyword in s
+        except:
+            partial = False
+
         return exact, start, partial
 
     res = sorted(res_list, key=lambda x: sort_key(x.name, keyword), reverse=True)
