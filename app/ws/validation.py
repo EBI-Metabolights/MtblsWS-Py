@@ -560,7 +560,7 @@ def validate_assays(isa_study, study_location, override_list):
                     + column_name + '"', success, desrc=file_description)
         else:
             add_msg(validations, val_section, "File '" + file_name + "' missing or not correct for column '"
-                    + column_name + '"', error, desrc=file_description)
+                    + column_name + "'", error, desrc=file_description)
 
         # Correct MAF?
         if column_name.lower() == 'metabolite assignment file':
