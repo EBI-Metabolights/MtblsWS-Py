@@ -622,7 +622,8 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
     val_section = "samples"
     validations = []
     samples = []
-
+    incorrect_species = "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, " \
+                        "chemical, food, matix, mus, rat, blood, urine, plasma, hair, fur, skin, saliva"
     if validation_schema:
         study_val = validation_schema['study']
         val = study_val['samples']
@@ -662,10 +663,22 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                 if row:
                     col_rows += 1
                 if s_header == 'Characteristics[Organism]':
-                    if 'human' in row.lower():
+                    if 'human' == row.lower() or 'man' == row.lower():
                         human_found = True
                     elif len(row) <= 5:  # ToDo, read from all_val[idx][ontology-details][rules][0][value]
                         too_short = True
+
+                    if row.lower() in incorrect_species:
+                        add_msg(validations, val_section,
+                                "Organism can not be '" + row + "', choose the appropriate taxonomy term",
+                                error, file_name)
+
+                    if ':' in row:
+                        add_msg(validations, val_section,
+                                "Organism should not contain the actual ontology/taxonomy name, "
+                                "please include just the appropriate taxonomy term",
+                                warning, file_name)
+
                 elif s_header.lower() == 'sample name':
                     sample_name_list.append(row)
 
@@ -677,7 +690,8 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                         success, file_name)
 
     if human_found:
-        add_msg(validations, val_section, "Organism can not be 'human', please choose the 'Homo sapiens' ontology term",
+        add_msg(validations, val_section,
+                "Organism can not be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
                 error, file_name)
     if too_short:
         add_msg(validations, val_section, "Organism name is too short (>=5 characters)", error, file_name)
