@@ -697,7 +697,7 @@ def map_file_type(file_name, directory):
         return 'text', active_status
     elif file_name == 'audit':
         return 'audit', active_status
-    elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml')):
+    elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata')):
         if is_file_referenced(file_name, directory, 'a_'):
             return 'derived', active_status
         else:
