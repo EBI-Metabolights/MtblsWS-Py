@@ -517,35 +517,39 @@ def validate_assays(isa_study, study_location, override_list):
             all_rows = assay_df.shape[0]
             for a_header in assays:
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
-                for row in assay_df[a_header]:
-                    if row:
-                        col_rows += 1
-                    # Correct sample names?
-                    if a_header.lower() == 'sample name':
-                        all_assays.append(row)
-                        if row in sample_name_list:
-                            add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
-                                    success, assay.filename)
-                        else:
-                            add_msg(validations, val_section, "Sample name '" + row + "' not found in sample sheet",
-                                    success, meta_file=assay.filename,
-                                    desrc="Please create the sample in the sample sheet first")
-                    elif a_header.endswith(' File'):  # files exists?
-                        file_and_column = row + '|' + a_header
-                        if file_and_column not in unique_file_names:
-                            if row != "":  # Do not add a section if a column does not list files, like derived files
-                                unique_file_names.append(file_and_column)
-                    elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the MAF
-                        if row not in all_assay_names:
-                            all_assay_names.append(row)
+                try:
+                    for row in assay_df[a_header]:
+                        if row:
+                            col_rows += 1
+                        # Correct sample names?
+                        if a_header.lower() == 'sample name':
+                            all_assays.append(row)
+                            if row in sample_name_list:
+                                add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
+                                        success, assay.filename)
+                            else:
+                                add_msg(validations, val_section, "Sample name '" + row + "' not found in sample sheet",
+                                        success, meta_file=assay.filename,
+                                        desrc="Please create the sample in the sample sheet first")
+                        elif a_header.endswith(' File'):  # files exists?
+                            file_and_column = row + '|' + a_header
+                            if file_and_column not in unique_file_names:
+                                if row != "":  # Do not add a section if a column does not list files, like derived files
+                                    unique_file_names.append(file_and_column)
+                        elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the MAF
+                            if row not in all_assay_names:
+                                all_assay_names.append(row)
 
-                if col_rows < all_rows:
-                    add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values", warning,
-                            assay.filename)
-                else:
+                        if col_rows < all_rows:
+                            add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values", warning,
+                                    assay.filename)
+                        else:
+                            add_msg(validations, val_section,
+                                    "Assay sheet column '" + a_header + "' has correct number of rows",
+                                    success, assay.filename)
+                except:
                     add_msg(validations, val_section,
-                            "Assay sheet column '" + a_header + "' has correct number of rows",
-                            success, assay.filename)
+                            "Assay sheet is missing rows for column '" + a_header + "'", error, assay.filename)
 
     for sample_name in sample_name_list:
         if sample_name not in all_assays:
