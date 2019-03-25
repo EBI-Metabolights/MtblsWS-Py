@@ -2483,8 +2483,11 @@ class StudyDescriptors(Resource):
 
         # Check that the ontology is referenced in the investigation
         term_source = new_obj.term_source
-        add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
-                                      term_source.file, term_source.description)
+        if term_source:
+            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                          term_source.file, term_source.description)
+        else:
+            abort(409)
 
         # add Study Descriptor
         isa_study.design_descriptors.append(new_obj)
