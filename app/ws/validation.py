@@ -2,7 +2,7 @@ import json
 import traceback
 from app.ws.study_files import get_all_files_from_filesystem
 from flask import request, abort
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
@@ -67,17 +67,21 @@ def return_validations(section, validations, override_list=[]):
         val["val_sequence"] = val_sequence
         val["val_override"] = 'false'
         val["val_message"] = ''
-        for db_val in override_list:  # These are from the database, ie. already over-ridden
-            val_step = db_val.split(':')[0]
-            val_msg = db_val.split(':')[1]
-            if val_sequence == val_step:
-                val_status = val['status']
-                val["val_override"] = 'true'
-                val["val_message"] = val_msg
-                if val_status == warning or val_status == error or val_status == info:
-                    val["status"] = success
-                elif val_status == success:
-                    val["status"] = error
+        if len(override_list) > 1:
+            try:
+                for db_val in override_list:  # These are from the database, ie. already over-ridden
+                    val_step = db_val.split(':')[0]
+                    val_msg = db_val.split(':')[1]
+                    if val_sequence == val_step:
+                        val_status = val['status']
+                        val["val_override"] = 'true'
+                        val["val_message"] = val_msg
+                        if val_status == warning or val_status == error or val_status == info:
+                            val["status"] = success
+                        elif val_status == success:
+                            val["status"] = error
+            except:
+                logger.error('Could not read the validation override list, is the required ":" there?')
 
     error_found = False
     warning_found = False
@@ -165,16 +169,17 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
             incorrect_message = incorrect_message + header + " is not the correct position. "
             incorrect_pos = True
     except:
-        add_msg(validations, val_section, "Column '"+header+"' is missing from " + file_name, error)
+        # add_msg(validations, val_section, "Column '"+header+"' is missing from " + file_name, error)
+        incorrect_message = incorrect_message + " Column '"+header+"' is missing from " + file_name + ". "
         incorrect_pos = True
 
     return incorrect_pos, incorrect_message, validations
 
 
-def validate_maf(validations, file_name, all_assay_names, sample_name_list, study_location, study_id):
+def validate_maf(validations, file_name, all_assay_names, study_location, study_id):
     maf_name = os.path.join(study_location, file_name)
     maf_df = read_tsv(maf_name)
-    val_section = 'maf'
+    val_section = "maf"
     incorrect_pos = False
     incorrect_message = ""
 
@@ -206,7 +211,7 @@ def validate_maf(validations, file_name, all_assay_names, sample_name_list, stud
         add_msg(validations, val_section, incorrect_message, error)
     else:
         add_msg(validations, val_section,
-                "Columns database_identifier, chemical_formula, smiles, inchi and metabolite_identification "
+                "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and 'metabolite_identification' "
                 "found and in correct column positions", success)
 
     # NMR/MS Assay Names OR Sample Names are added to the sheet
@@ -214,17 +219,17 @@ def validate_maf(validations, file_name, all_assay_names, sample_name_list, stud
         for assay_name in all_assay_names:
             try:
                 maf_header[assay_name]
-                add_msg(validations, val_section, "MS/NMR Assay Name " + assay_name + " found in the MAF", success)
+                add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF", success)
             except:
-                add_msg(validations, val_section, "MS/NMR Assay Name " + assay_name + " not found in the MAF", error)
+                add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF", error)
 
     if not all_assay_names and sample_name_list:
         for sample_name in sample_name_list:
             try:
                 maf_header[sample_name]
-                add_msg(validations, val_section, "Sample Name " + sample_name + " found in the MAF", success)
+                add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF", success)
             except:
-                add_msg(validations, val_section, "Sample Name " + sample_name + " not found in the MAF", error)
+                add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF", error)
 
 
 class Validation(Resource):
@@ -240,6 +245,16 @@ class Validation(Resource):
                 "allowMultiple": False,
                 "paramType": "path",
                 "dataType": "string"
+            },
+            {
+                "name": "val_section",
+                "description": "Specify which validations to run, default is all: "
+                               "isa-tab_metadata,publication,protocols,people,samples,assays,maf,files",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -283,12 +298,20 @@ class Validation(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
-        return validate_study(study_id, study_location, user_token, obfuscation_code)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('val_section', help="Validation section", location="args")
+        args = parser.parse_args()
+        val_section = args['val_section']
+        if val_section is None:
+            val_section = 'all'  # All
+
+        return validate_study(study_id, study_location, user_token, obfuscation_code, val_section)
 
 
 class OverrideValidation(Resource):
@@ -407,7 +430,7 @@ class OverrideValidation(Resource):
         return {"success": "Validations stored in the database"}
 
 
-def validate_study(study_id, study_location, user_token, obfuscation_code):
+def validate_study(study_id, study_location, user_token, obfuscation_code, validation_section='all'):
     all_validations = []
     validation_schema = None
     error_found = False
@@ -438,41 +461,59 @@ def validate_study(study_id, study_location, user_token, obfuscation_code):
     if amber_warning:
         warning_found = True
 
+    # We can now run the rest of the validation checks
+
     # Validate publications reported on the study
-    status, amber_warning, pub_validation = validate_publication(isa_study, validation_schema, inv_file, override_list)
-    all_validations.append(pub_validation)
-    if not status:
-        error_found = True
-    if amber_warning:
-        warning_found = True
+    val_section = "publication"
+    if validation_section == 'all' or val_section in validation_section:
+        status, amber_warning, pub_validation = validate_publication(isa_study, validation_schema, inv_file,
+                                                                     override_list, val_section)
+        all_validations.append(pub_validation)
+        # if not status:
+        #     error_found = True
+        # if amber_warning:
+        #     warning_found = True
 
     # Validate detailed metadata in ISA-Tab structure
-    status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(isa_inv, isa_study, validation_schema,
-                                                                           inv_file, override_list)
-    all_validations.append(isa_meta_validation)
+    val_section = "isa-tab_metadata"
+    if validation_section == 'all' or val_section in validation_section:
+        status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(isa_inv, isa_study, validation_schema,
+                                                                               inv_file, override_list, val_section)
+        all_validations.append(isa_meta_validation)
 
     # Validate Person (authors)
-    status, amber_warning, isa_person_validation = validate_contacts(isa_study, validation_schema, inv_file,
-                                                                     override_list)
-    all_validations.append(isa_person_validation)
+    val_section = "people"
+    if validation_section == 'all' or val_section in validation_section:
+        status, amber_warning, isa_person_validation = validate_contacts(isa_study, validation_schema, inv_file,
+                                                                         override_list, val_section)
+        all_validations.append(isa_person_validation)
 
     # Validate Protocols
-    status, amber_warning, isa_protocol_validation = validate_protocols(isa_study, validation_schema, inv_file,
-                                                                        override_list)
-    all_validations.append(isa_protocol_validation)
+    val_section = "protocols"
+    if validation_section == 'all' or val_section in validation_section:
+        status, amber_warning, isa_protocol_validation = validate_protocols(isa_study, validation_schema, inv_file,
+                                                                            override_list, val_section)
+        all_validations.append(isa_protocol_validation)
 
     # Validate Samples
-    status, amber_warning, isa_sample_validation = \
-        validate_samples(isa_study, isa_samples, validation_schema, s_file, override_list)
-    all_validations.append(isa_sample_validation)
+    val_section = "samples"
+    if validation_section == 'all' or val_section in validation_section:
+        status, amber_warning, isa_sample_validation = \
+            validate_samples(isa_study, isa_samples, validation_schema, s_file, override_list, val_section)
+        all_validations.append(isa_sample_validation)
 
     # Validate files
-    status, amber_warning, files_validation = validate_files(study_id, study_location, obfuscation_code, override_list)
-    all_validations.append(files_validation)
+    val_section = "files"
+    if validation_section == 'all' or val_section in validation_section:
+        status, amber_warning, files_validation = validate_files(study_id, study_location, obfuscation_code,
+                                                                 override_list, val_section)
+        all_validations.append(files_validation)
 
     # Validate assays
-    status, amber_warning, assay_validation = validate_assays(isa_study, study_location, override_list)
-    all_validations.append(assay_validation)
+    val_section = "assays"
+    if validation_section == 'all' or val_section in validation_section or 'maf' in validation_section:
+        status, amber_warning, assay_validation = validate_assays(isa_study, study_location, override_list, val_section)
+        all_validations.append(assay_validation)
 
     if not status:
         error_found = True
@@ -488,9 +529,8 @@ def validate_study(study_id, study_location, user_token, obfuscation_code):
     return {"validation": {"study_validation_status": success, "validations": all_validations}}
 
 
-def validate_assays(isa_study, study_location, override_list):
+def validate_assays(isa_study, study_location, override_list, val_section="assays"):
     # check for Publication
-    val_section = "assays"
     validations = []
     assays = []
     all_assays = []
@@ -568,14 +608,13 @@ def validate_assays(isa_study, study_location, override_list):
 
         # Correct MAF?
         if column_name.lower() == 'metabolite assignment file':
-            validate_maf(validations, file_name, all_assay_names, sample_name_list, study_location, isa_study.identifier)
+            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier)
 
     return return_validations(val_section, validations, override_list)
 
 
-def validate_files(study_id, study_location, obfuscation_code, override_list):
+def validate_files(study_id, study_location, obfuscation_code, override_list, val_section="files"):
     # check for Publication
-    val_section = "files"
     validations = []
 
     study_files, upload_files, upload_diff, upload_location = \
@@ -586,14 +625,23 @@ def validate_files(study_id, study_location, obfuscation_code, override_list):
         file_name = file['file']
         file_type = file['type']
         file_status = file['status']
+        isa_tab_warning = False
 
         full_file_name = os.path.join(study_location, file_name)
 
-        if os.path.isdir(os.path.join(full_file_name)):
-            for sub_file_name in os.listdir(full_file_name):
-                if is_empty_file(os.path.join(full_file_name, sub_file_name)):
-                    add_msg(validations, val_section, "Empty files are not allowed", error, val_section,
-                            value=os.path.join(file_name, sub_file_name))
+        if file_name != 'audit':
+            if os.path.isdir(os.path.join(full_file_name)):
+                for sub_file_name in os.listdir(full_file_name):
+                    if is_empty_file(os.path.join(full_file_name, sub_file_name)):
+                        add_msg(validations, val_section, "Empty files are not allowed", error, val_section,
+                                value=os.path.join(file_name, sub_file_name))
+
+                    # warning for sub folders with ISA tab
+                    if sub_file_name.startswith(('i_', 'a_', 's_', 'm_')) and not isa_tab_warning:
+                        add_msg(validations, val_section,
+                                "Sub-directory " + file_name + " contains ISA-Tab metadata documents",
+                                warning, val_section, value=file_name)
+                        isa_tab_warning = True
 
         if file_name.startswith('Icon') or file_name.lower() == 'desktop.ini' or file_name.lower() == '.ds_store' \
                 or '~' in file_name or '+' in file_name or file_name.startswith('.'):
@@ -621,9 +669,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list):
     return return_validations(val_section, validations, override_list)
 
 
-def validate_samples(isa_study, isa_samples, validation_schema, file_name, override_list):
+def validate_samples(isa_study, isa_samples, validation_schema, file_name, override_list, val_section="samples"):
     # check for Publication
-    val_section = "samples"
     validations = []
     samples = []
     incorrect_species = "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, " \
@@ -703,9 +750,8 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
     return return_validations(val_section, validations, override_list)
 
 
-def validate_protocols(isa_study, validation_schema, file_name, override_list):
+def validate_protocols(isa_study, validation_schema, file_name, override_list, val_section="protocols"):
     # check for Publication
-    val_section = "protocols"
     validations = []
     protocol_order_list = None
     is_nmr = False
@@ -799,9 +845,8 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list):
     return return_validations(val_section, validations, override_list)
 
 
-def validate_contacts(isa_study, validation_schema, file_name, override_list):
-    # check for Publication
-    val_section = "people"
+def validate_contacts(isa_study, validation_schema, file_name, override_list, val_section="people"):
+    # check for People ie. authors
     validations = []
 
     lastName_rules, lastName_val_description = get_complex_validation_rules(
@@ -859,9 +904,8 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list):
     return return_validations(val_section, validations, override_list)
 
 
-def validate_publication(isa_study, validation_schema, file_name, override_list):
+def validate_publication(isa_study, validation_schema, file_name, override_list, val_section="publication"):
     # check for Publication
-    val_section = "publication"
     validations = []
 
     title_rules, title_val_description = get_complex_validation_rules(
@@ -1061,9 +1105,9 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
            inv_file, s_file, assay_files
 
 
-def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list):
+def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list,
+                              val_section="isa-tab_metadata"):
     validations = []
-    val_section = 'isa-tab_metadata'
 
     if validation_schema:
         title_rules, title_descr = get_basic_validation_rules(validation_schema, 'title')

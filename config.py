@@ -11,8 +11,8 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.8.11"
-API_VERSION = "0.25.6"
+WS_APP_VERSION = "0.8.13"
+API_VERSION = "0.25.8"
 
 WS_APP_NAME = "MtblsWS-Py"
 WS_APP_DESCRIPTION = "MetaboLights RESTful WebService"
@@ -27,7 +27,7 @@ MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
 MTBLS_ZOOMA_FILE = "<local file>"
 BIOPORTAL_TOKEN = 'c60c5add-63c6-4485-8736-3f495146aee3'
-MZML_XSD_SCHEMA = ["<local file>","<script location>"]
+MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
 
 PARTNER_TEMPLATE_METABOLON = 'MTBLS study with the template files'
 

@@ -679,7 +679,8 @@ def getOLSTerm(keyword):
         url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
               '&groupField=true' \
               '&queryFields=label,synonym' \
-              'fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
+              '&type=class' \
+              '&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
               '&rows=30'  # &exact=true
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')

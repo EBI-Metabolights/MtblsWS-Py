@@ -269,6 +269,7 @@ class StudyTitle(Resource):
         isa_study.title = new_title
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Applied %s', new_title)
         return jsonify({"title": new_title})
 
@@ -381,12 +382,12 @@ class StudyReleaseDate(Resource):
         isa_study.public_release_date = new_date
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Applied %s', new_date)
         return jsonify({"release_date": new_date})
 
 
 class StudyMetaInfo(Resource):
-
     @swagger.operation(
         summary="Get Study Release Date and Status",
         notes="Get Study Release Date and Status.",
@@ -454,7 +455,6 @@ class StudyMetaInfo(Resource):
 
 
 class StudyDescription(Resource):
-
     @swagger.operation(
         summary="Get Study Description",
         notes="Get the description of a Study.",
@@ -631,6 +631,7 @@ class StudyDescription(Resource):
         isa_study.description = new_description
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Applied %s', new_description)
         return jsonify({"description": new_description})
 
@@ -788,10 +789,22 @@ class StudyContacts(Resource):
                 new_contact = result.data
                 logger.info('Adding new Contact %s for %s', new_contact.first_name, study_id)
                 if (new_contact.first_name+new_contact.last_name).lower() not in contact_persons:
-                    new_contacts.append(new_contact)
                     # Check that the ontology is referenced in the investigation
+                    if len(new_contact.roles) < 1:  # the role is missing, default to Investigator
+                        isa_inv, efo = add_ontology_to_investigation(isa_inv, 'EFO', '132',
+                                                                     'http://data.bioontology.org/ontologies/EFO',
+                                                                     'Experimental Factor Ontology')
+                        new_role = OntologyAnnotation(
+                            term_accession='http://purl.obolibrary.org/obo/NCIT_C51826',
+                            term='Investigator',
+                            term_source=efo)
+                        new_contact.roles.append(new_role)
+                        logger.warning("Role was not defined, defaulting to 'Investigator' for " +
+                                       new_contact.first_name + " " + new_contact.last_name)
+
                     term_anno = new_contact.roles[0]
                     term_source = term_anno.term_source
+                    new_contacts.append(new_contact)
                     add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
                                                   term_source.file, term_source.description)
 
@@ -804,6 +817,7 @@ class StudyContacts(Resource):
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
 
         obj_list = isa_study.contacts
         # Using context to avoid envelop tags in contained objects
@@ -1053,7 +1067,6 @@ class StudyContacts(Resource):
         if not write_access:
             abort(403)
 
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1098,6 +1111,7 @@ class StudyContacts(Resource):
             abort(404)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Updated %s', updated_contact.email)
 
         return PersonSchema().dump(updated_contact)
@@ -2483,8 +2497,11 @@ class StudyDescriptors(Resource):
 
         # Check that the ontology is referenced in the investigation
         term_source = new_obj.term_source
-        add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
-                                      term_source.file, term_source.description)
+        if term_source:
+            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                          term_source.file, term_source.description)
+        else:
+            abort(409)
 
         # add Study Descriptor
         isa_study.design_descriptors.append(new_obj)
