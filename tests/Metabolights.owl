@@ -16490,6 +16490,14 @@ Environments include natural environments or exposures, experimentally applied c
     
 
 
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000007 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000007">
+        <rdfs:label xml:lang="en">confidence</rdfs:label>
+    </owl:Class>
+    
+
+
     <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000008 -->
 
     <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000008">
@@ -18991,6 +18999,51 @@ Environments include natural environments or exposures, experimentally applied c
     
 
 
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000287 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000287">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000007"/>
+        <rdfs:label xml:lang="en">MSI:1</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000288 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000288">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000007"/>
+        <rdfs:label xml:lang="en">MSI:2</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000289 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000289">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000007"/>
+        <rdfs:label xml:lang="en">MSI:3</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000290 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000290">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000007"/>
+        <rdfs:label xml:lang="en">MSI:4</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000291 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000291">
+        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000007"/>
+        <rdfs:label xml:lang="en">MSI:5</rdfs:label>
+    </owl:Class>
+    
+
+
     <!-- 
     ///////////////////////////////////////////////////////////////////////////////////////
     //
@@ -19206,7 +19259,7 @@ Environments include natural environments or exposures, experimentally applied c
                 <rdfs:label>oboInOwl:cjm</rdfs:label>
             </rdf:Description>
         </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
+        <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasDbXref>
@@ -19215,7 +19268,7 @@ Environments include natural environments or exposures, experimentally applied c
                 <rdfs:label>oboInOwl:cjm</rdfs:label>
             </rdf:Description>
         </oboInOwl:hasDbXref>
-        <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
+        <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasDbXref>
@@ -19236,24 +19289,24 @@ Environments include natural environments or exposures, experimentally applied c
         <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboInOwl:hasURI>
-        <rdfs:label>oboFormat:subsetdef</rdfs:label>
+        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">partition</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">slim</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">view</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.obofoundry.org/wiki/index.php/Definitions</oboInOwl:hasURI>
         <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">view</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">slim</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">partition</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+        <oboInOwl:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboInOwl:hasURI>
+        <rdfs:label>oboFormat:subsetdef</rdfs:label>
     </rdf:Description>
     
 
