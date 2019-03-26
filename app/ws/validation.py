@@ -169,13 +169,14 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
             incorrect_message = incorrect_message + header + " is not the correct position. "
             incorrect_pos = True
     except:
-        add_msg(validations, val_section, "Column '"+header+"' is missing from " + file_name, error)
+        # add_msg(validations, val_section, "Column '"+header+"' is missing from " + file_name, error)
+        incorrect_message = incorrect_message + " Column '"+header+"' is missing from " + file_name + ". "
         incorrect_pos = True
 
     return incorrect_pos, incorrect_message, validations
 
 
-def validate_maf(validations, file_name, all_assay_names, sample_name_list, study_location, study_id):
+def validate_maf(validations, file_name, all_assay_names, study_location, study_id):
     maf_name = os.path.join(study_location, file_name)
     maf_df = read_tsv(maf_name)
     val_section = "maf"
@@ -210,7 +211,7 @@ def validate_maf(validations, file_name, all_assay_names, sample_name_list, stud
         add_msg(validations, val_section, incorrect_message, error)
     else:
         add_msg(validations, val_section,
-                "Columns database_identifier, chemical_formula, smiles, inchi and metabolite_identification "
+                "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and 'metabolite_identification' "
                 "found and in correct column positions", success)
 
     # NMR/MS Assay Names OR Sample Names are added to the sheet
@@ -218,17 +219,17 @@ def validate_maf(validations, file_name, all_assay_names, sample_name_list, stud
         for assay_name in all_assay_names:
             try:
                 maf_header[assay_name]
-                add_msg(validations, val_section, "MS/NMR Assay Name " + assay_name + " found in the MAF", success)
+                add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF", success)
             except:
-                add_msg(validations, val_section, "MS/NMR Assay Name " + assay_name + " not found in the MAF", error)
+                add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF", error)
 
     if not all_assay_names and sample_name_list:
         for sample_name in sample_name_list:
             try:
                 maf_header[sample_name]
-                add_msg(validations, val_section, "Sample Name " + sample_name + " found in the MAF", success)
+                add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF", success)
             except:
-                add_msg(validations, val_section, "Sample Name " + sample_name + " not found in the MAF", error)
+                add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF", error)
 
 
 class Validation(Resource):
@@ -247,8 +248,8 @@ class Validation(Resource):
             },
             {
                 "name": "val_section",
-                "description": "Specify which validations to run, default is all : "
-                               "isa-tab_metadata,publication,protocols,people,samples,assays,maf,files}",
+                "description": "Specify which validations to run, default is all: "
+                               "isa-tab_metadata,publication,protocols,people,samples,assays,maf,files",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -297,8 +298,8 @@ class Validation(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -607,7 +608,7 @@ def validate_assays(isa_study, study_location, override_list, val_section="assay
 
         # Correct MAF?
         if column_name.lower() == 'metabolite assignment file':
-            validate_maf(validations, file_name, all_assay_names, sample_name_list, study_location, isa_study.identifier)
+            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier)
 
     return return_validations(val_section, validations, override_list)
 
@@ -1105,7 +1106,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
 
 
 def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list,
-                              val_section = "isa-tab_metadata"):
+                              val_section="isa-tab_metadata"):
     validations = []
 
     if validation_schema:

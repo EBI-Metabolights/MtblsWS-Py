@@ -27,7 +27,7 @@ MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
 MTBLS_ZOOMA_FILE = "<local file>"
 BIOPORTAL_TOKEN = 'c60c5add-63c6-4485-8736-3f495146aee3'
-MZML_XSD_SCHEMA = ["<local file>","<script location>"]
+MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
 
 PARTNER_TEMPLATE_METABOLON = 'MTBLS study with the template files'
 
