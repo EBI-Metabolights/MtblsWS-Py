@@ -269,6 +269,7 @@ class StudyTitle(Resource):
         isa_study.title = new_title
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Applied %s', new_title)
         return jsonify({"title": new_title})
 
@@ -381,12 +382,12 @@ class StudyReleaseDate(Resource):
         isa_study.public_release_date = new_date
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Applied %s', new_date)
         return jsonify({"release_date": new_date})
 
 
 class StudyMetaInfo(Resource):
-
     @swagger.operation(
         summary="Get Study Release Date and Status",
         notes="Get Study Release Date and Status.",
@@ -454,7 +455,6 @@ class StudyMetaInfo(Resource):
 
 
 class StudyDescription(Resource):
-
     @swagger.operation(
         summary="Get Study Description",
         notes="Get the description of a Study.",
@@ -631,6 +631,7 @@ class StudyDescription(Resource):
         isa_study.description = new_description
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Applied %s', new_description)
         return jsonify({"description": new_description})
 
@@ -816,6 +817,7 @@ class StudyContacts(Resource):
 
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
 
         obj_list = isa_study.contacts
         # Using context to avoid envelop tags in contained objects
@@ -1065,7 +1067,6 @@ class StudyContacts(Resource):
         if not write_access:
             abort(403)
 
-
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
@@ -1110,6 +1111,7 @@ class StudyContacts(Resource):
             abort(404)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Updated %s', updated_contact.email)
 
         return PersonSchema().dump(updated_contact)

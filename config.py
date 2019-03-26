@@ -11,8 +11,8 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.8.12"
-API_VERSION = "0.25.7"
+WS_APP_VERSION = "0.8.13"
+API_VERSION = "0.25.8"
 
 WS_APP_NAME = "MtblsWS-Py"
 WS_APP_DESCRIPTION = "MetaboLights RESTful WebService"
