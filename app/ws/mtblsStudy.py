@@ -163,10 +163,6 @@ class IsaTabInvestigationFile(Resource):
                 "message": "OK."
             },
             {
-                "code": 403,
-                "message": "Study does not exist or your do not have access to this study."
-            },
-            {
                 "code": 404,
                 "message": "Not found. The requested identifier is not valid or does not exist."
             }
@@ -176,7 +172,7 @@ class IsaTabInvestigationFile(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(401)
+            abort(401, "Missing study_id")
 
         study_id = study_id.upper()
 
@@ -186,7 +182,7 @@ class IsaTabInvestigationFile(Resource):
             user_token = request.headers['user_token']
 
         if user_token is None:
-            abort(401)
+            abort(401, "Missing user_token")
 
         # query validation
         parser = reqparse.RequestParser()
@@ -215,9 +211,9 @@ class IsaTabInvestigationFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                abort(404, "Wrong investigation filename or file could not be read.")
+                abort(503, "Wrong investigation filename or file could not be read.")
         else:
-            abort(404, "Wrong investigation filename or file could not be read.")
+            abort(503, "Wrong investigation filename or file could not be read.")
 
 
 class IsaTabSampleFile(Resource):
@@ -879,12 +875,6 @@ class CreateAccession(Resource):
         except:
             logger.error('Could not copy files from %s to %s', from_path, to_path)
 
-        # The earlier add_empty_study call could still wait to commit
-        # if obfuscation_code is None:
-        #     time.sleep(1)
-        #     is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-        #         wsc.get_permissions(study_acc, user_token)
-
         # Create upload folder
         status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)
 
@@ -922,8 +912,6 @@ class CreateAccession(Resource):
 def write_audit_files(study_location):
     """
     Write back an ISA-API Investigation object directly into ISA-Tab files
-    :param user_token: User API key for accession check
-    :param study_id: Study accession number
     :param study_location: the filesystem where the study is located
     :return:
     """
@@ -1009,7 +997,7 @@ class ReindexStudy(Resource):
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(401, "Unauthorized. Access to the resource requires user authentication. "
-                        "Please provide a study id and a valid user token")
+                    "Please provide a study id and a valid user token")
 
         status, message = wsc.reindex_study(study_id, user_token)
 

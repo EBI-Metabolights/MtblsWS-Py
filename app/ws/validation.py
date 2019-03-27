@@ -59,7 +59,6 @@ def extract_details(rule):
 
 
 def return_validations(section, validations, override_list=[]):
-
     # Add the validation sequence
     for idx, val in enumerate(validations):
         idx += 1  # Set the sequence to 1, as this is the section we will override
@@ -117,7 +116,7 @@ def remove_nonprintable(text):
     # Get the difference of all ASCII characters from the set of printable characters
     nonprintable = set([chr(i) for i in range(128)]).difference(string.printable)
     # Use translate to remove all non-printable characters
-    return text.translate({ord(character):None for character in nonprintable})
+    return text.translate({ord(character): None for character in nonprintable})
 
 
 def is_empty_file(full_file_name):
@@ -169,8 +168,7 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
             incorrect_message = incorrect_message + header + " is not the correct position. "
             incorrect_pos = True
     except:
-        # add_msg(validations, val_section, "Column '"+header+"' is missing from " + file_name, error)
-        incorrect_message = incorrect_message + " Column '"+header+"' is missing from " + file_name + ". "
+        incorrect_message = incorrect_message + " Column '" + header + "' is missing from " + file_name + ". "
         incorrect_pos = True
 
     return incorrect_pos, incorrect_message, validations
@@ -299,7 +297,7 @@ class Validation(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -469,10 +467,6 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
         status, amber_warning, pub_validation = validate_publication(isa_study, validation_schema, inv_file,
                                                                      override_list, val_section)
         all_validations.append(pub_validation)
-        # if not status:
-        #     error_found = True
-        # if amber_warning:
-        #     warning_found = True
 
     # Validate detailed metadata in ISA-Tab structure
     val_section = "isa-tab_metadata"
@@ -543,7 +537,6 @@ def validate_assays(isa_study, study_location, override_list, val_section="assay
 
     for assay in isa_study.assays:
         unique_file_names = []
-        element = []
         assay_file_name = os.path.join(study_location, assay.filename)
         assay_df = read_tsv(assay_file_name)
 
@@ -574,15 +567,15 @@ def validate_assays(isa_study, study_location, override_list, val_section="assay
                         elif a_header.endswith(' File'):  # files exists?
                             file_and_column = row + '|' + a_header
                             if file_and_column not in unique_file_names:
-                                if row != "":  # Do not add a section if a column does not list files, like derived files
+                                if row != "":  # Do not add a section if a column does not list files
                                     unique_file_names.append(file_and_column)
                         elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the MAF
                             if row not in all_assay_names:
                                 all_assay_names.append(row)
 
                         if col_rows < all_rows:
-                            add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values", warning,
-                                    assay.filename)
+                            add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values",
+                                    warning, assay.filename)
                         else:
                             add_msg(validations, val_section,
                                     "Assay sheet column '" + a_header + "' has correct number of rows",
@@ -709,7 +702,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
         # isa_samples.replace({"", np.NaN}, inplace=True)
         all_rows = isa_samples.shape[0]
         for s_header in samples:
-            col_rows = 0 # col_rows = isa_samples[s_header].count()
+            col_rows = 0  # col_rows = isa_samples[s_header].count()
             for row in isa_samples[s_header]:
                 if row:
                     col_rows += 1
@@ -826,7 +819,8 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
             if len(prot_name) >= name_val_len:
                 add_msg(validations, val_section, "Protocol name validates", success, file_name, value=prot_name)
             else:
-                add_msg(validations, val_section, name_val_error, error, file_name, value=prot_name, desrc=name_val_description)
+                add_msg(validations, val_section, name_val_error, error, file_name, value=prot_name,
+                        desrc=name_val_description)
 
             if len(prot_desc) >= desc_val_len:
                 if prot_desc == 'Please update this protocol description':
@@ -834,10 +828,12 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                             desrc='Please update this protocol description')
                 add_msg(validations, val_section, "Protocol description validates", success, file_name, value=prot_desc)
             else:
-                add_msg(validations, val_section, desc_val_error, error, file_name, value=prot_desc, desrc=desc_val_description)
+                add_msg(validations, val_section, desc_val_error, error, file_name, value=prot_desc,
+                        desrc=desc_val_description)
 
             if len(prot_params.term) >= param_val_len:
-                add_msg(validations, val_section, "Protocol parameter validates", success, file_name, value=prot_params.term)
+                add_msg(validations, val_section, "Protocol parameter validates", success, file_name,
+                        value=prot_params.term)
             else:
                 add_msg(validations, val_section, param_val_error, error, file_name, value=prot_params.term,
                         desrc=param_val_description)
@@ -892,7 +888,8 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                 if len(email) >= email_val_len:
                     add_msg(validations, val_section, "Persons email validates", success, file_name)
                 else:
-                    add_msg(validations, val_section, email_val_error, error, file_name, value=email, desrc=email_val_error)
+                    add_msg(validations, val_section, email_val_error, error, file_name, value=email,
+                            desrc=email_val_error)
 
             if affiliation:
                 if len(affiliation) >= affiliation_val_len:
@@ -1039,15 +1036,19 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
         add_msg(validations, val_section, "Successfully read the i_Investigation.txt files", success, file_name)
 
         if isa_study:
-            add_msg(validations, val_section, "Successfully read the study section of the investigation file", success, file_name)
+            add_msg(validations, val_section, "Successfully read the study section of the investigation file", success,
+                    file_name)
         else:
-            add_msg(validations, val_section, "Can not read the study section of the investigation file", error, file_name)
+            add_msg(validations, val_section, "Can not read the study section of the investigation file", error,
+                    file_name)
             validates = False
 
         if isa_study.filename:
-            add_msg(validations, val_section, "Successfully found the reference to the sample sheet filename", success, file_name)
+            add_msg(validations, val_section, "Successfully found the reference to the sample sheet filename", success,
+                    file_name)
         else:
-            add_msg(validations, val_section, "Could not find the reference to the sample sheet filename", error, file_name)
+            add_msg(validations, val_section, "Could not find the reference to the sample sheet filename", error,
+                    file_name)
             validates = False
 
         # isaconfig
@@ -1059,11 +1060,11 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
 
             if 'isaconfig' in create_config.value:
                 add_msg(validations, val_section, "Incorrect configuration files used to create the study. "
-                                                "The study may not contain required fields", warning, file_name)
+                                                  "The study may not contain required fields", warning, file_name)
                 amber_warning = True
             if 'isaconfig' in open_config.value:
                 add_msg(validations, val_section, "Incorrect configuration files used to edit the study. "
-                                                "The study may not contain required fields", warning, file_name)
+                                                  "The study may not contain required fields", warning, file_name)
                 amber_warning = True
 
         if validates:  # Have to have a basic investigation and sample file before we can continue

@@ -623,7 +623,7 @@ def get_all_files(path, directory=None, include_raw_data=False, study_id=None):
     try:
         files = get_file_information(path, directory=directory, include_raw_data=include_raw_data, study_id=study_id)
     except:
-        logger.error('Could not find folder ' + path)
+        logger.warning('Could not find folder ' + path)
         files = []  # The upload folder for this study does not exist, this is normal
     return files
 

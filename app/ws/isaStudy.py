@@ -636,6 +636,32 @@ class StudyDescription(Resource):
         return jsonify({"description": new_description})
 
 
+def roles_to_contacts(isa_inv, new_contact):
+
+    # Check that the ontology is referenced in the investigation
+    isa_inv, efo = add_ontology_to_investigation(isa_inv, 'EFO', '132',
+                                                 'http://data.bioontology.org/ontologies/EFO',
+                                                 'Experimental Factor Ontology')
+    new_role = OntologyAnnotation(
+        term_accession='http://purl.obolibrary.org/obo/NCIT_C51826', term='Investigator', term_source=efo)
+
+    append_role = False
+
+    if len(new_contact.roles) < 1:  # the role is missing, default to Investigator
+        append_role = True
+        logger.warning("Role was not defined, defaulting to 'Investigator' for " +
+                       new_contact.first_name + " " + new_contact.last_name)
+    elif new_contact.roles:  # We have the role
+        role = new_contact.roles[0]
+        if not role.term or len(role.term) <= 2:  # the annotation value is missing
+            del new_contact.roles[0]  # Remove role with missing annotation
+            append_role = True
+
+    if append_role:
+        new_contact.roles.append(new_role)
+    return isa_inv, new_contact
+
+
 class StudyContacts(Resource):
 
     @swagger.operation(
@@ -790,18 +816,7 @@ class StudyContacts(Resource):
                 logger.info('Adding new Contact %s for %s', new_contact.first_name, study_id)
                 if (new_contact.first_name+new_contact.last_name).lower() not in contact_persons:
                     # Check that the ontology is referenced in the investigation
-                    if len(new_contact.roles) < 1:  # the role is missing, default to Investigator
-                        isa_inv, efo = add_ontology_to_investigation(isa_inv, 'EFO', '132',
-                                                                     'http://data.bioontology.org/ontologies/EFO',
-                                                                     'Experimental Factor Ontology')
-                        new_role = OntologyAnnotation(
-                            term_accession='http://purl.obolibrary.org/obo/NCIT_C51826',
-                            term='Investigator',
-                            term_source=efo)
-                        new_contact.roles.append(new_role)
-                        logger.warning("Role was not defined, defaulting to 'Investigator' for " +
-                                       new_contact.first_name + " " + new_contact.last_name)
-
+                    isa_inv, new_contact = roles_to_contacts(isa_inv, new_contact)
                     term_anno = new_contact.roles[0]
                     term_source = term_anno.term_source
                     new_contacts.append(new_contact)
@@ -1089,6 +1104,7 @@ class StudyContacts(Resource):
             updated_contact = result.data
 
             # Check that the ontology is referenced in the investigation
+            isa_inv, updated_contact = roles_to_contacts(isa_inv, updated_contact)
             term_anno = updated_contact.roles[0]
             term_source = term_anno.term_source
             add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
