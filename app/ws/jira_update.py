@@ -283,19 +283,11 @@ class GoogleDocs(Resource):
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
+                           "Please provide a valid user token"
             }
         ]
     )
-    def put(self):
+    def get(self):
 
         user_token = None
 
@@ -309,8 +301,8 @@ class GoogleDocs(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions('MTBLS1', user_token)
         if not is_curator:
-            abort(403)
+            abort(401)
 
         data = get_curation_log(user_token)
 
-        return jsonify({"curation_log":  data})
+        return jsonify({"curation_log": data})
