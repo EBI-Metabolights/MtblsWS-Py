@@ -305,4 +305,4 @@ class GoogleDocs(Resource):
 
         data = get_curation_log(user_token)
 
-        return jsonify({"curation_log": data})
+        return jsonify(data)
