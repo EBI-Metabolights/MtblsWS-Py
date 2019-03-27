@@ -557,6 +557,9 @@ def getMetaboTerm(keyword, branch):
             enti = entity(name=cls.label[0], iri=cls.iri,
                           provenance_name='Metabolights')
 
+            if cls.isDefinedBy:
+                enti.definition = cls.isDefinedBy[0]
+
             if 'MTBLS' in cls.iri:
                 enti.ontoName = 'MTBLS'
 
