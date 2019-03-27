@@ -1,9 +1,9 @@
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from flask import request, abort, current_app as app
+from flask import request, abort, current_app as app, jsonify
 from app.ws.mtblsWSclient import WsClient
 from jira import JIRA
-from app.ws.db_connection import get_all_studies
+from app.ws.db_connection import get_all_studies, get_curation_log
 import logging
 
 # https://jira.readthedocs.io
@@ -89,7 +89,6 @@ class Jira(Resource):
         if not write_access:
             abort(403)
 
-        logger.info('Creating a new study audit folder for study %s', study_id)
         status, message, updated_studies_list = update_or_create_jira_issue(passed_id, user_token, is_curator)
 
         if status:
@@ -260,3 +259,58 @@ def maintain_jira_labels(issue, study_status, user_name):
         labels.append(metaspace_label)
 
     return labels
+
+
+class GoogleDocs(Resource):
+    @swagger.operation(
+        summary="Read database for curation status",
+        notes="Read the database table for curation status",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self):
+
+        user_token = None
+
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None:
+            abort(401)
+
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions('MTBLS1', user_token)
+        if not is_curator:
+            abort(403)
+
+        data = get_curation_log(user_token)
+
+        return jsonify({"curation_log":  data})
