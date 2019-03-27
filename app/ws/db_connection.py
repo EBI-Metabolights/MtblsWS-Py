@@ -8,6 +8,8 @@ from app.ws.utils import get_single_file_information, check_user_token
 
 logger = logging.getLogger('wslog')
 
+query_curation_log = "select * from curation_log_temp order by acc_short asc;"
+
 query_all_studies = """
     select * from (
         select s.acc, 
@@ -115,6 +117,11 @@ def get_all_studies_for_user(user_token):
 
 def get_all_studies(user_token):
     data = execute_query(query_all_studies, user_token)
+    return data
+
+
+def get_curation_log(user_token):
+    data = execute_query(query_curation_log, user_token)
     return data
 
 
