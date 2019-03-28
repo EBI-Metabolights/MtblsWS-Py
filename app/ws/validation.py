@@ -163,17 +163,22 @@ def check_file(file_name_and_column, study_location):
         if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
             return True, 'Correct file ' + file_name + ' for column ' + column_name
         else:
-            return False, 'The ' + column_name + ' must start with "m_" and end in "_v2_maf.tsv"'
+            return False, "The " + column_name + " must start with 'm_' and end in '_v2_maf.tsv'"
 
     if file_type == 'raw' and column_name == 'Raw Spectral Data File':
         return True, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'raw' and column_name == 'Raw Spectral Data File':
         return False, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
 
-    if file_type == 'derived' and column_name == 'Derived Spectral Data File':
+    if file_type == 'derived' and (column_name == 'Derived Spectral Data File'
+                                   or column_name == 'Raw Spectral Data File'):
         return True, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'derived' and column_name == 'Derived Spectral Data File':
         return False, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
+    elif file_type == 'spreadsheet' and column_name == 'Derived Spectral Data File':
+        return True, 'Correct file ' + file_name + ' for column ' + column_name
+    elif file_type == 'compressed' and column_name == 'Free Induction Decay Data File':
+        return True, 'Correct file ' + file_name + ' for column ' + column_name
 
     return file_type, status
 
@@ -649,7 +654,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         status, file_description = check_file(files, study_location)
         if status:
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
-                    + column_name + '"', success, desrc=file_description)
+                    + column_name + "'", success, desrc=file_description)
         else:
             add_msg(validations, val_section, "File '" + file_name + "' missing or not correct for column '"
                     + column_name + "'", error, desrc=file_description)
@@ -843,7 +848,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is in the correct position",
                         success, file_name)
         except:
-            add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' was not found", error, file_name)
+            add_msg(validations, val_section, "Protocol '" + prot_val_name + "' was not found", error, file_name)
 
     name_rules, name_val_description = get_complex_validation_rules(
         validation_schema, part='protocols', sub_part='protocol', sub_set='name')
@@ -884,8 +889,12 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                             value=prot_desc, desrc='Please update this protocol description')
                 add_msg(validations, val_section, "Protocol description validates", success, file_name, value=prot_desc)
             else:
-                add_msg(validations, val_section, prot_name + ": " + desc_val_error, error, file_name, value=prot_desc,
-                        desrc=desc_val_description)
+                if 'no metabolites' in prot_desc.lower():
+                    add_msg(validations, val_section, "Protocol description validates", success, file_name,
+                            value=prot_desc)
+                else:
+                    add_msg(validations, val_section, prot_name + ": " + desc_val_error, error, file_name,
+                            value=prot_desc, desrc=desc_val_description)
 
             if len(prot_params.term) >= param_val_len:
                 add_msg(validations, val_section, "Protocol parameter validates", success, file_name,
@@ -1041,7 +1050,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                         "Found both doi and pmid for the publication", success, file_name)
 
             if not publication.author_list:
-                add_msg(validations, val_section, author_val_description, error, file_name)
+                add_msg(validations, val_section, author_val_error, error, file_name)
             elif publication.author_list:
                 if len(publication.author_list) >= author_val_len:
                     add_msg(validations, val_section, "Found the author list for the publication", success, file_name)
@@ -1115,12 +1124,12 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
                 open_config = isa_inv.get_comment('Last Opened With Configuration')
 
             if 'isaconfig' in create_config.value:
-                add_msg(validations, val_section, "Incorrect configuration files used to create the study. "
-                                                  "The study may not contain required fields", warning, file_name)
+                add_msg(validations, val_section, "Incorrect configuration files used to create the study ("
+                        + create_config.value + "). The study may not contain required fields", warning, file_name)
                 amber_warning = True
             if 'isaconfig' in open_config.value:
-                add_msg(validations, val_section, "Incorrect configuration files used to edit the study. "
-                                                  "The study may not contain required fields", warning, file_name)
+                add_msg(validations, val_section, "Incorrect configuration files used to edit the study ("
+                        + open_config.value + "). The study may not contain required fields", warning, file_name)
                 amber_warning = True
 
         if validates:  # Have to have a basic investigation and sample file before we can continue
