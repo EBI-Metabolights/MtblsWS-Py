@@ -541,17 +541,35 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     return {"validation": {"study_validation_status": success, "validations": all_validations}}
 
 
-def check_assay_columns(a_header, all_assays, row, validations, validation_schema,
-                        val_section, assay, unique_file_names, all_assay_names):
+def get_assay_column_validations(validation_schema, a_header):
     validation_schema = get_protocol_assay_rules(validation_schema, a_header)
     validate_column = False
     required_column = False
     val_descr = None
 
-    # Correct sample names?
     if a_header.lower() == 'sample name':
         validate_column = True
         required_column = True
+
+    if validation_schema and a_header.lower() != 'sample name':
+        validate_column = validation_schema['is-hidden']
+        if validate_column == 'false':
+            validate_column = False
+        else:
+            validate_column = True
+        required_column = validation_schema['is-required']
+        if required_column == 'false':
+            required_column = False
+        else:
+            required_column = True
+        val_descr = validation_schema['description']
+
+    return validate_column, required_column, val_descr
+
+
+def check_assay_columns(a_header, all_assays, row, validations, val_section, assay, unique_file_names, all_assay_names):
+    # Correct sample names?
+    if a_header.lower() == 'sample name':
         all_assays.append(row)
         if row in sample_name_list:
             add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
@@ -569,20 +587,7 @@ def check_assay_columns(a_header, all_assays, row, validations, validation_schem
         if row not in all_assay_names:
             all_assay_names.append(row)
 
-    if validation_schema and a_header.lower() != 'sample name':
-        validate_column = validation_schema['is-hidden']
-        if validate_column == 'false':
-            validate_column = False
-        else:
-            validate_column = True
-        required_column = validation_schema['is-required']
-        if required_column == 'false':
-            required_column = False
-        else:
-            required_column = True
-        val_descr = validation_schema['description']
-
-    return all_assays, all_assay_names, validations, unique_file_names, validate_column, required_column, val_descr
+    return all_assays, all_assay_names, validations, unique_file_names
 
 
 def validate_assays(isa_study, study_location, validation_schema, override_list, val_section="assays"):
@@ -591,6 +596,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     assays = []
     all_assays = []
     all_assay_names = []
+    unique_file_names = []
 
     if isa_study.assays:
         add_msg(validations, val_section, "Found assay(s) for this study", success, val_section)
@@ -611,15 +617,16 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         if not assay_df.empty:
             all_rows = assay_df.shape[0]
             for a_header in assays:
+                validate_column, required_column, val_descr = get_assay_column_validations(validation_schema, a_header)
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
                 try:
                     for row in assay_df[a_header]:
                         validate_column = False
                         if row:
                             col_rows += 1
-                        all_assays, all_assay_names, validations, unique_file_names, validate_column, required_column, \
-                            val_descr = check_assay_columns(a_header, all_assays, row, validations, validation_schema,
-                                                            val_section, assay, unique_file_names, all_assay_names)
+                        all_assays, all_assay_names, validations, unique_file_names = \
+                            check_assay_columns(a_header, all_assays, row, validations, val_section,
+                                                assay, unique_file_names, all_assay_names)
 
                     if (col_rows < all_rows) and validate_column:
                         add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values",
@@ -674,7 +681,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, va
             if os.path.isdir(os.path.join(full_file_name)):
                 for sub_file_name in os.listdir(full_file_name):
                     if is_empty_file(os.path.join(full_file_name, sub_file_name)):
-                        add_msg(validations, val_section, "Empty files are not allowed", error, val_section,
+                        add_msg(validations, val_section, "Empty files found is sub-directory", info, val_section,
                                 value=os.path.join(file_name, sub_file_name))
 
                     # warning for sub folders with ISA tab
@@ -703,7 +710,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, va
                         val_section, value=file_name)
 
         if is_empty_file(full_file_name):
-            add_msg(validations, val_section, "Empty files are not allowed", error, val_section, value=file_name)
+            if file_name not in 'metexplore_mapping.json':
+                add_msg(validations, val_section, "Empty files are not allowed", error, val_section, value=file_name)
 
         file_name_list.append(file_name)
 
@@ -867,24 +875,24 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
             if len(prot_name) >= name_val_len:
                 add_msg(validations, val_section, "Protocol name validates", success, file_name, value=prot_name)
             else:
-                add_msg(validations, val_section, name_val_error, error, file_name, value=prot_name,
+                add_msg(validations, val_section, prot_name + ": " + name_val_error, error, file_name, value=prot_name,
                         desrc=name_val_description)
 
             if len(prot_desc) >= desc_val_len:
                 if prot_desc == 'Please update this protocol description':
-                    add_msg(validations, "Protocol", desc_val_error, warning, file_name, value=prot_desc,
-                            desrc='Please update this protocol description')
+                    add_msg(validations, "Protocol", prot_name + ": " + desc_val_error, warning, file_name,
+                            value=prot_desc, desrc='Please update this protocol description')
                 add_msg(validations, val_section, "Protocol description validates", success, file_name, value=prot_desc)
             else:
-                add_msg(validations, val_section, desc_val_error, error, file_name, value=prot_desc,
+                add_msg(validations, val_section, prot_name + ": " + desc_val_error, error, file_name, value=prot_desc,
                         desrc=desc_val_description)
 
             if len(prot_params.term) >= param_val_len:
                 add_msg(validations, val_section, "Protocol parameter validates", success, file_name,
                         value=prot_params.term)
             else:
-                add_msg(validations, val_section, param_val_error, error, file_name, value=prot_params.term,
-                        desrc=param_val_description)
+                add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
+                        value=prot_params.term, desrc=param_val_description)
 
     return return_validations(val_section, validations, override_list)
 
@@ -1143,7 +1151,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
 
     validates, amber_warning, ret_list = return_validations(val_section, validations, override_list)
 
-    inv_file = file_name
+    inv_file = 'i_Investigation.txt'
     s_file = isa_study.filename
     assays = isa_study.assays
     assay_files = []
