@@ -506,7 +506,8 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     # Validate assays
     val_section = "assays"
     if validation_section == 'all' or val_section in validation_section or 'maf' in validation_section:
-        status, amber_warning, assay_validation = validate_assays(isa_study, study_location, override_list, val_section)
+        status, amber_warning, assay_validation = \
+            validate_assays(isa_study, study_location, validation_schema, override_list, val_section)
         all_validations.append(assay_validation)
 
     if not status:
@@ -523,7 +524,35 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     return {"validation": {"study_validation_status": success, "validations": all_validations}}
 
 
-def validate_assays(isa_study, study_location, override_list, val_section="assays"):
+def check_assay_columns(a_header, all_assays, row, validations, validation_schema,
+                        val_section, assay, unique_file_names, all_assay_names):
+
+    assay_rules, assay_val_description = get_complex_validation_rules(
+        validation_schema, part='protocols', sub_part='defulat', sub_set='name')
+    assay_val_len, assay_val_error, assay_val_condition, assay_val_type = extract_details(assay_rules)
+
+    # Correct sample names?
+    if a_header.lower() == 'sample name':
+        all_assays.append(row)
+        if row in sample_name_list:
+            add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
+                    success, assay.filename)
+        else:
+            add_msg(validations, val_section, "Sample name '" + row + "' not found in sample sheet",
+                    success, meta_file=assay.filename,
+                    desrc="Please create the sample in the sample sheet first")
+    elif a_header.endswith(' File'):  # files exists?
+        file_and_column = row + '|' + a_header
+        if file_and_column not in unique_file_names:
+            if row != "":  # Do not add a section if a column does not list files
+                unique_file_names.append(file_and_column)
+    elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the MAF
+        if row not in all_assay_names:
+            all_assay_names.append(row)
+    return all_assays, all_assay_names, validations, unique_file_names
+
+
+def validate_assays(isa_study, study_location, validation_schema, override_list, val_section="assays"):
     # check for Publication
     validations = []
     assays = []
@@ -554,24 +583,9 @@ def validate_assays(isa_study, study_location, override_list, val_section="assay
                     for row in assay_df[a_header]:
                         if row:
                             col_rows += 1
-                        # Correct sample names?
-                        if a_header.lower() == 'sample name':
-                            all_assays.append(row)
-                            if row in sample_name_list:
-                                add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
-                                        success, assay.filename)
-                            else:
-                                add_msg(validations, val_section, "Sample name '" + row + "' not found in sample sheet",
-                                        success, meta_file=assay.filename,
-                                        desrc="Please create the sample in the sample sheet first")
-                        elif a_header.endswith(' File'):  # files exists?
-                            file_and_column = row + '|' + a_header
-                            if file_and_column not in unique_file_names:
-                                if row != "":  # Do not add a section if a column does not list files
-                                    unique_file_names.append(file_and_column)
-                        elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the MAF
-                            if row not in all_assay_names:
-                                all_assay_names.append(row)
+                        all_assays, all_assay_names, validations, unique_file_names = \
+                            check_assay_columns(a_header, all_assays, row, validations, validation_schema, val_section,
+                                                assay, unique_file_names, all_assay_names)
 
                         if col_rows < all_rows:
                             add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values",
