@@ -167,10 +167,7 @@ def check_file(file_name_and_column, study_location):
 
     if file_type == 'raw' and column_name == 'Raw Spectral Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif file_type != 'raw' and column_name == 'Raw Spectral Data File':
-        return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
-
-    if file_type == 'derived' and (column_name == 'Derived Spectral Data File'
+    elif file_type == 'derived' and (column_name == 'Derived Spectral Data File'
                                    or column_name == 'Raw Spectral Data File'):
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'derived' and column_name == 'Derived Spectral Data File':
@@ -179,6 +176,8 @@ def check_file(file_name_and_column, study_location):
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'compressed' and column_name == 'Free Induction Decay Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+    elif file_type != 'raw' and column_name == 'Raw Spectral Data File':
+        return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
 
     return status, file_type, 'n/a'
 
