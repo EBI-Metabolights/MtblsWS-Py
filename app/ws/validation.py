@@ -596,7 +596,6 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
 
 
 def validate_assays(isa_study, study_location, validation_schema, override_list, val_section="assays"):
-    # check for Publication
     validations = []
     assays = []
     all_assays = []
@@ -656,7 +655,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
                     + column_name + "'", success, desrc=file_description)
         else:
-            add_msg(validations, val_section, "File '" + file_name + "' or type '" + file_type +
+            add_msg(validations, val_section, "File '" + file_name + "' of type '" + file_type +
                     "' is missing or not correct for column '" + column_name + "'", error, desrc=file_description)
 
         # Correct MAF?
