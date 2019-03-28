@@ -44,6 +44,22 @@ def get_complex_validation_rules(validation_schema, part, sub_part, sub_set):
     return rules, sets['description']
 
 
+def get_protocol_assay_rules(validation_schema, protocol_part):
+    val_rule = None
+    if validation_schema and protocol_part.lower() != 'sample name':
+        study_val = validation_schema['study']
+        val = study_val['protocols']
+        sub = val['default']
+        for column in sub:
+            column_title = column['title']
+            if column_title.lower() != 'sample collection':
+                rules = column['columns']
+                for rule in rules:
+                    if rule == protocol_part:
+                        return rules[protocol_part]
+    return val_rule
+
+
 def extract_details(rule):
     try:
         try:
@@ -433,6 +449,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     validation_schema = None
     error_found = False
     warning_found = False
+    validation_section = validation_section.lower()
 
     try:
         validation_schema_file = app.config.get('VALIDATIONS_FILE')
@@ -526,13 +543,15 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
 
 def check_assay_columns(a_header, all_assays, row, validations, validation_schema,
                         val_section, assay, unique_file_names, all_assay_names):
-
-    assay_rules, assay_val_description = get_complex_validation_rules(
-        validation_schema, part='protocols', sub_part='defulat', sub_set='name')
-    assay_val_len, assay_val_error, assay_val_condition, assay_val_type = extract_details(assay_rules)
+    validation_schema = get_protocol_assay_rules(validation_schema, a_header)
+    validate_column = False
+    required_column = False
+    val_descr = None
 
     # Correct sample names?
     if a_header.lower() == 'sample name':
+        validate_column = True
+        required_column = True
         all_assays.append(row)
         if row in sample_name_list:
             add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
@@ -549,7 +568,21 @@ def check_assay_columns(a_header, all_assays, row, validations, validation_schem
     elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the MAF
         if row not in all_assay_names:
             all_assay_names.append(row)
-    return all_assays, all_assay_names, validations, unique_file_names
+
+    if validation_schema and a_header.lower() != 'sample name':
+        validate_column = validation_schema['is-hidden']
+        if validate_column == 'false':
+            validate_column = False
+        else:
+            validate_column = True
+        required_column = validation_schema['is-required']
+        if required_column == 'false':
+            required_column = False
+        else:
+            required_column = True
+        val_descr = validation_schema['description']
+
+    return all_assays, all_assay_names, validations, unique_file_names, validate_column, required_column, val_descr
 
 
 def validate_assays(isa_study, study_location, validation_schema, override_list, val_section="assays"):
@@ -581,19 +614,20 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
                 try:
                     for row in assay_df[a_header]:
+                        validate_column = False
                         if row:
                             col_rows += 1
-                        all_assays, all_assay_names, validations, unique_file_names = \
-                            check_assay_columns(a_header, all_assays, row, validations, validation_schema, val_section,
-                                                assay, unique_file_names, all_assay_names)
+                        all_assays, all_assay_names, validations, unique_file_names, validate_column, required_column, \
+                            val_descr = check_assay_columns(a_header, all_assays, row, validations, validation_schema,
+                                                            val_section, assay, unique_file_names, all_assay_names)
 
-                        if col_rows < all_rows:
-                            add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values",
-                                    warning, assay.filename)
-                        else:
-                            add_msg(validations, val_section,
-                                    "Assay sheet column '" + a_header + "' has correct number of rows",
-                                    success, assay.filename)
+                    if (col_rows < all_rows) and validate_column:
+                        add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values",
+                                warning, assay.filename)
+                    # else:
+                    #     add_msg(validations, val_section,
+                    #             "Assay sheet column '" + a_header + "' has correct number of rows",
+                    #             success, assay.filename)
                 except:
                     add_msg(validations, val_section,
                             "Assay sheet is missing rows for column '" + a_header + "'", error, assay.filename)
