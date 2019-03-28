@@ -153,34 +153,34 @@ def check_file(file_name_and_column, study_location):
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
     if file_name not in file_name_list:
-        return False, "File " + file_name + " does not exist"
+        return False, 'n/a', "File " + file_name + " does not exist"
 
     file_type, status = map_file_type(file_name, study_location)
     if is_empty_file(os.path.join(study_location, file_name)):
-        return False, "File " + file_name + " is empty"
+        return False, file_type, "File " + file_name + " is empty"
 
     if file_type == 'metadata_maf' and column_name == 'Metabolite Assignment File':
         if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
-            return True, 'Correct file ' + file_name + ' for column ' + column_name
+            return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
         else:
-            return False, "The " + column_name + " must start with 'm_' and end in '_v2_maf.tsv'"
+            return False, file_type,  "The " + column_name + " must start with 'm_' and end in '_v2_maf.tsv'"
 
     if file_type == 'raw' and column_name == 'Raw Spectral Data File':
-        return True, 'Correct file ' + file_name + ' for column ' + column_name
+        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'raw' and column_name == 'Raw Spectral Data File':
-        return False, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
+        return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
 
     if file_type == 'derived' and (column_name == 'Derived Spectral Data File'
                                    or column_name == 'Raw Spectral Data File'):
-        return True, 'Correct file ' + file_name + ' for column ' + column_name
+        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'derived' and column_name == 'Derived Spectral Data File':
-        return False, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
+        return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
     elif file_type == 'spreadsheet' and column_name == 'Derived Spectral Data File':
-        return True, 'Correct file ' + file_name + ' for column ' + column_name
+        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'compressed' and column_name == 'Free Induction Decay Data File':
-        return True, 'Correct file ' + file_name + ' for column ' + column_name
+        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
 
-    return file_type, status
+    return status, file_type, 'n/a'
 
 
 def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, validations, val_section, file_name):
@@ -651,13 +651,13 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     for files in unique_file_names:
         file_name = files.split('|')[0]
         column_name = files.split('|')[1]
-        status, file_description = check_file(files, study_location)
+        status, file_type, file_description = check_file(files, study_location)
         if status:
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
                     + column_name + "'", success, desrc=file_description)
         else:
-            add_msg(validations, val_section, "File '" + file_name + "' missing or not correct for column '"
-                    + column_name + "'", error, desrc=file_description)
+            add_msg(validations, val_section, "File '" + file_name + "' or type '" + file_type +
+                    "' is missing or not correct for column '" + column_name + "'", error, desrc=file_description)
 
         # Correct MAF?
         if column_name.lower() == 'metabolite assignment file':
