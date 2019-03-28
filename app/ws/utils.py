@@ -334,7 +334,10 @@ def log_request(request_obj):
 
 
 def read_tsv(file_name):
-    table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+    try:
+        table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
+    except:
+        table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1')  # Excel format
     table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
     return table_df
 
