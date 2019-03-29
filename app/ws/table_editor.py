@@ -161,7 +161,9 @@ class ComplexColumns(Resource):
     @swagger.operation(
         summary="Add new columns to the given TSV file",
         nickname="Add table columns",
-        notes="Update an csv/tsv table for a given Study",
+        notes="Update an csv/tsv table for a given Study. "
+              "Please note that if the column name already exists at the given position, "
+              "this will *update* the rows for the column",
         parameters=[
             {
                 "name": "study_id",
@@ -246,6 +248,9 @@ class ComplexColumns(Resource):
         file_name = os.path.join(study_location, file_name)
         table_df = read_tsv(file_name)
 
+        # Get an indexed header row
+        df_header = get_table_header(table_df)
+
         for column in new_columns:
             new_column_default_value = column['value']
             new_column_name = column['name']
@@ -256,10 +261,18 @@ class ComplexColumns(Resource):
             for row_val in range(table_df.shape[0]):
                 new_col.append(new_column_default_value)
 
-            # Add new column to the spreadsheet
-            table_df.insert(loc=int(new_column_position), column=new_column_name, value=new_col, allow_duplicates=True)
+            # Check if we already have the column in the current position
+            # header_loc = table_df.get_values()[new_column_position]
+            header_name = table_df.iloc[:, new_column_position].name
 
-        # Get an indexed header row
+            if header_name == new_column_name:
+                table_df.iloc[:, new_column_position] = new_col
+            else:
+                # Add new column to the spreadsheet
+                table_df.insert(loc=int(new_column_position), column=new_column_name,
+                                value=new_col, allow_duplicates=True)
+
+        # Get an (updated) indexed header row
         df_header = get_table_header(table_df)
 
         # Get all indexed rows

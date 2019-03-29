@@ -195,59 +195,65 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
 
 
 def validate_maf(validations, file_name, all_assay_names, study_location, study_id):
-    maf_name = os.path.join(study_location, file_name)
-    maf_df = read_tsv(maf_name)
     val_section = "maf"
+    maf_name = os.path.join(study_location, file_name)
+    maf_df = None
+    try:
+        maf_df = read_tsv(maf_name)
+    except:
+        add_msg(validations, val_section, "Could not find or read file '" + file_name + "'", error)
+
     incorrect_pos = False
     incorrect_message = ""
 
-    maf_header = get_table_header(maf_df, study_id, maf_name)
-    # Correct order is:
-    # 1:"database_identifier", 2:"chemical_formula", 3:"smiles", 4:"inchi", 5:"metabolite_identification"
+    if maf_df:
+        maf_header = get_table_header(maf_df, study_id, maf_name)
+        # Correct order is:
+        # 1:"database_identifier", 2:"chemical_formula", 3:"smiles", 4:"inchi", 5:"metabolite_identification"
 
-    incorrect_pos, incorrect_message, validations = \
-        maf_messages('database_identifier', 0, incorrect_pos, maf_header, incorrect_message,
-                     validations, val_section, file_name)
+        incorrect_pos, incorrect_message, validations = \
+            maf_messages('database_identifier', 0, incorrect_pos, maf_header, incorrect_message,
+                         validations, val_section, file_name)
 
-    incorrect_pos, incorrect_message, validations = \
-        maf_messages('chemical_formula', 1, incorrect_pos, maf_header, incorrect_message,
-                     validations, val_section, file_name)
+        incorrect_pos, incorrect_message, validations = \
+            maf_messages('chemical_formula', 1, incorrect_pos, maf_header, incorrect_message,
+                         validations, val_section, file_name)
 
-    incorrect_pos, incorrect_message, validations = \
-        maf_messages('smiles', 2, incorrect_pos, maf_header, incorrect_message,
-                     validations, val_section, file_name)
+        incorrect_pos, incorrect_message, validations = \
+            maf_messages('smiles', 2, incorrect_pos, maf_header, incorrect_message,
+                         validations, val_section, file_name)
 
-    incorrect_pos, incorrect_message, validations = \
-        maf_messages('inchi', 3, incorrect_pos, maf_header, incorrect_message,
-                     validations, val_section, file_name)
+        incorrect_pos, incorrect_message, validations = \
+            maf_messages('inchi', 3, incorrect_pos, maf_header, incorrect_message,
+                         validations, val_section, file_name)
 
-    incorrect_pos, incorrect_message, validations = \
-        maf_messages('metabolite_identification', 4, incorrect_pos, maf_header, incorrect_message,
-                     validations, val_section, file_name)
+        incorrect_pos, incorrect_message, validations = \
+            maf_messages('metabolite_identification', 4, incorrect_pos, maf_header, incorrect_message,
+                         validations, val_section, file_name)
 
-    if incorrect_pos:
-        add_msg(validations, val_section, incorrect_message, error)
-    else:
-        add_msg(validations, val_section,
-                "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and 'metabolite_identification' "
-                "found and in correct column positions", success)
+        if incorrect_pos:
+            add_msg(validations, val_section, incorrect_message, error)
+        else:
+            add_msg(validations, val_section,
+                    "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and "
+                    "'metabolite_identification' found in the correct column position", success)
 
-    # NMR/MS Assay Names OR Sample Names are added to the sheet
-    if all_assay_names:
-        for assay_name in all_assay_names:
-            try:
-                maf_header[assay_name]
-                add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF", success)
-            except:
-                add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF", error)
+        # NMR/MS Assay Names OR Sample Names are added to the sheet
+        if all_assay_names:
+            for assay_name in all_assay_names:
+                try:
+                    maf_header[assay_name]
+                    add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF", success)
+                except:
+                    add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF", error)
 
-    if not all_assay_names and sample_name_list:
-        for sample_name in sample_name_list:
-            try:
-                maf_header[sample_name]
-                add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF", success)
-            except:
-                add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF", error)
+        if not all_assay_names and sample_name_list:
+            for sample_name in sample_name_list:
+                try:
+                    maf_header[sample_name]
+                    add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF", success)
+                except:
+                    add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF", error)
 
 
 class Validation(Resource):
