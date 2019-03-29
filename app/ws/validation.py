@@ -153,7 +153,7 @@ def check_file(file_name_and_column, study_location):
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
     if file_name not in file_name_list:
-        return False, 'n/a', "File " + file_name + " does not exist"
+        return False, 'missing file', "File " + file_name + " does not exist"
 
     file_type, status = map_file_type(file_name, study_location)
     if is_empty_file(os.path.join(study_location, file_name)):
@@ -168,7 +168,7 @@ def check_file(file_name_and_column, study_location):
     if file_type == 'raw' and column_name == 'Raw Spectral Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'derived' and (column_name == 'Derived Spectral Data File'
-                                   or column_name == 'Raw Spectral Data File'):
+                                     or column_name == 'Raw Spectral Data File'):
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'derived' and column_name == 'Derived Spectral Data File':
         return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
@@ -182,7 +182,7 @@ def check_file(file_name_and_column, study_location):
     return status, file_type, 'n/a'
 
 
-def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, validations, val_section, file_name):
+def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, validations, file_name):
     try:
         if maf_header[header] != pos:
             incorrect_message = incorrect_message + header + " is not the correct position. "
@@ -206,30 +206,26 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
     incorrect_pos = False
     incorrect_message = ""
 
-    if maf_df:
+    if not maf_df.empty:
         maf_header = get_table_header(maf_df, study_id, maf_name)
         # Correct order is:
         # 1:"database_identifier", 2:"chemical_formula", 3:"smiles", 4:"inchi", 5:"metabolite_identification"
 
         incorrect_pos, incorrect_message, validations = \
-            maf_messages('database_identifier', 0, incorrect_pos, maf_header, incorrect_message,
-                         validations, val_section, file_name)
+            maf_messages('database_identifier', 0, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 
         incorrect_pos, incorrect_message, validations = \
-            maf_messages('chemical_formula', 1, incorrect_pos, maf_header, incorrect_message,
-                         validations, val_section, file_name)
+            maf_messages('chemical_formula', 1, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 
         incorrect_pos, incorrect_message, validations = \
-            maf_messages('smiles', 2, incorrect_pos, maf_header, incorrect_message,
-                         validations, val_section, file_name)
+            maf_messages('smiles', 2, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 
         incorrect_pos, incorrect_message, validations = \
-            maf_messages('inchi', 3, incorrect_pos, maf_header, incorrect_message,
-                         validations, val_section, file_name)
+            maf_messages('inchi', 3, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 
         incorrect_pos, incorrect_message, validations = \
             maf_messages('metabolite_identification', 4, incorrect_pos, maf_header, incorrect_message,
-                         validations, val_section, file_name)
+                         validations, file_name)
 
         if incorrect_pos:
             add_msg(validations, val_section, incorrect_message, error)
@@ -244,6 +240,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 try:
                     maf_header[assay_name]
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF", success)
+                    check_maf_rows(validations, val_section, maf_df, assay_name)
                 except:
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF", error)
 
@@ -252,8 +249,24 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 try:
                     maf_header[sample_name]
                     add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF", success)
+                    check_maf_rows(validations, val_section, maf_df, sample_name)
                 except:
                     add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF", error)
+
+
+def check_maf_rows(validations, val_section, maf_df, sample_name):
+    all_rows = maf_df.shape[0]
+    col_rows = 0
+    # Are all relevant rows filled in?
+    for row in maf_df[sample_name]:
+        if row:
+            col_rows += 1
+
+    if col_rows == all_rows:
+        add_msg(validations, val_section, "All values for '" + sample_name + "' found in the MAF", success)
+    else:
+        add_msg(validations, val_section, "Missing values for '" + sample_name + "' in the MAF. " +
+                str(col_rows) + " rows found, but there should be " + str(all_rows), warning)
 
 
 class Validation(Resource):
@@ -638,12 +651,13 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                                 assay, unique_file_names, all_assay_names)
 
                     if (col_rows < all_rows) and validate_column:
-                        add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values",
+                        add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values. " +
+                                str(col_rows) + " rows found, but there should be " + str(all_rows),
                                 warning, assay.filename)
-                    # else:
-                    #     add_msg(validations, val_section,
-                    #             "Assay sheet column '" + a_header + "' has correct number of rows",
-                    #             success, assay.filename)
+                    else:
+                        add_msg(validations, val_section,
+                                "Assay sheet column '" + a_header + "' has correct number of rows",
+                                success, assay.filename)
                 except:
                     add_msg(validations, val_section,
                             "Assay sheet is missing rows for column '" + a_header + "'", error, assay.filename)
@@ -792,8 +806,8 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                     sample_name_list.append(row)
 
             if col_rows < all_rows:
-                add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing values", error,
-                        file_name)
+                add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing values. " +
+                        str(col_rows) + " rows found, but there should be " + str(all_rows), error, file_name)
             else:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has correct number of rows",
                         success, file_name)

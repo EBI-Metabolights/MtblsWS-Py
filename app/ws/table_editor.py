@@ -163,7 +163,7 @@ class ComplexColumns(Resource):
         nickname="Add table columns",
         notes="Update an csv/tsv table for a given Study. "
               "Please note that if the column name already exists at the given position, "
-              "this will *update* the rows for the column",
+              "this will <b>update</b> the rows for the column",
         parameters=[
             {
                 "name": "study_id",
@@ -183,7 +183,7 @@ class ComplexColumns(Resource):
             },
             {
                 "name": "new_columns",
-                "description": "The columns to add to the file",
+                "description": "The columns to add to/update in the file",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "body",
@@ -262,10 +262,9 @@ class ComplexColumns(Resource):
                 new_col.append(new_column_default_value)
 
             # Check if we already have the column in the current position
-            # header_loc = table_df.get_values()[new_column_position]
             header_name = table_df.iloc[:, new_column_position].name
 
-            if header_name == new_column_name:
+            if header_name == new_column_name:  # We should update the existing column
                 table_df.iloc[:, new_column_position] = new_col
             else:
                 # Add new column to the spreadsheet
