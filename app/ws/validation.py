@@ -194,7 +194,7 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
     return incorrect_pos, incorrect_message, validations
 
 
-def validate_maf(validations, file_name, all_assay_names, study_location, study_id):
+def validate_maf(validations, file_name, all_assay_names, study_location, study_id, is_ms):
     val_section = "maf"
     maf_name = os.path.join(study_location, file_name)
     maf_df = None
@@ -208,24 +208,12 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
 
     if not maf_df.empty:
         maf_header = get_table_header(maf_df, study_id, maf_name)
-        # Correct order is:
-        # 1:"database_identifier", 2:"chemical_formula", 3:"smiles", 4:"inchi", 5:"metabolite_identification"
+        correct_order = [{0: "database_identifier"}, {1: "chemical_formula"}, {2: "smiles"}, {3: "inchi"},
+                         {4: "metabolite_identification"}, {5: "mass_to_charge"}]
 
-        incorrect_pos, incorrect_message, validations = \
-            maf_messages('database_identifier', 0, incorrect_pos, maf_header, incorrect_message, validations, file_name)
-
-        incorrect_pos, incorrect_message, validations = \
-            maf_messages('chemical_formula', 1, incorrect_pos, maf_header, incorrect_message, validations, file_name)
-
-        incorrect_pos, incorrect_message, validations = \
-            maf_messages('smiles', 2, incorrect_pos, maf_header, incorrect_message, validations, file_name)
-
-        incorrect_pos, incorrect_message, validations = \
-            maf_messages('inchi', 3, incorrect_pos, maf_header, incorrect_message, validations, file_name)
-
-        incorrect_pos, incorrect_message, validations = \
-            maf_messages('metabolite_identification', 4, incorrect_pos, maf_header, incorrect_message,
-                         validations, file_name)
+        for idx, col in enumerate(correct_order):
+            incorrect_pos, incorrect_message, validations = \
+                maf_messages(col[idx], idx, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 
         if incorrect_pos:
             add_msg(validations, val_section, incorrect_message, error)
@@ -234,13 +222,16 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                     "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and "
                     "'metabolite_identification' found in the correct column position", success)
 
+        if maf_header['mass_to_charge']:
+            check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms)
+
         # NMR/MS Assay Names OR Sample Names are added to the sheet
         if all_assay_names:
             for assay_name in all_assay_names:
                 try:
                     maf_header[assay_name]
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF", success)
-                    check_maf_rows(validations, val_section, maf_df, assay_name)
+                    check_maf_rows(validations, val_section, maf_df, assay_name, is_ms)
                 except:
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF", error)
 
@@ -249,24 +240,29 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 try:
                     maf_header[sample_name]
                     add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF", success)
-                    check_maf_rows(validations, val_section, maf_df, sample_name)
+                    check_maf_rows(validations, val_section, maf_df, sample_name, is_ms)
                 except:
                     add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF", error)
 
 
-def check_maf_rows(validations, val_section, maf_df, sample_name):
+def check_maf_rows(validations, val_section, maf_df, column_name, is_ms):
     all_rows = maf_df.shape[0]
     col_rows = 0
     # Are all relevant rows filled in?
-    for row in maf_df[sample_name]:
+    for row in maf_df[column_name]:
         if row:
             col_rows += 1
 
     if col_rows == all_rows:
-        add_msg(validations, val_section, "All values for '" + sample_name + "' found in the MAF", success)
+        add_msg(validations, val_section, "All values for '" + column_name + "' found in the MAF", success)
     else:
-        add_msg(validations, val_section, "Missing values for '" + sample_name + "' in the MAF. " +
-                str(col_rows) + " rows found, but there should be " + str(all_rows), warning)
+        # For MS we should have m/z values, for NMR the chemical shift is equally important.
+        if (is_ms and column_name == 'mass_to_charge') or (not is_ms and column_name == 'chemical_shift'):
+            add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
+                    str(col_rows) + " rows found, but there should be " + str(all_rows), warning)
+        else:
+            add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
+                    str(col_rows) + " rows found, but there should be " + str(all_rows), info)
 
 
 class Validation(Resource):
@@ -336,7 +332,7 @@ class Validation(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -426,8 +422,8 @@ class OverrideValidation(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403)
 
@@ -626,9 +622,15 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         add_msg(validations, val_section, "Could not find any assays", error, desrc="Add assay(s) to the study")
 
     for assay in isa_study.assays:
+        is_ms = False
+
         unique_file_names = []
         assay_file_name = os.path.join(study_location, assay.filename)
         assay_df = read_tsv(assay_file_name)
+
+        assay_type_onto = assay.technology_type
+        if assay_type_onto.term == 'mass spectrometry':
+            is_ms = True
 
         assay_header = get_table_header(assay_df, isa_study.identifier, assay_file_name)
         for h_assay in assay_header:
@@ -679,7 +681,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
         # Correct MAF?
         if column_name.lower() == 'metabolite assignment file':
-            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier)
+            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier, is_ms)
 
     return return_validations(val_section, validations, override_list)
 
@@ -984,6 +986,18 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
     return return_validations(val_section, validations, override_list)
 
 
+def check_doi(pub_doi, doi_val):
+    # doi = pub_doi
+    # doi_pattern = re.compile(doi_val) # Todo, fix pattern
+    # doi_check = doi_pattern.match(doi)
+    # retun doi_check
+
+    if 'http' in pub_doi or 'doi.org' in pub_doi:
+        return False
+
+    return True
+
+
 def validate_publication(isa_study, validation_schema, file_name, override_list, val_section="publication"):
     # check for Publication
     validations = []
@@ -1032,10 +1046,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                 add_msg(validations, val_section, doi_val_description, warning, file_name)
                 doi = False
             elif publication.doi:
-                doi = publication.doi
-                doi_pattern = re.compile(doi_val)
-                doi_check = doi_pattern.match(doi)
-                if doi_check:
+                if check_doi(publication.doi, doi_val):
                     add_msg(validations, val_section, "Found the doi for the publication", success, file_name)
                     doi = True
                 else:

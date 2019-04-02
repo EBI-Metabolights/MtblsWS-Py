@@ -262,7 +262,10 @@ class ComplexColumns(Resource):
                 new_col.append(new_column_default_value)
 
             # Check if we already have the column in the current position
-            header_name = table_df.iloc[:, new_column_position].name
+            try:
+                header_name = table_df.iloc[:, new_column_position].name
+            except:
+                header_name = ""
 
             if header_name == new_column_name:  # We should update the existing column
                 table_df.iloc[:, new_column_position] = new_col
