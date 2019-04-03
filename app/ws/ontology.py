@@ -214,7 +214,6 @@ class Ontology(Resource):
 
         response = []
 
-
         # if queryFields and ('OLS' not in queryFields) and ('Bioportal' not in queryFields):
         #     priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
         #     result = setPriority(result, priority)
@@ -536,7 +535,7 @@ def getMetaboTerm(keyword, branch):
     elif keyword in [None, ''] and branch:  # term = 0, branch = 1, return whole branch
         start_cls = onto.search_one(label=branch)
         try:
-            res_cls = info.get_subs(start_cls, num=10)
+            res_cls = info.get_subs(start_cls, num=30)
         except Exception as e:
             logger.info("Can't find a branch called" + branch)
             print("Can't find a branch called" + branch)
