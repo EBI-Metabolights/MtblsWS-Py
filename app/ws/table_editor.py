@@ -615,7 +615,6 @@ class AddRows(Resource):
         ]
     )
     def put(self, study_id, file_name):
-
         # param validation
         if study_id is None or file_name is None:
             abort(406, 'Please provide valid parameters for study identifier and TSV file name')
@@ -741,7 +740,6 @@ class AddRows(Resource):
         ]
     )
     def delete(self, study_id, file_name):
-
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('row_num', help="The row number of the cell(s) to remove (exclude header)", location="args")
@@ -845,7 +843,6 @@ class GetTsvFile(Resource):
             abort(404)
         study_id = study_id.upper()
         file_name_param = file_name  # store the passed filename for simplicity
-
 
         # User authentication
         user_token = None

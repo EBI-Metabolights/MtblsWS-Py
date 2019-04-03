@@ -17,6 +17,9 @@ incorrect_species = \
     "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, chemical, food, matix, " \
     "mus, rat, blood, urine, plasma, hair, fur, skin, saliva, fly, unknown"
 
+correct_maf_order = [{0: "database_identifier"}, {1: "chemical_formula"}, {2: "smiles"}, {3: "inchi"},
+                     {4: "metabolite_identification"}, {5: "mass_to_charge"}]
+
 warning = "warning"
 error = "error"
 success = "success"
@@ -212,10 +215,8 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
 
     if not maf_df.empty:
         maf_header = get_table_header(maf_df, study_id, maf_name)
-        correct_order = [{0: "database_identifier"}, {1: "chemical_formula"}, {2: "smiles"}, {3: "inchi"},
-                         {4: "metabolite_identification"}, {5: "mass_to_charge"}]
 
-        for idx, col in enumerate(correct_order):
+        for idx, col in enumerate(correct_maf_order):
             incorrect_pos, incorrect_message, validations = \
                 maf_messages(col[idx], idx, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 

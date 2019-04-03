@@ -20,7 +20,7 @@ from app.ws.jira_update import Jira, GoogleDocs
 from app.ws.study_files import *
 from app.ws.assay_protocol import *
 from app.ws.validation import Validation, OverrideValidation
-from app.ws.chebi_workflow import SplitMaf
+from app.ws.chebi_workflow import SplitMaf, SearchNamesMaf
 
 """
 MTBLS WS-Py
@@ -131,6 +131,8 @@ def initialize_app(flask_app):
     api.add_resource(Validation, res_path + "/ebi-internal/<string:study_id>/validation")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validation/override")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split_maf")
+    api.add_resource(SearchNamesMaf, res_path + "/ebi-internal/<string:study_id>/maf_names")
+
 
 
 def main():
