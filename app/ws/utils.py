@@ -712,6 +712,8 @@ def map_file_type(file_name, directory):
             return 'compressed', none_active_status
     elif file_name == 'metexplore_mapping.json':
         return 'internal_mapping', active_status
+    elif file_name.lower().endswith('.tsv.split'):
+        return 'maf_pipeline_slit', active_status
     else:
         if is_file_referenced(file_name, directory, 'a_'):
             return 'raw', active_status

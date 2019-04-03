@@ -2,13 +2,11 @@ import logging
 import json
 import os
 import pandas as pd
-import numpy as np
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import get_table_header, totuples, copy_files_and_folders, validate_row, log_request, \
-    read_tsv, write_tsv
+from app.ws.utils import get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv
 
 """
 MTBLS Table Columns manipulator
