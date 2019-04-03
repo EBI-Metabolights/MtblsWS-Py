@@ -479,6 +479,7 @@ def getMetaboTerm(keyword, branch):
     print('Search "%s" in Metabolights ontology' % keyword)
     onto = get_ontology('./tests/Metabolights.owl').load()
     info = onto_information(onto)
+    set_priortity = False
 
     res_cls = []
     result = []
@@ -536,6 +537,16 @@ def getMetaboTerm(keyword, branch):
         start_cls = onto.search_one(label=branch)
         try:
             res_cls = info.get_subs(start_cls, num=30)
+
+            if branch == 'design descriptor':
+                set_priortity = True
+                first_priority_terms = ['ultra-performance liquid chromatography-mass spectrometry',
+                                        'untargeted metabolites', 'targeted metabolites']
+
+                for term in first_priority_terms:
+                    ele = onto.search_one(label=term)
+                    res_cls = [ele] + res_cls
+
         except Exception as e:
             logger.info("Can't find a branch called" + branch)
             print("Can't find a branch called" + branch)
@@ -568,7 +579,8 @@ def getMetaboTerm(keyword, branch):
                 enti.provenance_name = onto_name
 
             result.append(enti)
-        result.insert(0, result.pop())
+        if not set_priortity:
+            result.insert(0, result.pop())
 
     return result
 
