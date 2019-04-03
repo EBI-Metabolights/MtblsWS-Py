@@ -13,6 +13,10 @@ logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
 
+incorrect_species = \
+    "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, chemical, food, matix, " \
+    "mus, rat, blood, urine, plasma, hair, fur, skin, saliva, fly, unknown"
+
 warning = "warning"
 error = "error"
 success = "success"
@@ -349,7 +353,7 @@ class Validation(Resource):
 
 class OverrideValidation(Resource):
     @swagger.operation(
-        summary="Approve or reject a specific validation rule",
+        summary="Approve or reject a specific validation rule (curator only)",
         notes='''For EBI curatiors to manually approve or fail a validation step.</br>
         <pre><code>
     { 
@@ -500,29 +504,29 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     # Validate publications reported on the study
     val_section = "publication"
     if validation_section == 'all' or val_section in validation_section:
-        status, amber_warning, pub_validation = validate_publication(isa_study, validation_schema, inv_file,
-                                                                     override_list, val_section)
+        status, amber_warning, pub_validation = validate_publication(
+            isa_study, validation_schema, inv_file, override_list, val_section)
         all_validations.append(pub_validation)
 
     # Validate detailed metadata in ISA-Tab structure
     val_section = "isa-tab_metadata"
     if validation_section == 'all' or val_section in validation_section:
-        status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(isa_inv, isa_study, validation_schema,
-                                                                               inv_file, override_list, val_section)
+        status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(
+            isa_inv, isa_study, validation_schema, inv_file, override_list, val_section)
         all_validations.append(isa_meta_validation)
 
     # Validate Person (authors)
     val_section = "people"
     if validation_section == 'all' or val_section in validation_section:
-        status, amber_warning, isa_person_validation = validate_contacts(isa_study, validation_schema, inv_file,
-                                                                         override_list, val_section)
+        status, amber_warning, isa_person_validation = validate_contacts(
+            isa_study, validation_schema, inv_file, override_list, val_section)
         all_validations.append(isa_person_validation)
 
     # Validate Protocols
     val_section = "protocols"
     if validation_section == 'all' or val_section in validation_section:
-        status, amber_warning, isa_protocol_validation = validate_protocols(isa_study, validation_schema, inv_file,
-                                                                            override_list, val_section)
+        status, amber_warning, isa_protocol_validation = validate_protocols(
+            isa_study, validation_schema, inv_file, override_list, val_section)
         all_validations.append(isa_protocol_validation)
 
     # Validate Samples
@@ -535,8 +539,8 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     # Validate files
     val_section = "files"
     if validation_section == 'all' or val_section in validation_section:
-        status, amber_warning, files_validation = validate_files(study_id, study_location, obfuscation_code,
-                                                                 override_list, val_section)
+        status, amber_warning, files_validation = validate_files(
+            study_id, study_location, obfuscation_code, override_list, val_section)
         all_validations.append(files_validation)
 
     # Validate assays
@@ -747,8 +751,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
     # check for Publication
     validations = []
     samples = []
-    incorrect_species = "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, " \
-                        "chemical, food, matix, mus, rat, blood, urine, plasma, hair, fur, skin, saliva"
+
     if validation_schema:
         study_val = validation_schema['study']
         val = study_val['samples']
@@ -930,14 +933,15 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
     # check for People ie. authors
     validations = []
 
-    lastName_rules, lastName_val_description = get_complex_validation_rules(
+    last_name_rules, last_name_val_description = get_complex_validation_rules(
         validation_schema, part='people', sub_part='person', sub_set='lastName')
-    lastName_val_len, lastName_val_error, lastName_val_condition, lastName_val_type = extract_details(lastName_rules)
+    last_name_val_len, last_name_val_error, last_name_val_condition, last_name_val_type = \
+        extract_details(last_name_rules)
 
-    firstName_rules, firstName_val_description = get_complex_validation_rules(
+    first_name_rules, first_name_val_description = get_complex_validation_rules(
         validation_schema, part='people', sub_part='person', sub_set='firstName')
-    firstName_val_len, firstName_val_error, firstName_val_condition, firstName_val_type = \
-        extract_details(firstName_rules)
+    first_name_val_len, first_name_val_error, first_name_val_condition, first_name_val_type = \
+        extract_details(first_name_rules)
 
     email_rules, email_val_description = get_complex_validation_rules(
         validation_schema, part='people', sub_part='person', sub_set='email')
@@ -956,18 +960,18 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
             affiliation = person.affiliation
 
             if last_name:
-                if len(last_name) >= lastName_val_len:
+                if len(last_name) >= last_name_val_len:
                     add_msg(validations, val_section, "Persons last name validates", success, file_name)
                 else:
-                    add_msg(validations, val_section, lastName_val_error, error, file_name, value=last_name,
-                            desrc=lastName_val_description)
+                    add_msg(validations, val_section, last_name_val_error, error, file_name, value=last_name,
+                            desrc=last_name_val_description)
 
             if first_name:
-                if len(first_name) >= firstName_val_len:
+                if len(first_name) >= first_name_val_len:
                     add_msg(validations, val_section, "Persons first name validates", success, file_name)
                 else:
-                    add_msg(validations, val_section, firstName_val_error, error, file_name, value=first_name,
-                            desrc=firstName_val_description)
+                    add_msg(validations, val_section, first_name_val_error, error, file_name, value=first_name,
+                            desrc=first_name_val_description)
 
             if email:
                 if len(email) >= email_val_len:
@@ -1196,8 +1200,8 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
     for assay in assays:
         assay_files.append(assay.filename)
 
-    return isa_study, isa_inv, isa_sample_df, std_path, validates, amber_warning, ret_list, \
-           inv_file, s_file, assay_files
+    return isa_study, isa_inv, isa_sample_df, std_path, validates, amber_warning, \
+            ret_list, inv_file, s_file, assay_files
 
 
 def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list,

@@ -125,7 +125,7 @@ class AssayTable(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -228,7 +228,7 @@ class EditAssayFile(Resource):
 
         logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
@@ -333,7 +333,7 @@ class EditAssayFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -448,7 +448,7 @@ class EditAssayFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -561,7 +561,7 @@ class EditAssayFile(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)

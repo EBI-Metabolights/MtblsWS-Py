@@ -1,4 +1,4 @@
-import logging, json, pandas as pd, os
+import logging, pandas as pd, os
 import numpy as np
 from flask import request, abort
 from flask_restful import Resource, reqparse
@@ -6,10 +6,14 @@ from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import read_tsv, write_tsv
 from app.ws.mtbls_maf import totuples, get_table_header
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.study_files import get_all_files_from_filesystem
 
 logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
+
+iac = IsaApiClient()
 
 
 def split_rows(maf_df):
@@ -32,12 +36,28 @@ def explode(v, i, sep='|'):
     return np.concatenate([A, b[rpt]], axis=1)[:, asrt]
 
 
+def check_maf_for_pipes(study_location, annotation_file_name):
+    annotation_file_name = os.path.join(study_location, annotation_file_name)
+    maf_df = read_tsv(annotation_file_name)
+    maf_len = len(maf_df.index)
+
+    # Any rows to split?
+    new_maf_df = split_rows(maf_df)
+    new_maf_len = len(new_maf_df.index)
+
+    if maf_len != new_maf_len:  # We did find |, so we create a new MAF
+        write_tsv(new_maf_df, annotation_file_name + ".split")
+
+    return maf_df, maf_len, new_maf_df, new_maf_len
+
+
 class SplitMaf(Resource):
     @swagger.operation(
-        summary="MAF pipeline splitter",
+        summary="MAF pipeline splitter (curator only)",
         nickname="Add rows based on pipeline splitting",
         notes="Split a given Metabolite Annotation File based on pipelines in cells. "
-              "A new MAF will be created with extension '.split'",
+              "A new MAF will be created with extension '.split'. "
+              "If no annotation_file_name is given, all MAF in the study is processed",
         parameters=[
             {
                 "name": "study_id",
@@ -50,9 +70,10 @@ class SplitMaf(Resource):
             {
                 "name": "annotation_file_name",
                 "description": "Metabolite Annotation File name",
-                "required": True,
+                "required": False,
+                "allowEmptyValue": True,
                 "allowMultiple": False,
-                "paramType": "path",
+                "paramType": "query",
                 "dataType": "string"
             },
             {
@@ -83,11 +104,11 @@ class SplitMaf(Resource):
             }
         ]
     )
-    def post(self, study_id, annotation_file_name):
+    def post(self, study_id):
 
         # param validation
-        if study_id is None or annotation_file_name is None:
-            abort(404, 'Please provide valid parameters for study identifier and annotation file name')
+        if study_id is None:
+            abort(404, 'Please provide valid parameter for study identifier')
 
         # User authentication
         user_token = None
@@ -100,20 +121,34 @@ class SplitMaf(Resource):
         if not is_curator:
             abort(403)
 
-        annotation_file_name = os.path.join(study_location, annotation_file_name)
-        maf_df = read_tsv(annotation_file_name)
-        maf_len = len(maf_df.index)
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('annotation_file_name', help="Metabolite Annotation File", location="args")
+        args = parser.parse_args()
+        annotation_file_name = args['annotation_file_name']
 
-        # Any rows to split?
-        new_maf_df = split_rows(maf_df)
-        new_maf_len = len(new_maf_df.index)
+        if annotation_file_name is None:
+            # Loop through all m_*_v2_maf.tsv files
+            study_files, upload_files, upload_diff, upload_location = \
+                get_all_files_from_filesystem(
+                    study_id, obfuscation_code, study_location, directory=None, include_raw_data=False)
+            maf_count = 0
+            maf_changed = 0
+            for file in study_files:
+                file_name = file['file']
+                if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
+                    maf_count += 1
+                    maf_df, maf_len, new_maf_df, new_maf_len = check_maf_for_pipes(study_location, file_name)
+                    if maf_len != new_maf_len:
+                        maf_changed += 1
+        else:
+            maf_df, maf_len, new_maf_df, new_maf_len = check_maf_for_pipes(study_location, annotation_file_name)
+            # Dict for the data (rows)
+            df_data_dict = totuples(new_maf_df.reset_index(), 'rows')
+            # Get an indexed header row
+            df_header = get_table_header(new_maf_df)
 
-        if maf_len != new_maf_len:  # We did find |, so we create a new MAF
-            write_tsv(new_maf_df, annotation_file_name + ".split")
+            return {"maf_rows": maf_len, "new_maf_rows": new_maf_len, "header": df_header, "data": df_data_dict}
 
-        # Dict for the data (rows)
-        df_data_dict = totuples(new_maf_df.reset_index(), 'rows')
-        # Get an indexed header row
-        df_header = get_table_header(new_maf_df)
-
-        return {"maf_rows": maf_len, "new_maf_rows": new_maf_len, "header": df_header, "data": df_data_dict}
+        return {"success": str(maf_count) + " MAF files checked for pipelines, " +
+                           str(maf_changed) + " files needed updating."}

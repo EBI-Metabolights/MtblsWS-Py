@@ -195,8 +195,8 @@ class IsaTabInvestigationFile(Resource):
             logger.warning("Missing Investigation filename. Using default i_Investigation.txt")
             inv_filename = 'i_Investigation.txt'
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403, "Study does not exist or your do not have access to this study")
 
@@ -292,8 +292,8 @@ class IsaTabSampleFile(Resource):
             abort(404, "Missing Sample filename.")
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(401, "Study does not exist or your do not have access to this study.")
 
@@ -389,8 +389,8 @@ class IsaTabAssayFile(Resource):
             abort(404, "Missing Assay filename.")
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(401, "Study does not exist or your do not have access to this study.")
 
@@ -512,8 +512,8 @@ class CloneAccession(Resource):
             bypass = True  # Users can safely clone this study, even when passing in MTBLS121
 
         # Can the user read the study requested?
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
 
         if not bypass:
             if not read_access:
@@ -579,8 +579,8 @@ class CloneAccession(Resource):
             study_id = diff[0]
         else:  # User proved an existing study to clone into
             # Can the user read the study requested?
-            is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-                wsc.get_permissions(to_study_id, user_token)
+            is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+                study_status = wsc.get_permissions(to_study_id, user_token)
 
             # Can the user write into the given study?
             if not write_access:
@@ -651,8 +651,8 @@ class CreateUploadFolder(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(401, "Unauthorized. Access to the resource requires user authentication. "
                        "Please provide a study id and a valid user token")
@@ -719,8 +719,8 @@ class CreateUploadFolder(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(401)
 
@@ -783,8 +783,8 @@ class SaveAuditFiles(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(401, "Unauthorized. Write access to the resource requires user authentication. "
                        "Please provide a study id and a valid user token")
@@ -863,8 +863,8 @@ class CreateAccession(Resource):
         logger.info('Created new study ' + study_acc)
 
         # We should have a new study now, so we need to refresh the local variables based on the new study
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_acc, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_acc, user_token)
 
         study_path = app.config.get('STUDY_PATH')
         from_path = study_path + 'DUMMY'
@@ -936,7 +936,7 @@ def write_audit_files(study_location):
 
 class ReindexStudy(Resource):
     @swagger.operation(
-        summary="Reindex a MetaboLights study",
+        summary="Reindex a MetaboLights study (curator only)",
         notes='''Reindexing a MetaboLights study to ensure the search index is up to date''',
         parameters=[
             {
@@ -993,11 +993,10 @@ class ReindexStudy(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(401, "Unauthorized. Access to the resource requires user authentication. "
-                    "Please provide a study id and a valid user token")
+            abort(401)
 
         status, message = wsc.reindex_study(study_id, user_token)
 

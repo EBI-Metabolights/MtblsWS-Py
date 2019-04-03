@@ -18,7 +18,7 @@ curation_lable = 'curation'
 
 class Jira(Resource):
     @swagger.operation(
-        summary="Create (or update) Jira tickets for MetaboLights study curation.",
+        summary="Create (or update) Jira tickets for MetaboLights study curation (curator only)",
         notes="If no study id (accession number) is given, all tickets will be updated.",
         parameters=[
             {
@@ -86,7 +86,7 @@ class Jira(Resource):
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
+        if not is_curator:
             abort(403)
 
         status, message, updated_studies_list = update_or_create_jira_issue(passed_id, user_token, is_curator)
@@ -263,7 +263,7 @@ def maintain_jira_labels(issue, study_status, user_name):
 
 class GoogleDocs(Resource):
     @swagger.operation(
-        summary="Read database for curation status",
+        summary="Read database for curation status (curator only)",
         notes="Read the database table for curation status",
         parameters=[
             {

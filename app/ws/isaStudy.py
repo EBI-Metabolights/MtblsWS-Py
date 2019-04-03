@@ -82,8 +82,8 @@ class IsaJsonStudy(Resource):
 
         logger.info('Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -151,8 +151,8 @@ class StudyTitle(Resource):
 
         logger.info('Getting Study title for %s', study_id)
         # check for access rights
-        role, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 

@@ -130,7 +130,7 @@ def initialize_app(flask_app):
     api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(Validation, res_path + "/ebi-internal/<string:study_id>/validation")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validation/override")
-    api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split_maf/<string:annotation_file_name>")
+    api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split_maf")
 
 
 def main():
