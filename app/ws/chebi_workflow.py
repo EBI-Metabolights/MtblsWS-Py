@@ -38,7 +38,10 @@ def explode(v, i, sep='|'):
 
 def check_maf_for_pipes(study_location, annotation_file_name):
     annotation_file_name = os.path.join(study_location, annotation_file_name)
-    maf_df = read_tsv(annotation_file_name)
+    try:
+        maf_df = read_tsv(annotation_file_name)
+    except FileNotFoundError:
+        abort(400, "The file " + annotation_file_name + " was not found")
     maf_len = len(maf_df.index)
 
     # Any rows to split?
@@ -53,7 +56,10 @@ def check_maf_for_pipes(study_location, annotation_file_name):
 
 def search_and_update_maf(study_location, annotation_file_name):
     annotation_file_name = os.path.join(study_location, annotation_file_name)
-    maf_df = read_tsv(annotation_file_name)
+    try:
+        maf_df = read_tsv(annotation_file_name)
+    except FileNotFoundError:
+        abort(400, "The file " + annotation_file_name + " was not found")
     maf_len = len(maf_df.index)
 
     # Any rows to split?

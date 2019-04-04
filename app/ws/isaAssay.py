@@ -674,7 +674,10 @@ def update_assay_column_values(columns, assay_file_name, maf_file_name=None):
     assay_sample_name = 'Sample Name'
     maf_column_name = 'Metabolite Assignment File'
 
-    table_df = read_tsv(assay_file_name)
+    try:
+        table_df = read_tsv(assay_file_name)
+    except FileNotFoundError:
+        abort(400, "The file " + assay_file_name + " was not found")
 
     for key_val in columns:  # These are the values from the JSON passed
         column_header = key_val['name']

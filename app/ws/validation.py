@@ -631,7 +631,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
         unique_file_names = []
         assay_file_name = os.path.join(study_location, assay.filename)
-        assay_df = read_tsv(assay_file_name)
+        try:
+            assay_df = read_tsv(assay_file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + assay_file_name + " was not found")
 
         assay_type_onto = assay.technology_type
         if assay_type_onto.term == 'mass spectrometry':

@@ -134,8 +134,10 @@ class SimpleColumns(Resource):
             abort(403)
 
         file_name = os.path.join(study_location, file_name)
-
-        table_df = read_tsv(file_name)
+        try:
+            table_df = read_tsv(file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
 
         #  Need to add values for each existing row (not header)
         new_col = []
@@ -244,7 +246,10 @@ class ComplexColumns(Resource):
             abort(403)
 
         file_name = os.path.join(study_location, file_name)
-        table_df = read_tsv(file_name)
+        try:
+            table_df = read_tsv(file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
 
         # Get an indexed header row
         df_header = get_table_header(table_df)
@@ -374,7 +379,10 @@ class ColumnsRows(Resource):
             abort(403)
 
         file_name = os.path.join(study_location, file_name)
-        table_df = read_tsv(file_name)
+        try:
+            table_df = read_tsv(file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
 
         for column in columns_rows:
             cell_value = column['value']
@@ -534,7 +542,10 @@ class AddRows(Resource):
         df_header = get_table_header(file_df)
 
         # Get the updated data table
-        df_data_dict = totuples(read_tsv(file_name), 'rows')
+        try:
+            df_data_dict = totuples(read_tsv(file_name), 'rows')
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
 
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
@@ -654,7 +665,10 @@ class AddRows(Resource):
 
         file_name = os.path.join(study_location, file_name)
 
-        file_df = read_tsv(file_name)
+        try:
+            file_df = read_tsv(file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
 
         for row in new_rows:
             try:
@@ -763,7 +777,10 @@ class AddRows(Resource):
             abort(403)
 
         file_name = os.path.join(study_location, file_name)
-        file_df = read_tsv(file_name)
+        try:
+            file_df = read_tsv(file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
 
         row_nums = row_num.split(",")
 
@@ -776,7 +793,10 @@ class AddRows(Resource):
         message = write_tsv(file_df, file_name)
 
         # To be sure we read the file again
-        file_df = read_tsv(file_name)
+        try:
+            file_df = read_tsv(file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
 
         df_data_dict = totuples(file_df.reset_index(), 'rows')
 

@@ -902,7 +902,10 @@ class CreateAccession(Resource):
 
         # For ISA-API to correctly save a set of ISA documents, we need to have one dummy sample row
         file_name = os.path.join(study_location, sample_file_name)
-        sample_df = read_tsv(file_name)
+        try:
+            sample_df = read_tsv(file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
         sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row
         write_tsv(sample_df, file_name)
 
