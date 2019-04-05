@@ -231,7 +231,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
             if maf_header['mass_to_charge']:
                 check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms)
         except:
-            logger.into("No mass_to_charge column found in the MAF")
+            logger.info("No mass_to_charge column found in the MAF")
 
         # NMR/MS Assay Names OR Sample Names are added to the sheet
         if all_assay_names:
