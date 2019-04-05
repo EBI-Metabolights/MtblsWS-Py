@@ -280,6 +280,12 @@ def get_assay_type_from_file_name(study_id, file_name):
         assay_type = file_part  # Only interested in the assay type part
         break
 
+    if assay_type == 'a':  # Legacy filename
+        if file_name.endswith('metabolite_profiling_NMR_spectroscopy.txt'):
+            assay_type = 'NMR'
+        elif file_name.endswith('metabolite_profiling_mass_spectrometry.txt'):
+            assay_type = 'LC-MS'  # For this purpose LC and GC has the same columns
+
     return assay_type
 
 

@@ -609,7 +609,8 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
                 unique_file_names.append(file_and_column)
     elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the MAF
         if row not in all_assay_names:
-            all_assay_names.append(row)
+            if len(row) >= 1:
+                all_assay_names.append(row)
 
     return all_assays, all_assay_names, validations, unique_file_names
 
@@ -620,6 +621,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     all_assays = []
     all_assay_names = []
     unique_file_names = []
+
+    study_id = isa_study.identifier
 
     if isa_study.assays:
         add_msg(validations, val_section, "Found assay(s) for this study", success, val_section)
@@ -640,10 +643,20 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         if assay_type_onto.term == 'mass spectrometry':
             is_ms = True
 
-        assay_header = get_table_header(assay_df, isa_study.identifier, assay_file_name)
-        for h_assay in assay_header:
-            if 'Term ' not in h_assay and 'Protocol REF' not in h_assay:
-                assays.append(h_assay)
+        assay_header = get_table_header(assay_df, study_id, assay_file_name)
+        for header in assay_header:
+            if 'Term ' not in header and 'Protocol REF' not in header and 'Unit' not in header:
+                assays.append(header)
+
+        # Are the template headers present in the assay
+        assay_type = get_assay_type_from_file_name(study_id, assay.filename)
+        if assay_type != 'a':  # Not created from the online editor, so we have to skip this validation
+            tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type = \
+                get_assay_headers_and_protcols(assay_type)
+            for template_header in tidy_header_row:
+                if template_header not in assay_header:
+                    add_msg(validations, val_section,
+                            "Assay sheet is missing column '" + template_header + "'", error, assay.filename)
 
         # Are all relevant rows filled in?
         if not assay_df.empty:
@@ -812,7 +825,8 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                                 warning, file_name)
 
                 elif s_header.lower() == 'sample name':
-                    sample_name_list.append(row)
+                    if len(row) >= 1:
+                        sample_name_list.append(row)
 
             if col_rows < all_rows:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing values. " +
