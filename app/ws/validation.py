@@ -24,8 +24,6 @@ warning = "warning"
 error = "error"
 success = "success"
 info = "info"
-sample_name_list = []
-file_name_list = []
 
 
 def add_msg(validations, section, message, status, meta_file="", value="", desrc=""):
@@ -156,7 +154,7 @@ def get_sample_names(isa_samples):
     return all_samples
 
 
-def check_file(file_name_and_column, study_location):
+def check_file(file_name_and_column, study_location, file_name_list):
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
     if file_name not in file_name_list:
@@ -201,7 +199,7 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
     return incorrect_pos, incorrect_message, validations
 
 
-def validate_maf(validations, file_name, all_assay_names, study_location, study_id, is_ms):
+def validate_maf(validations, file_name, all_assay_names, study_location, study_id, is_ms, sample_name_list):
     val_section = "maf"
     maf_name = os.path.join(study_location, file_name)
     maf_df = None
@@ -535,23 +533,27 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
 
     # Validate Samples
     val_section = "samples"
+    sample_name_list = []
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_sample_validation = \
-            validate_samples(isa_study, isa_samples, validation_schema, s_file, override_list, val_section)
+            validate_samples(isa_study, isa_samples, validation_schema, s_file, override_list,
+                             sample_name_list, val_section)
         all_validations.append(isa_sample_validation)
 
     # Validate files
     val_section = "files"
+    file_name_list = []
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, files_validation = validate_files(
-            study_id, study_location, obfuscation_code, override_list, val_section)
+            study_id, study_location, obfuscation_code, override_list, file_name_list, val_section)
         all_validations.append(files_validation)
 
     # Validate assays
     val_section = "assays"
     if validation_section == 'all' or val_section in validation_section or 'maf' in validation_section:
         status, amber_warning, assay_validation = \
-            validate_assays(isa_study, study_location, validation_schema, override_list, val_section)
+            validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
+                            file_name_list, val_section)
         all_validations.append(assay_validation)
 
     if not status:
@@ -618,7 +620,7 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
     return all_assays, all_assay_names, validations, unique_file_names
 
 
-def validate_assays(isa_study, study_location, validation_schema, override_list, val_section="assays"):
+def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list, file_name_list, val_section="assays"):
     validations = []
     assays = []
     all_assays = []
@@ -695,7 +697,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     for files in unique_file_names:
         file_name = files.split('|')[0]
         column_name = files.split('|')[1]
-        status, file_type, file_description = check_file(files, study_location)
+        status, file_type, file_description = check_file(files, study_location, file_name_list)
         if status:
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
                     + column_name + "'", success, desrc=file_description)
@@ -705,12 +707,12 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
         # Correct MAF?
         if column_name.lower() == 'metabolite assignment file':
-            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier, is_ms)
+            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier, is_ms, sample_name_list)
 
     return return_validations(val_section, validations, override_list)
 
 
-def validate_files(study_id, study_location, obfuscation_code, override_list, val_section="files"):
+def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list, val_section="files"):
     # check for Publication
     validations = []
 
@@ -767,7 +769,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, va
     return return_validations(val_section, validations, override_list)
 
 
-def validate_samples(isa_study, isa_samples, validation_schema, file_name, override_list, val_section="samples"):
+def validate_samples(isa_study, isa_samples, validation_schema, file_name, override_list, sample_name_list, val_section="samples"):
     # check for Publication
     validations = []
     samples = []

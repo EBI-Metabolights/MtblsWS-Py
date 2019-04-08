@@ -178,7 +178,7 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 # Change the issue's summary, comments and description.
                 issue.update(summary=new_summary, fields={"labels": labels}, notify=False)
 
-                if valid_curator:
+                if valid_curator:  # ToDo, what if the curation log is not up to date?
                     issue.update(assignee={'name': jira_curator})
 
                 updated_studies.append(study_id)
