@@ -1,8 +1,12 @@
 import logging, pandas as pd, os
 import numpy as np
+import requests
+import cirpy
+import string
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from pubchempy import get_compounds
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import read_tsv, write_tsv
 from app.ws.mtbls_maf import totuples, get_table_header
@@ -12,7 +16,6 @@ from app.ws.study_files import get_all_files_from_filesystem
 logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
-
 iac = IsaApiClient()
 
 
@@ -55,7 +58,9 @@ def check_maf_for_pipes(study_location, annotation_file_name):
 
 
 def search_and_update_maf(study_location, annotation_file_name):
+    short_file_name = os.path.join(study_location, annotation_file_name.replace('.tsv', ''))
     annotation_file_name = os.path.join(study_location, annotation_file_name)
+    pd.options.mode.chained_assignment = None  # default='warn'
     try:
         maf_df = read_tsv(annotation_file_name)
     except FileNotFoundError:
@@ -76,11 +81,14 @@ def search_and_update_maf(study_location, annotation_file_name):
     for column_name in standard_maf_columns:
         maf_df.iloc[:, standard_maf_columns[column_name]] = ""
 
+    pubchem_df = create_pubchem_df(maf_df)
+
     row_idx = 0
     # Search using the compound name
     for idx, comp_name in enumerate(maf_df[maf_compound_name_column]):
-
         search_res = wsc.get_maf_search("name", comp_name)
+        pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula = pubchem_search(comp_name)
+
         if search_res['content']:
             name = None
             result = search_res['content'][0]
@@ -89,6 +97,31 @@ def search_and_update_maf(study_location, annotation_file_name):
             smiles = result["smiles"]
             inchi = result["inchi"]
             name = result["name"]
+
+            pubchem_df.iloc[row_idx, 0] = database_identifier
+            pubchem_df.iloc[row_idx, 1] = chemical_formula
+            pubchem_df.iloc[row_idx, 2] = smiles
+            pubchem_df.iloc[row_idx, 3] = inchi
+            # 4 is name / metabolite_identification from MAF
+            pubchem_df.iloc[row_idx, 5] = pc_name
+            pubchem_df.iloc[row_idx, 6] = pc_cid
+            # 7 PubChem CID from InChIKey search (Cactus, OBSIN)
+            # 8 ChemSpider ID (CSID) from INCHIKEY
+            # 9 final smiles
+            # 10 final inchi
+            # 11 final inchikey
+            pubchem_df.iloc[row_idx, 12] = pc_smiles
+            pubchem_df.iloc[row_idx, 13] = catus_search(comp_name, 'smiles')
+            pubchem_df.iloc[row_idx, 14] = opsin_search(comp_name, 'smiles')
+
+            pubchem_df.iloc[row_idx, 15] = pc_inchi
+            pubchem_df.iloc[row_idx, 16] = catus_search(comp_name, 'stdinchi')
+            pubchem_df.iloc[row_idx, 17] = opsin_search(comp_name, 'stdinchi')
+
+            pubchem_df.iloc[row_idx, 18] = pc_inchi_key
+            pubchem_df.iloc[row_idx, 19] = catus_search(comp_name, 'stdinchikey')
+            pubchem_df.iloc[row_idx, 20] = opsin_search(comp_name, 'stdinchikey')
+            pubchem_df.iloc[row_idx, 21] = pc_formula
 
             if name:  # comp_name == name:  # We have an exact match
                 if database_identifier:
@@ -101,9 +134,84 @@ def search_and_update_maf(study_location, annotation_file_name):
                     maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
             row_idx += 1
 
-    write_tsv(maf_df, annotation_file_name + ".annotated")
+    write_tsv(maf_df, short_file_name + "_annotated.tsv")
+    write_tsv(pubchem_df, short_file_name + "_pubchem.tsv")
 
     return maf_df, maf_len, new_maf_df, new_maf_len
+
+
+def create_pubchem_df(maf_df):
+    # These are simply the fixed spreadsheet column headers
+    pubchem_df = maf_df[['database_identifier', 'chemical_formula', 'smiles', 'inchi', 'metabolite_identification']]
+    pubchem_df['iupac_name'] = ''       # 5
+    pubchem_df['pubchem_cid'] = ''      # 6
+    pubchem_df['pubchem_cid_ik'] = ''   # 7  PubChem CID from InChIKey search (Cactus, OBSIN)
+    pubchem_df['csid_ik'] = ''          # 8  ChemSpider ID (CSID) from INCHIKEY
+
+    pubchem_df['final_smiles'] = ''     # 9
+    pubchem_df['final_inchi'] = ''      # 10
+    pubchem_df['final_inchi_key'] = ''  # 11
+
+    pubchem_df['pubchem_smiles'] = ''   # 12
+    pubchem_df['cactus_smiles'] = ''    # 13
+    pubchem_df['opsin_smiles'] = ''     # 14
+
+    pubchem_df['pubchem_inchi'] = ''    # 15
+    pubchem_df['cactus_inchi'] = ''     # 16
+    pubchem_df['opsin_inchi'] = ''      # 17
+
+    pubchem_df['pubchem_inchi_key'] = ''    # 18
+    pubchem_df['cactus_inchi_key'] = ''     # 19
+    pubchem_df['opsin_inchi_key'] = ''      # 20
+
+    pubchem_df['pubchem_formula'] = ''      # 21
+
+    return pubchem_df
+
+
+def opsin_search(comp_name, req_type):
+    result = ""
+    opsing_url = 'https://opsin.ch.cam.ac.uk/opsin/'
+    url = opsing_url + comp_name + '.json'
+    resp = requests.get(url)
+    if resp.status_code == 200:
+        json_resp = resp.json()
+        result = json_resp[req_type]
+    return result
+
+
+def catus_search(comp_name, type):
+    result = cirpy.resolve(comp_name, type)
+
+    if result:
+        if type == 'stdinchikey':
+            return result.replace('InChIKey=', '')
+    return result
+
+
+def pubchem_search(comp_name):
+    iupac = ''
+    inchi = ''
+    inchi_key = ''
+    smiles = ''
+    cid = ''
+    formula = ''
+
+    # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
+    try:
+        pubchem_compound = get_compounds(comp_name, namespace='name')
+        compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
+        inchi = compound.inchi
+        inchi_key = compound.inchikey
+        smiles = compound.canonical_smiles
+        iupac = compound.iupac_name
+        cid = compound.cid
+        formula = compound.molecular_formula
+        logger.debug('Searching PubChem for "' + comp_name + '", got cid "' + cid + '" and iupac name "' + iupac + '"')
+    except:
+        logger.error("Unable to search PubChem for compound " + comp_name)
+
+    return iupac, inchi, inchi_key, smiles, cid, formula
 
 
 class SplitMaf(Resource):
@@ -214,7 +322,7 @@ class SearchNamesMaf(Resource):
         summary="Search using compound names in MAF (curator only)",
         nickname="Search compound names",
         notes="Search and populate a given Metabolite Annotation File based on the 'metabolite_identification' column. "
-              "A new MAF will be created with extension '.annotated'. "
+              "New MAF files will be created with extensions '_annotated.tsv' and '_pubchem.tsv'. "
               "If no annotation_file_name is given, all MAF in the study is processed",
         parameters=[
             {
@@ -310,4 +418,3 @@ class SearchNamesMaf(Resource):
 
         return {"success": str(maf_count) + " MAF files checked for pipelines, " +
                            str(maf_changed) + " files needed updating."}
-
