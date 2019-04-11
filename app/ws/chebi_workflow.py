@@ -2,6 +2,7 @@ import logging, pandas as pd, os
 import numpy as np
 import requests
 import cirpy
+import ssl
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -317,6 +318,7 @@ def pubchem_search(comp_name, search_type='name'):
 
     # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
     try:
+        ssl._create_default_https_context = ssl._create_unverified_context
         pubchem_compound = get_compounds(comp_name, namespace=search_type)
         compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
         inchi = compound.inchi
