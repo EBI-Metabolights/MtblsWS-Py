@@ -9,6 +9,7 @@ from operator import itemgetter
 from marshmallow import ValidationError
 import json
 import zipfile
+from os import scandir, walk
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -115,6 +116,9 @@ class StudyFiles(Resource):
             args = parser.parse_args(req=request)
             include_raw_data = False if args['include_raw_data'].lower() != 'true' else True
             directory = args['directory'] if args['directory'] else None
+
+        if directory and directory.startswith(os.sep):
+            abort(401, "You can only specify folders in the current study folder")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
@@ -680,14 +684,32 @@ def get_file_times(directory, file_name):
 
 def get_basic_files(study_location, include_sub_dir):
     file_list = []
-    for entry in os.scandir(study_location):
+    file_list2 = []
+
+    if include_sub_dir:
+        dir_list = []
+        file_list = list_directories(study_location, dir_list)
+    else:
+        for entry in scandir(study_location):
+            file_list.append(entry.name)
+
+    for fname in file_list:
+        name = fname.replace(study_location+os.sep, '')
+        if name not in file_list2:
+            file_list2.append(fname.replace(study_location+os.sep, ''))
+
+    return file_list2
+
+
+def list_directories(study_location, dir_list):
+    for entry in scandir(study_location):
         if not entry.name.startswith('.'):
-            # yield entry.name
-            if not entry.is_dir():
-                file_list.append(entry.name)
-            if include_sub_dir and entry.is_dir():
-                file_list.append(os.sep + entry.name)
-    return file_list
+            if entry.is_dir():
+                dir_list.append(entry.path)
+                dir_list.extend(list_directories(entry.path, dir_list))
+            else:
+                dir_list.append(entry.path)
+    return dir_list
 
 
 class StudyFilesTree(Resource):
@@ -767,6 +789,9 @@ class StudyFilesTree(Resource):
             args = parser.parse_args(req=request)
             include_sub_dir = False if args['include_sub_dir'].lower() != 'true' else True
             directory = args['directory'] if args['directory'] else None
+
+        if directory and directory.startswith(os.sep):
+            abort(401, "You can only specify folders in the current study folder")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \

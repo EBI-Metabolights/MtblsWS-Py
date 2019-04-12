@@ -88,7 +88,7 @@ def search_and_update_maf(study_location, annotation_file_name):
     for idx, comp_name in enumerate(maf_df[maf_compound_name_column]):
         print(comp_name)
         chebi_found = False
-        comp_name = comp_name.trim()  # Remove leading and trailing spaces
+        comp_name = comp_name.rstrip()  # Remove trailing spaces
 
         if '/' in comp_name:  # Not a real name
             comp_name = comp_name.replace('/', ' ')
