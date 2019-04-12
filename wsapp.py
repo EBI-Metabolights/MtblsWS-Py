@@ -17,7 +17,7 @@ from app.ws.MapStudies import *
 from app.ws.mzML2ISA import *
 from app.ws.partner_utils import Metabolon
 from app.ws.jira_update import Jira, GoogleDocs
-from app.ws.study_files import *
+from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
 from app.ws.assay_protocol import *
 from app.ws.validation import Validation, OverrideValidation
 from app.ws.chebi_workflow import SplitMaf, SearchNamesMaf
@@ -64,6 +64,7 @@ def initialize_app(flask_app):
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
     api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
+    api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")

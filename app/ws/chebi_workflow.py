@@ -84,20 +84,14 @@ def search_and_update_maf(study_location, annotation_file_name):
     pubchem_df = create_pubchem_df(maf_df)
 
     row_idx = 0
-    # Search using the compound name
+    # Search using the compound name column
     for idx, comp_name in enumerate(maf_df[maf_compound_name_column]):
         print(comp_name)
+        chebi_found = False
+        comp_name = comp_name.trim()  # Remove leading and trailing spaces
 
-        pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms = pubchem_search(comp_name)
-
-        cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
-        opsin_stdinchikey = opsin_search(comp_name, 'stdinchikey')
-        cactus_smiles = cactus_search(comp_name, 'smiles')
-        opsin_smiles = opsin_search(comp_name, 'smiles')
-        cactus_inchi = cactus_search(comp_name, 'stdinchi')
-        opsin_inchi = opsin_search(comp_name, 'stdinchi')
-        cactus_synonyms = cactus_search(comp_name, 'names')  # Synonyms
-        csid = get_csid(pc_inchi_key, cactus_stdinchikey)
+        if '/' in comp_name:  # Not a real name
+            comp_name = comp_name.replace('/', ' ')
 
         search_res = wsc.get_maf_search("name", comp_name)  # This is the standard MetaboLights aka Plugin search
         if search_res['content']:
@@ -117,6 +111,8 @@ def search_and_update_maf(study_location, annotation_file_name):
 
             if name:
                 if database_identifier:
+                    if database_identifier.startswith('CHEBI:'):
+                        chebi_found = True
                     maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
                 if chemical_formula:
                     maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
@@ -125,29 +121,41 @@ def search_and_update_maf(study_location, annotation_file_name):
                 if inchi:
                     maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
 
-        pubchem_df.iloc[row_idx, 5] = pc_name  # 5 PubChem name
-        pubchem_df.iloc[row_idx, 6] = pc_cid   # 6 PubChem CID
+        if not chebi_found:  # We could not find this in ChEBI, let's try other sources
+            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms = pubchem_search(comp_name)
 
-        if not pc_cid:
-            pc_cid = get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey)
-        pubchem_df.iloc[row_idx, 7] = pc_cid  # 7 PubChem CID, if none get from InChIKey search (Cactus, OBSIN)
-        pubchem_df.iloc[row_idx, 8] = csid # 8 ChemSpider ID (CSID) from INCHI
-        pubchem_df.iloc[row_idx, 9] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # 9 final smiles
-        pubchem_df.iloc[row_idx, 10] = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # 10 final inchi
-        pubchem_df.iloc[row_idx, 11] = get_ranked_values(pc_inchi_key, cactus_stdinchikey,
-                                                         opsin_stdinchikey, None)  # 11 final inchikey
-        pubchem_df.iloc[row_idx, 12] = pc_smiles  # 12 pc_smiles
-        pubchem_df.iloc[row_idx, 13] = cactus_smiles   # 13 cactus_smiles
-        pubchem_df.iloc[row_idx, 14] = opsin_smiles  # 14 opsin_smiles
-        pubchem_df.iloc[row_idx, 15] = pc_inchi  # 15 PubChem inchi
-        pubchem_df.iloc[row_idx, 16] = cactus_inchi  # 16 Cacus inchi
-        pubchem_df.iloc[row_idx, 17] = opsin_inchi   # 17 Opsin inchi
-        pubchem_df.iloc[row_idx, 18] = pc_inchi_key  # 18 PubChem stdinchikey
-        pubchem_df.iloc[row_idx, 19] = cactus_stdinchikey  # 19 cactus_stdinchikey
-        pubchem_df.iloc[row_idx, 20] = opsin_stdinchikey   # 20 opsin_stdinchikey
-        pubchem_df.iloc[row_idx, 21] = pc_formula   # 21 PubChem formula
-        pubchem_df.iloc[row_idx, 22] = pc_synonyms  # 22 PubChem synonyms
-        pubchem_df.iloc[row_idx, 23] = cactus_synonyms  # 23 Cactus synonyms
+            cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
+            opsin_stdinchikey = opsin_search(comp_name, 'stdinchikey')
+            cactus_smiles = cactus_search(comp_name, 'smiles')
+            opsin_smiles = opsin_search(comp_name, 'smiles')
+            cactus_inchi = cactus_search(comp_name, 'stdinchi')
+            opsin_inchi = opsin_search(comp_name, 'stdinchi')
+            cactus_synonyms = cactus_search(comp_name, 'names')  # Synonyms
+            csid = get_csid(pc_inchi_key, cactus_stdinchikey)
+
+            pubchem_df.iloc[row_idx, 5] = pc_name  # 5 PubChem name
+            pubchem_df.iloc[row_idx, 6] = pc_cid   # 6 PubChem CID
+
+            if not pc_cid:
+                pc_cid = get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey)
+            pubchem_df.iloc[row_idx, 7] = pc_cid  # 7 PubChem CID, if none get from InChIKey search (Cactus, OBSIN)
+            pubchem_df.iloc[row_idx, 8] = csid  # 8 ChemSpider ID (CSID) from INCHI
+            pubchem_df.iloc[row_idx, 9] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # 9 final smiles
+            pubchem_df.iloc[row_idx, 10] = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # 10 final inchi
+            pubchem_df.iloc[row_idx, 11] = get_ranked_values(pc_inchi_key, cactus_stdinchikey,
+                                                             opsin_stdinchikey, None)  # 11 final inchikey
+            pubchem_df.iloc[row_idx, 12] = pc_smiles  # 12 pc_smiles
+            pubchem_df.iloc[row_idx, 13] = cactus_smiles   # 13 cactus_smiles
+            pubchem_df.iloc[row_idx, 14] = opsin_smiles  # 14 opsin_smiles
+            pubchem_df.iloc[row_idx, 15] = pc_inchi  # 15 PubChem inchi
+            pubchem_df.iloc[row_idx, 16] = cactus_inchi  # 16 Cacus inchi
+            pubchem_df.iloc[row_idx, 17] = opsin_inchi   # 17 Opsin inchi
+            pubchem_df.iloc[row_idx, 18] = pc_inchi_key  # 18 PubChem stdinchikey
+            pubchem_df.iloc[row_idx, 19] = cactus_stdinchikey  # 19 cactus_stdinchikey
+            pubchem_df.iloc[row_idx, 20] = opsin_stdinchikey   # 20 opsin_stdinchikey
+            pubchem_df.iloc[row_idx, 21] = pc_formula   # 21 PubChem formula
+            pubchem_df.iloc[row_idx, 22] = pc_synonyms  # 22 PubChem synonyms
+            pubchem_df.iloc[row_idx, 23] = cactus_synonyms  # 23 Cactus synonyms
 
         row_idx += 1
 
@@ -318,7 +326,7 @@ def pubchem_search(comp_name, search_type='name'):
 
     # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
     try:
-        ssl._create_default_https_context = ssl._create_unverified_context
+        ssl._create_default_https_context = ssl._create_unverified_context  # ToDo, get root certificates installed
         pubchem_compound = get_compounds(comp_name, namespace=search_type)
         compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
         inchi = compound.inchi
@@ -331,8 +339,9 @@ def pubchem_search(comp_name, search_type='name'):
             if get_relevant_synonym(synonym):
                 synonyms = synonyms + ';' + synonym
         logger.debug('Searching PubChem for "' + comp_name + '", got cid "' + cid + '" and iupac name "' + iupac + '"')
-    except:
+    except Exception as e:
         logger.error("Unable to search PubChem for compound " + comp_name)
+        logger.error(e)
 
     return iupac, inchi, inchi_key, smiles, cid, formula, synonyms
 

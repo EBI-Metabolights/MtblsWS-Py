@@ -678,4 +678,106 @@ def get_file_times(directory, file_name):
     return file_time, raw_time, file_type, status
 
 
+def get_basic_files(study_location, include_sub_dir):
+    file_list = []
+    for entry in os.scandir(study_location):
+        if not entry.name.startswith('.'):
+            # yield entry.name
+            if not entry.is_dir():
+                file_list.append(entry.name)
+            if include_sub_dir and entry.is_dir():
+                file_list.append(os.sep + entry.name)
+    return file_list
+
+
+class StudyFilesTree(Resource):
+    @swagger.operation(
+        summary="Get a basic list of all files, and subdirectories, in the study folder",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "include_sub_dir",
+                "description": "Include files in all sub-directories. False = only list files in the study folder",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "default": True
+            },
+            {
+                "name": "directory",
+                "description": "List first level of files in a sub-directory",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # If false, only sync ISA-Tab metadata files
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('include_sub_dir', help='include files in all sub-directories')
+        parser.add_argument('directory', help='List files in a specific sub-directory')
+        include_sub_dir = False
+        directory = None
+
+        if request.args:
+            args = parser.parse_args(req=request)
+            include_sub_dir = False if args['include_sub_dir'].lower() != 'true' else True
+            directory = args['directory'] if args['directory'] else None
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not read_access:
+            abort(403)
+
+        if directory:
+            study_location = os.path.join(study_location, directory)
+
+        file_list = get_basic_files(study_location, include_sub_dir)
+
+        return jsonify({'studyFiles': file_list})
 
