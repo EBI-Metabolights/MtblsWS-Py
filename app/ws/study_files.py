@@ -799,10 +799,16 @@ class StudyFilesTree(Resource):
         if not read_access:
             abort(403)
 
+        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
+        upload_location = upload_location.split('/mtblight')
+
         if directory:
             study_location = os.path.join(study_location, directory)
 
         file_list = get_basic_files(study_location, include_sub_dir)
 
-        return jsonify({'studyFiles': file_list})
-
+        return jsonify({'studyFiles': file_list,
+                        'upload': [],
+                        'upload_all': [],
+                        'upload_location': upload_location[1],
+                        'obfuscation_code': obfuscation_code})

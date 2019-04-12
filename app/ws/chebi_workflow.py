@@ -89,6 +89,7 @@ def search_and_update_maf(study_location, annotation_file_name):
         print(comp_name)
         chebi_found = False
         comp_name = comp_name.rstrip()  # Remove trailing spaces
+#        comp_name = comp_name.encode('ascii', 'ignore')  # Make sure it's only searching using ASCII encoding
 
         if '/' in comp_name:  # Not a real name
             comp_name = comp_name.replace('/', ' ')
@@ -324,21 +325,33 @@ def pubchem_search(comp_name, search_type='name'):
     formula = ''
     synonyms = ''
 
+    #if ',' in comp_name:
+    #    comp_name = comp_name.split(',')[0]
+
     # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
     try:
+        compound = None
         ssl._create_default_https_context = ssl._create_unverified_context  # ToDo, get root certificates installed
         pubchem_compound = get_compounds(comp_name, namespace=search_type)
-        compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
-        inchi = compound.inchi
-        inchi_key = compound.inchikey
-        smiles = compound.canonical_smiles
-        iupac = compound.iupac_name
-        cid = compound.cid
-        formula = compound.molecular_formula
-        for synonym in compound.synonyms:
-            if get_relevant_synonym(synonym):
-                synonyms = synonyms + ';' + synonym
-        logger.debug('Searching PubChem for "' + comp_name + '", got cid "' + cid + '" and iupac name "' + iupac + '"')
+        try:
+            compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
+        except IndexError:
+            logger.info('Could not find PubChem compound for ' + comp_name)   # Nothing was found
+
+        if compound:
+            inchi = compound.inchi
+            inchi_key = compound.inchikey
+            smiles = compound.canonical_smiles
+            iupac = compound.iupac_name
+            cid = compound.cid
+            formula = compound.molecular_formula
+            for synonym in compound.synonyms:
+                if get_relevant_synonym(synonym):
+                    synonyms = synonyms + ';' + synonym
+            logger.debug('Searching PubChem for "' + comp_name + '", got cid "' + cid +
+                         '" and iupac name "' + iupac + '"')
+    except TypeError:
+        logger.info('Found PubChem compound for ' + comp_name + ' but compound name name contain special characters')
     except Exception as e:
         logger.error("Unable to search PubChem for compound " + comp_name)
         logger.error(e)
