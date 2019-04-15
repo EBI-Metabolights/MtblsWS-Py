@@ -732,7 +732,9 @@ def map_file_type(file_name, directory, assay_file_list=None):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'raw', active_status
         else:
-            return 'unknown', none_active_status
+            if file_name.endswith('.d'):
+                return 'raw', none_active_status
+        return 'unknown', none_active_status
 
 
 def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_list=None):
