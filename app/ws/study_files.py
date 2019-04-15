@@ -684,42 +684,37 @@ def get_file_times(directory, file_name):
 
 def get_basic_files(study_location, include_sub_dir):
     file_list = []
-    file_list2 = []
 
     if include_sub_dir:
-        dir_list = []
-        file_list = list_directories(study_location, dir_list)
+        # dir_list = []
+        file_list = list_directories(study_location, file_list, base_study_location=study_location)
     else:
         for entry in scandir(study_location):
-            #file_type, status = map_file_type(entry.name, study_location)
-            #file_list.append({"file": entry.path, "type": file_type, "status": status})
-            file_list.append({"file": entry.path, "type": "", "status": ""})
-            # file_list.append(entry.name)
+            file_type, status = map_file_type(entry.name, study_location)
+            name = entry.path.replace(study_location + os.sep, '')
+            file_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type, "status": status})
 
-    for fname in file_list:
-        name = fname['file']
-        file_type = fname['type']
-        status = fname['status']
-        #if name not in file_list2:
-        name = name.replace(study_location + os.sep, '')
-        #file_list2.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type, "status": status})
-        file_list2.append({"file": name, "createdAt": "", "timestamp": "", "type": "", "status": ""})
+    # for fname in file_list:
+    #     name = fname['file']
+    #     file_type = fname['type']
+    #     status = fname['status']
+    #     name = name.replace(study_location + os.sep, '')
+    #     #file_list2.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type, "status": status})
 
-    return file_list2
+    return file_list
 
 
-def list_directories(study_location, dir_list):
-    for entry in scandir(study_location):
+def list_directories(file_location, dir_list, base_study_location):
+    for entry in scandir(file_location):
         if not entry.name.startswith('.'):
+            name = entry.path.replace(base_study_location + os.sep, '')
             if entry.is_dir():
-                # dir_list.append(entry.path)
-                dir_list.append({"file": entry.path, "type": "directory", "status": ""})
-                dir_list.extend(list_directories(entry.path, []))
+                dir_list.append({"file": name, "type": "directory", "status": ""})
+                dir_list.extend(list_directories(entry.path, [], base_study_location))
             else:
-                # file_type, status = map_file_type(entry.name, study_location)
-                # dir_list.append({"file": entry.path,  "type": file_type, "status": status})
-                dir_list.append({"file": entry.path, "type": "", "status": ""})
-                # dir_list.append(entry.path)
+                file_type, status = map_file_type(entry.name, file_location)
+                dir_list.append({"file": name,  "type": file_type, "status": status})
+                # dir_list.append({"file": entry.path, "type": "", "status": ""})
     return dir_list
 
 

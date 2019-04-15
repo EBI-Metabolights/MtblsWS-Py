@@ -684,7 +684,9 @@ def map_file_type(file_name, directory):
     active_status = 'active'
     none_active_status = 'unreferenced'
     # Metadata first, current is if the files are present in the investigation and assay files
-    if file_name.startswith(('i_', 'a_', 's_', 'm_')):
+    if os.path.isdir(os.path.join(directory, file_name)):
+        return 'directory', none_active_status
+    elif file_name.startswith(('i_', 'a_', 's_', 'm_')):
         if file_name.startswith('a_'):
             if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_assay', active_status
