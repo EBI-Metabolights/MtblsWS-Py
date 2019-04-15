@@ -680,7 +680,7 @@ def remove_file(file_location, file_name, allways_remove=False):
     return True, "File " + file_name + " deleted"
 
 
-def map_file_type(file_name, directory):
+def map_file_type(file_name, directory, basic=False):
     active_status = 'active'
     none_active_status = 'unreferenced'
     # Metadata first, current is if the files are present in the investigation and assay files
@@ -688,13 +688,13 @@ def map_file_type(file_name, directory):
         return 'directory', none_active_status
     elif file_name.startswith(('i_', 'a_', 's_', 'm_')):
         if file_name.startswith('a_'):
-            if is_file_referenced(file_name, directory, 'i_'):
+            if is_file_referenced(file_name, directory, 'i_', basic):
                 return 'metadata_assay', active_status
         elif file_name.startswith('s_'):
-            if is_file_referenced(file_name, directory, 'i_'):
+            if is_file_referenced(file_name, directory, 'i_', basic):
                 return 'metadata_sample', active_status
         elif file_name.startswith('m_'):
-            if is_file_referenced(file_name, directory, 'a_'):
+            if is_file_referenced(file_name, directory, 'a_', basic):
                 return 'metadata_maf', active_status
         elif file_name.startswith('i_'):
             investigation = os.path.join(directory, 'i_')
@@ -709,12 +709,12 @@ def map_file_type(file_name, directory):
     elif file_name == 'audit':
         return 'audit', active_status
     elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata')):
-        if is_file_referenced(file_name, directory, 'a_'):
+        if is_file_referenced(file_name, directory, 'a_', basic):
             return 'derived', active_status
         else:
             return 'derived', none_active_status
     elif file_name.lower().endswith(('.zip', '.gz', '.tar', '.7z', '.z')):
-        if is_file_referenced(file_name, directory, 'a_'):
+        if is_file_referenced(file_name, directory, 'a_', basic):
             return 'compressed', active_status
         else:
             return 'compressed', none_active_status
@@ -723,16 +723,19 @@ def map_file_type(file_name, directory):
     elif file_name.lower().endswith('.tsv.split'):
         return 'maf_pipeline_slit', active_status
     else:
-        if is_file_referenced(file_name, directory, 'a_'):
+        if is_file_referenced(file_name, directory, 'a_', basic):
             return 'raw', active_status
         else:
             return 'unknown', none_active_status
 
 
-def is_file_referenced(file_name, directory, isa_tab_file_to_check):
+def is_file_referenced(file_name, directory, isa_tab_file_to_check, basic=False):
     """ There can be more than one assay, so each MAF must be checked against
     each Assay file. Do not state a MAF as not in use if it's used in the 'other' assay """
     found = False
+    if basic:
+        return found
+
     isa_tab_file_to_check = isa_tab_file_to_check + '*.txt'
     isa_tab_file = os.path.join(directory, isa_tab_file_to_check)
     for ref_file_name in glob.glob(isa_tab_file):

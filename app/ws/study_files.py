@@ -690,7 +690,7 @@ def get_basic_files(study_location, include_sub_dir):
         file_list = list_directories(study_location, file_list, base_study_location=study_location)
     else:
         for entry in scandir(study_location):
-            file_type, status = map_file_type(entry.name, study_location)
+            file_type, status = map_file_type(entry.name, study_location, basic=True)
             name = entry.path.replace(study_location + os.sep, '')
             file_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type, "status": status})
 
@@ -712,7 +712,7 @@ def list_directories(file_location, dir_list, base_study_location):
                 dir_list.append({"file": name, "type": "directory", "status": ""})
                 dir_list.extend(list_directories(entry.path, [], base_study_location))
             else:
-                file_type, status = map_file_type(entry.name, file_location)
+                file_type, status = map_file_type(entry.name, file_location, basic=True)
                 dir_list.append({"file": name,  "type": file_type, "status": status})
                 # dir_list.append({"file": entry.path, "type": "", "status": ""})
     return dir_list
