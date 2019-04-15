@@ -658,9 +658,9 @@ def get_file_information(path, directory=None, include_raw_data=False, study_id=
             if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX:
                 if not include_raw_data:  # Only return metadata files
                     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
-                        file_time, raw_time, file_type, status = get_file_times(path, file_name)
+                        file_time, raw_time, file_type, status, folder = get_file_times(path, file_name)
                 else:
-                    file_time, raw_time, file_type, status = \
+                    file_time, raw_time, file_type, status, folder = \
                         get_file_times(path, file_name, assay_file_list=assay_file_list)
 
                 if directory:
@@ -671,7 +671,7 @@ def get_file_information(path, directory=None, include_raw_data=False, study_id=
 
                 if file_time:
                     file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
-                                      "type": file_type, "status": status})
+                                      "type": file_type, "status": status, "directory": folder})
     except Exception as e:
         logger.error('Error in listing files under ' + path + '. Last file was ' + file_name)
         logger.error(str(e))
@@ -683,9 +683,9 @@ def get_file_times(directory, file_name, assay_file_list=None):
     dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
     raw_time = time.strftime(date_format, dt)  # 20180724092134
     file_time = time.strftime(file_date_format, dt)  # 20180724092134
-    file_type, status = map_file_type(file_name, directory, assay_file_list)
+    file_type, status, folder = map_file_type(file_name, directory, assay_file_list)
 
-    return file_time, raw_time, file_type, status
+    return file_time, raw_time, file_type, status, folder
 
 
 def get_basic_files(study_location, include_sub_dir, assay_file_list=None):
@@ -695,10 +695,11 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None):
         file_list = list_directories(study_location, file_list, base_study_location=study_location)
     else:
         for entry in scandir(study_location):
-            file_type, status = map_file_type(entry.name, study_location,
+            file_type, status, folder = map_file_type(entry.name, study_location,
                                               assay_file_list=assay_file_list)
             name = entry.path.replace(study_location + os.sep, '')
-            file_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type, "status": status})
+            file_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
+                              "status": status, "directory": folder})
 
     return file_list
 
@@ -708,12 +709,14 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
         if not entry.name.startswith('.'):
             name = entry.path.replace(base_study_location + os.sep, '')
             if entry.is_dir():
-                dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": "directory", "status": ""})
+                dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": "directory",
+                                 "status": "", "directory": True})
                 dir_list.extend(list_directories(entry.path, [], base_study_location))
             else:
-                file_type, status = map_file_type(entry.name, file_location,
+                file_type, status, folder = map_file_type(entry.name, file_location,
                                                   assay_file_list=assay_file_list)
-                dir_list.append({"file": name,  "createdAt": "", "timestamp": "", "type": file_type, "status": status})
+                dir_list.append({"file": name,  "createdAt": "", "timestamp": "", "type": file_type,
+                                 "status": status, "directory": folder})
     return dir_list
 
 

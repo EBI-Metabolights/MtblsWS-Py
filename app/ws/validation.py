@@ -160,7 +160,7 @@ def check_file(file_name_and_column, study_location, file_name_list):
     if file_name not in file_name_list:
         return False, 'missing file', "File " + file_name + " does not exist"
 
-    file_type, status = map_file_type(file_name, study_location)
+    file_type, status, folder = map_file_type(file_name, study_location)
     if is_empty_file(os.path.join(study_location, file_name)):
         return False, file_type, "File " + file_name + " is empty"
 
