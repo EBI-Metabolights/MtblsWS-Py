@@ -16,14 +16,16 @@ wsc = WsClient()
 iac = IsaApiClient()
 
 
-def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None, include_raw_data=None):
+def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None, include_raw_data=None,
+                                  assay_file_list=None):
     logger.info('Getting list of all files for MTBLS Study %s', study_id)
     upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
     logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                 study_location, upload_location)
 
     study_files = get_all_files(study_location, directory=directory,
-                                include_raw_data=include_raw_data, study_id=study_id)
+                                include_raw_data=include_raw_data, study_id=study_id,
+                                assay_file_list=assay_file_list)
     upload_files = get_all_files(upload_location, directory=directory,
                                  include_raw_data=include_raw_data, study_id=study_id)
 
@@ -128,7 +130,8 @@ class StudyFiles(Resource):
 
         study_files, upload_files, upload_diff, upload_location = \
             get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
-                                          directory=directory, include_raw_data=include_raw_data)
+                                          directory=directory, include_raw_data=include_raw_data,
+                                          assay_file_list=get_assay_file_list(study_location))
 
         return jsonify({'studyFiles': study_files,
                         'upload': upload_diff,
@@ -436,7 +439,8 @@ class SampleStudyFiles(Resource):
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
 
         # Get all unique file names
-        all_files = get_files(get_all_files(study_location, include_raw_data=True)) + \
+        all_files = get_files(get_all_files(study_location, include_raw_data=True,
+                                            assay_file_list=get_assay_file_list(study_location))) + \
                     get_files(get_all_files(upload_location, include_raw_data=True))
 
         try:
@@ -623,16 +627,17 @@ def get_files(file_list):
     return all_files
 
 
-def get_all_files(path, directory=None, include_raw_data=False, study_id=None):
+def get_all_files(path, directory=None, include_raw_data=False, study_id=None, assay_file_list=None):
     try:
-        files = get_file_information(path, directory=directory, include_raw_data=include_raw_data, study_id=study_id)
+        files = get_file_information(path, directory=directory, include_raw_data=include_raw_data,
+                                     study_id=study_id, assay_file_list=assay_file_list)
     except:
         logger.warning('Could not find folder ' + path)
         files = []  # The upload folder for this study does not exist, this is normal
     return files
 
 
-def get_file_information(path, directory=None, include_raw_data=False, study_id=None):
+def get_file_information(path, directory=None, include_raw_data=False, study_id=None, assay_file_list=None):
     file_list = []
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
@@ -655,7 +660,8 @@ def get_file_information(path, directory=None, include_raw_data=False, study_id=
                     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
                         file_time, raw_time, file_type, status = get_file_times(path, file_name)
                 else:
-                    file_time, raw_time, file_type, status = get_file_times(path, file_name)
+                    file_time, raw_time, file_type, status = \
+                        get_file_times(path, file_name, assay_file_list=assay_file_list)
 
                 if directory:
                     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
@@ -673,48 +679,41 @@ def get_file_information(path, directory=None, include_raw_data=False, study_id=
     return file_list
 
 
-def get_file_times(directory, file_name):
+def get_file_times(directory, file_name, assay_file_list=None):
     dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
     raw_time = time.strftime(date_format, dt)  # 20180724092134
     file_time = time.strftime(file_date_format, dt)  # 20180724092134
-    file_type, status = map_file_type(file_name, directory)
+    file_type, status = map_file_type(file_name, directory, assay_file_list)
 
     return file_time, raw_time, file_type, status
 
 
-def get_basic_files(study_location, include_sub_dir):
+def get_basic_files(study_location, include_sub_dir, assay_file_list=None):
     file_list = []
 
     if include_sub_dir:
-        # dir_list = []
         file_list = list_directories(study_location, file_list, base_study_location=study_location)
     else:
         for entry in scandir(study_location):
-            file_type, status = map_file_type(entry.name, study_location, basic=True)
+            file_type, status = map_file_type(entry.name, study_location,
+                                              assay_file_list=assay_file_list)
             name = entry.path.replace(study_location + os.sep, '')
             file_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type, "status": status})
-
-    # for fname in file_list:
-    #     name = fname['file']
-    #     file_type = fname['type']
-    #     status = fname['status']
-    #     name = name.replace(study_location + os.sep, '')
-    #     #file_list2.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type, "status": status})
 
     return file_list
 
 
-def list_directories(file_location, dir_list, base_study_location):
+def list_directories(file_location, dir_list, base_study_location, assay_file_list=None):
     for entry in scandir(file_location):
         if not entry.name.startswith('.'):
             name = entry.path.replace(base_study_location + os.sep, '')
             if entry.is_dir():
-                dir_list.append({"file": name, "type": "directory", "status": ""})
+                dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": "directory", "status": ""})
                 dir_list.extend(list_directories(entry.path, [], base_study_location))
             else:
-                file_type, status = map_file_type(entry.name, file_location, basic=True)
-                dir_list.append({"file": name,  "type": file_type, "status": status})
-                # dir_list.append({"file": entry.path, "type": "", "status": ""})
+                file_type, status = map_file_type(entry.name, file_location,
+                                                  assay_file_list=assay_file_list)
+                dir_list.append({"file": name,  "createdAt": "", "timestamp": "", "type": file_type, "status": status})
     return dir_list
 
 
@@ -812,12 +811,9 @@ class StudyFilesTree(Resource):
             study_location = os.path.join(study_location, directory)
 
         try:
-            file_list = get_basic_files(study_location, include_sub_dir)
+            file_list = get_basic_files(study_location, include_sub_dir, get_assay_file_list(study_location))
         except MemoryError:
             abort(408)
 
-        return jsonify({'studyFiles': file_list,
-                        'upload': [],
-                        'upload_all': [],
-                        'upload_location': upload_location[1],
-                        'obfuscation_code': obfuscation_code})
+        return jsonify({'studyFiles': file_list, 'upload': [], 'upload_all': [],
+                        'upload_location': upload_location[1], 'obfuscation_code': obfuscation_code})

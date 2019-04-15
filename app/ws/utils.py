@@ -680,24 +680,27 @@ def remove_file(file_location, file_name, allways_remove=False):
     return True, "File " + file_name + " deleted"
 
 
-def map_file_type(file_name, directory, basic=False):
+def map_file_type(file_name, directory, assay_file_list=None):
     active_status = 'active'
     none_active_status = 'unreferenced'
     # Metadata first, current is if the files are present in the investigation and assay files
     if os.path.isdir(os.path.join(directory, file_name)):
         return 'directory', none_active_status
-    elif file_name.startswith(('i_', 'a_', 's_', 'm_')):
+
+    if file_name.startswith(('i_', 'a_', 's_', 'm_')):
         if file_name.startswith('a_'):
-            if is_file_referenced(file_name, directory, 'i_', basic):
+            if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_assay', active_status
         elif file_name.startswith('s_'):
-            if is_file_referenced(file_name, directory, 'i_', basic):
+            if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_sample', active_status
         elif file_name.startswith('m_'):
-            if is_file_referenced(file_name, directory, 'a_', basic):
+            if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
                 return 'metadata_maf', active_status
         elif file_name.startswith('i_'):
             investigation = os.path.join(directory, 'i_')
+            if os.sep + 'audit' + os.sep in directory:
+                return 'metadata_investigation', none_active_status
             for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
                 if open(invest_file).read():
                     return 'metadata_investigation', active_status
@@ -709,12 +712,12 @@ def map_file_type(file_name, directory, basic=False):
     elif file_name == 'audit':
         return 'audit', active_status
     elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata')):
-        if is_file_referenced(file_name, directory, 'a_', basic):
+        if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'derived', active_status
         else:
             return 'derived', none_active_status
     elif file_name.lower().endswith(('.zip', '.gz', '.tar', '.7z', '.z')):
-        if is_file_referenced(file_name, directory, 'a_', basic):
+        if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'compressed', active_status
         else:
             return 'compressed', none_active_status
@@ -723,18 +726,28 @@ def map_file_type(file_name, directory, basic=False):
     elif file_name.lower().endswith('.tsv.split'):
         return 'maf_pipeline_slit', active_status
     else:
-        if is_file_referenced(file_name, directory, 'a_', basic):
+        if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'raw', active_status
         else:
             return 'unknown', none_active_status
 
 
-def is_file_referenced(file_name, directory, isa_tab_file_to_check, basic=False):
+def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_list=None):
     """ There can be more than one assay, so each MAF must be checked against
     each Assay file. Do not state a MAF as not in use if it's used in the 'other' assay """
     found = False
-    if basic:
-        return found
+
+    if os.sep + 'audit' + os.sep in directory:
+        return False
+
+    if assay_file_list and not file_name.startswith(('i_', 'a_', 's_', 'm_')):
+        if file_name in assay_file_list:
+            return True
+        else:
+            return False
+
+    if file_name.startswith(('i_', 'a_', 's_', 'm_')) and os.sep + 'ftp' in directory:  # FTP metadata
+        return False
 
     isa_tab_file_to_check = isa_tab_file_to_check + '*.txt'
     isa_tab_file = os.path.join(directory, isa_tab_file_to_check)
@@ -751,3 +764,23 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, basic=False)
 
     return found
 
+
+def get_assay_file_list(study_location):
+    assay_files = os.path.join(study_location, 'a_*.txt')
+    all_files = []
+
+    for assay_file_name in glob.glob(assay_files):
+        assay_cols = []
+        assay_df = read_tsv(assay_file_name)
+        df_header = get_table_header(assay_df)
+        for header, value in df_header.items():
+            if ' File' in header:
+                assay_cols.append(value)
+
+        for col_pos in assay_cols:
+            unique_files = np.unique(assay_df.iloc[:, col_pos].values).tolist()
+            for a_file in unique_files:
+                if a_file not in all_files and len(a_file) > 0:
+                    all_files.append(a_file)
+
+    return all_files

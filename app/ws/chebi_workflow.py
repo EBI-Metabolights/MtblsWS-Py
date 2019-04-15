@@ -8,7 +8,7 @@ from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import read_tsv, write_tsv
+from app.ws.utils import read_tsv, write_tsv, get_assay_file_list
 from app.ws.mtbls_maf import totuples, get_table_header
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study_files import get_all_files_from_filesystem
@@ -439,7 +439,8 @@ class SplitMaf(Resource):
             # Loop through all m_*_v2_maf.tsv files
             study_files, upload_files, upload_diff, upload_location = \
                 get_all_files_from_filesystem(
-                    study_id, obfuscation_code, study_location, directory=None, include_raw_data=False)
+                    study_id, obfuscation_code, study_location, directory=None, include_raw_data=False,
+                    assay_file_list=get_assay_file_list(study_location))
             maf_count = 0
             maf_changed = 0
             for file in study_files:
