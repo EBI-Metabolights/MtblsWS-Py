@@ -716,8 +716,9 @@ def list_directories(study_location, dir_list):
                 dir_list.append({"file": entry.path, "type": "directory", "status": ""})
                 dir_list.extend(list_directories(entry.path, []))
             else:
-                file_type, status = map_file_type(entry.name, study_location)
-                dir_list.append({"file": entry.path,  "type": file_type, "status": status})
+                # file_type, status = map_file_type(entry.name, study_location)
+                # dir_list.append({"file": entry.path,  "type": file_type, "status": status})
+                dir_list.append({"file": entry.path, "type": "", "status": ""})
                 # dir_list.append(entry.path)
     return dir_list
 
