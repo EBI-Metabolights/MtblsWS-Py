@@ -691,8 +691,9 @@ def get_basic_files(study_location, include_sub_dir):
         file_list = list_directories(study_location, dir_list)
     else:
         for entry in scandir(study_location):
-            file_type, status = map_file_type(entry.name, study_location)
-            file_list.append({"file": entry.path, "type": file_type, "status": status})
+            #file_type, status = map_file_type(entry.name, study_location)
+            #file_list.append({"file": entry.path, "type": file_type, "status": status})
+            file_list.append({"file": entry.path, "type": "", "status": ""})
             # file_list.append(entry.name)
 
     for fname in file_list:
@@ -701,7 +702,8 @@ def get_basic_files(study_location, include_sub_dir):
         status = fname['status']
         #if name not in file_list2:
         name = name.replace(study_location + os.sep, '')
-        file_list2.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type, "status": status})
+        #file_list2.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type, "status": status})
+        file_list2.append({"file": name, "createdAt": "", "timestamp": "", "type": "", "status": ""})
 
     return file_list2
 
