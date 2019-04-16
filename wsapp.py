@@ -118,7 +118,7 @@ def initialize_app(flask_app):
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")
     api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
 
-    api.add_resource(BioStudies, res_path + "/ebi-internal/<string:study_id>/biostudies")
+    api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
 
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
