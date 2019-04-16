@@ -142,9 +142,10 @@ def search_and_update_maf(study_location, annotation_file_name):
             pubchem_df.iloc[row_idx, 7] = pc_cid  # 7 PubChem CID, if none get from InChIKey search (Cactus, OBSIN)
             pubchem_df.iloc[row_idx, 8] = csid  # 8 ChemSpider ID (CSID) from INCHI
             pubchem_df.iloc[row_idx, 9] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # 9 final smiles
-            pubchem_df.iloc[row_idx, 10] = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # 10 final inchi
-            pubchem_df.iloc[row_idx, 11] = get_ranked_values(pc_inchi_key, cactus_stdinchikey,
-                                                             opsin_stdinchikey, None)  # 11 final inchikey
+            final_inchi = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # 10 final inchi
+            pubchem_df.iloc[row_idx, 10] = final_inchi
+            final_inchi_key = get_ranked_values(pc_inchi_key, cactus_stdinchikey, opsin_stdinchikey, None)  # 11 final inchikey
+            pubchem_df.iloc[row_idx, 11] = final_inchi_key
             pubchem_df.iloc[row_idx, 12] = pc_smiles  # 12 pc_smiles
             pubchem_df.iloc[row_idx, 13] = cactus_smiles   # 13 cactus_smiles
             pubchem_df.iloc[row_idx, 14] = opsin_smiles  # 14 opsin_smiles
@@ -157,6 +158,34 @@ def search_and_update_maf(study_location, annotation_file_name):
             pubchem_df.iloc[row_idx, 21] = pc_formula   # 21 PubChem formula
             pubchem_df.iloc[row_idx, 22] = pc_synonyms  # 22 PubChem synonyms
             pubchem_df.iloc[row_idx, 23] = cactus_synonyms  # 23 Cactus synonyms
+
+            # Now we have more information, so let's try to search ChEBI again
+
+            search_res = wsc.get_maf_search("inchi", final_inchi)  # This is the standard MetaboLights aka Plugin search
+            if search_res['content']:
+                name = None
+                result = search_res['content'][0]
+                database_identifier = result["databaseId"]
+                chemical_formula = result["formula"]
+                smiles = result["smiles"]
+                inchi = result["inchi"]
+                name = result["name"]
+
+                pubchem_df.iloc[row_idx, 0] = database_identifier
+                pubchem_df.iloc[row_idx, 1] = chemical_formula
+                pubchem_df.iloc[row_idx, 2] = smiles
+                pubchem_df.iloc[row_idx, 3] = inchi
+                # 4 is name / metabolite_identification from MAF
+
+                if name:  # Add to the annotated file as well
+                    if database_identifier:
+                        maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
+                    if chemical_formula:
+                        maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
+                    if smiles:
+                        maf_df.iloc[row_idx, int(standard_maf_columns['smiles'])] = smiles
+                    if inchi:
+                        maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
 
         row_idx += 1
 
@@ -563,7 +592,7 @@ class SearchNamesMaf(Resource):
             # Get an indexed header row
             df_header = get_table_header(new_maf_df)
 
-            return {"in_maf_rows": maf_len, "out_maf_rows": new_maf_len, "header": df_header, "data": df_data_dict}
+            return {"in_maf_rows": maf_len, "out_maf_rows": new_maf_len}
 
         return {"success": str(maf_count) + " MAF files checked for pipelines, " +
                            str(maf_changed) + " files needed updating."}
