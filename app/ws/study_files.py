@@ -17,7 +17,7 @@ iac = IsaApiClient()
 
 
 def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None, include_raw_data=None,
-                                  assay_file_list=None):
+                                  assay_file_list=None, validation_only=False):
     logger.info('Getting list of all files for MTBLS Study %s', study_id)
     upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
     logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
@@ -25,9 +25,9 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     study_files = get_all_files(study_location, directory=directory,
                                 include_raw_data=include_raw_data, study_id=study_id,
-                                assay_file_list=assay_file_list)
+                                assay_file_list=assay_file_list, validation_only=validation_only)
     upload_files = get_all_files(upload_location, directory=directory,
-                                 include_raw_data=include_raw_data, study_id=study_id)
+                                 include_raw_data=include_raw_data, study_id=study_id, validation_only=validation_only)
 
     # Sort the two lists
     study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
@@ -627,17 +627,19 @@ def get_files(file_list):
     return all_files
 
 
-def get_all_files(path, directory=None, include_raw_data=False, study_id=None, assay_file_list=None):
+def get_all_files(path, directory=None, include_raw_data=False, study_id=None,
+                  assay_file_list=None, validation_only=False):
     try:
-        files = get_file_information(path, directory=directory, include_raw_data=include_raw_data,
-                                     study_id=study_id, assay_file_list=assay_file_list)
+        files = get_file_information(path, directory=directory, include_raw_data=include_raw_data, study_id=study_id,
+                                     assay_file_list=assay_file_list, validation_only=validation_only)
     except:
         logger.warning('Could not find folder ' + path)
         files = []  # The upload folder for this study does not exist, this is normal
     return files
 
 
-def get_file_information(path, directory=None, include_raw_data=False, study_id=None, assay_file_list=None):
+def get_file_information(path, directory=None, include_raw_data=False, study_id=None,
+                         assay_file_list=None, validation_only=False):
     file_list = []
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
@@ -661,7 +663,8 @@ def get_file_information(path, directory=None, include_raw_data=False, study_id=
                         file_time, raw_time, file_type, status, folder = get_file_times(path, file_name)
                 else:
                     file_time, raw_time, file_type, status, folder = \
-                        get_file_times(path, file_name, assay_file_list=assay_file_list)
+                        get_file_times(path, file_name, assay_file_list=assay_file_list,
+                                       validation_only=validation_only)
 
                 if directory:
                     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
@@ -679,10 +682,14 @@ def get_file_information(path, directory=None, include_raw_data=False, study_id=
     return file_list
 
 
-def get_file_times(directory, file_name, assay_file_list=None):
-    dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
-    raw_time = time.strftime(date_format, dt)  # 20180724092134
-    file_time = time.strftime(file_date_format, dt)  # 20180724092134
+def get_file_times(directory, file_name, assay_file_list=None, validation_only=False):
+    file_time = ""
+    raw_time = ""
+    if not validation_only:
+        dt = time.gmtime(os.path.getmtime(os.path.join(directory, file_name)))
+        raw_time = time.strftime(date_format, dt)  # 20180724092134
+        file_time = time.strftime(file_date_format, dt)  # 20180724092134
+
     file_type, status, folder = map_file_type(file_name, directory, assay_file_list)
 
     return file_time, raw_time, file_type, status, folder
@@ -709,12 +716,14 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
         if not entry.name.startswith('.'):
             name = entry.path.replace(base_study_location + os.sep, '')
             if entry.is_dir():
-                dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": "directory",
+                f_type = "directory"
+                if os.sep + 'audit' + os.sep in file_location:
+                    f_type = "audit"
+                dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": f_type,
                                  "status": "", "directory": True})
                 dir_list.extend(list_directories(entry.path, [], base_study_location))
             else:
-                file_type, status, folder = map_file_type(entry.name, file_location,
-                                                  assay_file_list=assay_file_list)
+                file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
                 dir_list.append({"file": name,  "createdAt": "", "timestamp": "", "type": file_type,
                                  "status": status, "directory": folder})
     return dir_list

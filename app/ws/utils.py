@@ -1,6 +1,7 @@
 import glob
 import logging
 import os
+import os.path
 import shutil
 import time
 import datetime
@@ -343,10 +344,12 @@ def read_tsv(file_name):
     try:
         if os.path.getsize(file_name) == 0:
             table_df = pd.DataFrame()  # Empty file
+            logger.info("Could not read file " + file_name)
         else:
             table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8')
     except:
         table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1')  # Excel format
+        logger.info("Have to open as Excel file 'ISO-8859-1' file " + file_name)
     table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
     return table_df
 
@@ -687,53 +690,62 @@ def map_file_type(file_name, directory, assay_file_list=None):
     active_status = 'active'
     none_active_status = 'unreferenced'
     folder = False
+    fname, ext = os.path.splitext(file_name)
+    fname = fname.lower()
+    ext = ext.lower()
     # Metadata first, current is if the files are present in the investigation and assay files
-    if file_name.startswith(('i_', 'a_', 's_', 'm_')):
-        if file_name.startswith('a_'):
+    if fname.startswith(('i_', 'a_', 's_', 'm_')):
+        if fname.startswith('a_'):
             if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_assay', active_status, folder
-        elif file_name.startswith('s_'):
+        elif fname.startswith('s_'):
             if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_sample', active_status, folder
-        elif file_name.startswith('m_'):
+        elif fname.startswith('m_'):
             if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
                 return 'metadata_maf', active_status, folder
-        elif file_name.startswith('i_'):
+        elif fname.startswith('i_'):
             investigation = os.path.join(directory, 'i_')
             if os.sep + 'audit' + os.sep in directory:
                 return 'metadata_investigation', none_active_status, folder
             for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
                 if open(invest_file).read():
                     return 'metadata_investigation', active_status, folder
-        return 'metadata', 'old', folder
-    elif file_name.lower().endswith(('.xls', '.xlsx', '.csv', '.tsv')):
+        return 'metadata', none_active_status, folder
+    elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
-    elif file_name.endswith('.txt'):
+    elif ext in ('.png', '.tiff', '.tif', '.jpeg', '.mpg', '.jpg'):
+        return 'image', active_status, folder
+    elif ext in ('.txt', '.text', '.tab', '.html', '.ini'):
         return 'text', active_status, folder
-    elif file_name.startswith('~'):
-        return 'backup', none_active_status, folder
+    elif fname.startswith('~') or ext.endswith('~') or ext in('.temp', '.tmp'):
+        return 'temp', none_active_status, folder
+    elif ext in ('.r', '.java', '.py', '.rdata', '.xsd', '.scan'):
+        return 'programmatic', none_active_status, folder
     elif file_name == 'audit':
         return 'audit', none_active_status, True
-    elif file_name.lower().endswith(('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata')):
+    elif ext in ('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata'):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'derived', active_status, folder
         else:
             return 'derived', none_active_status, folder
-    elif file_name.lower().endswith(
-            ('.zip', 'zipx', '.gz', '.tar', '.7z', '.z', '.g7z', '.arj', 'rar', '.bz2', '.arj', '.z', 'war')):
+    elif ext in ('.zip', 'zipx', '.gz', '.tar', '.7z', '.z', '.g7z', '.arj', 'rar', '.bz2', '.arj', '.z', 'war'):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'compressed', active_status, folder
         else:
             return 'compressed', none_active_status, folder
-    elif file_name == 'metexplore_mapping.json':
+    elif fname == 'metexplore_mapping.json':
         return 'internal_mapping', active_status, folder
-    elif file_name.lower().endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
+    elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
         return 'maf_pipeline_file', active_status, folder
     else:
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
-            return 'raw', active_status, folder
+            if os.path.isdir(os.path.join(directory, file_name)):
+                return 'raw', active_status, True
+            else:
+                return 'raw', active_status, folder
         else:
-            if file_name.endswith(('.d', '.raw', '.RAW')):
+            if ext in ('.d', '.raw', '.idb', 'cdf', '.wiff' ,'.dat'):
                 if os.path.isdir(os.path.join(directory, file_name)):
                     return 'raw', none_active_status, True
                 else:
@@ -753,7 +765,7 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
     if os.sep + 'audit' + os.sep in directory:
         return False
 
-    if assay_file_list and not file_name.startswith(('i_', 'a_', 's_', 'm_')):
+    if assay_file_list and isa_tab_file_to_check == 'a_': #not file_name.startswith(('i_', 'a_', 's_', 'm_')):
         if file_name in assay_file_list:
             return True
         else:

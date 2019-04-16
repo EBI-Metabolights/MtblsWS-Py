@@ -21,7 +21,7 @@ iac = IsaApiClient()
 
 def split_rows(maf_df):
     # Split rows with pipe-lines "|"
-    new_maf = pd.DataFrame(explode(explode(explode(maf_df.values, 0), 1), 2), columns=maf_df.columns)
+    new_maf = pd.DataFrame(explode(explode(explode(explode(explode(maf_df.values, 0), 1), 2), 3), 4), columns=maf_df.columns)
     return new_maf
 
 
