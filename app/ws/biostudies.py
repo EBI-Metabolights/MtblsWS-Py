@@ -1,0 +1,192 @@
+from flask import request, abort
+from flask_restful import Resource, reqparse
+from flask_restful_swagger import swagger
+from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import *
+from app.ws.db_connection import biostudies_acc
+
+logger = logging.getLogger('wslog')
+wsc = WsClient()
+
+
+class BioStudies(Resource):
+    @swagger.operation(
+        summary="Get the BioStudies accession mapped to this study",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not read_access:
+            abort(403)
+
+        status, data = biostudies_acc(study_id, biostudies_id=None, method='query')
+
+        return {"BioStudies": data[0]}
+
+    @swagger.operation(
+        summary="Add a BioStudies accession to this study",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "biostudies_acc",
+                "description": "BioStudies Identifier",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        study_id = study_id.upper()
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('biostudies_acc', help="BioStudies identifier", location="args")
+        args = parser.parse_args()
+        biostudies_id = args['biostudies_acc']
+
+        if biostudies_acc is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        status, data = biostudies_acc(study_id, biostudies_id=biostudies_id, method='add')
+
+        return {"BioStudies": data[0]}
+
+    @swagger.operation(
+        summary="Remove the BioStudies accession mapped to this study",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def delete(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = wsc.get_permissions(study_id, user_token)
+        if not read_access:
+            abort(403)
+
+        status, data = biostudies_acc(study_id, biostudies_id=None, method='delete')
+
+        return {"BioStudies": data[0]}
+

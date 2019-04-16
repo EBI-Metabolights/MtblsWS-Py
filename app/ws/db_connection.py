@@ -125,6 +125,41 @@ def get_curation_log(user_token):
     return data
 
 
+def biostudies_acc(study_id, biostudies_id, method):
+    # Default query to get the biosd accession
+    s_query = "SELECT biostudies_acc from studies where acc = '#study_id#';"
+
+    if method == 'add':
+        query = "update studies set biostudies_acc = '#biostudies_acc#' where acc = '#study_id#';"
+    elif method == 'query':
+        query = s_query
+    elif method == 'delete':
+        query = "update studies set biostudies_acc = '' where acc = '#study_id#';"
+
+    query = query.replace("#study_id#", study_id)
+    s_query = s_query.replace("#study_id#", study_id)
+    if biostudies_id:
+        query = query.replace("#biostudies_acc#", biostudies_id)
+    query = query.replace('\\', '')
+
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn = psycopg2.connect(**params)
+        cursor = conn.cursor()
+        cursor.execute(query)
+
+        if method == 'add' or method == 'delete':
+            conn.commit()
+            cursor.execute(s_query)
+
+        data = cursor.fetchall()
+        conn.close()
+        return True, data[0]
+
+    except Exception as e:
+        return False, "BioStudies accession was not added to the study"
+
+
 def check_access_rights(user_token, study_id):
 
     study_list = execute_query(query_user_access_rights, user_token, study_id)

@@ -43,7 +43,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
 class StudyFiles(Resource):
     @swagger.operation(
-        summary="Get a list of all files in the study and upload folder(s)",
+        summary="Get a list, with timestamps, of all files in the study and upload folder(s)",
         parameters=[
             {
                 "name": "study_id",
@@ -672,7 +672,7 @@ def get_file_information(path, directory=None, include_raw_data=False, study_id=
 
                     file_name = os.path.join(directory, file_name)
 
-                if file_time:
+                if file_type:
                     file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
                                       "type": file_type, "status": status, "directory": folder})
     except Exception as e:
@@ -715,17 +715,19 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
     for entry in scandir(file_location):
         if not entry.name.startswith('.'):
             name = entry.path.replace(base_study_location + os.sep, '')
+
+            file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
+            dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
+                             "status": status, "directory": folder})
             if entry.is_dir():
-                f_type = "directory"
-                if os.sep + 'audit' + os.sep in file_location:
-                    f_type = "audit"
-                dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": f_type,
-                                 "status": "", "directory": True})
+                # f_type = "directory"
+                # if os.sep + 'audit' + os.sep in file_location:
+                #     f_type = "audit"
                 dir_list.extend(list_directories(entry.path, [], base_study_location))
-            else:
-                file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
-                dir_list.append({"file": name,  "createdAt": "", "timestamp": "", "type": file_type,
-                                 "status": status, "directory": folder})
+            # else:
+            #     file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
+            #     dir_list.append({"file": name,  "createdAt": "", "timestamp": "", "type": file_type,
+            #                      "status": status, "directory": folder})
     return dir_list
 
 

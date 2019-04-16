@@ -328,10 +328,11 @@ def pubchem_search(comp_name, search_type='name'):
     #if ',' in comp_name:
     #    comp_name = comp_name.split(',')[0]
 
-    # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
     try:
         compound = None
-        ssl._create_default_https_context = ssl._create_unverified_context  # ToDo, get root certificates installed
+        # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
+        # or comment out the line below:
+        # ssl._create_default_https_context = ssl._create_unverified_context  # If no root certificates installed
         pubchem_compound = get_compounds(comp_name, namespace=search_type)
         try:
             compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
@@ -348,13 +349,15 @@ def pubchem_search(comp_name, search_type='name'):
             for synonym in compound.synonyms:
                 if get_relevant_synonym(synonym):
                     synonyms = synonyms + ';' + synonym
-            logger.debug('Searching PubChem for "' + comp_name + '", got cid "' + cid +
+
+            if synonyms:
+                synonyms = synonyms.replace(";", "", 1)  # Remove the leading ";"
+
+            logger.debug('Searching PubChem for "' + comp_name + '", got cid "' + str(cid) +
                          '" and iupac name "' + iupac + '"')
-    except TypeError:
-        logger.info('Found PubChem compound for ' + comp_name + ' but compound name name contain special characters')
-    except Exception as e:
+    except Exception as error:
         logger.error("Unable to search PubChem for compound " + comp_name)
-        logger.error(e)
+        logger.error(error)
 
     return iupac, inchi, inchi_key, smiles, cid, formula, synonyms
 

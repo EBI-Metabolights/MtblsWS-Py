@@ -716,14 +716,21 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'spreadsheet', active_status, folder
     elif ext in ('.png', '.tiff', '.tif', '.jpeg', '.mpg', '.jpg'):
         return 'image', active_status, folder
+    elif ext in ('.result_c', '.mcf', '.mcf_idx', '.hdx', '.u2', '.method', '.unt', '.hss', '.ami', '.baf', '.content',
+                 '.baf_idx', '.baf_xtr', '.xmc') or fname == 'synchelper':
+        return 'part_of_raw', active_status, folder
     elif ext in ('.txt', '.text', '.tab', '.html', '.ini'):
         return 'text', active_status, folder
     elif fname.startswith('~') or ext.endswith('~') or ext in('.temp', '.tmp'):
         return 'temp', none_active_status, folder
     elif ext in ('.r', '.java', '.py', '.rdata', '.xsd', '.scan'):
         return 'programmatic', none_active_status, folder
+    elif ext in ('.partial', '.aspera-ckpt'):
+        return 'aspera-control', none_active_status, folder
     elif file_name == 'audit':
         return 'audit', none_active_status, True
+    elif file_name == '.DS_Store':
+        return 'macos_special_file', none_active_status, False
     elif ext in ('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata'):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'derived', active_status, folder

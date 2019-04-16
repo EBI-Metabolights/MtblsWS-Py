@@ -596,7 +596,8 @@ def get_assay_column_validations(validation_schema, a_header):
     return validate_column, required_column, val_descr
 
 
-def check_assay_columns(a_header, all_assays, row, validations, val_section, assay, unique_file_names, all_assay_names):
+def check_assay_columns(a_header, all_assays, row, validations, val_section, assay, unique_file_names,
+                        all_assay_names, sample_name_list):
     # Correct sample names?
     if a_header.lower() == 'sample name':
         all_assays.append(row)
@@ -620,7 +621,8 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
     return all_assays, all_assay_names, validations, unique_file_names
 
 
-def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list, file_name_list, val_section="assays"):
+def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
+                    file_name_list, val_section="assays"):
     validations = []
     assays = []
     all_assays = []
@@ -676,7 +678,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             col_rows += 1
                         all_assays, all_assay_names, validations, unique_file_names = \
                             check_assay_columns(a_header, all_assays, row, validations, val_section,
-                                                assay, unique_file_names, all_assay_names)
+                                                assay, unique_file_names, all_assay_names, sample_name_list)
 
                     if (col_rows < all_rows) and validate_column:
                         add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values. " +
@@ -1145,6 +1147,8 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
             isa_sample_df = read_tsv(os.path.join(study_location, file_name))
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
+        except Exception as e:
+            abort(400, "Could not load the minimum ISA-Tab files")
 
     except ValueError:
         err = traceback.format_exc()
