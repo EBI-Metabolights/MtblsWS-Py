@@ -819,7 +819,6 @@ class StudyContacts(Resource):
                     new_contacts.append(new_contact)
                     add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
                                                   term_source.file, term_source.description)
-
         except (ValidationError, Exception) as e:
             logger.error(e)
             abort(400)
@@ -855,7 +854,7 @@ class StudyContacts(Resource):
         summary="Get Study Contacts",
         notes="""Get Contacts associated with a Study.
               <br>
-              Use contact's email as a query parameter to filter out.""",
+              Use contact's email or name as parameter to get a specific contact.""",
         parameters=[
             {
                 "name": "study_id",
@@ -876,6 +875,15 @@ class StudyContacts(Resource):
             {
                 "name": "email",
                 "description": "Contact's email",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "full_name",
+                "description": "Contact's first and last name",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -919,15 +927,18 @@ class StudyContacts(Resource):
         # ToDo add more filters: lastName, firstName,...
         parser = reqparse.RequestParser()
         parser.add_argument('email', help="Contact's email")
+        parser.add_argument('full_name', help="Contact's first and last name")
         email = None
+        full_name = None
         if request.args:
             args = parser.parse_args(req=request)
             email = args['email']
+            full_name = args['full_name']
 
         logger.info('Getting Contacts %s for Study %s', email, study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -938,7 +949,7 @@ class StudyContacts(Resource):
         # Using context to avoid envelop tags in contained objects
         sch = PersonSchema()
         sch.context['contact'] = Person()
-        if email is None:
+        if email is None and full_name is None:
             # return a list of objs
             logger.info('Got %s contacts', len(obj_list))
             return sch.dump(obj_list, many=True)
@@ -947,6 +958,9 @@ class StudyContacts(Resource):
             found = False
             for index, obj in enumerate(obj_list):
                 if obj.email == email:
+                    found = True
+                    break
+                elif obj.first_name + ' ' + obj.last_name == full_name:
                     found = True
                     break
             if not found:
@@ -958,7 +972,7 @@ class StudyContacts(Resource):
         summary='Update Study Contact',
         notes='''Update Contact associated with a Study.
               <br>
-              <b>Use contact's email as a parameter to update a single contact.</b><pre><code>
+              <b>Use contact's email or full name as a parameter to update a single contact.</b><pre><code>
 { 
   "contact": {
     "firstName": "Joe",
@@ -1004,7 +1018,16 @@ class StudyContacts(Resource):
             {
                 "name": "email",
                 "description": "Contact's email",
-                "required": True,
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "full_name",
+                "description": "Contact's first and last name",
+                "required": False,
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -1061,9 +1084,11 @@ class StudyContacts(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('email', help="Contact's email")
+        parser.add_argument('full_name', help="Contact's first and last name")
         args = parser.parse_args()
         email = args['email']
-        if email is None:
+        full_name = args['full_name']
+        if email is None and full_name is None:
             abort(404)
         # User authentication
         user_token = None
@@ -1114,18 +1139,24 @@ class StudyContacts(Resource):
         logger.info('Updating Contact details for %s', study_id)
 
         person_found = False
-        for index, person in enumerate(isa_study.contacts):
-            if person.email == email:
-                person_found = True
-                # update person details
-                isa_study.contacts[index] = updated_contact
-                break
-        if not person_found:
-            abort(404)
-        logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-        status, message = wsc.reindex_study(study_id, user_token)
-        logger.info('Updated %s', updated_contact.email)
+        if (email and len(email) > 3) or (full_name and len(full_name) > 3):
+            for index, person in enumerate(isa_study.contacts):
+                if person.email == email:
+                    person_found = True
+                    # update person details
+                    isa_study.contacts[index] = updated_contact
+                    break
+                elif person.first_name + ' ' + person.last_name == full_name:
+                    person_found = True
+                    # update person details
+                    isa_study.contacts[index] = updated_contact
+                    break
+            if not person_found:
+                abort(404)
+            logger.info("A copy of the previous files will %s saved", save_msg_str)
+            iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+            status, message = wsc.reindex_study(study_id, user_token)
+            logger.info('Updated %s', updated_contact.email)
 
         return PersonSchema().dump(updated_contact)
 
