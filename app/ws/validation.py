@@ -17,8 +17,8 @@ incorrect_species = \
     "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, chemical, food, matix, " \
     "mus, rat, blood, urine, plasma, hair, fur, skin, saliva, fly, unknown"
 
-correct_maf_order = [{0: "database_identifier"}, {1: "chemical_formula"}, {2: "smiles"}, {3: "inchi"},
-                     {4: "metabolite_identification"}, {5: "mass_to_charge"}]
+correct_maf_order = [{0: "database_identifier"}, {1: "chemical_formula"}, {2: "smiles"},
+                     {3: "inchi"}, {4: "metabolite_identification"}]
 
 warning = "warning"
 error = "error"
@@ -198,15 +198,15 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
         if maf_header[header] != pos:
             incorrect_message = incorrect_message + header + " is not the correct position. "
             incorrect_pos = True
-    except:
+    except Exception as e:
         incorrect_message = incorrect_message + " Column '" + header + "' is missing from " + file_name + ". "
         incorrect_pos = True
 
     return incorrect_pos, incorrect_message, validations
 
 
-def validate_maf(validations, file_name, all_assay_names, study_location, study_id, is_ms,
-                 sample_name_list, errors_only=False):
+def validate_maf(validations, file_name, all_assay_names, study_location, study_id,
+                 sample_name_list, is_ms=False, errors_only=False):
     val_section = "maf"
     maf_name = os.path.join(study_location, file_name)
     maf_df = None
@@ -218,6 +218,11 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
 
     incorrect_pos = False
     incorrect_message = ""
+
+    if is_ms:
+        correct_maf_order.append({5: "mass_to_charge"})
+    else:
+        correct_maf_order.append({5: "chemical_shift"})
 
     if not maf_df.empty:
         maf_header = get_table_header(maf_df, study_id, maf_name)
@@ -235,10 +240,10 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                     success, errors_only=errors_only)
 
         try:
-            if maf_header['mass_to_charge']:
-                check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms, errors_only=errors_only)
+            if is_ms and maf_header['mass_to_charge']:
+                check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms=is_ms, errors_only=errors_only)
         except:
-            logger.info("No mass_to_charge column found in the MAF")
+            logger.info("No mass_to_charge column found in the MS MAF")
 
         # NMR/MS Assay Names OR Sample Names are added to the sheet
         if all_assay_names:
@@ -247,7 +252,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                     maf_header[assay_name]
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF",
                             success, errors_only=errors_only)
-                    check_maf_rows(validations, val_section, maf_df, assay_name, is_ms, errors_only=errors_only)
+                    check_maf_rows(validations, val_section, maf_df, assay_name, is_ms=is_ms, errors_only=errors_only)
                 except:
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF",
                             error, errors_only=errors_only)
@@ -258,13 +263,13 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                     maf_header[sample_name]
                     add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF",
                             success, errors_only=errors_only)
-                    check_maf_rows(validations, val_section, maf_df, sample_name, is_ms, errors_only=errors_only)
+                    check_maf_rows(validations, val_section, maf_df, sample_name, is_ms=is_ms, errors_only=errors_only)
                 except:
                     add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF",
                             error, errors_only=errors_only)
 
 
-def check_maf_rows(validations, val_section, maf_df, column_name, is_ms, errors_only=False):
+def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, errors_only=False):
     all_rows = maf_df.shape[0]
     col_rows = 0
     # Are all relevant rows filled in?
@@ -279,10 +284,12 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms, errors_
         # For MS we should have m/z values, for NMR the chemical shift is equally important.
         if (is_ms and column_name == 'mass_to_charge') or (not is_ms and column_name == 'chemical_shift'):
             add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
-                    str(col_rows) + " rows found, but there should be " + str(all_rows), warning, errors_only=errors_only)
+                    str(col_rows) + " rows found, but there should be " + str(all_rows),
+                    warning, errors_only=errors_only)
         else:
             add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
-                    str(col_rows) + " rows found, but there should be " + str(all_rows), info, errors_only=errors_only)
+                    str(col_rows) + " rows found, but there should be " + str(all_rows),
+                    info, errors_only=errors_only)
 
 
 class Validation(Resource):
@@ -726,6 +733,16 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             error, assay.filename, errors_only=errors_only)
                     # logger.error(str(e))
 
+        # Correct MAF?
+        if header.lower() == 'metabolite assignment file':
+            file_name = None
+            for row in assay_df[header].unique():
+                file_name = row
+                break  # We only need one row
+
+            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier,
+                         sample_name_list, is_ms=is_ms, errors_only=errors_only)
+
     for sample_name in sample_name_list:
         if sample_name not in all_assays:
             add_msg(validations, val_section, "Sample name '" + sample_name + "' is not used in any assay",
@@ -742,11 +759,6 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             add_msg(validations, val_section, "File '" + file_name + "' of type '" + file_type +
                     "' is missing or not correct for column '" + column_name + "'", error, desrc=file_description,
                     errors_only=errors_only)
-
-        # Correct MAF?
-        if column_name.lower() == 'metabolite assignment file':
-            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier,
-                         is_ms, sample_name_list, errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 

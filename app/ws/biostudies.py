@@ -3,7 +3,7 @@ from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
-from app.ws.db_connection import biostudies_acc, biostudies_acc_to_mtbls
+from app.ws.db_connection import biostudies_accession, biostudies_acc_to_mtbls
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -60,7 +60,7 @@ class BioStudies(Resource):
         if not read_access:
             abort(403)
 
-        status, data = biostudies_acc(study_id, biostudies_acc=None, method='query')
+        status, data = biostudies_accession(study_id, biostudies_acc=None, method='query')
 
         return {"BioStudies": data[0]}
 
@@ -132,7 +132,7 @@ class BioStudies(Resource):
         if not write_access:
             abort(403)
 
-        status, data = biostudies_acc(study_id, biostudies_acc=biostudies_acc, method='add')
+        status, data = biostudies_accession(study_id, biostudies_acc=biostudies_acc, method='add')
 
         return {"BioStudies": data[0]}
 
@@ -186,7 +186,7 @@ class BioStudies(Resource):
         if not read_access:
             abort(403)
 
-        status, data = biostudies_acc(study_id, biostudies_acc=None, method='delete')
+        status, data = biostudies_accession(study_id, biostudies_acc=None, method='delete')
 
         return {"BioStudies": data[0]}
 

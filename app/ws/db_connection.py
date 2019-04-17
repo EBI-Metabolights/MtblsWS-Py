@@ -144,7 +144,7 @@ def biostudies_acc_to_mtbls(biostudies_id):
         return False, "MTBLS accession was not found for BioStudies accession " + biostudies_id
 
 
-def biostudies_acc(study_id, biostudies_id, method):
+def biostudies_accession(study_id, biostudies_id, method):
     # Default query to get the biosd accession
     s_query = "SELECT biostudies_acc from studies where acc = '#study_id#';"
 
