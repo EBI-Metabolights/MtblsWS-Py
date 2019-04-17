@@ -3,7 +3,8 @@ import numpy as np
 import requests
 import cirpy
 import ssl
-from flask import request, abort, current_app as app
+from zeep import Client
+from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
@@ -86,7 +87,7 @@ def search_and_update_maf(study_location, annotation_file_name):
     row_idx = 0
     # Search using the compound name column
     for idx, comp_name in enumerate(maf_df[maf_compound_name_column]):
-        print(comp_name)
+        print('Seaching for name: ' + comp_name)
         chebi_found = False
         comp_name = comp_name.rstrip()  # Remove trailing spaces
 #        comp_name = comp_name.encode('ascii', 'ignore')  # Make sure it's only searching using ASCII encoding
@@ -114,6 +115,8 @@ def search_and_update_maf(study_location, annotation_file_name):
                 if database_identifier:
                     if database_identifier.startswith('CHEBI:'):
                         chebi_found = True
+                        logger.info(" -- Found ChEBI id " + database_identifier + " based on name")
+                        print(" -- Found ChEBI id " + database_identifier + " based on name")
                     maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
                 if chemical_formula:
                     maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
@@ -161,31 +164,32 @@ def search_and_update_maf(study_location, annotation_file_name):
 
             # Now we have more information, so let's try to search ChEBI again
 
-            search_res = wsc.get_maf_search("inchi", final_inchi)  # This is the standard MetaboLights aka Plugin search
-            if search_res['content']:
-                name = None
-                result = search_res['content'][0]
-                database_identifier = result["databaseId"]
-                chemical_formula = result["formula"]
-                smiles = result["smiles"]
-                inchi = result["inchi"]
-                name = result["name"]
+            if final_inchi_key and len(final_inchi_key) > 0:
+                chebi_id, inchi, inchikey, name, smiles, formula = direct_chebi_search(final_inchi_key, comp_name)
+                if chebi_id:
+                    database_identifier = chebi_id
+                    chemical_formula = formula
+                    smiles = smiles
+                    inchi = inchi
+                    name = name
 
-                pubchem_df.iloc[row_idx, 0] = database_identifier
-                pubchem_df.iloc[row_idx, 1] = chemical_formula
-                pubchem_df.iloc[row_idx, 2] = smiles
-                pubchem_df.iloc[row_idx, 3] = inchi
-                # 4 is name / metabolite_identification from MAF
+                    logger.info(" -- Found ChEBI id " + database_identifier + " based on final InChIKey")
+                    print(' -- Found ChEBI id ' + database_identifier + ' based on final InChIKey')
+                    pubchem_df.iloc[row_idx, 0] = database_identifier
+                    pubchem_df.iloc[row_idx, 1] = chemical_formula
+                    pubchem_df.iloc[row_idx, 2] = smiles
+                    pubchem_df.iloc[row_idx, 3] = inchi
+                    # 4 is name / metabolite_identification from MAF
 
-                if name:  # Add to the annotated file as well
-                    if database_identifier:
-                        maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
-                    if chemical_formula:
-                        maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
-                    if smiles:
-                        maf_df.iloc[row_idx, int(standard_maf_columns['smiles'])] = smiles
-                    if inchi:
-                        maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
+                    if name:  # Add to the annotated file as well
+                        if database_identifier:
+                            maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
+                        if chemical_formula:
+                            maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
+                        if smiles:
+                            maf_df.iloc[row_idx, int(standard_maf_columns['smiles'])] = smiles
+                        if inchi:
+                            maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
 
         row_idx += 1
 
@@ -193,6 +197,34 @@ def search_and_update_maf(study_location, annotation_file_name):
     write_tsv(pubchem_df, short_file_name + "_pubchem.tsv")
 
     return maf_df, maf_len, new_maf_df, new_maf_len
+
+
+def direct_chebi_search(final_inchi, comp_name):
+    chebi_id = ""
+    inchi = ""
+    inchikey = ""
+    name = ""
+    smiles = ""
+    formula = ""
+    logger.info(" -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
+    print(" -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
+    url = 'https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl'
+    client = Client(url)
+    try:
+        lite_entity = client.service.getLiteEntity(final_inchi, 'INCHI_INCHI_KEY', '10', 'ALL')
+        top_result = lite_entity[0]
+        chebi_id = top_result.chebiId
+
+        complete_entity = client.service.getCompleteEntity(chebi_id)
+        inchi = complete_entity.inchi
+        inchikey = complete_entity.inchiKey
+        name = complete_entity.chebiAsciiName
+        smiles = complete_entity.smiles
+        formula = complete_entity.Formulae[0].data
+
+    except Exception as e:
+        logger.error(str(e))
+    return chebi_id, inchi, inchikey, name, smiles, formula
 
 
 def get_csid(inchikey1, inchikey2):
@@ -264,6 +296,9 @@ def create_pubchem_df(maf_df):
     pubchem_df['pubchem_formula'] = ''      # 21
     pubchem_df['pubchem_synonyms'] = ''  # 22
     pubchem_df['cactus_synonyms'] = ''  # 23
+
+    pubchem_df['structure'] = ''  # 24
+
 
     return pubchem_df
 
