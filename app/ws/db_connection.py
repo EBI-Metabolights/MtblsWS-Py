@@ -125,6 +125,25 @@ def get_curation_log(user_token):
     return data
 
 
+def biostudies_acc_to_mtbls(biostudies_id):
+    # Default query to get the mtbls accession
+    query = "SELECT acc from studies where biostudies_acc = '#biostudies_id#';"
+    query = query.replace("#biostudies_id#", biostudies_id)
+    query = query.replace('\\', '')
+
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn = psycopg2.connect(**params)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        conn.close()
+        return data[0]
+
+    except Exception as e:
+        return False, "MTBLS accession was not found for BioStudies accession " + biostudies_id
+
+
 def biostudies_acc(study_id, biostudies_id, method):
     # Default query to get the biosd accession
     s_query = "SELECT biostudies_acc from studies where acc = '#study_id#';"

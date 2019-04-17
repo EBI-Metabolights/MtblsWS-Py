@@ -2,6 +2,7 @@ import logging, pandas as pd, os
 import numpy as np
 import requests
 import cirpy
+import time
 import ssl
 from zeep import Client
 from flask import request, abort
@@ -87,6 +88,7 @@ def search_and_update_maf(study_location, annotation_file_name):
     row_idx = 0
     # Search using the compound name column
     for idx, comp_name in enumerate(maf_df[maf_compound_name_column]):
+        start_time = time.time()
         print('Seaching for name: ' + comp_name)
         chebi_found = False
         comp_name = comp_name.rstrip()  # Remove trailing spaces
@@ -192,6 +194,8 @@ def search_and_update_maf(study_location, annotation_file_name):
                             maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
 
         row_idx += 1
+        logger.info(" -- Search took %s seconds ---" % round(time.time() - start_time, 2))
+        print(" -- Search took %s seconds ---" % round(time.time() - start_time, 2))
 
     write_tsv(maf_df, short_file_name + "_annotated.tsv")
     write_tsv(pubchem_df, short_file_name + "_pubchem.tsv")

@@ -26,9 +26,15 @@ success = "success"
 info = "info"
 
 
-def add_msg(validations, section, message, status, meta_file="", value="", desrc=""):
-    validations.append({section: message, "status": status, "metadata_file": meta_file,
-                        "value": value, "desciption": desrc})
+def add_msg(validations, section, message, status, meta_file="", value="", desrc="", errors_only=False):
+    if errors_only and (status == success or status == info):  # Do not include success and info messages
+        add_message = False
+    else:
+        add_message = True
+
+    if add_message:
+        validations.append({section: message, "status": status, "metadata_file": meta_file,
+                            "value": value, "desciption": desrc})
 
 
 def get_basic_validation_rules(validation_schema, part):
@@ -199,14 +205,16 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
     return incorrect_pos, incorrect_message, validations
 
 
-def validate_maf(validations, file_name, all_assay_names, study_location, study_id, is_ms, sample_name_list):
+def validate_maf(validations, file_name, all_assay_names, study_location, study_id, is_ms,
+                 sample_name_list, errors_only=False):
     val_section = "maf"
     maf_name = os.path.join(study_location, file_name)
     maf_df = None
     try:
         maf_df = read_tsv(maf_name)
     except:
-        add_msg(validations, val_section, "Could not find or read file '" + file_name + "'", error)
+        add_msg(validations, val_section, "Could not find or read file '" + file_name + "'", error,
+                errors_only=errors_only)
 
     incorrect_pos = False
     incorrect_message = ""
@@ -219,15 +227,16 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 maf_messages(col[idx], idx, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 
         if incorrect_pos:
-            add_msg(validations, val_section, incorrect_message, error)
+            add_msg(validations, val_section, incorrect_message, error, errors_only=errors_only)
         else:
             add_msg(validations, val_section,
                     "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and "
-                    "'metabolite_identification' found in the correct column position", success)
+                    "'metabolite_identification' found in the correct column position",
+                    success, errors_only=errors_only)
 
         try:
             if maf_header['mass_to_charge']:
-                check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms)
+                check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms, errors_only=errors_only)
         except:
             logger.info("No mass_to_charge column found in the MAF")
 
@@ -236,22 +245,26 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
             for assay_name in all_assay_names:
                 try:
                     maf_header[assay_name]
-                    add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF", success)
-                    check_maf_rows(validations, val_section, maf_df, assay_name, is_ms)
+                    add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF",
+                            success, errors_only=errors_only)
+                    check_maf_rows(validations, val_section, maf_df, assay_name, is_ms, errors_only=errors_only)
                 except:
-                    add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF", error)
+                    add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF",
+                            error, errors_only=errors_only)
 
         if not all_assay_names and sample_name_list:
             for sample_name in sample_name_list:
                 try:
                     maf_header[sample_name]
-                    add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF", success)
-                    check_maf_rows(validations, val_section, maf_df, sample_name, is_ms)
+                    add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF",
+                            success, errors_only=errors_only)
+                    check_maf_rows(validations, val_section, maf_df, sample_name, is_ms, errors_only=errors_only)
                 except:
-                    add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF", error)
+                    add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF",
+                            error, errors_only=errors_only)
 
 
-def check_maf_rows(validations, val_section, maf_df, column_name, is_ms):
+def check_maf_rows(validations, val_section, maf_df, column_name, is_ms, errors_only=False):
     all_rows = maf_df.shape[0]
     col_rows = 0
     # Are all relevant rows filled in?
@@ -260,15 +273,16 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms):
             col_rows += 1
 
     if col_rows == all_rows:
-        add_msg(validations, val_section, "All values for '" + column_name + "' found in the MAF", success)
+        add_msg(validations, val_section, "All values for '" + column_name + "' found in the MAF",
+                success, errors_only=errors_only)
     else:
         # For MS we should have m/z values, for NMR the chemical shift is equally important.
         if (is_ms and column_name == 'mass_to_charge') or (not is_ms and column_name == 'chemical_shift'):
             add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
-                    str(col_rows) + " rows found, but there should be " + str(all_rows), warning)
+                    str(col_rows) + " rows found, but there should be " + str(all_rows), warning, errors_only=errors_only)
         else:
             add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
-                    str(col_rows) + " rows found, but there should be " + str(all_rows), info)
+                    str(col_rows) + " rows found, but there should be " + str(all_rows), info, errors_only=errors_only)
 
 
 class Validation(Resource):
@@ -294,6 +308,16 @@ class Validation(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
+            },
+            {
+                "name": "errors_only",
+                "description": "Only report validation errors.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": False,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
             },
             {
                 "name": "user_token",
@@ -342,6 +366,7 @@ class Validation(Resource):
         if not write_access:
             abort(403)
 
+        errors_only = False
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('val_section', help="Validation section", location="args")
@@ -349,8 +374,10 @@ class Validation(Resource):
         val_section = args['val_section']
         if val_section is None:
             val_section = 'all'  # All
+        if "errors_only" in request.headers and request.headers["errors_only"].lower() == 'true':
+            errors_only = True
 
-        return validate_study(study_id, study_location, user_token, obfuscation_code, val_section)
+        return validate_study(study_id, study_location, user_token, obfuscation_code, val_section, errors_only)
 
 
 class OverrideValidation(Resource):
@@ -469,7 +496,7 @@ class OverrideValidation(Resource):
         return {"success": "Validations stored in the database"}
 
 
-def validate_study(study_id, study_location, user_token, obfuscation_code, validation_section='all'):
+def validate_study(study_id, study_location, user_token, obfuscation_code, validation_section='all', errors_only=False):
     all_validations = []
     validation_schema = None
     error_found = False
@@ -494,7 +521,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
 
     # Validate basic ISA-Tab structure
     isa_study, isa_inv, isa_samples, std_path, status, amber_warning, isa_validation, inv_file, s_file, assay_files = \
-        validate_basic_isa_tab(study_id, user_token, study_location, override_list)
+        validate_basic_isa_tab(study_id, user_token, study_location, override_list, errors_only=errors_only)
     all_validations.append(isa_validation)
     if not status:
         error_found = True
@@ -507,28 +534,28 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     val_section = "publication"
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, pub_validation = validate_publication(
-            isa_study, validation_schema, inv_file, override_list, val_section)
+            isa_study, validation_schema, inv_file, override_list, val_section, errors_only=errors_only)
         all_validations.append(pub_validation)
 
     # Validate detailed metadata in ISA-Tab structure
     val_section = "isa-tab_metadata"
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(
-            isa_inv, isa_study, validation_schema, inv_file, override_list, val_section)
+            isa_inv, isa_study, validation_schema, inv_file, override_list, val_section, errors_only=errors_only)
         all_validations.append(isa_meta_validation)
 
     # Validate Person (authors)
     val_section = "people"
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_person_validation = validate_contacts(
-            isa_study, validation_schema, inv_file, override_list, val_section)
+            isa_study, validation_schema, inv_file, override_list, val_section, errors_only=errors_only)
         all_validations.append(isa_person_validation)
 
     # Validate Protocols
     val_section = "protocols"
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_protocol_validation = validate_protocols(
-            isa_study, validation_schema, inv_file, override_list, val_section)
+            isa_study, validation_schema, inv_file, override_list, val_section, errors_only=errors_only)
         all_validations.append(isa_protocol_validation)
 
     # Validate Samples
@@ -537,7 +564,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_sample_validation = \
             validate_samples(isa_study, isa_samples, validation_schema, s_file, override_list,
-                             sample_name_list, val_section)
+                             sample_name_list, val_section, errors_only=errors_only)
         all_validations.append(isa_sample_validation)
 
     # Validate files
@@ -545,7 +572,8 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     file_name_list = []
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, files_validation = validate_files(
-            study_id, study_location, obfuscation_code, override_list, file_name_list, val_section)
+            study_id, study_location, obfuscation_code, override_list,
+            file_name_list, val_section, errors_only=errors_only)
         all_validations.append(files_validation)
 
     # Validate assays
@@ -553,7 +581,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     if validation_section == 'all' or val_section in validation_section or 'maf' in validation_section:
         status, amber_warning, assay_validation = \
             validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
-                            file_name_list, val_section)
+                            file_name_list, val_section, errors_only=errors_only)
         all_validations.append(assay_validation)
 
     if not status:
@@ -597,17 +625,17 @@ def get_assay_column_validations(validation_schema, a_header):
 
 
 def check_assay_columns(a_header, all_assays, row, validations, val_section, assay, unique_file_names,
-                        all_assay_names, sample_name_list):
+                        all_assay_names, sample_name_list, errors_only=False):
     # Correct sample names?
     if a_header.lower() == 'sample name':
         all_assays.append(row)
         if row in sample_name_list:
             add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
-                    success, assay.filename)
+                    success, assay.filename, errors_only=errors_only)
         else:
             add_msg(validations, val_section, "Sample name '" + row + "' not found in sample sheet",
                     success, meta_file=assay.filename,
-                    desrc="Please create the sample in the sample sheet first")
+                    desrc="Please create the sample in the sample sheet first", errors_only=errors_only)
     elif a_header.endswith(' File'):  # files exists?
         file_and_column = row + '|' + a_header
         if file_and_column not in unique_file_names:
@@ -622,7 +650,7 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
 
 
 def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
-                    file_name_list, val_section="assays"):
+                    file_name_list, val_section="assays", errors_only=False):
     validations = []
     assays = []
     all_assays = []
@@ -632,9 +660,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     study_id = isa_study.identifier
 
     if isa_study.assays:
-        add_msg(validations, val_section, "Found assay(s) for this study", success, val_section)
+        add_msg(validations, val_section, "Found assay(s) for this study", success, val_section,
+                errors_only=errors_only)
     else:
-        add_msg(validations, val_section, "Could not find any assays", error, desrc="Add assay(s) to the study")
+        add_msg(validations, val_section, "Could not find any assays", error, desrc="Add assay(s) to the study",
+                errors_only=errors_only)
 
     for assay in isa_study.assays:
         is_ms = False
@@ -663,7 +693,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             for template_header in tidy_header_row:
                 if template_header not in assay_header:
                     add_msg(validations, val_section,
-                            "Assay sheet is missing column '" + template_header + "'", error, assay.filename)
+                            "Assay sheet is missing column '" + template_header + "'", error, assay.filename,
+                            errors_only=errors_only)
 
         # Are all relevant rows filled in?
         if not assay_df.empty:
@@ -678,23 +709,27 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             col_rows += 1
                         all_assays, all_assay_names, validations, unique_file_names = \
                             check_assay_columns(a_header, all_assays, row, validations, val_section,
-                                                assay, unique_file_names, all_assay_names, sample_name_list)
+                                                assay, unique_file_names, all_assay_names,
+                                                sample_name_list, errors_only=errors_only)
 
                     if (col_rows < all_rows) and validate_column:
                         add_msg(validations, val_section, "Assay sheet column '" + a_header + "' is missing values. " +
                                 str(col_rows) + " rows found, but there should be " + str(all_rows),
-                                warning, assay.filename)
+                                warning, assay.filename, errors_only=errors_only)
                     else:
                         add_msg(validations, val_section,
                                 "Assay sheet column '" + a_header + "' has correct number of rows",
-                                success, assay.filename)
-                except:
+                                success, assay.filename, errors_only=errors_only)
+                except Exception as e:
                     add_msg(validations, val_section,
-                            "Assay sheet is missing rows for column '" + a_header + "'", error, assay.filename)
+                            "Assay sheet is missing rows for column '" + a_header + "'",
+                            error, assay.filename, errors_only=errors_only)
+                    # logger.error(str(e))
 
     for sample_name in sample_name_list:
         if sample_name not in all_assays:
-            add_msg(validations, val_section, "Sample name '" + sample_name + "' is not used in any assay", info)
+            add_msg(validations, val_section, "Sample name '" + sample_name + "' is not used in any assay",
+                    info, errors_only=errors_only)
 
     for files in unique_file_names:
         file_name = files.split('|')[0]
@@ -702,19 +737,22 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         status, file_type, file_description = check_file(files, study_location, file_name_list)
         if status:
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
-                    + column_name + "'", success, desrc=file_description)
+                    + column_name + "'", success, desrc=file_description, errors_only=errors_only)
         else:
             add_msg(validations, val_section, "File '" + file_name + "' of type '" + file_type +
-                    "' is missing or not correct for column '" + column_name + "'", error, desrc=file_description)
+                    "' is missing or not correct for column '" + column_name + "'", error, desrc=file_description,
+                    errors_only=errors_only)
 
         # Correct MAF?
         if column_name.lower() == 'metabolite assignment file':
-            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier, is_ms, sample_name_list)
+            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier,
+                         is_ms, sample_name_list, errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
 
-def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list, val_section="files"):
+def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list,
+                   val_section="files", errors_only=False):
     # check for Publication
     validations = []
 
@@ -735,19 +773,19 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                 for sub_file_name in os.listdir(full_file_name):
                     if is_empty_file(os.path.join(full_file_name, sub_file_name)):
                         add_msg(validations, val_section, "Empty files found is sub-directory", info, val_section,
-                                value=os.path.join(file_name, sub_file_name))
+                                value=os.path.join(file_name, sub_file_name), errors_only=errors_only)
 
                     # warning for sub folders with ISA tab
                     if sub_file_name.startswith(('i_', 'a_', 's_', 'm_')) and not isa_tab_warning:
                         add_msg(validations, val_section,
                                 "Sub-directory " + file_name + " contains ISA-Tab metadata documents",
-                                warning, val_section, value=file_name)
+                                warning, val_section, value=file_name, errors_only=errors_only)
                         isa_tab_warning = True
 
         if file_name.startswith('Icon') or file_name.lower() == 'desktop.ini' or file_name.lower() == '.ds_store' \
                 or '~' in file_name or '+' in file_name or file_name.startswith('.'):
             add_msg(validations, val_section, "Special files should be removed from the study folder",
-                    warning, val_section, value=file_name)
+                    warning, val_section, value=file_name, errors_only=errors_only)
             continue
 
         if file_name.startswith(('i_', 'a_', 's_', 'm_')):
@@ -756,22 +794,24 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
             if sample_cnt > 1:
                 add_msg(validations, val_section, "Only one active sample sheet per study is allowed", error,
-                        val_section, value='Number of active sample sheets ' + sample_cnt)
+                        val_section, value='Number of active sample sheets ' + sample_cnt, errors_only=errors_only)
 
             if file_status == 'old':
                 add_msg(validations, val_section, "Old metadata file should be removed", warning,
-                        val_section, value=file_name)
+                        val_section, value=file_name, errors_only=errors_only)
 
         if is_empty_file(full_file_name):
             if file_name not in 'metexplore_mapping.json':
-                add_msg(validations, val_section, "Empty files are not allowed", error, val_section, value=file_name)
+                add_msg(validations, val_section, "Empty files are not allowed", error, val_section,
+                        value=file_name, errors_only=errors_only)
 
         file_name_list.append(file_name)
 
     return return_validations(val_section, validations, override_list)
 
 
-def validate_samples(isa_study, isa_samples, validation_schema, file_name, override_list, sample_name_list, val_section="samples"):
+def validate_samples(isa_study, isa_samples, validation_schema, file_name, override_list, sample_name_list,
+                     val_section="samples", errors_only=False):
     # check for Publication
     validations = []
     samples = []
@@ -794,13 +834,14 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
             if sample_val_name == 'Protocol REF':  # Don't need to output this column name
                 continue
             add_msg(validations, val_section, "Sample column '" + sample_val_name + "' found in the sample file",
-                    success, file_name)
+                    success, file_name, errors_only=errors_only)
         else:
             if sample_val_name == 'Characteristics[Variant]':  # Not all studies have this present
                 add_msg(validations, val_section, "Sample column '" + sample_val_name + "' was not found", info,
-                        file_name)
+                        file_name, errors_only=errors_only)
                 continue
-            add_msg(validations, val_section, "Sample column '" + sample_val_name + "' was not found", error, file_name)
+            add_msg(validations, val_section, "Sample column '" + sample_val_name + "' was not found", error,
+                    file_name, errors_only=errors_only)
     # Has the submitter use the term 'Human' and not 'Homo sapiens'?
     human_found = False
     too_short = False
@@ -823,13 +864,13 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                     if row.lower() in incorrect_species:
                         add_msg(validations, val_section,
                                 "Organism can not be '" + row + "', choose the appropriate taxonomy term",
-                                error, file_name)
+                                error, file_name, errors_only=errors_only)
 
                     if ':' in row:
                         add_msg(validations, val_section,
                                 "Organism should not contain the actual ontology/taxonomy name, "
                                 "please include just the appropriate taxonomy term",
-                                warning, file_name)
+                                warning, file_name, errors_only=errors_only)
 
                 elif s_header.lower() == 'sample name':
                     if len(row) >= 1:
@@ -837,22 +878,25 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
 
             if col_rows < all_rows:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing values. " +
-                        str(col_rows) + " rows found, but there should be " + str(all_rows), error, file_name)
+                        str(col_rows) + " rows found, but there should be " + str(all_rows), error, file_name,
+                        errors_only=errors_only)
             else:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has correct number of rows",
-                        success, file_name)
+                        success, file_name, errors_only=errors_only)
 
     if human_found:
         add_msg(validations, val_section,
                 "Organism can not be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
-                error, file_name)
+                error, file_name, errors_only=errors_only)
     if too_short:
-        add_msg(validations, val_section, "Organism name is too short (>=5 characters)", error, file_name)
+        add_msg(validations, val_section, "Organism name is too short (>=5 characters)", error, file_name,
+                errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
 
-def validate_protocols(isa_study, validation_schema, file_name, override_list, val_section="protocols"):
+def validate_protocols(isa_study, validation_schema, file_name, override_list, val_section="protocols",
+                       errors_only=False):
     # check for Publication
     validations = []
     protocol_order_list = None
@@ -891,12 +935,13 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
 
             if prot_val_name != isa_prot_name:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is not in the correct position",
-                        warning, file_name)
+                        warning, file_name, errors_only=errors_only)
             else:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is in the correct position",
-                        success, file_name)
+                        success, file_name, errors_only=errors_only)
         except:
-            add_msg(validations, val_section, "Protocol '" + prot_val_name + "' was not found", error, file_name)
+            add_msg(validations, val_section, "Protocol '" + prot_val_name + "' was not found", error, file_name,
+                    errors_only=errors_only)
 
     name_rules, name_val_description = get_complex_validation_rules(
         validation_schema, part='protocols', sub_part='protocol', sub_set='name')
@@ -920,41 +965,43 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
             # non printable characters
             if prot_desc != clean_prot_desc:
                 add_msg(validations, val_section, "Protocol description contains non printable characters",
-                        error, file_name, value=prot_desc)
+                        error, file_name, value=prot_desc, errors_only=errors_only)
             else:
                 add_msg(validations, val_section, "Protocol description only contains printable characters",
-                        success, file_name, value=prot_desc)
+                        success, file_name, value=prot_desc, errors_only=errors_only)
 
             if len(prot_name) >= name_val_len:
-                add_msg(validations, val_section, "Protocol name validates", success, file_name, value=prot_name)
+                add_msg(validations, val_section, "Protocol name validates", success, file_name,
+                        value=prot_name, errors_only=errors_only)
             else:
                 add_msg(validations, val_section, prot_name + ": " + name_val_error, error, file_name, value=prot_name,
-                        desrc=name_val_description)
+                        desrc=name_val_description, errors_only=errors_only)
 
             if len(prot_desc) >= desc_val_len:
                 if prot_desc == 'Please update this protocol description':
                     add_msg(validations, "Protocol", prot_name + ": " + desc_val_error, warning, file_name,
-                            value=prot_desc, desrc='Please update this protocol description')
-                add_msg(validations, val_section, "Protocol description validates", success, file_name, value=prot_desc)
+                            value=prot_desc, desrc='Please update this protocol description', errors_only=errors_only)
+                add_msg(validations, val_section, "Protocol description validates", success, file_name,
+                        value=prot_desc, errors_only=errors_only)
             else:
                 if 'no metabolites' in prot_desc.lower():
                     add_msg(validations, val_section, "Protocol description validates", success, file_name,
-                            value=prot_desc)
+                            value=prot_desc, errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, prot_name + ": " + desc_val_error, error, file_name,
-                            value=prot_desc, desrc=desc_val_description)
+                            value=prot_desc, desrc=desc_val_description, errors_only=errors_only)
 
             if len(prot_params.term) >= param_val_len:
                 add_msg(validations, val_section, "Protocol parameter validates", success, file_name,
-                        value=prot_params.term)
+                        value=prot_params.term, errors_only=errors_only)
             else:
                 add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
-                        value=prot_params.term, desrc=param_val_description)
+                        value=prot_params.term, desrc=param_val_description, errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
 
-def validate_contacts(isa_study, validation_schema, file_name, override_list, val_section="people"):
+def validate_contacts(isa_study, validation_schema, file_name, override_list, val_section="people", errors_only=False):
     # check for People ie. authors
     validations = []
 
@@ -986,31 +1033,35 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
 
             if last_name:
                 if len(last_name) >= last_name_val_len:
-                    add_msg(validations, val_section, "Persons last name validates", success, file_name)
+                    add_msg(validations, val_section, "Persons last name validates", success, file_name,
+                            errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, last_name_val_error, error, file_name, value=last_name,
-                            desrc=last_name_val_description)
+                            desrc=last_name_val_description, errors_only=errors_only)
 
             if first_name:
                 if len(first_name) >= first_name_val_len:
-                    add_msg(validations, val_section, "Persons first name validates", success, file_name)
+                    add_msg(validations, val_section, "Persons first name validates", success, file_name,
+                            errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, first_name_val_error, error, file_name, value=first_name,
-                            desrc=first_name_val_description)
+                            desrc=first_name_val_description, errors_only=errors_only)
 
             if email:
                 if len(email) >= email_val_len:
-                    add_msg(validations, val_section, "Persons email validates", success, file_name)
+                    add_msg(validations, val_section, "Persons email validates", success, file_name,
+                            errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, email_val_error, error, file_name, value=email,
-                            desrc=email_val_error)
+                            desrc=email_val_error, errors_only=errors_only)
 
             if affiliation:
                 if len(affiliation) >= affiliation_val_len:
-                    add_msg(validations, val_section, "Persons affiliation validates", success, file_name)
+                    add_msg(validations, val_section, "Persons affiliation validates", success, file_name,
+                            errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, affiliation_val_error, error, file_name, value=affiliation,
-                            desrc=affiliation_val_error)
+                            desrc=affiliation_val_error, errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
@@ -1027,7 +1078,8 @@ def check_doi(pub_doi, doi_val):
     return True
 
 
-def validate_publication(isa_study, validation_schema, file_name, override_list, val_section="publication"):
+def validate_publication(isa_study, validation_schema, file_name, override_list, val_section="publication",
+                         errors_only=False):
     # check for Publication
     validations = []
 
@@ -1058,32 +1110,34 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
         for index, publication in enumerate(isa_study.publications):
 
             if not publication:
-                add_msg(validations, val_section, title_val_error, error, file_name)
+                add_msg(validations, val_section, title_val_error, error, file_name, errors_only=errors_only)
             else:
-                add_msg(validations, val_section, "Found a publication", success, file_name)
+                add_msg(validations, val_section, "Found a publication", success, file_name, errors_only=errors_only)
 
             if not publication.title:
-                add_msg(validations, val_section, title_val_error, error, file_name)
+                add_msg(validations, val_section, title_val_error, error, file_name, errors_only=errors_only)
             elif publication.title:
                 if len(publication.title) >= title_val_len:
-                    add_msg(validations, val_section, "Found the title of the publication", success, file_name)
+                    add_msg(validations, val_section, "Found the title of the publication", success, file_name,
+                            errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, title_val_error, warning,
-                            file_name, value=publication.title, desrc=title_val_description)
+                            file_name, value=publication.title, desrc=title_val_description, errors_only=errors_only)
 
             if not publication.doi:
-                add_msg(validations, val_section, doi_val_description, warning, file_name)
+                add_msg(validations, val_section, doi_val_description, warning, file_name, errors_only=errors_only)
                 doi = False
             elif publication.doi:
                 if check_doi(publication.doi, doi_val):
-                    add_msg(validations, val_section, "Found the doi for the publication", success, file_name)
+                    add_msg(validations, val_section, "Found the doi for the publication", success, file_name,
+                            errors_only=errors_only)
                     doi = True
                 else:
-                    add_msg(validations, val_section, doi_val_error, warning, file_name, doi)
+                    add_msg(validations, val_section, doi_val_error, warning, file_name, doi, errors_only=errors_only)
                     doi = False
 
             if not publication.pubmed_id:
-                add_msg(validations, val_section, pmid_val_description, warning, file_name)
+                add_msg(validations, val_section, pmid_val_description, warning, file_name, errors_only=errors_only)
                 pmid = False
             elif publication.pubmed_id:
                 try:
@@ -1093,45 +1147,50 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                             value=publication.pubmed_id, desrc=pmid_val_description)
 
                 if len(publication.pubmed_id) >= int(pmid_val_len):
-                    add_msg(validations, val_section, "Found the pmid for the publication", success, file_name)
+                    add_msg(validations, val_section, "Found the pmid for the publication", success, file_name,
+                            errors_only=errors_only)
                     pmid = True
                 else:
                     add_msg(validations, val_section, pmid_val_error, error, file_name,
-                            value=publication.pubmed_id, desrc=pmid_val_description)
+                            value=publication.pubmed_id, desrc=pmid_val_description, errors_only=errors_only)
                     pmid = False
 
             if not doi or not pmid:
                 add_msg(validations, val_section,
-                        "Please provide both a valid doi and pmid for the publication", warning, file_name)
+                        "Please provide both a valid doi and pmid for the publication",
+                        warning, file_name, errors_only=errors_only)
             elif doi and pmid:
                 add_msg(validations, val_section,
-                        "Found both doi and pmid for the publication", success, file_name)
+                        "Found both doi and pmid for the publication", success, file_name, errors_only=errors_only)
 
             if not publication.author_list:
-                add_msg(validations, val_section, author_val_error, error, file_name)
+                add_msg(validations, val_section, author_val_error, error, file_name, errors_only=errors_only)
             elif publication.author_list:
                 if len(publication.author_list) >= author_val_len:
-                    add_msg(validations, val_section, "Found the author list for the publication", success, file_name)
+                    add_msg(validations, val_section, "Found the author list for the publication",
+                            success, file_name, errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, author_val_error, error, file_name,
-                            value=publication.author_list, desrc=author_val_description)
+                            value=publication.author_list, desrc=author_val_description, errors_only=errors_only)
 
             if not publication.status:
-                add_msg(validations, val_section, "Please provide the publication status", error, file_name)
+                add_msg(validations, val_section, "Please provide the publication status",
+                        error, file_name, errors_only=errors_only)
             elif publication.status:
                 pub_status = publication.status
                 if len(pub_status.term) >= status_val_len:
-                    add_msg(validations, val_section, "Found the publication status", success, file_name)
+                    add_msg(validations, val_section, "Found the publication status",
+                            success, file_name, errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, status_val_error, success, file_name,
-                            value=pub_status.title, desrc=status_val_description)
+                            value=pub_status.title, desrc=status_val_description, errors_only=errors_only)
     else:
-        add_msg(validations, val_section, title_val_error, error)
+        add_msg(validations, val_section, title_val_error, error, errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
 
-def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
+def validate_basic_isa_tab(study_id, user_token, study_location, override_list, errors_only=False):
     validates = True
     amber_warning = False
     validations = []
@@ -1154,26 +1213,28 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
         err = traceback.format_exc()
         add_msg(validations, val_section,
                 "Loading ISA-Tab without sample and assay tables. "
-                "Protocol parameters does not match the protocol definition", warning, file_name)
+                "Protocol parameters does not match the protocol definition",
+                warning, file_name, errors_only=errors_only)
         logger.error("Cannot load ISA-Tab with sample and assay tables due to critical error: " + err)
 
     if isa_inv:
-        add_msg(validations, val_section, "Successfully read the i_Investigation.txt files", success, file_name)
+        add_msg(validations, val_section, "Successfully read the i_Investigation.txt files", success, file_name,
+                errors_only=errors_only)
 
         if isa_study:
             add_msg(validations, val_section, "Successfully read the study section of the investigation file", success,
-                    file_name)
+                    file_name, errors_only=errors_only)
         else:
             add_msg(validations, val_section, "Can not read the study section of the investigation file", error,
-                    file_name)
+                    file_name, errors_only=errors_only)
             validates = False
 
         if isa_study.filename:
             add_msg(validations, val_section, "Successfully found the reference to the sample sheet filename", success,
-                    file_name)
+                    file_name, errors_only=errors_only)
         else:
             add_msg(validations, val_section, "Could not find the reference to the sample sheet filename", error,
-                    file_name)
+                    file_name, errors_only=errors_only)
             validates = False
 
         # isaconfig
@@ -1185,38 +1246,50 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
 
             if 'isaconfig' in create_config.value:
                 add_msg(validations, val_section, "Incorrect configuration files used to create the study ("
-                        + create_config.value + "). The study may not contain required fields", warning, file_name)
+                        + create_config.value + "). The study may not contain required fields",
+                        warning, file_name, errors_only=errors_only)
                 amber_warning = True
             if 'isaconfig' in open_config.value:
                 add_msg(validations, val_section, "Incorrect configuration files used to edit the study ("
-                        + open_config.value + "). The study may not contain required fields", warning, file_name)
+                        + open_config.value + "). The study may not contain required fields",
+                        warning, file_name, errors_only=errors_only)
                 amber_warning = True
 
         if validates:  # Have to have a basic investigation and sample file before we can continue
             if isa_study.samples:
-                add_msg(validations, val_section, "Successfully found one or more samples", success, file_name)
+                add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
+                        errors_only=errors_only)
             elif not isa_sample_df.empty:
-                add_msg(validations, val_section, "Successfully found one or more samples", success, file_name)
+                add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
+                        errors_only=errors_only)
             else:
-                add_msg(validations, val_section, "Could not find any samples", error, file_name)
+                add_msg(validations, val_section, "Could not find any samples",
+                        error, file_name, errors_only=errors_only)
 
             if isa_study.assays:
-                add_msg(validations, val_section, "Successfully found one or more assays", success, file_name)
+                add_msg(validations, val_section, "Successfully found one or more assays", success, file_name,
+                        errors_only=errors_only)
             else:
-                add_msg(validations, val_section, "Could not find any assays", error, file_name)
+                add_msg(validations, val_section, "Could not find any assays",
+                        error, file_name, errors_only=errors_only)
 
             if isa_study.factors:
-                add_msg(validations, val_section, "Successfully found one or more factors", success, file_name)
+                add_msg(validations, val_section, "Successfully found one or more factors", success, file_name,
+                        errors_only=errors_only)
             else:
-                add_msg(validations, val_section, "Could not find any factors", warning, file_name)
+                add_msg(validations, val_section, "Could not find any factors",
+                        warning, file_name, errors_only=errors_only)
 
             if isa_study.design_descriptors:
-                add_msg(validations, val_section, "Successfully found one or more descriptors", success, file_name)
+                add_msg(validations, val_section, "Successfully found one or more descriptors", success, file_name,
+                        errors_only=errors_only)
             else:
-                add_msg(validations, val_section, "Could not find any study design descriptors", error, file_name)
+                add_msg(validations, val_section, "Could not find any study design descriptors",
+                        error, file_name, errors_only=errors_only)
 
     else:
-        add_msg(validations, "ISA-Tab", "Can not find or read the investigation files", error, file_name)
+        add_msg(validations, "ISA-Tab", "Can not find or read the investigation files",
+                error, file_name, errors_only=errors_only)
 
     validates, amber_warning, ret_list = return_validations(val_section, validations, override_list)
 
@@ -1232,7 +1305,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list):
 
 
 def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list,
-                              val_section="isa-tab_metadata"):
+                              val_section="isa-tab_metadata", errors_only=False):
     validations = []
 
     if validation_schema:
@@ -1249,9 +1322,10 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
             title_len = 0
 
         if title_len >= val_len:
-            add_msg(validations, val_section, "The title length validates", success, file_name)
+            add_msg(validations, val_section, "The title length validates", success, file_name, errors_only=errors_only)
         else:
-            add_msg(validations, val_section, val_error, error, file_name, value=isa_study.title, desrc=title_descr)
+            add_msg(validations, val_section, val_error, error, file_name,
+                    value=isa_study.title, desrc=title_descr, errors_only=errors_only)
 
         # Description
         val_len, val_error, val_condition, val_type = extract_details(desc_rules)
@@ -1261,12 +1335,14 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
             descr_len = 0
 
         if descr_len >= val_len:
-            add_msg(validations, val_section, "The length of the description validates", success, file_name)
+            add_msg(validations, val_section, "The length of the description validates", success, file_name,
+                    errors_only=errors_only)
         else:
             add_msg(validations, val_section, val_error, error, file_name,
-                    value=isa_study.description, desrc=desc_desrc)
+                    value=isa_study.description, desrc=desc_desrc, errors_only=errors_only)
 
     else:
-        add_msg(validations, val_section, "Can not find or read the investigation files", error)
+        add_msg(validations, val_section, "Can not find or read the investigation files", error,
+                errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)

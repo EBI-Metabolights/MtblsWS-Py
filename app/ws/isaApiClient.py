@@ -135,12 +135,14 @@ class IsaApiClient:
             # loading tables also load Samples and Assays
             isa_inv = load(fp, skip_load_tables)
             isa_study = isa_inv.studies[0]
-        except IndexError:
+        except IndexError as e:
             logger.exception("Failed to find Investigation file from %s", study_id, std_path)
-            abort(400)
-        except Exception:
+            logger.error(str(e))
+            abort(400, str(e))
+        except Exception as e:
             logger.exception("Failed to find Investigation file from %s", study_id, std_path)
-            abort(400)
+            logger.error(str(e))
+            abort(400, str(e))
         else:
             return isa_study, isa_inv, std_path
 
