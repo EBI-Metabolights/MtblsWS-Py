@@ -218,16 +218,16 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
 
     incorrect_pos = False
     incorrect_message = ""
-
+    maf_order = correct_maf_order.copy()
     if is_ms:
-        correct_maf_order.append({5: "mass_to_charge"})
+        maf_order.append({5: "mass_to_charge"})
     else:
-        correct_maf_order.append({5: "chemical_shift"})
+        maf_order.append({5: "chemical_shift"})
 
     if not maf_df.empty:
         maf_header = get_table_header(maf_df, study_id, maf_name)
 
-        for idx, col in enumerate(correct_maf_order):
+        for idx, col in enumerate(maf_order):
             incorrect_pos, incorrect_message, validations = \
                 maf_messages(col[idx], idx, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 
@@ -1003,12 +1003,16 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                     add_msg(validations, val_section, prot_name + ": " + desc_val_error, error, file_name,
                             value=prot_desc, desrc=desc_val_description, errors_only=errors_only)
 
-            if len(prot_params.term) >= param_val_len:
+            if prot_params and len(prot_params.term) >= param_val_len:
                 add_msg(validations, val_section, "Protocol parameter validates", success, file_name,
                         value=prot_params.term, errors_only=errors_only)
             else:
-                add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
-                        value=prot_params.term, desrc=param_val_description, errors_only=errors_only)
+                if prot_params:
+                    add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
+                            value=prot_params.term, desrc=param_val_description, errors_only=errors_only)
+                else:
+                    add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
+                            value="", desrc=param_val_description, errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
