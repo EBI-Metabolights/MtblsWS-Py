@@ -60,7 +60,7 @@ class BioStudies(Resource):
         if not read_access:
             abort(403)
 
-        status, data = biostudies_accession(study_id, biostudies_acc=None, method='query')
+        status, data = biostudies_accession(study_id, None, method='query')
 
         return {"BioStudies": data[0]}
 
@@ -132,7 +132,7 @@ class BioStudies(Resource):
         if not write_access:
             abort(403)
 
-        status, data = biostudies_accession(study_id, biostudies_acc=biostudies_acc, method='add')
+        status, data = biostudies_accession(study_id, biostudies_acc, method='add')
 
         return {"BioStudies": data[0]}
 
@@ -186,7 +186,7 @@ class BioStudies(Resource):
         if not read_access:
             abort(403)
 
-        status, data = biostudies_accession(study_id, biostudies_acc=None, method='delete')
+        status, data = biostudies_accession(study_id, None, method='delete')
 
         return {"BioStudies": data[0]}
 
