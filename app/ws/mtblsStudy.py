@@ -856,7 +856,7 @@ class CreateAccession(Resource):
             logger.error('Failed to create new study. ' + study_message)
             abort(503, "Could not create a new study.")
 
-        time.sleep(1)  # give the Java WebService time to recover! ;-)
+        time.sleep(3)  # give the Java WebService time to recover! ;-)
 
         data_dict = json.loads(study_message)
         study_acc = data_dict["message"]
