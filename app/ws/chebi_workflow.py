@@ -3,22 +3,29 @@ import numpy as np
 import requests
 import cirpy
 import time
+import pubchempy as pcp
+import pybel
 import ssl
 from zeep import Client
+from pathlib import Path
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list
-from app.ws.mtbls_maf import totuples, get_table_header
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study_files import get_all_files_from_filesystem
 
 logger = logging.getLogger('wslog')
+
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
 iac = IsaApiClient()
+
+http_base_location='https://www.ebi.ac.uk/metabolights/'
+
+pubchem_end = "_pubchem.tsv"
 
 
 def split_rows(maf_df):
@@ -53,154 +60,225 @@ def check_maf_for_pipes(study_location, annotation_file_name):
     new_maf_df = split_rows(maf_df)
     new_maf_len = len(new_maf_df.index)
 
+    file_name = annotation_file_name + '.split'
     if maf_len != new_maf_len:  # We did find |, so we create a new MAF
-        write_tsv(new_maf_df, annotation_file_name + ".split")
+        write_tsv(new_maf_df, file_name)
 
-    return maf_df, maf_len, new_maf_df, new_maf_len
+    return maf_df, maf_len, new_maf_df, new_maf_len, file_name
 
 
 def search_and_update_maf(study_location, annotation_file_name):
+    sdf_file_list = []
+    exiting_pubchem_file = False
     short_file_name = os.path.join(study_location, annotation_file_name.replace('.tsv', ''))
+    if annotation_file_name.endswith(pubchem_end):
+        exiting_pubchem_file = True
+        short_file_name = os.path.join(study_location, annotation_file_name.replace(pubchem_end, ''))
+
     annotation_file_name = os.path.join(study_location, annotation_file_name)
     pd.options.mode.chained_assignment = None  # default='warn'
+
+    standard_maf_columns = {"database_identifier": 0, "chemical_formula": 1, "smiles": 2, "inchi": 3}
+    maf_compound_name_column = "metabolite_identification"
+
     try:
         maf_df = read_tsv(annotation_file_name)
     except FileNotFoundError:
         abort(400, "The file " + annotation_file_name + " was not found")
     maf_len = len(maf_df.index)
 
-    # Any rows to split?
-    new_maf_df = split_rows(maf_df)
-    new_maf_len = len(new_maf_df.index)
+    # First make sure the existing pubchem annotated spreadsheet is loaded
+    pubchem_df = maf_df.copy()
 
-    if maf_len != new_maf_len:  # We did find | so we have to use the new dataframe
-        maf_df = new_maf_df
+    if exiting_pubchem_file:  # The has already been split and this is an existing "pubchem" file
+        new_maf_df = maf_df.copy()
+        new_maf_len = len(new_maf_df.index)
+    else:
+        # Any rows to split?
+        new_maf_df = split_rows(maf_df)
+        new_maf_len = len(new_maf_df.index)
 
-    standard_maf_columns = {"database_identifier": 0, "chemical_formula": 1, "smiles": 2, "inchi": 3}
-    maf_compound_name_column = "metabolite_identification"
+        if maf_len != new_maf_len:  # We did find | so we have to use the new dataframe
+            maf_df = new_maf_df
 
-    # Remove existing row values first, because that's what we do ;-)
-    for column_name in standard_maf_columns:
-        maf_df.iloc[:, standard_maf_columns[column_name]] = ""
+        # Remove existing row values first, because that's what we do ;-)
+        for column_name in standard_maf_columns:
+            maf_df.iloc[:, standard_maf_columns[column_name]] = ""
 
-    pubchem_df = create_pubchem_df(maf_df)
+        pubchem_df = create_pubchem_df(maf_df)
 
     row_idx = 0
+    short_df = maf_df[["database_identifier", maf_compound_name_column]]
+
     # Search using the compound name column
-    for idx, comp_name in enumerate(maf_df[maf_compound_name_column]):
-        start_time = time.time()
-        print('Seaching for name: ' + comp_name)
-        chebi_found = False
-        comp_name = comp_name.rstrip()  # Remove trailing spaces
-#        comp_name = comp_name.encode('ascii', 'ignore')  # Make sure it's only searching using ASCII encoding
+    for idx, row in short_df.iterrows():
+        database_id = row[0]
+        comp_name = row[1]
+        print(str(idx) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
+        if not database_id:
+            start_time = time.time()
+            chebi_found = False
+            comp_name = comp_name.rstrip()  # Remove trailing spaces
+    #        comp_name = comp_name.encode('ascii', 'ignore')  # Make sure it's only searching using ASCII encoding
 
-        if '/' in comp_name:  # Not a real name
-            comp_name = comp_name.replace('/', ' ')
+            if '/' in comp_name:  # Not a real name
+                comp_name = comp_name.replace('/', ' ')
 
-        search_res = wsc.get_maf_search("name", comp_name)  # This is the standard MetaboLights aka Plugin search
-        if search_res['content']:
-            name = None
-            result = search_res['content'][0]
-            database_identifier = result["databaseId"]
-            chemical_formula = result["formula"]
-            smiles = result["smiles"]
-            inchi = result["inchi"]
-            name = result["name"]
+            search_res = wsc.get_maf_search("name", comp_name)  # This is the standard MetaboLights aka Plugin search
+            if search_res['content']:
+                result = search_res['content'][0]
+                database_identifier = result["databaseId"]
+                chemical_formula = result["formula"]
+                smiles = result["smiles"]
+                inchi = result["inchi"]
+                name = result["name"]
 
-            pubchem_df.iloc[row_idx, 0] = database_identifier
-            pubchem_df.iloc[row_idx, 1] = chemical_formula
-            pubchem_df.iloc[row_idx, 2] = smiles
-            pubchem_df.iloc[row_idx, 3] = inchi
-            # 4 is name / metabolite_identification from MAF
+                pubchem_df.iloc[row_idx, 0] = database_identifier
+                pubchem_df.iloc[row_idx, 1] = chemical_formula
+                pubchem_df.iloc[row_idx, 2] = smiles
+                pubchem_df.iloc[row_idx, 3] = inchi
+                # 4 is name / metabolite_identification from MAF
 
-            if name:
-                if database_identifier:
-                    if database_identifier.startswith('CHEBI:'):
-                        chebi_found = True
-                        logger.info(" -- Found ChEBI id " + database_identifier + " based on name")
-                        print(" -- Found ChEBI id " + database_identifier + " based on name")
-                    maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
-                if chemical_formula:
-                    maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
-                if smiles:
-                    maf_df.iloc[row_idx, int(standard_maf_columns['smiles'])] = smiles
-                if inchi:
-                    maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
+                if name:
+                    if database_identifier:
+                        if database_identifier.startswith('CHEBI:'):
+                            chebi_found = True
+                            logger.info("    -- Found ChEBI id " + database_identifier + " based on name")
+                            print("    -- Found ChEBI id " + database_identifier + " based on name")
+                        maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
+                    if chemical_formula:
+                        maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
+                    if smiles:
+                        maf_df.iloc[row_idx, int(standard_maf_columns['smiles'])] = smiles
+                    if inchi:
+                        maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
 
-        if not chebi_found:  # We could not find this in ChEBI, let's try other sources
-            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms = pubchem_search(comp_name)
+            if not chebi_found:  # We could not find this in ChEBI, let's try other sources
+                pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure = \
+                    pubchem_search(comp_name, study_location)
 
-            cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
-            opsin_stdinchikey = opsin_search(comp_name, 'stdinchikey')
-            cactus_smiles = cactus_search(comp_name, 'smiles')
-            opsin_smiles = opsin_search(comp_name, 'smiles')
-            cactus_inchi = cactus_search(comp_name, 'stdinchi')
-            opsin_inchi = opsin_search(comp_name, 'stdinchi')
-            cactus_synonyms = cactus_search(comp_name, 'names')  # Synonyms
-            csid = get_csid(pc_inchi_key, cactus_stdinchikey)
+                cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
+                opsin_stdinchikey = opsin_search(comp_name, 'stdinchikey')
+                cactus_smiles = cactus_search(comp_name, 'smiles')
+                opsin_smiles = opsin_search(comp_name, 'smiles')
+                cactus_inchi = cactus_search(comp_name, 'stdinchi')
+                opsin_inchi = opsin_search(comp_name, 'stdinchi')
+                cactus_synonyms = cactus_search(comp_name, 'names')  # Synonyms
 
-            pubchem_df.iloc[row_idx, 5] = pc_name  # 5 PubChem name
-            pubchem_df.iloc[row_idx, 6] = pc_cid   # 6 PubChem CID
+                ik = cactus_stdinchikey
+                if pc_inchi_key:
+                    ik = pc_inchi_key
+                csid = get_csid(ik)
 
-            if not pc_cid:
-                pc_cid = get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey)
-            pubchem_df.iloc[row_idx, 7] = pc_cid  # 7 PubChem CID, if none get from InChIKey search (Cactus, OBSIN)
-            pubchem_df.iloc[row_idx, 8] = csid  # 8 ChemSpider ID (CSID) from INCHI
-            pubchem_df.iloc[row_idx, 9] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # 9 final smiles
-            final_inchi = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # 10 final inchi
-            pubchem_df.iloc[row_idx, 10] = final_inchi
-            final_inchi_key = get_ranked_values(pc_inchi_key, cactus_stdinchikey, opsin_stdinchikey, None)  # 11 final inchikey
-            pubchem_df.iloc[row_idx, 11] = final_inchi_key
-            pubchem_df.iloc[row_idx, 12] = pc_smiles  # 12 pc_smiles
-            pubchem_df.iloc[row_idx, 13] = cactus_smiles   # 13 cactus_smiles
-            pubchem_df.iloc[row_idx, 14] = opsin_smiles  # 14 opsin_smiles
-            pubchem_df.iloc[row_idx, 15] = pc_inchi  # 15 PubChem inchi
-            pubchem_df.iloc[row_idx, 16] = cactus_inchi  # 16 Cacus inchi
-            pubchem_df.iloc[row_idx, 17] = opsin_inchi   # 17 Opsin inchi
-            pubchem_df.iloc[row_idx, 18] = pc_inchi_key  # 18 PubChem stdinchikey
-            pubchem_df.iloc[row_idx, 19] = cactus_stdinchikey  # 19 cactus_stdinchikey
-            pubchem_df.iloc[row_idx, 20] = opsin_stdinchikey   # 20 opsin_stdinchikey
-            pubchem_df.iloc[row_idx, 21] = pc_formula   # 21 PubChem formula
-            pubchem_df.iloc[row_idx, 22] = pc_synonyms  # 22 PubChem synonyms
-            pubchem_df.iloc[row_idx, 23] = cactus_synonyms  # 23 Cactus synonyms
+                pubchem_df.iloc[row_idx, 5] = pc_name  # 5 PubChem name
+                pubchem_df.iloc[row_idx, 6] = pc_cid   # 6 PubChem CID
 
-            # Now we have more information, so let's try to search ChEBI again
+                if not pc_cid:
+                    pc_cid = get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey)
+                pubchem_df.iloc[row_idx, 7] = pc_cid  # 7 PubChem CID, if none get from InChIKey search (Cactus, OBSIN)
+                pubchem_df.iloc[row_idx, 8] = csid  # 8 ChemSpider ID (CSID) from INCHI
+                pubchem_df.iloc[row_idx, 9] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # 9 final smiles
+                final_inchi = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # 10 final inchi
+                pubchem_df.iloc[row_idx, 10] = final_inchi
+                final_inchi_key = get_ranked_values(pc_inchi_key, cactus_stdinchikey, opsin_stdinchikey, None)  # 11 final inchikey
+                pubchem_df.iloc[row_idx, 11] = final_inchi_key
+                pubchem_df.iloc[row_idx, 12] = pc_smiles  # 12 pc_smiles
+                pubchem_df.iloc[row_idx, 13] = cactus_smiles   # 13 cactus_smiles
+                pubchem_df.iloc[row_idx, 14] = opsin_smiles  # 14 opsin_smiles
+                pubchem_df.iloc[row_idx, 15] = pc_inchi  # 15 PubChem inchi
+                pubchem_df.iloc[row_idx, 16] = cactus_inchi  # 16 Cacus inchi
+                pubchem_df.iloc[row_idx, 17] = opsin_inchi   # 17 Opsin inchi
+                pubchem_df.iloc[row_idx, 18] = pc_inchi_key  # 18 PubChem stdinchikey
+                pubchem_df.iloc[row_idx, 19] = cactus_stdinchikey  # 19 cactus_stdinchikey
+                pubchem_df.iloc[row_idx, 20] = opsin_stdinchikey   # 20 opsin_stdinchikey
+                pubchem_df.iloc[row_idx, 21] = pc_formula   # 21 PubChem formula
+                pubchem_df.iloc[row_idx, 22] = pc_synonyms  # 22 PubChem synonyms
+                pubchem_df.iloc[row_idx, 23] = cactus_synonyms  # 23 Cactus synonyms
+                pubchem_df.iloc[row_idx, 24] = pc_structure  # 24 PubChem structure (SDF)
 
-            if final_inchi_key and len(final_inchi_key) > 0:
-                chebi_id, inchi, inchikey, name, smiles, formula = direct_chebi_search(final_inchi_key, comp_name)
-                if chebi_id:
-                    database_identifier = chebi_id
-                    chemical_formula = formula
-                    smiles = smiles
-                    inchi = inchi
-                    name = name
+                # Now we have more information, so let's try to search ChEBI again
 
-                    logger.info(" -- Found ChEBI id " + database_identifier + " based on final InChIKey")
-                    print(' -- Found ChEBI id ' + database_identifier + ' based on final InChIKey')
-                    pubchem_df.iloc[row_idx, 0] = database_identifier
-                    pubchem_df.iloc[row_idx, 1] = chemical_formula
-                    pubchem_df.iloc[row_idx, 2] = smiles
-                    pubchem_df.iloc[row_idx, 3] = inchi
-                    # 4 is name / metabolite_identification from MAF
+                if final_inchi_key and len(final_inchi_key) > 0:
+                    chebi_id, inchi, inchikey, name, smiles, formula = direct_chebi_search(final_inchi_key, comp_name)
+                    if chebi_id:
+                        database_identifier = chebi_id
+                        chemical_formula = formula
+                        smiles = smiles
+                        inchi = inchi
+                        name = name
 
-                    if name:  # Add to the annotated file as well
-                        if database_identifier:
-                            maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
-                        if chemical_formula:
-                            maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
-                        if smiles:
-                            maf_df.iloc[row_idx, int(standard_maf_columns['smiles'])] = smiles
-                        if inchi:
-                            maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
+                        logger.info("    -- Found ChEBI id " + database_identifier + " based on final InChIKey")
+                        print('    -- Found ChEBI id ' + database_identifier + ' based on final InChIKey')
+                        pubchem_df.iloc[row_idx, 0] = database_identifier
+                        pubchem_df.iloc[row_idx, 1] = chemical_formula
+                        pubchem_df.iloc[row_idx, 2] = smiles
+                        pubchem_df.iloc[row_idx, 3] = inchi
+                        # 4 is name / metabolite_identification from MAF
+
+                        if name:  # Add to the annotated file as well
+                            if database_identifier:
+                                maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
+                            if chemical_formula:
+                                maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
+                            if smiles:
+                                maf_df.iloc[row_idx, int(standard_maf_columns['smiles'])] = smiles
+                            if inchi:
+                                maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
+
+                    else:
+                        # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
+                        sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list)
+
+            logger.info("    -- Search took %s seconds" % round(time.time() - start_time, 2))
+            print("    -- Search took %s seconds" % round(time.time() - start_time, 2))
+        else:
+            print("    -- Skipping. Found database id  " + database_id)
 
         row_idx += 1
-        logger.info(" -- Search took %s seconds ---" % round(time.time() - start_time, 2))
-        print(" -- Search took %s seconds ---" % round(time.time() - start_time, 2))
 
     write_tsv(maf_df, short_file_name + "_annotated.tsv")
-    write_tsv(pubchem_df, short_file_name + "_pubchem.tsv")
+    pubchem_file = short_file_name + pubchem_end
+    write_tsv(pubchem_df, pubchem_file)
+    if sdf_file_list:
+        concatenate_sdf_files(sdf_file_list, short_file_name + '_complete.sdf')
+    return maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file
 
-    return maf_df, maf_len, new_maf_df, new_maf_len
+
+def concatenate_sdf_files(sdf_file_list, sdf_file_name):
+    # Create a new concatenated SDF file
+    with open(sdf_file_name, 'w') as outfile:
+        for fname in sdf_file_list:
+            # First remove the hydrogens. OpenBabel 'Delete hydrogens (make implicit)'
+            remove_hydrogens(fname)
+            with open(fname) as infile:
+                for line in infile:
+                    outfile.write(line)
+
+    # If we have a real new SDF file, remove the smaller sdf files
+    sdf_file = Path(sdf_file_name)
+    if sdf_file.is_file():
+        for fname in sdf_file_list:
+            try:
+                sdf_path = Path(fname)
+                sdf_path.unlink()
+            except Exception as e:
+                logger.error('Could not remove file' + sdf_path)
+                logger.exception(str(e))
+
+
+def remove_hydrogens(sdf_file):
+    for mol in pybel.readfile("sdf", sdf_file):
+        mol.removeh()
+
+    if mol:
+        with open(sdf_file, 'w') as outfile:
+            outfile.write(mol)
+
+
+def classyfire(final_inchi):
+    url = "http://classyfire.wishartlab.com"
+    chunk_size = 1000
+    sleep_interval = 60
 
 
 def direct_chebi_search(final_inchi, comp_name):
@@ -231,21 +309,20 @@ def direct_chebi_search(final_inchi, comp_name):
     return chebi_id, inchi, inchikey, name, smiles, formula
 
 
-def get_csid(inchikey1, inchikey2):
+def get_csid(inchikey):
     csid = ""
     csurl_base = 'http://parts.chemspider.com/JSON.ashx?op='
 
-    if [inchikey1, inchikey2]:
-        for inchikey in [inchikey1, inchikey2]:
-            if inchikey:
-                url1 = csurl_base + 'SimpleSearch&searchOptions.QueryText=' + inchikey
-                resp1 = requests.get(url1)
-                if resp1.status_code == 200:
-                    url2 = csurl_base + 'GetSearchResult&rid=' + resp1.text
-                    resp2 = requests.get(url2)
-                    if resp2.status_code == 200:
-                        csid = resp2.text
-                        return csid.replace('[', '').replace(']', '')
+    if inchikey:
+        url1 = csurl_base + 'SimpleSearch&searchOptions.QueryText=' + inchikey
+        resp1 = requests.get(url1)
+        if resp1.status_code == 200:
+            url2 = csurl_base + 'GetSearchResult&rid=' + resp1.text
+            resp2 = requests.get(url2)
+            if resp2.status_code == 200:
+                csid = resp2.text
+                csid = csid.replace('[', '').replace(']', '').split(',')[0]
+                return csid
     return csid
 
 
@@ -253,7 +330,7 @@ def get_pubchem_cid_on_inchikey(inchikey1, inchikey2):
     pc_cid = ''
     for inchikey in [inchikey1, inchikey2]:
         if inchikey:
-            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms = \
+            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure = \
                 pubchem_search(inchikey, search_type='inchikey')
             if pc_cid:
                 return pc_cid
@@ -302,7 +379,6 @@ def create_pubchem_df(maf_df):
     pubchem_df['cactus_synonyms'] = ''  # 23
 
     pubchem_df['structure'] = ''  # 24
-
 
     return pubchem_df
 
@@ -392,9 +468,7 @@ def pubchem_search(comp_name, search_type='name'):
     cid = ''
     formula = ''
     synonyms = ''
-
-    #if ',' in comp_name:
-    #    comp_name = comp_name.split(',')[0]
+    structure = ''
 
     try:
         compound = None
@@ -412,6 +486,7 @@ def pubchem_search(comp_name, search_type='name'):
             inchi_key = compound.inchikey
             smiles = compound.canonical_smiles
             iupac = compound.iupac_name
+            iupac = iupac.replace('~', '').replace('{', '').replace('}', '')
             cid = compound.cid
             formula = compound.molecular_formula
             for synonym in compound.synonyms:
@@ -427,7 +502,17 @@ def pubchem_search(comp_name, search_type='name'):
         logger.error("Unable to search PubChem for compound " + comp_name)
         logger.error(error)
 
-    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms
+    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, structure
+
+
+def get_sdf(study_location, cid, iupac, sdf_file_list):
+    if study_location and cid:
+        logger.info("    -- Getting SDF for CID " + cid + " for name " + iupac)
+        print("    -- Getting SDF for CID " + cid + " for name " + iupac)
+        file_name = str(cid) + ' - ' + iupac + '.sdf'
+        pcp.download('SDF', study_location + '/' + file_name, cid, overwrite=True)
+        sdf_file_list.append(file_name)
+    return sdf_file_list
 
 
 class SplitMaf(Resource):
@@ -485,6 +570,8 @@ class SplitMaf(Resource):
     )
     def post(self, study_id):
 
+        http_file_location = http_base_location + study_id + '/files'
+
         # param validation
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
@@ -518,17 +605,16 @@ class SplitMaf(Resource):
                 file_name = file['file']
                 if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
                     maf_count += 1
-                    maf_df, maf_len, new_maf_df, new_maf_len = check_maf_for_pipes(study_location, file_name)
+                    maf_df, maf_len, new_maf_df, new_maf_len, split_file_name = \
+                        check_maf_for_pipes(study_location, file_name)
                     if maf_len != new_maf_len:
                         maf_changed += 1
         else:
-            maf_df, maf_len, new_maf_df, new_maf_len = check_maf_for_pipes(study_location, annotation_file_name)
-            # Dict for the data (rows)
-            df_data_dict = totuples(new_maf_df.reset_index(), 'rows')
-            # Get an indexed header row
-            df_header = get_table_header(new_maf_df)
+            maf_df, maf_len, new_maf_df, new_maf_len, split_file_name = \
+                check_maf_for_pipes(study_location, annotation_file_name)
 
-            return {"maf_rows": maf_len, "new_maf_rows": new_maf_len, "header": df_header, "data": df_data_dict}
+            return {"maf_rows": maf_len, "new_maf_rows": new_maf_len,
+                    "file_name": http_file_location + split_file_name.split(study_id)[1]}
 
         return {"success": str(maf_count) + " MAF files checked for pipelines, " +
                            str(maf_changed) + " files needed updating."}
@@ -589,6 +675,7 @@ class SearchNamesMaf(Resource):
     )
     def post(self, study_id):
 
+        http_file_location = http_base_location + study_id + '/files'
         # param validation
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
@@ -621,17 +708,13 @@ class SearchNamesMaf(Resource):
                 file_name = file['file']
                 if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
                     maf_count += 1
-                    maf_df, maf_len, new_maf_df, new_maf_len = search_and_update_maf(study_location, file_name)
+                    maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = search_and_update_maf(study_location, file_name)
                     if maf_len != new_maf_len:
                         maf_changed += 1
         else:
-            maf_df, maf_len, new_maf_df, new_maf_len = search_and_update_maf(study_location, annotation_file_name)
-            # Dict for the data (rows)
-            df_data_dict = totuples(new_maf_df.reset_index(), 'rows')
-            # Get an indexed header row
-            df_header = get_table_header(new_maf_df)
-
-            return {"in_maf_rows": maf_len, "out_maf_rows": new_maf_len}
+            maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = search_and_update_maf(study_location, annotation_file_name)
+            return {"in_maf_rows": maf_len, "out_maf_rows": new_maf_len,
+                    "pubchem_file": http_file_location + pubchem_file.split(study_id)[1]}
 
         return {"success": str(maf_count) + " MAF files checked for pipelines, " +
                            str(maf_changed) + " files needed updating."}
