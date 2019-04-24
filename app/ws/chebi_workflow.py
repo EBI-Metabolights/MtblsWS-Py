@@ -4,7 +4,7 @@ import requests
 import cirpy
 import time
 import pubchempy as pcp
-import pybel
+#import pybel
 import ssl
 from zeep import Client
 from pathlib import Path
@@ -114,7 +114,7 @@ def search_and_update_maf(study_location, annotation_file_name):
     for idx, row in short_df.iterrows():
         database_id = row[0]
         comp_name = row[1]
-        print(str(idx) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
+        print(str(idx+1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
         if not database_id:
             start_time = time.time()
             chebi_found = False
@@ -227,7 +227,8 @@ def search_and_update_maf(study_location, annotation_file_name):
 
                     else:
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
-                        sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list)
+                        # and the classyFire SDF
+                        sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list, final_inchi)
 
             logger.info("    -- Search took %s seconds" % round(time.time() - start_time, 2))
             print("    -- Search took %s seconds" % round(time.time() - start_time, 2))
@@ -240,45 +241,76 @@ def search_and_update_maf(study_location, annotation_file_name):
     pubchem_file = short_file_name + pubchem_end
     write_tsv(pubchem_df, pubchem_file)
     if sdf_file_list:
-        concatenate_sdf_files(sdf_file_list, short_file_name + '_complete.sdf')
+        concatenate_sdf_files(sdf_file_list, short_file_name + '_complete.sdf', short_file_name + '_classyfire.sdf')
+
     return maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file
 
 
-def concatenate_sdf_files(sdf_file_list, sdf_file_name):
+def concatenate_sdf_files(sdf_file_list, sdf_file_name, classyfire_file_name):
+
     # Create a new concatenated SDF file
     with open(sdf_file_name, 'w') as outfile:
-        for fname in sdf_file_list:
+        # SDF file list = [file name, classyFire process id]
+        for entry in sdf_file_list:
+            fname, cf_id = entry
+        # for fname in sdf_file_list:
             # First remove the hydrogens. OpenBabel 'Delete hydrogens (make implicit)'
-            remove_hydrogens(fname)
+            # remove_hydrogens(fname)
             with open(fname) as infile:
                 for line in infile:
                     outfile.write(line)
 
-    # If we have a real new SDF file, remove the smaller sdf files
-    sdf_file = Path(sdf_file_name)
-    if sdf_file.is_file():
-        for fname in sdf_file_list:
-            try:
-                sdf_path = Path(fname)
-                sdf_path.unlink()
-            except Exception as e:
-                logger.error('Could not remove file' + sdf_path)
-                logger.exception(str(e))
+        # If we have a real new SDF file, remove the smaller sdf files
+        sdf_file = Path(sdf_file_name)
+        if sdf_file.is_file():
+            for fname in sdf_file_list:
+                try:
+                    sdf_path = Path(fname)
+                    sdf_path.unlink()
+                except Exception as e:
+                    logger.error('Could not remove file' + sdf_path)
+                    logger.exception(str(e))
+
+        # Now, get the classyFire queries, add to classyfire_file_name
+        get_classyfire_results(cf_id, classyfire_file_name)
 
 
-def remove_hydrogens(sdf_file):
-    for mol in pybel.readfile("sdf", sdf_file):
-        mol.removeh()
+# def remove_hydrogens(sdf_file):
+#     for mol in pybel.readfile("sdf", sdf_file):
+#         mol.removeh()
+#
+#     if mol:
+#         with open(sdf_file, 'w') as outfile:
+#             outfile.write(mol)
 
-    if mol:
-        with open(sdf_file, 'w') as outfile:
-            outfile.write(mol)
 
-
-def classyfire(final_inchi):
+def classyfire(inchi):
+    print("    -- Querying ClassyFire")
     url = "http://classyfire.wishartlab.com"
-    chunk_size = 1000
-    sleep_interval = 60
+    label = 'MetaboLights WS'
+    query_id = None
+    try:
+        r = requests.post(url + '/queries.json',
+                          data='{"label": "%s", "query_input": "%s", "query_type": "STRUCTURE"}' % (label, inchi),
+                          headers={"Content-Type": "application/json"})
+        r.raise_for_status()
+        query_id = r.json()['id']
+    except Exception as e:
+        logger.error(str(e))
+        print("    -- Error querying ClassyFire: " + str(e))
+    return query_id
+
+
+def get_classyfire_results(query_id, classyfire_file_name):
+    url = "http://classyfire.wishartlab.com"
+    return_format = 'sdf'  # 'json'
+    r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
+                     headers={"Content-Type": "application/%s" % return_format})
+    r.raise_for_status()
+
+    if len(r.text) > 1:
+        with open(classyfire_file_name, "a") as cf_file:
+            cf_file.write(r.text)
 
 
 def direct_chebi_search(final_inchi, comp_name):
@@ -288,8 +320,8 @@ def direct_chebi_search(final_inchi, comp_name):
     name = ""
     smiles = ""
     formula = ""
-    logger.info(" -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
-    print(" -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
+    logger.info("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
+    print("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
     url = 'https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl'
     client = Client(url)
     try:
@@ -505,13 +537,21 @@ def pubchem_search(comp_name, search_type='name'):
     return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, structure
 
 
-def get_sdf(study_location, cid, iupac, sdf_file_list):
+def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi):
     if study_location and cid:
-        logger.info("    -- Getting SDF for CID " + cid + " for name " + iupac)
-        print("    -- Getting SDF for CID " + cid + " for name " + iupac)
+        if not iupac or len(iupac) < 1:
+            iupac = 'no name given'
+        classifyre_id = ''
+        logger.info("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
+        print("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
         file_name = str(cid) + ' - ' + iupac + '.sdf'
         pcp.download('SDF', study_location + '/' + file_name, cid, overwrite=True)
-        sdf_file_list.append(file_name)
+
+        if final_inchi:
+            classifyre_id = classyfire(final_inchi)
+
+        sdf_file_list.append([file_name, classifyre_id])
+
     return sdf_file_list
 
 
@@ -622,11 +662,11 @@ class SplitMaf(Resource):
 
 class SearchNamesMaf(Resource):
     @swagger.operation(
-        summary="Search using compound names in MAF (curator only)",
+        summary="Search external resources using compound names in MAF (curator only)",
         nickname="Search compound names",
         notes="Search and populate a given Metabolite Annotation File based on the 'metabolite_identification' column. "
-              "New MAF files will be created with extensions '_annotated.tsv' and '_pubchem.tsv'. "
-              "If no annotation_file_name is given, all MAF in the study is processed",
+              "New MAF files will be created with extensions '_annotated.tsv' and '_pubchem.tsv'. These form part of "
+              "the ChEBI submission pipeline. If no annotation_file_name is given, all MAF in the study are processed",
         parameters=[
             {
                 "name": "study_id",
