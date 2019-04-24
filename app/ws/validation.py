@@ -307,7 +307,7 @@ class Validation(Resource):
                 "dataType": "string"
             },
             {
-                "name": "val_section",
+                "name": "section",
                 "description": "Specify which validations to run, default is all: "
                                "isa-tab_metadata,publication,protocols,people,samples,assays,maf,files",
                 "required": False,
@@ -317,14 +317,14 @@ class Validation(Resource):
                 "dataType": "string",
             },
             {
-                "name": "errors_only",
-                "description": "Only report validation errors.",
-                "paramType": "header",
-                "type": "Boolean",
-                "defaultValue": False,
-                "format": "application/json",
+                "name": "levels",
+                "description": "Specify which success-errors levels to report, default is all: "
+                               "errors,warning,info,success",
                 "required": False,
-                "allowMultiple": False
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
             },
             {
                 "name": "user_token",
@@ -373,18 +373,20 @@ class Validation(Resource):
         if not write_access:
             abort(403)
 
-        errors_only = False
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('val_section', help="Validation section", location="args")
+        parser.add_argument('section', help="Validation section", location="args")
+        parser.add_argument('levels', help="Validation message levels", location="args")
         args = parser.parse_args()
-        val_section = args['val_section']
-        if val_section is None:
-            val_section = 'all'  # All
-        if "errors_only" in request.headers and request.headers["errors_only"].lower() == 'true':
-            errors_only = True
+        section = args['section']
+        levels = args['levels']
+        if section is None:
+            section = 'all'
 
-        return validate_study(study_id, study_location, user_token, obfuscation_code, val_section, errors_only)
+        if levels is None:
+            levels = 'all'
+
+        return validate_study(study_id, study_location, user_token, obfuscation_code, section, levels)
 
 
 class OverrideValidation(Resource):
@@ -503,12 +505,16 @@ class OverrideValidation(Resource):
         return {"success": "Validations stored in the database"}
 
 
-def validate_study(study_id, study_location, user_token, obfuscation_code, validation_section='all', errors_only=False):
+def validate_study(study_id, study_location, user_token, obfuscation_code, validation_section='all', levels='all'):
     all_validations = []
     validation_schema = None
     error_found = False
     warning_found = False
     validation_section = validation_section.lower()
+
+    errors_only = False
+    if levels == 'errors':
+        errors_only = True
 
     try:
         validation_schema_file = app.config.get('VALIDATIONS_FILE')
@@ -885,7 +891,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                                 warning, file_name, errors_only=errors_only)
 
                 elif s_header.lower() == 'sample name':
-                    if len(row) >= 1:
+                    if row:
                         sample_name_list.append(row)
 
             if col_rows < all_rows:
