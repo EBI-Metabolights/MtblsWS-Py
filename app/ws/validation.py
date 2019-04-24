@@ -124,16 +124,16 @@ def return_validations(section, validations, override_list=[]):
 
     if error_found:
         validates = False
-        ret_list = {section: validations, "status_message": "Validation failed",
-                    "overall_status": error}
+        ret_list = {section: validations, "message": "Validation failed",
+                    "status": error}
     elif warning_found:
         amber_warning = True
         ret_list = {section: validations,
-                    "status_message": "Some optional information is missing for your study",
-                    "overall_status": warning}
+                    "message": "Some optional information is missing for your study",
+                    "status": warning}
     else:
-        ret_list = {section: validations, "status_message": "Successful validation",
-                    "overall_status": success}
+        ret_list = {section: validations, "message": "Successful validation",
+                    "status": success}
 
     return validates, amber_warning, ret_list
 
@@ -604,12 +604,12 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
         warning_found = True
 
     if error_found:
-        return {"validation": {"study_validation_status": error, "validations": all_validations}}
+        return {"validation": {"status": error, "validations": all_validations}}
 
     if warning_found:
-        return {"validation": {"study_validation_status": warning, "validations": all_validations}}
+        return {"validation": {"status": warning, "validations": all_validations}}
 
-    return {"validation": {"study_validation_status": success, "validations": all_validations}}
+    return {"validation": {"status": success, "validations": all_validations}}
 
 
 def get_assay_column_validations(validation_schema, a_header):
