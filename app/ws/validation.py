@@ -33,7 +33,7 @@ def add_msg(validations, section, message, status, meta_file="", value="", desrc
         add_message = True
 
     if add_message:
-        validations.append({section: message, "status": status, "metadata_file": meta_file,
+        validations.append({"message": message, "status": status, "metadata_file": meta_file,
                             "value": value, "desciption": desrc})
 
 
@@ -124,15 +124,15 @@ def return_validations(section, validations, override_list=[]):
 
     if error_found:
         validates = False
-        ret_list = {section: validations, "message": "Validation failed",
+        ret_list = {"section": section, "details": validations, "message": "Validation failed",
                     "status": error}
     elif warning_found:
         amber_warning = True
-        ret_list = {section: validations,
+        ret_list = {"section": section, "details": validations,
                     "message": "Some optional information is missing for your study",
                     "status": warning}
     else:
-        ret_list = {section: validations, "message": "Successful validation",
+        ret_list = {"section": section, "details": validations, "message": "Successful validation",
                     "status": success}
 
     return validates, amber_warning, ret_list
