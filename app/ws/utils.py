@@ -714,6 +714,8 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'metadata', none_active_status, folder
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
+    elif ext in ('.sdf', '.mol'):
+        return 'chemical_structure', active_status, folder
     elif ext in ('.png', '.tiff', '.tif', '.jpeg', '.mpg', '.jpg'):
         return 'image', active_status, folder
     elif ext in ('.result_c', '.mcf', '.mcf_idx', '.hdx', '.u2', '.method', '.unt', '.hss', '.ami', '.baf', '.content',

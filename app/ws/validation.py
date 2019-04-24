@@ -474,8 +474,9 @@ class OverrideValidation(Resource):
         # First, get all existing validations from the database
         try:
             query_list = override_validations(study_id, 'query')
-            for val in query_list[0].split('|'):
-                override_list.append(val)
+            if query_list:
+                for val in query_list[0].split('|'):
+                    override_list.append(val)
         except Exception as e:
             logger.error('Can not query existing overridden validations from the database')
 
@@ -528,8 +529,9 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     override_list = []
     try:
         query_list = override_validations(study_id, 'query')
-        for val in query_list[0].split('|'):
-            override_list.append(val)
+        if query_list:
+            for val in query_list[0].split('|'):
+                override_list.append(val)
     except Exception as e:
         logger.error('Can not query overridden validations from the database')
 
@@ -779,6 +781,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True)
     sample_cnt = 0
+    raw_file_found = False
+    derived_file_found = False
     for file in study_files:
         file_name = file['file']
         file_type = file['type']
@@ -824,7 +828,23 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                 add_msg(validations, val_section, "Empty files are not allowed", error, val_section,
                         value=file_name, errors_only=errors_only)
 
+        if file_type == 'raw':
+            raw_file_found = True
+
+        if file_type == 'derived':
+            derived_file_found = True
+
         file_name_list.append(file_name)
+
+    if not raw_file_found and not derived_file_found:
+        add_msg(validations, val_section, "No raw or derived files found", error, val_section,
+                value="", errors_only=errors_only)
+    elif not raw_file_found:
+        add_msg(validations, val_section, "No raw files found", error, val_section,
+                value="", errors_only=errors_only)
+    elif not derived_file_found:
+        add_msg(validations, val_section, "No derived files found", error, val_section,
+                value="", errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
