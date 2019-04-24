@@ -839,11 +839,14 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
     if not raw_file_found and not derived_file_found:
         add_msg(validations, val_section, "No raw or derived files found", error, val_section,
                 value="", errors_only=errors_only)
-    elif not raw_file_found:
-        add_msg(validations, val_section, "No raw files found", error, val_section,
+    elif not raw_file_found and derived_file_found:
+        add_msg(validations, val_section, "No raw files found, but there are derived files", warning, val_section,
                 value="", errors_only=errors_only)
     elif not derived_file_found:
         add_msg(validations, val_section, "No derived files found", error, val_section,
+                value="", errors_only=errors_only)
+    elif not raw_file_found:
+        add_msg(validations, val_section, "No raw files found", error, val_section,
                 value="", errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
