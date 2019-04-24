@@ -318,6 +318,15 @@ class CopyFilesFolders(Resource):
                 "default": True
             },
             {
+                "name": "file_location",
+                "description": "Alternative EMBL-EBI filesystem location for raw files, default is private FTP",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -360,12 +369,15 @@ class CopyFilesFolders(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('include_raw_data', help='Include raw data')
+        parser.add_argument('file_location', help='Alternative file location')
         include_raw_data = False
+        file_location = None
 
         # If false, only sync ISA-Tab metadata files
         if request.args:
             args = parser.parse_args(req=request)
             include_raw_data = False if args['include_raw_data'].lower() != 'true' else True
+            file_location = args['file_location']
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -375,6 +387,8 @@ class CopyFilesFolders(Resource):
 
         status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
         upload_location = status["os_upload_path"]
+        if file_location:
+            upload_location = file_location
 
         logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location, study_location)
         status, message = copy_files_and_folders(upload_location, study_location,

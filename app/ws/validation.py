@@ -309,7 +309,7 @@ class Validation(Resource):
             {
                 "name": "section",
                 "description": "Specify which validations to run, default is all: "
-                               "isa-tab_metadata,publication,protocols,people,samples,assays,maf,files",
+                               "isa-tab, publication, protocols, people, samples, assays, maf, files",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -319,7 +319,7 @@ class Validation(Resource):
             {
                 "name": "level",
                 "description": "Specify which success-errors levels to report, default is all: "
-                               "errors,warning,info,success",
+                               "errors, warning, info, success",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -1328,7 +1328,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
 
 
 def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list,
-                              val_section="isa-tab_metadata", errors_only=False):
+                              val_section="isa-tab", errors_only=False):
     validations = []
 
     if validation_schema:
