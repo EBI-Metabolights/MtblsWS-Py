@@ -120,6 +120,7 @@ def initialize_app(flask_app):
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
+    api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
 
 
     # Direct API consumers/Partners
@@ -133,7 +134,6 @@ def initialize_app(flask_app):
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
     #ToDo, complete this: api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
-    api.add_resource(Validation, res_path + "/ebi-internal/<string:study_id>/validate-study")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study//override")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split_maf")
     api.add_resource(SearchNamesMaf, res_path + "/ebi-internal/<string:study_id>/chebi_pipeline")
