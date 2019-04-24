@@ -355,7 +355,7 @@ class Validation(Resource):
             }
         ]
     )
-    def post(self, study_id):
+    def get(self, study_id):
 
         user_token = None
         # User authentication
@@ -380,6 +380,7 @@ class Validation(Resource):
         args = parser.parse_args()
         section = args['section']
         levels = args['levels']
+
         if section is None:
             section = 'all'
 
