@@ -317,7 +317,7 @@ class Validation(Resource):
                 "dataType": "string",
             },
             {
-                "name": "levels",
+                "name": "level",
                 "description": "Specify which success-errors levels to report, default is all: "
                                "errors,warning,info,success",
                 "required": False,
