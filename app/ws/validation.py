@@ -554,7 +554,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
         all_validations.append(pub_validation)
 
     # Validate detailed metadata in ISA-Tab structure
-    val_section = "isa-tab_metadata"
+    val_section = "isa-tab"
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(
             isa_inv, isa_study, validation_schema, inv_file, override_list, val_section, errors_only=errors_only)
@@ -1079,7 +1079,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
 
             if last_name:
                 if len(last_name) >= last_name_val_len:
-                    add_msg(validations, val_section, "Persons last name validates", success, file_name,
+                    add_msg(validations, val_section, "Persons last name " + last_name + " validates ", success, file_name,
                             errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, last_name_val_error, error, file_name, value=last_name,
@@ -1087,7 +1087,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
 
             if first_name:
                 if len(first_name) >= first_name_val_len:
-                    add_msg(validations, val_section, "Persons first name validates", success, file_name,
+                    add_msg(validations, val_section, "Persons first name " + first_name + " validates", success, file_name,
                             errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, first_name_val_error, error, file_name, value=first_name,
@@ -1095,7 +1095,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
 
             if email:
                 if len(email) >= email_val_len:
-                    add_msg(validations, val_section, "Persons email validates", success, file_name,
+                    add_msg(validations, val_section, "Persons email  " + email + " validates", success, file_name,
                             errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, email_val_error, error, file_name, value=email,
@@ -1103,7 +1103,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
 
             if affiliation:
                 if len(affiliation) >= affiliation_val_len:
-                    add_msg(validations, val_section, "Persons affiliation validates", success, file_name,
+                    add_msg(validations, val_section, "Persons affiliation  " + affiliation + " validates", success, file_name,
                             errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, affiliation_val_error, error, file_name, value=affiliation,
@@ -1164,8 +1164,8 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                 add_msg(validations, val_section, title_val_error, error, file_name, errors_only=errors_only)
             elif publication.title:
                 if len(publication.title) >= title_val_len:
-                    add_msg(validations, val_section, "Found the title of the publication", success, file_name,
-                            errors_only=errors_only)
+                    add_msg(validations, val_section, "Found the title of the publication " + publication.title,
+                            success, file_name, errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, title_val_error, warning,
                             file_name, value=publication.title, desrc=title_val_description, errors_only=errors_only)
@@ -1175,7 +1175,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                 doi = False
             elif publication.doi:
                 if check_doi(publication.doi, doi_val):
-                    add_msg(validations, val_section, "Found the doi for the publication", success, file_name,
+                    add_msg(validations, val_section, "Found the doi " + publication.doi + " for the publication", success, file_name,
                             errors_only=errors_only)
                     doi = True
                 else:
@@ -1193,7 +1193,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                             value=publication.pubmed_id, desrc=pmid_val_description)
 
                 if len(publication.pubmed_id) >= int(pmid_val_len):
-                    add_msg(validations, val_section, "Found the pmid for the publication", success, file_name,
+                    add_msg(validations, val_section, "Found the pmid " +  publication.pubmed_id + " for the publication", success, file_name,
                             errors_only=errors_only)
                     pmid = True
                 else:
