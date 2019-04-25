@@ -1,5 +1,6 @@
 import json
 import traceback
+import requests
 from app.ws.study_files import get_all_files_from_filesystem
 from flask import request, abort
 from flask_restful import Resource, reqparse
@@ -159,7 +160,7 @@ def check_file(file_name_and_column, study_location, file_name_list):
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
     if file_name not in file_name_list:
-        return False, ' - missing - ', "File " + file_name + " does not exist"
+        return False, ' - unknown - ', "File " + file_name + " does not exist"
 
     file_type, status, folder = map_file_type(file_name, study_location)
     if is_empty_file(os.path.join(study_location, file_name)):
@@ -409,16 +410,23 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
 
     try:
         validation_schema_file = app.config.get('VALIDATIONS_FILE')
-        with open(validation_schema_file, 'r') as json_file:
-            validation_schema = json.load(json_file)
-    except:
+
+        if validation_schema_file.startswith('http'):
+            response = requests.get(validation_schema_file)
+            validation_schema = json.loads(response.content)
+        else:
+            with open(validation_schema_file, 'r') as json_file:
+                validation_schema = json.load(json_file)
+
+    except Exception as e:
         all_validations.append({"info": "Could not find the validation schema, only basic validation will take place",
                                 "status": success})
+        logger.error(str(e))
 
     override_list = []
     try:
         query_list = override_validations(study_id, 'query')
-        if query_list:
+        if query_list and query_list[0]:
             for val in query_list[0].split('|'):
                 override_list.append(val)
     except Exception as e:
@@ -732,7 +740,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
         add_msg(validations, val_section, "No raw files found, but there are derived files", warning, val_section,
                 value="", descr="Ideally you should provide both raw and derived files", log_category=log_category)
     elif not derived_file_found:
-        add_msg(validations, val_section, "No derived files found", error, val_section,
+        add_msg(validations, val_section, "No derived files found", warning, val_section,
                 value="", log_category=log_category)
     elif not raw_file_found:
         add_msg(validations, val_section, "No raw files found", error, val_section,
@@ -1066,7 +1074,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                 doi = False
             elif publication.doi:
                 if check_doi(publication.doi, doi_val):
-                    add_msg(validations, val_section, "Found the doi " + publication.doi + " for the publication",
+                    add_msg(validations, val_section, "Found the doi '" + publication.doi + "' for the publication",
                             success, file_name, log_category=log_category)
                     doi = True
                 else:

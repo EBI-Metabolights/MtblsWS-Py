@@ -126,6 +126,10 @@ def get_curation_log(user_token):
 
 
 def biostudies_acc_to_mtbls(biostudies_id):
+
+    if not biostudies_id:
+        return None
+
     # Default query to get the mtbls accession
     query = "SELECT acc from studies where biostudies_acc = '#biostudies_id#';"
     query = query.replace("#biostudies_id#", biostudies_id)
@@ -145,6 +149,10 @@ def biostudies_acc_to_mtbls(biostudies_id):
 
 
 def biostudies_accession(study_id, biostudies_id, method):
+
+    if not study_id:
+        return None
+
     # Default query to get the biosd accession
     s_query = "SELECT biostudies_acc from studies where acc = '#study_id#';"
 
@@ -233,6 +241,10 @@ def check_access_rights(user_token, study_id):
 
 
 def study_submitters(study_id, user_email, method):
+
+    if not study_id or user_email:
+        return None
+
     if method == 'add':
         query = 'insert into study_user(userid,studyid) ' \
                 'select u.id, s.id from users u, studies s where u.email = %s and acc=%s;'
@@ -255,6 +267,9 @@ def study_submitters(study_id, user_email, method):
 
 def override_validations(study_id, method, override=""):
 
+    if not study_id:
+        return None
+
     if method == 'query':
         query = "select override from studies where acc = '#study_id#';"
     elif method == 'update':
@@ -272,7 +287,7 @@ def override_validations(study_id, method, override=""):
             data = cursor.fetchall()
             conn.close()
             return data[0]
-        elif method == 'update':
+        elif method == 'update' and override:
             query = query.replace("#study_id#", study_id.upper())
             query = query.replace("#override#", override)
             query = query.replace('\\', '')
@@ -284,6 +299,10 @@ def override_validations(study_id, method, override=""):
 
 
 def execute_query(query, user_token, study_id=None):
+
+    if not user_token:
+        return None
+
     try:
         params = app.config.get('DB_PARAMS')
         conn = psycopg2.connect(**params)

@@ -11,8 +11,8 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.12.3"
-API_VERSION = "0.30.3"
+WS_APP_VERSION = "0.13.0"
+API_VERSION = "0.31.0"
 
 WS_APP_NAME = "MtblsWS-Py"
 WS_APP_DESCRIPTION = "MetaboLights RESTful WebService"
@@ -58,4 +58,4 @@ JIRA_PARAMS = {
 # Timeout in secounds when listing a large folder for files
 FILE_LIST_TIMEOUT = 30
 
-VALIDATIONS_FILE = "<path>/validations.json"
+VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
