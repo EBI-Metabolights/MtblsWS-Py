@@ -26,7 +26,7 @@ success = "success"
 info = "info"
 
 
-def add_msg(validations, section, message, status, meta_file="", value="", desrc="", errors_only=False):
+def add_msg(validations, section, message, status, meta_file="", value="", descr="", errors_only=False):
     if errors_only and (status == success or status == info):  # Do not include success and info messages
         add_message = False
     else:
@@ -34,7 +34,7 @@ def add_msg(validations, section, message, status, meta_file="", value="", desrc
 
     if add_message:
         validations.append({"message": message, "status": status, "metadata_file": meta_file,
-                            "value": value, "desciption": desrc})
+                            "value": value, "desciption": descr})
 
 
 def get_basic_validation_rules(validation_schema, part):
@@ -651,7 +651,7 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
         else:
             add_msg(validations, val_section, "Sample name '" + row + "' not found in sample sheet",
                     success, meta_file=assay.filename,
-                    desrc="Please create the sample in the sample sheet first", errors_only=errors_only)
+                    descr="Please create the sample in the sample sheet first", errors_only=errors_only)
     elif a_header.endswith(' File'):  # files exists?
         file_and_column = row + '|' + a_header
         if file_and_column not in unique_file_names:
@@ -679,7 +679,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         add_msg(validations, val_section, "Found assay(s) for this study", success, val_section,
                 errors_only=errors_only)
     else:
-        add_msg(validations, val_section, "Could not find any assays", error, desrc="Add assay(s) to the study",
+        add_msg(validations, val_section, "Could not find any assays", error, descr="Add assay(s) to the study",
                 errors_only=errors_only)
 
     for assay in isa_study.assays:
@@ -763,10 +763,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         status, file_type, file_description = check_file(files, study_location, file_name_list)
         if status:
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
-                    + column_name + "'", success, desrc=file_description, errors_only=errors_only)
+                    + column_name + "'", success, descr=file_description, errors_only=errors_only)
         else:
             add_msg(validations, val_section, "File '" + file_name + "' of type '" + file_type +
-                    "' is missing or not correct for column '" + column_name + "'", error, desrc=file_description,
+                    "' is missing or not correct for column '" + column_name + "'", error, descr=file_description,
                     errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
@@ -1017,12 +1017,12 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                         value=prot_name, errors_only=errors_only)
             else:
                 add_msg(validations, val_section, prot_name + ": " + name_val_error, error, file_name, value=prot_name,
-                        desrc=name_val_description, errors_only=errors_only)
+                        descr=name_val_description, errors_only=errors_only)
 
             if len(prot_desc) >= desc_val_len:
                 if prot_desc == 'Please update this protocol description':
                     add_msg(validations, "Protocol", prot_name + ": " + desc_val_error, warning, file_name,
-                            value=prot_desc, desrc='Please update this protocol description', errors_only=errors_only)
+                            value=prot_desc, descr='Please update this protocol description', errors_only=errors_only)
                 add_msg(validations, val_section, "Protocol description validates", success, file_name,
                         value=prot_desc, errors_only=errors_only)
             else:
@@ -1031,7 +1031,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                             value=prot_desc, errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, prot_name + ": " + desc_val_error, error, file_name,
-                            value=prot_desc, desrc=desc_val_description, errors_only=errors_only)
+                            value=prot_desc, descr=desc_val_description, errors_only=errors_only)
 
             if prot_params and len(prot_params.term) >= param_val_len:
                 add_msg(validations, val_section, "Protocol parameter(s) validates", success, file_name,
@@ -1039,10 +1039,10 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
             else:
                 if prot_params:
                     add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
-                            value=prot_params.term, desrc=param_val_description, errors_only=errors_only)
+                            value=prot_params.term, descr=param_val_description, errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
-                            value="", desrc=param_val_description, errors_only=errors_only)
+                            value="", descr=param_val_description, errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
@@ -1083,7 +1083,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                             errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, last_name_val_error, error, file_name, value=last_name,
-                            desrc=last_name_val_description, errors_only=errors_only)
+                            descr=last_name_val_description, errors_only=errors_only)
 
             if first_name:
                 if len(first_name) >= first_name_val_len:
@@ -1091,7 +1091,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                             errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, first_name_val_error, error, file_name, value=first_name,
-                            desrc=first_name_val_description, errors_only=errors_only)
+                            descr=first_name_val_description, errors_only=errors_only)
 
             if email:
                 if len(email) >= email_val_len:
@@ -1099,7 +1099,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                             errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, email_val_error, error, file_name, value=email,
-                            desrc=email_val_error, errors_only=errors_only)
+                            descr=email_val_error, errors_only=errors_only)
 
             if affiliation:
                 if len(affiliation) >= affiliation_val_len:
@@ -1107,7 +1107,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                             errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, affiliation_val_error, error, file_name, value=affiliation,
-                            desrc=affiliation_val_error, errors_only=errors_only)
+                            descr=affiliation_val_error, errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
@@ -1168,7 +1168,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                             success, file_name, errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, title_val_error, warning,
-                            file_name, value=publication.title, desrc=title_val_description, errors_only=errors_only)
+                            file_name, value=publication.title, descr=title_val_description, errors_only=errors_only)
 
             if not publication.doi:
                 add_msg(validations, val_section, doi_val_description, warning, file_name, errors_only=errors_only)
@@ -1191,7 +1191,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                     int(publication.pubmed_id)
                 except ValueError:
                     add_msg(validations, val_section, pmid_val_error, error, file_name,
-                            value=publication.pubmed_id, desrc=pmid_val_description)
+                            value=publication.pubmed_id, descr=pmid_val_description)
 
                 if len(publication.pubmed_id) >= int(pmid_val_len):
                     add_msg(validations, val_section,
@@ -1200,7 +1200,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                     pmid = True
                 else:
                     add_msg(validations, val_section, pmid_val_error, error, file_name,
-                            value=publication.pubmed_id, desrc=pmid_val_description, errors_only=errors_only)
+                            value=publication.pubmed_id, descr=pmid_val_description, errors_only=errors_only)
                     pmid = False
 
             if not doi or not pmid:
@@ -1219,7 +1219,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                             success, file_name, errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, author_val_error, error, file_name,
-                            value=publication.author_list, desrc=author_val_description, errors_only=errors_only)
+                            value=publication.author_list, descr=author_val_description, errors_only=errors_only)
 
             if not publication.status:
                 add_msg(validations, val_section, "Please provide the publication status",
@@ -1231,7 +1231,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                             success, file_name, errors_only=errors_only)
                 else:
                     add_msg(validations, val_section, status_val_error, success, file_name,
-                            value=pub_status.title, desrc=status_val_description, errors_only=errors_only)
+                            value=pub_status.title, descr=status_val_description, errors_only=errors_only)
     else:
         add_msg(validations, val_section, title_val_error, error, errors_only=errors_only)
 
@@ -1373,7 +1373,7 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
             add_msg(validations, val_section, "The title length validates", success, file_name, errors_only=errors_only)
         else:
             add_msg(validations, val_section, val_error, error, file_name,
-                    value=isa_study.title, desrc=title_descr, errors_only=errors_only)
+                    value=isa_study.title, descr=title_descr, errors_only=errors_only)
 
         # Description
         val_len, val_error, val_condition, val_type = extract_details(desc_rules)
@@ -1387,7 +1387,7 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
                     errors_only=errors_only)
         else:
             add_msg(validations, val_section, val_error, error, file_name,
-                    value=isa_study.description, desrc=desc_desrc, errors_only=errors_only)
+                    value=isa_study.description, descr=desc_desrc, errors_only=errors_only)
 
     else:
         add_msg(validations, val_section, "Can not find or read the investigation files", error,
