@@ -138,11 +138,11 @@ class IsaApiClient:
         except IndexError as e:
             logger.exception("Failed to find Investigation file from %s", study_id, std_path)
             logger.error(str(e))
-            abort(400, str(e))
+            abort(400)
         except Exception as e:
             logger.exception("Failed to find Investigation file from %s", study_id, std_path)
             logger.error(str(e))
-            abort(400, str(e))
+            abort(400)
         else:
             return isa_study, isa_inv, std_path
 

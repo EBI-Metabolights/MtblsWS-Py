@@ -287,7 +287,7 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, e
                     str(col_rows) + " rows found, but there should be " + str(all_rows),
                     warning, errors_only=errors_only)
         else:
-            add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
+            add_msg(validations, val_section, "Missing values for sample '" + column_name + "' in the MAF. " +
                     str(col_rows) + " rows found, but there should be " + str(all_rows),
                     info, errors_only=errors_only)
 
@@ -561,7 +561,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
         all_validations.append(isa_meta_validation)
 
     # Validate Person (authors)
-    val_section = "people"
+    val_section = "person"
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_person_validation = validate_contacts(
             isa_study, validation_schema, inv_file, override_list, val_section, errors_only=errors_only)
@@ -1047,7 +1047,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
     return return_validations(val_section, validations, override_list)
 
 
-def validate_contacts(isa_study, validation_schema, file_name, override_list, val_section="people", errors_only=False):
+def validate_contacts(isa_study, validation_schema, file_name, override_list, val_section="person", errors_only=False):
     # check for People ie. authors
     validations = []
 
@@ -1108,6 +1108,8 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                 else:
                     add_msg(validations, val_section, affiliation_val_error, error, file_name, value=affiliation,
                             descr=affiliation_val_error, errors_only=errors_only)
+    else:
+        add_msg(validations, val_section, "No study persons/authors found", error, file_name, errors_only=errors_only)
 
     return return_validations(val_section, validations, override_list)
 
@@ -1179,7 +1181,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                             success, file_name, errors_only=errors_only)
                     doi = True
                 else:
-                    add_msg(validations, val_section, doi_val_error, warning, file_name, doi,
+                    add_msg(validations, val_section, doi_val_error + ": " + publication.doi, warning, file_name, doi,
                             descr=publication.doi, errors_only=errors_only)
                     doi = False
 
@@ -1266,7 +1268,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
         logger.error("Cannot load ISA-Tab with sample and assay tables due to critical error: " + err)
 
     if isa_inv:
-        add_msg(validations, val_section, "Successfully read the i_Investigation.txt file", success,
+        add_msg(validations, val_section, "Successfully read the investigation file", success,
                 'i_Investigation.txt', errors_only=errors_only)
 
         if isa_study:
