@@ -975,27 +975,29 @@ class StudyContacts(Resource):
               <br>
               <b>Use contact's email or full name as a parameter to update a single contact.</b><pre><code>
 { 
-  "contact": {
-    "firstName": "Joe",
-    "lastName": "Blogs",
-    "email": "joe.blogs@cam.ac.uk",
-    "affiliation": "University of Cambridge",
-    "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
-    "fax": "01223123456",
-    "midInitials": "A",
-    "phone": "01223234567",
-    "roles": [
+  "contacts": [
       {
-        "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
-        "annotationValue": "Grant Principal Investigator",
-        "termSource": {
-          "file": "http://data.bioontology.org/ontologies/EFO",
-          "name": "",
-          "version": "132"
-        }
+        "firstName": "Joe",
+        "lastName": "Blogs",
+        "email": "joe.blogs@cam.ac.uk",
+        "affiliation": "University of Cambridge",
+        "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
+        "fax": "01223123456",
+        "midInitials": "A",
+        "phone": "01223234567",
+        "roles": [
+          {
+            "termAccession": "http://purl.obolibrary.org/obo/NCIT_C51826",
+            "annotationValue": "Grant Principal Investigator",
+            "termSource": {
+              "file": "http://data.bioontology.org/ontologies/EFO",
+              "name": "",
+              "version": "132"
+            }
+          }
+        ]
       }
-    ]
-  } 
+  ] 
 }
 
 </code></pre>''',
@@ -1121,17 +1123,18 @@ class StudyContacts(Resource):
         updated_contact = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            data = data_dict['contact']
-            # if partial=True missing fields will be ignored
-            result = PersonSchema().load(data, partial=True)
-            updated_contact = result.data
+            data = data_dict['contacts']
+            for contact in data:
+                # if partial=True missing fields will be ignored
+                result = PersonSchema().load(contact, partial=True)
+                updated_contact = result.data
 
-            # Check that the ontology is referenced in the investigation
-            isa_inv, updated_contact = roles_to_contacts(isa_inv, updated_contact)
-            term_anno = updated_contact.roles[0]
-            term_source = term_anno.term_source
-            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
-                                          term_source.file, term_source.description)
+                # Check that the ontology is referenced in the investigation
+                isa_inv, updated_contact = roles_to_contacts(isa_inv, updated_contact)
+                term_anno = updated_contact.roles[0]
+                term_source = term_anno.term_source
+                add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                              term_source.file, term_source.description)
 
         except (ValidationError, Exception):
             abort(400)
