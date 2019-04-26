@@ -955,6 +955,7 @@ class StudyContacts(Resource):
             return sch.dump(obj_list, many=True)
         else:
             # return a single obj
+            logger.info('Contact full_name' + full_name)
             found = False
             for index, obj in enumerate(obj_list):
                 if obj.email == email:
@@ -1026,7 +1027,7 @@ class StudyContacts(Resource):
             },
             {
                 "name": "full_name",
-                "description": "Contact's first and last name",
+                "description": "Contact's first and last name, concatenated without any extra characters",
                 "required": False,
                 "allowEmptyValue": False,
                 "allowMultiple": False,
@@ -1146,7 +1147,7 @@ class StudyContacts(Resource):
                     # update person details
                     isa_study.contacts[index] = updated_contact
                     break
-                elif person.first_name + ' ' + person.last_name == full_name:
+                elif person.first_name + person.last_name == full_name:
                     person_found = True
                     # update person details
                     isa_study.contacts[index] = updated_contact
