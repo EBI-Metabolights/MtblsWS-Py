@@ -660,7 +660,6 @@ def roles_to_contacts(isa_inv, new_contact):
 
 
 class StudyContacts(Resource):
-
     @swagger.operation(
         summary='Add new Study Contact',
         notes='''Add new Contact to a Study. <pre><code>
@@ -1196,6 +1195,15 @@ class StudyContacts(Resource):
                 "dataType": "string"
             },
             {
+                "name": "full_name",
+                "description": "Contact's first and last name, concatenated without any extra characters",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
                 "name": "save_audit_copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
@@ -1237,10 +1245,13 @@ class StudyContacts(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('email', help="Contact's email", location="args")
+        parser.add_argument('full_name', help="Contact's first and last name")
         args = parser.parse_args()
         email = args['email']
-        if email is None:
+        full_name = args['full_name']
+        if email is None and full_name is None:
             abort(404)
+            
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -1269,11 +1280,12 @@ class StudyContacts(Resource):
                                                          study_location=study_location)
         person_found = False
         for index, person in enumerate(isa_study.contacts):
-            if person.email == email:
+            if person.email == email or person.first_name + person.last_name == full_name:
                 person_found = True
                 # delete contact
                 del isa_study.contacts[index]
                 break
+
         if not person_found:
             abort(404)
         logger.info("A copy of the previous files will %s saved", save_msg_str)

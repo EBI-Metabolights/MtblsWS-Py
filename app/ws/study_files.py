@@ -267,8 +267,9 @@ without setting the "force" parameter to True''',
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
 
         for file in files:
-            f_name = file["name"]
             try:
+                f_name = file["name"]
+
                 if file_location == "study":
                     status, message = remove_file(study_location, f_name, allways_remove)
                 elif file_location == "upload":
@@ -604,7 +605,7 @@ class UnzipFiles(Resource):
                     zip_ref.extractall(study_location)
             except Exception as e:
                 msg = 'Could not extract zip file ' + f_name
-                logger.error(msg)
+                logger.error(msg + ":" + str(e))
                 return {'Error': msg}
 
             try:
