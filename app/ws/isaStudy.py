@@ -923,7 +923,6 @@ class StudyContacts(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # ToDo add more filters: lastName, firstName,...
         parser = reqparse.RequestParser()
         parser.add_argument('email', help="Contact's email")
         parser.add_argument('full_name', help="Contact's first and last name")
@@ -957,12 +956,10 @@ class StudyContacts(Resource):
             logger.info('Contact full_name' + full_name)
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.email == email:
+                if obj.email == email or obj.first_name + obj.last_name == full_name:
                     found = True
                     break
-                elif obj.first_name + obj.last_name == full_name:
-                    found = True
-                    break
+
             if not found:
                 abort(404)
             logger.info('Got %s', obj.email)
@@ -1092,6 +1089,7 @@ class StudyContacts(Resource):
         full_name = args['full_name']
         if email is None and full_name is None:
             abort(404)
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -1144,16 +1142,12 @@ class StudyContacts(Resource):
         person_found = False
         if (email and len(email) > 3) or (full_name and len(full_name) > 3):
             for index, person in enumerate(isa_study.contacts):
-                if person.email == email:
+                if person.email == email or person.first_name + person.last_name == full_name:
                     person_found = True
                     # update person details
                     isa_study.contacts[index] = updated_contact
                     break
-                elif person.first_name + person.last_name == full_name:
-                    person_found = True
-                    # update person details
-                    isa_study.contacts[index] = updated_contact
-                    break
+
             if not person_found:
                 abort(404)
             logger.info("A copy of the previous files will %s saved", save_msg_str)
@@ -1188,7 +1182,7 @@ class StudyContacts(Resource):
             {
                 "name": "email",
                 "description": "Contact's email",
-                "required": True,
+                "required": False,
                 "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -1251,7 +1245,7 @@ class StudyContacts(Resource):
         full_name = args['full_name']
         if email is None and full_name is None:
             abort(404)
-            
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
