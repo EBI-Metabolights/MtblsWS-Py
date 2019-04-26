@@ -883,7 +883,7 @@ class StudyContacts(Resource):
             },
             {
                 "name": "full_name",
-                "description": "Contact's first and last name",
+                "description": "Contact's first and last name, concatenated without any extra characters",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -960,7 +960,7 @@ class StudyContacts(Resource):
                 if obj.email == email:
                     found = True
                     break
-                elif obj.first_name + ' ' + obj.last_name == full_name:
+                elif obj.first_name + obj.last_name == full_name:
                     found = True
                     break
             if not found:

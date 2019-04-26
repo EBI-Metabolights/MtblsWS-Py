@@ -758,3 +758,68 @@ class SearchNamesMaf(Resource):
 
         return {"success": str(maf_count) + " MAF files checked for pipelines, " +
                            str(maf_changed) + " files needed updating."}
+
+
+class CheckCompounds(Resource):
+    @swagger.operation(
+        summary="Search external resources using compound names",
+        nickname="Search compound names",
+        notes="Search various resources based on compound names",
+        parameters=[
+            {
+                "name": "compound_names",
+                "description": 'Compound names, one per line',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Metabolite Annotation File (MAF) is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions('MTBLS1', user_token)
+        if not read_access:
+            abort(403)
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('compound_names', help='compound_names')
+        args = parser.parse_args()
+        compound_names = args['compound_names']
+
+        return {"success": compound_names}

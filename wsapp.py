@@ -20,7 +20,7 @@ from app.ws.jira_update import Jira, GoogleDocs
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
 from app.ws.assay_protocol import *
 from app.ws.validation import Validation, OverrideValidation
-from app.ws.chebi_workflow import SplitMaf, SearchNamesMaf
+from app.ws.chebi_workflow import SplitMaf, SearchNamesMaf, CheckCompounds
 from app.ws.biostudies import *
 
 """
@@ -92,7 +92,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyDescriptors, res_path + "/studies/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/studies/<string:study_id>/publications")
 
-    #Metabolite Annotation File (MAF)
+    # Metabolite Annotation File (MAF)
     api.add_resource(MetaboliteAnnotationFile,
                      res_path + "/studies/<string:study_id>/maf/validate/<string:annotation_file_name>")
 
@@ -122,7 +122,6 @@ def initialize_app(flask_app):
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
 
-
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
 
@@ -133,10 +132,11 @@ def initialize_app(flask_app):
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
-    #ToDo, complete this: api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
+    # ToDo, complete this: api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split_maf")
     api.add_resource(SearchNamesMaf, res_path + "/ebi-internal/<string:study_id>/chebi_pipeline")
+    # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
 
 
 def main():
