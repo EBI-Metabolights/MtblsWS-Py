@@ -205,7 +205,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                  sample_name_list, is_ms=False, log_category=error):
     val_section = "maf"
     maf_name = os.path.join(study_location, file_name)
-    maf_df = None
+    maf_df = pd.DataFrame()
     try:
         maf_df = read_tsv(maf_name)
     except:

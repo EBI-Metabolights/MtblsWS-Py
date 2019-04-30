@@ -326,14 +326,16 @@ def classyfire(inchi):
 
 
 def get_classyfire_results(query_id, classyfire_file_name, return_format):
-    url = app.config.get('CLASSYFIRE_ULR')
-    r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
-                     headers={"Content-Type": "application/%s" % return_format})
-    r.raise_for_status()
 
-    if len(r.text) > 1:
-        with open(classyfire_file_name, "a") as cf_file:
-            cf_file.write(r.text)
+    if query_id:
+        url = app.config.get('CLASSYFIRE_ULR')
+        r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
+                         headers={"Content-Type": "application/%s" % return_format})
+        r.raise_for_status()
+
+        if len(r.text) > 1:
+            with open(classyfire_file_name, "a") as cf_file:
+                cf_file.write(r.text)
 
 
 def load_chebi_classyfire_mapping():
