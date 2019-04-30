@@ -261,7 +261,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                             success, log_category=log_category)
                     check_maf_rows(validations, val_section, maf_df, sample_name, is_ms=is_ms, log_category=log_category)
                 except:
-                    add_msg(validations, val_section, "Sample Name '" + sample_name + "' not found in the MAF",
+                    add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' not found in the MAF",
                             error, log_category=log_category)
 
 
