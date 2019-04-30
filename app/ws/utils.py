@@ -814,7 +814,7 @@ def get_assay_file_list(study_location):
         for col_pos in assay_cols:
             unique_files = np.unique(assay_df.iloc[:, col_pos].values).tolist()
             for a_file in unique_files:
-                if a_file not in all_files and len(a_file) > 0:
+                if a_file not in all_files and len(str(a_file)) > 0:
                     all_files.append(a_file)
 
     return all_files
