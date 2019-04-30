@@ -242,7 +242,7 @@ def check_access_rights(user_token, study_id):
 
 def study_submitters(study_id, user_email, method):
 
-    if not study_id or user_email:
+    if not study_id or len(user_email) < 5:
         return None
 
     if method == 'add':

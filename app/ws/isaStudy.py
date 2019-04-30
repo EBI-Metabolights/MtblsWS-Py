@@ -4987,7 +4987,9 @@ class StudySubmitters(Resource):
     { 
       "submitters": [
         {
-          "email": "joe.blogs@university.ac.uk",
+          "email": "joe.blogs@university.ac.uk"
+        },
+        {
           "email": "jane.blogs@university.ac.uk"
         } 
       ]
