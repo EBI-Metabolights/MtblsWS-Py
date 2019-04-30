@@ -6,6 +6,10 @@ import time
 import pubchempy as pcp
 #import pybel
 import ssl
+import sdf
+import pronto
+from pronto import Relationship
+from flask import current_app as app
 from zeep import Client
 from pathlib import Path
 from flask import request, abort
@@ -23,9 +27,10 @@ logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
 
-http_base_location='https://www.ebi.ac.uk/metabolights/'
-
 pubchem_end = "_pubchem.tsv"
+complete_end = "_complete.sdf"
+classyfire_end = "_classyfire"
+anno_sub_folder = "chebi_pipeline_annotations"
 
 
 def split_rows(maf_df):
@@ -49,18 +54,18 @@ def explode(v, i, sep='|'):
 
 
 def check_maf_for_pipes(study_location, annotation_file_name):
-    annotation_file_name = os.path.join(study_location, annotation_file_name)
+    annotation_file = os.path.join(study_location, annotation_file_name)
     try:
-        maf_df = read_tsv(annotation_file_name)
+        maf_df = read_tsv(annotation_file)
     except FileNotFoundError:
-        abort(400, "The file " + annotation_file_name + " was not found")
+        abort(400, "The file " + annotation_file + " was not found")
     maf_len = len(maf_df.index)
 
     # Any rows to split?
     new_maf_df = split_rows(maf_df)
     new_maf_len = len(new_maf_df.index)
 
-    file_name = annotation_file_name + '.split'
+    file_name = os.path.join(anno_sub_folder, annotation_file + '.split')
     if maf_len != new_maf_len:  # We did find |, so we create a new MAF
         write_tsv(new_maf_df, file_name)
 
@@ -70,10 +75,12 @@ def check_maf_for_pipes(study_location, annotation_file_name):
 def search_and_update_maf(study_location, annotation_file_name):
     sdf_file_list = []
     exiting_pubchem_file = False
-    short_file_name = os.path.join(study_location, annotation_file_name.replace('.tsv', ''))
+    short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
+                                   annotation_file_name.replace('.tsv', ''))
     if annotation_file_name.endswith(pubchem_end):
         exiting_pubchem_file = True
-        short_file_name = os.path.join(study_location, annotation_file_name.replace(pubchem_end, ''))
+        short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
+                                       annotation_file_name.replace(pubchem_end, ''))
 
     annotation_file_name = os.path.join(study_location, annotation_file_name)
     pd.options.mode.chained_assignment = None  # default='warn'
@@ -115,10 +122,12 @@ def search_and_update_maf(study_location, annotation_file_name):
         database_id = row[0]
         comp_name = row[1]
         print(str(idx+1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
-        if not database_id:
+        if not database_id and comp_name:
             start_time = time.time()
             chebi_found = False
             comp_name = comp_name.rstrip()  # Remove trailing spaces
+            # comp_name = comp_name.replace('Î´', 'δ')
+            # '\u03b4', UnicodeEncodeError: 'latin-1' codec can't encode character '\u03b4' in position 8: ordinal not in range(256)
     #        comp_name = comp_name.encode('ascii', 'ignore')  # Make sure it's only searching using ASCII encoding
 
             if '/' in comp_name:  # Not a real name
@@ -228,6 +237,7 @@ def search_and_update_maf(study_location, annotation_file_name):
                     else:
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
+                        create_annotation_folder(study_location + os.sep + anno_sub_folder)
                         sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list, final_inchi)
 
             logger.info("    -- Search took %s seconds" % round(time.time() - start_time, 2))
@@ -241,12 +251,20 @@ def search_and_update_maf(study_location, annotation_file_name):
     pubchem_file = short_file_name + pubchem_end
     write_tsv(pubchem_df, pubchem_file)
     if sdf_file_list:
-        concatenate_sdf_files(sdf_file_list, short_file_name + '_complete.sdf', short_file_name + '_classyfire.sdf')
+        concatenate_sdf_files(sdf_file_list, study_location + os.sep + anno_sub_folder + os.sep,
+                              short_file_name + complete_end, short_file_name + classyfire_end)
 
     return maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file
 
 
-def concatenate_sdf_files(sdf_file_list, sdf_file_name, classyfire_file_name):
+def create_annotation_folder(folder_loc):
+    if not os.path.exists(folder_loc):
+        os.makedirs(folder_loc)
+
+
+def concatenate_sdf_files(sdf_file_list, study_location, sdf_file_name, classyfire_file_name):
+    return_format = 'sdf'  # 'json' will require a new root element to separate the entries before merging
+    classyfire_file_name = classyfire_file_name + '.' + return_format
 
     # Create a new concatenated SDF file
     with open(sdf_file_name, 'w') as outfile:
@@ -256,23 +274,17 @@ def concatenate_sdf_files(sdf_file_list, sdf_file_name, classyfire_file_name):
         # for fname in sdf_file_list:
             # First remove the hydrogens. OpenBabel 'Delete hydrogens (make implicit)'
             # remove_hydrogens(fname)
-            with open(fname) as infile:
+            with open(os.path.join(study_location, fname)) as infile:
                 for line in infile:
                     outfile.write(line)
+            # Now, get the classyFire queries, add to classyfire_file_name and get ancestors
+
+            get_classyfire_results(cf_id, classyfire_file_name, return_format)
+
+        get_ancestors(classyfire_file_name)
 
         # If we have a real new SDF file, remove the smaller sdf files
-        sdf_file = Path(sdf_file_name)
-        if sdf_file.is_file():
-            for fname in sdf_file_list:
-                try:
-                    sdf_path = Path(fname)
-                    sdf_path.unlink()
-                except Exception as e:
-                    logger.error('Could not remove file' + sdf_path)
-                    logger.exception(str(e))
-
-        # Now, get the classyFire queries, add to classyfire_file_name
-        get_classyfire_results(cf_id, classyfire_file_name)
+        # remove_sdf_files(sdf_file_name, study_location, sdf_file_list)
 
 
 # def remove_hydrogens(sdf_file):
@@ -284,9 +296,21 @@ def concatenate_sdf_files(sdf_file_list, sdf_file_name, classyfire_file_name):
 #             outfile.write(mol)
 
 
+def remove_sdf_files(sdf_file_name, study_location, sdf_file_list):
+    sdf_file = Path(sdf_file_name)
+    if sdf_file.is_file():
+        for fname in sdf_file_list:
+            try:
+                sdf_path = Path(os.path.join(study_location, fname[0]))
+                sdf_path.unlink()
+            except Exception as e:
+                logger.error('Could not remove file' + sdf_path)
+                logger.exception(str(e))
+
+
 def classyfire(inchi):
     print("    -- Querying ClassyFire")
-    url = "http://classyfire.wishartlab.com"
+    url = app.config.get('CLASSYFIRE_ULR')
     label = 'MetaboLights WS'
     query_id = None
     try:
@@ -301,9 +325,8 @@ def classyfire(inchi):
     return query_id
 
 
-def get_classyfire_results(query_id, classyfire_file_name):
-    url = "http://classyfire.wishartlab.com"
-    return_format = 'sdf'  # 'json'
+def get_classyfire_results(query_id, classyfire_file_name, return_format):
+    url = app.config.get('CLASSYFIRE_ULR')
     r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
                      headers={"Content-Type": "application/%s" % return_format})
     r.raise_for_status()
@@ -311,6 +334,46 @@ def get_classyfire_results(query_id, classyfire_file_name):
     if len(r.text) > 1:
         with open(classyfire_file_name, "a") as cf_file:
             cf_file.write(r.text)
+
+
+def load_chebi_classyfire_mapping():
+    mapping_file = app.config.get('CLASSYFIRE_MAPPING')
+    print('loading ChEBI mapping file ' + mapping_file)
+    return read_tsv(mapping_file)
+
+
+def get_ancestors(classyfire_file_name):
+    # get mappings from ClassyFire names (in classyfire_file_name) to ChEBI
+    mapping_file = load_chebi_classyfire_mapping()
+    print('Reading new ClassyFire mapping file')
+    classyfire_sdf_file = sdf.load(classyfire_file_name)
+
+    print('loading ChEBI OBO file')
+    obo_file = app.config.get('OBO_FILE')
+    onto = pronto.Ontology(obo_file)
+    is_a_list = []
+    print('Get ChEBI parents')
+    is_a_list = get_is_a(onto, is_a_list, 'CHEBI:63020')
+    parents = onto['CHEBI:63020'].rparents()
+    return is_a_list
+
+
+def get_is_a(onto, is_a_list, chebi_compound):
+    parent_list = []
+    child_list = []
+
+    if chebi_compound not in is_a_list:
+        term = onto[chebi_compound]
+        if term:
+            is_a = term.relations[Relationship('is_a')]
+            for relations in is_a:
+                if relations.id not in is_a_list:
+                    is_a_list.append(relations.id)
+
+            for compound in is_a_list:
+                get_is_a(onto, is_a_list, compound)
+
+    return is_a_list
 
 
 def direct_chebi_search(final_inchi, comp_name):
@@ -322,7 +385,7 @@ def direct_chebi_search(final_inchi, comp_name):
     formula = ""
     logger.info("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
     print("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
-    url = 'https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl'
+    url = app.config.get('CHEBI_URL')
     client = Client(url)
     try:
         lite_entity = client.service.getLiteEntity(final_inchi, 'INCHI_INCHI_KEY', '10', 'ALL')
@@ -343,7 +406,7 @@ def direct_chebi_search(final_inchi, comp_name):
 
 def get_csid(inchikey):
     csid = ""
-    csurl_base = 'http://parts.chemspider.com/JSON.ashx?op='
+    csurl_base = app.config.get('CHEMSPIDER_URL')
 
     if inchikey:
         url1 = csurl_base + 'SimpleSearch&searchOptions.QueryText=' + inchikey
@@ -417,8 +480,8 @@ def create_pubchem_df(maf_df):
 
 def opsin_search(comp_name, req_type):
     result = ""
-    opsing_url = 'https://opsin.ch.cam.ac.uk/opsin/'
-    url = opsing_url + comp_name + '.json'
+    opsin_url = app.config.get('OPSIN_URL')
+    url = opsin_url + comp_name + '.json'
     resp = requests.get(url)
     if resp.status_code == 200:
         json_resp = resp.json()
@@ -518,7 +581,7 @@ def pubchem_search(comp_name, search_type='name'):
             inchi_key = compound.inchikey
             smiles = compound.canonical_smiles
             iupac = compound.iupac_name
-            iupac = iupac.replace('~', '').replace('{', '').replace('}', '')
+            iupac = iupac.replace('f', '').replace('{', '').replace('}', '')
             cid = compound.cid
             formula = compound.molecular_formula
             for synonym in compound.synonyms:
@@ -544,8 +607,8 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi):
         classifyre_id = ''
         logger.info("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
         print("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
-        file_name = str(cid) + ' - ' + iupac + '.sdf'
-        pcp.download('SDF', study_location + '/' + file_name, cid, overwrite=True)
+        file_name = str(cid) + '.sdf'
+        pcp.download('SDF', study_location + os.sep + anno_sub_folder + os.sep + file_name, cid, overwrite=True)
 
         if final_inchi:
             classifyre_id = classyfire(final_inchi)
@@ -609,8 +672,8 @@ class SplitMaf(Resource):
         ]
     )
     def post(self, study_id):
-
-        http_file_location = http_base_location + study_id + '/files'
+        http_base_location = app.config.get('WS_APP_BASE_LINK')
+        http_file_location = http_base_location + os.sep + study_id + os.sep + 'files'
 
         # param validation
         if study_id is None:
@@ -715,7 +778,8 @@ class SearchNamesMaf(Resource):
     )
     def post(self, study_id):
 
-        http_file_location = http_base_location + study_id + '/files'
+        http_base_location = app.config.get('WS_APP_BASE_LINK')
+        http_file_location = http_base_location + os.sep + study_id + os.sep + 'files'
         # param validation
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
