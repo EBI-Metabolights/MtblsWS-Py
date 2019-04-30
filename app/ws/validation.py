@@ -257,7 +257,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
             for sample_name in sample_name_list:
                 try:
                     maf_header[sample_name]
-                    add_msg(validations, val_section, "Sample Name '" + sample_name + "' found in the MAF",
+                    add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' found in the MAF",
                             success, log_category=log_category)
                     check_maf_rows(validations, val_section, maf_df, sample_name, is_ms=is_ms, log_category=log_category)
                 except:
@@ -651,7 +651,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
     for sample_name in sample_name_list:
         if sample_name not in all_assays:
-            add_msg(validations, val_section, "Sample name '" + sample_name + "' is not used in any assay",
+            add_msg(validations, val_section, "Sample name '" + str(sample_name) + "' is not used in any assay",
                     info, log_category=log_category)
 
     for files in unique_file_names:
