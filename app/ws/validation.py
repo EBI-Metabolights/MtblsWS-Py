@@ -220,7 +220,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
     else:
         maf_order.append({5: "chemical_shift"})
 
-    if maf_df and not maf_df.empty:
+    if not maf_df.empty:
         maf_header = get_table_header(maf_df, study_id, maf_name)
 
         for idx, col in enumerate(maf_order):
@@ -1293,6 +1293,7 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
                 log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
+
 
 class OverrideValidation(Resource):
     @swagger.operation(

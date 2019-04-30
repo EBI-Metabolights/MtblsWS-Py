@@ -129,7 +129,7 @@ def initialize_app(flask_app):
     api.add_resource(MapStudies, res_path + "/ebi-internal/zooma")
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
     api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml2isatab")
-    api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate")
+    api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
     # ToDo, complete this: api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
