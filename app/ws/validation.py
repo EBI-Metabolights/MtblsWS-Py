@@ -220,7 +220,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
     else:
         maf_order.append({5: "chemical_shift"})
 
-    if not maf_df.empty:
+    if maf_df and not maf_df.empty:
         maf_header = get_table_header(maf_df, study_id, maf_name)
 
         for idx, col in enumerate(maf_order):
