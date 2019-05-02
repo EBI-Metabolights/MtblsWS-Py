@@ -62,6 +62,6 @@ VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/con
 OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
 CHEBI_URL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
 CLASSYFIRE_ULR = "http://classyfire.wishartlab.com"
-CLASSYFIRE_MAPPING = "/net/isilon8/ftp_public/databases/metabolights/resources/ClassyFire_Mapping.tsv"
+CLASSYFIRE_MAPPING = "/net/isilon8/ftp_public/databases/metabolights/submissionTool/ClassyFire_Mapping.tsv"
 OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"
 CHEMSPIDER_URL = "http://parts.chemspider.com/JSON.ashx?op="
