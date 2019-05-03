@@ -4,9 +4,9 @@ import requests
 import cirpy
 import time
 import pubchempy as pcp
-#import pybel
-import ssl
+import ctfile
 import sdf
+import ssl
 import pronto
 from pronto import Relationship
 from flask import current_app as app
@@ -164,7 +164,7 @@ def search_and_update_maf(study_location, annotation_file_name):
 
             if not chebi_found:  # We could not find this in ChEBI, let's try other sources
                 pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure = \
-                    pubchem_search(comp_name, study_location)
+                    pubchem_search(comp_name, 'name')
 
                 cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
                 opsin_stdinchikey = opsin_search(comp_name, 'stdinchikey')
@@ -278,7 +278,6 @@ def concatenate_sdf_files(sdf_file_list, study_location, sdf_file_name, classyfi
                 for line in infile:
                     outfile.write(line)
             # Now, get the classyFire queries, add to classyfire_file_name and get ancestors
-
             get_classyfire_results(cf_id, classyfire_file_name, return_format)
 
         get_ancestors(classyfire_file_name)
@@ -328,14 +327,19 @@ def classyfire(inchi):
 def get_classyfire_results(query_id, classyfire_file_name, return_format):
 
     if query_id:
-        url = app.config.get('CLASSYFIRE_ULR')
-        r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
-                         headers={"Content-Type": "application/%s" % return_format})
-        r.raise_for_status()
+        try:
+            url = app.config.get('CLASSYFIRE_ULR')
+            r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
+                             headers={"Content-Type": "application/%s" % return_format})
+            time.sleep(2)  # Give ClassyFire time to recover first ;-)
+            r.raise_for_status()
 
-        if len(r.text) > 1:
-            with open(classyfire_file_name, "a") as cf_file:
-                cf_file.write(r.text)
+            if len(r.text) > 1:
+                with open(classyfire_file_name, "a") as cf_file:
+                    cf_file.write(r.text)
+        except Exception as e:
+            logger.error("Could not get classyfire result for " + query_id)
+            logger.error(str(e))
 
 
 def load_chebi_classyfire_mapping():
@@ -346,35 +350,48 @@ def load_chebi_classyfire_mapping():
 
 def get_ancestors(classyfire_file_name):
     # get mappings from ClassyFire names (in classyfire_file_name) to ChEBI
-    mapping_file = load_chebi_classyfire_mapping()
-    print('Reading new ClassyFire mapping file')
-    classyfire_sdf_file = sdf.load(classyfire_file_name)
+    # with open(classyfire_file_name, 'r') as infile:
+    #     mols = ctfile.load(infile)
 
-    print('loading ChEBI OBO file')
-    obo_file = app.config.get('OBO_FILE')
-    onto = pronto.Ontology(obo_file)
+    lines = []
+    direct_parents = []
+    alt_parents = []
     is_a_list = []
-    print('Get ChEBI parents')
-    is_a_list = get_is_a(onto, is_a_list, 'CHEBI:63020')
-    parents = onto['CHEBI:63020'].rparents()
+    with open(classyfire_file_name, 'r') as infile:
+        for line in infile:
+            lines.append(line.rstrip('\n'))
+
+    for idx, line in enumerate(lines):
+        if line == "> <Direct Parent>":
+            direct_parents.append(lines[idx+1])
+        elif line == "> <Alternative Parents>":
+            alt_parents.append(lines[idx + 1])
+
+    onto = get_chebi_obo_file()
+    for compound_name in direct_parents:
+        chebi_compound = get_chebi_mapping(compound_name)
+        is_a_list = get_is_a(onto, chebi_compound)
+
     return is_a_list
 
 
-def get_is_a(onto, is_a_list, chebi_compound):
-    parent_list = []
-    child_list = []
+def get_chebi_obo_file():
+    print('loading ChEBI OBO file')
+    obo_file = app.config.get('OBO_FILE')
+    onto = pronto.Ontology(obo_file)
+    return onto
 
-    if chebi_compound not in is_a_list:
-        term = onto[chebi_compound]
-        if term:
-            is_a = term.relations[Relationship('is_a')]
-            for relations in is_a:
-                if relations.id not in is_a_list:
-                    is_a_list.append(relations.id)
 
-            for compound in is_a_list:
-                get_is_a(onto, is_a_list, compound)
+def get_chebi_mapping(compound_name):
+    print('Reading ClassyFire to ChEBI mapping file')
+    mapping_file = load_chebi_classyfire_mapping()
 
+    return mapping_file
+
+
+def get_is_a(onto, chebi_compound):
+    print('Get ChEBI parents')
+    is_a_list = onto[chebi_compound].rparents()
     return is_a_list
 
 
@@ -571,9 +588,9 @@ def pubchem_search(comp_name, search_type='name'):
         compound = None
         # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
         # or comment out the line below:
-        # ssl._create_default_https_context = ssl._create_unverified_context  # If no root certificates installed
-        pubchem_compound = get_compounds(comp_name, namespace=search_type)
+        ssl._create_default_https_context = ssl._create_unverified_context  # If no root certificates installed
         try:
+            pubchem_compound = get_compounds(comp_name, namespace=search_type)
             compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
         except IndexError:
             logger.info('Could not find PubChem compound for ' + comp_name)   # Nothing was found
