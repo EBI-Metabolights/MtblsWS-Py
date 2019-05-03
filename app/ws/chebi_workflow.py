@@ -39,6 +39,11 @@ def split_rows(maf_df):
     return new_maf
 
 
+def print_log(message):
+    print(str(message))
+    logger.info(str(message))
+
+
 def explode(v, i, sep='|'):
     v = v.astype(str)
     n, m = v.shape
@@ -121,7 +126,7 @@ def search_and_update_maf(study_location, annotation_file_name):
     for idx, row in short_df.iterrows():
         database_id = row[0]
         comp_name = row[1]
-        print(str(idx+1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
+        print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
         if not database_id and comp_name:
             start_time = time.time()
             chebi_found = False
@@ -152,8 +157,7 @@ def search_and_update_maf(study_location, annotation_file_name):
                     if database_identifier:
                         if database_identifier.startswith('CHEBI:'):
                             chebi_found = True
-                            logger.info("    -- Found ChEBI id " + database_identifier + " based on name")
-                            print("    -- Found ChEBI id " + database_identifier + " based on name")
+                            print_log("    -- Found ChEBI id " + database_identifier + " in the  MetaboLights plugin search")
                         maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
                     if chemical_formula:
                         maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
@@ -177,6 +181,7 @@ def search_and_update_maf(study_location, annotation_file_name):
                 ik = cactus_stdinchikey
                 if pc_inchi_key:
                     ik = pc_inchi_key
+                    print_log("    -- Searching ChemSpider using PubChem InChIKey, not Cactus")
                 csid = get_csid(ik)
 
                 pubchem_df.iloc[row_idx, 5] = pc_name  # 5 PubChem name
@@ -216,8 +221,7 @@ def search_and_update_maf(study_location, annotation_file_name):
                         inchi = inchi
                         name = name
 
-                        logger.info("    -- Found ChEBI id " + database_identifier + " based on final InChIKey")
-                        print('    -- Found ChEBI id ' + database_identifier + ' based on final InChIKey')
+                        print_log('    -- Found ChEBI id ' + database_identifier + ' based on final InChIKey')
                         pubchem_df.iloc[row_idx, 0] = database_identifier
                         pubchem_df.iloc[row_idx, 1] = chemical_formula
                         pubchem_df.iloc[row_idx, 2] = smiles
@@ -240,10 +244,9 @@ def search_and_update_maf(study_location, annotation_file_name):
                         create_annotation_folder(study_location + os.sep + anno_sub_folder)
                         sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list, final_inchi)
 
-            logger.info("    -- Search took %s seconds" % round(time.time() - start_time, 2))
-            print("    -- Search took %s seconds" % round(time.time() - start_time, 2))
+            print_log("    -- Search took %s seconds" % round(time.time() - start_time, 2))
         else:
-            print("    -- Skipping. Found database id  " + database_id)
+            print_log("    -- Skipping. Found database id  " + database_id)
 
         row_idx += 1
 
@@ -280,7 +283,8 @@ def concatenate_sdf_files(sdf_file_list, study_location, sdf_file_name, classyfi
             # Now, get the classyFire queries, add to classyfire_file_name and get ancestors
             get_classyfire_results(cf_id, classyfire_file_name, return_format)
 
-        get_ancestors(classyfire_file_name)
+        outfile.close()
+        #get_ancestors(classyfire_file_name)
 
         # If we have a real new SDF file, remove the smaller sdf files
         # remove_sdf_files(sdf_file_name, study_location, sdf_file_list)
@@ -308,7 +312,7 @@ def remove_sdf_files(sdf_file_name, study_location, sdf_file_list):
 
 
 def classyfire(inchi):
-    print("    -- Querying ClassyFire")
+    print_log("    -- Querying ClassyFire")
     url = app.config.get('CLASSYFIRE_ULR')
     label = 'MetaboLights WS'
     query_id = None
@@ -320,7 +324,7 @@ def classyfire(inchi):
         query_id = r.json()['id']
     except Exception as e:
         logger.error(str(e))
-        print("    -- Error querying ClassyFire: " + str(e))
+        print_log("    -- Error querying ClassyFire: " + str(e))
     return query_id
 
 
@@ -344,7 +348,7 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format):
 
 def load_chebi_classyfire_mapping():
     mapping_file = app.config.get('CLASSYFIRE_MAPPING')
-    print('loading ChEBI mapping file ' + mapping_file)
+    print_log('loading ChEBI mapping file ' + mapping_file)
     return read_tsv(mapping_file)
 
 
@@ -376,21 +380,21 @@ def get_ancestors(classyfire_file_name):
 
 
 def get_chebi_obo_file():
-    print('loading ChEBI OBO file')
+    print_log('loading ChEBI OBO file')
     obo_file = app.config.get('OBO_FILE')
     onto = pronto.Ontology(obo_file)
     return onto
 
 
 def get_chebi_mapping(compound_name):
-    print('Reading ClassyFire to ChEBI mapping file')
+    print_log('Reading ClassyFire to ChEBI mapping file')
     mapping_file = load_chebi_classyfire_mapping()
 
     return mapping_file
 
 
 def get_is_a(onto, chebi_compound):
-    print('Get ChEBI parents')
+    print_log('Get ChEBI parents')
     is_a_list = onto[chebi_compound].rparents()
     return is_a_list
 
@@ -402,8 +406,7 @@ def direct_chebi_search(final_inchi, comp_name):
     name = ""
     smiles = ""
     formula = ""
-    logger.info("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
-    print("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
+    print_log("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
     url = app.config.get('CHEBI_URL')
     client = Client(url)
     try:
@@ -436,6 +439,7 @@ def get_csid(inchikey):
             if resp2.status_code == 200:
                 csid = resp2.text
                 csid = csid.replace('[', '').replace(']', '').split(',')[0]
+                print_log("    -- Found CSID using ChemSpider: " + inchikey)
                 return csid
     return csid
 
@@ -592,6 +596,7 @@ def pubchem_search(comp_name, search_type='name'):
         try:
             pubchem_compound = get_compounds(comp_name, namespace=search_type)
             compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
+            print_log("    -- Found PubChem compound '" + compound.iupac_name + "'")
         except IndexError:
             logger.info('Could not find PubChem compound for ' + comp_name)   # Nothing was found
 
@@ -624,8 +629,7 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi):
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
         classifyre_id = ''
-        logger.info("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
-        print("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
+        print_log("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
         file_name = str(cid) + '.sdf'
         pcp.download('SDF', study_location + os.sep + anno_sub_folder + os.sep + file_name, cid, overwrite=True)
 
