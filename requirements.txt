@@ -16,4 +16,4 @@ pubchempy
 cirpy
 zeep
 pronto
-sdf
+ctfile
