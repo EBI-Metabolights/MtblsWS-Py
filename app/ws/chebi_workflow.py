@@ -5,7 +5,7 @@ import cirpy
 import time
 import pubchempy as pcp
 import ctfile
-import sdf
+
 import ssl
 import pronto
 from pronto import Relationship
