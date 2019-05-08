@@ -5,10 +5,8 @@ import cirpy
 import time
 import pubchempy as pcp
 import ctfile
-import sdf
 import ssl
 import pronto
-from pronto import Relationship
 from flask import current_app as app
 from zeep import Client
 from pathlib import Path
@@ -35,7 +33,12 @@ anno_sub_folder = "chebi_pipeline_annotations"
 
 def split_rows(maf_df):
     # Split rows with pipe-lines "|"
-    new_maf = pd.DataFrame(explode(explode(explode(explode(explode(maf_df.values, 0), 1), 2), 3), 4), columns=maf_df.columns)
+    try:
+        new_maf = pd.DataFrame(explode(explode(explode(explode(explode(maf_df.values, 0), 1), 2), 3), 4), columns=maf_df.columns)
+    except Exception as e:
+        logger.error(str(e))
+        return maf_df
+
     return new_maf
 
 
@@ -131,8 +134,8 @@ def search_and_update_maf(study_location, annotation_file_name):
             start_time = time.time()
             chebi_found = False
             comp_name = comp_name.rstrip()  # Remove trailing spaces
-            # comp_name = comp_name.replace('Î´', 'δ')
-            # '\u03b4', UnicodeEncodeError: 'latin-1' codec can't encode character '\u03b4' in position 8: ordinal not in range(256)
+            comp_name = comp_name.replace('Î´', 'delta')
+            # If you try using unixode delta: '\u03b4', UnicodeEncodeError: 'latin-1' codec can't encode character '\u03b4' in position 8: ordinal not in range(256)
     #        comp_name = comp_name.encode('ascii', 'ignore')  # Make sure it's only searching using ASCII encoding
 
             if '/' in comp_name:  # Not a real name
@@ -284,7 +287,7 @@ def concatenate_sdf_files(sdf_file_list, study_location, sdf_file_name, classyfi
             get_classyfire_results(cf_id, classyfire_file_name, return_format)
 
         outfile.close()
-        #get_ancestors(classyfire_file_name)
+        get_ancestors(classyfire_file_name)
 
         # If we have a real new SDF file, remove the smaller sdf files
         # remove_sdf_files(sdf_file_name, study_location, sdf_file_list)
@@ -395,7 +398,7 @@ def get_chebi_mapping(compound_name):
 
 def get_is_a(onto, chebi_compound):
     print_log('Get ChEBI parents')
-    is_a_list = onto[chebi_compound].rparents()
+    is_a_list = onto[chebi_compound].rparents()  # "Parents" are "is_a" relationships
     return is_a_list
 
 
@@ -423,6 +426,7 @@ def direct_chebi_search(final_inchi, comp_name):
 
     except Exception as e:
         logger.error(str(e))
+        print_log('    -- Error querying ChEBI')
     return chebi_id, inchi, inchikey, name, smiles, formula
 
 
@@ -587,7 +591,7 @@ def pubchem_search(comp_name, search_type='name'):
     formula = ''
     synonyms = ''
     structure = ''
-
+    print_log("    -- Searching PubChem for compound '" + comp_name + "'")
     try:
         compound = None
         # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
@@ -598,7 +602,7 @@ def pubchem_search(comp_name, search_type='name'):
             compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
             print_log("    -- Found PubChem compound '" + compound.iupac_name + "'")
         except IndexError:
-            logger.info('Could not find PubChem compound for ' + comp_name)   # Nothing was found
+            print_log('    -- ERROR: Could not find PubChem compound for ' + comp_name)   # Nothing was found
 
         if compound:
             inchi = compound.inchi
@@ -628,15 +632,15 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi):
     if study_location and cid:
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
-        classifyre_id = ''
+        classyfire_id = ''
         print_log("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
         file_name = str(cid) + '.sdf'
         pcp.download('SDF', study_location + os.sep + anno_sub_folder + os.sep + file_name, cid, overwrite=True)
 
         if final_inchi:
-            classifyre_id = classyfire(final_inchi)
+            classyfire_id = classyfire(final_inchi)
 
-        sdf_file_list.append([file_name, classifyre_id])
+        sdf_file_list.append([file_name, classyfire_id])
 
     return sdf_file_list
 
