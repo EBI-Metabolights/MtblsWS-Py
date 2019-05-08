@@ -574,7 +574,7 @@ def getMetaboTerm(keyword, branch):
                 enti.ontoName = 'MTBLS'
 
             if enti.ontoName == '':
-                onto_name = getOnto_Name(enti.iri)
+                onto_name = getOnto_Name(enti.iri)[0]
                 enti.ontoName = onto_name
                 enti.provenance_name = onto_name
 
@@ -622,7 +622,7 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
                           Zooma_confidence='High')
 
             try:
-                enti.ontoName = getOnto_Name(iri)
+                enti.ontoName, enti.definition = getOnto_Name(iri)
             except:
                 enti.ontoName = 'MTBLS'
 
@@ -660,13 +660,12 @@ def getZoomaTerm(keyword):
                           Zooma_confidence=term['confidence'])
 
             if enti.ontoName == '':
-                enti.ontoName = getOnto_Name(iri)
-                # enti.provenance_uri = getOnto_url(enti.ontoName)
+                enti.ontoName,enti.definition = getOnto_Name(iri)
 
             try:
-                provenance_name = term['derivedFrom']['provenance']['source']['name']
+                enti.provenance_name = term['derivedFrom']['provenance']['source']['name']
             except:
-                provenance_name = enti.ontoName
+                enti.provenance_name = enti.ontoName
 
             if enti.provenance_name == 'metabolights':
                 res = [enti] + res
@@ -801,11 +800,14 @@ def getOnto_Name(iri):
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
-        return j_content['_embedded']['terms'][0]['ontology_prefix']
+        try:
+            return j_content['_embedded']['terms'][0]['ontology_prefix'],j_content['_embedded']['terms'][0]['description'][0]
+        except:
+            return j_content['_embedded']['terms'][0]['ontology_prefix'],''
 
     except:
         substring = iri.rsplit('/', 1)[-1]
-        return ''.join(x for x in substring if x.isalpha())
+        return ''.join(x for x in substring if x.isalpha()),''
 
 
 # def getOnto_version(pre_fix):
