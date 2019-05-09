@@ -31,13 +31,25 @@ classyfire_end = "_classyfire"
 anno_sub_folder = "chebi_pipeline_annotations"
 
 
-def split_rows(maf_df):
+def split_rows(maf_df, annotation_file=None):
     # Split rows with pipe-lines "|"
-    try:
-        new_maf = pd.DataFrame(explode(explode(explode(explode(explode(maf_df.values, 0), 1), 2), 3), 4), columns=maf_df.columns)
-    except Exception as e:
-        logger.error(str(e))
-        return maf_df
+    pipe_found = False
+    new_maf = maf_df
+    with open(annotation_file, 'r') as f:
+        for line in f:
+            if '|' in line:
+                pipe_found = True
+                f.close()
+                break
+
+    if pipe_found:
+        print_log("    -- Found pipe-line '|' will split MAF rows")
+        try:
+            new_maf = pd.DataFrame(explode(explode(explode(explode(explode(maf_df.values, 0), 1), 2), 3), 4), columns=maf_df.columns)
+        except Exception as e:
+            logger.error("MAF splitter failed!")
+            logger.error(str(e))
+            return maf_df
 
     return new_maf
 
@@ -70,7 +82,7 @@ def check_maf_for_pipes(study_location, annotation_file_name):
     maf_len = len(maf_df.index)
 
     # Any rows to split?
-    new_maf_df = split_rows(maf_df)
+    new_maf_df = split_rows(maf_df, annotation_file)
     new_maf_len = len(new_maf_df.index)
 
     file_name = os.path.join(anno_sub_folder, annotation_file + '.split')
@@ -80,7 +92,7 @@ def check_maf_for_pipes(study_location, annotation_file_name):
     return maf_df, maf_len, new_maf_df, new_maf_len, file_name
 
 
-def search_and_update_maf(study_location, annotation_file_name):
+def search_and_update_maf(study_location, annotation_file_name, classyfire_search):
     sdf_file_list = []
     exiting_pubchem_file = False
     short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
@@ -110,7 +122,7 @@ def search_and_update_maf(study_location, annotation_file_name):
         new_maf_len = len(new_maf_df.index)
     else:
         # Any rows to split?
-        new_maf_df = split_rows(maf_df)
+        new_maf_df = split_rows(maf_df, annotation_file_name)
         new_maf_len = len(new_maf_df.index)
 
         if maf_len != new_maf_len:  # We did find | so we have to use the new dataframe
@@ -142,7 +154,8 @@ def search_and_update_maf(study_location, annotation_file_name):
                 comp_name = comp_name.replace('/', ' ')
 
             search_res = wsc.get_maf_search("name", comp_name)  # This is the standard MetaboLights aka Plugin search
-            if search_res['content']:
+
+            if search_res and search_res['content']:
                 result = search_res['content'][0]
                 database_identifier = result["databaseId"]
                 chemical_formula = result["formula"]
@@ -245,7 +258,8 @@ def search_and_update_maf(study_location, annotation_file_name):
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
                         create_annotation_folder(study_location + os.sep + anno_sub_folder)
-                        sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list, final_inchi)
+                        sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list,
+                                                final_inchi, classyfire_search)
 
             print_log("    -- Search took %s seconds" % round(time.time() - start_time, 2))
         else:
@@ -258,7 +272,7 @@ def search_and_update_maf(study_location, annotation_file_name):
     write_tsv(pubchem_df, pubchem_file)
     if sdf_file_list:
         concatenate_sdf_files(sdf_file_list, study_location + os.sep + anno_sub_folder + os.sep,
-                              short_file_name + complete_end, short_file_name + classyfire_end)
+                              short_file_name + complete_end, short_file_name + classyfire_end, classyfire_search)
 
     return maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file
 
@@ -268,7 +282,7 @@ def create_annotation_folder(folder_loc):
         os.makedirs(folder_loc)
 
 
-def concatenate_sdf_files(sdf_file_list, study_location, sdf_file_name, classyfire_file_name):
+def concatenate_sdf_files(sdf_file_list, study_location, sdf_file_name, classyfire_file_name, classyfire_search):
     return_format = 'sdf'  # 'json' will require a new root element to separate the entries before merging
     classyfire_file_name = classyfire_file_name + '.' + return_format
 
@@ -284,10 +298,11 @@ def concatenate_sdf_files(sdf_file_list, study_location, sdf_file_name, classyfi
                 for line in infile:
                     outfile.write(line)
             # Now, get the classyFire queries, add to classyfire_file_name and get ancestors
-            get_classyfire_results(cf_id, classyfire_file_name, return_format)
+            get_classyfire_results(cf_id, classyfire_file_name, return_format, classyfire_search)
 
         outfile.close()
-        get_ancestors(classyfire_file_name)
+        if classyfire_search:
+            get_ancestors(classyfire_file_name)
 
         # If we have a real new SDF file, remove the smaller sdf files
         # remove_sdf_files(sdf_file_name, study_location, sdf_file_list)
@@ -331,9 +346,9 @@ def classyfire(inchi):
     return query_id
 
 
-def get_classyfire_results(query_id, classyfire_file_name, return_format):
+def get_classyfire_results(query_id, classyfire_file_name, return_format, classyfire_search):
 
-    if query_id:
+    if classyfire_search and query_id:
         try:
             url = app.config.get('CLASSYFIRE_ULR')
             r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
@@ -414,15 +429,16 @@ def direct_chebi_search(final_inchi, comp_name):
     client = Client(url)
     try:
         lite_entity = client.service.getLiteEntity(final_inchi, 'INCHI_INCHI_KEY', '10', 'ALL')
-        top_result = lite_entity[0]
-        chebi_id = top_result.chebiId
+        if lite_entity:
+            top_result = lite_entity[0]
+            chebi_id = top_result.chebiId
 
-        complete_entity = client.service.getCompleteEntity(chebi_id)
-        inchi = complete_entity.inchi
-        inchikey = complete_entity.inchiKey
-        name = complete_entity.chebiAsciiName
-        smiles = complete_entity.smiles
-        formula = complete_entity.Formulae[0].data
+            complete_entity = client.service.getCompleteEntity(chebi_id)
+            inchi = complete_entity.inchi
+            inchikey = complete_entity.inchiKey
+            name = complete_entity.chebiAsciiName
+            smiles = complete_entity.smiles
+            formula = complete_entity.Formulae[0].data
 
     except Exception as e:
         logger.error(str(e))
@@ -602,7 +618,7 @@ def pubchem_search(comp_name, search_type='name'):
             compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
             print_log("    -- Found PubChem compound '" + compound.iupac_name + "'")
         except IndexError:
-            print_log('    -- ERROR: Could not find PubChem compound for ' + comp_name)   # Nothing was found
+            print_log('    -- Could not find PubChem compound for ' + comp_name)   # Nothing was found
 
         if compound:
             inchi = compound.inchi
@@ -628,7 +644,7 @@ def pubchem_search(comp_name, search_type='name'):
     return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, structure
 
 
-def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi):
+def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
     if study_location and cid:
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
@@ -637,7 +653,7 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi):
         file_name = str(cid) + '.sdf'
         pcp.download('SDF', study_location + os.sep + anno_sub_folder + os.sep + file_name, cid, overwrite=True)
 
-        if final_inchi:
+        if classyfire_search and final_inchi:
             classyfire_id = classyfire(final_inchi)
 
         sdf_file_list.append([file_name, classyfire_id])
@@ -750,7 +766,7 @@ class SplitMaf(Resource):
                            str(maf_changed) + " files needed updating."}
 
 
-class SearchNamesMaf(Resource):
+class ChEBIPipeLine(Resource):
     @swagger.operation(
         summary="Search external resources using compound names in MAF (curator only)",
         nickname="Search compound names",
@@ -774,6 +790,16 @@ class SearchNamesMaf(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
+            },
+            {
+                "name": "classyfire_search",
+                "description": "Search ClassyFire?.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
             },
             {
                 "name": "user_token",
@@ -816,6 +842,12 @@ class SearchNamesMaf(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        # Search ClassyFire?
+        classyfire_search = False
+        if "classyfire_search" in request.headers and \
+                request.headers["classyfire_search"].lower() == 'true':
+            classyfire_search = True
+
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
@@ -839,11 +871,13 @@ class SearchNamesMaf(Resource):
                 file_name = file['file']
                 if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
                     maf_count += 1
-                    maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = search_and_update_maf(study_location, file_name)
+                    maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = \
+                        search_and_update_maf(study_location, file_name, classyfire_search)
                     if maf_len != new_maf_len:
                         maf_changed += 1
         else:
-            maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = search_and_update_maf(study_location, annotation_file_name)
+            maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = \
+                search_and_update_maf(study_location, annotation_file_name, classyfire_search)
             return {"in_maf_rows": maf_len, "out_maf_rows": new_maf_len,
                     "pubchem_file": http_file_location + pubchem_file.split(study_id)[1]}
 

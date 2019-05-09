@@ -151,17 +151,26 @@ class WsClient:
         """
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/genericcompoundsearch/" + search_type
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        resp = None
+        json_resp = None
         if search_type == 'name' or search_type == 'databaseid':
-            resp = requests.get(url + "/" + search_value, headers={"body": search_value})
+            try:
+                resp = requests.get(url + "/" + search_value, headers={"body": search_value})
+            except Exception as e:
+                logger.error("MAF search failed. " + str(e))
 
         if search_type == 'inchi' or search_type == 'smiles':
-            bytes_search = search_value.encode()
-            resp = requests.post(url, data={search_type: bytes_search})
+            try:
+                bytes_search = search_value.encode()
+                resp = requests.post(url, data={search_type: bytes_search})
+            except Exception as e:
+                logger.error("MAF search failed. " + str(e))
 
-        if resp.status_code != 200:
-            abort(resp.status_code)
+        if resp:
+            if resp.status_code != 200:
+                abort(resp.status_code)
 
-        json_resp = resp.json()
+            json_resp = resp.json()
         return json_resp
 
     def get_study_status(self, study_id, user_token):
