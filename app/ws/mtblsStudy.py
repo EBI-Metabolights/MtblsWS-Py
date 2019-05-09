@@ -122,13 +122,7 @@ class MyMtblsStudiesDetailed(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
 
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS1', user_token)
-        if not read_access:
-            abort(403, "Study does not exist or your do not have access to this study")
-
-        user_studies = get_all_studies_for_user(user_token, is_curator)
+        user_studies = get_all_studies_for_user(user_token)
 
         return jsonify({"data": user_studies})
 

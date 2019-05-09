@@ -34,20 +34,17 @@ query_all_studies = """
     where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
 query_studies_user = """
-        SELECT distinct s.acc, 
-        to_char(s.releasedate,'YYYY-MM-DD'), 
-        to_char(s.submissiondate,'YYYY-MM-DD'), 
-          case when s.status = 0 then 'Submitted' 
-               when s.status = 1 then 'In Curation'
-               when s.status = 2 then 'In Review' 
-               when s.status = 3 then 'Public' 
-               else 'Dormant' end 
-        from studies s
+    SELECT distinct s.acc, 
+    to_char(s.releasedate,'YYYY-MM-DD'), 
+    to_char(s.submissiondate,'YYYY-MM-DD'), 
+      case when s.status = 0 then 'Submitted' 
+           when s.status = 1 then 'In Curation'
+           when s.status = 2 then 'In Review' 
+           when s.status = 3 then 'Public' 
+           else 'Dormant' end 
+    from studies s, users u, study_user su 
+    where s.id = su.studyid and su.userid = u.id and u.apitoken = (%s);
     """
-query_studies_user_from = """
-        , users u, study_user su 
-        where s.id = su.studyid and su.userid = u.id and u.apitoken = (%s);
-        """
 
 query_user_access_rights = """
     select distinct role, read, write, obfuscationcode, releasedate, submissiondate, 
@@ -76,12 +73,9 @@ query_user_access_rights = """
 """
 
 
-def get_all_studies_for_user(user_token, is_curator):
-    query = query_studies_user
-    if not is_curator:
-        query = query_studies_user + query_studies_user_from
+def get_all_studies_for_user(user_token):
 
-    study_list = execute_query(query, user_token)
+    study_list = execute_query(query_studies_user, user_token)
     study_location = app.config.get('STUDY_PATH')
     file_name = 'i_Investigation.txt'
     isa_title = 'Study Title'
