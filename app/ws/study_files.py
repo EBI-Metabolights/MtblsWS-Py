@@ -133,11 +133,11 @@ class StudyFiles(Resource):
                                           directory=directory, include_raw_data=include_raw_data,
                                           assay_file_list=get_assay_file_list(study_location))
 
-        return jsonify({'studyFiles': study_files,
-                        'upload': upload_diff,
-                        'upload_all': upload_files,
-                        'upload_location': upload_location[1],
-                        'obfuscation_code': obfuscation_code})
+        return jsonify({'study': study_files,
+                        'latest': upload_diff,
+                        'private': upload_files,
+                        'uploadPath': upload_location[1],
+                        'obfuscationCode': obfuscation_code})
 
     @swagger.operation(
         summary="Delete files from a given folder",
@@ -844,5 +844,5 @@ class StudyFilesTree(Resource):
         except MemoryError:
             abort(408)
 
-        return jsonify({'studyFiles': file_list, 'upload': [], 'upload_all': [],
-                        'upload_location': upload_location[1], 'obfuscation_code': obfuscation_code})
+        return jsonify({'study': file_list, 'latest': [], 'private': [],
+                        'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
