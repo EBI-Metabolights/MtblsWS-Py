@@ -29,6 +29,7 @@ pubchem_end = "_pubchem.tsv"
 complete_end = "_complete.sdf"
 classyfire_end = "_classyfire"
 anno_sub_folder = "chebi_pipeline_annotations"
+final_cid_column_name = "final_external_id"
 
 
 def split_rows(maf_df, annotation_file=None):
@@ -135,17 +136,23 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
         pubchem_df = create_pubchem_df(maf_df)
 
     row_idx = 0
-    short_df = maf_df[["database_identifier", maf_compound_name_column]]
+    if exiting_pubchem_file:
+        short_df = maf_df[["database_identifier", maf_compound_name_column, final_cid_column_name]]
+    else:
+        short_df = maf_df[["database_identifier", maf_compound_name_column]]
 
     # Search using the compound name column
     for idx, row in short_df.iterrows():
         database_id = row[0]
         comp_name = row[1]
+        final_cid = None
+        if exiting_pubchem_file:
+            final_cid = row[2]
         print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
-        if not database_id and comp_name:  # So if have a name, but no ChEBI id, try to search for it
+        if not database_id and comp_name:  # So if have a name, but no ChEBI id, try to search for it  # ToDo, use final_cid
             start_time = time.time()
             chebi_found = False
-            comp_name = comp_name.rstrip()  # Remove trailing spaces
+            comp_name = comp_name.strip()  # Remove leading/trailing spaces before we search
             comp_name = comp_name.replace('Î´', 'delta')
             # If you try using unixode delta: '\u03b4', UnicodeEncodeError: 'latin-1' codec can't encode character '\u03b4' in position 8: ordinal not in range(256)
     #        comp_name = comp_name.encode('ascii', 'ignore')  # Make sure it's only searching using ASCII encoding
@@ -167,13 +174,13 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
                 pubchem_df.iloc[row_idx, 1] = chemical_formula
                 pubchem_df.iloc[row_idx, 2] = smiles
                 pubchem_df.iloc[row_idx, 3] = inchi
-                # 4 is name / metabolite_identification from MAF
+                pubchem_df.iloc[row_idx, 4] = comp_name  # 4 is name / metabolite_identification from MAF
 
                 if name:
                     if database_identifier:
                         if database_identifier.startswith('CHEBI:'):
                             chebi_found = True
-                            print_log("    -- Found ChEBI id " + database_identifier + " in the  MetaboLights plugin search")
+                            print_log("    -- Found ChEBI id " + database_identifier + " in the  MetaboLights search")
                         maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
                     if chemical_formula:
                         maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
@@ -201,13 +208,16 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
                 csid = get_csid(ik)
 
                 pubchem_df.iloc[row_idx, 5] = pc_name  # PubChem name
-                pubchem_df.iloc[row_idx, 6] = pc_cid   # Final PubChem CID
-                pubchem_df.iloc[row_idx, 7] = pc_cid   # PubChem CID
 
-                if not pc_cid:
-                    pc_cid = get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey)
-                    pubchem_df.iloc[row_idx, 6] = pc_cid  # Final PubChem CID should now be the cactus/opsin one
-                pubchem_df.iloc[row_idx, 8] = pc_cid    # PubChem CID, if none get from InChIKey search (Cactus, OBSIN)
+                if not final_cid:
+                    final_cid = pc_cid
+                pubchem_df.iloc[row_idx, 6] = final_cid   # Final PubChem CID (and other external id's manually added)
+                pubchem_df.iloc[row_idx, 7] = pc_cid   # PubChem CID
+                if not final_cid:
+                    final_cid = get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey)
+                    pubchem_df.iloc[row_idx, 6] = final_cid  # Final PubChem CID should now be the cactus or opsin
+                pubchem_df.iloc[row_idx, 8] = pc_cid    # PubChem CID
+
                 pubchem_df.iloc[row_idx, 9] = csid      # ChemSpider ID (CSID) from INCHI
                 pubchem_df.iloc[row_idx, 10] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # final smiles
                 final_inchi = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # final inchi
@@ -228,44 +238,52 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
                 pubchem_df.iloc[row_idx, 24] = cactus_synonyms      # Cactus synonyms
                 pubchem_df.iloc[row_idx, 25] = pc_structure         # PubChem structure (SDF)
 
-                # Now we have more information, so let's try to search ChEBI again
+                # Now we may have more information, so let's try to search ChEBI again
 
                 if final_inchi_key and len(final_inchi_key) > 0:
                     chebi_id, inchi, inchikey, name, smiles, formula = direct_chebi_search(final_inchi_key, comp_name)
-                    if chebi_id:
-                        database_identifier = chebi_id
-                        chemical_formula = formula
-                        smiles = smiles
-                        inchi = inchi
-                        name = name
+                elif comp_name:
+                    chebi_id, inchi, inchikey, name, smiles, formula = direct_chebi_search(
+                        final_inchi_key, comp_name, "external_db")
+                else:
+                    chebi_id, inchi, inchikey, name, smiles, formula = direct_chebi_search(
+                        final_inchi_key, comp_name, "external_db")  # ToDo, not really required
 
-                        print_log('    -- Found ChEBI id ' + database_identifier + ' based on final InChIKey')
-                        pubchem_df.iloc[row_idx, 0] = database_identifier
-                        pubchem_df.iloc[row_idx, 1] = chemical_formula
-                        pubchem_df.iloc[row_idx, 2] = smiles
-                        pubchem_df.iloc[row_idx, 3] = inchi
-                        # 4 is name / metabolite_identification from MAF
+                if chebi_id:
+                    database_identifier = chebi_id
+                    chemical_formula = formula
+                    smiles = smiles
+                    inchi = inchi
+                    name = name
 
-                        if name:  # Add to the annotated file as well
-                            if database_identifier:
-                                maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
-                            if chemical_formula:
-                                maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
-                            if smiles:
-                                maf_df.iloc[row_idx, int(standard_maf_columns['smiles'])] = smiles
-                            if inchi:
-                                maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
+                    print_log('    -- Found ChEBI id ' + database_identifier + ' based on final InChIKey')
+                    pubchem_df.iloc[row_idx, 0] = database_identifier
+                    pubchem_df.iloc[row_idx, 1] = chemical_formula
+                    pubchem_df.iloc[row_idx, 2] = smiles
+                    pubchem_df.iloc[row_idx, 3] = inchi
+                    # 4 is name / metabolite_identification from MAF
 
-                    else:
-                        # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
-                        # and the classyFire SDF
-                        create_annotation_folder(study_location + os.sep + anno_sub_folder)
-                        sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list,
-                                                final_inchi, classyfire_search)
+                    if name:  # Add to the annotated file as well
+                        if database_identifier:
+                            maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
+                        if chemical_formula:
+                            maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
+                        if smiles:
+                            maf_df.iloc[row_idx, int(standard_maf_columns['smiles'])] = smiles
+                        if inchi:
+                            maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
+
+                else:
+                    # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
+                    # and the classyFire SDF
+                    create_annotation_folder(study_location + os.sep + anno_sub_folder)
+                    sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list,
+                                            final_inchi, classyfire_search)
 
             print_log("    -- Search took %s seconds" % round(time.time() - start_time, 2))
         else:
-            print_log("    -- Skipping. No database id/compound name to search " + database_id + " " + comp_name)
+            print_log("    -- Skipping. Already found or no database id/compound name to search for: "
+                      + database_id + " " + comp_name)
 
         row_idx += 1
 
@@ -419,22 +437,35 @@ def get_is_a(onto, chebi_compound):
     return is_a_list
 
 
-def direct_chebi_search(final_inchi, comp_name):
+def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
     chebi_id = ""
     inchi = ""
     inchikey = ""
     name = ""
     smiles = ""
     formula = ""
-    print_log("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
     url = app.config.get('CHEBI_URL')
     client = Client(url)
+    top_result = None
     try:
-        lite_entity = client.service.getLiteEntity(final_inchi, 'INCHI_INCHI_KEY', '10', 'ALL')
+        if search_type == "inchi" and final_inchi:
+            print_log("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
+            lite_entity = client.service.getLiteEntity(final_inchi, 'INCHI_INCHI_KEY', '10', 'ALL')
+        elif search_type == "external_db" and comp_name:
+            print_log("    -- Querying ChEBI web services for " + comp_name + " using external database id search")
+            lite_entity = client.service.getLiteEntity(comp_name, 'DATABASE_LINK_REGISTRY_NUMBER_CITATION', '10', 'ALL')
+
         if lite_entity:
             top_result = lite_entity[0]
-            chebi_id = top_result.chebiId
+        # else:
+        #     print_log("    -- Querying ChEBI web services for " + comp_name + " using external database id search")
+        #     lite_entity = client.service.getLiteEntity(comp_name, 'DATABASE_LINK_REGISTRY_NUMBER_CITATION', '10', 'ALL')
+        #     if lite_entity:
+        #         top_result = lite_entity[0]
 
+        if top_result:
+            chebi_id = top_result.chebiId
+            print_log('    -- Found ChEBI compound ' + chebi_id)
             complete_entity = client.service.getCompleteEntity(chebi_id)
             inchi = complete_entity.inchi
             inchikey = complete_entity.inchiKey
@@ -494,7 +525,7 @@ def create_pubchem_df(maf_df):
     # These are simply the fixed spreadsheet column headers
     pubchem_df = maf_df[['database_identifier', 'chemical_formula', 'smiles', 'inchi', 'metabolite_identification']]
     pubchem_df['iupac_name'] = ''           # 5
-    pubchem_df['final_cid'] = ''            # 6
+    pubchem_df[final_cid_column_name] = ''  # 6
     pubchem_df['pubchem_cid'] = ''          # 7
     pubchem_df['pubchem_cid_ik'] = ''       # 8  PubChem CID from InChIKey search (Cactus, OBSIN)
     pubchem_df['csid_ik'] = ''              # 9  ChemSpider ID (CSID) from INCHIKEY

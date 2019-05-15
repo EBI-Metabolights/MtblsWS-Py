@@ -833,7 +833,7 @@ class CreateAccession(Resource):
             }
         ]
     )
-    def post(self):
+    def get(self):
 
         # User authentication
         user_token = None

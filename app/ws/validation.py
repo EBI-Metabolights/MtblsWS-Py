@@ -910,7 +910,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                         success, file_name, value=prot_desc, log_category=log_category)
 
             if len(prot_name) >= name_val_len:
-                add_msg(validations, val_section, "Protocol name '" + prot_name + "'validates", success, file_name,
+                add_msg(validations, val_section, "Protocol name '" + prot_name + "' validates", success, file_name,
                         value=prot_name, log_category=log_category)
             else:
                 add_msg(validations, val_section, prot_name + ": " + name_val_error, error, file_name, value=prot_name,

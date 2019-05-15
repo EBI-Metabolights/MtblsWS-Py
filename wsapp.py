@@ -22,6 +22,7 @@ from app.ws.assay_protocol import *
 from app.ws.validation import Validation, OverrideValidation
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, CheckCompounds
 from app.ws.biostudies import *
+from app.ws.spectra import ExtractMSSpectra
 
 """
 MTBLS WS-Py
@@ -130,6 +131,7 @@ def initialize_app(flask_app):
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
     api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml2isatab")
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml")
+    api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
     # ToDo, complete this: api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
