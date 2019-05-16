@@ -1,8 +1,7 @@
 import pyopenms
 import logging
-import os
 import json
-from flask import current_app as app
+import os
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -16,52 +15,6 @@ wsc = WsClient()
 
 
 class ExtractMSSpectra(Resource):
-    #  See: https://pypi.org/project/pyopenms/
-
-    def get_spectrum(self, filepath, retention_time):
-        float_format = "{0:.4f}"
-        peak_list = []
-        mz_list = []
-        path = str.encode(filepath)
-
-        # rt_num = None
-        # if retention_time:
-        #     try:
-        #         rt_num = int(retention_time)
-        #     except ValueError:
-        #         rt_num = float(retention_time)
-        #     rt_num = float_format.format(rt_num)
-
-        try:
-            exp = pyopenms.MSExperiment()
-            pyopenms.FileHandler().loadExperiment(path, exp)
-        except Exception as error:
-            print(str(error))
-        for spectrum in exp:
-            rt = str(spectrum.getRT())
-            # So either no rt param passed, or the decimal input in the mzml rt float (no rounding)
-            if not retention_time or retention_time in rt:
-                for peak in spectrum:
-                    peak_list.append({"intensity": peak.getIntensity(), "mz": peak.getMZ(), "rt": rt})
-                    mz_list.append(peak.getMZ())
-
-        return peak_list, mz_list
-
-    def create_mtbls_peak_list(self, filepath, retention_time):
-        peak_list, mz_list = self.get_spectrum(filepath, retention_time)
-        try:
-            mz_start = min(mz_list)
-            mz_stop = max(mz_list)
-        except:
-            mz_start = 0
-            mz_stop = 0
-
-        return peak_list, mz_list, mz_start, mz_stop
-
-    def write_json(self, filename, data):
-        with open(filename, 'w') as outfile:
-            json.dump(data, outfile)
-
     @swagger.operation(
         summary="Generate SpeckTackle spectra (curator only)",
         nickname="SpeckTackle spectra",
@@ -86,7 +39,7 @@ class ExtractMSSpectra(Resource):
             },
             {
                 "name": "retention_time",
-                "description": "Retention time to extract peaks for, (Use up to 3 decimal places)",
+                "description": "Extract peaks for this retention time only. Use as many decimal places as you like",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -130,7 +83,7 @@ class ExtractMSSpectra(Resource):
             }
         ]
     )
-    def post(self, study_id):
+    def get(self, study_id):
 
         # param validation
         if study_id is None:
@@ -143,7 +96,7 @@ class ExtractMSSpectra(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403)
 
@@ -162,7 +115,8 @@ class ExtractMSSpectra(Resource):
         if mzml_file_name:
             full_mzml_file_name = os.path.join(study_location, mzml_file_name)
 
-        peak_list, mz_list, mz_start, mz_stop = self.create_mtbls_peak_list(full_mzml_file_name, retention_time)
+        peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list = \
+            self.create_mtblc_peak_list(full_mzml_file_name, retention_time)
         short_name = mzml_file_name.replace(".mzML", "")
         json_file_name = mtbls_compound_id + '-' + short_name + ".json"
 
@@ -170,6 +124,51 @@ class ExtractMSSpectra(Resource):
                 "fileName": json_file_name, "peaks": peak_list}
         self.write_json(os.path.join(study_location, json_file_name), data)
 
-        return {"mzStart": mz_start, "mzStop": mz_stop,
-                "spectrumId": short_name,
-                "number of peaks": len(peak_list)}
+        return {"mzStart": mz_start, "mzStop": mz_stop, "spectrumId": short_name,
+                "intensityMin": intensity_min, "intensityMax": intensity_max,
+                "retentionTimes": rt_list, "numberOfPeaks": len(peak_list)}
+
+    def get_spectrum(self, filepath, retention_time):
+        #  See: https://pypi.org/project/pyopenms/
+        peak_list = []
+        mz_list = []
+        rt_list = []
+        intensity_list = []
+        path = str.encode(filepath)
+
+        try:
+            exp = pyopenms.MSExperiment()
+            pyopenms.FileHandler().loadExperiment(path, exp)
+        except Exception as error:
+            print(str(error))
+        for spectrum in exp:
+            rt = str(spectrum.getRT())
+            # So either no rt param passed, or the decimal input exists in the start of the mzml rt float (no rounding)
+            if not retention_time or retention_time in rt:
+                if rt not in rt_list:
+                    rt_list.append(rt)
+                for peak in spectrum:
+                    mz = peak.getMZ()
+                    intensity = peak.getIntensity()
+                    peak_list.append({"intensity": intensity, "mz": mz})
+                    mz_list.append(mz)
+                    intensity_list.append(intensity)
+
+        return peak_list, mz_list, rt_list, intensity_list
+
+    def create_mtblc_peak_list(self, filepath, retention_time):
+        peak_list, mz_list, rt_list, intensity_list = self.get_spectrum(filepath, retention_time)
+        try:
+            mz_start = min(mz_list)
+            mz_stop = max(mz_list)
+            intensity_min = min(intensity_list)
+            intensity_max = max(intensity_list)
+        except:
+            mz_start = 0
+            mz_stop = 0
+
+        return peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list
+
+    def write_json(self, filename, data):
+        with open(filename, 'w') as outfile:
+            json.dump(data, outfile)

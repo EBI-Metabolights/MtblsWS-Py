@@ -206,11 +206,16 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
     val_section = "maf"
     maf_name = os.path.join(study_location, file_name)
     maf_df = pd.DataFrame()
+
+    if len(file_name) == 0:
+        add_msg(validations, val_section, "Please add a Metabolite Annotation File name '" + file_name + "'",
+                error, log_category=log_category)
+
     try:
         maf_df = read_tsv(maf_name)
     except:
-        add_msg(validations, val_section, "Could not find or read file '" + file_name + "'", error,
-                log_category=log_category)
+        add_msg(validations, val_section, "Could not find or read Metabolite Annotation File '" + file_name + "'",
+                error, log_category=log_category)
 
     incorrect_pos = False
     incorrect_message = ""
@@ -546,9 +551,14 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
             add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
                     success, assay.filename, log_category=log_category)
         else:
-            add_msg(validations, val_section, "Sample name '" + row + "' not found in sample sheet",
-                    success, meta_file=assay.filename,
-                    descr="Please create the sample in the sample sheet first", log_category=log_category)
+            if len(row)==0:
+                add_msg(validations, val_section, "Sample name '" + row + "' can not be empty",
+                        error, meta_file=assay.filename, descr="Please add a valid sample name",
+                        log_category=log_category)
+            else:
+                add_msg(validations, val_section, "Sample name '" + row + "' not found in sample sheet",
+                        error, meta_file=assay.filename,
+                        descr="Please create the sample in the sample sheet first", log_category=log_category)
     elif a_header.endswith(' File'):  # files exists?
         file_and_column = row + '|' + a_header
         if file_and_column not in unique_file_names:
@@ -828,7 +838,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                 "Organism can not be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
                 error, file_name, log_category=log_category)
     if too_short:
-        add_msg(validations, val_section, "Organism name is too short (>=5 characters)", error, file_name,
+        add_msg(validations, val_section, "Organism name is missing or too short (>=5 characters)", error, file_name,
                 log_category=log_category)
 
     return return_validations(val_section, validations, override_list)

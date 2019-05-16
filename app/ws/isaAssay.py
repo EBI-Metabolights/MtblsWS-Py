@@ -62,8 +62,172 @@ def get_protocol(protocol_list, protocol_name):
     return None
 
 
-class StudyAssay(Resource):
+class StudyAssayDelete(Resource):
+    @swagger.operation(
+        summary='Delete an assay',
+        notes='''Remove an assay from your study. Use the full assay file name, 
+        like this: "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "assay_file_name",
+                "description": 'Assay definition',
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "force",
+                "description": "Remove related protocols",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": True
+            },
+            {
+                "name": "save_audit_copy",
+                "description": "Keep track of changes saving a copy of the unmodified files.",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 409,
+                "message": "Conflict. The request could not be completed due to a conflict"
+                           " with the current state of study. This is usually issued to prevent duplications."
+            }
+        ]
+    )
+    def delete(self, study_id, assay_file_name):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404)
 
+        if assay_file_name is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('force', help='Remove related protocols')
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        # check if we should be keeping copies of the metadata
+        save_audit_copy = True
+        save_msg_str = "be"
+        if "save_audit_copy" in request.headers:
+            if request.headers["save_audit_copy"].lower() == 'true':
+                save_audit_copy = True
+                save_msg_str = "be"
+            else:
+                save_audit_copy = False
+                save_msg_str = "NOT be"
+
+        remove_protocols = False
+        if request.args:
+            args = parser.parse_args(req=request)
+            remove_protocols = False if args['force'].lower() != 'true' else True
+
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
+                                                         skip_load_tables=True, study_location=study_location)
+        # Remove the assay from the study
+        for assay in isa_study.assays:
+            a_file = assay.filename
+
+            if assay_file_name == a_file:
+                logger.info("Removing assay " + assay_file_name + " from study " + study_id)
+
+                if remove_protocols:  # remove protocols *only* used by this assay
+                    # Get all unique protocols for the study, ie. any protocol that is only used once
+                    unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
+                    assay_type = get_assay_type_from_file_name(study_id, assay.filename)
+                    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type = \
+                        get_assay_headers_and_protcols(assay_type)
+
+                    for protcol in protocols:
+                        prot_name = protcol[1]
+                        for uprot_name in unique_protocols:
+                            if prot_name == uprot_name:
+                                obj = isa_study.get_prot(prot_name)
+                                if not obj:
+                                    abort(404)
+                                # remove object
+                                isa_study.protocols.remove(obj)
+
+                isa_study.assays.remove(assay)
+                maf_name = get_maf_name_from_assay_name(a_file)
+                logger.info("A copy of the previous files will %s saved", save_msg_str)
+                iac.write_isa_study(isa_inv, user_token, std_path,
+                                    save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
+                                    save_samples_copy=save_audit_copy)
+                try:
+                    remove_file(study_location, a_file, allways_remove=True)  # We have to remove active metadata files
+                    if maf_name is not None:
+                        remove_file(study_location, maf_name, allways_remove=True)
+                except:
+                    logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
+
+        return {"success": "The assay was removed from study " + study_id}
+
+
+class StudyAssay(Resource):
     @swagger.operation(
         summary="Get Study Assay",
         notes="""Get Study Assay.""",
@@ -358,176 +522,6 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                 "filename": assay.filename,
                 "maf": maf_name,
                 "assay": json_assay[0]}
-
-    @swagger.operation(
-        summary='Delete an assay',
-        notes='''Remove an assay from your study<pre><code>
-{    
-    "filename": "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"
-}</pre></code> ''',
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "assay",
-                "description": 'Assay definition',
-                "paramType": "body",
-                "type": "string",
-                "format": "application/json",
-                "required": True,
-                "allowMultiple": False
-            },
-            {
-                "name": "force",
-                "description": "Remove related protocols",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": False,
-                "default": True
-            },
-            {
-                "name": "save_audit_copy",
-                "description": "Keep track of changes saving a copy of the unmodified files.",
-                "paramType": "header",
-                "type": "Boolean",
-                "defaultValue": True,
-                "format": "application/json",
-                "required": False,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            },
-            {
-                "code": 409,
-                "message": "Conflict. The request could not be completed due to a conflict"
-                           " with the current state of study. This is usually issued to prevent duplications."
-            }
-        ]
-    )
-    def delete(self, study_id):
-        log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
-
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('force', help='Remove related protocols')
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
-        # check if we should be keeping copies of the metadata
-        save_audit_copy = False
-        save_msg_str = "NOT be"
-        if "save_audit_copy" in request.headers and \
-                request.headers["save_audit_copy"].lower() == 'true':
-            save_audit_copy = True
-            save_msg_str = "be"
-
-        remove_protocols = False
-        if request.args:
-            args = parser.parse_args(req=request)
-            remove_protocols = False if args['force'].lower() != 'true' else True
-
-        # body content validation
-        try:
-            data_dict = json.loads(request.data.decode('utf-8'))
-            data = data_dict['filename']
-            if data is None:
-                abort(412)
-            assay_file_name = data
-        except (ValidationError, Exception):
-            abort(400, 'Incorrect JSON provided')
-
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
-                                                         skip_load_tables=True, study_location=study_location)
-        # Remove the assay from the study
-        for assay in isa_study.assays:
-            a_file = assay.filename
-
-            if assay_file_name == a_file:
-                logger.info("Removing assay " + assay_file_name + " from study " + study_id)
-
-                if remove_protocols:  # remove protocols *only* used by this assay
-                    # Get all unique protocols for the study, ie. any protocol that is only used once
-                    unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
-                    assay_type = get_assay_type_from_file_name(study_id, assay.filename)
-                    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type = \
-                        get_assay_headers_and_protcols(assay_type)
-
-                    for protcol in protocols:
-                        prot_name = protcol[1]
-                        for uprot_name in unique_protocols:
-                            if prot_name == uprot_name:
-                                obj = isa_study.get_prot(prot_name)
-                                if not obj:
-                                    abort(404)
-                                # remove object
-                                isa_study.protocols.remove(obj)
-
-                isa_study.assays.remove(assay)
-                maf_name = get_maf_name_from_assay_name(a_file)
-                logger.info("A copy of the previous files will %s saved", save_msg_str)
-                iac.write_isa_study(isa_inv, user_token, std_path,
-                                    save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
-                                    save_samples_copy=save_audit_copy)
-                try:
-                    remove_file(study_location, a_file, allways_remove=True)  # We have to remove active metadata files
-                    if maf_name is not None:
-                        remove_file(study_location, maf_name, allways_remove=True)
-                except:
-                    logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
-
-        return {"success": "The assay was removed from study "+study_id}
 
 
 def get_all_unique_protocols_from_study_assays(study_id, assays):

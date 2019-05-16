@@ -3,8 +3,13 @@ from flask_restful_swagger import swagger
 from flask import request, abort, current_app as app, jsonify
 from app.ws.mtblsWSclient import WsClient
 from jira import JIRA
-from app.ws.db_connection import get_all_studies, get_curation_log
+from app.ws.db_connection import get_all_studies
 import logging
+import gspread
+import numpy as np
+import json
+import pandas as pd
+from oauth2client.service_account import ServiceAccountCredentials as SAC
 
 # https://jira.readthedocs.io
 options = {
@@ -303,6 +308,24 @@ class GoogleDocs(Resource):
         if not is_curator:
             abort(401)
 
-        data = get_curation_log(user_token)
+        data = self.get_curation_log()
 
         return jsonify(data)
+
+    def get_curation_log(self):
+        # Load spreadsheet from Google sheet
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        google_creds = app.config.get('GOOGLE_CREDS')
+        google_json = json.loads(google_creds, encoding='utf-8')
+        credentials = SAC.from_json_keyfile_dict(google_json, scopes=scope)
+        gc = gspread.authorize(credentials)
+        query_wks = gc.open('MTBLS Curation Status Log').get_worksheet(5)   # "Database query" sheet
+        query_records = query_wks.get_all_records()
+
+        update_wks = gc.open('MTBLS Curation Status Log').get_worksheet(6)  # "Database update" sheet
+        update_records = update_wks.get_all_records()
+        for updates in update_records:
+            print(updates[1])
+
+        df = pd.DataFrame(query_records)
+        return df

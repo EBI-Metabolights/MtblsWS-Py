@@ -560,13 +560,13 @@ def opsin_search(comp_name, req_type):
     return result
 
 
-def cactus_search(comp_name, type):
-    result = cirpy.resolve(comp_name, type)
+def cactus_search(comp_name, search_type):
+    result = cirpy.resolve(comp_name, search_type)
     synonyms = ""
     if result:
-        if type == 'stdinchikey':
+        if search_type == 'stdinchikey':
             return result.replace('InChIKey=', '')
-        if type == 'names':
+        if search_type == 'names':
             for synonym in result:
                 if get_relevant_synonym(synonym.strip()):
                     synonyms = synonyms + ';' + synonym
