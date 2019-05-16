@@ -18,3 +18,5 @@ zeep
 pronto
 ctfile
 pyopenms
+gspread
+oauth2client
