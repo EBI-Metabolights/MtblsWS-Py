@@ -173,7 +173,7 @@ def remove_samples_from_isatab(std_path):
 
         # remove tagged lines
         tag = app.config.get('DELETED_SAMPLES_PREFIX_TAG')
-        backup_file = dest_file.strip('.txt') + '.bak'
+        backup_file = dest_file.replace('.txt', '.bak')
         removed_lines = 0
         with open(dest_file, "r") as infile:
             with open(src_file, "w+") as outfile:

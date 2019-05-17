@@ -7,9 +7,10 @@ from app.ws.mm_models import *
 from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
 from flask_restful_swagger import swagger
-from app.ws.utils import log_request, add_ontology_to_investigation
+from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv
 from app.ws.db_connection import study_submitters
 import logging
+import os
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -238,10 +239,12 @@ class StudyTitle(Resource):
         # param validation
         if study_id is None:
             abort(404)
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
@@ -1598,6 +1601,17 @@ class StudyProtocols(Resource):
                 "dataType": "string"
             },
             {
+                "name": "force",
+                "description": "Remove even if referenced in any assays",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": False
+            },
+            {
                 "name": "save_audit_copy",
                 "description": "Keep track of changes saving a copy of the unmodified files.",
                 "paramType": "header",
@@ -1639,9 +1653,14 @@ class StudyProtocols(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Protocol name", location="args")
+        parser.add_argument('force', help="Force remove protocol", location="args")
+
+        force_remove_protocols = True
         args = parser.parse_args()
-        obj_name = args['name'] if args['name'] else None
-        if not obj_name:
+        force_remove_protocols = False if args['force'].lower() != 'true' else True
+        prot_name = args['name'] if args['name'] else None
+
+        if not prot_name:
             abort(404)
         # User authentication
         user_token = None
@@ -1659,24 +1678,41 @@ class StudyProtocols(Resource):
             save_msg_str = "be"
 
         # delete protocol
-        logger.info('Deleting protocol %s for %s', obj_name, study_id)
+        logger.info('Deleting protocol %s for %s', prot_name, study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
+
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
 
-        obj = isa_study.get_prot(obj_name)
-        if not obj:
+        protocol = isa_study.get_prot(prot_name)
+        if not protocol:
             abort(404)
-        # remove object
-        isa_study.protocols.remove(obj)
-        logger.info("A copy of the previous files will %s saved", save_msg_str)
-        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
-        logger.info('Deleted %s', obj.name)
+
+        # Check if the protocol is used in any assays
+        can_remove_protocol = True
+        if not force_remove_protocols:
+            for assay in isa_study.assays:
+                if protocol.name.lower() == "sample collection":
+                    can_remove_protocol = False
+                    break
+                assay_df = read_tsv(os.path.join(study_location, assay.filename))
+                if protocol.name in assay_df:
+                    can_remove_protocol = False
+                    break
+
+        if can_remove_protocol:
+            # remove object
+            isa_study.protocols.remove(protocol)
+            logger.info("A copy of the previous files will %s saved", save_msg_str)
+            iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+            logger.info('Deleted %s', protocol.name)
+        else:
+            abort(406, "The protocol is referenced in one or more assays")
 
         return jsonify(success=True)
 
@@ -3090,7 +3126,7 @@ class StudyPublications(Resource):
         exists = False
         # check for Publication added already
         for index, publication in enumerate(isa_study.publications):
-            if publication.title == new_publication.title:
+            if publication.title.strip().rstrip('\n') == new_publication.title.strip().rstrip('\n'):
                 exists = True
         # add Study Publication
         if not exists:
@@ -3310,7 +3346,7 @@ class StudyPublications(Resource):
                                                          study_location=study_location)
         found = False
         for index, publication in enumerate(isa_study.publications):
-            if publication.title == publication_title:
+            if publication.title.strip().rstrip('\n') == publication_title.strip().rstrip('\n'):
                 found = True
                 # delete Study Publication
                 del isa_study.publications[index]
@@ -3469,7 +3505,7 @@ class StudyPublications(Resource):
                                           term_source.file, term_source.description)
         found = False
         for index, publication in enumerate(isa_study.publications):
-            if publication.title == publication_title:
+            if publication.title.strip().rstrip('\n') == publication_title.strip().rstrip('\n'):
                 found = True
                 # update protocol details
                 isa_study.publications[index] = updated_publication

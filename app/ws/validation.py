@@ -616,8 +616,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             for template_header in tidy_header_row:
                 if template_header not in assay_header:
                     add_msg(validations, val_section,
-                            "Assay sheet '" + assay.filename + "' is missing column '" + template_header + "'", error, assay.filename,
-                            log_category=log_category)
+                            "Assay sheet '" + assay.filename + "' is missing column '" + template_header + "'",
+                            error, assay.filename, log_category=log_category)
 
         # Are all relevant rows filled in?
         if not assay_df.empty:

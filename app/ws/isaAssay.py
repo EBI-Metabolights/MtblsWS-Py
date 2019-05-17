@@ -150,6 +150,7 @@ class StudyAssayDelete(Resource):
 
         if assay_file_name is None:
             abort(404)
+        assay_file_name = assay_file_name.strip()
 
         # User authentication
         user_token = None
@@ -190,6 +191,7 @@ class StudyAssayDelete(Resource):
         # Remove the assay from the study
         for assay in isa_study.assays:
             a_file = assay.filename
+            a_file = a_file.strip().rstrip('\n')
 
             if assay_file_name == a_file:
                 logger.info("Removing assay " + assay_file_name + " from study " + study_id)

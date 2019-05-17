@@ -131,7 +131,7 @@ class IsaApiClient:
 
         try:
             i_filename = glob.glob(os.path.join(std_path, "i_*.txt"))[0]
-            fp = open(i_filename)
+            fp = open(i_filename, encoding='UTF-8')
             # loading tables also load Samples and Assays
             isa_inv = load(fp, skip_load_tables)
             isa_study = isa_inv.studies[0]
