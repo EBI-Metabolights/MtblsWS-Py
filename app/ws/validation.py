@@ -42,6 +42,8 @@ def get_basic_validation_rules(validation_schema, part):
 
 
 def get_complex_validation_rules(validation_schema, part, sub_part, sub_set):
+    rules = None
+    sets = None
     if validation_schema:
         study_val = validation_schema['study']
         val = study_val[part]
@@ -420,7 +422,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
             response = requests.get(validation_schema_file)
             validation_schema = json.loads(response.content)
         else:
-            with open(validation_schema_file, 'r') as json_file:
+            with open(validation_schema_file, 'r', encoding='utf-8') as json_file:
                 validation_schema = json.load(json_file)
 
     except Exception as e:
@@ -802,7 +804,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
         for s_header in samples:
             col_rows = 0  # col_rows = isa_samples[s_header].count()
             for row in isa_samples[s_header]:
-                if row:
+                if str(row):  # Float values with 0.0 are not counted, so convert to string first
                     col_rows += 1
                 if s_header == 'Characteristics[Organism]':
                     if 'human' == row.lower() or 'man' == row.lower():
@@ -864,6 +866,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
     # List if standard protocols that should be present
     if validation_schema:
         study_val = validation_schema['study']
+        # maf_name = os.path.join(study_location, file_name)
         val = study_val['protocols']
         protocol_order_list = val['default']
         for prot in protocol_order_list:
