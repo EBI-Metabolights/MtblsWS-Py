@@ -712,6 +712,8 @@ def map_file_type(file_name, directory, assay_file_list=None):
                 if open(invest_file).read():
                     return 'metadata_investigation', active_status, folder
         return 'metadata', none_active_status, folder
+    elif file_name == 'fid':  # NMR data
+        return 'fid', active_status, True
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
     elif ext in ('.sdf', '.mol'):
@@ -754,7 +756,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             else:
                 return 'raw', active_status, folder
         else:
-            if ext in ('.d', '.raw', '.idb', 'cdf', '.wiff' ,'.dat'):
+            if ext in ('.d', '.raw', '.idb', 'cdf', '.wiff','.dat'):
                 if os.path.isdir(os.path.join(directory, file_name)):
                     return 'raw', none_active_status, True
                 else:
@@ -774,7 +776,7 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
     if os.sep + 'audit' + os.sep in directory:
         return False
 
-    if assay_file_list and isa_tab_file_to_check == 'a_': #not file_name.startswith(('i_', 'a_', 's_', 'm_')):
+    if assay_file_list and isa_tab_file_to_check == 'a_':
         if file_name in assay_file_list:
             return True
         else:

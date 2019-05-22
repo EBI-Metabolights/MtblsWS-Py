@@ -161,7 +161,11 @@ def get_sample_names(isa_samples):
 def check_file(file_name_and_column, study_location, file_name_list):
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
-    if file_name not in file_name_list:
+
+    if os.path.isdir(os.path.join(study_location, file_name)):
+        return False, 'folder', file_name + " is a sub-folder, please reference a file"
+
+    if "fid" not in file_name and file_name not in file_name_list:  # Files may be referenced in sub-folders
         return False, ' - unknown - ', "File " + file_name + " does not exist"
 
     file_type, status, folder = map_file_type(file_name, study_location)
@@ -184,6 +188,8 @@ def check_file(file_name_and_column, study_location, file_name_list):
     elif file_type == 'spreadsheet' and column_name == 'Derived Spectral Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'compressed' and column_name == 'Free Induction Decay Data File':
+        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+    elif file_type == 'fid' and column_name == 'Free Induction Decay Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'raw' and column_name == 'Raw Spectral Data File':
         return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
