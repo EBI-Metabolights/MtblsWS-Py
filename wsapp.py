@@ -41,6 +41,7 @@ from app.ws.validation import Validation, OverrideValidation
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, CheckCompounds
 from app.ws.biostudies import *
 from app.ws.spectra import ExtractMSSpectra
+from app.ws.study_actions import StudyStatus
 
 """
 MTBLS WS-Py
@@ -95,6 +96,7 @@ def initialize_app(flask_app):
     api.add_resource(CreateAccession, res_path + "/studies/create")
     api.add_resource(CloneAccession, res_path + "/studies/clone")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
+    api.add_resource(StudyStatus, res_path + "/studies/<string:study_id>/status/<string:study_status>")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")
     api.add_resource(SaveAuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")

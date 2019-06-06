@@ -319,6 +319,36 @@ def override_validations(study_id, method, override=""):
         return False
 
 
+def update_study_status(study_id, study_status):
+    status = '0'
+    study_status = study_status.lower()
+    if study_status == 'submitted':
+        status = '0'
+    elif study_status == 'in_curation':
+        status = '1'
+    elif study_status == 'in_review':
+        status = '2'
+    elif study_status == 'public':
+        status = '3'
+    elif study_status == 'dormant':
+        status = '4'
+
+    query = "update studies set status = '" + status + "' where acc = '" + study_id + "';"
+
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn = psycopg2.connect(**params)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        return False
+
+
+
+
 def execute_query(query, user_token, study_id=None):
 
     if not user_token:

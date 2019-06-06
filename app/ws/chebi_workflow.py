@@ -48,6 +48,7 @@ complete_end = "_complete.sdf"
 classyfire_end = "_classyfire"
 anno_sub_folder = "chebi_pipeline_annotations"
 final_cid_column_name = "final_external_id"
+unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known"
 
 
 def split_rows(maf_df, annotation_file=None):
@@ -163,11 +164,15 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
     for idx, row in short_df.iterrows():
         database_id = row[0]
         comp_name = row[1]
+
         final_cid = None
         if exiting_pubchem_file:
             final_cid = row[2]
         print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
-        if not database_id and comp_name:  # So if have a name, but no ChEBI id, try to search for it  # ToDo, use final_cid
+
+        if not database_id and comp_name and comp_name.lower() not in unknown_list:
+            # So if have a name, but no ChEBI id, try to search for it  # ToDo, use final_cid
+
             start_time = time.time()
             chebi_found = False
             comp_name = comp_name.strip()  # Remove leading/trailing spaces before we search
@@ -198,7 +203,7 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
                     if database_identifier:
                         if database_identifier.startswith('CHEBI:'):
                             chebi_found = True
-                            print_log("    -- Found ChEBI id " + database_identifier + " in the  MetaboLights search")
+                            print_log("    -- Found ChEBI id " + database_identifier + " in the MetaboLights search")
                         maf_df.iloc[row_idx, int(standard_maf_columns['database_identifier'])] = database_identifier
                     if chemical_formula:
                         maf_df.iloc[row_idx, int(standard_maf_columns['chemical_formula'])] = chemical_formula
@@ -588,6 +593,7 @@ def cactus_search(comp_name, search_type):
         result = cirpy.resolve(comp_name, search_type)
         synonyms = ""
     except:
+        print_log("    -- ERROR: Cactus search failed!")
         return result
 
     if result:
