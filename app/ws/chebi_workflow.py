@@ -579,8 +579,17 @@ def opsin_search(comp_name, req_type):
 
 
 def cactus_search(comp_name, search_type):
-    result = cirpy.resolve(comp_name, search_type)
-    synonyms = ""
+    result = None
+
+    if comp_name is None:
+        return None
+
+    try:
+        result = cirpy.resolve(comp_name, search_type)
+        synonyms = ""
+    except:
+        return result
+
     if result:
         if search_type == 'stdinchikey':
             return result.replace('InChIKey=', '')

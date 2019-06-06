@@ -180,7 +180,11 @@ def check_file(file_name_and_column, study_location, file_name_list):
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
 
-    if os.path.isdir(os.path.join(study_location, file_name)):
+    fname, ext = os.path.splitext(file_name)
+    fname = fname.lower()
+    ext = ext.lower()
+
+    if os.path.isdir(os.path.join(study_location, file_name)) and ext not in ('.raw', '.d'):
         return False, 'folder', file_name + " is a sub-folder, please reference a file"
 
     if "fid" not in file_name and file_name not in file_name_list:  # Files may be referenced in sub-folders
@@ -601,7 +605,6 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
 def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
                     file_name_list, val_section="assays", log_category=error):
     validations = []
-    assays = []
     all_assays = []
     all_assay_names = []
     unique_file_names = []
@@ -617,6 +620,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
     for assay in isa_study.assays:
         is_ms = False
+        assays = []
 
         unique_file_names = []
         assay_file_name = os.path.join(study_location, assay.filename)
@@ -1028,7 +1032,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                             descr=first_name_val_description, log_category=log_category)
 
             if email:
-                if len(email) >= email_val_len:
+                if len(email) >= 7:
                     add_msg(validations, val_section, "Person email '" + email + "' validates", success, file_name,
                             log_category=log_category)
                 else:
