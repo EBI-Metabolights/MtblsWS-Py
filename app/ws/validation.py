@@ -239,13 +239,13 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
 
     if len(file_name) == 0:
         add_msg(validations, val_section, "Please add a Metabolite Annotation File name '" + file_name + "'",
-                error, val_sequence=1, log_category=log_category)
+                error, val_sequence=10, log_category=log_category)
 
     try:
         maf_df = read_tsv(maf_name)
     except:
         add_msg(validations, val_section, "Could not find or read Metabolite Annotation File '" + file_name + "'",
-                error, val_sequence=2, log_category=log_category)
+                error, val_sequence=11, log_category=log_category)
 
     incorrect_pos = False
     incorrect_message = ""
