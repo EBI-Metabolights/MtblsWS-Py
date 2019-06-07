@@ -116,6 +116,8 @@ class StudyStatus(Resource):
                 self.update_status(study_id, study_status)
             else:
                 abort(403, "There are validation errors. Fix any problems before attempting to change study status.")
+        else:
+            abort(403, "You do not have rights to change the status for this study")
 
         return {"Success": "Status updated from '" + db_study_status + "' to '"
                            + self.translate_status(study_status) + "'"}
