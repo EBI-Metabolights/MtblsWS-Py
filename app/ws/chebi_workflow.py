@@ -134,6 +134,8 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
         abort(400, "The file " + annotation_file_name + " was not found")
     maf_len = len(maf_df.index)
 
+    create_annotation_folder(study_location + os.sep + anno_sub_folder)
+
     # First make sure the existing pubchem annotated spreadsheet is loaded
     pubchem_df = maf_df.copy()
 
@@ -299,7 +301,6 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
                 else:
                     # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                     # and the classyFire SDF
-                    create_annotation_folder(study_location + os.sep + anno_sub_folder)
                     sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list,
                                             final_inchi, classyfire_search)
 
