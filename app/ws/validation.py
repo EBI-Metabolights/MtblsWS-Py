@@ -45,10 +45,10 @@ success = "success"
 info = "info"
 
 
-def add_msg(validations, section, message, status, meta_file="", value="", descr="", log_category=error):
+def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0, log_category=error):
     if log_category == status or log_category == 'all':
-        validations.append({"message": message, "section": section, "status": status, "metadata_file": meta_file,
-                            "value": value, "description": descr})
+        validations.append({"message": message, "section": section, "val_sequence": str(val_sequence), "status": status,
+                            "metadata_file": meta_file, "value": value, "description": descr})
 
 
 def get_basic_validation_rules(validation_schema, part):
@@ -103,13 +103,13 @@ def extract_details(rule):
 
 def return_validations(section, validations, override_list=[]):
     # Add the validation sequence
-    for idx, val in enumerate(validations):
-        idx += 1  # Set the sequence to 1, as this is the section we will override
-        val_sequence = section + '_' + str(idx)
+    for val in validations:
+        # idx += 1  # Set the sequence to 1, as this is the section we will override
+        val_sequence = section + '_' + val['val_sequence']
         val["val_sequence"] = val_sequence
         val["val_override"] = 'false'
         val["val_message"] = ''
-        if len(override_list) > 1:
+        if len(override_list) > 0:
             try:
                 for db_val in override_list:  # These are from the database, ie. already over-ridden
                     val_step = db_val.split(':')[0]
@@ -131,7 +131,7 @@ def return_validations(section, validations, override_list=[]):
     amber_warning = False
 
     # What is the overall validation status now?
-    for idx, val in enumerate(validations):
+    for val in validations:
         status = val["status"]
         if status == error:
             error_found = True
@@ -239,13 +239,13 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
 
     if len(file_name) == 0:
         add_msg(validations, val_section, "Please add a Metabolite Annotation File name '" + file_name + "'",
-                error, log_category=log_category)
+                error, val_sequence=1, log_category=log_category)
 
     try:
         maf_df = read_tsv(maf_name)
     except:
         add_msg(validations, val_section, "Could not find or read Metabolite Annotation File '" + file_name + "'",
-                error, log_category=log_category)
+                error, val_sequence=2, log_category=log_category)
 
     incorrect_pos = False
     incorrect_message = ""
@@ -263,12 +263,12 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 maf_messages(col[idx], idx, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 
         if incorrect_pos:
-            add_msg(validations, val_section, incorrect_message, error, log_category=log_category)
+            add_msg(validations, val_section, incorrect_message, error, val_sequence=3, log_category=log_category)
         else:
             add_msg(validations, val_section,
                     "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and "
                     "'metabolite_identification' found in the correct column position in '" + file_name + "'",
-                    success, log_category=log_category)
+                    success, val_sequence=4, log_category=log_category)
 
         try:
             if is_ms and maf_header['mass_to_charge']:
@@ -282,22 +282,22 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 try:
                     maf_header[assay_name]
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF",
-                            success, log_category=log_category)
+                            success, val_sequence=5, log_category=log_category)
                     check_maf_rows(validations, val_section, maf_df, assay_name, is_ms=is_ms, log_category=log_category)
                 except:
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF",
-                            error, log_category=log_category)
+                            error, val_sequence=6, log_category=log_category)
 
         if not all_assay_names and sample_name_list:
             for sample_name in sample_name_list:
                 try:
                     maf_header[sample_name]
                     add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' found in the MAF",
-                            success, log_category=log_category)
+                            success, val_sequence=7, log_category=log_category)
                     check_maf_rows(validations, val_section, maf_df, sample_name, is_ms=is_ms, log_category=log_category)
                 except:
                     add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' not found in the MAF",
-                            error, log_category=log_category)
+                            error, val_sequence=8, log_category=log_category)
 
 
 def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, log_category=error):
@@ -310,17 +310,17 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
 
     if col_rows == all_rows:
         add_msg(validations, val_section, "All values for '" + column_name + "' found in the MAF",
-                success, log_category=log_category)
+                success, val_sequence=9, log_category=log_category)
     else:
         # For MS we should have m/z values, for NMR the chemical shift is equally important.
         if (is_ms and column_name == 'mass_to_charge') or (not is_ms and column_name == 'chemical_shift'):
             add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
                     str(col_rows) + " rows found, but there should be " + str(all_rows),
-                    warning, log_category=log_category)
+                    warning, val_sequence=10, log_category=log_category)
         else:
             add_msg(validations, val_section, "Missing values for sample '" + column_name + "' in the MAF. " +
                     str(col_rows) + " rows found, but there should be " + str(all_rows),
-                    info, log_category=log_category)
+                    info, val_sequence=11, log_category=log_category)
 
 
 class Levels(object):
@@ -579,16 +579,17 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
         all_assays.append(row)
         if row in sample_name_list:
             add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
-                    success, assay.filename, log_category=log_category)
+                    success, assay.filename, val_sequence=7, log_category=log_category)
         else:
             if len(row)==0:
                 add_msg(validations, val_section, "Sample name '" + row + "' can not be empty",
                         error, meta_file=assay.filename, descr="Please add a valid sample name",
-                        log_category=log_category)
+                        val_sequence=8, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Sample name '" + row + "' not found in sample sheet",
                         error, meta_file=assay.filename,
-                        descr="Please create the sample in the sample sheet first", log_category=log_category)
+                        descr="Please create the sample in the sample sheet first",
+                        val_sequence=9, log_category=log_category)
     elif a_header.endswith(' File'):  # files exists?
         file_and_column = row + '|' + a_header
         if file_and_column not in unique_file_names:
@@ -613,10 +614,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
     if isa_study.assays:
         add_msg(validations, val_section, "Found assay(s) for this study", success, val_section,
-                log_category=log_category)
+                val_sequence=1, log_category=log_category)
     else:
         add_msg(validations, val_section, "Could not find any assays", error, descr="Add assay(s) to the study",
-                log_category=log_category)
+                val_sequence=2, log_category=log_category)
 
     for assay in isa_study.assays:
         is_ms = False
@@ -647,7 +648,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 if template_header not in assay_header:
                     add_msg(validations, val_section,
                             "Assay sheet '" + assay.filename + "' is missing column '" + template_header + "'",
-                            error, assay.filename, log_category=log_category)
+                            error, assay.filename, val_sequence=3, log_category=log_category)
 
         # Are all relevant rows filled in?
         if not assay_df.empty:
@@ -668,15 +669,15 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                     if (col_rows < all_rows) and validate_column:
                         add_msg(validations, val_section, "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing values. " +
                                 str(col_rows) + " rows found, but there should be " + str(all_rows),
-                                warning, assay.filename, log_category=log_category)
+                                warning, assay.filename, val_sequence=4, log_category=log_category)
                     else:
                         add_msg(validations, val_section,
                                 "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
-                                success, assay.filename, log_category=log_category)
+                                success, assay.filename, val_sequence=5, log_category=log_category)
                 except Exception as e:
                     add_msg(validations, val_section,
                             "Assay sheet '" + assay.filename + "' is missing rows for column '" + a_header + "'",
-                            error, assay.filename, log_category=log_category)
+                            error, assay.filename, val_sequence=6, log_category=log_category)
                     # logger.error(str(e))
 
         # Correct MAF?
@@ -692,7 +693,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     for sample_name in sample_name_list:
         if sample_name not in all_assays:
             add_msg(validations, val_section, "Sample name '" + str(sample_name) + "' is not used in any assay",
-                    info, log_category=log_category)
+                    info, val_sequence=7, log_category=log_category)
 
     for files in unique_file_names:
         file_name = files.split('|')[0]
@@ -700,11 +701,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         status, file_type, file_description = check_file(files, study_location, file_name_list)
         if status:
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
-                    + column_name + "'", success, descr=file_description, log_category=log_category)
+                    + column_name + "'", success, descr=file_description, val_sequence=8, log_category=log_category)
         else:
             add_msg(validations, val_section, "File '" + file_name + "' of type '" + file_type +
                     "' is missing or not correct for column '" + column_name + "'", error, descr=file_description,
-                    log_category=log_category)
+                    val_sequence=9, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
 
@@ -733,19 +734,19 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                 for sub_file_name in os.listdir(full_file_name):
                     if is_empty_file(os.path.join(full_file_name, sub_file_name)):
                         add_msg(validations, val_section, "Empty files found is sub-directory", info, val_section,
-                                value=os.path.join(file_name, sub_file_name), log_category=log_category)
+                                value=os.path.join(file_name, sub_file_name), val_sequence=1, log_category=log_category)
 
                     # warning for sub folders with ISA tab
                     if sub_file_name.startswith(('i_', 'a_', 's_', 'm_')) and not isa_tab_warning:
                         add_msg(validations, val_section,
                                 "Sub-directory " + file_name + " contains ISA-Tab metadata documents",
-                                warning, val_section, value=file_name, log_category=log_category)
+                                warning, val_section, value=file_name, val_sequence=2, log_category=log_category)
                         isa_tab_warning = True
 
         if file_name.startswith('Icon') or file_name.lower() == 'desktop.ini' or file_name.lower() == '.ds_store' \
                 or '~' in file_name or '+' in file_name or file_name.startswith('.'):
             add_msg(validations, val_section, "Special files should be removed from the study folder",
-                    warning, val_section, value=file_name, log_category=log_category)
+                    warning, val_section, value=file_name, val_sequence=3, log_category=log_category)
             continue
 
         if file_name.startswith(('i_', 'a_', 's_', 'm_')):
@@ -754,16 +755,17 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
             if sample_cnt > 1:
                 add_msg(validations, val_section, "Only one active sample sheet per study is allowed", error,
-                        val_section, value='Number of active sample sheets ' + sample_cnt, log_category=log_category)
+                        val_section, value='Number of active sample sheets ' + sample_cnt,
+                        val_sequence=4, log_category=log_category)
 
             if file_status == 'old':
                 add_msg(validations, val_section, "Old metadata file should be removed", warning,
-                        val_section, value=file_name, log_category=log_category)
+                        val_section, value=file_name, val_sequence=5, log_category=log_category)
 
         if is_empty_file(full_file_name):
             if file_name not in 'metexplore_mapping.json':
                 add_msg(validations, val_section, "Empty files are not allowed, '" + file_name+ "'", error, val_section,
-                        value=file_name, log_category=log_category)
+                        value=file_name, val_sequence=6, log_category=log_category)
 
         if file_type == 'raw':
             raw_file_found = True
@@ -775,16 +777,17 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
     if not raw_file_found and not derived_file_found:
         add_msg(validations, val_section, "No raw or derived files found", error, val_section,
-                value="", log_category=log_category)
+                value="", val_sequence=7, log_category=log_category)
     elif not raw_file_found and derived_file_found:
         add_msg(validations, val_section, "No raw files found, but there are derived files", warning, val_section,
-                value="", descr="Ideally you should provide both raw and derived files", log_category=log_category)
+                value="", descr="Ideally you should provide both raw and derived files",
+                val_sequence=8, log_category=log_category)
     elif not derived_file_found:
         add_msg(validations, val_section, "No derived files found", warning, val_section,
-                value="", log_category=log_category)
+                value="", val_sequence=9, log_category=log_category)
     elif not raw_file_found:
         add_msg(validations, val_section, "No raw files found", error, val_section,
-                value="", log_category=log_category)
+                value="", val_sequence=10, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
 
@@ -813,14 +816,14 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
             if sample_val_name == 'Protocol REF':  # Don't need to output this column name
                 continue
             add_msg(validations, val_section, "Sample column '" + sample_val_name + "' found in the sample file",
-                    success, file_name, log_category=log_category)
+                    success, file_name, val_sequence=1, log_category=log_category)
         else:
             if sample_val_name == 'Characteristics[Variant]':  # Not all studies have this present
                 add_msg(validations, val_section, "Sample column '" + sample_val_name + "' was not found", info,
-                        file_name, log_category=log_category)
+                        file_name, val_sequence=2, log_category=log_category)
                 continue
             add_msg(validations, val_section, "Sample column '" + sample_val_name + "' was not found", error,
-                    file_name, log_category=log_category)
+                    file_name, val_sequence=3, log_category=log_category)
     # Has the submitter use the term 'Human' and not 'Homo sapiens'?
     human_found = False
     too_short = False
@@ -843,13 +846,13 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                     if row.lower() in incorrect_species:
                         add_msg(validations, val_section,
                                 "Organism can not be '" + row + "', choose the appropriate taxonomy term",
-                                error, file_name, log_category=log_category)
+                                error, file_name, val_sequence=4, log_category=log_category)
 
                     if ':' in row:
                         add_msg(validations, val_section,
                                 "Organism should not contain the actual ontology/taxonomy name, "
                                 "please include just the appropriate taxonomy term",
-                                warning, file_name, log_category=log_category)
+                                warning, file_name, val_sequence=5, log_category=log_category)
 
                 elif s_header.lower() == 'sample name':
                     if row:
@@ -858,18 +861,18 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
             if col_rows < all_rows:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing values. " +
                         str(col_rows) + " rows found, but there should be " + str(all_rows), error, file_name,
-                        log_category=log_category)
+                        val_sequence=6, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has correct number of rows",
-                        success, file_name, log_category=log_category)
+                        success, file_name, val_sequence=7, log_category=log_category)
 
     if human_found:
         add_msg(validations, val_section,
                 "Organism can not be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
-                error, file_name, log_category=log_category)
+                error, file_name, val_sequence=8, log_category=log_category)
     if too_short:
         add_msg(validations, val_section, "Organism name is missing or too short (>=5 characters)", error, file_name,
-                log_category=log_category)
+                val_sequence=9, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
 
@@ -915,13 +918,13 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
 
             if prot_val_name != isa_prot_name:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is not in the correct position",
-                        warning, file_name, log_category=log_category)
+                        warning, file_name, val_sequence=1, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' is in the correct position",
-                        success, file_name, log_category=log_category)
+                        success, file_name, val_sequence=2, log_category=log_category)
         except:
             add_msg(validations, val_section, "Protocol '" + prot_val_name + "' was not found", error, file_name,
-                    log_category=log_category)
+                    val_sequence=3, log_category=log_category)
 
     name_rules, name_val_description = get_complex_validation_rules(
         validation_schema, part='protocols', sub_part='protocol', sub_set='name')
@@ -945,42 +948,44 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
             # non printable characters
             if prot_desc != clean_prot_desc:
                 add_msg(validations, val_section, "Protocol description contains non printable characters",
-                        error, file_name, value=prot_desc, log_category=log_category)
+                        error, file_name, value=prot_desc, val_sequence=4, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Protocol description only contains printable characters",
-                        success, file_name, value=prot_desc, log_category=log_category)
+                        success, file_name, value=prot_desc, val_sequence=5, log_category=log_category)
 
             if len(prot_name) >= name_val_len:
                 add_msg(validations, val_section, "Protocol name '" + prot_name + "' validates", success, file_name,
-                        value=prot_name, log_category=log_category)
+                        value=prot_name, val_sequence=6, log_category=log_category)
             else:
                 add_msg(validations, val_section, prot_name + ": " + name_val_error, error, file_name, value=prot_name,
-                        descr=name_val_description, log_category=log_category)
+                        descr=name_val_description, val_sequence=7, log_category=log_category)
 
             if len(prot_desc) >= desc_val_len:
                 if prot_desc == 'Please update this protocol description':
                     add_msg(validations, "Protocol", prot_name + ": " + desc_val_error, warning, file_name,
-                            value=prot_desc, descr='Please update this protocol description', log_category=log_category)
+                            value=prot_desc, descr='Please update this protocol description',
+                            val_sequence=8, log_category=log_category)
                 add_msg(validations, val_section, "Protocol description validates", success, file_name,
-                        value=prot_desc, log_category=log_category)
+                        value=prot_desc, val_sequence=9, log_category=log_category)
             else:
                 if 'no metabolites' in prot_desc.lower():
                     add_msg(validations, val_section, "Protocol description validates", success, file_name,
-                            value=prot_desc, log_category=log_category)
+                            value=prot_desc, val_sequence=10, log_category=log_category)
                 else:
                     add_msg(validations, val_section, prot_name + ": " + desc_val_error, error, file_name,
-                            value=prot_desc, descr=desc_val_description, log_category=log_category)
+                            value=prot_desc, descr=desc_val_description, val_sequence=11, log_category=log_category)
 
             if prot_params and len(prot_params.term) >= param_val_len:
                 add_msg(validations, val_section, "Protocol parameter(s) validates", success, file_name,
-                        value=prot_params.term, log_category=log_category)
+                        value=prot_params.term, val_sequence=12, log_category=log_category)
             else:
                 if prot_params:
                     add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
-                            value=prot_params.term, descr=param_val_description, log_category=log_category)
+                            value=prot_params.term, descr=param_val_description,
+                            val_sequence=13, log_category=log_category)
                 else:
                     add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
-                            value="", descr=param_val_description, log_category=log_category)
+                            value="", descr=param_val_description, val_sequence=14, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
 
@@ -1017,37 +1022,38 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
 
             if last_name:
                 if len(last_name) >= last_name_val_len:
-                    add_msg(validations, val_section, "Person last name '" + last_name + "' validates ", success, file_name,
-                            log_category=log_category)
+                    add_msg(validations, val_section, "Person last name '" + last_name + "' validates ", success,
+                            file_name, val_sequence=1, log_category=log_category)
                 else:
                     add_msg(validations, val_section, last_name_val_error, error, file_name, value=last_name,
-                            descr=last_name_val_description, log_category=log_category)
+                            descr=last_name_val_description, val_sequence=2, log_category=log_category)
 
             if first_name:
                 if len(first_name) >= first_name_val_len:
-                    add_msg(validations, val_section, "Person first name '" + first_name + "' validates", success, file_name,
-                            log_category=log_category)
+                    add_msg(validations, val_section, "Person first name '" + first_name + "' validates", success,
+                            file_name, val_sequence=3, log_category=log_category)
                 else:
                     add_msg(validations, val_section, first_name_val_error, error, file_name, value=first_name,
-                            descr=first_name_val_description, log_category=log_category)
+                            descr=first_name_val_description, val_sequence=4, log_category=log_category)
 
             if email:
                 if len(email) >= 7:
                     add_msg(validations, val_section, "Person email '" + email + "' validates", success, file_name,
-                            log_category=log_category)
+                            val_sequence=5, log_category=log_category)
                 else:
                     add_msg(validations, val_section, email_val_error, error, file_name, value=email,
-                            descr=email_val_error, log_category=log_category)
+                            descr=email_val_error, val_sequence=6, log_category=log_category)
 
             if affiliation:
                 if len(affiliation) >= affiliation_val_len:
                     add_msg(validations, val_section, "Person affiliation '" + affiliation + "' validates", success, file_name,
-                            log_category=log_category)
+                            val_sequence=7, log_category=log_category)
                 else:
                     add_msg(validations, val_section, affiliation_val_error, error, file_name, value=affiliation,
-                            descr=affiliation_val_error, log_category=log_category)
+                            descr=affiliation_val_error, val_sequence=8, log_category=log_category)
     else:
-        add_msg(validations, val_section, "No study persons/authors found", error, file_name, log_category=log_category)
+        add_msg(validations, val_section, "No study persons/authors found", error, file_name,
+                val_sequence=9, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
 
@@ -1096,84 +1102,96 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
         for index, publication in enumerate(isa_study.publications):
 
             if not publication:
-                add_msg(validations, val_section, title_val_error, error, file_name, log_category=log_category)
+                add_msg(validations, val_section, title_val_error, error, file_name,
+                        val_sequence=1, log_category=log_category)
             else:
-                add_msg(validations, val_section, "Found a publication", success, file_name, log_category=log_category)
+                add_msg(validations, val_section, "Found a publication", success, file_name,
+                        val_sequence=2, log_category=log_category)
 
             if not publication.title:
-                add_msg(validations, val_section, title_val_error, error, file_name, log_category=log_category)
+                add_msg(validations, val_section, title_val_error, error, file_name,
+                        val_sequence=3, log_category=log_category)
             elif publication.title:
                 if len(publication.title) >= title_val_len:
                     add_msg(validations, val_section, "Found the title of the publication '" + publication.title + "'",
-                            success, file_name, log_category=log_category)
+                            success, file_name, val_sequence=4, log_category=log_category)
                 else:
                     add_msg(validations, val_section, title_val_error, warning,
-                            file_name, value=publication.title, descr=title_val_description, log_category=log_category)
+                            file_name, value=publication.title, descr=title_val_description,
+                            val_sequence=5, log_category=log_category)
 
             if not publication.doi:
-                add_msg(validations, val_section, doi_val_description, warning, file_name, log_category=log_category)
+                add_msg(validations, val_section, doi_val_description, warning, file_name,
+                        val_sequence=6, log_category=log_category)
                 doi = False
             elif publication.doi:
                 if check_doi(publication.doi, doi_val):
                     add_msg(validations, val_section, "Found the doi '" + publication.doi + "' for the publication",
-                            success, file_name, log_category=log_category)
+                            success, file_name, val_sequence=7, log_category=log_category)
                     doi = True
                 else:
                     add_msg(validations, val_section, doi_val_error + ": " + publication.doi, warning, file_name, doi,
-                            descr=publication.doi, log_category=log_category)
+                            descr=publication.doi, val_sequence=8, log_category=log_category)
                     doi = False
 
             if not publication.pubmed_id:
-                add_msg(validations, val_section, pmid_val_description, warning, file_name, log_category=log_category)
+                add_msg(validations, val_section, pmid_val_description, warning, file_name,
+                        val_sequence=9, log_category=log_category)
                 pmid = False
             elif publication.pubmed_id:
                 try:
                     int(publication.pubmed_id)
                 except ValueError:
                     add_msg(validations, val_section, pmid_val_error, error, file_name,
-                            value=publication.pubmed_id, descr=pmid_val_description)
+                            value=publication.pubmed_id, descr=pmid_val_description,
+                            val_sequence=10, log_category=log_category)
 
                 if len(publication.pubmed_id) >= int(pmid_val_len):
                     add_msg(validations, val_section,
                             "Found pmid '" + publication.pubmed_id + "' for the publication", success, file_name,
-                            log_category=log_category)
+                            val_sequence=11, log_category=log_category)
                     pmid = True
                 else:
                     add_msg(validations, val_section, pmid_val_error, error, file_name,
-                            value=publication.pubmed_id, descr=pmid_val_description, log_category=log_category)
+                            value=publication.pubmed_id, descr=pmid_val_description,
+                            val_sequence=12, log_category=log_category)
                     pmid = False
 
             if not doi or not pmid:
                 add_msg(validations, val_section,
                         "Please provide both a valid doi and pmid for the publication",
-                        warning, file_name, log_category=log_category)
+                        warning, file_name, val_sequence=13, log_category=log_category)
             elif doi and pmid:
                 add_msg(validations, val_section,
-                        "Found both doi and pmid for the publication", success, file_name, log_category=log_category)
+                        "Found both doi and pmid for the publication", success, file_name,
+                        val_sequence=14, log_category=log_category)
 
             if not publication.author_list:
-                add_msg(validations, val_section, author_val_error, error, file_name, log_category=log_category)
+                add_msg(validations, val_section, author_val_error, error, file_name,
+                        val_sequence=15, log_category=log_category)
             elif publication.author_list:
                 if len(publication.author_list) >= author_val_len:
                     add_msg(validations, val_section, "Found the author list for the publication",
-                            success, file_name, log_category=log_category)
+                            success, file_name, val_sequence=16, log_category=log_category)
                 else:
                     add_msg(validations, val_section, author_val_error, error, file_name,
-                            value=publication.author_list, descr=author_val_description, log_category=log_category)
+                            value=publication.author_list, descr=author_val_description,
+                            val_sequence=17, log_category=log_category)
 
             if not publication.status:
                 add_msg(validations, val_section, "Please provide the publication status",
-                        error, file_name, log_category=log_category)
+                        error, file_name, val_sequence=18, log_category=log_category)
             elif publication.status:
                 pub_status = publication.status
                 if len(pub_status.term) >= status_val_len:
                     add_msg(validations, val_section, "Found the publication status",
-                            success, file_name, log_category=log_category)
+                            success, file_name, val_sequence=19, log_category=log_category)
                 else:
                     add_msg(validations, val_section, status_val_error, success, file_name,
-                            value=pub_status.title, descr=status_val_description, log_category=log_category)
+                            value=pub_status.title, descr=status_val_description,
+                            val_sequence=20, log_category=log_category)
     else:
-        add_msg(validations, val_section, title_val_error, error, log_category=log_category)
+        add_msg(validations, val_section, title_val_error, error, val_sequence=21, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
 
@@ -1202,27 +1220,27 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
         add_msg(validations, val_section,
                 "Loading ISA-Tab without sample and assay tables. "
                 "Protocol parameters does not match the protocol definition",
-                warning, file_name, log_category=log_category)
+                warning, file_name, val_sequence=1, log_category=log_category)
         logger.error("Cannot load ISA-Tab with sample and assay tables due to critical error: " + err)
 
     if isa_inv:
         add_msg(validations, val_section, "Successfully read the investigation file", success,
-                'i_Investigation.txt', log_category=log_category)
+                'i_Investigation.txt', val_sequence=2, log_category=log_category)
 
         if isa_study:
             add_msg(validations, val_section, "Successfully read the study section of the investigation file", success,
-                    'i_Investigation.txt', log_category=log_category)
+                    'i_Investigation.txt', val_sequence=3, log_category=log_category)
         else:
             add_msg(validations, val_section, "Can not read the study section of the investigation file", error,
-                    'i_Investigation.txt', log_category=log_category)
+                    'i_Investigation.txt', val_sequence=4, log_category=log_category)
             validates = False
 
         if isa_study.filename:
             add_msg(validations, val_section, "Successfully found the reference to the sample sheet filename", success,
-                    'i_Investigation.txt', log_category=log_category)
+                    'i_Investigation.txt', val_sequence=5, log_category=log_category)
         else:
             add_msg(validations, val_section, "Could not find the reference to the sample sheet filename", error,
-                    file_name, log_category=log_category)
+                    file_name, val_sequence=6, log_category=log_category)
             validates = False
 
         # isaconfig
@@ -1235,49 +1253,49 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
             if 'isaconfig' in create_config.value:
                 add_msg(validations, val_section, "Incorrect configuration files used to create the study ("
                         + create_config.value + "). The study may not contain required fields",
-                        warning, file_name, log_category=log_category)
+                        warning, file_name, val_sequence=7, log_category=log_category)
                 amber_warning = True
             if 'isaconfig' in open_config.value:
                 add_msg(validations, val_section, "Incorrect configuration files used to edit the study ("
                         + open_config.value + "). The study may not contain required fields",
-                        warning, file_name, log_category=log_category)
+                        warning, file_name, val_sequence=8, log_category=log_category)
                 amber_warning = True
 
         if validates:  # Have to have a basic investigation and sample file before we can continue
             if isa_study.samples:
                 add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
-                        log_category=log_category)
+                        val_sequence=9, log_category=log_category)
             elif not isa_sample_df.empty:
                 add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
-                        log_category=log_category)
+                        val_sequence=10, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Could not find any samples",
-                        error, file_name, log_category=log_category)
+                        error, file_name, val_sequence=11, log_category=log_category)
 
             if isa_study.assays:
                 add_msg(validations, val_section, "Successfully found one or more assays", success, file_name,
-                        log_category=log_category)
+                        val_sequence=12, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Could not find any assays",
-                        error, file_name, log_category=log_category)
+                        error, file_name, val_sequence=13, log_category=log_category)
 
             if isa_study.factors:
                 add_msg(validations, val_section, "Successfully found one or more factors", success, file_name,
-                        log_category=log_category)
+                        val_sequence=14, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Could not find any factors",
-                        warning, file_name, log_category=log_category)
+                        warning, file_name, val_sequence=15, log_category=log_category)
 
             if isa_study.design_descriptors:
                 add_msg(validations, val_section, "Successfully found one or more descriptors", success, file_name,
-                        log_category=log_category)
+                        val_sequence=16, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Could not find any study design descriptors",
-                        error, file_name, log_category=log_category)
+                        error, file_name, val_sequence=17, log_category=log_category)
 
     else:
         add_msg(validations, "ISA-Tab", "Can not find or read the investigation files",
-                error, file_name, log_category=log_category)
+                error, file_name, val_sequence=18, log_category=log_category)
 
     validates, amber_warning, ret_list = return_validations(val_section, validations, override_list)
 
@@ -1310,10 +1328,11 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
             title_len = 0
 
         if title_len >= val_len:
-            add_msg(validations, val_section, "The title length validates", success, file_name, log_category=log_category)
+            add_msg(validations, val_section, "The title length validates", success, file_name,
+                    val_sequence=1, log_category=log_category)
         else:
             add_msg(validations, val_section, val_error, error, file_name,
-                    value=isa_study.title, descr=title_descr, log_category=log_category)
+                    value=isa_study.title, descr=title_descr, val_sequence=2, log_category=log_category)
 
         # Description
         val_len, val_error, val_condition, val_type = extract_details(desc_rules)
@@ -1324,14 +1343,14 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
 
         if descr_len >= val_len:
             add_msg(validations, val_section, "The length of the description validates", success, file_name,
-                    log_category=log_category)
+                    val_sequence=3, log_category=log_category)
         else:
             add_msg(validations, val_section, val_error, error, file_name,
-                    value=isa_study.description, descr=desc_desrc, log_category=log_category)
+                    value=isa_study.description, descr=desc_desrc, val_sequence=4, log_category=log_category)
 
     else:
         add_msg(validations, val_section, "Can not find or read the investigation files", error,
-                log_category=log_category)
+                val_sequence=5, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
 
