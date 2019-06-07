@@ -322,8 +322,13 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
 
 
 def create_annotation_folder(folder_loc):
-    if not os.path.exists(folder_loc):
-        os.makedirs(folder_loc)
+    print_log("Checking for ChEBI folder " + folder_loc)
+    try:
+        if not os.path.exists(folder_loc):
+            print_log("Creating ChEBI folder " + folder_loc)
+            os.makedirs(folder_loc)
+    except Exception as e:
+        print_log(e.str())
 
 
 def concatenate_sdf_files(sdf_file_list, study_location, sdf_file_name, classyfire_file_name, classyfire_search):
