@@ -485,12 +485,22 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
             isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
         all_validations.append(pub_validation)
 
+    if not status:
+        error_found = True
+    if amber_warning:
+        warning_found = True
+
     # Validate detailed metadata in ISA-Tab structure
     val_section = "isa-tab"
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(
             isa_inv, isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
         all_validations.append(isa_meta_validation)
+
+    if not status:
+        error_found = True
+    if amber_warning:
+        warning_found = True
 
     # Validate Person (authors)
     val_section = "person"
@@ -499,12 +509,22 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
             isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
         all_validations.append(isa_person_validation)
 
+    if not status:
+        error_found = True
+    if amber_warning:
+        warning_found = True
+
     # Validate Protocols
     val_section = "protocols"
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_protocol_validation = validate_protocols(
             isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
         all_validations.append(isa_protocol_validation)
+
+    if not status:
+        error_found = True
+    if amber_warning:
+        warning_found = True
 
     # Validate Samples
     val_section = "samples"
@@ -515,6 +535,11 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
                              sample_name_list, val_section, log_category=log_category)
         all_validations.append(isa_sample_validation)
 
+    if not status:
+        error_found = True
+    if amber_warning:
+        warning_found = True
+
     # Validate files
     val_section = "files"
     file_name_list = []
@@ -523,6 +548,11 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
             study_id, study_location, obfuscation_code, override_list,
             file_name_list, val_section, log_category=log_category)
         all_validations.append(files_validation)
+
+    if not status:
+        error_found = True
+    if amber_warning:
+        warning_found = True
 
     # Validate assays
     val_section = "assays"
