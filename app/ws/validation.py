@@ -717,8 +717,12 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 file_name = row
                 break  # We only need one row
 
-            validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier,
-                         sample_name_list, is_ms=is_ms, log_category=log_category)
+            if file_name:
+                validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier,
+                             sample_name_list, is_ms=is_ms, log_category=log_category)
+            else:
+                add_msg(validations, val_section, "No MAF file referenced", warning,
+                        val_sequence=7.1, log_category=log_category)
 
     for sample_name in sample_name_list:
         if sample_name not in all_assays:
