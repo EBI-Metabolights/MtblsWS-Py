@@ -691,7 +691,8 @@ def pubchem_search(comp_name, search_type='name'):
             inchi = compound.inchi.strip().rstrip('\n')
             inchi_key = compound.inchikey.strip().rstrip('\n')
             smiles = compound.canonical_smiles.strip().rstrip('\n')
-            iupac = compound.iupac_name.strip().rstrip('\n')
+            iupac = compound.iupac_name.strip().rstrip('\n')  # ToDo, more than one newline encoding??
+            # ToDo, generate from structure. Venkat has Marvin license
             iupac = iupac.replace('f', '').replace('{', '').replace('}', '')
             iupac = iupac.strip().rstrip('\n')
             cid = compound.cid

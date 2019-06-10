@@ -18,6 +18,7 @@
 
 import logging
 import string
+import json
 from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -36,7 +37,8 @@ class StudyStatus(Resource):
         summary="Change study status",
         nickname="Change study status",
         notes='''Change study status from 'Submitted' to 'In Curation'.<br>
-                <pre><code>Curators can change to any of: 'submitted', 'in_curation', 'in_review', 'public' or 'dormant'
+                <pre><code>Curators can change to any of: 'Submitted', 'In Curation', 'In Review', 'Public' or 'Dormant'
+                </p>Example: { "status": "In Curation" }
                 </code></pre>''',
         parameters=[
             {
@@ -50,10 +52,11 @@ class StudyStatus(Resource):
             {
                 "name": "study_status",
                 "description": "The status to change a study to",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
                 "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
+                "allowMultiple": False
             },
             {
                 "name": "user_token",
@@ -83,11 +86,14 @@ class StudyStatus(Resource):
             }
         ]
     )
-    def get(self, study_id, study_status):
+    def post(self, study_id):
 
         # param validation
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
+
+        data_dict = json.loads(request.data.decode('utf-8'))
+        study_status = data_dict['status']
 
         if study_status is None:
             abort(404, 'Please provide the new study status')
@@ -103,13 +109,13 @@ class StudyStatus(Resource):
         if not read_access:
             abort(403)
 
-        if self.translate_status(study_status) == db_study_status:
+        if study_status.lower() == db_study_status.lower():
             abort(406, "Nothing to change")
 
         if is_curator:  # User is a curator, so just update status without any further checks
             self.update_status(study_id, study_status)
         elif write_access:
-            if db_study_status != 'Submitted' and study_status != 'in_curation':
+            if db_study_status != 'Submitted' and study_status != 'In Curation':
                 abort(403, "You can not change to this status")
 
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
@@ -119,22 +125,12 @@ class StudyStatus(Resource):
         else:
             abort(403, "You do not have rights to change the status for this study")
 
-        return {"Success": "Status updated from '" + db_study_status + "' to '"
-                           + self.translate_status(study_status) + "'"}
+        return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'"}
 
     @staticmethod
     def update_status(study_id, study_status):
         # Update database
         update_study_status(study_id, study_status)
-
-    @staticmethod
-    def translate_status(study_status):
-        if study_status.lower() == 'in_curation':
-            return 'In Curation'
-        elif study_status.lower() == 'in_reivew':
-            return 'In Review'
-        else:
-            return string.capwords(study_status)
 
     @staticmethod
     def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):

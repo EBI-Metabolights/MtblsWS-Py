@@ -324,9 +324,9 @@ def update_study_status(study_id, study_status):
     study_status = study_status.lower()
     if study_status == 'submitted':
         status = '0'
-    elif study_status == 'in_curation':
+    elif study_status == 'in curation':
         status = '1'
-    elif study_status == 'in_review':
+    elif study_status == 'in review':
         status = '2'
     elif study_status == 'public':
         status = '3'
@@ -344,6 +344,7 @@ def update_study_status(study_id, study_status):
         conn.close()
         return True
     except Exception as e:
+        logger.error('Database update of study status failed with error ' + str(e))
         return False
 
 

@@ -663,7 +663,7 @@ def get_files(file_list):
 def get_all_files(path, directory=None, include_raw_data=False, study_id=None,
                   assay_file_list=None, validation_only=False):
     try:
-        files = get_file_information(path, directory=directory, include_raw_data=include_raw_data, study_id=study_id,
+        files = get_file_information(path, directory=directory, include_raw_data=include_raw_data,
                                      assay_file_list=assay_file_list, validation_only=validation_only)
     except:
         logger.warning('Could not find folder ' + path)
@@ -671,8 +671,7 @@ def get_all_files(path, directory=None, include_raw_data=False, study_id=None,
     return files
 
 
-def get_file_information(path, directory=None, include_raw_data=False, study_id=None,
-                         assay_file_list=None, validation_only=False):
+def get_file_information(path, directory=None, include_raw_data=False, assay_file_list=None, validation_only=False):
     file_list = []
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
