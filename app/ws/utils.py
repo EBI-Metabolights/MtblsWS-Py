@@ -605,9 +605,21 @@ def update_correct_sample_file_name(isa_study, study_location, study_id):
 
     return isa_study, short_sample_file_name
 
+def get_maf_name_from_assay_name(assay_file_name):
+    annotation_file_name = assay_file_name.replace(".txt", "_v2_maf.tsv")
+    for file_part in annotation_file_name.split("/a_"):
+        maf_name = file_part
+
+    maf_name = maf_name.replace("a_", "")
+    maf_name = "m_" + maf_name
+    return maf_name
 
 def create_maf(technology, study_location, assay_file_name, annotation_file_name):
     resource_folder = "./resources/"
+
+    if technology is None:
+        if "nmr" in assay_file_name.lower():
+            technology = "NMR"
 
     # Fixed column headers to look for in the MAF, defaults to MS
     sample_name = 'Sample Name'
@@ -620,6 +632,9 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
         assay_name = 'NMR Assay Name'
 
     col_names = [sample_name, assay_name]
+
+    if annotation_file_name is None:
+        annotation_file_name = get_maf_name_from_assay_name(assay_file_name)
 
     annotation_file_name = os.path.join(study_location, annotation_file_name)
     assay_file_name = os.path.join(study_location, assay_file_name)

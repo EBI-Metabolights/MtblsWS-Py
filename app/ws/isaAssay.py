@@ -574,15 +574,6 @@ def get_all_unique_protocols_from_study_assays(study_id, assays):
     return short_list
 
 
-def get_maf_name_from_assay_name(assay_file_name):
-    annotation_file_name = assay_file_name.replace(".txt", "_v2_maf.tsv")
-    for file_part in annotation_file_name.split("/a_"):
-        maf_name = file_part
-
-    maf_name = maf_name.replace("a_", "")
-    maf_name = "m_" + maf_name
-    return maf_name
-
 
 def create_assay(assay_type, columns, study_id, ontology):
     profiling = 'metabolite_profiling'

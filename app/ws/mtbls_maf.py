@@ -16,7 +16,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import logging, json, pandas as pd
+import logging, json, pandas as pd, os
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -115,18 +115,15 @@ class MtblsMAFSearch(Resource):
 
 
 class MetaboliteAnnotationFile(Resource):
-    """Get MAF from filesystem"""
     @swagger.operation(
         summary="Read, and add missing samples for a MAF",
         nickname="Get MAF for a given MTBLS Assay",
-        notes='''Get a given Metabolite Annotation File for a MTBLS Study with in JSON format. For assay_file_tech use 
+        notes='''Create or update a Metabolite Annotation File for an assay.
 <pre><code> 
 {  
   "data": [ 
-    {
-      "assay_file_name": "a_some_assay_file.txt", 
-      "technology": "MS"
-    } 
+    { "assay_file_name": "a_some_assay_file.txt" },
+    { "assay_file_name": "a_some_assay_file-1.txt" } 
   ]
 }
 </code></pre>''',
@@ -140,16 +137,8 @@ class MetaboliteAnnotationFile(Resource):
                 "dataType": "string"
             },
             {
-                "name": "annotation_file_name",
-                "description": "Metabolite Annotation File name",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "assay_file_tech",
-                "description": "Assay File name and technology type (MS/NMR)",
+                "name": "data",
+                "description": "Assay File names",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "body",
@@ -187,27 +176,17 @@ class MetaboliteAnnotationFile(Resource):
             }
         ]
     )
-    def post(self, study_id, annotation_file_name):
-        try:
-            data_dict = json.loads(request.data.decode('utf-8'))
-            assay_file_tech = data_dict['data']
-        except KeyError:
-            assay_file_tech = None
-
-        if assay_file_tech is None:
-            abort(417, "Please provide valid data for updated new row(s). "
-                       "The JSON string has to have a surrounding 'data' element")
+    def post(self, study_id):
+        data_dict = json.loads(request.data.decode('utf-8'))
+        assay_file_names = data_dict['data']
 
         # param validation
-        if study_id is None or annotation_file_name is None:
+        if study_id is None:
             abort(417)
 
-        assay_file_name = assay_file_tech[0]['assay_file_name']
-        technology = assay_file_tech[0]['assay_file_name']
-
         # param validation
-        if assay_file_name is None or technology is None:
-            abort(417, 'Please ensure the JSON has "assay_file_name" and "technology" elements')
+        if assay_file_names is None:
+            abort(417, 'Please ensure the JSON has at least one "assay_file_name" element')
 
         # User authentication
         user_token = None
@@ -221,12 +200,13 @@ class MetaboliteAnnotationFile(Resource):
         if not read_access:
             abort(403)
 
-        maf_df = create_maf(technology, study_location, assay_file_name, annotation_file_name)
+        for assay_file_name in assay_file_names:
+            assay_file = assay_file_name['assay_file_name']
+            if not os.path.isfile(os.path.join(study_location, assay_file)):
+                abort(406, "Assay file " + assay_file + " does not exist")
+            maf_df = create_maf(None, study_location, assay_file, annotation_file_name=None)
+            if maf_df.empty:
+                abort(406, "MAF file could not be created or updated")
 
-        # Get an indexed header row
-        df_header = get_table_header(maf_df)
-
-        # Get the rows from the maf
-        df_data_dict = totuples(maf_df.reset_index(), 'rows')
-        return {'header': df_header, 'data': df_data_dict}
+        return {"success": "Added/Updated MAF(s)"}
 
