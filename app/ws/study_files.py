@@ -734,11 +734,12 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None):
         file_list = list_directories(study_location, file_list, base_study_location=study_location)
     else:
         for entry in scandir(study_location):
-            file_type, status, folder = map_file_type(entry.name, study_location,
-                                              assay_file_list=assay_file_list)
-            name = entry.path.replace(study_location + os.sep, '')
-            file_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
-                              "status": status, "directory": folder})
+            if not entry.name.startswith("."):
+                file_type, status, folder = map_file_type(entry.name, study_location,
+                                                  assay_file_list=assay_file_list)
+                name = entry.path.replace(study_location + os.sep, '')
+                file_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
+                                  "status": status, "directory": folder})
 
     return file_list
 

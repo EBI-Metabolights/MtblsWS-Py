@@ -727,7 +727,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             if os.sep + 'audit' + os.sep in directory:
                 return 'metadata_investigation', none_active_status, folder
             for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
-                if open(invest_file).read():
+                if open(invest_file, encoding='utf8', errors="ignore").read():
                     return 'metadata_investigation', active_status, folder
         return 'metadata', none_active_status, folder
     elif file_name == 'fid':  # NMR data
