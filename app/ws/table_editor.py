@@ -413,11 +413,10 @@ class ComplexColumns(Resource):
                 file_df = read_tsv(tsv_file)
                 try:
                     file_df.drop(column, axis=1, inplace=True)
-                    write_tsv(tsv_file)
+                    write_tsv(file_df, tsv_file)
                 except Exception as e:
                     logger.error("Could not remove column '" + column + "' from file " + file_name)
                     logger.error(str(e))
-
 
         return {"Success": "Removed column(s) from " + file_name}
 
