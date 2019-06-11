@@ -147,7 +147,7 @@ class SimpleColumns(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -259,7 +259,7 @@ class ComplexColumns(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -304,6 +304,122 @@ class ComplexColumns(Resource):
         message = write_tsv(table_df, file_name)
 
         return {'header': df_header, 'rows': df_data_dict, 'message': message}
+
+    @swagger.operation(
+        summary="Delete columns from a tsv file",
+        nickname="Delete columns from a tsv file",
+        notes='''Delete given columns from a sample, assay or MAF sheet (tsv files).
+<pre><code> 
+{  
+  "data": { 
+    "columns": [
+         "column name 1" , 
+         "column name 2" 
+    ]
+  }
+}
+</code></pre>''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "file_name",
+                "description": "the CSV or TSV file name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "tsv_files",
+                "description": "TSV File names",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Metabolite Annotation File (MAF) is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Incorrect parameters provided"
+            }
+        ]
+    )
+    def delete(self, study_id, file_name):
+
+        # param validation
+        if study_id is None or file_name is None:
+            abort(417)
+
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            delete_columns = data_dict['data']
+        except Exception as e:
+            abort(417, str(e))
+
+        # param validation
+        columns = delete_columns['columns']
+        if columns is None:
+            abort(417, 'Please ensure the JSON contains a "columns" element')
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        for column in columns:
+            tsv_file = os.path.join(study_location, file_name)
+            if not os.path.isfile(tsv_file):
+                abort(406, "File " + file_name + " does not exist")
+            else:
+                file_df = read_tsv(tsv_file)
+                try:
+                    file_df.drop(column, axis=1, inplace=True)
+                    write_tsv(tsv_file)
+                except Exception as e:
+                    logger.error("Could not remove column '" + column + "' from file " + file_name)
+                    logger.error(str(e))
+
+
+        return {"Success": "Removed column(s) from " + file_name}
 
 
 class ColumnsRows(Resource):
@@ -392,7 +508,7 @@ class ColumnsRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -408,7 +524,7 @@ class ColumnsRows(Resource):
             column_index = column['column']
             #  Need to add values for column and row (not header)
             try:
-                #for row_val in range(table_df.shape[0]):
+                # for row_val in range(table_df.shape[0]):
                 table_df.iloc[int(row_index), int(column_index)] = cell_value
             except ValueError:
                 abort(417, "Unable to find the required 'value', 'row' and 'column' values")
@@ -528,7 +644,7 @@ class AddRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -677,7 +793,7 @@ class AddRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -790,7 +906,7 @@ class AddRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -890,7 +1006,7 @@ class GetTsvFile(Resource):
         logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -914,6 +1030,3 @@ class GetTsvFile(Resource):
         df_header = get_table_header(file_df, study_id, file_name_param)
 
         return {'header': df_header, 'data': df_data_dict}
-
-
-

@@ -21,7 +21,7 @@ from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import create_maf, read_tsv
+from app.ws.utils import create_maf, read_tsv, write_tsv
 
 logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client
@@ -201,10 +201,20 @@ class MetaboliteAnnotationFile(Resource):
             abort(403)
 
         for assay_file_name in assay_file_names:
+            annotation_file_name = None
             assay_file = assay_file_name['assay_file_name']
-            if not os.path.isfile(os.path.join(study_location, assay_file)):
+            full_assay_file_name = os.path.join(study_location, assay_file)
+            if not os.path.isfile(full_assay_file_name):
                 abort(406, "Assay file " + assay_file + " does not exist")
-            maf_df = create_maf(None, study_location, assay_file, annotation_file_name=None)
+            assay_df = read_tsv(full_assay_file_name)
+            annotation_file_name = assay_df['Metabolite Assignment File'].iloc[0]
+
+            maf_df, new_annotation_file_name = create_maf(None, study_location, assay_file,
+                                                          annotation_file_name=annotation_file_name)
+            if annotation_file_name != new_annotation_file_name:
+                assay_df['Metabolite Assignment File'] = new_annotation_file_name
+                write_tsv(assay_df, full_assay_file_name)
+
             if maf_df.empty:
                 abort(406, "MAF file could not be created or updated")
 

@@ -605,6 +605,7 @@ def update_correct_sample_file_name(isa_study, study_location, study_id):
 
     return isa_study, short_sample_file_name
 
+
 def get_maf_name_from_assay_name(assay_file_name):
     annotation_file_name = assay_file_name.replace(".txt", "_v2_maf.tsv")
     for file_part in annotation_file_name.split("/a_"):
@@ -614,8 +615,10 @@ def get_maf_name_from_assay_name(assay_file_name):
     maf_name = "m_" + maf_name
     return maf_name
 
+
 def create_maf(technology, study_location, assay_file_name, annotation_file_name):
     resource_folder = "./resources/"
+    update_maf = False
 
     if technology is None:
         if "nmr" in assay_file_name.lower():
@@ -631,18 +634,17 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
         annotation_file_template = resource_folder + 'm_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv'
         assay_name = 'NMR Assay Name'
 
-    col_names = [sample_name, assay_name]
-
-    if annotation_file_name is None:
+    if annotation_file_name is None or len(annotation_file_name) == 0:
         annotation_file_name = get_maf_name_from_assay_name(assay_file_name)
 
-    annotation_file_name = os.path.join(study_location, annotation_file_name)
+    full_annotation_file_name = os.path.join(study_location, annotation_file_name)
     assay_file_name = os.path.join(study_location, assay_file_name)
 
     # Get the MAF table or create a new one if it does not already exist
     try:
-        maf_df = pd.read_csv(annotation_file_name, sep="\t", header=0, encoding='utf-8')
+        maf_df = pd.read_csv(full_annotation_file_name, sep="\t", header=0, encoding='utf-8')
     except FileNotFoundError:
+        update_maf = True
         maf_df = pd.read_csv(annotation_file_template, sep="\t", header=0, encoding='utf-8')
     # Get rid of empty numerical values
     maf_df = maf_df.replace(np.nan, '', regex=True)
@@ -650,19 +652,29 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     # Read NMR or MS Assay Name first, if that is empty, use Sample Name
     assay_df = read_tsv(assay_file_name)
 
-    assay_sample_names = None
+    assay_names = []
     # Get the MS/NMR Assay Name or Sample names from the assay
     try:
-        assay_sample_names = assay_df[assay_name]
+        assay_names = assay_df[assay_name]
     except:
         logger.warning('The assay ' + assay_file_name + ' does not have ' + assay_name + ' defined!')
 
-    if assay_sample_names is None:
-        assay_sample_names = assay_df[sample_name]
+    try:
+        sample_names = assay_df[sample_name]
+    except:
+        logger.warning('The assay ' + assay_file_name + ' does not have ' + sample_name + ' defined!')
+
+    if len(assay_names) == 0:
+        assay_names = sample_names
+
+    # for i, sample in enumerate(assay_names):
+    #     if len(sample) == 0:
+    #         assay_names[i] = sample_names[i]  # Get the Sample name for this row
+    #         i += 1
 
     # Does the column already exist?
-    for row in assay_sample_names.iteritems():
-        s_name = row[1]
+    for row in assay_names:
+        s_name = str(row)
         if s_name != '':
             try:
                 in_maf = maf_df.columns.get_loc(s_name)
@@ -672,11 +684,13 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
             if in_maf == 0:
                 # Add the new columns to the MAF
                 maf_df[s_name] = ""
+                update_maf = True
 
     # Write the new empty columns back in the file
-    maf_df.to_csv(annotation_file_name, sep="\t", encoding='utf-8', index=False)
+    if update_maf:
+        maf_df.to_csv(full_annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
-    return maf_df
+    return maf_df, annotation_file_name
 
 
 def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, onto_desc):

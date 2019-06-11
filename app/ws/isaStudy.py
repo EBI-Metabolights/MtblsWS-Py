@@ -391,8 +391,8 @@ class StudyReleaseDate(Resource):
         # update study title
         logger.info('Updating Study title for %s', study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -5147,8 +5147,10 @@ class StudySubmitters(Resource):
         Due to data protection issues with confirming if an email address exists in MetaboLights, we will always indicate a successful deletion<pre><code>
     { 
       "submitters": [
+        { 
+          "email": "joe.blogs@university.ac.uk"
+        },
         {
-          "email": "joe.blogs@university.ac.uk",
           "email": "jane.blogs@university.ac.uk"
         } 
       ]

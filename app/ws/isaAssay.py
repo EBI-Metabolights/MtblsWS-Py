@@ -521,7 +521,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         maf_name = ""
         try:
             maf_name = get_maf_name_from_assay_name(assay_file_name)
-            maf_df = create_maf(overall_technology, study_location, assay_file_name, maf_name)
+            maf_df, annotation_file_name = create_maf(overall_technology, study_location, assay_file_name, maf_name)
         except:
             logger.error('Could not create MAF for study ' + study_id + ' under assay ' + assay_file_name)
 

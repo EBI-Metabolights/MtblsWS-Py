@@ -86,7 +86,7 @@ class StudyStatus(Resource):
             }
         ]
     )
-    def post(self, study_id):
+    def put(self, study_id):
 
         # param validation
         if study_id is None:
