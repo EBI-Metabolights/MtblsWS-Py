@@ -22,6 +22,7 @@ from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
+from app.ws.mtblsStudy import write_audit_files
 from app.ws.isaApiClient import IsaApiClient
 from operator import itemgetter
 from marshmallow import ValidationError
@@ -284,6 +285,8 @@ without setting the "force" parameter to True''',
         message = None
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
 
+        audit_status, dest_path = write_audit_files(study_location)
+
         for file in files:
             try:
                 f_name = file["name"]
@@ -409,10 +412,13 @@ class CopyFilesFolders(Resource):
         if file_location:
             upload_location = file_location
 
+        audit_status, dest_path = write_audit_files(study_location)
+
         logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location, study_location)
         status, message = copy_files_and_folders(upload_location, study_location,
                                                  include_raw_data=include_raw_data, include_investigation_file=False)
         if status:
+            reindex_status, message = wsc.reindex_study(study_id, user_token)
             return {'Success': 'Copied files from ' + upload_location}
         else:
             return {'Warning': message}
@@ -615,6 +621,8 @@ class UnzipFiles(Resource):
             study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
+
+        audit_status, dest_path = write_audit_files(study_location)
 
         for file in files:
             f_name = file["name"]

@@ -24,6 +24,7 @@ from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
+from app.ws.mtblsStudy import write_audit_files
 from app.ws.utils import get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv
 
 """
@@ -157,6 +158,8 @@ class SimpleColumns(Resource):
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
 
+        audit_status, dest_path = write_audit_files(study_location)
+
         #  Need to add values for each existing row (not header)
         new_col = []
         for row_val in range(table_df.shape[0]):
@@ -268,6 +271,8 @@ class ComplexColumns(Resource):
             table_df = read_tsv(file_name)
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
+
+        audit_status, dest_path = write_audit_files(study_location)
 
         # Get an indexed header row
         df_header = get_table_header(table_df)
@@ -404,6 +409,8 @@ class ComplexColumns(Resource):
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
+
+        audit_status, dest_path = write_audit_files(study_location)
 
         for column in columns:
             tsv_file = os.path.join(study_location, file_name)

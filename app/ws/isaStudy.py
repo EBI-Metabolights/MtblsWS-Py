@@ -29,6 +29,7 @@ from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv
 from app.ws.db_connection import study_submitters
 import logging
 import os
+import datetime
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -371,16 +372,25 @@ class StudyReleaseDate(Resource):
         # param validation
         if study_id is None:
             abort(404)
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+
         # body content validation
         if request.data is None or request.json is None:
             abort(400)
+
         # data_dict = request.get_json(force=True)
         data_dict = json.loads(request.data.decode('utf-8'))
         new_date = data_dict['release_date']
+
+        try:
+            datetime.datetime.strptime(new_date, '%Y-%m-%d')
+        except ValueError:
+            abort(406, "Incorrect date format, please use YYYY-MM-DD")
+
         # check for keeping copies
         save_audit_copy = False
         save_msg_str = "NOT be"
