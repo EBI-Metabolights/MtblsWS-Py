@@ -1075,15 +1075,15 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                     add_msg(validations, val_section, "Person email '" + email + "' validates", success, file_name,
                             val_sequence=5, log_category=log_category)
                 else:
-                    add_msg(validations, val_section, email_val_error, error, file_name, value=email,
+                    add_msg(validations, val_section, email_val_error, info, file_name, value=email,
                             descr=email_val_error, val_sequence=6, log_category=log_category)
 
             if affiliation:
                 if len(affiliation) >= affiliation_val_len:
-                    add_msg(validations, val_section, "Person affiliation '" + affiliation + "' validates", success, file_name,
-                            val_sequence=7, log_category=log_category)
+                    add_msg(validations, val_section, "Person affiliation '" + affiliation + "' validates", success,
+                            file_name, val_sequence=7, log_category=log_category)
                 else:
-                    add_msg(validations, val_section, affiliation_val_error, error, file_name, value=affiliation,
+                    add_msg(validations, val_section, affiliation_val_error, info, file_name, value=affiliation,
                             descr=affiliation_val_error, val_sequence=8, log_category=log_category)
     else:
         add_msg(validations, val_section, "No study persons/authors found", error, file_name,
