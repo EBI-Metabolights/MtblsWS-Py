@@ -655,7 +655,11 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     assay_names = []
     # Get the MS/NMR Assay Name or Sample names from the assay
     try:
-        assay_names = assay_df[assay_name]
+        assay_names_df = assay_df[assay_name]
+        if assay_names_df:
+            for assay_name in assay_names_df:
+                if len(assay_name) != 0:
+                    assay_names.append(assay_name)
     except:
         logger.warning('The assay ' + assay_file_name + ' does not have ' + assay_name + ' defined!')
 

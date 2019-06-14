@@ -202,13 +202,13 @@ def check_file(file_name_and_column, study_location, file_name_list):
 
     if (file_type == 'raw' or file_type == 'compressed') and column_name == 'Raw Spectral Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif file_type == 'derived' and (column_name == 'Derived Spectral Data File'
-                                     or column_name == 'Raw Spectral Data File'):
+    elif (file_type == 'derived' or file_type == 'raw') and (column_name == 'Derived Spectral Data File'
+                                                             or column_name == 'Raw Spectral Data File'):
+        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+    elif file_type == 'spreadsheet' and column_name == 'Derived Spectral Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'derived' and column_name == 'Derived Spectral Data File':
         return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
-    elif file_type == 'spreadsheet' and column_name == 'Derived Spectral Data File':
-        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'compressed' and column_name == 'Free Induction Decay Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'fid' and column_name == 'Free Induction Decay Data File':
@@ -676,9 +676,13 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 get_assay_headers_and_protcols(assay_type)
             for template_header in tidy_header_row:
                 if template_header not in assay_header:
+                    msg_type = error
+                    if template_header in ('Parameter Value[Guard column]', 'Parameter Value[Autosampler model]'):
+                        msg_type = info
+
                     add_msg(validations, val_section,
                             "Assay sheet '" + assay.filename + "' is missing column '" + template_header + "'",
-                            error, assay.filename, val_sequence=3, log_category=log_category)
+                            msg_type, assay.filename, val_sequence=3, log_category=log_category)
 
         # Are all relevant rows filled in?
         if not assay_df.empty:
@@ -893,8 +897,13 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                         sample_name_list.append(row)
 
             if col_rows < all_rows:
+                val_stat = error
+
+                if s_header == 'Characteristics[Variant]':  # This is a new column we like to see, but not mandatory
+                    val_stat = info
+
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing values. " +
-                        str(col_rows) + " rows found, but there should be " + str(all_rows), error, file_name,
+                        str(col_rows) + " rows found, but there should be " + str(all_rows), val_stat, file_name,
                         val_sequence=6, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has correct number of rows",
@@ -1002,7 +1011,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                 add_msg(validations, val_section, "Protocol description validates", success, file_name,
                         value=prot_desc, val_sequence=9, log_category=log_category)
             else:
-                if 'no metabolites' in prot_desc.lower():
+                if prot_desc.lower() in('no metabolites', 'not applicable', 'no metabolites were identified'):
                     add_msg(validations, val_section, "Protocol description validates", success, file_name,
                             value=prot_desc, val_sequence=10, log_category=log_category)
                 else:
@@ -1176,9 +1185,10 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                 try:
                     int(publication.pubmed_id)
                 except ValueError:
-                    add_msg(validations, val_section, pmid_val_error, error, file_name,
-                            value=publication.pubmed_id, descr=pmid_val_description,
-                            val_sequence=10, log_category=log_category)
+                    if publication.pubmed_id != 'none':
+                        add_msg(validations, val_section, pmid_val_error, error, file_name,
+                                value=publication.pubmed_id, descr=pmid_val_description,
+                                val_sequence=10, log_category=log_category)
 
                 if len(publication.pubmed_id) >= int(pmid_val_len):
                     add_msg(validations, val_section,
