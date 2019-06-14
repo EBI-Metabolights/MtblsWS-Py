@@ -92,7 +92,6 @@ query_user_access_rights = """
 
 
 def get_all_studies_for_user(user_token):
-
     study_list = execute_query(query_studies_user, user_token)
     study_location = app.config.get('STUDY_PATH')
     file_name = 'i_Investigation.txt'
@@ -348,12 +347,12 @@ def update_study_status(study_id, study_status):
         return False
 
 
-
-
 def execute_query(query, user_token, study_id=None):
 
     if not user_token:
         return None
+
+    data = []
 
     try:
         params = app.config.get('DB_PARAMS')
