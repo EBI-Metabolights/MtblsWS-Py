@@ -195,10 +195,12 @@ class MetaboliteAnnotationFile(Resource):
 
         logger.info('MAF: Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
+
+        maf_feedback = ""
 
         for assay_file_name in assay_file_names:
             annotation_file_name = None
@@ -209,14 +211,18 @@ class MetaboliteAnnotationFile(Resource):
             assay_df = read_tsv(full_assay_file_name)
             annotation_file_name = assay_df['Metabolite Assignment File'].iloc[0]
 
-            maf_df, new_annotation_file_name = create_maf(None, study_location, assay_file,
-                                                          annotation_file_name=annotation_file_name)
+            maf_df, new_annotation_file_name, new_column_counter = \
+                create_maf(None, study_location, assay_file, annotation_file_name=annotation_file_name)
             if annotation_file_name != new_annotation_file_name:
                 assay_df['Metabolite Assignment File'] = new_annotation_file_name
                 write_tsv(assay_df, full_assay_file_name)
+                annotation_file_name = new_annotation_file_name
 
             if maf_df.empty:
                 abort(406, "MAF file could not be created or updated")
 
-        return {"success": "Added/Updated MAF(s)"}
+            maf_feedback = maf_feedback + ". New row(s):" + str(new_column_counter) + " for assay file " + \
+                            annotation_file_name
+
+        return {"success": "Added/Updated MAF(s)" + maf_feedback}
 

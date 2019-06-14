@@ -667,30 +667,24 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     if len(assay_names) == 0:
         assay_names = sample_names
 
-    # for i, sample in enumerate(assay_names):
-    #     if len(sample) == 0:
-    #         assay_names[i] = sample_names[i]  # Get the Sample name for this row
-    #         i += 1
-
+    new_column_counter = 0
     # Does the column already exist?
     for row in assay_names:
         s_name = str(row)
         if s_name != '':
             try:
                 in_maf = maf_df.columns.get_loc(s_name)
-            except KeyError:
-                in_maf = 0
-
-            if in_maf == 0:
+            except KeyError:  # Key is not found, so add it
                 # Add the new columns to the MAF
                 maf_df[s_name] = ""
+                new_column_counter += 1
                 update_maf = True
 
     # Write the new empty columns back in the file
     if update_maf:
         maf_df.to_csv(full_annotation_file_name, sep="\t", encoding='utf-8', index=False)
 
-    return maf_df, annotation_file_name
+    return maf_df, annotation_file_name, new_column_counter
 
 
 def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, onto_desc):
