@@ -200,7 +200,7 @@ def check_file(file_name_and_column, study_location, file_name_list):
         else:
             return False, file_type,  "The " + column_name + " must start with 'm_' and end in '_v2_maf.tsv'"
 
-    if file_type == 'raw' and column_name == 'Raw Spectral Data File':
+    if (file_type == 'raw' or file_type == 'compressed') and column_name == 'Raw Spectral Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'derived' and (column_name == 'Derived Spectral Data File'
                                      or column_name == 'Raw Spectral Data File'):
