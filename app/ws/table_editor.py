@@ -533,7 +533,10 @@ class ColumnsRows(Resource):
                 # for row_val in range(table_df.shape[0]):
                 table_df.iloc[int(row_index), int(column_index)] = cell_value
             except ValueError:
-                abort(417, "Unable to find the required 'value', 'row' and 'column' values")
+                logger.error("Unable to find the required 'value', 'row' and 'column' values. Value: "
+                             + cell_value + ", row: " + row_index + ", column: " + column)
+                abort(417, "Unable to find the required 'value', 'row' and 'column' values. Value: "
+                      + cell_value + ", row: " + row_index + ", column: " + column)
 
         # Write the new row back in the file
         message = write_tsv(table_df, file_name)

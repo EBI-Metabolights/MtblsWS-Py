@@ -924,7 +924,12 @@ class CreateAccession(Resource):
             sample_df = read_tsv(file_name)
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
-        sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row
+            
+        try:
+            sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row, if there is one
+        except IndexError:
+            logger.info("No empty rows in the default sample sheet template, so nothing to remove")
+
         write_tsv(sample_df, file_name)
 
         return {"new_study": study_acc}
