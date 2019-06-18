@@ -202,8 +202,8 @@ def check_file(file_name_and_column, study_location, file_name_list):
 
     if (file_type == 'raw' or file_type == 'compressed') and column_name == 'Raw Spectral Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif (file_type == 'derived' or file_type == 'raw') and (column_name == 'Derived Spectral Data File'
-                                                             or column_name == 'Raw Spectral Data File'):
+    elif (file_type == 'derived' or file_type == 'raw' or file_type == 'compressed') \
+            and (column_name == 'Derived Spectral Data File' or column_name == 'Raw Spectral Data File'):
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'spreadsheet' and column_name == 'Derived Spectral Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
@@ -284,7 +284,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF",
                             success, val_sequence=5, log_category=log_category)
                     check_maf_rows(validations, val_section, maf_df, assay_name, is_ms=is_ms, log_category=log_category)
-                except:
+                except KeyError as e:
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF",
                             error, val_sequence=6, log_category=log_category)
 
@@ -602,11 +602,11 @@ def get_assay_column_validations(validation_schema, a_header):
     return validate_column, required_column, val_descr
 
 
-def check_assay_columns(a_header, all_assays, row, validations, val_section, assay, unique_file_names,
+def check_assay_columns(a_header, all_samples, row, validations, val_section, assay, unique_file_names,
                         all_assay_names, sample_name_list, log_category=error):
     # Correct sample names?
     if a_header.lower() == 'sample name':
-        all_assays.append(row)
+        all_samples.append(row)
         if row in sample_name_list:
             add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
                     success, assay.filename, val_sequence=7, log_category=log_category)
@@ -630,14 +630,13 @@ def check_assay_columns(a_header, all_assays, row, validations, val_section, ass
             if len(row) >= 1:
                 all_assay_names.append(row)
 
-    return all_assays, all_assay_names, validations, unique_file_names
+    return all_samples, all_assay_names, validations, unique_file_names
 
 
 def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
                     file_name_list, val_section="assays", log_category=error):
     validations = []
     all_assays = []
-    all_assay_names = []
     unique_file_names = []
 
     study_id = isa_study.identifier
@@ -652,7 +651,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     for assay in isa_study.assays:
         is_ms = False
         assays = []
-
+        all_assay_names = []
         unique_file_names = []
         assay_file_name = os.path.join(study_location, assay.filename)
         try:
@@ -695,7 +694,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                         validate_column = False
                         if row:
                             col_rows += 1
-                        all_assays, all_assay_names, validations, unique_file_names = \
+                        all_sample_names, all_assay_names, validations, unique_file_names = \
                             check_assay_columns(a_header, all_assays, row, validations, val_section,
                                                 assay, unique_file_names, all_assay_names,
                                                 sample_name_list, log_category=log_category)
