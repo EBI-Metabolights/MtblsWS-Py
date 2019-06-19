@@ -709,19 +709,19 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                 "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
                                 success, assay.filename, val_sequence=5, log_category=log_category)
 
-                    if all_assay_names:
-                        if len(all_assay_names) < all_rows:
-                            add_msg(validations, val_section, "MS/NAMR Assay name column must contain unique values",
-                                    error, assay.filename, val_sequence=4, log_category=log_category)
-                        else:
-                            add_msg(validations, val_section, "MS/NAMR Assay name column contains unique values",
-                                    success, assay.filename, val_sequence=4, log_category=log_category)
-
                 except Exception as e:
                     add_msg(validations, val_section,
                             "Assay sheet '" + assay.filename + "' is missing rows for column '" + a_header + "'",
                             error, assay.filename, val_sequence=6, log_category=log_category)
                     # logger.error(str(e))
+
+            if all_assay_names:
+                if len(all_assay_names) < all_rows:
+                    add_msg(validations, val_section, "MS/NMR Assay name column must contain unique values",
+                            error, assay.filename, val_sequence=4, log_category=log_category)
+                else:
+                    add_msg(validations, val_section, "MS/NMR Assay name column contains unique values",
+                            success, assay.filename, val_sequence=4, log_category=log_category)
 
         # Correct MAF?
         if header.lower() == 'metabolite assignment file':
