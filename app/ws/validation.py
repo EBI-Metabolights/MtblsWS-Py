@@ -625,7 +625,8 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
         if file_and_column not in unique_file_names:
             if row != "":  # Do not add a section if a column does not list files
                 unique_file_names.append(file_and_column)
-    elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the MAF
+    elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the
+        row = str(row)
         if row not in all_assay_names:
             if len(row) >= 1:
                 all_assay_names.append(row)
@@ -707,6 +708,15 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                         add_msg(validations, val_section,
                                 "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
                                 success, assay.filename, val_sequence=5, log_category=log_category)
+
+                    if all_assay_names:
+                        if len(all_assay_names) < all_rows:
+                            add_msg(validations, val_section, "MS/NAMR Assay name column must contain unique values",
+                                    error, assay.filename, val_sequence=4, log_category=log_category)
+                        else:
+                            add_msg(validations, val_section, "MS/NAMR Assay name column contains unique values",
+                                    success, assay.filename, val_sequence=4, log_category=log_category)
+
                 except Exception as e:
                     add_msg(validations, val_section,
                             "Assay sheet '" + assay.filename + "' is missing rows for column '" + a_header + "'",
