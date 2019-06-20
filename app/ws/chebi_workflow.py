@@ -486,8 +486,14 @@ def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
     smiles = ""
     formula = ""
     url = app.config.get('CHEBI_URL')
-    client = Client(url)
     top_result = None
+
+    try:
+        client = Client(url)
+    except Exception as e:
+        print_log("    -- Could not set up ChEBI webservice calls. " + str(e))
+        return chebi_id, inchi, inchikey, name, smiles, formula
+
     try:
         if search_type == "inchi" and final_inchi:
             print_log("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
@@ -515,7 +521,7 @@ def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
             formula = complete_entity.Formulae[0].data
 
     except Exception as e:
-        logger.error(str(e))
+        logger.error("ChEBI Search error: " + str(e))
         print_log('    -- Error querying ChEBI')
     return chebi_id, inchi, inchikey, name, smiles, formula
 
