@@ -903,7 +903,9 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
 
                 elif s_header.lower() == 'sample name':
                     if row:
-                        sample_name_list.append(row)
+                        row = str(row)
+                        if row not in sample_name_list:
+                            sample_name_list.append(row)
 
             if col_rows < all_rows:
                 val_stat = error
@@ -917,6 +919,14 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
             else:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has correct number of rows",
                         success, file_name, val_sequence=7, log_category=log_category)
+
+            if sample_name_list:
+                if len(sample_name_list) != all_rows:
+                    add_msg(validations, val_section, "Sample name column must contain unique values",
+                            error, file_name, val_sequence=4, log_category=log_category)
+                else:
+                    add_msg(validations, val_section, "Sample name column contains unique values",
+                            success, file_name, val_sequence=4, log_category=log_category)
 
     if human_found:
         add_msg(validations, val_section,

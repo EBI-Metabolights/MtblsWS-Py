@@ -25,6 +25,7 @@ import pubchempy as pcp
 import ctfile
 import ssl
 import pronto
+from subprocess import *
 from flask import current_app as app
 from zeep import Client
 from pathlib import Path
@@ -49,6 +50,7 @@ classyfire_end = "_classyfire"
 anno_sub_folder = "chebi_pipeline_annotations"
 final_cid_column_name = "final_external_id"
 unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known"
+resource_folder = "./resources/"
 
 
 def split_rows(maf_df, annotation_file=None):
@@ -65,32 +67,42 @@ def split_rows(maf_df, annotation_file=None):
     if pipe_found:
         print_log("    -- Found pipe-line '|' will split MAF rows")
         try:
-            new_maf = pd.DataFrame(explode(explode(explode(explode(explode(maf_df.values, 0), 1), 2), 3), 4), columns=maf_df.columns)
+            new_maf = split_maf_df(annotation_file)
         except Exception as e:
-            logger.error("MAF splitter failed!")
+            print_log("MAF splitter failed!")
             logger.error(str(e))
             return maf_df
 
     return new_maf
 
 
+def split_maf_df(maf_file_name):
+    try:
+        args = [resource_folder + 'maf-splitter.jar', maf_file_name]  # Any number of args to be passed to the jar file
+        stdout, stderr = jarWrapper(*args)
+    except Exception as e:
+        print_log("    -- Could not split MAF file. Error: " + str(e) + stderr)
+
+    split_file = maf_file_name + "_SPLIT"
+    try:
+        new_df = read_tsv(split_file)
+        os.remove(split_file)
+    except Exception as e:
+        print_log("Could not read and/or remove 'split' file " + split_file)
+
+    return new_df
+
+
+def jarWrapper(*args):
+    process = Popen(['java', '-jar']+list(args), stdout=PIPE, stderr=PIPE)
+    process.wait()
+    stdout, stderr = process.communicate()
+    return stdout, stderr
+
+
 def print_log(message):
     print(str(message))
     logger.info(str(message))
-
-
-def explode(v, i, sep='|'):
-    v = v.astype(str)
-    n, m = v.shape
-    a = v[:, i]
-    bslc = np.r_[0:i, i + 1:m]
-    asrt = np.append(i, bslc).argsort()
-    b = v[:, bslc]
-    a = np.core.defchararray.split(a, sep)
-    A = np.concatenate(a)[:, None]
-    counts = [len(x) for x in a.tolist()]
-    rpt = np.arange(n).repeat(counts)
-    return np.concatenate([A, b[rpt]], axis=1)[:, asrt]
 
 
 def check_maf_for_pipes(study_location, annotation_file_name):
