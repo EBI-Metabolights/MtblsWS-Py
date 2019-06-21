@@ -186,7 +186,7 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
     if exiting_pubchem_file:
         short_df = maf_df[["database_identifier", maf_compound_name_column, search_flag, final_cid_column_name]]
     else:
-        short_df = maf_df[["database_identifier", maf_compound_name_column, search_flag, '']]
+        short_df = maf_df[["database_identifier", maf_compound_name_column, '', '']]
 
     # Search using the compound name column
     for idx, row in short_df.iterrows():
