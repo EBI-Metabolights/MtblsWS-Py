@@ -507,7 +507,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
                                                          skip_load_tables=True, study_location=study_location)
 
         # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
-        isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_id)
+        # isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_id)
 
         isa_inv, obi = add_ontology_to_investigation(isa_inv, 'OBI', '29', 'http://data.bioontology.org/ontologies/OBI',
                                                      'Ontology for Biomedical Investigations')
@@ -572,7 +572,6 @@ def get_all_unique_protocols_from_study_assays(study_id, assays):
             short_list.append(i[0])
 
     return short_list
-
 
 
 def create_assay(assay_type, columns, study_id, ontology):

@@ -50,7 +50,7 @@ classyfire_end = "_classyfire"
 anno_sub_folder = "chebi_pipeline_annotations"
 final_cid_column_name = "final_external_id"
 unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
-               "not identified"
+               "not identified", "unmatched"
 resource_folder = "./resources/"
 search_flag = 'search_flag'
 
@@ -135,6 +135,10 @@ def check_if_unknown(comp_name):
     for c_name in unknown_list:
         if comp_name.endswith(c_name):
             return False
+
+        if comp_name.startswith(c_name):
+            return False
+
     return True
 
 
@@ -341,13 +345,15 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
             print_log("    -- Skipping. Already found or no database id/compound name to search for: "
                       + database_id + " " + comp_name)
 
-        pubchem_file = short_file_name + pubchem_end
-        write_tsv(pubchem_df, pubchem_file)
+        if row_idx > 0 and row_idx % 10 == 0:  # Save every 10 rows
+            pubchem_file = short_file_name + pubchem_end
+            write_tsv(pubchem_df, pubchem_file)
+
         row_idx += 1
 
     write_tsv(maf_df, short_file_name + "_annotated.tsv")
-    # pubchem_file = short_file_name + pubchem_end
-    # write_tsv(pubchem_df, pubchem_file)
+    pubchem_file = short_file_name + pubchem_end
+    write_tsv(pubchem_df, pubchem_file)
     if sdf_file_list:
         concatenate_sdf_files(sdf_file_list, study_location + os.sep + anno_sub_folder + os.sep,
                               short_file_name + complete_end, short_file_name + classyfire_end, classyfire_search)
