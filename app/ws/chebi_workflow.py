@@ -186,18 +186,18 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
     if exiting_pubchem_file:
         short_df = maf_df[["database_identifier", maf_compound_name_column, search_flag, final_cid_column_name]]
     else:
-        short_df = maf_df[["database_identifier", maf_compound_name_column, '', '']]
+        short_df = maf_df[["database_identifier", maf_compound_name_column]]
 
     # Search using the compound name column
     for idx, row in short_df.iterrows():
         database_id = row[0]
         comp_name = row[1]
         search = True
-        if str(row[2]) == '1.0':  # This is the already searched flag in the spreadsheet
-            search = False
 
         final_cid = None
         if exiting_pubchem_file:
+            if str(row[2]) == '1.0':  # This is the already searched flag in the spreadsheet
+                search = False
             final_cid = row[3]
         print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
 
