@@ -283,7 +283,7 @@ class WsClient:
         """
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            updated_date, study_status = check_access_rights(user_token, study_id)
+            updated_date, study_status = check_access_rights(user_token, study_id.upper())
 
         logger.info("Read access: " + str(read_access) + ". Write access: " + str(write_access))
 

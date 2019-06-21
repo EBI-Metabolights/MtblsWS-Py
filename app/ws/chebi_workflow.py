@@ -49,8 +49,10 @@ complete_end = "_complete.sdf"
 classyfire_end = "_classyfire"
 anno_sub_folder = "chebi_pipeline_annotations"
 final_cid_column_name = "final_external_id"
-unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known"
+unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
+               "not identified"
 resource_folder = "./resources/"
+search_flag = 'search_flag'
 
 
 def split_rows(maf_df, annotation_file=None):
@@ -124,6 +126,18 @@ def check_maf_for_pipes(study_location, annotation_file_name):
     return maf_df, maf_len, new_maf_df, new_maf_len, file_name
 
 
+def check_if_unknown(comp_name):
+    comp_name = comp_name.lower()
+
+    if comp_name in unknown_list:
+        return False
+
+    for c_name in unknown_list:
+        if comp_name.endswith(c_name):
+            return False
+    return True
+
+
 def search_and_update_maf(study_location, annotation_file_name, classyfire_search):
     sdf_file_list = []
     exiting_pubchem_file = False
@@ -170,21 +184,24 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
 
     row_idx = 0
     if exiting_pubchem_file:
-        short_df = maf_df[["database_identifier", maf_compound_name_column, final_cid_column_name]]
+        short_df = maf_df[["database_identifier", maf_compound_name_column, search_flag, final_cid_column_name]]
     else:
-        short_df = maf_df[["database_identifier", maf_compound_name_column]]
+        short_df = maf_df[["database_identifier", maf_compound_name_column, search_flag, '']]
 
     # Search using the compound name column
     for idx, row in short_df.iterrows():
         database_id = row[0]
         comp_name = row[1]
+        search = True
+        if str(row[2]) == '1.0':  # This is the already searched flag in the spreadsheet
+            search = False
 
         final_cid = None
         if exiting_pubchem_file:
-            final_cid = row[2]
+            final_cid = row[3]
         print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
 
-        if not database_id and comp_name and comp_name.lower() not in unknown_list:
+        if search and comp_name and check_if_unknown(comp_name):
             # So if have a name, but no ChEBI id, try to search for it  # ToDo, use final_cid
 
             start_time = time.time()
@@ -212,6 +229,7 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
                 pubchem_df.iloc[row_idx, 2] = smiles
                 pubchem_df.iloc[row_idx, 3] = inchi
                 pubchem_df.iloc[row_idx, 4] = comp_name  # 4 is name / metabolite_identification from MAF
+                pubchem_df.iloc[row_idx, 5] = ''  # Search flag
 
                 if name:
                     if database_identifier:
@@ -244,36 +262,36 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
                     print_log("    -- Searching ChemSpider using PubChem InChIKey, not Cactus")
                 csid = get_csid(ik)
 
-                pubchem_df.iloc[row_idx, 5] = pc_name  # PubChem name
+                pubchem_df.iloc[row_idx, 6] = pc_name  # PubChem name
 
                 if not final_cid:
                     final_cid = pc_cid
-                pubchem_df.iloc[row_idx, 6] = final_cid   # Final PubChem CID (and other external id's manually added)
-                pubchem_df.iloc[row_idx, 7] = pc_cid   # PubChem CID
+                pubchem_df.iloc[row_idx, 7] = final_cid   # Final PubChem CID (and other external id's manually added)
+                pubchem_df.iloc[row_idx, 8] = pc_cid   # PubChem CID
                 if not final_cid:
                     final_cid = get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey)
-                    pubchem_df.iloc[row_idx, 6] = final_cid  # Final PubChem CID should now be the cactus or opsin
-                pubchem_df.iloc[row_idx, 8] = pc_cid    # PubChem CID
+                    pubchem_df.iloc[row_idx, 7] = final_cid  # Final PubChem CID should now be the cactus or opsin
+                pubchem_df.iloc[row_idx, 9] = pc_cid    # PubChem CID
 
-                pubchem_df.iloc[row_idx, 9] = csid      # ChemSpider ID (CSID) from INCHI
-                pubchem_df.iloc[row_idx, 10] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # final smiles
+                pubchem_df.iloc[row_idx, 10] = csid      # ChemSpider ID (CSID) from INCHI
+                pubchem_df.iloc[row_idx, 11] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # final smiles
                 final_inchi = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # final inchi
-                pubchem_df.iloc[row_idx, 11] = final_inchi
+                pubchem_df.iloc[row_idx, 12] = final_inchi
                 final_inchi_key = get_ranked_values(pc_inchi_key, cactus_stdinchikey, opsin_stdinchikey, None)  # final inchikey
-                pubchem_df.iloc[row_idx, 12] = final_inchi_key
-                pubchem_df.iloc[row_idx, 13] = pc_smiles            # pc_smiles
-                pubchem_df.iloc[row_idx, 14] = cactus_smiles        # cactus_smiles
-                pubchem_df.iloc[row_idx, 15] = opsin_smiles         # opsin_smiles
-                pubchem_df.iloc[row_idx, 16] = pc_inchi             # PubChem inchi
-                pubchem_df.iloc[row_idx, 17] = cactus_inchi         # Cactus inchi
-                pubchem_df.iloc[row_idx, 18] = opsin_inchi          # Opsin inchi
-                pubchem_df.iloc[row_idx, 19] = pc_inchi_key         # PubChem stdinchikey
-                pubchem_df.iloc[row_idx, 20] = cactus_stdinchikey   # cactus_stdinchikey
-                pubchem_df.iloc[row_idx, 21] = opsin_stdinchikey    # opsin_stdinchikey
-                pubchem_df.iloc[row_idx, 22] = pc_formula           # PubChem formula
-                pubchem_df.iloc[row_idx, 23] = pc_synonyms          # PubChem synonyms
-                pubchem_df.iloc[row_idx, 24] = cactus_synonyms      # Cactus synonyms
-                pubchem_df.iloc[row_idx, 25] = pc_structure         # PubChem structure (SDF)
+                pubchem_df.iloc[row_idx, 13] = final_inchi_key
+                pubchem_df.iloc[row_idx, 14] = pc_smiles            # pc_smiles
+                pubchem_df.iloc[row_idx, 15] = cactus_smiles        # cactus_smiles
+                pubchem_df.iloc[row_idx, 16] = opsin_smiles         # opsin_smiles
+                pubchem_df.iloc[row_idx, 17] = pc_inchi             # PubChem inchi
+                pubchem_df.iloc[row_idx, 18] = cactus_inchi         # Cactus inchi
+                pubchem_df.iloc[row_idx, 19] = opsin_inchi          # Opsin inchi
+                pubchem_df.iloc[row_idx, 20] = pc_inchi_key         # PubChem stdinchikey
+                pubchem_df.iloc[row_idx, 21] = cactus_stdinchikey   # cactus_stdinchikey
+                pubchem_df.iloc[row_idx, 22] = opsin_stdinchikey    # opsin_stdinchikey
+                pubchem_df.iloc[row_idx, 23] = pc_formula           # PubChem formula
+                pubchem_df.iloc[row_idx, 24] = pc_synonyms          # PubChem synonyms
+                pubchem_df.iloc[row_idx, 25] = cactus_synonyms      # Cactus synonyms
+                pubchem_df.iloc[row_idx, 26] = pc_structure         # PubChem structure (SDF)
 
                 # Now we may have more information, so let's try to search ChEBI again
 
@@ -316,16 +334,20 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
                     sdf_file_list = get_sdf(study_location, pc_cid, pc_name, sdf_file_list,
                                             final_inchi, classyfire_search)
 
+            pubchem_df.iloc[row_idx, 5] = '1'  # Search flag
             print_log("    -- Search took %s seconds" % round(time.time() - start_time, 2))
         else:
+            pubchem_df.iloc[row_idx, 5] = '1'  # Search flag set so we don't search for unknown again
             print_log("    -- Skipping. Already found or no database id/compound name to search for: "
                       + database_id + " " + comp_name)
 
+        pubchem_file = short_file_name + pubchem_end
+        write_tsv(pubchem_df, pubchem_file)
         row_idx += 1
 
     write_tsv(maf_df, short_file_name + "_annotated.tsv")
-    pubchem_file = short_file_name + pubchem_end
-    write_tsv(pubchem_df, pubchem_file)
+    # pubchem_file = short_file_name + pubchem_end
+    # write_tsv(pubchem_df, pubchem_file)
     if sdf_file_list:
         concatenate_sdf_files(sdf_file_list, study_location + os.sep + anno_sub_folder + os.sep,
                               short_file_name + complete_end, short_file_name + classyfire_end, classyfire_search)
@@ -571,27 +593,28 @@ def get_ranked_values(pubchem, cactus, opsin, chemspider):
 def create_pubchem_df(maf_df):
     # These are simply the fixed spreadsheet column headers
     pubchem_df = maf_df[['database_identifier', 'chemical_formula', 'smiles', 'inchi', 'metabolite_identification']]
-    pubchem_df['iupac_name'] = ''           # 5
-    pubchem_df[final_cid_column_name] = ''  # 6
-    pubchem_df['pubchem_cid'] = ''          # 7
-    pubchem_df['pubchem_cid_ik'] = ''       # 8  PubChem CID from InChIKey search (Cactus, OBSIN)
-    pubchem_df['csid_ik'] = ''              # 9  ChemSpider ID (CSID) from INCHIKEY
-    pubchem_df['final_smiles'] = ''         # 10
-    pubchem_df['final_inchi'] = ''          # 11
-    pubchem_df['final_inchi_key'] = ''      # 12
-    pubchem_df['pubchem_smiles'] = ''       # 13
-    pubchem_df['cactus_smiles'] = ''        # 14
-    pubchem_df['opsin_smiles'] = ''         # 15
-    pubchem_df['pubchem_inchi'] = ''        # 16
-    pubchem_df['cactus_inchi'] = ''         # 17
-    pubchem_df['opsin_inchi'] = ''          # 18
-    pubchem_df['pubchem_inchi_key'] = ''    # 19
-    pubchem_df['cactus_inchi_key'] = ''     # 20
-    pubchem_df['opsin_inchi_key'] = ''      # 21
-    pubchem_df['pubchem_formula'] = ''      # 22
-    pubchem_df['pubchem_synonyms'] = ''     # 23
-    pubchem_df['cactus_synonyms'] = ''      # 24
-    pubchem_df['structure'] = ''            # 25
+    pubchem_df[search_flag] = ''          # 5
+    pubchem_df['iupac_name'] = ''           # 6
+    pubchem_df[final_cid_column_name] = ''  # 7
+    pubchem_df['pubchem_cid'] = ''          # 8
+    pubchem_df['pubchem_cid_ik'] = ''       # 9  PubChem CID from InChIKey search (Cactus, OBSIN)
+    pubchem_df['csid_ik'] = ''              # 10 ChemSpider ID (CSID) from INCHIKEY
+    pubchem_df['final_smiles'] = ''         # 11
+    pubchem_df['final_inchi'] = ''          # 12
+    pubchem_df['final_inchi_key'] = ''      # 13
+    pubchem_df['pubchem_smiles'] = ''       # 14
+    pubchem_df['cactus_smiles'] = ''        # 15
+    pubchem_df['opsin_smiles'] = ''         # 16
+    pubchem_df['pubchem_inchi'] = ''        # 17
+    pubchem_df['cactus_inchi'] = ''         # 18
+    pubchem_df['opsin_inchi'] = ''          # 19
+    pubchem_df['pubchem_inchi_key'] = ''    # 20
+    pubchem_df['cactus_inchi_key'] = ''     # 21
+    pubchem_df['opsin_inchi_key'] = ''      # 22
+    pubchem_df['pubchem_formula'] = ''      # 23
+    pubchem_df['pubchem_synonyms'] = ''     # 24
+    pubchem_df['cactus_synonyms'] = ''      # 25
+    pubchem_df['structure'] = ''            # 26
 
     return pubchem_df
 
