@@ -414,6 +414,7 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_
 
         outfile.close()
 
+        all_ancestors = None
         if classyfire_search:
             all_ancestors = get_ancestors(classyfire_file_name)
 
