@@ -801,7 +801,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             else:
                 return 'raw', active_status, folder
         else:
-            if ext in ('.d', '.raw', '.idb', 'cdf', '.wiff','.dat'):
+            if ext in ('.d', '.raw', '.idb', 'cdf', '.wiff', '.scan', '.dat'):
                 if os.path.isdir(os.path.join(directory, file_name)):
                     return 'raw', none_active_status, True
                 else:

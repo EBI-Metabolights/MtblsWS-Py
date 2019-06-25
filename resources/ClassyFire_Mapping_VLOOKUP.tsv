@@ -1,0 +1,4991 @@
+name	map_to
+Organic compounds	ISA72695
+Inorganic compounds	ISA24835
+Heterocyclic compounds	ISA24532
+Thiepanes	ISA38106
+Organosulfur compounds	ISA33261
+Pyrroloquinoline quinones	ISA50918; ISA36141
+Benzoxazolines	ISA51548
+Amidines	ISA2634
+Cembrane diterpenoids	ISA60687
+Sulfines	ISA50492; ISA35813
+Sulfenes	ISA50492
+Carbohydrates and carbohydrate conjugates	ISA78616
+Lipids and Lipid-like molecules	ISA18059
+"Amino acids, peptides, and analogues"	ISA36586
+Phenylbutylamines	ISA50047; ISA22712
+Dibenzofurans	ISA38922
+Allenes	ISA37602
+Cycloalkenes	ISA33642
+Anthracenes	ISA46955
+Dibenzocycloheptenes	ISA51959
+Fluorenes	ISA24059
+Indenes and isoindenes	ISA37910
+Naphthacenes	ISA51270
+Naphthalenes	ISA25477
+Pentacenes	ISA51271
+Phenanthrenes and derivatives	ISA25961
+Purine ribonucleoside bisphosphates	ISA64620
+Indanes	ISA46940
+Pyridoxals and derivatives	ISA38187
+Cinnamaldehydes	ISA23245
+Hydroxyeicosatrienoic acids	ISA24654; ISA26208
+Benzenesulfonamides	ISA35358
+Benzenesulfonic acids and derivatives	ISA33552; ISA33261
+Benzyl alcohols	ISA22743
+Sulfobenzoic acids	ISA22723; ISA33555
+Halobenzenes	ISA36684
+Nitrobenzenes	ISA35716
+Styrenes	ISA26799
+Sulfanilides	ISA35358
+Sulfamic acid derivatives	ISA33424; HFP9330
+Indanediones	ISA24789; ISA3992
+Biphenyls and derivatives	ISA22888
+Diphenhydramines	ISA25698; ISA50996
+Biphenylbenzimidazoles	ISA22715; ISA22888
+Biphenyltetrazoles and derivatives	ISA35689; ISA22888
+Phenylpropenes	ISA78840
+Hydroxyeicosatetraenoic acids	ISA24654; ISA26208
+Podophyllotoxins	ISA50307
+Tetralins	ISA36786
+Tametralines	ISA36786
+Lactones	ISA25000
+Aromatic monoterpenoids	ISA25409
+Brominated biphenyls	ISA37141; ISA22888
+Aminoquinolines and derivatives	ISA36709
+Benzylisoquinolines	ISA24922
+Dibenzothiazepines	ISA39268
+Quinolones and derivatives	ISA23765
+Hydroxyquinolines	ISA38774
+Morphinans	ISA25418
+Coumaric acids and derivatives	ISA24689
+Alpha amino acids and derivatives	ISA36963; ISA35352; HFP33704
+Indoloquinolines	ISA38163; ISA38101
+2-sulfobenzoic acids	ISA26825
+Nitrate esters	ISA51080
+Macrolactams	ISA24955; ISA52898
+Arsoles	ISA38414
+Oxazepines	ISA38104; ISA38101
+Pyrazines	ISA38314
+Thiazepines	ISA48893
+Azepines	ISA48105
+Oxetanes	ISA38474
+Diazepines	ISA47918
+Dibenzodiazepines	ISA64051
+Oxetenes	ISA51194
+Pyridazines and derivatives	ISA37921
+Pyrimidines and pyrimidine derivatives	ISA39447
+Furans	ISA24129
+Thiosalicylic acids and derivatives	ISA29256; HFP59124
+Imidazoles	ISA24780
+Imidazolines	ISA53095
+Indazoles	ISA38769
+Isoxazoles	ISA55373
+Oxazines	ISA38101; ISA36963
+Oxazoles	ISA35790
+Oxazolines	ISA35790
+Phosphinines	ISA25710; ISA25693
+Pyrans	ISA26407
+Pyrazoles	ISA26410
+Pyrazolines	ISA38312
+Pyridines and derivatives	ISA26421
+Pyrroles	ISA26455
+Pyrrolines	ISA23763
+Tetrazines	ISA38101
+Thiadiazoles	ISA38099
+Thiazines	ISA38326
+Thiazoles	ISA48901
+Thiepins	ISA38106
+Thiophenes	ISA26961
+Triazines	ISA38102
+Triazoles	ISA35727
+"1'-(acyl-sn-glycero-3-phospho),3'-(acyl-sn-glycero-3-phospho)-sn-glycerols"	ISA51245
+"Eudesmane, isoeudesmane or cycloeudesmane sesquiterpenoids"	ISA62508
+Azetidines	ISA38777
+Aziridines	ISA22681
+Azirines	ISA47848
+Dioxolanes	ISA39430
+Oxathiolanes	ISA78801
+Oxazinanes	ISA46952
+Oxazolidines	ISA38229
+Pteridines and derivatives	ISA26373
+Pterins and derivatives	ISA26375
+Tetrazoles	ISA35689
+Hydrazines and derivatives	ISA24631
+Phenylhydrazines	ISA25996
+Semicarbazides	ISA35363; ISA47857
+Semicarbazones	ISA38532
+Hydrazones	ISA38532
+Imines	ISA24783
+Ketones	ISA17087
+Acetophenones	ISA22187
+Benzophenones	ISA22726
+Thioketones	ISA36579
+Alpha-amino ketones	ISA17087; ISA50047
+Benzopyrans	ISA22727
+Aldehydes	ISA17478
+Quinomethanes	ISA52404
+Organic azides	ISA22680
+Isoindoles	ISA24897
+Alkyl aryl ethers	ISA35618
+Alcohols and polyols	ISA26191; ISA30879; ISA33822
+Azaspirodecane derivatives	ISA35624
+Enediols	ISA33822
+Enols	ISA33823
+"1,3-dicarbonyl compounds"	ISA36586
+Phenols and derivatives	ISA33853
+Catechols	ISA33566
+Hydroquinones	ISA24646
+Resorcinols	ISA33572
+Anisoles	ISA51683
+Tyrosols and derivatives	ISA33853; ISA30879
+Aminophenols	ISA48975; ISA33853
+Nitrophenols and derivatives	ISA35716; ISA33853
+Stilbene glycosides	ISA26776; ISA24400
+Bisphenols	ISA22901
+Chromones	ISA23238
+Coumarins and derivatives	ISA23403
+Acylaminosugars	ISA28963
+Macrolides and analogues	ISA25106
+Dithiazoles	ISA68452; ISA38106
+Aflatoxins	ISA22271
+Dibenzoxazepines	ISA53802
+Anthraquinones	ISA22580
+M-iminoquinones	ISA50193
+Naphthoquinones	ISA25481
+Pentacenequinones	ISA51271; ISA36141
+Tetracenequinones	ISA51270; ISA36141
+Adamantanones	ISA22235
+Carbodiimides	ISA53091
+Organic hydroxylamines	ISA24709
+Epoxides	ISA32955
+Lactams	ISA24995
+Epothilones and analogues	ISA60831
+Beta lactams	ISA35627
+Caprolactams	ISA23000
+Delta lactams	ISA77727
+Gamma lactams	ISA74222
+Thiolactams	ISA47956
+Carbapenems	ISA46633
+Cephems	ISA38311
+Clavams	ISA35992
+Monobactams	ISA50695
+Oxacephems	ISA55506
+Penams	ISA35992
+Cephalosporins	ISA23066
+Penicillins	ISA17334
+Glycerolipids	ISA35741
+Benzoic acids and derivatives	ISA22723
+Imidazopyridinones	ISA46908
+Benzamides	ISA22702
+Hippuric acids and derivatives	ISA16180
+Oleanane triterpenoids	ISA36615
+Tetracyclines	ISA26895
+Catecholamines and derivatives	ISA33567
+Tryptamines and derivatives	ISA27162
+Pheniramines	ISA26421; ISA50996
+Phenylmethylamines	ISA33860
+Phenethylamines	ISA32877
+Phenylpropylamines	ISA32952
+Amphetamines and derivatives	ISA35338
+Piperazines	ISA26114
+Methoxyphenols	ISA33853; ISA51683
+Diazaspirononane derivatives	ISA35624
+Cyclopyrrolones	ISA74222
+Dioxoles	ISA38104
+Nitrofurans	ISA35716; ISA24129
+Piperidines	ISA26151
+Oxazolidinones	ISA55374
+Oxazolidinediones	ISA55374
+Oligosaccharides	ISA50699
+Thioxanthenes	ISA50930
+Xanthenes	ISA38835
+Tocopherols	ISA27013
+Psoralens	ISA26369
+Thioxanthones	ISA50930; ISA76224
+Xanthones	ISA51149
+Pyrazolones	ISA26410
+Cinnolines	ISA38770
+Phthalazines	ISA38768
+Pyridazinones	ISA26414
+Phthalazinones	ISA38768
+Carbazoles	ISA48513
+Indoles and derivatives	ISA24828
+Porphyrins	ISA26214
+Pyrrolopyridines	ISA46771
+Hydroxyeicosapentaenoic acids	ISA72799
+Sugar acids and derivatives	ISA78618
+Indolizines	ISA38485
+Pyrazolidines	ISA38312
+Pyrrolidines	ISA38260
+Pyrrolizines	ISA38522
+Pyrrolizidines	ISA38522
+Quinolizidines	ISA26516
+Quinolizines	ISA38063
+Hydrophenanthrenes	ISA25961
+Thiadiazines	ISA25693; ISA38101; ISA38106
+Nitrothiazoles	ISA48901; ISA35716
+Thiazolidines	ISA35622
+Thiazolidinones	ISA48891
+Thiazolidinediones	ISA50990
+Thiazolines	ISA48901
+Organic superoxides	ISA36983
+Benzothiepins	ISA38106; ISA27171
+Dibenzothiepins	ISA38924
+Thiolanes	ISA48224
+Triazolones	ISA35727
+Triazolidines	ISA51262
+Ellagic acids and derivatives	ISA38163
+Acyl monophosphates	ISA16826
+Tannins	ISA26848
+Indolizinoquinolines	ISA38163; ISA38101
+Camptothecins	ISA48626
+Pyranoindolizines	ISA26979; ISA38101; ISA38104
+Nitroimidazoles	ISA24780; ISA35716
+Thienoimidazoles	ISA47029
+Biotin and derivatives	ISA51570
+Purines and purine derivatives	ISA26401
+Hypoxanthines	ISA25810
+Xanthines	ISA25810
+"1,2-dioxoles"	ISA25702; ISA38104
+Thioxanthines	ISA26401; ISA33261
+Imidazolidines	ISA38261
+Indolizidines	ISA38485
+Quinuclidines	ISA26518
+Stilbenes	ISA26776
+Ethers	ISA25698
+Folic acids and derivatives	ISA37445
+Glycerophospholipids	ISA37739
+Sphingolipids	ISA26739
+Steroids and steroid derivatives	ISA35341
+Prenol lipids	ISA64611
+"Monohydroxy bile acids, alcohols and derivatives"	ISA3098
+Phenylpropanoids and polyketides	ISA36963
+Fatty acids	ISA25384
+Sesquiterpene glycosides	ISA61777
+Organic acids and derivatives	ISA64709
+Carboxylic acids and derivatives	ISA33575
+Short-chain hydroxy acids and derivatives	ISA24669
+Organohalogen compounds	ISA36684
+Sulfenic acids and derivatives	ISA51333
+Sulfinic acids and derivatives	ISA37784
+Sulfonic acids and derivatives	ISA33552
+Carbamic acids	ISA33709; HFP28616
+"1,3-dioxoles"	ISA38104
+Miscellaneous chromates	ISA35402
+Acridines	ISA22213
+Acryloyl compounds	ISA78840; HFP18308
+Acyl glycines	ISA16180
+Organic alkaline earth metal compounds	ISA33299
+Organonitrogen compounds	ISA35352
+Alkaloids and derivatives	ISA23315
+Beta-amino ketones	ISA17087; ISA50047
+Aminobenzoic acids and derivatives	ISA22495
+Aminoglycosides	ISA47779
+Aminopyridines and derivatives	ISA38207
+Anilines	ISA48975
+Anilides	ISA13248
+Primary alcohols	ISA15734
+Organomagnesium compounds	ISA33976
+Thioanisoles	ISA35683
+"Nucleosides, nucleotides, and analogues"	ISA61120
+Azulenes	ISA38096
+Pyrimidones	ISA38387
+Barbituric acid derivatives	ISA22693
+Benzazepines	ISA35676
+Benzimidazoles	ISA22715
+Benzodiazepines	ISA22720
+Benzodioxoles	ISA38298
+Lysophosphatidylglycerols	ISA24360
+Fatty aldehydes	ISA35746
+Medium-chain hydroxy acids and derivatives	ISA36586
+Benzarsoles	ISA33406; ISA27171
+Benzofurans	ISA35259
+Benzoxazoles	ISA46700
+Phenylpiperidines	ISA26151
+Pyrazolopyridines	ISA46699
+Pyrazolopyrimidines	ISA38669
+Phenyltetrazoles and derivatives	ISA35689
+Azepanes	ISA46986
+Benzothiadiazines	ISA50265
+Benzothiazines	ISA46899
+Phenothiazines	ISA38093
+Benzothiazoles	ISA37947
+Benzothiophenes	ISA38767
+Triazolopyrazines	ISA48277
+Triazolopyridines	ISA46746
+Benzotriazoles	ISA48912
+Benzopyrenes	ISA35300
+Benzothiazepines	ISA48684
+Carbamic acids and derivatives	ISA23003
+Benzoxazepines	ISA38101; ISA38104
+Dibenzazepines	ISA53802
+Benzoyl derivatives	ISA36586
+Betaxanthins and derivatives	ISA22861
+Organooxygen compounds	ISA36963
+Fatty acid esters	ISA35748
+Biphenols	ISA24681
+Bipyridines and oligopyridines	ISA50511
+Bisphosphonates	ISA77383
+Imidazopyridines	ISA46908
+Phenylazirines	ISA47848
+Phenylbenzimidazoles	ISA22715
+Fatty amides	ISA29348
+Phosphatidylglycerophosphates	ISA17264
+Straight chain fatty acids	ISA59202
+Flavonoids	ISA72544
+N-acylpiperidines	ISA48591
+Anthocyanidins	ISA38695
+Flavans	ISA38672
+Branched fatty acids	ISA35819
+Unsaturated fatty acids	ISA27208
+Hydroperoxy fatty acids	ISA64009
+Hydroxy fatty acids	ISA24654
+Pyridinylpyrimidines	ISA38101
+Pyrrolopyrazines	ISA48337
+Thienopyridines	ISA37942
+Azaborinanes	ISA33406
+Dicarboxylic acids and derivatives	ISA35692
+Amino acids and derivatives	ISA35352; ISA36963; HFP33709
+Peptides	ISA16670
+Organoantimony compounds	ISA36919
+Butyrophenones	ISA22951
+Biflorane and serrulatane diterpenoids	ISA23849
+Cobalamin derivatives	ISA33906
+Corrinoids	ISA33913
+Coumestans	ISA72577
+Cumenes	ISA38976
+Curcuminoids	ISA78802
+Sesquaterpenoids	ISA51961
+Furanocoumarins	ISA24128
+Thietanes	ISA38106; ISA36389
+Thietes	ISA38106
+Organic cyanamides	ISA53091
+Nitriles	ISA18379
+Cyanates	ISA23420
+Organic carbonic acids and derivatives	HFP28976; ISA36963
+Cyclamates	ISA35719
+Nitrosimines	ISA35800
+Dihydropyridines	ISA50075
+Dioxanes	ISA46926
+Diphenylmethanes	ISA51614
+Phenylmorpholines	ISA38785
+"Ergotamines, dihydroergotamines, and derivatives"	ISA25904
+Fentanyls	ISA26151
+Glucosinolates	ISA24279
+Glucuronides	ISA24302
+Guanidines	ISA24436
+Hydroxamic acids	ISA24650
+Thiiranes	ISA36389; ISA38106
+Dithietanes	ISA38106; ISA36389
+Proanthocyanidins	ISA26267
+Hydroxyquinols and derivatives	ISA22707
+Aporphines	ISA24921
+Phloroglucinols and derivatives	ISA22707
+Hydroperoxyeicosatrienoic acids	ISA64009
+Alloxazines and isoalloxazines	ISA37326
+Batrachotoxins and derivatives	ISA26767
+Acyl cholines	ISA35287
+Hydroperoxyeicosatetraenoic acids	ISA64009
+Ketenes	ISA48002
+Keto acids and derivatives	ISA25754
+Indolequinones	ISA24829
+Mitomycins	ISA25357
+Morpholines	ISA38785
+Oxoeicosapolyenoic acids	ISA26208
+Alpha amino acid esters	ISA46874
+Organic nitrates	ISA51081
+Organic nitrites	ISA25549
+Pyrogallols and derivatives	ISA22707
+Nitrogen mustard compounds	ISA37598
+Phenylazides	ISA22680
+Organophosphorus compounds	ISA25710
+Organic phosphines and derivatives	ISA35883
+Organic phosphoric acids and derivatives	ISA26079
+Organic sulfuric acids and derivatives	ISA37826
+Miscellaneous chromites	ISA23237
+Organoarsenic compounds	ISA33406
+Organolithium compounds	ISA51186
+Organomercurial compounds	ISA25196
+Phosphate esters	ISA37734
+Keto fatty acids	ISA59644
+Azo compounds	ISA37533
+Oximes	ISA25750
+Dioxetanes	ISA38104
+Pentalenes	ISA36785
+Organic peroxides	ISA25702
+Boronic acids	ISA38269
+Phenazines and derivatives	ISA39201
+Phenoxyacetic acid derivatives	ISA25384
+Phenylacetic acid derivatives	ISA25384
+Organic phosphonic acids and derivatives	ISA26069
+Chlorinated dibenzo-p-dioxins	ISA23825
+Methoxy fatty acids	ISA35366; ISA25698
+Homogeneous metal compounds	ISA24835
+Homogeneous non-metal compounds	ISA23367
+Mixed metal/non-metal compounds	ISA23367
+Homogeneous alkali metal compounds	ISA33296
+Homogeneous transition metal compounds	ISA33497
+Homogeneous post-transition metal compounds	ISA24835
+Homogeneous alkaline earth metal compounds	ISA33299
+Homogeneous lanthanide compounds	ISA33775
+Homogeneous actinide compounds	ISA33498
+Homogeneous metalloid compounds	ISA24835
+Homogeneous halogens	ISA24471
+Homogeneous noble gases	ISA33583
+Homogeneous other non-metal compounds	ISA24835
+Non-metal oxoanionic compounds	ISA35406
+Azoles	ISA68452
+Other non-metal halides	ISA37578
+Alkali metal salts	ISA35479
+Alkaline earth metal salts	ISA36364
+Lanthanide salts	ISA24866; ISA33775
+Actinide salts	ISA33498; ISA24866
+Metalloid salts	ISA24866
+Transition metal salts	ISA24866; ISA33497
+Post-transition metal salts	ISA24866
+Alkali metal oxoanionic compounds	ISA33296; ISA35406
+Alkaline earth metal oxoanionic compounds	ISA35406; ISA33299
+Lanthanide oxoanionic compounds	ISA33775; ISA35406
+Actinide oxoanionic compounds	ISA33498; ISA35406
+Metalloid oxoanionic compounds	ISA35406
+Transition metal oxoanionic compounds	ISA35405
+Post-transition metal oxoanionic compounds	ISA35406
+Metalloporphyrins	ISA25216
+Other non-metal organides	ISA24835
+Halogen organides	ISA24471
+Actinide organides	ISA33498
+Alkali metal organides	ISA33296
+Alkaline earth metal organides	ISA33299
+Post-transition metal organides	ISA24835
+Lanthanide organides	ISA33775
+Metalloid organides	ISA24835
+Transition metal organides	ISA33497
+Organometallic compounds	ISA25707
+Organic oxoanionic compounds	ISA35406
+Acetylenedicarboxylates	ISA73474
+Coumaric acid esters	ISA36087
+Fulminates	ISA35352; ISA36963
+Phenylcarbamates	ISA23003
+Dicarbonic acids and derivatives	ISA36631
+Monoalkylamines	ISA13759
+Enamines	ISA47989
+Nitro fatty acids	ISA35366; ISA35716
+Hydroxy acids and derivatives	ISA24669
+Organogold compounds	ISA33969
+Biguanides	ISA53662
+Carboxylic acid amides	ISA32988
+Cinnamic acids and derivatives	ISA78840; HFP27386
+Acyclic sesquiterpenoids	ISA26658
+Polyprenyl phosphates	ISA16460
+Purine nucleosides and analogues	ISA26394
+Pyrimidine nucleosides and analogues	ISA26440
+Pyranones and derivatives	ISA37963
+Trithiolanes	ISA39195
+Halogenated fatty acids	ISA60692
+Dithiolanes	ISA39192
+Quinazolines	ISA38530
+Quinoxalines	ISA38771
+Salicylic acid and derivatives	ISA22712; ISA36586
+Organic nitric acids and derivatives	ISA51081
+Amino fatty acids	ISA59650
+Sulfonylureas	ISA76983
+Sulfoxides	ISA35813
+Tropanes	ISA37332
+Thiaziridines	ISA38101; ISA38106
+Isoflavones	ISA38757
+Carbocyclic fatty acids	ISA35744
+Amine oxides and derivatives	ISA35580; ISA35323
+Aminals	ISA35412
+Boronic acid derivatives	ISA38269
+Imidoesters	ISA35352; ISA33241
+Chlorinated biphenyls	ISA22888; ISA36683
+Isocyanates	ISA53212
+Xanthanolides	ISA37667
+Quaternary ammonium salts	ISA35273
+Lineolic acids and derivatives	ISA18059
+Sulfones	ISA35850
+Sulfonyl halides	ISA33261
+Isoflavonoid O-glycosides	ISA50753; ISA2440
+Organic sulfonium compounds	ISA26830
+Sultams	ISA46950
+Thioamides	ISA47956
+12-oxophytodienoic acid metabolites	ISA18059
+Jasmonic acids	ISA18059; HFP18292
+Eicosanoids	ISA23899
+Prostaglandins and related compounds	ISA26347
+Leukotrienes	ISA25029
+"Dihydroxy bile acids, alcohols and derivatives"	ISA36078
+Ureas	ISA47857
+Triphenylenes	ISA35294
+Thromboxanes	ISA26995
+Actinide hydrides	ISA37761; ISA33498
+Actinide nitrides	ISA50882; ISA33498
+Actinide oxides	ISA24836; ISA33498
+Actinide sulfides	ISA46718; ISA33498
+Alkali metal hydrides	ISA33760
+Alkali metal nitrides	ISA50882; ISA35479
+Alkali metal oxides	ISA24836; ISA35479
+Alkali metal sulfides	ISA46718; ISA35479
+Post-transition metal hydrides	ISA37761; ISA33675
+Post-transition metal nitrides	ISA50882; ISA33675
+Post-transition metal oxides	ISA24836; ISA33675
+Post-transition metal sulfides	ISA46718; ISA33675
+Metalloid hydrides	ISA37761; ISA33675
+Metalloid nitrides	ISA50882; ISA33675
+Metalloid oxides	ISA24836; ISA33675
+Metalloid sulfides	ISA26822; ISA33675
+Transition metal hydrides	ISA33497; ISA37761
+Transition metal nitrides	ISA33497; ISA50882
+Transition metal oxides	ISA33497; ISA24836
+Transition metal sulfides	ISA33497; ISA46718
+Lanthanide hydrides	ISA33775; ISA37761
+Lanthanide nitrides	ISA33775; ISA50882
+Lanthanide oxides	ISA33775; ISA24836
+Lanthanide sulfides	ISA33775; ISA46718
+Alkaline earth metal hydrides	ISA33299; ISA37762
+Alkaline earth metal nitrides	ISA36364; ISA50882
+Alkaline earth metal oxides	ISA33299; ISA24836
+Alkaline earth metal sulfides	ISA46718; ISA36364
+Halogen hydrides	ISA37140
+Halogen nitrides	ISA50882; ISA24471
+Halogen oxides	ISA37749
+Halogen sulfides	ISA24835
+Other non-metal hydrides	ISA33242
+Other non-metal nitrides	ISA50882
+Other non-metal oxides	ISA24836
+Other non-metal sulfides	ISA46718
+Actinide astatides	ISA33498; ISA37138
+Actinide bromides	ISA33498; ISA22925
+Actinide chlorides	ISA33498; ISA23114
+Actinide fluorides	ISA33498; ISA24060
+Actinide iodides	ISA33498; ISA24858
+Alkali metal astatides	ISA33296; ISA37138
+Alkali metal bromides	ISA35479; ISA22925
+Alkali metal chlorides	ISA35479; ISA23114
+Alkali metal fluorides	ISA35479; ISA24060
+Alkali metal iodides	ISA35479; ISA24858
+Alkaline earth metal astatides	ISA36364; ISA37138
+Alkaline earth metal bromides	ISA36364; ISA22925
+Alkaline earth metal chlorides	ISA36364; ISA23114
+Alkaline earth metal fluorides	ISA36364; ISA24060
+Alkaline earth metal iodides	ISA36364; ISA24858
+Post-transition metal astatides	ISA37138; ISA24839
+Post-transition metal bromides	ISA22925; ISA24839
+Post-transition metal chlorides	ISA23114; ISA36093
+Post-transition metal fluorides	ISA24839; ISA24060
+Post-transition metal iodides	ISA24858; ISA24839
+Lanthanide astatides	ISA37138; ISA33775
+Lanthanide bromides	ISA33775; ISA22925
+Lanthanide chlorides	ISA33775; ISA36093
+Lanthanide fluorides	ISA33775; ISA24060
+Lanthanide iodides	ISA33775; ISA24858
+Metalloid astatides	ISA24839; ISA37138
+Metalloid bromides	ISA24839; ISA22925
+Metalloid chlorides	ISA36093
+Metalloid fluorides	ISA24839; ISA24060
+Metalloid iodides	ISA24839; ISA24858
+Transition metal astatides	ISA33497; ISA37138
+Transition metal bromides	ISA33497; ISA22925
+Transition metal chlorides	ISA33497; ISA36093
+Transition metal fluorides	ISA33497; ISA24060
+Transition metal iodides	ISA33497; ISA24858
+Actinide bromates	ISA33498; ISA22923
+Actinide chlorates	ISA33498; HP49709
+Actinide chlorites	ISA33498; HP17441
+Actinide chromates	ISA33498; HP35404
+Actinide chromites	ISA33498; ISA35402
+Actinide cyanates	ISA33498; ISA23420
+Purinones	ISA25810
+Actinide hydroxides	ISA33498; ISA33977
+Actinide hypobromites	ISA33498; HP29250
+Actinide hypochlorites	ISA33498; HP29222
+Actinide hyponitrites	ISA33498; HP33458
+Actinide hypophosphites	ISA33498; ISA24759
+Actinide iodates	ISA33498; ISA33445
+Actinide nitrites	ISA33498; ISA46648
+Actinide nitrates	ISA33498; ISA51084
+Actinide orthonitrates	ISA33498
+Actinide perbromates	ISA33498; HP29246
+Actinide perchlorates	ISA33498; HP49706
+Actinide periodates	ISA33498; HP49826
+Actinide permanganates	ISA33498; HP25939
+Actinide peroxynitrates	ISA33498; HP29270
+Actinide peroxynitrites	ISA33498; HP29541
+33498; technetium molecular entity	ISA33498; HP49858
+Actinide pertechnetates	ISA33498; ISA26868
+Actinide phosphites	ISA33498; HP45064
+Actinide phosphates	ISA33498; ISA24838
+Actinide pyrophosphates	ISA33498; HP18361
+Actinide selenates	ISA33498; HP15075
+Actinide selenites	ISA33498; ISA48840
+Actinide sulfates	ISA33498; ISA24840
+Actinide sulfites	ISA33498; ISA48857
+Actinide superoxides	ISA33498
+"N,N-diphenylcarbamates"	ISA23003; ISA22712
+Actinide peroxomonosulfates	ISA33498; HP33482
+Actinide peroxodisulfates	ISA33498; HP33482
+Actinide pyrosulfates	ISA33498; HP45163
+Actinide tetrathionates	ISA33498; HP23936
+Actinide thiosulfates	ISA33498; ISA26977
+Actinide dithionites	ISA33498; HP42160
+Actinide hyposulfites	ISA33498; HP33482
+Alkali metal bromates	ISA35479; ISA22923
+Alkali metal chlorates	ISA35479; ISA23109
+Alkali metal chlorites	ISA35479; ISA23118
+Alkali metal chromates	ISA35479; HP35404
+Alkali metal chromites	ISA35479; ISA23237
+Alkali metal cyanates	ISA35479; ISA36831
+Glycosylglycerols	ISA24406
+Alkali metal hydroxides	ISA33978
+Alkali metal hypobromites	ISA35479; HP29250
+Alkali metal hypochlorites	ISA35479; HP29222
+Alkali metal hyponitrites	ISA35479
+Alkali metal hypophosphites	ISA35479; HP29198
+Alkali metal iodates	ISA35479; ISA24856
+Alkali metal nitrites	ISA35479; ISA46648
+Alkali metal nitrates	ISA35479; ISA51084
+Alkali metal orthonitrates	ISA35479
+Alkali metal perbromates	ISA35479; HP29246
+Alkali metal perchlorates	ISA35479; HP49706
+Alkali metal periodates	ISA35479; HP49826
+Alkali metal permanganates	ISA35479; HP25939
+Alkali metal peroxynitrates	ISA35479; HP29270
+Alkali metal peroxynitrites	ISA35479; HP25941
+Alkali metal perrhenates	ISA35479; HP49858
+Alkali metal pertechnetates	ISA35479; ISA26865
+Alkali metal phosphites	ISA35479; HP45064
+Alkali metal phosphates	ISA35479; ISA24838
+Alkali metal pyrophosphates	ISA35479; HP18361
+Alkali metal selenates	ISA35479; HP15075
+Alkali metal selenites	ISA35479; ISA48840
+Alkali metal sulfates	ISA35479; ISA24840
+Alkali metal sulfites	ISA35479; ISA48857
+Alkali metal superoxides	ISA35479; HP18421
+Benzimidazole nucleosides and nucleotides	ISA61120
+Alkali metal peroxomonosulfates	ISA35479; ISA33424
+Alkali metal peroxodisulfates	ISA35479; ISA33424
+Alkali metal pyrosulfates	ISA35479; HP45163
+Alkali metal tetrathionates	ISA35479; HP15226
+Alkali metal thiosulfates	ISA35479; ISA26977
+Alkali metal dithionites	ISA35479; HP42160
+Alkali metal hyposulfites	ISA35479
+Alkaline earth metal bromates	ISA36364; ISA22923
+Alkaline earth metal chlorates	ISA36364; ISA23109
+Alkaline earth metal chlorites	ISA36364; ISA23118
+Alkaline earth metal chromates	ISA36364; HP35404
+Alkaline earth metal cyanates	ISA36364; ISA36831
+Taxanes and derivatives	ISA50367
+Alkaline earth metal hydroxides	ISA33989
+Alkaline earth metal hypobromites	ISA36364; HP29250
+Alkaline earth metal hypochlorites	ISA36364; HP29222
+Alkaline earth metal hyponitrites	ISA36364
+Alkaline earth metal hypophosphites	ISA36364; HP29198
+Alkaline earth metal iodates	ISA36364; ISA24856
+Alkaline earth metal nitrites	ISA36364; ISA46648
+Alkaline earth metal nitrates	ISA36364; ISA51084
+Alkaline earth metal orthonitrates	ISA36364
+Alkaline earth metal perbromates	ISA36364; HP29246
+Alkaline earth metal perchlorates	ISA36364; HP49706
+Alkaline earth metal periodates	ISA36364; HP49826
+Alkaline earth metal permanganates	ISA36364; HP25939
+Alkaline earth metal peroxynitrates	ISA36364; HP29270
+Alkaline earth metal peroxynitrites	ISA36364; HP25941
+Alkaline earth metal perrhenates	ISA36364; HP49858
+Alkaline earth metal pertechnetates	ISA36364; ISA26865
+Alkaline earth metal phosphites	ISA36364; HP45064
+Alkaline earth metal phosphates	ISA36364; ISA24838
+Alkaline earth metal pyrophosphates	ISA36364; HP18361
+Alkaline earth metal selenates	ISA36364; HP15075
+Alkaline earth metal selenites	ISA36364; ISA48840
+Alkaline earth metal sulfates	ISA36364; ISA24840
+Alkaline earth metal sulfites	ISA36364; ISA48857
+Alkaline earth metal superoxides	ISA36364; HP18421
+Sesterterpene lactones	ISA26660; ISA25000
+Alkaline earth metal peroxomonosulfates	ISA36364; ISA33424
+Alkaline earth metal peroxodisulfates	ISA36364; ISA33424
+Alkaline earth metal pyrosulfates	ISA36364; HP45163
+Alkaline earth metal tetrathionates	ISA36364; HP15226
+Alkaline earth metal thiosulfates	ISA36364; ISA26977
+Alkaline earth metal dithionites	ISA36364; HP42160
+Alkaline earth metal hyposulfites	ISA36364
+Post-transition metal bromates	ISA22923
+Post-transition metal chlorates	ISA23109
+Post-transition metal chlorites	ISA23118
+Post-transition metal chromates	ISA33675; HP35404
+Post-transition metal chromites	ISA33675; ISA23237
+Post-transition metal cyanates	ISA36831
+Chlorins	ISA33910
+Post-transition metal hydroxides	ISA24651
+Post-transition metal hypobromites	ISA33675; HP29250
+Post-transition metal hypochlorites	ISA33675; HP29222
+Post-transition metal hyponitrites	ISA33675
+Post-transition metal hypophosphites	ISA33675; HP29198
+Post-transition metal iodates	ISA24856
+Post-transition metal nitrites	ISA46648
+Post-transition metal nitrates	ISA51084
+Post-transition metal orthonitrates	ISA33675
+Post-transition metal perbromates	ISA33675; HP29246
+Post-transition metal perchlorates	ISA33675; HP49706
+Post-transition metal periodates	ISA33675; HP49826
+Post-transition metal permanganates	ISA33675; HP25939
+Post-transition metal peroxynitrates	ISA33675; HP29270
+Post-transition metal peroxynitrites	ISA33675; HP25941
+Post-transition metal perrhenates	ISA33675; HP49858
+Post-transition metal pertechnetates	ISA33675; ISA26865
+Post-transition metal phosphites	ISA33675; HP45064
+Post-transition metal phosphates	ISA33675; ISA24838
+Post-transition metal pyrophosphates	ISA33675; HP18361
+Post-transition metal selenates	ISA33675; HP15075
+Post-transition metal selenites	ISA48840
+Post-transition metal sulfates	ISA24840
+Post-transition metal sulfites	ISA48857
+Post-transition metal superoxides	ISA33675; HP18421
+Phospholanes	ISA25710; ISA25693
+Post-transition metal peroxomonosulfates	ISA33424
+Post-transition metal peroxodisulfates	ISA33424
+Post-transition metal pyrosulfates	ISA33675; HP45163
+Post-transition metal tetrathionates	ISA33675; HP15226
+Post-transition metal thiosulfates	ISA26977
+Post-transition metal dithionites	ISA33675; HP42160
+Post-transition metal hyposulfites	ISA33675
+Lanthanide bromates	ISA33775; ISA22923
+Lanthanide chlorates	ISA33775; ISA23109
+Lanthanide chlorites	ISA33775; ISA23118
+Lanthanide chromates	ISA33775; HP35404
+Lanthanide chromites	ISA33775; ISA23237
+Lanthanide cyanates	ISA33775; ISA36831
+Imidazothiazoles	ISA48909
+Lanthanide hydroxides	ISA33775; ISA52625
+Lanthanide hypobromites	ISA33775; HP29250
+Lanthanide hypochlorites	ISA33775; HP29222
+Lanthanide hyponitrites	ISA33775
+Lanthanide hypophosphites	ISA33775; HP29198
+Lanthanide iodates	ISA33775; ISA24856
+Lanthanide nitrites	ISA33775; ISA46648
+Lanthanide nitrates	ISA33775; ISA51084
+Lanthanide orthonitrates	ISA33775
+Lanthanide perbromates	ISA33775; HP29246
+Lanthanide perchlorates	ISA33775; HP49706
+Lanthanide periodates	ISA33775; HP49826
+Lanthanide permanganates	ISA33775; HP25939
+Lanthanide peroxynitrates	ISA33775; HP29270
+Lanthanide peroxynitrites	ISA33775; HP25941
+Lanthanide perrhenates	ISA33775; HP49858
+Lanthanide pertechnetates	ISA33775; ISA26865
+Lanthanide phosphites	ISA33775; HP45064
+Lanthanide phosphates	ISA33775; ISA24838
+Lanthanide pyrophosphates	ISA33775; HP18361
+Lanthanide selenates	ISA33775; HP15075
+Lanthanide selenites	ISA33775; ISA48840
+Lanthanide sulfates	ISA33775; ISA24840
+Lanthanide sulfites	ISA33775; ISA48857
+Lanthanide superoxides	ISA33775; HP18421
+Oxaphospholanes	ISA25710; ISA36963; ISA33670
+Lanthanide peroxomonosulfates	ISA33775; ISA33424
+Lanthanide peroxodisulfates	ISA33775; ISA33424
+Lanthanide pyrosulfates	ISA33775; HP45163
+Lanthanide tetrathionates	ISA33775; HP15226
+Lanthanide thiosulfates	ISA33775; ISA26977
+Lanthanide dithionites	ISA33775; HP42160
+Lanthanide hyposulfites	ISA33775
+Metalloid bromates	ISA22923
+Metalloid chlorates	ISA23109
+Metalloid chlorites	ISA23118
+Metalloid chromates	ISA33560; HP35404
+Metalloid chromites	ISA33560; ISA23237
+Metalloid cyanates	ISA36831
+Imidazodithiazoles	ISA33672; ISA38106; ISA38101
+Metalloid hydroxides	ISA33560; ISA52625
+Metalloid hypobromites	ISA24839; HP29250
+Metalloid hypochlorites	ISA24839; HP29222
+Metalloid hyponitrites	ISA24839; HP18210
+Metalloid hypophosphites	ISA24839; HP29198
+Metalloid iodates	ISA24839; HP29226
+Metalloid nitrites	ISA46648
+Metalloid nitrates	ISA51084
+Metalloid orthonitrates	ISA24839
+Metalloid perbromates	ISA24839; HP29246
+Metalloid perchlorates	ISA24839; HP49706
+Metalloid periodates	ISA24839; HP49826
+Metalloid permanganates	ISA24839; HP25939
+Metalloid peroxynitrates	ISA24839; HP29270
+Metalloid peroxynitrites	ISA24839; HP25941
+Metalloid perrhenates	ISA24839; ISA37241
+Metalloid pertechnetates	ISA24839; ISA26865
+Metalloid phosphites	ISA24839; HP26045
+Metalloid phosphates	ISA24839; HP24838
+Metalloid pyrophosphates	ISA24839; HP24839
+Metalloid selenates	ISA24839; HP15075
+Metalloid selenites	ISA24839; HP18212
+Metalloid sulfates	ISA24840
+Metalloid sulfites	ISA48857
+Metalloid superoxides	ISA24839; HP18421
+Dioxaphospholanes	ISA38104; ISA25710
+Metalloid peroxomonosulfates	ISA24839; HP29288
+Metalloid peroxodisulfates	ISA24839; HP29267
+Metalloid pyrosulfates	ISA24839; HP45163
+Metalloid tetrathionates	ISA24839; HP26936
+Metalloid thiosulfates	ISA24839; HP16094
+Metalloid dithionites	ISA24839; HP42160
+Metalloid hyposulfites	ISA24839; HP33482
+Transition metal bromates	ISA33497; ISA22923
+Transition metal chlorates	ISA33497; ISA23109
+Transition metal chlorites	ISA33497; ISA23118
+Transition metal chromates	ISA33497; HP35402
+Transition metal chromites	ISA33497; HP35402
+Transition metal cyanates	ISA33497; ISA36831
+Imidazodithiazolethiones	ISA27171; ISA38101; ISA38106
+Transition metal hydroxides	ISA33497; ISA33977
+Transition metal hypobromites	ISA33497; HP29250
+Transition metal hypochlorites	ISA33497; HP29222
+Transition metal hyponitrites	ISA33497; HP33458
+Transition metal hypophosphites	ISA33497; HP24759
+Transition metal iodates	ISA33497; ISA24856
+Transition metal nitrates	ISA33497; ISA51084
+Transition metal orthonitrates	ISA33497; HP33458
+Transition metal perbromates	ISAHP29246; ISA33497
+Transition metal perchlorates	ISAHP49706; ISA33497
+Transition metal periodates	ISAHP49826; ISA33497
+Transition metal permanganates	ISAHP25939; ISA33497
+Transition metal peroxynitrates	ISA33497; HP29270
+Transition metal peroxynitrites	ISA33497; HP25941
+Transition metal perrhenates	ISA33497; HP37242
+Transition metal pertechnetates	ISA33497; ISA26865
+Transition metal phosphites	ISA33497; HP26045
+Transition metal phosphates	ISA33497; HP35780
+Transition metal pyrophosphates	ISA33497; HP33461
+Transition metal selenates	ISA33497; HP15075
+Transition metal selenites	ISA33497; ISA48840
+Transition metal sulfates	ISA33497; ISA35175
+Transition metal sulfites	ISA33497; ISA48857
+Transition metal superoxides	ISA33497; HP18421
+Phospholes	ISA25710
+Transition metal peroxomonosulfates	ISA33497; ISA33424
+Transition metal peroxodisulfates	ISA33497; ISA33424
+Transition metal pyrosulfates	ISA33497; ISA33424
+Transition metal tetrathionates	ISA33497; ISA26835
+Transition metal thiosulfates	ISA33497; ISA26835
+Transition metal dithionites	ISA33497; ISA26835
+Transition metal hyposulfites	ISA33497; ISA26835
+Actinide aluminates	ISA33498; HP36668
+Actinide antimonates	ISA33498; HP36921
+Actinide antimonites	ISA33498; HP30297
+Actinide arsenates	ISA33498; HP22629
+Actinide arsenites	ISA33498; HP22633
+Actinide bisulfites	ISA33498; HP17137
+Actinide borates	ISA33498; HP22908
+Actinide ferrates	ISA33498; HP33892
+Actinide manganates	ISA33498; HP25152
+Actinide molybdates	ISA33498; HP36264
+Actinide plumbates	ISA33498; HP37185
+Actinide plumbites	ISA33498; HP37185
+Actinide silicates	ISA33498; HP48123
+Actinide stannates	ISA33498; HP50535
+Actinide stannites	ISA33498; HP50535
+Actinide tellurates	ISA33498; HP30464
+Actinide tellurites	ISA33498; HP30477
+Actinide tetrahydroxyborates	ISA33498; HP41132
+Actinide tungstates	ISA33498; HP46502
+Actinide orthovanadates	ISA33498; HP30528
+Alkali metal aluminates	ISA35479; HP36668
+Alkali metal antimonates	ISA35479; HP36921
+Alkali metal antimonites	ISA35479; HP30297
+Alkali metal arsenates	ISA35479; HP22629
+Alkali metal arsenites	ISA35479; HP22633
+Alkali metal bisulfites	ISA35479; HP17137
+Alkali metal borates	ISA35479; HP22908
+Alkali metal ferrates	ISA35479; HP33892
+Alkali metal manganates	ISA35479; HP25152
+Alkali metal molybdates	ISA35479;HP36264
+Alkali metal plumbates	ISA35479; HP37185
+Alkali metal plumbites	ISA35479; HP37185
+Alkali metal silicates	ISA35479; HP48123
+Alkali metal stannates	ISA35479; HP50535
+Alkali metal stannites	ISA35479; HP50535
+Alkali metal tellurates	ISA35479; HP30464
+Alkali metal tellurites	ISA35479; HP30477
+Alkali metal tetrahydroxyborates	ISA35479; HP41132
+Alkali metal tungstates	ISA35479; HP46502
+Alkali metal orthovanadates	ISA35479; HP30528
+Alkaline earth metal aluminates	ISA36364; HP36668
+Alkaline earth metal antimonates	ISA36364; HP36921
+Alkaline earth metal antimonites	ISA36364; HP30297
+Alkaline earth metal arsenates	ISA36364; HP22629
+Alkaline earth metal arsenites	ISA36364; HP22633
+Alkaline earth metal bisulfites	ISA36364; HP17137
+Alkaline earth metal borates	ISA36364; HP22908
+Alkaline earth metal ferrates	ISA36364; HP33892
+Alkaline earth metal manganates	ISA36364; HP25152
+Alkaline earth metal molybdates	ISA36364; HP36264
+Alkaline earth metal plumbates	ISA36364; HP37185
+Alkaline earth metal plumbites	ISA36364; HP37185
+Alkaline earth metal silicates	ISA36364; HP48123
+Alkaline earth metal stannates	ISA36364; HP50535
+Alkaline earth metal stannites	ISA36364; HP50535
+Alkaline earth metal tellurates	ISA36364; HP30464
+Alkaline earth metal tellurites	ISA36364; HP30477
+Alkaline earth metal tetrahydroxyborates	ISA36364; HP41132
+Alkaline earth metal tungstates	ISA36364; HP46502
+Alkaline earth metal orthovanadates	ISA36364; HP30528
+Post-transition metal aluminates	ISA33675; HP36668
+Post-transition metal antimonates	ISA33675; HP36921
+Post-transition metal antimonites	ISA33675; HP30297
+Post-transition metal arsenates	ISA33675; HP22629
+Post-transition metal arsenites	ISA33675; HP22633
+Post-transition metal bisulfites	ISA33675; HP17137
+Post-transition metal borates	ISA33675; HP22908
+Post-transition metal ferrates	ISA33675; HP 33892
+Post-transition metal manganates	ISA33675; HP25152
+Post-transition metal molybdates	ISA33675; HP36264
+Post-transition metal plumbates	ISA33675; HP37185
+Post-transition metal plumbites	ISA33675; HP37185
+Post-transition metal silicates	ISA33675; HP48123
+Post-transition metal stannates	ISA33675; HP50535
+Post-transition metal stannites	ISA33675; HP50535
+Post-transition metal tellurates	ISA33675; HP30464
+Post-transition metal tellurites	ISA33675; HP30477
+Post-transition metal tetrahydroxyborates	ISA33675; HP41132
+Post-transition metal tungstates	ISA33675; HP46502
+Post-transition metal orthovanadates	ISA33675; HP30528
+Lanthanide aluminates	ISA33775; HP36668
+Lanthanide antimonates	ISA33775; HP36921
+Lanthanide antimonites	ISA33775; HP30297
+Lanthanide arsenates	ISA33775; HP22629
+Lanthanide arsenites	ISA33775; HP22633
+Lanthanide bisulfites	ISA33775; HP17137
+Lanthanide borates	ISA33775; HP22908
+Lanthanide ferrates	ISA33775; HP33892
+Lanthanide manganates	ISA33775; HP25152
+Lanthanide molybdates	ISA33775; HP36264
+Lanthanide plumbates	ISA33775; HP37185
+Lanthanide plumbites	ISA33775; HP37185
+Lanthanide silicates	ISA33775; HP48123
+Lanthanide stannates	ISA33775; HP50535
+Lanthanide stannites	ISA33775; HP50535
+Lanthanide tellurates	ISA33775; HP30464
+Lanthanide tellurites	ISA33775; HP30477
+Lanthanide tetrahydroxyborates	ISA33775; HP41132
+Lanthanide tungstates	ISA33775; HP46502
+Lanthanide orthovanadates	ISA33775; HP30528
+Metalloid aluminates	ISA33675; HP36668
+Metalloid antimonates	ISA33675; HP36921
+Metalloid antimonites	ISA33675; HP30297
+Metalloid arsenates	ISA33675; HP22629
+Metalloid arsenites	ISA33675; HP22633
+Metalloid bisulfites	ISA33675; HP17137
+Metalloid borates	ISA33675; HP22908
+Metalloid ferrates	ISA33675; HP33892
+Metalloid manganates	ISA33675; HP25152
+Metalloid molybdates	ISA33675; HP36264
+Metalloid plumbates	ISA33675; HP37185
+Metalloid silicates	ISA33675; HP48123
+Metalloid stannates	ISA33675; HP50535
+Metalloid stannites	ISA33675; HP50535
+Metalloid tellurates	ISA33675; HP30464
+Metalloid tellurites	ISA33675; HP30477
+Metalloid tetrahydroxyborates	ISA33675; HP41132
+Metalloid tungstates	ISA33675; HP46502
+Metalloid orthovanadates	ISA33675; HP30528
+Transition metal aluminates	ISA33497; HP36668
+Transition metal antimonates	ISA33497; HP36921
+Transition metal antimonites	ISA33497; HP30297
+Transition metal arsenates	ISA33497; HP22629
+Transition metal arsenites	ISA33497; HP22633
+Transition metal bisulfites	ISA33497; HP17137
+Transition metal borates	ISA33497; HP22908
+Transition metal manganates	ISA33497; HP25152
+Transition metal molybdates	ISA33497; HP36264
+Transition metal plumbates	ISA33497; HP37185
+Transition metal plumbites	ISA33497; HP37185
+Transition metal silicates	ISA33497; HP48123
+Transition metal stannates	ISA33497; HP50535
+Transition metal stannites	ISA33497; HP50535
+Transition metal tellurates	ISA33497; HP30464
+Transition metal tellurites	ISA33497; HP30477
+Transition metal tetrahydroxyborates	HP41132; ISA33497
+Transition metal tungstates	HP46502; ISA33497
+Transition metal orthovanadates	ISA33497; HP30528
+Lipoxins	ISA6497
+Dibenzazecins	ISA38607
+Enol ethers	ISA47985
+Oxime ethers	ISA36816
+Hydroperoxyeicosapentaenoic acids	ISA24644
+Cholines	ISA23217
+Steroidal glycosides	ISA61655
+Glycinamide ribonucleotides	ISA24367
+Epoxyeicosatrienoic acids	ISA64007
+Cycloalkanes	ISA23453
+Acyl bromides	ISA37579; ISA37141
+Acyclic alkanes	ISA18310
+Alkadienes	ISA33646
+Hepoxilins	ISA36200
+Clavulones and derivatives	ISA36092
+Acyl chlorides	ISA36687
+Acyl fluorides	ISA38110
+Acyl iodides	ISA37579; ISA37142
+Alkyl bromides	ISA37141
+Alkyl chlorides	ISA36683
+Alkyl fluorides	ISA37143
+Alkyl iodides	ISA37142
+Aryl bromides	ISA37141
+Aryl chlorides	ISA36683
+Aryl fluorides	ISA37143
+Aryl iodides	ISA37142
+Imidoyl bromides	ISA37141
+Imidoyl chlorides	ISA36683
+Imidoyl fluorides	ISA37143
+Imidoyl iodides	ISA37142
+Organic sulfuryl bromides	ISA33552
+Organic sulfuryl chlorides	ISA33552
+Organic sulfuryl fluorides	ISA33552
+Organic sulfuryl iodides	ISA33552
+Sulfonyl bromides	ISA33552
+Sulfonyl chlorides	ISA33552
+Sulfonyl fluorides	ISA33552
+Sulfonyl iodides	ISA33552
+Carboxamidines	ISA35359
+Sulfinamidines	ISA35360
+Phosphinamidines	ISA35361
+Non-metal bromates	ISA22923; ISA33675
+Non-metal chlorates	ISA23109; ISA33675
+Non-metal chlorites	ISA23118; ISA33675
+Non-metal chromates	HP35402; ISA33675
+Non-metal chromites	HP35402; ISA33675
+Non-metal cyanates	ISA36831; ISA33675
+Phenyldithiazoles	ISA36820; ISA38101; ISA38106
+Non-metal hydroxides	ISA33675; ISA52625
+Non-metal hypobromites	ISA33675; HP29250
+Non-metal hypochlorites	ISA33675; HP29222
+Non-metal hyponitrites	ISA33675; HP33458
+Non-metal hypophosphites	ISA33675; HP24759
+Non-metal iodates	ISA33675; ISA24856
+Non-metal nitrites	ISA33675; ISA46648
+Non-metal nitrates	ISA33675; ISA51084
+Non-metal orthonitrates	ISA33675; HP33458
+Non-metal perbromates	ISA33675; HP29246
+Non-metal perchlorates	ISA33675; HP49706
+Non-metal periodates	ISA33675; HP49826
+Non-metal permanganates	ISA33675; HP25939
+Non-metal peroxynitrates	ISA33675; HP29270
+Non-metal peroxynitrites	ISA33675; HP25941
+Non-metal perrhenates	ISA33675; HP37242
+Non-metal pertechnetates	ISA33675
+Non-metal phosphites	ISA33675; HP26045
+Non-metal phosphates	ISA33675; HP35780
+Non-metal pyrophosphates	ISA33675; HP33461
+Non-metal selenates	ISA33675; HP15075
+Non-metal selenites	ISA33675; ISA48840
+Non-metal sulfates	ISA33675; ISA24840
+Non-metal sulfites	ISA33675; ISA48857
+Non-metal superoxides	ISA33675
+Tetrazolines	ISA35689
+Non-metal peroxomonosulfates	ISA33675; HP33482
+Non-metal peroxodisulfates	ISA33675; HP33482
+Non-metal pyrosulfates	ISA33675; HP33482
+Non-metal tetrathionates	ISA33675; HP33482
+Non-metal thiosulfates	ISA33675; HP33482
+Non-metal dithionites	ISA33675; HP33482
+Non-metal hyposulfites	ISA33675; HP33482
+Hemiaminals	ISA73080
+Gal- (Gala series)	ISA63415
+Acyl CoAs	ISA17984
+Toluenes	ISA27024
+Hemiacetals	ISA5653
+Carboxylic acid derivatives	HFP33575
+Imidothioesters	ISA38101; ISA33261
+Acyl carnitines	ISA17387
+N-acyl amines	ISA29348
+Benzyloxycarbonyls	ISA33308; HFP17987
+Bromobenzenes	ISA37141
+Chlorobenzenes	ISA36683
+Fluorobenzenes	ISA37143
+Iodobenzenes	ISA37142
+Acyl homoserine lactones	ISA22950; ISA37622; HFP17289
+Endocannabinoids	ISA67197
+"Trihydroxy bile acids, alcohols and derivatives"	ISA3098
+Phthalic acid and derivatives	ISA19643
+M-phthalic acid and derivatives	ISA19643
+O-phthalic acid and derivatives	ISA19643
+P-phthalic acid and derivatives	ISA19643
+Phthalic anhydrides	ISA38831; ISA36609
+"Tetrahydroxy bile acids, alcohols and derivatives"	ISA3098
+Flavonoid glycosides	ISA50018
+Thiocarboxylic acids and derivatives	ISA33307
+Alpha-keto acids and derivatives	ISA25754
+Beta-keto acids and derivatives	ISA25754
+Gamma-keto acids and derivatives	ISA25754
+Lipoic acids and derivatives	ISA39192; ISA48847; ISA59643
+Polyprenyl phospho carbohydrates	ISA26187
+Gamma-amino ketones	ISA17087; ISA50047
+"Sulfonyl-1,2,3-triazoles"	ISA35727; ISA38850
+"Sulfonyl-1,2,4-triazoles"	ISA35727; ISA38851
+"N-sulfonyl-1,2,3-triazoles"	ISA35727; ISA35358
+Thiobarbituric acid derivatives	ISA22693
+Triazolopyridinones	ISA46746
+Glycinated bile acids and derivatives	ISA36255
+Steroid lactones	ISA26766
+"2,3-diphenylfurans"	ISA24129
+Acyclic monoterpenoids	ISA25409
+Dithiazolethiones	ISA68452; ISA38106
+Diacylglycerols	ISA18035
+"1,2,4-dithiazole-3-thiones"	ISA68452; ISA38106
+Sphingomyelins	ISA64583
+Pyrimidodiazepines	ISA39306
+Monoacylglycerols	ISA17408
+Other carbohydrate conjugates	ISA78616
+Triacylglycerols	ISA17855
+Flavonols	ISA72010
+Monocarboxylic acids and derivatives	ISA25384
+Leucoanthocyanidins	ISA60835
+Phosphatidylinositol phosphates	ISA28765
+Harmala alkaloids	ISA61379
+Sulfonylanilines	ISA35358
+Chrysenes	ISA35294
+Coenzyme A and derivatives	ISA37240; HFP16761
+Fluoroquinolones	ISA23765; ISA37143
+N-acylethanolamines	ISA52640
+Indolines	ISA24828
+Sphaeroane diterpenoids	ISA23849
+Amino sugars	ISA28963
+Imidazolidinones	ISA55370
+Imidazolidinediones	ISA55370
+Indanones	ISA24789
+Nitro compounds	ISA35715
+Organoplumbates	ISA33586
+Lipoamides	ISA29347; ISA39192
+Nitroquinolines and derivatives	ISA26513; ISA35715
+Phenylaziridines	ISA22681
+Sulfonyls	ISA35850
+Pyrrolidones	ISA38275
+Taurinated bile acids and derivatives	ISA23219
+Pyridinones	ISA38183
+Thiosulfinic acid esters	ISA33424
+Urethanes	ISA23003
+Organic thiophosphonic acid derivatives	ISA25716
+Amidrazones	ISA35352
+Carboxylic acid hydrazides	ISA35363
+Carboxylic acid salts	ISA24868
+Dialkyl ethers	ISA25698
+Ketene acetals	ISA59769
+Phosphonic acid esters	ISA37735
+Epoxide amino acids and derivatives	ISA32955; ISA35352
+Steroidal acyl CoAs	ISA52135
+Sulfenic acid amides	ISA33261; ISA50047
+Sulfenic acid esters	ISA33261; ISA36963
+Sulfenic acid halides	ISA51333
+Sulfinic acid amides	ISA37784
+Sulfinic acid esters	ISA37784
+Sulfinic acid halides	ISA37784
+Sulfonic acid esters	ISA33552
+Sulfonic acids	ISA33551
+Organic sulfuric acids	ISA25704
+Sulfuric acid amides	ISA38038
+Corroles	ISA23393
+Sulfuric acid diamides	ISA51871
+Sulfuric acid diesters	ISA26819
+Sulfuric acid monoesters	ISA26819
+Sulfuric acid amide esters	ISA37826
+Thioacetals	ISA59792
+Thioaldehydes	ISA59786
+N-acyl-alpha amino acids and derivatives	ISA51569
+Thiocarbamic acid esters	ISA38127
+Thiocarbamic acid halides	ISA33261; ISA50047; ISA37578
+Carbamic acid halides	ISA37578; HFP28616
+Organic thiocarbonic acids	HFP36958
+Oxosteroids	ISA35789
+Thiocarbonic acid ester halides	ISA37578; HFP36958
+Thiocarbonic acid monoesters	ISA50492; HFP36958
+Thiocarbonic acid diesters	ISA50492; HFP36959
+Thiocarbonyl compounds	ISA50492
+Thiocarboxylic acids	ISA33307
+Thioesters	ISA26959
+Thiocyanates	ISA26955
+Thioethers	ISA16385
+Phenyldithiazolethiones	ISA68452; ISA38106
+Organic phosphoramides	ISA17102
+Carboxylic acids	ISA33575
+Organic phosphoric acid halides	ISA37579
+Thiosemicarbazides	ISA35363
+Thiosemicarbazones	ISA38532
+Thioureas	ISA51276
+Ynamines	ISA50047; ISA73474
+Dihydropyranones	ISA37963
+Alkylthiols	ISA47908
+Pyridoindoles	ISA48888
+Thiolactones	ISA60317
+Heterocyclic diaryl ethers	ISA35618
+Homocyclic diaryl ethers	ISA35618
+Diphenyltetrazoles and derivatives	ISA46926
+Pyrrolidinopyridines	ISA46771
+Organic thiophosphoric acids	ISA37512
+Benzyl cyanides	ISA18379
+Precorrins	ISA18379
+Organic perrhenates	ISA37242
+Alpha-diketones	ISA51869
+N-carbamoyl-alpha amino acids and derivatives	ISA51569
+Aminoimidazoles	ISA22512
+Imidazole carboxylic acids and derivatives	ISA24780
+Imidazolyl carboxylic acids and derivatives	ISA38307
+Pteroic acids and derivatives	ISA38795
+Nitrosoureas	ISA47857
+Thiocarboxylic acid amides	ISA47956
+Isoureas	ISA48379
+Isothioureas	ISA38914
+Cardiolipins	ISA28494
+Isothiocyanates	ISA52221
+Sulfenic acids	ISA51333
+Orthocarboxylic acid derivatives	ISA50860
+Carboxylic acid orthoesters	ISA71989
+Carboxylic acid esters	ISA33308
+Carboxylic acid azides	ISA22680
+Carboxylic acid anhydrides	ISA35873
+Caprolactones	ISA50239
+Phenylthiazoles	ISA48901; ISA36820
+Beta propiolactones	ISA49043
+Delta valerolactones	ISA18946
+Gamma butyrolactones	ISA37581
+Metalloid plumbites	ISA33675; HP37185
+Organic fluorophosphonic acids and derivatives	ISA26079; ISA24062
+Hydroxybenzoic acid derivatives	ISA24676
+Flavins	ISA30527
+Phosphocholines	ISA36700
+Gallic acid and derivatives	ISA27115
+Indole-3-acetic acid derivatives	ISA24803
+Quinolines and derivatives	ISA26513
+Imidazole carboxamides	ISA24780; ISA37622
+CDP-diacylglycerols	ISA17962
+Phenylacetaldehydes	ISA25973
+Neuraminic acids and derivatives	ISA25508
+Organic bromates	ISA22923
+Organic chlorates	HP49709; ISA24868
+Organic chlorites	HP17441; ISA24869
+Aminopyrimidines and derivatives	ISA38338
+CDP-glycerols	ISA35774
+CDP-monoacylglycerols	ISA16371
+N-sulfinylhydrazines	ISA38084; HFP15571
+Phosphoethanolamines	ISA36711
+Aldimines	ISA33271
+Nicotinamide nucleotides	ISA25527
+Sulfinic acids	ISA37783
+Miscellaneous mixed metal/non-metals	ISA24835
+Thiodiacetic acid derivatives	ISA33261; ISA36963
+Cresols	ISA51683; ISA33853
+Meta cresols	ISA24751
+Ortho cresols	ISA24751
+Para cresols	ISA24751
+Phenylpyruvic acid derivatives	ISA35910; HFP32816
+Carotenoids	ISA23044
+Organic chromates	ISA24868; HP35404
+Sulfur mustard compounds	ISA22327; ISA36684
+Alpha ketoaldehydes	ISA27659
+Decamethonium compounds	ISA35273
+Hexamethonium compounds	ISA35273
+Terpene lactones	ISA37668
+Strigolactones	ISA68487
+Thiamines	ISA26948
+Benzenediols	ISA33570
+Thiamine phosphates	ISA26945
+Dialk(en)yl-sn-glycerol-3-phosphates	ISA37739
+Dialk(en)yl-sn-glycerol-3-phosphocholines	ISA72807
+Indolyl carboxylic acids and derivatives	ISA46867
+Pyranoquinolines	ISA26979; ISA38104; ISA38101
+Cyclic alcohols and derivatives	ISA33822
+Purine nucleotide sugars	ISA64711
+Polyprenylbenzoquinones	ISA26255
+Hydroxysteroids	ISA35350
+Pyrimidine nucleotide sugars	ISA61109
+Pyridine nucleotides	ISA36980
+Other glycerophosphoserines	ISA35766
+"1,2-diacylglycerol-3-phosphates"	ISA29089
+Nicotinic acid nucleotides	ISA36976
+Alkynes	ISA22339
+Organic phosphonic acids	ISA15732
+Organic thiophosphoric acid derivatives	ISA37512
+Brevetoxins and derivatives	ISA61275
+Nitroso compounds	ISA35800
+Isocyanides	ISA35353
+Organic chromites	ISA24868
+Organic hydroperoxides	ISA35924
+Organophosphine oxides	ISA59656
+Benzenetriols and derivatives	ISA22707
+Isoprenoid phosphates	ISA37841
+"1,2-dioxanes"	ISA46926
+"1,4-dioxanes"	ISA46926
+"1,3-dioxanes"	ISA46926
+"1,2-dioxolanes"	ISA39430
+"1,3-dioxolanes"	ISA39430
+Transition metal ferrates	ISA33497; HP33892
+Hippuric acids	ISA16180; HFP18089
+Pyrimidinecarboxylic acids and derivatives	ISA78574
+Lysophosphatidic acids	ISA32957
+Pyrimidinecarboxamides	ISA48438
+Pyridinecarboxylic acids and derivatives	ISA26420; ISA33859
+Pyrrolizidinones	ISA27171; ISA38101; ISA3992
+Phosphatidylinositol monophosphates	ISA26036
+Quinolizidinones	ISA26516; ISA3992
+Pyridinecarboxamides	ISA25716; ISA17102
+Triazolidinones	ISA29347; ISA25985
+3-oxo-acyl CoAs	ISA17984
+Flavin nucleotides	ISA36981
+Lysophosphatidylinositol monophosphates	ISA26036
+Benzoins	ISA51586
+Indolizidinones	ISA73307; ISA3992
+Inorganic sulfuryl halides	ISA39443
+Fatty alcohols	ISA2571
+"1,2-diazepines"	ISA47918
+"1,4-diazepines"	ISA47918
+"1,3-diazepines"	ISA47918
+"1,2-oxazepines"	ISA38101; ISA38104
+"1,4-oxazepines"	ISA38101; ISA38105
+"1,3-oxazepines"	ISA38101; ISA38106
+"1,3-oxazines"	ISA38101; ISA38107
+"1,4-oxazines"	ISA38101; ISA38108
+"1,2-oxazines"	ISA38101; ISA38109
+Phosphatidylinositols	ISA28874
+Benzaldehydes	ISA22698
+Diazines	ISA38313
+"1,3-thiazines"	ISA46975
+"1,2-thiazines"	ISA46974
+"1,4-thiazines"	ISA46976
+Benzoic acid esters	ISA36054
+Acyclic triterpenoids	ISA36615
+Meta thiazepines	ISA48893
+Ortho thiazepines	ISA48893
+Para thiazepines	ISA48893
+Lysophosphatidylinositols	ISA64931
+Trioses	ISA27137
+Acyclic diterpenoids	ISA23849
+Phosphatidylglycerols	ISA17517
+Alpha hydroxy acids and derivatives	ISA35868
+Intermetallic alkali metal compounds	ISA33296
+Anthocyanins	ISA38697
+Flavanonols	ISA48039
+Enones	ISA51689
+Organic hydroxides	ISA25696
+Alkaline earth metal chromites	ISA36364; HP35404
+Sugar amino acids and derivatives	ISA63436
+Phosphatidylserines	ISA18303
+Thiocarbamic acid derivatives	ISA50492
+Boronic acid esters	ISA50979
+Organic metalloid compounds	ISA50860
+Organic transition metal compounds	ISA25707; ISA33497
+Organic alkali metal compounds	ISA25707; ISA35837
+Ynones	ISA51723
+Pyridoindolones	ISA48888
+Cyanohydrins	ISA23437
+Beta ketoaldehydes	ISA27659
+Lysophosphatidylserines	ISA68510
+Chlorinated dibenzofurans	ISA38922; ISA36683
+Benzo-p-dioxins	ISA64096
+N-acyl-alpha-hexosamine-1-phosphates	ISA24584
+Dibenzo-p-dioxins	ISA23825
+Benzo-o-dioxins	ISA64096
+Benzo-m-dioxins	ISA64096
+Dioxins	ISA38104
+Ortho dioxins	ISA38104
+Para dioxins	ISA38104
+Sultims	ISA38106; ISA38101
+Glucuronosphingolipids	ISA27253
+Neoflavones	ISA71971
+Colchicinoids	ISA38032
+Hydroxycinnamic acids and derivatives	ISA24689
+Lignans and norlignans	ISA26004
+Phosphatidylethanolamines	ISA64674
+Ceramide phosphoethanolamines	ISA73204
+Other glycerophosphoethanolamines	ISA36314
+Benzoxazines	ISA46969
+Other glycerophosphoinositols	ISA36315
+Non-metal bisulfites	ISA48857
+Ceramide phosphoinositols	ISA60245
+Nitrosamines	ISA35803
+Menthane monoterpenoids	ISA25186
+Imidazolinones	ISA20432
+Ergosterols and derivatives	ISA50403
+"1-alk(en)yl,2-acylglycerophosphates"	ISA37296
+Lysophosphatidylethanolamines	ISA64574
+Monoalk(en)ylglycerophosphates	ISA17106
+Other glycerophosphates	ISA37296
+Phosphatidylcholines	ISA57643
+Other glycerophosphocholines	ISA36313
+Xanthophylls	ISA27325
+Carotenes	ISA23044
+1-phosphoribosyl-imidazoles	ISA37292
+Lysophosphatidylcholines	ISA60479
+Monoalk(en)ylglycerophosphocholines	ISA64590
+Medium-chain keto acids and derivatives	ISA25754
+Short-chain keto acids and derivatives	ISA25754
+1-phosphoribosyl-imidazolecarboxamides	ISA37290
+Ceramides	ISA17761
+Neutral glycosphingolipids	ISA36520
+1-ribosyl-imidazolecarboxamides	ISA26556
+Glycidol esters	ISA33308; ISA32955; HFP30966
+Other hydroxyeicosapolyenoic acids	ISA23899
+Thia fatty acids	ISA59643
+Lysosphingomyelins and lysoglycosphingolipids	ISA35786
+Sulfated fatty acids	ISA29281; ISA61697
+Pyrophosphatidic acids	ISA52643
+Phosphoceramides	ISA35786
+Simple glycosylceramides	ISA62941
+GalNAcb1-3Gala1-4Galb1-4Glc- (Globo series)	ISA18259
+GalNAcb1-4GlcNAcb1-3Manb1-4Glc- (Arthro series)	ISA23075
+Galb1-3GlcNAcb1-3Galb1-4Glc- (Lacto series)	ISA17292
+Galb1-4GlcNAcb1-3Galb1-4Glc- (Neolacto series)	ISA20964
+GalNAcb1-3Gala1-3Galb1-4Glc- (Isoglobo series)	ISA23075
+Betacyanins and derivatives	ISA22861; ISA24400; HFP3079
+Betalains	ISA22861
+GlcNAcb1-2Mana1-3Manb1-4Glc- (Mollu series)	ISA23075
+Benzoxazinones	ISA46969
+Organothiophosphorus compounds	ISA25716
+Gangliosides	ISA28892
+Sulfatides	ISA36477
+Alpha-amino acyl ester of carbohydrates	ISA52782
+Other mixed metal/non-metal oxoanionic compounds	ISA24835
+Triazolopyrimidines	ISA48435
+Organic hypobromites	ISA24868
+"Bile acids, alcohols and derivatives"	ISA3098
+Thienoimidazolidines	ISA47029
+Steroid glucuronide conjugates	ISA26763
+Furoic acid derivatives	ISA36055
+Intermetallic alkaline earth metal compounds	ISA24835
+Intermetallic lanthanide compounds	ISA24835
+Intermetallic actinide compounds	ISA24835
+Intermetallic metalloid compounds	ISA24835
+Intermetallic transition metal compounds	ISA24835
+Intermetallic post-transition metal compounds	ISA24835
+Tetrapyrroles and derivatives	ISA26932
+Cephams	ISA35995
+Penems	ISA35996
+Cephamycins	ISA55429
+Glycosylglycerophospholipids	ISA24397
+Vitamin D and derivatives	ISA27300
+Pyrethroids	HFP39100
+Mannosylerythritol lipids	ISA33563
+3-(3-hydroxyalkanoyloxy)alkanoic acids	ISA33308
+4-hydroxy-2-alkylquinolines	ISA38774
+Anatoxins	ISA37332
+Estrane steroids	ISA35341; HPH23966
+Androgens and derivatives	ISA36834; HR50113
+"Gluco/mineralocorticoids, progestogins and derivatives"	ISA36699
+Cholesterols and derivatives	ISA50401
+Miscellaneous metallic oxoanionic compounds	ISA24835
+Miscellaneous aluminates	ISA24835
+Miscellaneous antimonates	ISA24835
+Miscellaneous antimonites	ISA24835
+Miscellaneous arsenates	ISA24835
+Miscellaneous arsenites	ISA24835
+Miscellaneous borates	ISA24835
+Miscellaneous ferrates	ISA24835
+Miscellaneous manganates	ISA24835
+Miscellaneous molybdates	ISA24835
+Miscellaneous plumbates	ISA24835
+Miscellaneous plumbites	ISA24835
+Miscellaneous silicates	ISA24835
+Miscellaneous stannates	ISA24835
+Miscellaneous stannites	ISA24835
+Miscellaneous tellurates	ISA24835
+Miscellaneous tellurites	ISA24835
+Miscellaneous tetrahydroxyborates	ISA24835
+Miscellaneous tungstates	ISA24835
+Miscellaneous orthovanadates	ISA24835
+Cholesteryl esters	ISA17002
+Cyclic purine nucleotides	ISA36982
+Cyclic pyrimidine nucleotides	ISA36983
+Epibatidine analogues	ISA22315
+"2',3'-cyclic purine nucleotides"	ISA19217
+"2',3'-cyclic pyrimidine nucleotides"	ISA19218
+Tetroses	ISA26938
+Pentoses	ISA25901
+Hexoses	ISA18133
+Heptoses	ISA33905
+Octoses	ISA25656
+Nonoses	ISA63367
+"3',5'-cyclic purine nucleotides"	ISA19834
+"3',5'-cyclic pyrimidine nucleotides"	ISA19835
+Diacylglycerophosphates	ISA26707
+6-oxopurines	ISA25810
+Purine nucleotides	ISA26395
+Thiocarbamic acids	ISA50492; ISA35352
+Organic oxoazanium compounds	ISA51143; ISA36963
+Pyrimidine nucleotides	ISA26441
+Lignan lactones	ISA25036; ISA25000
+Lignan glycosides	ISA25036; ISA24400
+Other glycerolipids	ISA35741
+Alk(en)yl diacylglycerols	ISA76584
+Organoastatides	ISA36684
+Organobromides	ISA37141
+Organochlorides	ISA36683
+Organofluorides	ISA37143
+Organoiodides	ISA37142
+Acyl astatides	ISA36684
+Organic nitrosonium compounds	ISA35352
+Organic carbonic acids	ISA36963
+Acyltrehaloses	ISA35748
+Organic post-transition metal compounds	ISA24835
+Organotin compounds	ISA25717
+Other hydroperoxyeicosapolyenoic acids	ISA23899
+Organic hypochlorites	ISA24868; HP29222
+Diphenylacetonitriles	ISA18379
+Furanoid fatty acids	ISA48847
+Organoaluminium compounds	ISA51175
+Benzonitriles	ISA22712; ISA18379
+Urofuranic acids	ISA48847
+Difurocoumarocyclopentenones	ISA23403
+Difurocoumarolactones	ISA23403
+Quinone and hydroquinone lipids	ISA18059
+Polyprenols	ISA26199
+Difurocoumarins	ISA23403
+Epoxy fatty acids	ISA61498
+Diterpene lactones	ISA49193
+Polysaccharides	ISA18154
+Monosaccharides	ISA35381
+Monosaccharide phosphates	ISA26816; ISA63367
+Disaccharides	ISA36233
+Sesquiterpene lactones	ISA37667
+Purine ribonucleotides	ISA26400
+Ubiquinones	ISA16389
+Vitamin E compounds	ISA39437
+Vitamin K compounds	ISA28384
+Alpha-halocarboxylic acids and derivatives	ISA36684
+Monoterpenoids	ISA25409
+Sesquiterpenoids	ISA26658
+Diterpenoids	ISA23849
+Sesterterpenoids	ISA26660
+Triterpenoids	ISA36615
+Tetraterpenoids	ISA26935
+Cardenolides and derivatives	ISA74634
+"1,3-diacylglycerol-2-phosphates"	ISA37739
+Bufanolides and derivatives	ISA26766; HFP22934
+Bufanolide glycosides and derivatives	ISA63299
+Cardenolide glycosides and derivatives	ISA38092
+Withanolides and derivatives	ISA74716
+Withanolide glycosides and derivatives	ISA74716; ISA24400
+Dihydropyridinecarboxylic acids and derivatives	ISA50075
+Monocyclic monoterpenoids	ISA25409
+Bicyclic monoterpenoids	ISA25409
+Iridoids and derivatives	ISA50563
+Enynes	ISA59831
+"Pumiliotoxins, homopumiliotoxins, and allopumiliotoxins"	ISA22315
+Miscellaneous inorganic compounds	ISA24835
+Inorganic phosphorotrithioic acids and derivatives	ISA46612
+Organophosphorotrithioic acids and derivatives	ISA37512
+Organic thiophosphoric acid amides	ISA25716; ISA17102
+Thiophosphoric acid esters	ISA37512
+Organic thiophosphoric acid halides	ISA37579; ISA25716
+Organic phosphoric acids	ISA59698
+Retinoid esters	ISA16179
+Allylic alcohols	ISA30879
+Organic hyponitrites	ISA24868; HP33458
+Benzofuranones	ISA35259
+Quinodimethanes	ISA52405
+Triterpene glycosides	ISA61778
+Piperidinones	ISA48589
+Piperidinediones	ISA48589
+Flavonoid O-glycosides	ISA72544; ISA24400
+Catechins	ISA23053
+Sulfonamides	ISA35358
+Biflavonoids and polyflavonoids	ISA72720
+Catechin gallates	ISA23053
+N-epsilon-acyl lysines	ISA16232
+Organic hypophosphites	ISA24868; HP24759
+Organic iodates	ISA24868; ISA24856
+Inorganic sulfuryl bromides	ISA39443
+Pterofurans	ISA35259
+Bilirubins	ISA36735
+Epigallocatechins	ISA23053
+"Spatane and 4,10-secospatane diterpenoids"	ISA23849
+Acyclic sesterterpenoids	ISA26660
+1-monoacylglycerols	ISA35759
+Hydroxyanthraquinones	ISA37485
+Disaccharide phosphates	ISA23843
+Anthraquinone glycosides	ISA22580; ISA24400
+Cyclosporins	ISA24613
+M-quinodimethanes	ISA52405
+2-monoacylglycerols	ISA17389
+Tetrahydrofuran lignans	ISA25036
+Carbonyl hydrates	ISA63732
+Retinoids	ISA26537
+Rotenoids	ISA71543
+Pterocarpans	ISA26377
+Carnitines	ISA22860
+Arylnaphthalene lignans	ISA25036
+Carbonic acid diesters	ISA46722
+Isoflavans	ISA72572
+Dibenzylbutyrolactone lignans	ISA25036
+Neoflavonoids	ISA71971
+Flavones	ISA24043
+Transition metal nitrites	ISA33497; ISA46648
+Purine ribonucleoside monophosphates	ISA26397
+Purine ribonucleoside diphosphates	ISA26396
+Purine ribonucleoside triphosphates	ISA26398
+Pyrimidine ribonucleoside monophosphates	ISA26443
+Pyrimidine ribonucleoside diphosphates	ISA26442
+Pyrimidine ribonucleoside triphosphates	ISA26444
+Dibenzocyclooctadiene lignans	ISA25036
+Dibenzylbutanediol lignans	ISA25036
+Tetralin lignans	ISA25036
+Phenanthrolines	ISA48835
+Purine ribonucleoside polyphosphates	ISA26400
+Pyrimidine ribonucleoside polyphosphates	ISA26446
+Benzopyrazoles	ISA38769
+Chalcones and dihydrochalcones	ISA72544
+Aurone flavonoids	ISA72576
+Flavanones	ISA28863
+Homoisoflavones	ISA73233
+Naphthofurans	ISA39270
+Pyridoxal 5'-phosphates	ISA36970; HFP17310
+Inorganic sulfuryl chlorides	ISA39443
+Serotonins	ISA27162; HFP28790
+1-acyl-sn-glycero-3-phosphocholines	ISA58168
+Tetrodotoxins	ISA36470; HFP9506
+Naphthopyrans	ISA26979; ISA36963
+Naphthopyranones	ISA26979; ISA36963
+Inorganic sulfuryl fluorides	ISA39443
+2-acyl-sn-glycero-3-phosphocholines	ISA16728
+"1,2-diacylglycerols"	ISA49172
+Depsides and depsidones	ISA36586
+Naphthopyranone glycosides	ISA64986; ISA24400
+"1,3-diacylglycerols"	ISA47777
+Tyrosol esters	HFP1879; ISA33308
+Isochromanequinones	ISA36141
+Tropones	ISA3992
+Biopterins and derivatives	ISA22881
+Carbonic acid ester halides	ISA36586; ISA36684
+Long-chain fatty acyl CoAs	ISA33184
+Benzyl esters	ISA33308
+Carbonic acid monoesters	ISA46722
+Acetals	ISA59769
+Carboxylic acid imides	ISA35356
+N-substituted carboxylic acid imides	ISA35356
+N-unsubstituted carboxylic acid imides	ISA35356
+Acyl cyanides	ISA18379; ISA36586
+Secondary alcohols	ISA35681
+Primary carboxylic acid amides	ISA37622
+Secondary carboxylic acid amides	ISA37622
+Tertiary carboxylic acid amides	ISA37622
+Enolates	ISA36963
+Thiohemiaminal derivatives	ISA33261
+Carboxylic acid amide acetals	ISA33822; ISA50047
+Organic diazonium salts	ISA39444
+Long-chain ceramides	ISA17761
+Tertiary alcohols	ISA26878
+Physalins and derivatives	ISA76361
+Organic thiocarbonic acid derivatives	ISA50492
+Ketimines	ISA33272
+Tropolones	ISA3992
+Aminocyclitol glycosides	ISA61689; ISA24400
+"Phosphatidylinositol-4,5-bisphosphates"	ISA37328
+1-acyl-sn-glycero-3-phosphoethanolamines	ISA29017
+Acyclic allenes	ISA37602
+Cyclic allenes	ISA37602
+2-acyl-sn-glycero-3-phosphoethanolamines	ISA28936
+1-acyl-glycerol-3-phosphoserines	ISA52603
+2-acyl-glycerol-3-phosphoserines	ISA26649
+Monoacylglycerophosphates	ISA16961
+1-acylglycerol-2-phosphates	ISA37739
+1-acylglycerol-3-phosphates	ISA16975
+Cucurbitacins	ISA16219
+Cucurbitacin glycosides	ISA16219; ISA24400
+2-acylglycerol-3-phosphates	ISA17936
+Long-chain 1-acylglycerol-3-phosphates	ISA16975
+Polysaccharide phosphates	ISA37639
+Steroid esters	ISA47880
+Sulfated steroids	ISA16158
+Aminotriazines	ISA38102
+Aminopyrazines	ISA38314
+Oxetane amino acids and derivatives	ISA38784; ISA35352
+Furanoid amino acids and derivatives	ISA24129; ISA35352
+Pyranoid amino acids and derivatives	ISA38104; ISA33709
+Bicyclic amino acids and derivatives	ISA35352; ISA36963
+Glycopeptides and derivatives	ISA24396
+Spirostanes and derivatives	ISA37948; ISA35341
+Furostanes and derivatives	ISA37948; ISA35341
+Furospirostanes and derivatives	ISA37948; ISA35341
+Solanidines and derivatives	ISA22315; ISA35341; ISA38166
+Spirosolanes and derivatives	ISA35624; ISA37948; ISA35341
+Gingerols	ISA55380; ISA25235; ISA33853
+Gingerdiols	ISA13643; ISA25235; ISA33853
+Gingerdiones	ISA67265; ISA25235; ISA33853
+Shogaols	ISA51689; ISA25235; ISA33853
+Paradols	ISA17087; ISA25235; ISA33853
+Hydrolyzable tannins	ISA26848
+Phlorotannins	ISA71222
+Complex tannins	ISA26848
+Beta hydroxy acids and derivatives	ISA61355
+Hydroxyquinolones	ISA23765; ISA38774
+Hydroquinolines	ISA26513
+Hydroquinolones	ISA26513
+Oxaborine derivatives	ISA38278
+Other glycerophosphoinositol phosphates	ISA35771
+Other glycerophosphoglycerols	ISA24360
+Lysophosphatidylglycerophosphates	ISA16961
+Phosphoglycosphingolipids	ISA24402
+Fatty alcohol esters	ISA33308
+Wax esters	ISA10036
+Pyrethrins	ISA39098
+Chloropropanol esters	ISA33308; ISA36683
+3-mcpd esters	ISA33308; ISA36683
+Diacylglycosylglycerophospholipids	ISA24397
+Quinacridines	ISA38164
+Oxepanes	ISA38104
+Piperidinylpyridines	ISA38207; ISA26151
+Dioxopiperazines	ISA46846
+Thiodioxopiperazines	ISA50492
+Pyrroloindoles	ISA48133
+Pyrroloquinolines	ISA50918
+Furanochromones	ISA26979; ISA38104
+Benzochromones	ISA64986
+Flavonoid C-glycosides	ISA72544; ISA20857
+Aurone O-glycosides	ISA72576; ISA24400
+Chalcone- and dihydrochalcone O-glycosides	ISA72544; ISA24400
+Organic antimonates	HP36921; ISA24868
+Rotenoid O-glycosides	ISA71543; ISA24400
+Coumaronochromones	ISA38834
+Coumarin glycosides	ISA23403; ISA24400
+Cyanolipids	ISA18379; ISA35748
+Type 1 cyanolipids	ISA18379; ISA35748
+Type 2 cyanolipids	ISA18379; ISA35749
+Type 3 cyanolipids	ISA18379; ISA35750
+Type 4 cyanolipids	ISA18379; ISA35751
+Lysobisphosphatidic acids	ISA24360
+Semilysobisphosphatidic acids	ISA24360
+Bisphosphatidic acids	ISA24360
+"8,2'-cyclic purine nucleotides"	ISA36982
+Benzoylindoles	ISA75884
+Simplexides	ISA24400; HR76507
+Diterpene glycosides	ISA71939
+Steviol glycosides	ISA71939
+Colensane and clerodane diterpenoids	ISA23849
+Dalbergiones	ISA71971
+Furanoflavones	ISA71037
+Dolabellane and neodolabellane diterpenoids	ISA23849
+Kavalactones	ISA75885; ISA35618
+Pyrroloacridines	ISA38163; ISA38101
+Pyridoacridines	ISA38163; ISA38101
+Pyridinium derivatives	ISA50334
+Rhamnolipids	ISA33563
+Fatty acyl glycosides	ISA52782; ISA61697
+Gibberellins	ISA24250
+Ginkgolides and bilobalides	ISA49193
+Pyrroloindolizines	ISA26979; ISA38101
+Guaianolides and derivatives	ISA37667
+Germacranolides and derivatives	ISA73011
+"Eudesmanolides, secoeudesmanolides, and derivatives"	ISA37667
+Glycosylmonoacylglycerols	ISA24385
+Brassinolides and derivatives	ISA22921
+Amaryllidaceae alkaloids	ISA22315
+Melleolides and analogues	ISA26658; ISA36054
+Illudanes and illudins	ISA26658
+O-quinodimethanes	ISA52405
+Guanidinobenzoic acids and derivatives	ISA24436; ISA22723
+Dihydrofuranoquinolines	ISA26979; ISA38104; ISA38101
+Aromadendrane sesquiterpenoids	ISA26658
+Erythrina alkaloids	ISA22315
+Curan alkaloids	ISA38958; HPH35948
+Thiaergolines	ISA38163; HFP38484
+Oxamorphinans	ISA38163; HFP17303
+Yohimbine alkaloids	ISA27358
+Ochratoxins and related substances	ISA38762; ISA29347; ISA25985
+Zearalenones	ISA25106; ISA33572
+Trichothecenes	ISA55517
+Epipolythiodioxopiperazines	ISA38164; ISA35489; ISA24828; ISA65061
+Gliotoxins	ISA35489; ISA38163; ISA64130; HR25442
+Fumonisins	ISA38224
+Ellipticine alkaloids	ISA38958; HPH4776
+Ajmaline-sarpagine alkaloids	ISA38958
+"Sparteine, lupanine, and related alkaloids"	ISA26515
+Oxocins	ISA38104
+Imidazopyrimidines	ISA35875
+Pyrrolotriazines	ISA38101; ISA27171
+Pyrrolopyrimidines	ISA38670
+"Saxitoxins, gonyautoxins, and derivatives"	ISA26979; HR76507
+Kainoids	ISA46767; ISA26273; ISA35692
+Okadaic acids and derivatives	ISA36468; ISA72600; HR76507
+Pectenotoxins and derivatives	ISA36468; ISA72600; HR76507
+Organic pyrophosphates	ISA62889
+Quinuclidones	ISA26518; ISA3992
+Organic arsenates	ISA50956
+Spironolactones and derivatives	ISA26766
+Ciguatera toxins	ISA61275
+Quinacridones	ISA61878
+Pyridoacridones	ISA61878
+Acridones	ISA22213; HFP50756
+Glycosyl-amino acids	ISA35258
+Peptidomimetics	ISA32988
+Phenylphosphines and derivatives	ISA35883
+Glycopeptidomimetics	ISA32988
+Furofurans	ISA47790
+Sterigmatocystins	ISA26759
+Furopyrans	ISA74927
+Isoindoles and derivatives	ISA24897
+Isoindolones	ISA24897
+Cytochalasans	ISA75946
+Oxadiazoles	ISA46685
+Hopanoids	ISA51963
+Hopane triterpenoids	ISA51963
+Polyterpenes	ISA51960
+Bacteriohopanoids	ISA51963
+Isoflavanones	ISA38741
+Isoflavanols	ISA76250
+M-terphenyls	ISA36820
+Inorganic sulfuryl iodides	ISA39443
+Carbonyl compounds	ISA36586
+Thiocarbonyl s-imides	ISA50492
+Thienopyrroles	ISA27171; ISA38101; ISA38106
+Pyrrolothiazoles	ISA27171; ISA38101; ISA38106
+Pyrrolizidine oximes	ISA38101; ISA36963
+O-terphenyls	ISA36820
+Organic peroxynitrates	ISA24868; HP29270
+Organic peroxynitrites	ISA24868; HP25941
+Organoaluminates	ISA24868; ISA36668
+Organostannates	ISA24868; ISA50535
+Organic orthovanadates	ISA24868; HP30528
+Tetrazolidines	ISA38101
+Phenyltetrazolines and derivatives	ISA38101
+Flavonolignans	ISA72709
+Bromodiphenyl ethers	ISA35618; ISA37141
+Alpha bromotoluenes	ISA27024; ISA37141
+Alpha chlorotoluenes	ISA27024; ISA36683
+Carbonucleotoids	ISA26816
+Carbopeptoids	ISA63299
+Thiophenols	ISA29256
+Pyrenes	ISA59659
+"1,3-aminoalcohols"	ISA22478
+Trioxanes	ISA38044
+Trioxolanes	ISA38104; ISA25693
+Phenoxazines	ISA25970
+Pyridazinoindazoles	ISA38101; ISA26979
+Naphthyridines	ISA73539
+Naphthyridine carboxylic acids and derivatives	ISA73539
+Pyridopyrimidines	ISA38932
+Pyridopyrimidine carboxylic acids and derivatives	ISA38932
+Pyridinesulfonamides	ISA26421; ISA35358
+Trithianes	ISA39195
+Dithianes	ISA51652
+Oxirane carboxylic acids and derivatives	ISA32955
+Pyrrolocarbazoles	ISA38101; ISA38163
+Indolocarbazoles	ISA51915
+Benzotriazole nucleosides and nucleotides	ISA48912; ISA61120
+Indazole nucleosides and nucleotides	ISA24780; ISA61120
+Indole nucleosides and nucleotides	ISA24820; ISA61120
+Naphthohydroquinones	ISA51475
+Naphthalenecarboxylic acids and derivatives	ISA25477; ISA36586
+P-quinodimethanes	ISA52405
+Phthalides	ISA38831
+Sulfonphthalides	ISA38086
+Benzoxathioles	ISA38086
+Azetidinecarboxylic acids or derivatives	ISA38777
+Aziridinecarboxylic acids or derivatives	ISA22681
+Beta amino acids and derivatives	ISA35352; ISA36963; HFP33706
+Delta amino acids and derivatives	ISA35352; ISA36963; HFP35931
+Gamma amino acids and derivatives	ISA35352; ISA36963; HFP33707
+Thiazetidines	ISA38106; ISA38101
+Beta sultams	ISA46950
+Gamma sultams	ISA46950
+Thiazinanes	ISA46954
+Delta sultams	ISA46950
+Oxathietanes	ISA38104; ISA38106
+Beta sultones	ISA38088
+Gamma sultones	ISA38088
+Oxathianes	ISA38104; ISA38106
+Isocoumarins and derivatives	ISA38758
+Sulfinylbenzimidazoles	ISA22715; ISA35813
+Biphenylcarbonitriles	ISA22888; ISA18379
+Halopyrimidines	ISA39447; ISA36684
+Thianes	ISA38106; ISA52849
+Thiopyrans	ISA38106; ISA52849
+Thienoquinolines	ISA38101; ISA38106; ISA26979
+"1,2-aminoalcohols"	ISA22478
+Organic triazenes	ISA72573
+Cylindrospermopsins	ISA38101
+Macrolide lactams	ISA25106; ISA24995
+Beta-sulfonopeptides	ISA16670
+"Alpha,beta-sulfonopeptides"	ISA16670
+Pyrrolidine carboxylic acids and derivatives	ISA38260; ISA36586
+Pyrimidine ribonucleoside bisphosphates	ISA25608
+Sulfinylamines	ISA33261; ISA35352
+Phenanthroindolizidines	ISA38101; ISA38164
+Phenanthroquinolizidines	ISA38101; ISA38164
+Benzoquinolines	ISA38101; ISA26979
+Protoberberine alkaloids and derivatives	ISA22315
+Benzoxepines	ISA38104
+Anthracenecarboxylic acids and derivatives	ISA46955; ISA36586
+Pyridoisoindoles	ISA38101; ISA26979
+Alpha carbolines	ISA48888
+Beta carbolines	ISA60834
+Delta carbolines	ISA48888
+Gamma carbolines	ISA48888
+Aminobenzamides	ISA22702
+Furopyrroles	ISA64471
+Thiazinanethiones	ISA38106; ISA38101
+Triazinones	ISA38102
+Pyrimidinethiones	ISA48546
+Triazinethiones	ISA38102; ISA50492
+Thiazolidinethiones	ISA35622; ISA50492
+Aminopyridazines	ISA37921
+Aminobenzenesulfonamides	ISA35358; ISA22712
+Metallotetrapyrroles	ISA33909
+Nitropyrimidines	ISA48507
+Thienothiazines	ISA46977
+Thienothiazoles	ISA38101; ISA38106
+Benzoxadiazoles	ISA46829
+Oxatriazoles	ISA38101; ISA38104
+Oxatriazolidines	ISA38101; ISA38104
+Oxadiazolidines	ISA46808
+Tetrahydropyridines	ISA26921
+N-phenylureas	ISA47857
+Aminothiophenes	ISA26961
+Polyprenyl quinols	ISA26253
+Peptoids	ISA16670
+Peptoid-peptide hydrids	ISA16670
+Urea peptoids	ISA36954
+Azatides	ISA37622; HFP28306
+Azapeptides	ISA16670
+Polyisoxazolines	ISA55373
+Oligothioureas	ISA33261; ISA35352
+Vinylogous sulfonylpeptides	ISA35358
+Vinylogous peptides	ISA51751
+Imidazole oligoamides	ISA62733; ISA24780
+Pyridoxines	ISA26421
+Pyrrolin-4-one oligomers	ISA38101
+Pyrrole oligoamides	ISA38101
+Oligoureas	ISA36954
+Oligourea amides	ISA36954
+Oligosulfoxides	ISA35813
+Oligosulfones	ISA35850
+Oligocarbamates	ISA35352
+Oligoanthrilamides	ISA32988
+Imidazole-pyrrole oligo- and polyamides	ISA32988
+Hydrazinopeptides	ISA32988
+Alpha-sulfonopeptides	ISA32988
+Alpha-phosphonopeptides	ISA32988
+Depsipeptides	ISA23643
+Aromatic urea oligo- and polyamides	ISA32988
+Aromatic oligo- and polyamides	ISA32988
+Glycodepsipeptides	ISA23643
+Thienopyrans	ISA48910
+Pyridoxamines	ISA26421; HFP16410
+Oxolanes	ISA26912
+Dibenzylbutyrolactols	ISA25036
+Dibenzylbutane lignans	ISA25036
+Furan lignans	ISA25036
+Furofuran lignans	ISA25036
+Sphingosylphosphorylcholines	ISA35786
+Benzoxazolones	ISA46700
+Piperidinecarboxylic acids and derivatives	ISA26151; ISA36586
+Pyrrolidinylpyridines	ISA38260; ISA26421
+Pyridinylpiperazines	ISA26421; ISA26144
+Pyrimidinylpiperazines	ISA26144; ISA39447
+Bipyrimidines and oligopyrimidines	ISA64459
+Imidazodiazepines	ISA39305
+Glycero-3-dithiophosphocholines	ISA37739
+Glycero-3-thiophosphocholines	ISA37739
+Furanones	ISA26912
+Dihydrofurans	ISA51659
+Phenylpiperazines	ISA26144
+Dioxolopyrans	ISA38104; ISA27171
+Tricarboxylic acids and derivatives	ISA36586
+Isosorbides	ISA63433
+Dibenzoxepines	ISA53802
+Heterocyclic fatty acids	ISA48847
+Pyrroloazepines	ISA38101; ISA27171
+Pyran carboxylic acids and derivatives	ISA26407; ISA36586
+Nitrobenzoic acids and derivatives	ISA25553
+"2',5'-cyclic purine nucleotides"	ISA36982
+Cyclic depsipeptides	ISA35213
+Cyclic peptides	ISA23449
+Cyclic glycopeptides and derivatives	ISA24396
+Imidazole nucleosides and nucleotides	ISA61120
+Purinethiones	ISA26401; ISA50492
+Dithioxanthines	ISA50492
+Piperazinoazepines	ISA27171; ISA38101
+Imidazotetrazines	ISA72565
+Mutilin derivatives	ISA23849
+Pleuromutilin and derivatives	ISA38032; ISA33308; ISA3992
+Triquinane sesquiterpenoids	ISA26658
+Pyrazolotriazines	ISA27171; ISA38101
+Pyrazolylpyridines	ISA46699
+Thiazolecarboxylic acids and derivatives	ISA48901; ISA33859
+Thiazolecarboxamides	ISA48901; ISA62733
+Hybrid glycopeptides	ISA24396
+Hybrid peptides	ISA16670
+Pyranodioxins	ISA27171; ISA38104
+Oxanes	ISA46942
+Indolecarboxylic acids and derivatives	ISA46867
+Indolecarboxamides and derivatives	ISA46921
+Thiadiazolidines	ISA48865
+Thiadiazolines	ISA38099
+Thiophene carboxylic acids and derivatives	ISA48436
+Thiophene carboxamides	ISA26961; ISA62733
+Phenylpyrazoles	ISA26410; ISA36820
+Thienopyrimidines	ISA27171; ISA38101; ISA38106
+Bi- and oligothiophenes	ISA26961; ISA36820
+Ureides	ISA74266
+N-acyl ureas	ISA74266
+"N,N'-diacyl ureas"	ISA74266
+Thioketone s-oxides	ISA22063
+Dithiohemiacetals	ISA59792
+Seleninic acids and derivatives	ISA25712
+Dipyrrins	ISA36749
+Semioxamazones	ISA38532
+Ergopeptines	ISA25904
+Stigmastanes and derivatives	ISA35341; HPH26773
+Isoselenocyanates	ISA25712; ISA35352
+Carbonyl imides	ISA51163
+Carbonyl oxides	ISA51165
+Organic thiosulfuric acids and derivatives	ISA37996
+Azo imides	ISA35352
+Azoxy compounds	ISA37390
+Formazans	ISA37533; ISA38532
+Gorgostanes and derivatives	ISA35341; HPH24424
+Selenols	ISA25712
+Selones	ISA25712
+Terphenyls	ISA36820
+Acenaphthenes and derivatives	ISA22156
+Phenylnaphthalenes	ISA25477; ISA22712; ISA36820
+Bakkenolides	ISA37667
+Ambrosanolides and secoambrosanolides	ISA37667
+Eremophilanolides and secoeremophilanolides	ISA37667
+Cadinanolides	ISA37667
+Terpene glycosides	ISA61777
+Tetrathianes	ISA38106
+Agarofurans	ISA26658
+Metalloheterocyclic compounds	ISA25707
+Silyl enol ethers	ISA47986
+Isoquinolones and derivatives	ISA24922
+Dithiins	ISA38106
+Furazans	ISA46815
+Furoxans	ISA46815; ISA35580
+Oxathiins	ISA38104; ISA38106
+Benzoxathiins	ISA46671
+Phenoxathiins	ISA26979; ISA38104; ISA38106
+Diazaphospholanes	ISA25710; ISA38101
+Diazaphospholines	ISA25710; ISA38101
+Diazaphospholes	ISA25710; ISA38101
+Histrionicotoxins	ISA22315
+Organic orthonitrates	ISA24868
+Organic perbromates	ISA24868; HP29246
+Organic perchlorates	ISA24868; HP49706
+Organic periodates	ISA24868; HP49826
+Organic permanganates	ISA24868; HP25939
+Organic pertechnetates	ISA24868
+Organic phosphites	ISA24868; HP26045
+Organic selenates	ISA24868; HP15075
+Organic selenites	ISA24868; HP18212
+Organosulfites	ISA24868; HP17359
+M-quinomethanes	ISA52404
+Organic peroxomonosulfates	ISA24868; HP29288
+Organic peroxodisulfates	ISA24868; HP29267
+Organic pyrosulfates	ISA24868; HP45163
+Organic tetrathionates	ISA24868; HP26936
+Organic thiosulfates	ISA24868; HP16094
+Organic dithionites	ISA24868; HP42160
+Organic hyposulfites	ISA24868; HP16094
+Isoxazolidines	ISA38329
+Isoxazolidinones	ISA55375
+Pyrazinecarboxamides	ISA38314; ISA37622
+Sulfanylbenzoic acids and derivatives	ISA59126
+Indoloquinazolines	ISA38163; ISA38101
+Acyloins	ISA2468
+Oxoprolines	ISA25801
+Dithioles	ISA38081
+Dihydrothiophenes	ISA38106
+Tocotrienols	ISA33235
+"N-sulfonyl-1,2,4-triazoles"	ISA35727; ISA35358
+Glucuronic acid derivatives	ISA63436
+Methanesulfonates	ISA25223
+Beta sultims	ISA38101; ISA38106
+Gamma sultims	ISA38101; ISA38106
+Delta sultims	ISA38101; ISA38106
+Cyclohexylphenols	ISA38976; ISA36820
+Benzodioxins	ISA64096
+1-acyl-sn-glycerol-3-phosphoinositols	ISA16617
+Azarsinanes	ISA33406; ISA38101
+Benzarsazines and derivatives	ISA33406; ISA38101
+Phenarsazines and derivatives	ISA33406; ISA38101
+Glycosyl compounds	ISA24400
+Anthracyclines	ISA48120
+Benzodioxinopyrroles	ISA26979; ISA38104; ISA38101
+Benzomorpholines	ISA46969
+Dioxiranes	ISA38104
+Furoindazoles	ISA38101; ISA38104
+Pyranopyridines	ISA38192
+Azaborines	ISA33406
+Azaborinines	ISA33406
+Naphthothiazoles	ISA48903
+Stannines	ISA25717
+Stannoles	ISA25717
+Triazolopyridazines	ISA48384
+Oxazolopyridines	ISA38765
+Quassinoids	ISA72485
+2-acyl-sn-glycerol-3-phosphoinositols	ISA62749
+"2',5'-cyclic pyrimidine nucleotides"	ISA36983
+O-quinomethanes	ISA52404
+P-quinomethanes	ISA52404
+Triazolothiazoles	ISA38101; ISA38106; ISA27171
+Alkyl glycosides	ISA24400
+P-terphenyls	ISA75874
+Pyrazolopyrazoles	ISA62826
+Pyrrolopyrazoles	ISA46866
+Pyranopyrimidines	ISA38104; ISA38101; ISA27171
+Monothioketals	ISA59799
+Monothioacetals	ISA59793
+Dithioacetals	ISA59794
+Dithioketals	ISA59800
+Purine deoxyribonucleotides	ISA26395
+Purine deoxyribonucleoside monophosphates	ISA26392
+Purine deoxyribonucleoside diphosphates	ISA26391
+Purine deoxyribonucleoside triphosphates	ISA26389
+Purine deoxyribonucleoside polyphosphates	ISA25608
+Purine 2'-deoxyribonucleoside diphosphates	ISA26387
+Purine 3'-deoxyribonucleoside diphosphates	ISA26391
+Purine 2'-deoxyribonucleoside monophosphates	ISA26388
+Purine 3'-deoxyribonucleoside monophosphates	ISA47974
+Purine 2'-deoxyribonucleoside polyphosphates	ISA25608
+Purine 3'-deoxyribonucleoside polyphosphates	ISA25608
+Purine 2'-deoxyribonucleoside triphosphates	ISA26389
+Purine 3'-deoxyribonucleoside triphosphates	ISA26389
+Pyrimidine ribonucleotides	ISA26446
+Pyrimidine deoxyribonucleotides	ISA26441
+Pyrimidine deoxyribonucleoside bisphosphates	ISA25608
+Pyrimidine deoxyribonucleoside diphosphates	ISA26437
+Pyrimidine deoxyribonucleoside monophosphates	ISA26438
+Pyrimidine deoxyribonucleoside polyphosphates	ISA25608
+Pyrimidine deoxyribonucleoside triphosphates	ISA26435
+"Pyrimidine deoxyribonucleoside 2',5'-bisphosphates"	ISA25608
+"Pyrimidine deoxyribonucleoside 3',5'-bisphosphates"	ISA25608
+Pyrimidine 2'-deoxyribonucleoside diphosphates	ISA26433
+Pyrimidine 3'-deoxyribonucleoside diphosphates	ISA26437
+Pyrimidine 2'-deoxyribonucleoside monophosphates	ISA26434
+Pyrimidine 3'-deoxyribonucleoside monophosphates	ISA47930
+Pyrimidine 3'-deoxyribonucleoside polyphosphates	ISA25608
+Pyrimidine 2'-deoxyribonucleoside polyphosphates	ISA25608
+Pyrimidine 2'-deoxyribonucleoside triphosphates	ISA26435
+Pyrimidine 3'-deoxyribonucleoside triphosphates	ISA26435
+"10,11-secoergolines"	ISA22315
+"Pyrimidine 2',3'-dideoxyribonucleoside diphosphates"	ISA26437
+"Pyrimidine 2',3'-dideoxyribonucleoside monophosphates"	ISA47973
+"Pyrimidine 2',3'-dideoxyribonucleoside polyphosphates"	ISA25608
+"Pyrimidine 2',3'-dideoxyribonucleoside triphosphates"	ISA26435
+"Purine 2',3'-dideoxyribonucleoside diphosphates"	ISA26391
+"Purine 2',3'-dideoxyribonucleoside monophosphates"	ISA26392
+"Purine 2',3'-dideoxyribonucleoside polyphosphates"	ISA25608
+"Purine 2',3'-dideoxyribonucleoside triphosphates"	ISA26389
+Purine deoxyribonucleoside bisphosphates	ISA61078
+Pyrazole nucleosides and nucleotides	ISA61120
+"Purine deoxyribonucleoside 3',5'-bisphosphates"	ISA61078
+"Purine deoxyribonucleoside 2',5'-bisphosphates"	ISA61078
+Purine 2'-deoxyribonucleosides and analogues	ISA61120
+Purine 3'-deoxyribonucleosides and analogues	ISA61120
+"Purine 2',3'-dideoxyribonucleosides and analogues"	ISA61120
+Pyrimidine 2'-deoxyribonucleosides and analogues	ISA61120
+Pyrimidine 3'-deoxyribonucleosides and analogues	ISA61120
+"Pyrimidine 2',3'-dideoxyribonucleosides and analogues"	ISA61120
+Phenyltriazoles	ISA35727
+Piperazinesulfonamides	ISA26144; ISA35358
+Pyrazolopyrimidine nucleosides and nucleotides	ISA61120
+N-amidino-alpha amino acids	ISA24436; ISA25384
+Primary ketimines	ISA33272
+Phthalide isoquinolines	ISA24922
+1-phenethyltetrahydroisoquinolines	ISA24922
+Pachysanane triterpenoids	ISA36615
+Oligosaccharide phosphates	ISA16916
+"6,7-secoergolines"	ISA22315
+Ergopeptams	ISA22315
+"Hydroxy bile acids, alcohols and derivatives"	ISA35341
+Naphthylisoquinolines	ISA24922; ISA25477
+Naphthylquinolines	ISA26513; ISA25477
+Oxazolopyrazines	ISA48275
+"Pentahydroxy bile acids, alcohols and derivatives"	ISA35341
+Peptidosulfonamides	ISA32988
+Phenylazetidines	ISA38777; ISA22712; ISA36820
+Sophorolipids	ISA51075
+Hydropyrimidines	ISA39447
+Glycosylamines	ISA21731
+C-glycosyl compounds	ISA20857
+Thioglycosides	ISA35275
+Selenoglycosides	ISA63161
+O-glycosyl compounds	ISA24400
+"Purine ribonucleoside 2',5'-bisphosphates"	ISA64620
+"Purine ribonucleoside 3',5'-bisphosphates"	ISA64620
+Sugar alcohols	ISA17522
+Isoxazolines	ISA55373
+Pyridine carboxaldehydes	ISA38187
+Glycerophosphocholines	ISA36313
+Glycerophosphates	ISA26707
+Glycerophosphoethanolamines	ISA36314
+Glycerophosphoglycerols	ISA24360
+Glycerophosphoglycerophosphates	ISA37739
+Glycerophosphoserines	ISA35766
+Glycerophosphoinositols	ISA36315
+Glycerophosphoinositol phosphates	ISA35771
+Polyprenylphenols	ISA33853
+Hydropyrimidine carboxylic acids and derivatives	ISA78574
+Butenolides	ISA50523
+Hydropyridines	ISA50075
+Dioxaborolanes	ISA38278; ISA38104
+Dioxaboroles	ISA38278; ISA38104
+Oxaborole derivatives	ISA38278; ISA38104
+Dialkylamines	ISA50995
+Medium-chain aldehydes	ISA35746
+Short-chain aldehydes	ISA59768
+Ubiquinols	ISA17976
+Isoxazolinones	ISA55373
+Aldazines	ISA38532
+Aminotetrazines	ISA39321
+Ketazines	ISA38532
+Delta sultones	ISA33552
+Arylsulfonic acids and derivatives	ISA33555
+Quinolizine carboxylic acids and derivatives	ISA38063; ISA33575
+Trialkylamines	ISA50996
+Thiopyranoquinolines	ISA38101; ISA38106; ISA26979
+Aromatic amines	ISA33860
+Elemanolides	ISA37667
+Phenylacetylindoles	ISA24828
+"8,2'-cyclic pyrimidine nucleotides"	ISA36983
+Abscisic acids and derivatives	ISA36758
+Cinchona alkaloids	ISA51323
+Naphthoylindoles	ISA46921
+"Pyrimidine ribonucleoside 2',5'-bisphosphates"	ISA61079
+"Pyrimidine ribonucleoside 3',5'-bisphosphates"	ISA61079
+Cyclic glycodepsipeptides	ISA35213; ISA24400
+Thioaldehyde s-oxides	ISA22063
+Alk(en)ylacylglycerols	ISA76578; ISA35741
+Nicotinamides	ISA25529; HFP17154
+N-substituted nicotinamides	ISA25529; HFP17154
+Glyceraldehyde-3-phosphates	ISA35142
+Pyrrolidinecarboxamides	ISA46770
+Substituted pyrroles	ISA26455
+N-substituted pyrroles	ISA26455
+Pentose phosphates	ISA33447
+Hexose phosphates	ISA33447
+Oxathioles	ISA38104; ISA38106
+Gluconolactones	ISA24267
+Pyranopterins and derivatives	ISA63169
+Sulfoquinovosyldiacylglycerols	ISA63427
+Pyrazine carboxylic acids and derivatives	ISA38314
+Actinide selenophosphates	ISA24839; HP16144
+Alkali metal selenophosphates	ISA35479; HP16144
+Lanthanide selenophosphates	ISA24839; HP16144
+Metalloid selenophosphates	ISA24839; HP16144
+Non-metal selenophosphates	ISA24839; HP16144
+Post-transition metal selenophosphates	ISA24839; HP16144
+Transition metal selenophosphates	ISA33861; HP16144
+Hydantoins	ISA24628
+Allantoins	ISA24628
+Nitronaphthalenes	ISA50631
+N-acyl-alpha-hexosamines	ISA21656
+Alkaline earth metal selenophosphates	ISA36364; HP16144
+Shikimic acids and derivatves	ISA36586
+Benzene and substituted derivatives	ISA22712
+Indole-3-glycerol-3-phosphates	ISA24828
+N-acyl-alpha-hexosamine-6-phosphates	ISA60926
+Phenylhydantoins	ISA24628
+Pterin carboxylates	ISA26375
+Pyrrolopyrimidinecarboxylic acids and derivatives	ISA38670
+Carboximidic acids and derivatives	ISA35352
+Polyols	ISA26191
+Pyrroline carboxylic acids and derivatives	ISA23763
+Thiomorpholines	ISA36393
+Thiomorpholine carboxylic acids and derivatives	ISA36393
+Non-metal dithiophosphates	ISA24839; HP33461
+Non-metal thiophosphates	ISA24839; HP33461
+Actinide dithiophosphates	ISA24839; HP33461
+Actinide thiophosphates	ISA24839; HP33461
+Alkali metal thiophosphates	ISA35479; HP33461
+Alkali metal dithiophosphates	ISA35479; HP33461
+Alkaline earth metal thiophosphates	ISA36364; HP33461
+Alkaline earth metal dithiophosphates	ISA36364; HP33461
+Lanthanide thiophosphates	ISA24839; HP33461
+Lanthanide dithiophosphates	ISA24839; HP74591
+Metalloid thiophosphates	ISA24839; HP74591
+Metalloid dithiophosphates	ISA24839; HP74591
+Post-transition metal thiophosphates	ISA24839; HP74591
+Post-transition metal dithiophosphates	ISA24839; HP74591
+Transition metal thiophosphates	ISA24839; HP74591
+Transition metal dithiophosphates	ISA24839; HP74591
+Pyrrolopyrimidine nucleosides and nucleotides	ISA61120
+Morpholine carboxylic acids and derivatives	ISA38785
+Phenylpyrimidines	ISA39447
+Alpha amino acid amides	ISA22475
+Substituted imidazoles	ISA24780
+N-substituted imidazoles	ISA24780
+Piperidinecarboxamides	ISA48592
+Thienodiazepines	ISA38101; ISA38106
+Quinazolinamines	ISA38530
+Piperazine carboxylic acids and derivatives	ISA26144
+Piperazine carboxamides	ISA46853
+Phenylpyridines	ISA38193
+Carbacephems	ISA55504
+Phenol esters	ISA33853; ISA36054
+Halophenols	ISA38856
+Cycloartanols and derivatives	ISA36615
+Triazolodiazepines	ISA38101; ISA27171
+Benzothiadiazoles	ISA48864
+Triazole carboxylic acids and derivatives	ISA35727
+Triazole carboxamides	ISA35727
+Thiadiazole sulfonamides	ISA38099; ISA35358
+Phenylimidazoles	ISA24780
+Isoxazolidinediones	ISA55374
+Aminothiazoles	ISA48901
+Isoxazolopyridines	ISA38101; ISA38104; ISA27171
+Isoxazolopyrazines	ISA38101; ISA38104; ISA27171
+Benzisoxazoles	ISA51549
+Benzisoxazolones	ISA51549
+Phenylpyrroles	ISA26455
+Phenylpyrrolines	ISA23763
+Phenylpyrrolidines	ISA38260
+Imidazolethiones	ISA24780
+Cycloheptathiophenes	ISA38106
+Chromenopyridines	ISA53792
+Azasteroids and derivatives	ISA35726
+Phenol ethers	ISA35618
+Triazole ribonucleosides and ribonucleotides	ISA61120
+Dialk(en)ylglycerophosphoglycerophoshates	ISA37739
+Methoxybenzoic acids and derivatives	ISA25238
+O-methoxybenzoic acids and derivatives	ISA25238
+P-methoxybenzoic acids and derivatives	ISA25238
+M-methoxybenzoic acids and derivatives	ISA25238
+Phenylquinolines	ISA26513
+Naphthalenecarboxamides	ISA48739
+Pyrazole carboxylic acids and derivatives	ISA26410
+Benzocycloheptapyridines	ISA48593
+Thioenol ethers	ISA16385
+Thioenols	ISA59722
+Enol esters	ISA35701
+Benzoisochromanequinones	ISA48129
+Diketopiperazines	ISA65061
+Aminopiperidines	ISA48588
+Triterpene saponins	ISA61778
+Thiophenol ethers	ISA16385
+Thiophenol esters	ISA51277
+Thiobenzoic acids and derivatives	ISA33261
+Thienamycins	ISA46633
+Phenylacetamides	ISA22160
+Steroidal saponins	ISA61655
+Cyanogenic glycosides	ISA23436
+Non-metal phosphonates	ISA24839; HP33461
+Actinide phosphonates	ISA24839; HP33461
+Alkali metal phosphonates	HP33461; ISA35479
+Alkaline earth metal phosphonates	HP33461; ISA36364
+Lanthanide phosphonates	HP33461; ISA24839
+Metalloid phosphonates	HP33461; ISA24839
+Post-transition metal phosphonates	HP33461; ISA24839
+Transition metal phosphonates	HP33461; ISA24839
+Furanoquinolines	ISA38101; ISA38104; ISA26979
+Secondary ketimines	ISA33272
+Nitrite esters	ISA46649
+Piperazinopiperidines	ISA38101; ISA27171
+Pyrroloquinoxalines	ISA64056
+Thiazoloquinazolines	ISA38106; ISA38101; ISA26979
+Limonoids	ISA39434
+17-furanylsteroids and derivatives	ISA35341
+Oxasteroids and derivatives	ISA50917
+Thiasteroids and derivatives	ISA33261; ISA35341
+Benzoquinones	ISA22729
+O-quinones	ISA25622
+M-quinones	ISA25099
+P-quinones	ISA25830
+O-iminoquinones	ISA50193
+Diazinanes	ISA38101; ISA25693
+P-iminoquinones	ISA50193
+Glycerol ethers	ISA24353
+Azines	ISA38532
+Azomethines	ISA50228
+Shiff bases	ISA50229
+Primary aldimines	ISA33271
+Azomethine imides	ISA51152
+Nitrones	ISA77477
+Azomethine ylides	ISA51159
+Azonic acids and derivatives	ISA35352; ISA36963; HFP37769
+"Adianane, fernane, filicane, and neohopane triterpenoids"	ISA36615
+Thiophthalic anhydrides	ISA38837
+N-acyl-alpha amino acids	ISA51569
+N-carbamoyl-alpha amino acids	ISA21689
+Alpha amino acids	ISA33704
+Imidazole carboxylic acids	ISA38307
+Indolecarboxylic acids	ISA46867
+Morpholine carboxylic acids	ISA38785; ISA33575
+Thiomorpholine carboxylic acids	ISA36393; ISA33576
+Oxirane carboxylic acids	ISA32955; ISA33575
+Piperazine carboxylic acids	ISA48683
+Piperidinecarboxylic acids	ISA26151; ISA33575
+Pyran carboxylic acids	ISA26407; ISA33575
+Pyrazine carboxylic acids	ISA48345
+Pyridinecarboxylic acids	ISA26421; ISA33859
+Pyrimidinecarboxylic acids	ISA78574
+Pyrrolidine carboxylic acids	ISA46767; ISA33575
+Pyrroline carboxylic acids	ISA23763; ISA33575
+Thiazolecarboxylic acids	ISA38418; ISA33575
+Thiophene carboxylic acids	ISA48436
+Triazole carboxylic acids	ISA35727; ISA33575
+Naphthalenecarboxylic acids	ISA25483
+Azetidinecarboxylic acids	ISA46891; ISA33575
+Aziridinecarboxylic acids	ISA22681; ISA33575
+Anthracenecarboxylic acids	ISA46955
+Tellurols	ISA36652
+Tellones	ISA36652
+Carboselenoic acids and derivatives	ISA25712
+Selenazoles	ISA48101
+Selenoethers	ISA25712
+Selenoesters	ISA25712
+Telluroethers	ISA36652
+Alpha-bromoaldehydes	ISA17478; ISA37141
+"Alpha,beta-unsaturated aldehydes"	ISA51718
+Alpha-hydrogen aldehydes	ISA17478
+Beta-hydroxy aldehydes	ISA50413
+Enals	ISA51688
+Ynals	ISA51720
+Terminal alkynes	ISA73477
+Internal alkynes	ISA73474
+Artemisins	ISA26658
+Naphthols and derivatives	ISA25392
+Nitrosopiperidines	ISA26151; ISA35800
+Nitrosothiols	ISA35800
+N-methylnitrosoureas	ISA76551
+Peroxycarboxylic acids and derivatives	ISA36586
+Peroxycarboxylic acids	ISA52094
+Piperidinylpiperazines	ISA26151; ISA26144
+Benzenoids	ISA33836
+Amines	ISA32952
+Primary amines	ISA32877
+Secondary amines	ISA32863
+Tertiary amines	ISA32876
+Primary aromatic amines	ISA50471
+Tertiary alkylarylamines	ISA32876
+Diarylamines	ISA32863
+Germacrane sesquiterpenoids	ISA68588
+Triarylamines	ISA32876
+Secondary alkylarylamines	ISA32863
+Nitramines	ISA25543
+Alkanolamines	ISA22478
+Nitrile imides	ISA47846
+Imidothioic acids and derivatives	ISA35352; ISA33261
+Diarylethers	ISA35618
+Hydrazidines	ISA51143
+Ynols	ISA33824
+Oxazaphosphinanes	ISA25710; ISA38101
+"1,2-diols"	ISA26191
+Organoselenium compounds	ISA25712
+Organotellurium compounds	ISA36652
+Selenocyanates	ISA25712
+Selenenyl halides	ISA25712
+Diselenides	ISA25712
+Selenoxides	ISA25712
+Perselenic acids	ISA25712
+Perselenic acids and derivatives	ISA25712
+Seleniranes	ISA48102
+Telluraldehydes	ISA36652
+Ditellurides	ISA36652
+Tellurones	ISA36652
+Telluric acids and derivatives	ISA36652
+Telluric acids	ISA36652
+Telluroxides	ISA36652
+Dicarboxdiimides	ISA35352
+Carboximidic acids	ISA48378
+Thiols	ISA29256
+Dioxathiolanes	ISA38106; ISA38104
+Organic nitric acids	ISA35352
+Oligophosphenes	ISA25710
+Diphosphenes	ISA25710
+Azolines	ISA38101
+Azolidines	ISA38101
+O-benzoquinones	ISA25622; ISA22729
+M-benzoquinones	ISA36141; ISA22729
+P-benzoquinones	ISA25830; ISA22729
+Quinones	ISA36141
+Isoindolines	ISA24897
+Indoles	ISA24828
+Isothiochromenes	ISA27171; ISA38106
+Thiochromenes	ISA50747
+Alkanes	ISA18310
+Alkenes	ISA32878
+Cembranolides	ISA60687
+Hydroxycinnamic acids	ISA24689
+Cinnamic acids	ISA23252
+Coumaric acids	ISA24689; HFP36090
+Isoflavonoids	ISA50753
+Homoisoflavonoids	ISA73233
+Homoisoflavans	ISA73233
+Cyclitols and derivatives	ISA23451
+Aminocyclitols and derivatives	ISA61689
+Inositol phosphates	ISA24846
+Quinic acids and derivatives	ISA26493
+O-galloylquinic acids and derivatives	ISA26493; HFP30778
+Salicylic acids	ISA24676; HFP16914
+Salicylamides	ISA53443
+N-piperazineacetamides	ISA46844
+Chamigranes	ISA26658
+Annonaceous acetogenins	ISA26188
+Acylphloroglucinols and derivatives	ISA33308; HFP16204
+P-toluquinols and derivatives	ISA24751
+P-toluquinols	ISA24646
+P-toluquinones	ISA22729
+Isoflavanquinones	ISA50753
+Cyclopropanecarboxylic acids and derivatives	ISA51454
+Cyclopropanecarboxylic acids	ISA33575; ISA51454
+1-aminocyclopropane-1-carboxylic acids and derivatives	ISA51454; ISA33704
+1-aminocyclopropane-1-carboxylic acids	ISA51454; ISA33704
+Halohydrins	ISA36684; ISA30879
+Carbonylimidazoles	ISA24780
+Epoxypiperidines	ISA26151; ISA32955
+Thiosulfonimidic o-acids	ISA64709
+Thiosulfonimidic s-acids	ISA64709
+Trithiosulfonic acids	ISA64709
+Sulfinohydroximic acids	ISA64709
+Sulfinohydrazonic acids	ISA64709
+Phenoxides	ISA24868
+Isothiocyanate acids	ISA52221
+Nitronic acids	ISA64709
+Hemiketals	ISA59772
+Dihydroxyphosphanes	ISA36359; HFP29261
+Carbodithioic acids	ISA35736
+Benzylethers	ISA59859
+Dithiosulfonic o-acids	ISA64709
+Dithiosulfonic s-acids	ISA64709
+Coumarinolignans	ISA38104
+Diazetidines	ISA38101
+Phenylimidazolidines	ISA38261
+"Tanshinones, isotanshinones, and derivatives"	ISA36762
+Tanshinlactones and derivatives	ISA35341
+Isocopalane and spongiane diterpenoids	ISA23849
+Phenylpropanoic acids	ISA25384; ISA22712
+Quinoline carboxylic acids	ISA26513
+Quinoline carboxamides	ISA26513
+Pyrrole carboxylic acids and derivatives	ISA26455
+Pyrrole carboxylic acids	ISA26455; ISA33575
+Pyrrole carboxamides	ISA26455; ISA37622
+Pyrrole 2-carboxylic acids	ISA26455; ISA33575
+N-substituted phenoxazines	ISA25970
+Sulfosalicylic acids and derivatives	ISA36586; ISA73942
+Sulfosalicyclic acids	ISA73942
+Thiatriazoles	ISA38101; ISA38106
+Aminothiadiazoles	ISA38101; ISA38106
+Methoxypyrazines	ISA38314; ISA35618
+Dichlorobenzenes	ISA23697
+Benzoic acids	ISA22723
+Isoquinolines and derivatives	ISA24922
+Isoquinoline quinones	ISA24922
+Angular furanocoumarins	ISA24128
+Linear furanocoumarins	ISA24128
+Quinoline quinones	ISA23765
+Phenanthraquinones	ISA25961
+Naphthothiophenes	ISA26979; ISA38106
+Thienobenzoxepines	ISA26979; ISA38104; ISA38106
+Phenyloxazolidines	ISA38329
+Phenylisoxazolidines	ISA35790; ISA38101
+"1,2-oxazinanes"	ISA46952
+Phenylthiomorpholines	ISA38101; ISA38106
+Oxathiazolidines	ISA38104; ISA38106
+Phenylthiazetidines	ISA38101; ISA38106
+Isoflavonequinones	ISA38757
+Neoflavans	ISA71971
+Neoflavenes	ISA71971
+Dalbergiquinols	ISA71971
+Phenylbenzofurans	ISA35259
+O-methylated flavonoids	ISA72544; ISA25698
+O-methylated isoflavonoids	ISA50753; ISA25698
+2-O-methylated flavonoids	ISA72544; ISA25698
+3-O-methylated flavonoids	ISA72544; ISA25698
+4-O-methylated flavonoids	ISA72544; ISA25698
+5-O-methylated flavonoids	ISA72544; ISA25698
+6-O-methylated flavonoids	ISA72544; ISA25698
+7-O-methylated flavonoids	ISA72544; ISA25698
+8-O-methylated flavonoids	ISA72544; ISA25698
+2'-O-methylated flavonoids	ISA72544; ISA25698
+3'-O-methylated flavonoids	ISA72544; ISA25698
+4'-O-methylated flavonoids	ISA72544; ISA25698
+2-O-methylated isoflavonoids	ISA72544; ISA25698
+3-O-methylated isoflavonoids	ISA72544; ISA25698
+4-O-methylated isoflavonoids	ISA72544; ISA25698
+5-O-methylated isoflavonoids	ISA72544; ISA25698
+6-O-methylated isoflavonoids	ISA72544; ISA25698
+7-O-methylated isoflavonoids	ISA72544; ISA25698
+8-O-methylated isoflavonoids	ISA72544; ISA25698
+2'-O-methylated isoflavonoids	ISA72544; ISA25698
+3'-O-methylated isoflavonoids	ISA72544; ISA25698
+4'-O-methylated isoflavonoids	ISA72544; ISA25698
+Bromohydrins	ISA37141; ISA30879
+Chlorohydrins	ISA30879; ISA36683
+Fluorohydrins	ISA30879; ISA37143
+Iodohydrins	ISA30879; ISA37142
+Dichlorobenzoic acids	ISA23134
+Alpha-methyldeoxybenzoin flavonoids	ISA17087
+2-phenylbenzofurans	ISA35259
+Furanoflavonoids and dihydrofuranoflavonoids	ISA71037
+Angular furanoflavonoids and dihydrofuranoflavonoids	ISA71037
+Linear furanoflavonoids and dihydrofuranoflavonoids	ISA71037
+Furanoisoflavonoids	ISA72544
+Tetrahydrofolic acids and derivatives	ISA26907
+Dihydrofolic acids and derivatives	ISA23743
+N-benzylalanines	ISA22278
+N-benzoylpiperidines	ISA48591
+N-benzylpiperidines	ISA26151
+Thiohydroquinones	ISA33853; ISA29256
+Aminohydroquinones	ISA24646
+N-phenylbenzamides	ISA22702
+Phenylsulfates	ISA37919
+Imidazopiperidines	ISA38101
+Trisubstituted imidazoles	ISA24780
+"1,2,4-trisubstituted imidazoles"	ISA24780
+"1,2,5-trisubstituted imidazoles"	ISA24780
+"2,4,5-trisubstituted imidazoles"	ISA24780
+Tetrasubstituted imidazoles	ISA24780
+"1,2,4,5-tetrasubstituted imidazoles"	ISA24780
+"2,4-disubstituted thiazoles"	ISA48901
+"2,5-disubstituted thiazoles"	ISA48901
+"4,5-disubstituted thiazoles"	ISA48901
+"2,4,5-trisubstituted thiazoles"	ISA48901
+"2,4-disubstituted oxazoles"	ISA35790
+"2,5-disubstituted oxazoles"	ISA35790
+"4,5-disubstituted oxazoles"	ISA35790
+"2,4,5-trisubstituted oxazoles"	ISA35790
+"3,4-dihydrocoumarins"	ISA37912
+"6,7-dihydroxycoumarins"	ISA37912
+"7,8-dihydroxycoumarins"	ISA37912
+Halogenated steroids	ISA35341; ISA36684
+Cyclohexanones	ISA23482
+Cyclohexanols	ISA23480
+Tetrahydrofurans	ISA26912
+Oxathiaphospholanes	ISA38104; ISA38106; ISA25710
+Diarylheptanoids	ISA78802
+Linear diarylheptanoids	ISA78802
+Cyclic diarylheptanoids	ISA78802
+Phenalenes	ISA51120
+Phenalenones	ISA51120
+Phenalanes	ISA51120
+Loline alkaloids and derivatives	ISA22315
+Cularin alkaloids and derivatives	ISA22315
+Rhoeadine alkaloids	ISA22315
+Emetine alkaloids	ISA22315
+Proaporphines	ISA22315
+Homoaporphines	ISA22315
+Homoproaporphines	ISA22315
+Aristolactams	ISA22315
+Aristolochic acids and derivatives	ISA25961; HFP2825
+Benzophenanthridine alkaloids	ISA38517
+Hexahydrobenzophenanthridine alkaloids	ISA38517
+Dihydrobenzophenanthridine alkaloids	ISA38517
+N-demethylbenzophenanthridine alkaloids	ISA38517
+Quaternary benzophenanthridine alkaloids	ISA38517
+Secobenzophenanthridine alkaloids	ISA38517
+Eburnan-type alkaloids	ISA22315
+Plumeran-type alkaloids	ISA22315
+Benzylamines	ISA18000
+Cyclohexylamines	ISA32952
+Thiirenes	ISA38106
+Peroxols	ISA35924
+Indenoazepines	ISA26979; ISA38101
+Lycoctonine alkaloids	ISA22315
+Ergolines and derivatives	ISA60529
+Lysergic acids and derivatives	ISA60529
+Oxaergolines	ISA22315
+Coumaroyl glycosides	ISA24400
+M-coumaroyl glycosides	ISA24400
+O-coumaroyl glycosides	ISA24400
+P-coumaroyl glycosides	ISA24400
+2-hydroxyisoflavanones	ISA72739
+4'-O-methylisoflavones	ISA38756
+"1-acyl-sn-glycerol-2,3-cyclic-phosphates"	ISA62839
+7-O-methylisoflavones	ISA38756
+3'-O-methylisoflavones	ISA38756
+Diazirines	ISA38101
+Triazirines	ISA38101
+Triazinanes	ISA38778
+Molybdopterins	ISA35203
+Diphenylpyrroles	ISA26455
+Chlorocatechols	ISA23138
+4-chlorocatechols	ISA23138
+3-chlorocatechols	ISA23138
+Benzodioxanes	ISA64096
+"Benzo-1,2-dioxanes"	ISA64096
+"Benzo-1,3-dioxanes"	ISA64096
+"Benzo-1,4-dioxanes"	ISA64096
+"Benzo-2,3-dioxanes"	ISA64096
+Phenylbenzodioxanes	ISA64096
+"Phenylbenzo-1,3-dioxanes"	ISA64096
+"Phenylbenzo-2,3-dioxanes"	ISA64096
+"Phenylbenzo-1,4-dioxanes"	ISA64096
+Anthocyanidin 3-O-p-coumaroyl glycosides	ISA71583
+Anthocyanidin 3p-O-p-coumaroyl glycosides	ISA71583
+Anthocyanidin 5-O-p-coumaroyl glycosides	ISA71583
+Anthocyanidin 3-O-6-p-coumaroyl glycosides	ISA71583
+Anthocyanidin 3-O-2-p-coumaroyl glycosides	ISA71583
+Anthocyanidin 3p-O-6-p-coumaroyl glycosides	ISA71583
+Anthocyanidin 3p-O-2-p-coumaroyl glycosides	ISA71583
+Anthocyanidin 5-O-6-p-coumaroyl glycosides	ISA71583
+Anthocyanidin 5-O-2-p-coumaroyl glycosides	ISA71583
+Polyphenyl ethers	ISA35618
+Polyphenyl thioethers	ISA16385
+Lupin alkaloids	ISA22315
+Matrine alkaloids	ISA22315
+Lupinine-type alkaloids	ISA26515
+Cytisine and derivatives	ISA22315
+Anagyrine-type alkaloids	ISA22315
+Steroidal alkaloids	ISA26767
+Solanocapsine-type alkaloids	ISA26767
+Buxus alkaloids	ISA26767
+Samamine-type alkaloids	ISA26767
+Jerveratum-type alkaloids	ISA22315
+Cerveratrum-type alkaloids	ISA22315
+Pregnane-type alkaloids	ISA26767
+Conanine-type alkaloids	ISA26767
+"22,26-epiminocholestanes"	ISA26767
+"22,23-secosolanidanes and derivatives"	ISA26767
+Samandarines	ISA26767
+"3-oxo-22,26-epiminocholestanes"	ISA26767
+"3-amino-22,26-epiminocholestanes"	ISA26767
+3-aminospirostanes	ISA26767
+Atisane diterpenoids	HPH36471; ISA23849
+Atisine alkaloids	ISA23847
+Benzodifurans	ISA38104; ISA26979
+Angular benzodifurans	ISA38104; ISA26979
+Linear benzodifurans	ISA38104; ISA26979
+Protopine alkaloids	ISA22315
+Vobasan alkaloids	ISA22315
+Lysergic acids	ISA60529; HFP6604
+Lysergamides	ISA60529
+Clavines and derivatives	ISA22315
+Ibogan-type alkaloids	ISA22315
+Strychnos alkaloids	ISA22315
+Corynanthean-type alkaloids	ISA22315
+Vallesiachotaman alkaloids	ISA22315
+Vincosan alkaloids	ISA22315
+Pyridoxine-5'-phosphates	ISA36970
+Cinnamyl alcohols	ISA26004
+Aspidospermatan-type alkaloids	ISA22315
+Vinca alkaloids	ISA27288
+Quebrachamine alkaloids	ISA22315
+Rhazinilam alkaloids	ISA22315
+Tacaman alkaloids	ISA22315
+Amidoximes	ISA65234
+3-sulfobenzoic acids	ISA26825
+4-sulfobenzoic acids	ISA26825
+Iodophenols	ISA24863
+Bromophenols	ISA33624
+Fluorophenols	ISA38856; ISA37143
+Chlorophenols	ISA23150
+M-bromophenols	ISA33624
+O-bromophenols	ISA33624
+P-bromophenols	ISA33624
+M-chlorophenols	ISA38857
+O-chlorophenols	ISA38857
+P-chlorophenols	ISA38857
+M-fluorophenols	ISA38856; ISA37143
+O-fluorophenols	ISA38856; ISA37143
+P-fluorophenols	ISA38856; ISA37143
+M-iodophenols	ISA24863
+O-iodophenols	ISA24863
+P-iodophenols	ISA24863
+4-nitroquinoline N-oxides	ISA26508; ISA35716
+Erythrinanes	ISA22315
+Homoerythrinane alkaloids	ISA22315
+Pyridodiazepines	ISA38101
+"Akuammilan, akuammidan, and related alkaloids"	ISA22315
+Sulfanylbenzoic acids	ISA59126
+Thiosalicylic acids	ISA59126
+M-sulfanylbenzoic acids and derivatives	ISA36586; ISA29256
+P-sulfanylbenzoic acids and derivatives	ISA36586; ISA29256
+M-sulfanylbenzoic acids	ISA59126
+P-sulfanylbenzoic acids	ISA59126
+"1,3-oxazinanes"	ISA46952
+Acutumine and related alkaloids	ISA22315
+Hasubanan alkaloids	ISA24921
+Pavine alkaloids	ISA24921
+Isopavine alkaloids	ISA22315
+Organoboron compounds	ISA38278
+"1,2,3-triazinanes"	ISA38778; HPH38040
+"1,2,4-triazinanes"	HPH38041; ISA38778
+"1,3,5-triazinanes"	ISA38779
+Organic trisulfides	ISA78493
+Organic disulfides	ISA35489
+Prenylated hydroquinones	ISA24646
+Prenylquinones	ISA26255
+Thianthrenes	ISA64511
+Benzodithiins	ISA38106; ISA27171
+"1,2-benzodithiins"	ISA38106; ISA27171
+"1,3-benzodithiins"	ISA38106; ISA27171
+"1,4-benzodithiins"	ISA38106; ISA27171
+"2,3-benzodithiins"	ISA38106; ISA27171
+N-methylpyrroles	ISA26455
+Cinnamic acid amides	ISA23247
+Phenylpropanes	ISA38976
+Acyl glucuronides	ISA24302
+O-glucuronides	ISA24302
+N-glucuronides	ISA21731
+C-glucuronides	ISA20857
+S-glucuronides	ISA35275
+Dibenzopyrans	ISA39203
+Dibenzothiophenes	ISA23684
+Isoflav-3-enes	ISA50753
+Isoflav-3-enones	ISA50753
+Isoflavone epoxides	ISA50753; ISA32955
+Leontidine-type alkaloids	ISA22315
+Aloperine and related alkaloids	ISA22315
+Azaphenalenes	ISA22315
+Ormosia-type alkaloids	ISA22315
+"Pyrido[2,3,4-kl]acridones"	ISA38163; ISA38101
+"Pyrido[2,3,4-kl]acridines"	ISA38163; ISA38101
+"Pyrrolo[2,3,4-kl]acridines"	ISA38163; ISA38101
+"Pyrrolo[4,3,2-de]quinolines"	ISA50918
+5-hydroxypsoralens	ISA26369
+8-hydroxypsoralens	ISA26369
+5-methoxypsoralens	ISA26369
+8-methoxypsoralens	ISA26369
+Thiochromanes	ISA50747
+Isothiochromanes	ISA38106; ISA27171
+Pyrazolidinones	ISA26410
+Hydrocarbons	ISA24632
+Olefins	ISA33641
+Acyclic olefins	ISA33645
+Cyclic olefins	ISA33642
+Alkatrienes	ISA33647
+Alkatetraenes	ISA37835
+Acetylenes	ISA33644
+Alkadiynes	ISA33651
+Alkatriynes	ISA33652
+Cyclic acetylenes	ISA33649
+Acyclic acetylenes	ISA33650
+Monocyclic acetylenes	ISA33649
+Polycyclic acetylenes	ISA33649
+Cycloalkynes	ISA33648
+Iminoquinones	ISA50193
+Cytochalasins	ISA23528
+Aziridinones	ISA22681; ISA24995
+Lactims	ISA24995
+Phosphorus mustard compounds	ISA25710; ISA36684
+Phosphorodiamides	ISA35467
+Phosphoromonoamides	ISA17102
+Isofamides	ISA55369
+Azlactones	ISA37581; ISA46812
+Sulfonylamines	ISA35358; ISA51517
+Vinyl fluorides	ISA37143
+Vinyl iodides	ISA37142
+Vinyl chlorides	ISA36683
+Vinyl bromides	ISA37141
+Acyl halides	ISA37579
+Aryl halides	ISA50887
+Alkyl halides	ISA24469
+Vinyl halides	ISA36684
+Organic sulfuryl halides	ISA33261; ISA36963; ISA37578
+Imidoyl halides	ISA37579
+Ambrosane sesquiterpenoids	HPH35712; ISA26658
+Elemane sesquiterpenoids	ISA26658
+Pseudoguaianes	ISA26658
+Guaianes	ISA26658
+Tigliane and ingenane diterpenoids	ISA23849
+Cyathane diterpenoids	ISA23849
+Jatrophane and cyclojatrophane diterpenoids	ISA23849
+Leucothol and grayanotoxane diterpenoids	ISA23849
+Xeniaphyllane and xenicane diterpenoids	ISA23849
+Sphaerane diterpenoids	ISA23849
+Cheilanthane sesterterpenoids	ISA26660
+Ophiobolane sesterterpenoids	ISA26660
+Scalarane sesterterpenoids	ISA59370
+Lupane triterpenoids	HPH36485; ISA36615
+Tirucallane and euphane triterpenoids	ISA36615
+"Taraxastane, ursane, and bauerane triterpenoids"	ISA36615
+"Taraxerane, multiflorane, glutinane and friedelane triterpenoids"	ISA36615
+Dammarane triterpenoids	ISA36615; HP36488
+Protostane and fusidane triterpenoids	ISA36615
+Briarane diterpenoids	ISA23849
+Actinide metavanadates	ISA33498; HP75224
+Quinonimines	ISA50193
+M-quinonimines	ISA50193
+O-quinonimines	ISA50193
+P-quinonimines	ISA50193
+Isoflavonoid C-glycosides	ISA50753; ISA20857
+Neoflavonoid 5-O-glycosides	ISA71971; ISA24400
+Homoisoflavanones	ISA73233
+Sulfinohydrazonoperoxoic acids	ISA64709
+"1,2-diaryl-2-propen-1-ols"	ISA72544
+Isoflav-2-enes	ISA50753
+Milbemycins	ISA50345
+Perylenequinones	ISA25479
+Holostanes	ISA35341
+Dithiolethiones	ISA38081
+Phorbol esters	ISA37532
+4-hydroxycoumarins	ISA37912
+Hydroxycoumarins	ISA37912
+7-hydroxycoumarins	ISA37912
+Borinanes	ISA38278
+"Polypodane, malabaricane and podiodane triterpenoids"	ISA36615
+Alpha-hydroxy ketones	ISA17087
+Beta-hydroxy ketones	ISA55380
+3-hydroxyflavonoids	ISA71968
+3'-hydroxyflavonoids	ISA71968
+Eunicellane and asbestinane diterpenoids	ISA23849
+Arborinane and stictane triterpenoids	ISA36615
+Serratane and onocerane triterpenoids	ISA36615
+Phenyltropanes	ISA38295; HPH35615
+Diazepanes	ISA38823
+"1,2-diazepanes"	ISA38823
+"1,3-diazepanes"	ISA38823
+"1,4-diazepanes"	ISA38823
+"1,2,4-oxadiazoles"	ISA46809
+"1,3,4-oxadiazoles"	ISA46810
+Ortho esters	ISA71989
+Ortho amides	ISA35352
+Ortho acids	ISA24833
+Sulfimides	ISA35352; ISA33261
+Mutilane diterpenoids	ISA23849
+Aphidicolane and stemodane diterpenoids	ISA23849
+"1,3-isoquinolinediones"	ISA24922
+"1,4-isoquinolinediones"	ISA24922
+Flavonoid O-glucuronides	ISA72544; ISA15341
+Neoflavonoid 7-O-glycosides	ISA71971; ISA24400
+Cycloheptafurans	ISA39435
+Cycloheptapyrans	ISA38104
+Cyclopentanols	ISA23495
+Dioxepines	ISA38104
+"1,2-dioxepines"	ISA38104; ISA38101
+"1,3-dioxepines"	ISA38104
+"1,4-dioxepines"	ISA38104
+Dioxepanes	ISA38104
+"1,2-dioxepanes"	ISA38104; ISA38101
+"1,3-dioxepanes"	ISA38104
+"1,4-dioxepanes"	ISA38104
+Guanidinobenzoic acids	ISA24436; ISA22723
+Aminobenzoic acids	ISA22495
+Long-chain fatty acids	ISA15904
+Very long-chain fatty acids	ISA27283
+Long-chain fatty alcohols	ISA17135
+Long-chain fatty aldehydes	ISA17176
+Piperidinesulfonamides	ISA48738
+Tetrahydrofolic acids	ISA26907
+Tetrahydroisoquinolines	ISA24922
+1-phenyltetrahydroisoquinolines	ISA24922
+4-phenyltetrahydroisoquinolines	ISA24922
+Dihydroisoquinolines	ISA24922
+Sulfonohydrazides	ISA48104
+3-hydroxyacyl CoAs	ISA62618
+N-acylsphingosines	ISA52639
+N-acylsphinganines	ISA31488
+Phytoceramides	ISA31998
+N-formyl-alpha amino acids	ISA50759
+N-formyl-alpha amino acids and derivatives	ISA24079; HFP33704
+Tetracarboxylic acids and derivatives	ISA36963; HFP35742
+Hexacarboxylic acids and derivatives	ISA36963; HFP35743
+3-hydroxy delta-1-steroids	ISA36834
+"3-hydroxy delta-1,4-steroids"	ISA36834
+3-hydroxy delta-4-steroids	ISA36834
+3-hydroxy delta-5-steroids	ISA36834
+3-oxo delta-1-steroids	ISA20156
+"3-oxo delta-1,4-steroids"	ISA77166
+3-oxo delta-4-steroids	ISA47909
+3-oxo delta-5-steroids	ISA47907
+Delta-1-steroids	ISA35341
+"Delta-1,4-steroids"	ISA35341
+Delta-4-steroids	ISA35341
+Delta-5-steroids	ISA35341
+N-phenylthioureas	ISA51276
+N-acyl-phenylthioureas	ISA51276
+N-acyl-phenylureas	ISA74266
+Acylguanidines	ISA24436
+Delta-7-steroids	ISA35341
+3-hydroxy delta-7-steroids	ISA35341
+3-oxo delta-7-steroids	ISA71598
+6-aminopurines	ISA20706
+4-hydroxyflavonoids	ISA71968
+4'-hydroxyflavonoids	ISA71968
+6-hydroxyflavonoids	ISA71968
+Hydroxyflavonoids	ISA71968
+5-hydroxyflavonoids	ISA71968
+7-hydroxyflavonoids	ISA71968
+8-hydroxyflavonoids	ISA71968
+Pentacarboxylic acids and derivatives	ISA36963; HFP59359
+Anthocyanidin-3-O-glycosides	ISA71583
+Anthocyanidin-5-O-glycosides	ISA71583
+C19-gibberellins	ISA20858
+C20-gibberellins	ISA20859
+Alpha-halocarboxylic acids	ISA33575; ISA36684
+Alpha-halocarboxylic acid derivatives	ISA36684; HFP33575
+Hydroxycinnamic acid esters	ISA33308; HFP24689
+Hydroxycinnamic acid glycosides	ISA24400; HFP24689
+Chlorogenic acids and derivatives	ISA33308; HFP24689
+Sulfated flavonoids	ISA72544; ISA25704
+Monohydroxyflavonoids	ISA71968
+Phenanthrols	ISA25962
+Aminosalicylic acids and derivatives	ISA33860
+Aminosalicylic acids	ISA25389; HFP16914; ISA33860
+3-aminosalicylic acids	ISA25389; HFP16914; ISA33860
+4-aminosalicylic acids	ISA25389; HFP16914; ISA33860
+Flavan-3-ols	ISA72010
+Flavan-4-ols	ISA72010
+Organophosphinic acids and derivatives	ISA26044
+Phosphinic acid esters	ISA26043
+Tropoloisoquinolines	ISA22315
+Benzacridines	ISA38180; ISA38101
+Isoaporphines	ISA22315
+1-azaoxoaporphines	ISA22315
+Azahomoaporphines	ISA22315
+Hydroxy-7-aporphines	ISA22315
+Methyl-7-aporphines	ISA22315
+N-acylpyrrolidines	ISA46766
+Gamma-glutamyl amino acids	ISA15857
+Gamma-glutamyl peptides	ISA16670
+3-oxosteroids	ISA47788
+3-hydroxysteroids	ISA36834
+"Polyprenylbenzene-1,2-diols"	ISA33566
+Polychlorinated dibenzofurans	ISA38922; ISA36683
+Polychlorinated biphenyls	ISA53156
+Pyrrolidine-2-ones	ISA74223
+Pyrrolidine-3-ones	ISA38275
+Dicarboximides	ISA35356
+C-nitroso compounds	ISA35800
+O-nitroso compounds	ISA35800
+N-nitroso compounds	ISA35800
+3-aminosalicyclic acids and derivatives	ISA33860
+4-aminosalicyclic acids and derivatives	ISA33860
+Folic acids	ISA37445
+Pteroic acids	ISA38795
+Dihydropteroic acids and derivatives	ISA26373
+Tetrahydropteroic acids and derivatives	ISA26373
+"7,8-dihydrofolic acids"	ISA37445
+"7,8-dihydrofolic acids and derivatives"	ISA26375
+Tetrahydropteroic acids	ISA38795
+"7,8-dihydropteroic acids"	ISA38795
+"7,8-dihydropteroic acids and derivatives"	ISA26373
+N-acylneuraminic acids	ISA25508
+N-acylneuraminic acids and derivatives	ISA28963
+Neuraminic acids	ISA25508
+N-acylglutathiones	ISA21659
+S-acylglutathiones	ISA18126
+25-azasteroids and derivatives	ISA35726
+8-azasteroids and derivatives	ISA35726
+6-azasteroids and derivatives	ISA35726
+4-azasteroids and derivatives	ISA35726
+p-Bromobenzenesulfonates	ISA33552
+20-oxosteroids	ISA36885
+11-oxosteroids	ISA47787
+16-oxosteroids	ISA47786
+C24-propyl sterols and derivatives	ISA35341
+Sulfoquinovosylmonoacylglycerols	ISA63427
+Sulfoquinovosyl 1-monoacylglycerols	ISA63427
+Sulfoquinovosyl 2-monoacylglycerols	ISA63427
+Indan-1-spirocyclohexanes	ISA33599
+Carbapenams	ISA64510
+Glycosyldiacylglycerols	ISA63427
+Monosubstituted amine oxides and derivatives	ISA35580
+Disubstituted amine oxides and derivatives	ISA35580
+Trisubstituted amine oxides and derivatives	ISA35580
+"1,8-naphthalic anhydrides"	ISA36609
+1-carboxy-2-haloaromatic compounds	ISA33859; ISA36684
+Aromatic alcohols	ISA33854
+Arylsufonic acids	ISA33552
+"1-sulfo,2-unsubstituted aromatic compounds"	ISA33555
+Thioamide-s-oxides	ISA47956
+"Thioamide-s,s-dioxides"	ISA47956
+Aldoximes	ISA22307
+Ketoximes	ISA24983
+N-aliphatic s-triazines	ISA26588
+Acylsulfonic acids and derivatives	ISA33552
+Acylsulfonic acids	ISA33552
+2-polyprenyl-6-methoxyphenols	ISA33853
+Chlorohydroquinones	ISA23147
+Peroxybenzoic acids and derivatives	ISA36586
+Medium-chain fatty acids	ISA59554
+Benzylpiperidines	ISA26151
+2-benzylpiperidines	ISA26151
+3-benzylpiperidines	ISA26151
+4-benzylpiperidines	ISA26151
+N-acylimines	ISA51517
+Oxaziridines	ISA38101; ISA38104
+N-sulfonyloxaziridines	ISA33552; ISA38101; ISA38104
+Thiadiazinanes	ISA38781
+21-hydroxysteroids	ISA35344
+Halobenzoic acids and derivatives	ISA36586; ISA36684
+Halobenzoic acids	ISA22723; ISA36684
+2-halobenzoic acids and derivatives	ISA36586; ISA36684
+3-halobenzoic acids and derivatives	ISA36586; ISA36684
+4-halobenzoic acids and derivatives	ISA36586; ISA36684
+2-halobenzoic acids	ISA70862
+3-halobenzoic acids	ISA22723; ISA36684
+4-halobenzoic acids	ISA22723; ISA36684
+Geminal diols	ISA63732
+O-sulfanylbenzoic acids and derivatives	ISA36586
+O-sulfanylbenzoic acids	ISA22723
+Carbothioic s-acids	ISA33307
+Carbothioic o-acids	ISA33307
+Flavaglines	ISA71504
+Hydroxylamine o-sulfonic acids	ISA38025
+Hydrazinesulfinic acids	ISA37784
+Sulfonohydrazonic acids	ISA35352; ISA33261
+Sulfonimidic acids	ISA35352; ISA33261
+Sulfonodihydrazonic acids	ISA35352; ISA33261
+Tellurinohydrazonic acids	ISA36652
+Selenodiimidic acids	ISA25712
+Selenimidic acids	ISA25712
+Sulfonohydrazonimidic acids	ISA33261
+Seleninyl compounds	ISA25712
+Selenonyl compounds	ISA25712
+Telluronyl compounds	ISA36652
+Tellurinyl compounds	ISA36652
+Selenocarbonyl compounds	ISA25712
+Tellurocarbonyl compounds	ISA36652
+Imidocarbonyl compounds	ISA35352
+Carboselenoic acids	ISA25712
+Carboselenoamides	ISA25712
+Carbotelluroic acids and derivatives	ISA36652
+Carbotelluroamides	ISA36652
+Sulfinyl compounds	ISA37784
+"Alpha,beta-unsaturated carbonyl compounds"	ISA36586
+Hydrazinecarboxylic acids and derivatives	ISA36586
+Hydrazinecarboxylic acids	ISA33575
+Hydrazinecarboxamides	ISA37622
+Organic thioperoxides	ISA36962
+Alkanesulfonic acids and derivatives	ISA33552
+Aminosulfonyl compounds	ISA35352; ISA33261
+Hydrazinosulfonyl compounds	ISA35352; ISA33261
+Aminosulfonodithioyl compounds	ISA35352; ISA33261
+Trialkoxysilanes	ISA25713
+S-hydrazinosulfonimidoyl compounds	ISA35352; ISA33261
+S-aminosulfonimidothioyl compounds	ISA35352; ISA33261
+Aminosulfinyl compounds	ISA35352; ISA33261
+Sulfonohydrazonothioic o-acids	ISA35352; ISA33261
+Sulfonohydrazonothioic s-acids	ISA35352; ISA33261
+Sulfonimidodithioic acids	ISA35352; ISA33261
+Sulfonimidoselenoic acids	ISA25712
+Sulfonohydrazonamides	ISA35352; ISA33261
+Hydrazineselenoamides	ISA25712
+Sulfonodiimidoperoxoic acids	ISA35352; ISA33261
+Sulfonodiimidic acids	ISA35352; ISA33261
+Carboximidamides	ISA35352
+Carboximidohydrazides	ISA35352
+Sulfonimidamides	ISA33261
+Sulfonodiimidamides	ISA33261
+Sulfinoimidoperoxoic acids	ISA24833; ISA33261; ISA35352
+OS-thioperoxols	ISA37865
+SO-thioperoxols	ISA51334
+Thioperoxols	ISA37864
+Telluronohydrazides	ISA36652
+Tellurinohydrazides	ISA36652
+Seleninohydrazides	ISA25712
+Selenonohydrazides	ISA25712
+Carboperoxoic acids	ISA52094
+Carboperoxoselenoic acids	ISA25712
+Carboperoxothioic OO-acids	ISA33261
+Carboselenothioic S-acids	ISA25712
+Carboselenothioic Se-acids	ISA25712
+Carbodiselenoic acids	ISA25712
+Long-chain 1-monoacylglycerols	ISA35759; HFP15904
+Very long-chain 1-monoacylglycerols	ISA35759; HFP27283
+Long-chain 2-monoacylglycerols	ISA17389; HFP15904
+Very long-chain 2-monoacylglycerols	ISA17389; HFP27283
+Very long-chain fatty aldehydes	ISA35746
+Very long-chain fatty acyl CoAs	ISA61910
+Long-chain 3-oxoacyl CoAs	ISA15489; ISA33184
+Very-long-chain 3-oxoacyl CoAs	ISA15489; ISA61910
+Long-chain 3-hydroxyacyl CoAs	ISA20060; ISA33184
+Very long-chain 3-hydroxyacyl CoAs	ISA20060; ISA61910
+Enoyl CoAs	ISA51006
+2-enoyl CoAs	ISA19573
+3-enoyl CoAs	ISA20012
+Long-chain enoyl CoAs	ISA51006; ISA33184
+Long-chain 2-enoyl CoAs	ISA19573; ISA33184
+Long-chain 3-enoyl CoAs	ISA20012; ISA33184
+N-acyl-phosphatidylethanolamines	ISA36314
+Glycero-3-phospho-n-acyl-ethanolamines	ISA36314
+Acyl homoserines	ISA55414
+3-Oxo-acyl homoserines	ISA55414
+Coumarino-alpha-pyrones	ISA23403
+Coumarino-gamma-pyrones	ISA23403
+Ammonium ylides	ISA51152
+Nitrile ylides	ISA47846
+Organosilicon compounds	ISA25713
+Alkylsilanes	ISA25713
+Alkylarylsilanes	ISA25713
+Alpha-diazo esters	ISA39444
+Alpha-diazo ketones	ISA39444
+Sulfonyl azides	ISA22680; ISA33552
+Silyl ethers	ISA47988
+Silanols	ISA37171
+Urazoles	ISA35727
+Maleimides	ISA55417
+"2,3-dihydro-4-pyridones"	ISA38183
+Disiloxanes	ISA48138
+Medium-chain fatty acyl CoAs	ISA61907
+Medium-chain 2-enoyl CoAs	ISA51006
+"2,3,4-saturated fatty acyl CoAs"	ISA37554
+Carbo-azosulfones	ISA38084
+5-monosubstituted hydantoins	ISA24628; HFP27612
+N-acyl-aliphatic-alpha amino acids	ISA51569
+N-acyl-aromatic-alpha amino acids	ISA51569
+Aryl-aldehydes	ISA33855
+2-phenylindoles	ISA48559
+Thiophene sulfoxides	ISA26961; ISA35813
+3-aroylthiophenes	ISA26961; ISA76224
+2-amino-3-aroylthiophenes	ISA26961; ISA76224
+3-aroylfurans	ISA24129; ISA76224
+Borinic acid derivatives	ISA22916
+Borinic acid esters	ISA22916
+Borinic acids	ISA22916
+Organoboroxines	ISA38278
+Amidoximes	ISA65234
+(R)-3-hydroxyacyl CoAs	ISA20060
+(S)-3-hydroxyacyl CoAs	ISA20060
+3-beta-hydroxy delta-5-steroids	ISA36836
+11-beta-hydroxysteroids	ISA35346
+11-hydroxysteroids	ISA36841
+16-hydroxysteroids	ISA36840
+16-alpha-hydroxysteroids	ISA16799
+16-beta-hydroxysteroids	ISA17354
+3-alpha-hydroxysteroids	ISA36835
+3-beta-hydroxysteroids	ISA36836
+11-alpha-hydroxysteroids	ISA19129
+Delta-11-acyl CoAs	ISA52831
+17-hydroxysteroids	ISA36838
+17-beta-hydroxysteroids	ISA35343
+7-hydroxysteroids	ISA36844
+7-alpha-hydroxysteroids	ISA36843
+7-beta-hydroxysteroids	ISA35349
+12-hydroxysteroids	ISA36845
+12-alpha-hydroxysteroids	ISA36846
+12-beta-hydroxysteroids	ISA36847
+7-oxosteroids	ISA47789
+3-oxo-5-alpha-steroids	ISA47788
+"1-alpha,2-epoxy-3-oxo-5-alpha-steroids"	ISA47788; ISA32955
+"1,2-epoxy-3-oxosteroids"	ISA47788; ISA32955
+3-beta-hydroxy-6-oxo-5-alpha-steroids	ISA36836; ISA36883
+6-oxosteroids	ISA36883
+"5,6-epoxysteroids"	ISA35341; ISA32955
+3-beta-hydroxy-delta-7-steroids	ISA36836
+3-oxo-4-azasteroids	ISA47788; ISA35726
+17-azasteroids and derivatives	ISA35726
+(2R)-hydroxy acids and derivatives	ISA52618
+(2R)-hydroxy acids	ISA52618
+3-oxo-5-beta-steroids	ISA47788
+GalNAcb1-4Galb1-4Glc- (Ganglio series)	ISA36520
+Glycosphingolipids	ISA24402
+"1,2-diacyl-3-O-beta-D-galactosyl-sn-glycerols"	ISA17615
+Sulfenyl compounds	ISA33261
+Sulfenyl halides	ISA33261; ISA37578
+Sulfinyl halides	ISA50096
+Monoalkylglycerols	ISA52575
+Glycerol vinyl ethers	ISA24353
+Alkoxysilanes	ISA47988
+Monoalkylsilanols	ISA25713; ISA46890
+Dialkylsilanols	ISA25713; ISA46890
+Trialkylsilanols	ISA25713; ISA46890
+Monoalkylsilanediols	ISA26673
+Monoalkylsilanetriols	ISA26674
+Dialkylsilanediols	ISA26673
+Isocyanide dichlorides	ISA35353; ISA36683
+Alkylhalosilanes	ISA25713; ISA37578
+Idoso compounds	ISA37142
+Idoxy compounds	ISA37142
+Tosyl compounds	ISA33552
+p-Nitrobenzenesulfonates	ISA53348; ISA35716
+p-Methylbenzenesulfonates	ISA53348
+Ynolates	ISA73474; ISA36963
+N-hydroxyguanidines	ISA24436
+N-nitrosated N-hydroxyguanidines	ISA24436; ISA35800
+N-arylamides	ISA62733
+N-aryl-N-hydroxylamides	ISA24650
+Thiosulfonic acids	ISA33552
+Alkali metal metavanadates	ISA35479; HP75224
+Alkaline earth metal orthovanadates	HP30528; ISA36364
+Lanthanide orthovanadates	HP30528; ISA33775
+Metalloid orthovanadates	HP30528; ISA33675
+Miscellaneous metavanadates	HP75224; ISA24839
+Non-metal orthovanadates	HP30528; ISA33675
+Non-metal metavanadates	HP75224; ISA33675
+Post-transition metal metavanadates	HP75224; ISA24839
+Transition metal metavanadates	HP75224; ISA33497
+Organic metavanadates	HP75224; ISA24868
+N-alkylated hydrazones	ISA38532
+N-alkyl sulfonyl hydrazones	ISA38532
+Organic Polymers	ISA60027
+Polypeptides	ISA15841
+Polystyrenes	ISA61642
+Polyureas	ISA60029
+Polynucleotides	ISA15986
+Polycarbamates	ISA60737
+Amino oligosaccharides	ISA22483
+Acylamino oligosaccharides	ISA63563
+Aminosaccharides	ISA28963
+Monosaccharide sulfates	ISA24589
+Disaccharide sulfates	ISA63353; ISA35724
+Oligosaccharide sulfates	ISA37909
+Polysaccharide sulfates	ISA37944
+Naphthalene sulfonates	ISA36336
+Alkanesulfonic acids	ISA47901
+"1,1-diunsubstituted alkanesulfonic acids"	ISA47901
+"1,1-diunsubstituted alkanesulfonic acids and derivatives"	ISA47901
+"Phenyl-1,2,4-triazoles"	ISA35727
+"Phenyl-1,2,3-triazoles"	ISA35727
+"Phenyl-1,3,4-triazoles"	ISA35727
+Pyridyltriazoles	ISA35727
+"Pyridyl-1,2,3-triazoles"	ISA35727
+"Pyridyl-1,2,4-triazoles"	ISA35727
+"Pyridyl-1,3,4-triazoles"	ISA35727
+O-glycosides of fatty acids	ISA63299
+Wax monoesters	ISA10036
+Type 1 wax diesters	ISA10036
+Type 2 wax diesters	ISA10036
+Wax diesters	ISA10036
+"4,5-dioxoaporphines"	ISA24921; HFP35643
+Fatty acyl thioesters	ISA51277
+"2,3-dienoyl fatty acyl thioesters"	ISA27743
+"3,4-dienoyl CoAs"	ISA19573
+"2,4-dienoyl CoAs"	ISA19573
+"2,5-dienoyl CoAs"	ISA19573
+"6,6a-secoaporphines"	ISA22315
+Cyclic glycosylpeptides and derivatives	ISA24396; ISA23449
+Glycosylpeptides and derivatives	ISA24396
+Glyco-alpha-amino-acids	ISA35258
+Glycosyl-alpha-amino-acids	ISA35258
+Organoarsonous acids	ISA50017
+Polyethylene glycols	ISA46793
+2-amino-3-benzoylthiophenes	ISA26961
+"2-amino-3-aroyl-4,5-alkylthiophenes"	ISA26961
+1-diacyl-3-O-beta-D-galactosyl-sn-glycerols	ISA63425
+"1,2-diacyl-3-O-beta-D-digalactosyl-sn-glycerols"	ISA63425
+1-diacyl-3-O-beta-D-digalactosyl-sn-glycerols	ISA63425
+3-o-beta-d-digalactosyl-sn-glycerols	ISA24168
+3-o-beta-d-monogalactosyl-sn-glycerols	ISA24168
+Phosphatidylinositol dimannosides	ISA60484
+Phosphatidylinositol monomannosides	ISA59466
+3-thia fatty acids	ISA59643
+4-thia fatty acids	ISA59643
+N-hydroxyl-alpha-amino acids	ISA33704
+"1,2,3-oxadiazoles"	ISA46685
+Thienopyridazines	ISA38101; ISA38106
+"Thieno[3,4-c]pyridazines"	ISA38101; ISA38106
+"Thieno[3,4-d]pyridazines"	ISA38101; ISA38106
+"2-aminothieno[3,4-c]pyridazines"	ISA38101; ISA38106
+"2-aminothieno[3,4-d]pyridazines"	ISA38101; ISA38106
+N-alkylpiperazines	ISA46845
+N-methylpiperazines	ISA46920
+N-arylpiperazines	ISA46848
+30-hydroxysteroids	ISA35350
+Pyrazinium compounds	ISA25697
+1-aminopyrazinium compounds	ISA25697
+2-aminopyrazinium compounds	ISA25697
+Steroid acids	ISA47891
+Mono-rhamnolipids	ISA33563
+Di-rhamnolipids	ISA33563
+3-carboxy-20-oxosteroids	ISA36885; ISA47891
+3-carboxy steroids	ISA47891
+17-carboxy steroids	ISA47891
+Azobenzenes	ISA22682
+Isodiazenes	ISA35352
+"1,2-dithiolanes"	ISA39192
+"1,3-dithiolanes"	ISA39192; HPH38079
+"1,2-dithiolane-3-carboxylic acids"	ISA39192; ISA33575
+"1,2-dithiolane-4-carboxylic acids"	ISA39192; ISA33575
+"1,3-dithiolane-2-carboxylic acids"	ISA39192; HPH38079
+"1,3-dithiolane-4-carboxylic acids"	ISA39192; HPH38079
+Dithiolanecarboxylic acids	ISA38336
+"1,2-dithiolanecarboxylic acids"	ISA39192; ISA33575
+"1,3-dithiolanecarboxylic acids"	ISA39192; HPH38079
+alpha-Mercaptocarboxylic acids	ISA33576
+Thiophosphate monoesters	ISA37512
+Thiophosphate diesters	ISA37512
+Thiophosphate triesters	ISA37512
+Organic dithiophosphoric acids and derivatives	ISA37512
+Dithiophosphate esters	ISA37512
+Dithiophosphate S-esters	ISA37512
+"1'-(acyl-sn-glycero-3-phospho),3'-(acyl-sn-glycero-3-phospho)-sn-glycerols"	ISA17517
+Glycerophosphoglycerophosphoglycerols	ISA37739
+Ceramide-1-phosphates	ISA16197
+Phosphonosphingolipids	ISA36695
+Phosphosphingolipids	ISA35786
+(2'->5')-dinucleotides	ISA75800
+(3'->5')-dinucleotides	ISA48637
+5'-phospho-(2'->5')-dinucleotides	ISA75800
+5'-phospho-(3'->5')-dinucleotides	ISA48638
+Sphenolobane diterpenoids	ISA23849
+"Amphilectane, neoamphilectane, cycloamphilectane, and adociane diterpenoids"	ISA23849
+Cyclohexane sesterterpenes	ISA26660
+Stemarane diterpenoids	ISA23849
+"Villanovane, atisane, trachylobane or helvifulvane diterpenoids"	ISA23849
+Monomethylphosphatidylethanolamines	ISA16038
+Dimethylphosphatidylethanolamines	ISA16038
+Phosphatidylethanols	ISA37739
+2-arylbenzofuran flavonoids	ISA35259
+3-arylcoumarin flavonoids	ISA23403
+Peltogynoid flavonoids	ISA72544
+Isobenzofurans	ISA38831
+Isobenzofuranones	ISA55372
+1-benzopyrans	ISA38443
+2-benzopyrans	ISA38444
+Benzothiopyrans	ISA50747
+1-benzothiopyrans	ISA38106; ISA27171
+2-benzothiopyrans	ISA38106
+Angucyclines	ISA48130
+Methyl esters	ISA33308
+Fatty acid methyl esters	ISA4986
+Benzofuran lignans	ISA25036
+Cyclobutane lignans	ISA25036
+Aryltetrahydronaphthalene lignans	ISA25036
+"7,8'-epoxylignans"	ISA25036
+"7,9'-epoxylignans"	ISA25036
+"7,7'-epoxylignans"	ISA25036
+"9,9'-epoxylignans"	ISA25036
+Aryltetralin lignans	ISA25036
+"9,9p-dihydroxyaryltetralin lignans"	ISA25036
+Stemona alkaloids	ISA22315
+Croomine-type alkaloids	ISA22315
+Stichoneurine-type alkaloids	ISA22315
+Protostemonine-type alkaloids	ISA22315
+Vallesaman alkaloids	ISA22315
+Thiocarbamic acid bromides	ISA33261; ISA37141
+Thiocarbamic acid iodides	ISA33261; ISA37142
+Thiocarbamic acid fluorides	ISA33261; ISA37143
+Thiocarbamic acid chlorides	ISA33261; ISA36683
+Dithiocarboxylic acids and derivatives	ISA50492
+Dithiocarboxylic acids	ISA35736
+Dithiocarboxylic acid amides	ISA50492
+Dithiocarboxylic acid esters	ISA50492
+S-alkyl-CoAs	ISA62204
+S-alkyl-L-cysteines	ISA47915
+S-alkyl-L-cysteine S-oxides	ISA22063
+S-alkyl thiosulfates	ISA29289
+Glycerone and derivatives	ISA24358
+O-alkylglycerones	ISA17567
+Glycerone phosphates	ISA24356
+O-alkylglycerone phosphates	ISA22335
+O-acylglycerone-phosphates	ISA22231
+N-alkylpyrrolidines	ISA46775
+Acyl-L-homoserine lactones	ISA55474
+Acyl L-homoserines	ISA55412
+Acyl D-homoserines	ISA55415
+6-thiopurines	ISA35666
+6-alkylaminopurines	ISA35666
+Sulfuric acid esters	ISA26819
+Alkyl sulfates	ISA29281
+Alkyl phosphates	ISA22324
+Monoalkyl phosphates	ISA25381
+Dialkyl phosphates	ISA16648
+Trialkyl phosphates	ISA37562
+Alkanesulfinic acids and derivatives	ISA37784
+Alkanesulfinic acids	ISA37783
+Thiolane-2-thiones	ISA48224; ISA50492
+Thiolane-3-thiones	ISA48224; ISA50492
+"p-Dioxolo[2,3-g]coumarins"	ISA38104
+"p-Dioxolo[2,3-h]coumarins"	ISA38104
+"Linear 1,3-diarylpropanoids"	ISA33655
+(5'->5')-dinucleotides	ISA47885
+N-benzylbenzamides	ISA22702
+Coumaronochromenes	ISA38104
+Auronols	ISA72576
+2'-Hydroxychalcones	ISA23086
+2'-Hydroxy-dihydrochalcones	ISA23086
+Retrochalcones	ISA23086
+2'-OH retrochalcones	ISA23086
+"2,3-Cyclopentanoindolines"	ISA38101
+Azaphilones	ISA50941
+C-cinnamoyl glycosides	ISA20857
+O-cinnamoyl glycosides	ISA24400
+Cinnamic acid esters	ISA36087
+"2,5-disubstituted thiophenes"	ISA26961
+"2,3,5-trisubstituted thiophenes"	ISA26961
+Benzoxanthenes	ISA38835
+Pyranocoumarins	ISA23403
+Angular pyranocoumarins	ISA23403
+Linear pyranocoumarins	ISA23403
+Cyclic ketones	ISA3992
+"2,4-diphenylfurans"	ISA24129
+"2,5-diphenylfurans"	ISA24129
+"3,4-diphenylfurans"	ISA24129
+Diphenylfurans	ISA24129
+4-carboxy steroids	ISA47891
+Pyripyropenes	ISA26658
+Rhamnofolane and daphnane diterpenoids	ISA23849
+Stilbenolignans	ISA25036
+Cinnamylphenols	ISA33853
+Benzofuran-2-C-glycosides	ISA35259; ISA20857
+Benzofuran-2-O-glycosides	ISA35259; ISA24400
+Benzofuran-5-C-glycosides	ISA35259; ISA20857
+Benzofuran-5-O-glycosides	ISA35259; ISA24400
+3-prenylated flavones	ISA24043
+3'-prenylated flavones	ISA24043
+6-prenylated flavones	ISA24043
+8-prenylated flavones	ISA24043
+3-prenylated flavanones	ISA28863
+3'-prenylated flavanones	ISA28863
+6-prenylated flavanones	ISA28863
+8-prenylated flavanones	ISA28863
+3-prenylated chalcones	ISA23086
+3'-prenylated chalcones	ISA23086
+4-prenylated 2-arybenzofurans	ISA35259
+3'-prenylated isoflavones	ISA38757
+6-prenylated isoflavones	ISA38757
+8-prenylated isoflavones	ISA38757
+7-prenylated 2-arybenzofurans	ISA35259
+4'-prenylated 2-arybenzofurans	ISA35259
+2-prenylated xanthones	ISA51149
+4-prenylated xanthones	ISA51149
+8-prenylated xanthones	ISA51149
+Pyranoflavonoids	ISA71037
+Pyranoxanthones	ISA71238
+"2,2-dimethyl-1-benzopyrans"	ISA38443
+"Meta,para-diphenylether diarylheptanoids"	ISA78802
+"Meta,meta-bridged biphenyls"	ISA22888
+3'-prenylated isoflavanones	ISA38741
+6-prenylated isoflavanones	ISA38741
+8-prenylated isoflavanones	ISA38741
+Rotenones	ISA72581
+"Furo[2,3-b]chromones"	ISA23238
+Pyranoisoflavonoids	ISA50753
+Flavonoid-3-O-glycosides	ISA72544; ISA24400
+Flavonoid-3-O-glucuronides	ISA72544; ISA24302
+Flavonoid-7-O-glycosides	ISA72544; ISA24400
+Flavonoid-7-O-glucuronides	ISA72544; ISA24302
+Flavonoid 8-C-glycosides	ISA72544; ISA20857
+Dinaphthofurans	ISA38104
+"Dinaphtho[2,1-b;2',3'-d]furans"	ISA38104
+Gallic acids	ISA36586; HFP30778
+Galloyl esters	ISA37576
+Flavonoid-8-O-glycosides	ISA72544; ISA24400
+Flavonoid-8-O-glucuronides	ISA72544; ISA24302
+Furanochalcones	ISA23086
+Pyranochromenes	ISA23232
+Methyl-branched fatty acids	ISA62499
+Himachalane and lippifoliane sesquiterpenoids	ISA26658
+Jatropholane and crotopholane diterpenoids	ISA23849
+Fusicoccane diterpenoids	ISA23849
+Valparane and mulinane diterpenoids	ISA23849
+Bicyclogermacrane and isolepidozane sesquiterpenoids	ISA26658
+Pachydictyane and cneoruburin diterpenoids	ISA23849
+Anthocyanin-3'-O-glycosides	ISA71583
+Anthocyanin-4'-O-glycosides	ISA71583
+Anthocyanidin 7-O-2-p-coumaroyl glycosides	ISA71583
+Anthocyanidin 7-O-6-p-coumaroyl glycosides	ISA71583
+Anthocyanidin-7-O-Glycosides	ISA71583
+Anthocyanidin 7-O-p-coumaroyl glycosides	ISA71583
+19-oxosteroids	ISA38149
+17-oxosteroids	ISA19168
+Elisabethane diterpenoids	ISA23849
+"Elisapterane, elisabane, cumbiane or colombiane diterpenoids"	ISA23849
+"Ileabethane, pseudopterane or nor-sandresane diterpenoids"	ISA23849
+"5,10-cycloaromadendrane sesquiterpenoids"	ISA26658
+Rotundane sesquiterpenoids	ISA26658
+Maaliane sesquiterpenoids	ISA26658
+Aristolane sesquiterpenoids	ISA26658; HPH35784
+Cholestane steroids	ISA50401
+Ergostane steroids	ISA50403
+Androstane steroids	ISA50402
+Pregnane steroids	ISA35341; HPH8386
+Estrogens and derivatives	ISA36834
+N-substituted N'-hydroxyguanidines	ISA24436
+Guanidinoglycosides	ISA24436; ISA21731
+"4,5-disubstituted 2-deoxystreptamines"	ISA61800
+"4,6-disubstituted 2-deoxystreptamines"	ISA61800
+2-deoxystreptamine aminoglycosides	ISA61689
+Streptamine aminoglycosides	ISA61689
+6-beta-hydroxysteroids	ISA36851
+6-hydroxysteroids	ISA36849
+2'-prenylated isoflavanones	ISA38741
+2'-prenylated isoflavones	ISA38757
+Capnellane and isocapnellane sesquiterpenoids	ISA26658
+Angular triquinanes	ISA26658
+Linear triquinanes	ISA26658
+Precapnellane sesquiterpenoids	ISA26658
+Propellane triquinanes	ISA26658
+Pentalenane and rearranged pentalenane sesquiterpenoids	ISA26658
+2'-prenylated flavones	ISA24043
+2'-prenylated flavanones	ISA28863
+Imidazopyrazines	ISA37847
+"Imidazo-[4,5-c]pyridines"	ISA46908
+Sulfinyl sulfones	ISA26835; ISA25806
+Phenanthro-perylenequinones	ISA35294; ISA36141
+Naphthalene sulfonamides	ISA25477; ISA35358
+Pyridoazepine alkaloids	ISA22315
+1-naphthalene sulfonamides	ISA25477; ISA35358
+2-naphthalene sulfonamides	ISA25477; ISA35358
+Naphthalene sulfonic acids and derivatives	ISA33552; ISA25477
+1-naphthalene sulfonic acids and derivatives	ISA33552; ISA25477
+2-naphthalene sulfonic acids and derivatives	ISA33552; ISA25477
+1-naphthalene sulfonates	ISA36336
+2-naphthalene sulfonates	ISA36336
+2-bromoanilines	ISA48975; ISA37141
+"1-bromo,2-chlorobenzenes"	ISA23132; ISA37148
+Ceramide 2-N-methylaminoethylphosphonates	ISA36695
+Ceramide aminoethylphosphonates	ISA36494
+Thio-lactosylceramides	ISA24402
+1-azafluoranthenes	ISA22315
+Organic anions	ISA25696
+Organic cations	ISA25697
+Organic zwitterions	ISA27369
+Inorganic anions	ISA24834
+Inorganic cations	ISA36915
+Inorganic zwitterions	ISA27369
+"1,2-diacyl-sn-glycerol-3(2'-aminoethyl)phosphonates"	ISA37731
+"1,2-diacyl-sn-glycerol-3(2'-aminopropyl)phosphonates"	ISA36567
+Glycerophosphonolipids	ISA36567
+Glycerol-3-phosphonocholines	ISA36567
+Glycerol-3-phosphonoethanolamines	ISA36567
+"1,2-diacyl-sn-glycerol-3(2'-trimethylaminoethyl)phosphonates"	ISA27980
+Glycerophosphonocholines	ISA36567
+Carbonyl ylides	ISA51160
+"1,2-dithiole-3-ones"	ISA48859
+"1,2-dithioles"	ISA38081
+"1,3-dithioles"	ISA38081
+Enoate esters	ISA51702
+Ynoate esters	ISA1743
+"Alpha,beta-unsaturated carboxylic esters"	ISA51737
+Carbenes	ISA51363
+"Organic 1,3-dipolar compounds"	ISA51151
+"Allyl-type 1,3-dipolar organic compounds"	ISA51151
+"Carbene-type 1,3-dipolar compounds"	ISA51151
+"Propargyl-type 1,3-dipolar organic compounds"	ISA51151
+Acyl carbenes	ISA51365
+Imidoyl carbenes	ISA51366
+Vinyl carbenes	ISA51367
+Flav-3-enes	ISA47916
+3-prenylated flav-3-enes	ISA47916
+3-prenylated flavans	ISA38672
+4-prenylated flavans	ISA38672
+7-prenylated flavans	ISA38672
+8-prenylated flavans	ISA38672
+3'-prenylated flavans	ISA38672
+4'-prenylated flavans	ISA38672
+2'-prenylated flavans	ISA38672
+6-prenylated flavans	ISA38672
+7-prenylated flavanones	ISA28863
+4-prenylated flavanones	ISA28863
+5-prenylated 2-arybenzofurans	ISA35259
+Prenylated neoflavonoids	ISA71971
+"3'-hydroxy,4'-methoxyisoflavonoids"	ISA50753
+Pyranoneoflavonoids	ISA71971
+"1,1'-azonaphthalenes"	ISA48959; ISA25477
+Molybdopterin dinucleotides	ISA37146
+"Eremophilane, 8,9-secoeremophilane and furoeremophilane sesquiterpenoids"	ISA26658
+Alkyl-CoA disulfides	ISA35489
+3-MCPD diesters	ISA51307; ISA36683
+Sn1-3-MCPD monoesters	ISA36683; ISA35701
+Sn2-3-MCPD monoesters	ISA36683; ISA35701
+Sn1-2-MCPD monoesters	ISA36683; ISA35701
+2-MCPD diesters	ISA51307; ISA36683
+Organic phosphoric acid diamides	ISA26079
+Dimethoxybenzyl-N-methylpiperazines	ISA46920
+"1,2-dihalobenzenes"	ISA50887
+"1,3-dihalobenzenes"	ISA50887
+"1,4-dihalobenzenes"	ISA50887
+"Inorganic 1,3-dipolar compounds"	ISA24835
+"Allyl-type 1,3-dipolar inorganic compounds"	ISA24835
+"Propargyl-type 1,3-dipolar inorganic compounds"	ISA24835
+Aryl ketones	ISA76224
+Aryl alkyl ketones	ISA76224
+"Alpha,beta-unsaturated ketones"	ISA51721
+"b'-hydroxy-alpha,beta-unsaturated ketones"	ISA55380; ISA51689
+"Alpha-branched alpha,beta-unsaturated ketones"	ISA51689
+Alpha-hydroxyaldehydes	ISA50413
+Enol ester epoxides	ISA32955; ISA36586
+Alpha-acyloxy carbonyl compounds	ISA36586
+Flavonoid 3-O-p-coumaroyl glycosides	ISA47916; ISA24400
+Flavonoid 5-O-p-coumaroyl glycosides	ISA47916; ISA24400
+Flavonoid 7-O-p-coumaroyl glycosides	ISA47916; ISA24400
+Flavonoid 3p-O-p-coumaroyl glycosides	ISA47916; ISA24400
+Thioflavones	ISA38106
+Thioflavans	ISA38106
+"2,5-dioxopiperazines"	ISA46846
+Alpha-acyloxy aldehydes	ISA17478
+Furanoid lignans	ISA25036
+Nitrile oxides	ISA47838
+Diazo compounds	ISA39444
+Nitrile sulfides	ISA47839
+"Pyrido[3,4-c]pyridazines"	ISA27171; ISA38104; ISA38101
+Diselenins	ISA25712
+"1,2-diselenins"	ISA25712
+"1,3-diselenins"	ISA25712
+"1,4-diselenins"	ISA25712
+Nitrile selenides	ISA47840
+Selenanthrenes	ISA25712
+"Pyrano[3,4-c]pyridazines"	ISA27171; ISA38104; ISA38101
+Tyrosols	ISA33853
+Organic thionylimides	ISA48872
+Inorganic thionylimides	ISA48872
+Oxonium ylides	ISA51162
+2-pyranosylbenzoxazoles	ISA51548; ISA21731
+2-pyranosylbenzothiazoles	ISA37947; ISA21731
+2-ribofuranosylbenzimidazoles	ISA47917
+2-pyranosylbenzimidazoles	ISA22715; ISA21731
+"Furo[3,2-d]pyrimidine glycosides"	ISA60783; ISA21731
+1-pyranosylbenzimidazoles	ISA22715; ISA21731
+2-ribofuranosylbenzotriazoles	ISA48912; ISA21731
+1-pyranosylbenzotriazoles	ISA48912; ISA21731
+2-pyranosylbenzotriazoles	ISA48912; ISA21731
+2-ribofuranosylindazoles	ISA38769; ISA21731
+1-pyranosylindazoles	ISA38769; ISA21731
+2-pyranosylindazoles	ISA38769; ISA21731
+1-pyranosylindoles	ISA24828; ISA21731
+3-ribofuranosylpyrazoles	ISA26410; ISA21731
+"1,2-substituted cyclopentyl purine nucleosides"	ISA26401; ISA60783
+"1,3-substituted cyclopentyl purine nucleosides"	ISA26401; ISA60783
+"1,2-substituted cyclopentyl pyrimidine nucleosides"	ISA39447; ISA60783
+"1,3-substituted cyclopentyl pyrimidine nucleosides"	ISA39447; ISA60783
+Cyclopropyl purine nucleosides	ISA26401; ISA60783
+Cyclopropyl pyrimidine nucleosides	ISA39447; ISA60783
+Cyclobutyl nucleosides	ISA60783
+Phosphonated cyclopentyl nucleosides	ISA60783
+"Acyclic 2,4-diaminopyrimidine nucleoside phosphonates"	ISA39447; ISA60783
+Acyclic purine nucleoside phosphonates	ISA26401; ISA60783
+Phosphonated cyclopropyl purine nucleosides	ISA26401; ISA60783
+Phosphonated cyclopropyl pyrimidine nucleosides	ISA39447; ISA60783
+"1,2-substituted phosphonated cyclopentyl purine nucleosides"	ISA26401; ISA60783
+"1,2-substituted phosphonated cyclopentyl pyrimidine nucleosides"	ISA39447; ISA60783
+"1,3-substituted phosphonated cyclopentyl purine nucleosides"	ISA26401; ISA60783
+"1,3-substituted phosphonated cyclopentyl pyrimidine nucleosides"	ISA39447; ISA60783
+"Phosphonated 2'-oxa,3'-aza purine nucleosides"	ISA61120
+"Phosphonated 2'-oxa,3'-aza pyrimidine nucleosides"	ISA61120
+C2-linked imidazole ribonucleosides and ribonucleotides	ISA24780; ISA20857
+C4-linked imidazole ribonucleosides and ribonucleotides	ISA24780; ISA20857
+Nucleoside and nucleotide analogues	ISA63299; ISA61120
+Cyclopentyl nucleosides	ISA61120
+"1,2-substituted cyclopentyl nucleosides"	ISA61120
+"1,3-substituted cyclopentyl nucleosides"	ISA61120
+Cyclopropyl nucleosides	ISA61120
+"1,2-substituted phosphonated cyclopentyl nucleosides"	ISA61120
+"1,3-substituted phosphonated cyclopentyl nucleosides"	ISA61120
+Phosphonated cyclopropyl nucleosides	ISA61120
+"Pyrano[3,2-d]pyrimidine glycosides"	ISA60783
+3'-thia pyrimidine nucleosides	ISA61120
+"Furo[3,4-d]pyrimidine glycosides"	ISA60783; ISA46910
+"Thieno[2,3-d]pyrimidine glycosides"	ISA60783
+"v-triazolo[4,5-d]pyrimidine glycosides"	ISA60783; ISA27091
+"Pyrazolo[3,4-d]pyrimidine glycosides"	ISA60783; ISA38669
+Pteridine nucleosides and nucleotides	ISA60783; ISA26373
+Cedrane and isocedrane sesquiterpenoids	ISA36745
+"12,13-diacylphorbols and derivatives"	ISA37532
+Akageran and related alkaloids	ISA38958
+Aspidofractine alkaloids	ISA38958
+Condylocarpan alkaloids	ISA22315
+Ervatamia alkaloids	ISA38958
+Gelsemium alkaloids	ISA38958
+Macroline alkaloids	ISA38958
+Pandoline alkaloids	ISA38958
+Melodinus alkaloids	ISA38958
+Pleiocarpaman alkaloids	ISA38958
+Schizozygine alkaloids	ISA38958
+Correantan alkaloids	ISA22315
+Kopsane alkaloids	ISA38958
+Pyrichalasins	ISA23528: HR76946
+Chaetoglobosins	ISA23528: HR76946
+Aspochalasins	ISA23528: HR76946
+Alachalasins	ISA23528: HR76946
+"Pyrrolo[3,4-d]pyridazines"	ISA27171; ISA38101
+"Imidazo[5,1-d]-1,2,3,5-tetrazines"	ISA72565
+4a-homomorphinans	ISA24921
+Androcymbine alkaloids	ISA24921
+"4,5-epoxy-10-normorphinans"	ISA24921
+Phenethylisoquinoline alkaloids	ISA24921
+Allocolchicine alkaloids	ISA22160; ISA22315; ISA38032
+Lumicolchicine alkaloids	ISA22160; ISA22315; ISA38032
+Cephalotaxus alkaloids	ISA38523; ISA59770
+Hetidine-type diterpenoid alkaloids	ISA23847
+Hetisine-type diterpenoid alkaloids	ISA23847
+Danudatine-type diterpenoid alkaloids	ISA23847
+Kaurane diterpenoids	ISA53666
+Veatchine-type diterpenoid alkaloids	ISA53666
+Napelline-type diterpenoid alkaloids	ISA53666
+"4,6-disubstituted quinolizidines"	ISA26516
+"1,4-disubstituted quinolizidines"	ISA26516
+Quinolidines	ISA27171; ISA38101
+Aconitane-type diterpenoid alkaloids	ISA23847: HFP35911
+Lappaconitine-type diterpenoid alkaloids	ISA23847: HFP35911
+Ranaconitine-type diterpenoid alkaloids	ISA23847
+Strictosidine alkaloids	ISA38958
+(3'->5')-cyclic dinucleotides and analogues	ISA23447
+(3'->5')-cyclic dinucleotide bis(phosphoromonothioate) analogues	ISA23447
+(3'->5')-cyclic dinucleotide phosphoromonothioate analogues	ISA23447
+(3'->5')-cyclic dinucleotide phosphorotrithioate analogues	ISA23447
+(3'->5')-dinucleotides and analogues	ISA23447
+(3'->5')-dinucleotide phosphorothioates	ISA23447
+(3'->5')-dinucleotide phosphorodithioates	ISA23447
+Phosphorothioate poynucleotides	ISA76674
+Phosphorothioate oligonucleotides	ISA76674
+Purine nucleosides	ISA26394
+Purine 2'-deoxyribonucleosides	ISA19254
+Imidazole ribonucleosides and ribonucleotides	ISA37293
+Phenanthridines and derivatives	ISA51245
+Pachydictyane and cneorubin diterpenoids	ISA23849
+Alpha-acyloxy ketones	ISA17087; ISA33308
+"Lignans, neolignans and related compounds"	ISA26004
+1-aryltetralin lactones	ISA25000; ISA25036
+Colchicines	ISA22160; ISA22315; ISA38032
+Vinylogous esters	ISA47985; ISA51689
+Vinylogous acids	ISA33823; ISA51689
+Stenine-type alkaloids	ISA22315; ISA36183
+Stemoamide-type alkaloids	ISA26979; ISA22315
+Aralkylamines	ISA18000
+Vinylogous amides	ISA51689; ISA47989
+Organic salts	ISA24868
+Imidolactams	ISA35356; ISA5686
+Fatty acyl glycosides of mono- and disaccharides	ISA52782
+Saccharolipids	ISA16412
+Imidothiolactones	ISA35352; ISA33261; ISA5686
+Dialkylthioethers	ISA22327
+Imidolactones	ISA52479; ISA38104
+Indolonaphthyridine alkaloids	ISA38163; ISA22315
+Dialkylarylamines	ISA23665; ISA50996
+Cyclic carboximidic acids	ISA48378
+Chloroalkenes	ISA36387
+Alkyldiarylamines	ISA50996; ISA33860
+Vinylogous halides	ISA36684
+Bromoalkenes	ISA51328
+Carbothioic S-lactones	ISA26959
+Diarylthioethers	ISA35683
+Alkylarylthioethers	ISA35683
+Sulfuric acid monoamides	ISA35719
+Aminotoluenes	ISA22531
+Phosphoric monoester diamides	ISA27577
+Acetamides	ISA22160
+Carbothioic S-esters	ISA26959
+Substituted anilines	ISA48975
+Polyhalopyridines	ISA39173
+Beta-diketones	ISA67265
+"2-amino-1,3-thiazoles"	ISA38418; ISA33860
+Pyrimidine 2'-deoxyribonucleosides	ISA19255
+Acetanilides	ISA13248; ISA22160
+Phenylalkylamines	ISA18000
+Perfluoroalkyl carboxylic acid and derivatives	ISA37143
+Perfluorooctanoic acid and derivatives	ISA37143
+Perfluorooctane sulfonic acid and derivatives	ISA37143
+Perfluoroalkyl sulfonamides	ISA37143; ISA35358
+Fluoroalkenes	ISA37143; ISA78840
+Methoxyanilines	ISA51683; ISA48975
+Organic metalloid salts	ISA24868
+Acetate salts	ISA59230
+Dimethoxybenzenes	ISA51681
+Phenols	ISA33853
+L-alpha-amino acids	ISA15705
+Alkyl-phenylketones	ISA76224
+"Pyrimidine 2',3'-dideoxyribonucleosides"	ISA48441
+"2-amino-1,3,4-thiadiazoles"	ISA39472; ISA33860
+Acetylides	ISA73478
+3-alkylindoles	ISA24828
+Tyrosine and derivatives	ISA62761
+3-methylindoles	ISA38460
+Hydroxybenzaldehydes	ISA24673
+3-pyridinecarbonitriles	ISA26421; ISA18379
+Nitrophenols	ISA25562
+Acylaminobenzoic acid and derivatives	ISA48470
+Pyrimidine nucleosides	ISA26440
+Diphenylethers	ISA35618
+Acrylic acids and derivatives	ISA78840: HFP18308
+Phenolic glycosides	ISA24400
+Tetraalkylammonium salts	ISA35273
+Pentaorganoarsanes	ISA33406
+Glycine and derivatives	ISA24373
+Cyanides	ISA18379
+Alanine and derivatives	ISA22278
+Aspartic acid and derivatives	ISA22661
+D-alpha-amino acids	ISA16733
+Organosulfonic acids	ISA33551
+Organic oxides	ISA36963
+C19-gibberellin 6-carboxylic acids	ISA20858; ISA38305
+2-arylethylamines	ISA64365
+Asparagine and derivatives	ISA22654
+Cysteine and derivatives	ISA25309
+Histidine and derivatives	ISA24599
+Leucine and derivatives	ISA47003
+Methionine and derivatives	ISA25230
+Phenylalanine and derivatives	ISA25985
+Serine and derivatives	ISA26649
+Valine and derivatives	ISA27267
+m-Xylenes	ISA38975
+Glutamic acid and derivatives	ISA24315
+o-Xylenes	ISA38975
+Organoheterosilanes	ISA25713
+Pyridoxamine 5'-phosphates	ISA36970: HFP16410
+Proline and derivatives	ISA26273
+5'-deoxyribonucleosides	ISA36988
+Trialkyl amine oxides	ISA35580
+Tropane alkaloids	ISA37332
+Cyanide salts	ISA36572
+Polyamines	ISA50047
+Dihexoses	ISA36233
+Beta Keto-Acids and Derivatives	ISA25754
+Alkylamines	ISA13759
+Folic Acid Derivatives	ISA37445
+Gamma Keto-Acids and Derivatives	ISA25754
+Alpha Keto-Acids and Derivatives	ISA25754
+Acyclic Triterpenes	ISA35191
+Mixed Pentose/Hexose Disaccharides	ISA36233
+Sesterterpenes	ISA35192
+Glycoamino Acids and Derivatives	ISA35258
+Cinnamic Acid Derivatives	ISA23252
+Trihexoses	ISA27150
+Phosphatidic Acids	ISA16337
+Tetrahexoses	ISA50126
+Aromatic Homomonocyclic Compounds	ISA33847
+Diterpenes	ISA35190
+Hydroxycinnamic Acid Derivatives	ISA24689
+Sesquiterpenes	ISA35189
+Benzoic Acid and Derivatives	ISA22723
+Organophosphate Esters	ISA37734
+Aminobenzoic Acid Derivatives	ISA22495
+Aminophenol Derivatives	ISA28829
+Isoquinolines	ISA24922
+Triterpenes	ISA35191
+Acyl Phosphates	ISA37787
+Aromatic Monoterpenes	ISA35186; ISA33658
+Aliphatic Acyclic Compounds	ISA33653
+N-acetyl-alpha-hexosamine-1-phosphates	ISA52079
+Methoxyphenols and Derivatives	ISA33853; ISA51683
+Lipoic Acid Derivatives	ISA39192; ISA59643; ISA48847
+Organic Thiophosphoric Acid Esters	ISA37512
+Organic Sulfuric Acid Diamides	ISA51871
+Hexose Oligosaccharides	ISA50699
+Other Steroids and Derivatives	ISA35341
+Oleanane Triterpenes	ISA35191
+Coumaric Acid Derivatives	ISA24689
+Benzyl Alcohols and Derivatives	ISA22743
+Ketosteroids	ISA35789
+Vitamin K	ISA25481
+Mixed Pentose/Hexose Trisaccharides	ISA27150
+Solanidine and Derivatives	ISA35341; ISA51914
+p-Menthane Monoterpenes	ISA35187; ISA33654
+Monocyclic Monoterpenes	ISA33664; ISA35187
+Waxes	ISA73702
+Monoterpenes	ISA35187
+Arthro and Ganglio series	ISA62941
+Bicyclic Monoterpenes	ISA35187; ISA36785
+Difurocoumarocyclopentenone Series	ISA48210
+Hemiterpenes	ISA35188
+Flavanols	ISA72010
+Polyhexoses	ISA18154
+Acyclic Alkenes	ISA33645
+Chlorocarbons	ISA39226
+Aromatic Homopolycyclic Compounds	ISA33848
+Jatropha Diterpenes	ISA35190
+Isooctanes	ISA18310
+Other Mixed Trisaccharides	ISA63571
+Methylpyridines	ISA25340
+Dicarboxylic acids and derivatives	ISA35692
+Phenolic glycosides	ISA24400
+Diphenylethers	ISA35618
+Branched unsaturated hydrocarbons	ISA24632
+Branched alkanes	ISA18310
+o-Hydroxybenzoic acid esters	ISA36054; ISA33853; HFP16914
+Polycyclic hydrocarbons	ISA33666
+Unsaturated aliphatic hydrocarbons	ISA24632
+Homogeneous alkali metal compounds	ISA25707
+Purine 3'-deoxyribonucleosides	ISA36987; ISA26401
+Polyterpenoids	ISA26207
+Bactoprenol diphosphates	ISA37841
+Hydrocarbon derivatives	ISA50860
+Benzimidazole ribonucleosides and ribonucleotides	ISA47917
+"1-alkyl,2-acylglycerophosphates"	ISA16961; ISA64611
+"1-(1Z-alkenyl),2-acyl-glycerophosphates"	ISA16961; ISA64612
+Bactoprenol monophosphates	ISA37841
+Menaquinones	ISA25185
+Hydroxypyrimidines	ISA38340
+Acetohydroxamic acids	ISA22177
+Aminocyclitols	ISA61689
+Fatty acids and conjugates	ISA61697
+Alpha-imino acids	ISA23591; ISA24783
+Benzanilides	ISA22702
+Trifluoromethylbenzenes	ISA83565
+4-aminoquinolines	ISA36709
+Aromatic anilides	ISA62733
+Aniline and substituted anilines	ISA48975
+Aryl thioethers	ISA35683
+"N,N-dialkyl-p-toluamides"	ISA22702
+Aryl-phenylketones	ISA76224
+N-alkylindoles	ISA24828
+1-benzoylpiperidines	ISA48591; ISA22702
+Furopyridines	ISA38197
+"Pyrrolo[2,3-d]pyrimidines"	ISA38670
+P-toluenesulfonamides	ISA35358
+Benzenesulfonyl compounds	ISA33552
+Triphenyl compounds	ISA33836
+1-hydroxy-4-unsubstituted benzenoids	ISA33853
+Crinine- and Haemanthamine-type amaryllidaceae alkaloids	ISA22315
+Indazole-3-carboxamides	ISA38769; ISA62733
+Furanonaphthodioxoles	ISA50307
+Polybrominated biphenyls	ISA22888; ISA37149
+2-benzimidazolylcarbamic acid esters	ISA22715; ISA23003
+Phenyl sulfoxides	ISA22063
+O-haloacetanilides	ISA62733
+Coumarans	ISA38830
+"1,2,4-benzothiadiazine-1,1-dioxides"	ISA50265
+Galanthamine-type amaryllidaceae alkaloids	ISA22315
+"Phenyl-1,3-oxazoles"	ISA46812
+Cyclohexenones	ISA48953
+"Imidazo[1,5-a][1,4]benzodiazepines"	ISA38101; ISA26979
+Phenylbenzamines	ISA33860
+Phthalimides	ISA82851
+1-benzothiophenes	ISA38836
+Homolycorine-type amaryllidaceae alkaloids	ISA22315
+Hydroxyindoles	ISA84729
+Phenylpyridazines	ISA37921; ISA36820
+Retro-dihydrochalcones	ISA71230
+"Pyrazolo[3,4-d]pyrimidines"	ISA38669
+Phenyloxadiazoles	ISA46685; ISA36820
+2-benzylaminopyridines	ISA38207
+Precocenes	ISA23232; HR26220
+Iridoid O-glycosides	ISA50563; ISA24400
+p-Hydroxybenzoic acid alkyl esters	ISA79323
+Chloroquinolines	ISA26513; ISA36683
+Organic thiophosphoric acids and derivatives	ISA37512
+2-furanilides	ISA24129; ISA62733
+Heteroaromatic compounds	ISA33833
+Methylthio-s-triazines	ISA38174; ISA16385
+8-hydroxyquinolines	ISA38774
+2-heteroaryl carboxamides	ISA62733; ISA33833
+"3,3'-disubstituted benzidines"	ISA22888; ISA48975
+Xylenols	ISA33853
+"1,4-benzodiazepines"	ISA22720
+N-cinnamoylanthranilic acids	ISA48470; ISA23247; HFP30754
+"1,3,5-triazine-2,4-diamines"	ISA38170
+N-acyldopamines	ISA37622; HFP18243
+"1,3,4-thiadiazol-2-ylureas"	ISA47857; ISA38099
+Norbelladine-type amaryllidaceae alkaloids	ISA22315
+"Pyrido[3,4-d]pyrimidines"	ISA38932
+Phenyl thiophosphates	ISA37512
+Haloquinolines	ISA26513; ISA36684
+Alkyl-2-thio-S-triazines	ISA38174; ISA16385
+Hydroxyisoflavonoids	ISA50753; ISA33822
+Oxime carbamates	ISA35352; ISA23003
+Jerveratrum-type alkaloids	ISA22315
+Quinoline-3-carboxamides	ISA26513; ISA62733
+N-acetyl-2-arylethylamines	ISA22160
+"Pyrazolo[1,5-a]pyrimidines"	ISA38669
+"N,N-disubstituted p-toluenesulfonamides"	ISA35358
+Nitroaromatic compounds	ISA35716
+Phenylcarbamic acid esters	ISA23003
+5-alkyl-2-carboxypyrimidines	ISA78574
+Acylsalicylamides	ISA22702; ISA33308; HFP32114
+1-benzylquinolines	ISA26513
+"N,N-dialkyl-m-toluamides"	ISA22702
+Phenoxy compounds	ISA35618
+"2',5'-dideoxyribonucleosides"	ISA23636
+1-hydroxy-2-unsubstituted benzenoids	ISA33853
+Cyclohexyl halides	ISA36684; ISA33654
+Sulfonated stilbenes	ISA26776; ISA35850
+Nitrophenyl ethers	ISA35618; ISA35716
+N-acyl-L-alpha-amino acids	ISA21644
+Thienothiophenes	ISA48653
+Naphthalene-2-carboxanilides	ISA48739
+Glutamine and derivatives	ISA70813
+"1,2-dithiole-3-thiones"	ISA48859
+2'-Aminoanilides	ISA62733; ISA33860
+Artemisinins	ISA63920
+Phenanthridine- and phenanthridone-type amaryllidaceae alkaloids	ISA22315
+Dialkyl alkylphosphonates	ISA37735
+"Chromeno[2,3-b]pyridines"	ISA53792
+Cephalosporin 3'-esters	ISA23066
+4-quinolinemethanols	ISA26513; ISA33854
+Carbamate esters	ISA23003
+Acylsalicylic acids	ISA22723; ISA33308; ISA26596
+Ketals	ISA59777
+Amino acids	ISA33709
+Organosulfonic acid esters	ISA83347
+Imidazoquinolines	ISA38776
+Phenyl phosphates	ISA36943
+"Chromeno[2,3-b]pyridine-5-ones"	ISA53792
+Thiuram disulfides	ISA35489
+Aminophenyl ethers	ISA35618; ISA48975
+Cephalosporin 3'-carbamates	ISA23066; ISA23003
+"Pyrido[2,3-d]pyrimidines"	ISA38932
+2-halopyridines	ISA26421; ISA36684
+4-alkoxyphenols	ISA35618; ISA33853
+3'-quaternary ammonium cephalosporins	ISA23066; ISA26469
+N-methylpyridinium compounds	ISA38188
+"Purine 2',3'-dideoxyribonucleosides"	ISA48442
+Alpha-haloketones	ISA51839
+1-hydroxysteroids	ISA71017
+Lycorine-type amaryllidaceae alkaloids	ISA22315
+Furoic acid esters	ISA33308; HFP30845
+C-nitro compounds	ISA35716
+Aryl phosphotriesters	ISA36943
+2-pyridylmethylamines	ISA38198
+N-acetylarylamines	ISA22160; ISA62733
+Benzenesulfonate esters	ISA83352
+Chloronaphthalenes	ISA25477; ISA36683
+Furoic acids	ISA36055
+2-nitrothiophenes	ISA26961; ISA35716
+"1,2,4-triazines"	ISA39410
+"N,S-acetals"	ISA33261; ISA35352
+Isoleucine and derivatives	ISA24899
+Furoic acid and derivatives	ISA36055
+Furan-3-carboxylic acid and derivatives	ISA36055; HFP30846
+4-aroylquinolines	ISA26513; ISA76224
+Azacyclic compounds	ISA38101
+Pyrazole-5-carboxamides	ISA26410; ISA62733
+1-benzothiophene-2-carboxanilides	ISA38836; ISA62733
+"3,4,5-trisubstituted-2-aminothiophenes"	ISA26961; ISA33860
+"Pyrrolo[3,2-c]quinolines"	ISA50918
+"1,2,4-triazolo[3,4-a]phthalazines"	ISA60482
+"Imidazo[1,2-a]pyrimidines"	ISA35875
+p-Xylenes	ISA38976
+2-phenoxypropionic acid esters	ISA33308
+"Benzo-1,2,3-triazines"	ISA51361
+N-benzoyl-N'-phenylureas	ISA74266
+3-furanilides	ISA24129; ISA62733
+Hydrazinecarboxylic acid esters	ISA33308; HFP38662
+Dinitrophenols	ISA39352
+N-acylserotonins	ISA37622; ISA84729; HFP28790
+Benzotriazine organothiophosphates	ISA37512; ISA51361
+Triazolobenzothiazoles	ISA48908
+p-Phthalate esters	ISA35484
+Pyrazole-4-carboxamides	ISA26410; ISA62733
+N-benzoylpyrazoles	ISA38318
+Dithiophosphate O-esters	ISA37512
+Benzoylpyrazoles	ISA38318
+Peptoid-peptide hybrids	ISA16670
+"2-amino-5-substituted-1,3,4-thiadiazoles"	ISA38099; ISA33860
+Anthranilamides	ISA22702; HFP30754
+Dinitroanilines	ISA25550
+2-benzylamino-s-triazines	ISA26588; ISA33860
+Phenylisopropylamines	ISA32952
+m-Hydroxybenzoic acid esters	ISA36054; ISA33853
+"Furo[2,3-d]pyrimidines"	ISA46910
+Arginine and derivatives	ISA22617
+Halomethanes	ISA39279
+L-cysteine-S-conjugates	ISA64987
+Triorganotin halide salts	ISA51069; ISA25717
+Trihalomethanes	ISA39279
+Organoheterocyclic compounds	ISA24532
+N-organohydroxylamines	ISA24709
+Organosulfenic acids and derivatives	ISA51333
+Organosulfonic acids and derivatives	ISA33552
+Organoalkaline-earth metal compounds	ISA25707
+Phenylacetic acids	ISA22712; ISA33575
+Phenylcarbamic acids	ISA33709; HFP28616
+Actinide perrhenates	ISA33498; HP49858
+"N,N-diphenylcarbamic acids"	ISA33709; HFP28616
+Thionucleosides	ISA60783
+Organic nitro compounds	ISA35716
+Organic plumbates	ISA33586
+Organosulfenic acid amides	ISA51333
+Organosulfenic acid halides	ISA51333
+Organosulfenic acids	ISA51334
+1Z-alkenylglycero-3-phosphates	ISA37739; ISA64611
+Dialkylglycerophosphates	ISA37739; ISA64611
+Dialkylglycerol-3-phosphocholines	ISA36313; ISA64611
+"1-acyl,2-alkylglycerophosphoglycerols"	ISA24360; ISA64611
+Organometalloid compounds	ISA50860
+Organotransition metal compounds	ISA25707
+Organo-alkali-metal compounds	ISA25707
+"1-alkyl,2-acyl-glycerol-3-phosphoserines"	ISA35766; ISA64611
+Organic nitrosamines	ISA35803
+Monoalkylglycerophosphates	ISA37739; ISA64611
+"1-(1Z-alkenyl),2-acylglycerophosphoserines"	ISA35766; ISA64611
+"1-acyl,2-alkylglycerophosphoethanolamines"	ISA52578; ISA64611
+Monoalkylglycerophosphocholines	ISA78196
+Quinoline-3-sulfonamides	ISA35358; ISA26513
+Organo-post-transition metal compounds	ISA25707
+Organosulfonamides	ISA35358
+Diacylglycerophosphodiradylglycerols	ISA24360
+3-MCPD monoesters	ISA33308; ISA36683; HFP18721
+Organic aluminates	ISA51175
+Organic stannates	ISA25717
+1-(1Z-alkenyl)-glycero-3-phosphocholines	ISA36313; ISA64611
+Benzotriazole ribonucleosides and ribonucleotides	ISA48912; ISA21731
+Indazole ribonucleosides and ribonucleotides	ISA38769; ISA21731
+Indole ribonucleosides and ribonucleotides	ISA24828; ISA21731
+Sulfite esters	ISA39088
+Pyrazole ribonucleosides and ribonucleotides	ISA26410; ISA21731
+Pyrimidine 3'-deoxyribonucleosides	ISA36987; ISA39447
+Pyrazolopyrimidine ribonucleosides and ribonucleotides	ISA38669; ISA21731
+Dialkylglycerophosphoglycerophosphates	ISA37739
+Triazoloquinazolines	ISA131355
+Ergoline and derivatives	ISA60529
+Atisine-type diterpenoid alkaloids	ISA23847
+Akuammilan and related alkaloids	ISA38958
+9b-azaphenalenes	ISA26979; ISA38031
+"1,1-diols"	ISA63732
+Organic phosphoric acid monoamides	ISA17102
+Grayanoids	ISA35190
+Acetohydroximates	ISA22177
+1-(1Z-alkenyl)-glycero-3-phosphates	ISA52568; ISA64611
+2-(1Z-alkenyl)-glycero-3-phosphates	ISA37739; ISA64611
+"1,2-diacylglycero-3-phosphosulfocholines"	ISA37739
+Glyco-alpha-amino acids	ISA35258
+Glycosyl-alpha-amino acids	ISA35258
+1-acyl-3-O-beta-D-galactosyl-sn-glycerols	ISA63425
+1-acyl-3-O-beta-D-digalactosyl-sn-glycerols	ISA63425
+Dihydrobenzofuran and benzofuran lignans	ISA25036; ISA35259
+Glycerophosphonoethanolamines	ISA36567
+Pyranosyl nitrile oxides	ISA47838; ISA63299
+Phosphorothioate polynucleotides	ISA76674
+Purine nucleoside phosphorothioates	ISA48208
+Pyrimidine nucleoside phosphorothioates	ISA48208
+"2',3'-cyclic purine nucleoside phosphorothioates"	ISA48208
+"2',3'-cyclic pyrimidine nucleoside phosphorothioates"	ISA48208
+Mono-(1Z-alkenyl)-glycerols	ISA76575
+Glycero-3-pyrophosphates	ISA26707
+Monoradylglycerols	ISA76575
+Diradylglycerols	ISA76578
+Dialkylglycerols	ISA76578
+"1-alkyl,3-acylglycerols"	ISA76225
+"1-acyl,2-alkylglycerols"	ISA76578
+"1-alkyl,2-acylglycerols"	ISA598
+Alkyldiacylglycerols	ISA18035
+Triradylcglycerols	ISA35741
+1Z-alkenyldiacylglycerols	ISA18035
+Dialkylmonoacylglycerols	ISA17408
+Glycosylmonoalkylglycerols	ISA63427
+Glycosylmonoradylglycerols	ISA63427
+Glycosyldialkylglycerols	ISA63427
+Glycosylalkylacylglycerols	ISA63427
+Glycosyldiradylglycerols	ISA63427
+1Z-alkenylglycerophosphocholines	ISA36313
+1Z-alkenylacylglycerols	ISA18035
+"1-(1Z-alkenyl),2-acyl-glycerols"	ISA18035
+"1-acyl,2-(1Z-alkenyl)-glycerophosphocholines"	ISA18035
+"1-(1Z-alkenyl),2-acyl-glycerophosphocholines"	ISA78188
+"1-acyl,2-alkylglycero-3-phosphocholines"	ISA78189
+"1-alkyl,2-acylglycero-3-phosphocholines"	ISA78186
+"1-alkyl,2-acylglycerophosphoethanolamines"	ISA52578
+Dialkylglycerophosphoethanolamines	ISA37814
+"1-(1Z-alkenyl),2-acylglycerophosphoethanolamines"	ISA36314
+Monoalkylglycerophosphoethanolamines	ISA36314
+1-(1Z-alkenyl)-glycero-3-phosphoethanolamines	ISA36314
+Alkyldiazohydroxides	ISA35352; ISA36963
+Dialkylglycerophosphoserines	ISA35766
+Monoalkylglycerol-3-phosphoserines	ISA35766
+1Z-alkenylglycero-3-phosphoserines	ISA35766
+"1-alkyl,2-acylglycerophosphoglycerols"	ISA24360
+"1-(1Z-alkenyl),2-acylglycerophosphoglycerols"	ISA24360
+Dialkylglycerolphosphoglycerols	ISA24360
+Monoalkylglycerophosphoglycerols	ISA24360
+1-(1Z-alkenyl)glycerophosphoglycerols	ISA24360
+Monoacylglycerophosphomonoradylglycerols	ISA24360
+Diacylglycerophosphomonoradylglycerols	ISA24360
+"1-alkyl,2-acylglycerophosphoglycerophosphates"	ISA37739
+"1-(1Z-alkenyl),2-acylglycerophosphoglycerophosphates"	ISA37739
+"1-alkyl,2-acylglycerophosphoinositols"	ISA36315
+"1-(1Z-alkenyl),2-acylglycerophosphoinositols"	ISA36315
+Dialkylglycerophosphoinositols	ISA36315
+Monoalkylglycerophosphoinositols	ISA36315
+1-(1Z-alkenyl)glycerophosphoinositols	ISA36315
+Glycero-3-phosphosulfocholines	ISA37739
+Dolichols	ISA16091
+Dolichyl monophosphates	ISA16214
+Dolichyl diphosphates	ISA15750
+Acyldolichols	ISA16030
+Bactoprenols	ISA16091
+Inorganic salts	ISA24839
+Trialkylsilanes	ISA25713
+Phosphoric monoester monoamides	ISA27577
+Phosphoric diester monoamides	ISA27577
+Organic phosphoric acid triamides	ISA17102
+Carbothioic O-esters	ISA51278
+Carbothioic O-lactones	ISA51278
+Carbothioic halides	ISA50492
+Carbodithioic acid esters	ISA59785
+Carbodithiolactones	ISA59785
+Oxime esters	ISA33308
+Hydroxamic acid esters	ISA75606
+Imidothioic acids	ISA35352; ISA33261
+Cyclic imidothioic acids	ISA35352; ISA33261
+Cyclic imidoyl halides	ISA35352; ISA36684
+Organic phosphonic acid diamides	ISA37672
+Phosphonic acid diesters	ISA37735
+Phosphonic amide esters	ISA37672; ISA37735
+Ketene silyl acetals	ISA25713
+Silyl monohalides	ISA25713; ISA24471
+Silyl dihalides	ISA25713; ISA24471
+Silyl trihalides	ISA25713; ISA24471
+N-acetoxyarylamines	ISA21494
+Haloalkenes	ISA5610
+Iodoalkenes	ISA5610
+Fatty N-acylethanolamines	ISA52640
+Fatty Acyls	ISA24027
+2-aroylquinolines	ISA26513; ISA76224
+5-amino-2-aroylquinolines	ISA26513; ISA76224; ISA33860
+Stemonamine-type alkaloids	ISA22315
+Tuberostemospironine-type alkaloids	ISA22315
+Parvistemoline-type alkaloids	ISA22315
+Hydrobromides	ISA48367
+Hydrochlorides	ISA36807
+Alkylglucosinolates	ISA36445
+Organic potassium salts	ISA26218
+Organic sodium salts	ISA38700
+Organic sulfate salts	ISA51337
+Organic bromide salts	ISA48369
+Organic chloride salts	ISA36094
+Organic iodide salts	ISA50356
+Organic perchlorate salts	ISA52165
+Dithiocarbamic acids and derivatives	ISA33261; ISA35352
+Dithiocarbamic acids	ISA78787
+Dithiocarbamic acid esters	ISA38129
+Cyclic dithiocarbamates	ISA38129
+Phosphine sulfides	ISA63258
+Phosphine imides	ISA63258
+Inorganic arsenides	ISA24839
+Inorganic sulfides	ISA24839
+Inorganic phosphides	ISA24839
+Inorganic oxides	ISA24839
+Inorganic hydrides	ISA24839
+Inorganic selenides	ISA24839
+Nitrosamides	ISA51143; ISA25806
+Inorganic nitrosamines	ISA51143; ISA25806
+Inorganic hydroxylamines	ISA51143; ISA25806
+Isporenylated bicyclo [2.2.2] alkaloids	ISA22315
+Dialkyl peroxides	ISA25702
+2-aminoanthraquinones	ISA22580; ISA33860
+Benzidines	ISA22888; ISA48975
+"3,3'-dihalogenated benzidines"	ISA22888; ISA48975; ISA48975
+Perfluorooctane phosphonic acid and derivatives	ISA37143; ISA37588
+Perfluoroalkyl sulfonic acid and derivatives	ISA37143; ISA33552
+Perfluoroalkyl phosphonic acid and derivatives	ISA37143; ISA37588
+Diaminotoluenes	ISA23666; ISA27024
+Fluorotelomer alcohols	ISA63922
+Dinitrotoluenes	ISA23822
+Halopyridines	ISA26421; ISA36684
+Organic nitrenes	ISA50860
+Carbonylnitrenes	ISA50860
+Sulfonylnitrenes	ISA50860
+Alkyldimethylbenzylammonium halides	ISA35273; ISA33958
+Alkyldimethylbenzylammonium chlorides	ISA35273; ISA23114
+Benzyl bromides	ISA59857
+Benzyl chlorides	ISA59852
+Benzyl halides	ISA59851
+Benzyl fluorides	ISA59851; ISA37143
+Toluene diisocyanates	ISA53213; ISA27024
+Arsines	ISA22637
+Diarsolanes	ISA38783
+Arsine oxides	ISA35843
+Arsine imides	ISA22632
+Arsine sulfides	ISA22632
+Acylals	ISA59769
+Organosulfonic anhydrides	ISA48899
+Sulfonediimides	ISA33261; ISA51143
+Organic triazanes	ISA35352; HPH50155
+Aminoxides	ISA35580
+Phosphonic dihydrazides	ISA35362; ISA26082
+Organic cobalt salts	ISA35698
+Inorganic cobalt salts	ISA35698
+Organic transition metal salts	ISA24868
+2-aminobenzamides	ISA22702; ISA48975
+2-aminothiophenes	ISA33860; ISA26961
+N-arylated-2-aminothiophenes	ISA33860; ISA26961
+Benzazocines	ISA39307
+Phthalate esters	ISA35484
+m-Phthalate esters	ISA35484
+o-Phthalate esters	ISA35484
+C20-gibberellin 6-carboxylic acids	ISA20859
+C20-gibberellin 20-carboxylic acids	ISA20859
+"2-hydroxy,20-norgibberellanes"	ISA23849
+Organocopper compounds	ISA51182
+Organic copper salts	ISA23377
+Inorganic copper salts	ISA23377
+Vinylogous thioesters	ISA51689; ISA16385
+4-hydroxy-3-polyprenylbenzoic acids	ISA24676; ISA78840
+(5L-glutamyl)-alpha-peptides	ISA16670
+5L-glutamyl alpha-amino-acids	ISA15857
+Organolead compounds	ISA33586
+Organosilver compounds	ISA51191
+Alkyl lead compounds	ISA33586
+Hydroxymercuribenzoic acids	ISA25194
+Mercuribenzoic acids	ISA25194
+2-Hydroxymercuribenzoic acids	ISA25194
+3-Hydroxymercuribenzoic acids	ISA25194
+4-Hydroxymercuribenzoic acids	ISA25194
+2-Mercuribenzoic acids	ISA25194
+3-Mercuribenzoic acids	ISA25194
+4-Mercuribenzoic acids	ISA25194
+Organic metal salts	ISA24868
+Organic metal bromide salts	ISA48369
+Organic tin salts	ISA27008
+Inorganic tin salts	ISA27008
+Organic post-transition metal salts	ISA24868
+Organic aluminium salts	ISA33620
+Alkyl mercury compounds	ISA25706
+Aryl mercury compounds	ISA25706
+Phallotoxins	ISA24533
+Amatoxins	ISA24533
+Perfluoroalkane N-alkylsulfonamides	ISA37143; ISA35358
+"Perfluoroalkane N,N-alkylsulfonamides"	ISA37143; ISA35358
+Perfluoroalkane sulfonamidoethanols	ISA37143; ISA35358
+Perfluoroalkane sulfonamidoacetals	ISA37143; ISA35358
+Perfluoroalkanesulfonyl fluorides	ISA37143; ISA33552
+Organic lead salts	ISA37185
+Inorganic lead salts	ISA37185
+Trivalent inorganic arsenic compounds	ISA22632
+Pentavalent inorganic arsenic compounds	ISA22632
+Trivalent organic arsenic compounds	ISA33406
+Pentavalent organic arsenic compounds	ISA33406
+Inorganic arsenic compounds	ISA22632
+Methylated trivalent arsenic compounds	ISA33406
+Trialkylarsanes	ISA33406
+Inorganic mercury compounds	ISA36561
+Inorganic nickel compounds	ISA35438
+Inorganic silver salts	ISA33968
+Organic silver salts	ISA33968
+Transition metal cyanide salts	ISA36572
+Triorganolead compounds	ISA33586
+Triorganotin compounds	ISA25717
+Triorganotin metal salts	ISA25707
+Trialkylstibanes	ISA50007
+Monoalkyltins	ISA25717
+Dialkyltins	ISA25717
+Trialkyltins	ISA25717
+Organochromium compounds	ISA35409
+Inorganic chromium (VI) compounds	ISA35403
+Organic cadmium salts	ISA36565
+Inorganic cadmium salts	ISA36565
+Inorganic antimony salts	ISA50007
+Organic antimony salts	ISA50007
+Vinylaziridines	ISA51320
+N-vinylaziridines	ISA51320
+4-arylsulfanyl-substituted kainoids	ISA38260; ISA35850
+Cyanogens	ISA18379
+Dialkyltin dicarboxylates	ISA25717
+Thiodisulfinates	ISA50094
+Acyl nitrates	ISA35716
+Peroxyacyl nitrates	ISA35716
+Dialkyldisulfides	ISA35489
+Dialkyltin salts	ISA25717
+Alkyl nitrates	ISA51080
+Acyl nitrites	ISA51143
+Alkyl nitrites	ISA51143
+Alkyl perchlorates	ISA23117
+1-phenethylisoquinolines	ISA24922
+"Mitomycins, mitosane and mitosene derivatives"	ISA25558
+Organic alkali metal salts	ISA25707
+Thio-linked disaccharides	ISA63353
+N-linked disaccharides	ISA63353
+Inorganic sodium salts	ISA38702
+Inorganic chloride salts	ISA36093
+"1,3,5-triazine ribonucleosides and ribonucleotides"	ISA26588; ISA21731
+"1,3,5-triazines"	ISA26588
+"1,2,3-triazines"	ISA59099
+Nitrotoluenes	ISA25566
+Benzoyl peroxides	ISA25702
+Methoxybenzenes	ISA51683
+N-substituted alpha-imino acids	ISA23591; ISA24783
+Oxoisoaporphines	ISA38163
+Isoatisine-type diterpenoid alkaloids	ISA23847
+Tazettine-type amaryllidaceae alkaloids	ISA38958
+Montanine-type amaryllidaceae alkaloids	ISA22315; ISA38166
+Plicamine-type amaryllidaceae alkaloids	ISA22315; ISA38166
+Galanthindole-type amaryllidaceae alkaloids	ISA38958
+Gracilline-type amaryllidaceae alkaloids	ISA22315
+"6,7-benzomorphans"	ISA26979; ISA35990
+Alpha-imino acid and derivatives	ISA83821
+Alpha-imino acid esters	ISA83821
+Epithionitriles	ISA18379; ISA38106
+Desulfoglucosinolates	ISA35275
+Thiohydroximic acids and derivatives	ISA25750; ISA33261
+Thiohydroximic acids	ISA25750; ISA33261
+S-alkyl-thiohydroximates	ISA25750; ISA33261
+Oxacyclic compounds	ISA38104
+Phosphacyclic compounds	ISA5686; ISA26082
+"Kalmanes and 1,5-seco-kalmanes"	ISA23849
+Hydroxypyridines	ISA24745
+Cladiellane diterpenoids	ISA23849
+Steroidal alkaloid glycosides	ISA61655; ISA26767
+18-hydroxysteroids	ISA36855
+Thioselenides	ISA64726
+Phenoselenazines	ISA48102; ISA26979
+Perimidines	ISA39204
+Quindolines	ISA38163
+Selenophenes	ISA38416
+Oxirenes	ISA38104
+2-Thiopyrimidines	ISA39447
+4-Thiopyrimidines	ISA39447
+Thiopyrimidines	ISA39447
+Pyridine nucleosides	ISA47896
+S-alkylsulfenates	ISA22326
+Ethylene bisdithiocarbamates	ISA78787
+"1-(1Z-alkenyl),3-acylglycerophosphoethanolamines"	ISA36314
+Long-chain (3R)-3-hydroxyacyl CoAs	ISA33184; ISA61902
+Very-long-chain (3R)-3-hydroxyacyl CoAs	ISA61902; ISA61902
+3-sulfated flavonoids	ISA72544
+Flavonoid 3-phosphates	ISA72544
+Long-chain alkyl amine oxides	ISA35580
+Trialkylarsane oxides	ISA35843
+Trialkylphosphanes	ISA35886
+Phorbines	ISA38252
+Phthalocyanines	ISA51580
+1-phenylcoumarans	ISA38830
+Isocoumarans	ISA38831
+14-alpha-methylsteroids	ISA35341
+"Pyrrolo[1,2-a]benzimidazoles"	ISA26979
+Allyl sulfur compounds	ISA33261
+Dithiazinanes	ISA25693; ISA38101; ISA38106
+"1,3,5-dithiazinanes"	ISA25693; ISA38101; ISA38106
+Hydroxyanilides	ISA62733; ISA22712; ISA33822
+"1-sulfamoyl-1,2,3-triazoles"	ISA38597
+Phenyl-beta-methoxyacrylates	ISA47985
+Furancarboxamides	ISA37622; ISA24129
+Xylenes	ISA27338
+m-Xylenols	ISA33853; ISA27338
+o-Xylenols	ISA33853; ISA27338
+p-Xylenols	ISA33853; ISA27338
+Anilinopyrimidines	ISA38338; ISA33860
+"1,4-oxathiin carboxamides"	ISA37622
+Allylamines	ISA50047; ISA78840
+Toluamides	ISA22702
+m-Toluamides	ISA22702
+o-Toluamides	ISA22702
+p-Toluamides	ISA22702
+"1,2,4-triazolo[4,3-a][1,4]benzodiazepines"	ISA35501
+"1-(1Z-alkenyl),3-acyl-glycerophosphates"	ISA37739
+"1-(1Z-alkenyl),3-acyl-glycerol-2-phosphocholines"	ISA37739
+"Pyrrolo[1,2-c][1,3]benzodiazepines"	ISA131437
+"Pyrrolo[2,1-c][1,4]benzodiazepines"	ISA131437
+"C2-aryl pyrrolo[2,1-c][1,4]benzodiazepines"	ISA131437
+5'-O-tritylated nucleosides and derivatives	ISA61120
+Benzenesulfonyl chlorides	ISA36687
+"Azetidino[1,2-d][1,4]benzodiazepines"	ISA26979
+6-Thiathiophenes	ISA38106
+Tertiary arsines	ISA22637
+Tetraorganoarsonium salts	ISA24868
+Sulfur-containing organoarsenic compounds	ISA33406; ISA26835
+Organoarsenic sulfides	ISA33406; ISA26835
+Thiodiarsines	ISA33406; ISA26835
+Organotetrahaloarsoranes	ISA33406
+Diorganotrihaloarsoranes	ISA33406
+Triorganodihaloarsoranes	ISA33406
+Arsonous acid esters	ISA22632
+Organoarsinous acid esters	ISA33406
+Organoarsinous acids	ISA33406
+Tetraorganostibonium salts	ISA50007
+"1-phosphatidyl-1D-myo-inositol-4,5-bisphosphates"	ISA18348
+1-phosphatidyl-1D-myo-inositols	ISA16749
+"Phosphatidylinositol-3,4,5-trisphosphates"	ISA16618
+Pyrroline 2-carboxylic acids	ISA23763; ISA33575
+Very long-chain 2-enoyl CoAs	ISA61910; ISA51006
+Very long-chain 3-enoyl CoAs	ISA61910; ISA51006
+Arylsulfates	ISA26835
+S-prenyl-L-cysteines	ISA60941
+N-acylneuraminate-9-phosphates	ISA21662
+"1-alkyl,2-acetylglycero-3-phosphocholines"	ISA78189
+1-phosphatidyl-1D-myo-inositol-3-phosphates	ISA26034
+"1-phosphatidyl-1D-myo-inositol-3,4,5-trisphosphates"	ISA16618
+"1-phosphatidyl-1D-myo-inositol-3,4-bisphosphates"	ISA16152
+"1-phosphatidyl-1D-myo-inositol-3,5-bisphosphates"	ISA16851
+N-acyl-L-glutamines	ISA24317; ISA21644
+3-Acylpyruvic acids	ISA1447
+"6,7-dihydropteridines"	ISA13614
+"5,6,7,8-tetrahydropteridines"	ISA30436
+Long-chain N-acylserotonins	ISA29348; HFP28790
+1-O-alkylglycerols	ISA36594
+1-O-alkyl-sn-glycerols	ISA36594
+Polyprenyl monophosphates	ISA16460
+Polyprenyl diphosphates	ISA37531
+N-acyl-aliphatic L-alpha-amino-acids	ISA21644
+N-acyl-aromatic L-alpha-amino-acids	ISA21644
+Oxygen-containing organoarsenic compounds	ISA33406; ISA25806
+Monohaloarsines	ISA22632; ISA24471
+Dihaloarsines	ISA22632; ISA24471
+Triorganodialkoxyarsoranes	ISA33406
+Tetraorganoalkoxyarsoranes	ISA33406
+Organotin selenides	ISA25717
+Organotin sulfides	ISA25717
+Organotin tellurides	ISA25717
+Organolead sulfides	ISA33586
+Tetraorganolead compounds	ISA33586
+Primary stibines	ISA50007
+Secondary stibines	ISA50007
+2-benzothiophenes	ISA38837
+2-azidobenzoic acids	ISA22723; ISA22680
+Phenylketones	ISA76224
+Glucosylceramides	ISA36500
+D-glucosyl-N-acylsphingosines	ISA22801
+3-hydroxy-3-alkylglutaryl CoAs	ISA17984
+(S)-3-hydroxy-3-alkylglutaryl CoAs	ISA17984
+4-Hydrocarbylideneazlactones	ISA38327; ISA25000
+D-glucosyl-N-acylsphinganines	ISA36500
+Glycosyl-N-acylsphingosines	ISA62941
+Metallobisdithiocarbamates	ISA83060
+1-phosphatidyl-1d-myo-inositol-4-phosphates	ISA17526
+Benzenesulfonyl halides	ISA37579
+Daphniphylline-type alkaloids	ISA26871
+Yuzurimine-type alkaloids	ISA22315
+Tetraalkylphosphonium compounds	ISA26082
+Tetraalkylphosphonium halides	ISA51069
+"Imidazo[2,1-b]benzothiazoles"	ISA26979
+"Quinolo[1,2-a]quinazolines"	ISA38163
+"Pyrido[2,3-b]quinoxalines"	ISA26979
+"Pyrido[2,3-g]quinoxalines"	ISA26979
+Nitrothiophenes	ISA26961; ISA35716
+3-nitrothiophenes	ISA26961; ISA35716
+Nitrohalothiophenes	ISA26961; ISA35716; ISA36684
+2-nitrohalothiophenes	ISA26961; ISA35716; ISA36684
+3-nitrohalothiophenes	ISA26961; ISA35716; ISA36684
+Cyclitols	ISA23451
+"Indeno[1,2-c]pyrazoles"	ISA46869
+"Dipyrido[1,4]diazepines"	ISA63667
+Tetraalkyltins	ISA25717
+Tetraorganotin compounds	ISA25717
+Acyclic pyrimidine nucleoside phosphonates	ISA39447; ISA48038
+Deoxyribo- and ribonucleoside phosphonates	ISA61120; ISA48038
+Oligonucleotides	ISA7754
+(3'->5')-cyclic dinucleotide bis(carbamate) analogues	ISA61120
+"Imidazole[4,5-c]pyridine ribonucleosides and ribonucleotides"	ISA46908; ISA21731
+Benzenecarbothioic S-acids	ISA35737
+Sulfono(thioperoxoic) SO-acids	ISA26835; ISA25806
+Sulfonothioic O-acids	ISA26835; ISA25806
+Sulfonothioic S-acids	ISA26835; ISA25806
+Sulfonoperoxoic acids	ISA26835; ISA25806
+Sulfonoselenoic Se-acids	ISA26835; ISA26628
+Purine ribonucleoside phosphonates	ISA26401; ISA21731; ISA48038
+Pyrimidine ribonucleoside phosphonates	ISA39447; ISA21731; ISA48038
+Ribonucleoside phosphoramidites	ISA48208; ISA59751
+"Indolo[2,3-b]quinoxalines"	ISA38163
+2-Anilinoquinolines	ISA36709
+3-Anilinoquinolines	ISA36709
+4-Anilinoquinolines	ISA36709
+Organic chromium salts	ISA35409
+"Pyrazolo[3,4-b]pyrazines"	ISA27171
+"Pyrazolo[1,5-b]pyridazines"	ISA48383
+"Pyrazolo[1,5-a][1,3,5]triazines"	ISA48383
+"Pyrazolo[1,5-d][1,2,4]triazines"	ISA48383
+Substituted imidazole-4-acetic acid and analogues	ISA24780
+"Pyrazolo[4,3-e]pyrrolo[1,2-a]pyrazines"	ISA26979
+"Imidazo[1,2-a]pyrazin-8-ones"	ISA37847
+"Imidazo[1,2-a][1,2,4]triazines"	ISA46906
+"Imidazo[1,2-d][1,2,4]triazines"	ISA46906
+"Imidazo[2,1-c][1,2,4]triazines"	ISA46906
+"Imidazo[4,3-c][1,2,4]triazines"	ISA46906
+"Pyrazolo[1',5':1,6]pyrimido[4,5-d]pyridazines"	ISA26979
+"Pyrazolo[1',5':1,6]pyrimido[4,5-d]pyridazin-4-ones"	ISA26979
+"2,4-Diaminoquinazolines"	ISA38530; ISA33860
+"2,4-Diaminothieno[2,3-d]pyrimidines"	ISA27171; ISA33860
+"5-Benzylpyrimidine-2,4-diamines"	ISA38338
+"Imidazo[1,5-a]pyrazines"	ISA37847
+4-Anilinoquinazolines	ISA38530; ISA33860
+"Pyrrolo[2,3-a]carbazoles"	ISA38163
+6-Amino-4-phenyltetrahydroquinolines	ISA26513
+Phenylpiperazinyl-cyclohexylureas	ISA47857
+Phenylpiperazinyl-cyclohexylsulfonamides	ISA35358
+"Imidazo[1,2-a]pyridines"	ISA46908
+"5-piperazinylimidazo[1,2-a]pyridines"	ISA46908; ISA26144
+"6-piperazinylimidazo[1,2-a]pyridines"	ISA46908; ISA26144
+"7-piperazinylimidazo[1,2-a]pyridines"	ISA46908; ISA26144
+"8-piperazinylimidazo[1,2-a]pyridines"	ISA46908; ISA26144
+"1,3-thiazolo[5,4-d]pyrimidines"	ISA64196
+"7-oxo-1,3-thiazolo[5,4-d]pyrimidines"	ISA64196
+Ribonucleoside 3'-phosphates	ISA37009
+Pyridopyrazines	ISA48276
+"3-arylsulfonyl-pyrazolo[1,5-a]pyrimidines"	ISA38669; ISA35358
+"Furo[2,3-c]pyridines"	ISA38197
+"Furo[3,2-c]pyridines"	ISA38197
+"Pyrrolo[2,1-f][1,2,4]triazines"	ISA88341
+"2-amino-pyrido[2,3-d]pyrimidines"	ISA38932; ISA33860
+"Isoindolo[2,1-a]quinoxalines"	ISA38163
+Benzo[c]quinolizin-3-ones	ISA64027
+Benzo[f]quinolin-3-ones	ISA26979
+O-thiocarbamates	ISA38127
+S-thiocarbamates	ISA38128
+S-Alkyl-thiocarbamates	ISA38128
+Thiocarbamate salts	ISA24868
+Dithiocarbamate salts	ISA83060
+Chloroformic acid esters	ISA33308; ISA36687
+Alkylchloroformates	ISA33308; ISA36687
+Inorganic silicides	ISA37763
+Borate esters	ISA38915
+Organic sulfonic acids and derivatives	ISA33552
+Metal alkyls	ISA25707
+Organic sulfonic anhydrides	ISA36606
+Organic sulfonic acids	ISA33551
+Organic sulfonamides	ISA35358
+Metal aryls	ISA25707
+Metal allyls	ISA25707
+Metal alkyl halides	ISA25707
+Transition metal alkyls	ISA25707
+Organochlorosilanes	ISA85314
+Siloxanes	ISA48138
+Carbonate salts	ISA46721
+Alkali metal carbonate salts	ISA46721
+Metal carbonate salts	ISA46721
+Acrylic acids	ISA79020
+Acrylic acid esters	ISA50424
+Alpha-aminonitriles	ISA18379
+Alpha-hydroxynitriles	ISA18379
+Organic sulfite salts	ISA48857
+Organic sulfites	ISA48857
+Organic thiosulfate salts	ISA24868
+Organic bromate salts	ISA22923
+Organic selenite salts	ISA48840
+Organic iodate salts	ISA24856
+Triazolines	ISA51261
+Organic chlorite salts	ISA23118
+Organic phosphite salts	ISA24868
+Inorganic azides	ISA24839
+Alkyl azides	ISA22680
+Aryl azides	ISA22680
+Organoazides	ISA22680
+Salt-like carbides	ISA24866
+Carbides	ISA24866
+Inorganic nitrides	ISA24839
+Inorganic nitrites	ISA46648
+Alkenyl azides	ISA22680
+Saturated hydrocarbons	ISA18310
+Unsaturated hydrocarbons	ISA24632
+Aromatic hydrocarbons	ISA33663
+Trialkylheterosilanes	ISA25713
+Trialkylchlorosilanes	ISA85314
+Trimethylsilyl esters	ISA25713
+Alkylphosphonofluoridic acids and esters	ISA24062; ISA26082; ISA25806
+Trialkylphosphites	ISA48135
+O-alkylpyrimidines	ISA39447
+Inorganic lithium salts	ISA35478
+Organic lithium salts	ISA35478
+Organic beryllium salts	ISA24868
+Inorganic beryllium salts	ISA24839
+Organic metal halides	ISA37578
+Organonickel compounds	ISA51188
+Organic calcium salts	ISA35156
+Inorganic calcium salts	ISA35156
+14-hydroxysteroids	ISA36860
+"3',5'-cyclic purine nucleoside phosphorothioates"	ISA85287
+"3',5'-cyclic pyrimidine nucleoside phosphorothioates"	ISA85287
+"2',3'-dideoxy-3'-thionucleosides"	ISA47945
+"2',3'-dideoxy-3'-thionucleoside triphosphates"	ISA25608
+"2',3'-dideoxy-3'-thionucleoside diphosphates"	ISA25608
+"2',3'-dideoxy-3'-thionucleoside monophosphates"	ISA25608
+5'-deoxy-5'-thionucleosides	ISA61120
+Phosphiranes	ISA25716
+Chloroethylnitrosoureas	ISA76551; ISA36683
+"1,2,3-thiadiazolopyridines"	ISA27171
+7-alkoxylcoumarins	ISA23403; ISA35618
+Alkylhydrazines	ISA24631
+"1,2-diacyl-1-alkylhydrazines"	ISA35363
+N-sulfenyl-N'-sulfonyl-ureas	ISA76983
+Sulfonyl isocyanates	ISA53212
+Sulfonyl isothiocyanates	ISA52221
+Polybrominated dibenzofurans	ISA38922; ISA37141
+Brominated dibenzofurans	ISA38922; ISA37141
+Chlorofluorocarbons	ISA37143; ISA36683
+Hydrofluorocarbons	ISA46695
+Aziridinylquinones	ISA36141; ISA22681
+Chlorophenoxtacetates	ISA23152
+Chloroanilines	ISA23130
+Chloroacetamides	ISA36683; ISA37622
+Halotoluenes	ISA36684; ISA27024
+Formamides	ISA24079
+2-halopyrimidines	ISA39447; ISA36684
+"1,2,3,6-Tetrahydropyridines"	ISA26921
+Arylbiguanides	ISA24436
+"1,5-diarylbiguanides"	ISA24436
+1-arylbiguanides	ISA24436
+Organothalium compounds	ISA37110
+Inorganic thalium compounds	ISA37110
+Halonitrobenzenes	ISA36684; ISA48109
+Thiopurine S-methylethers	ISA35666
+Aryl dialkyl phosphates	ISA37558
+Arylhydroxamates	ISA24650
+S-(2-hydroxyacyl)glutathiones	ISA17491
+5'-acylphosphoadenosines	ISA16406
+Benzyl isothiocyanates	ISA52221
+Benzyl thiocyanates	ISA26955
+"13,28-epoxyoleananes"	ISA70994; ISA35990; ISA37407; HPH36481
+Cumulenes	ISA37608
+Nitrimines	ISA38780
+S-sulfo-L-cysteines	ISA27891
+Organopnictogen compounds	ISA33302
+Inorganic pnictogen compounds	ISA33302
+Avenanthramides	ISA22315; ISA22702
+Cyanate esters	ISA36832
+Metal cyanates	ISA36831
+Inorganic 3-nitrosotriazenes	ISA72573
+Ethoxyethynyl alcohols	ISA25698; ISA73474
+Haloacetylenes and derivatives	ISA73474; ISA36684
+Metal acetylides	ISA73478
+Acetylenic peroxides	ISA73474; ISA25702
+Alkylaluminium and derivatives	ISA51175
+Alkylaluminium halides	ISA51175
+Alkylboranes	ISA38278
+Alkylhaloboranes	ISA38278
+Alkylhalophosphines	ISA63258
+Monoalkylboranes	ISA38278
+Dialkylboranes	ISA38278
+Trialkylboranes	ISA38278
+Acylsalicylic acids and derivatives	ISA26596
+Diacyl peroxides	ISA25940
+3-beta-hydroxysteroid-4-alpha-carboxylates	ISA47891; ISA36836
+Trifluoromethanesulfonates	ISA52473
+Alkyl hydroperoxides	ISA61050
+Trialkylantimony halides	ISA50007
+Allyl trifluoromethanesulfonates	ISA52473
+Allylic hydroperoxides	ISA61050
+Diazoethers	ISA25698
+Arenediazoates	ISA33659
+Bis-arenediazo oxides	ISA33659
+Bis-arenediazo sulfides	ISA33659
+Arenediazo aryl sulfides	ISA33659
+Trialkylaluminiums	ISA51175
+Organozinc compounds	ISA51494
+Dialkylzincs	ISA51495
+Organomagnesium halides	ISA51236
+Alkylmagnesium halides	ISA51488
+Arylmagnesium halides	ISA51487
+Dialkylmagnesiums	ISA51187
+Alkyl trialkyllead peroxides	ISA33586
+3-cyanotriazenes	ISA72573
+Aromatic 3-cyanotriazenes	ISA72573
+Dialkyl hyponitrites	ISA36963; ISA51143
+Diazonium perchlorates	ISA24866
+Organic oxygen compounds	ISA36963
+Diazonium sulfates	ISA35175
+Diazonium tetrahaloborates	ISA24866
+Difluoroamino compounds	ISA37381
+Fluorodinitromethyl compounds	ISA37143
+"1,1-dinitrodifluoramines"	ISA37381; ISA38780
+Tris(ketoximino)silanes	ISA25713
+Metal p-nitrophenoxides	ISA24868
+Metal thiocyanates	ISA24868
+Nitrobenzaldehydes	ISA22698; ISA48109
+Organometallic peroxides	ISA24868
+Phenylboronic acids	ISA38269
+Aryl phosphates	ISA36943
+Aryl phosphomonoesters	ISA36943
+Aryl phosphodiesters	ISA36943
+Branched cycloalkanes	ISA23453
+Aryl thiophosphates	ISA37512
+Pyridine-2-carboxylic acids	ISA26420
+Pyridine-3-carboxylic acids	ISA26420
+5-alkoxy-2-carboxypyrimidines	ISA26420
+Benzyl sulfoxides	ISA22063
+Benzyl alkyl sulfoxides	ISA22063
+"1,2-allenyl phenyl sulfoxides"	ISA22063
+Phenyl sulfides	ISA35683
+Dibenzothiophene-5-oxides	ISA23684; ISA22063
+"Dibenzothiophene-5,5-dioxides"	ISA23684; ISA35850
+Alkoxy-S-triazines	ISA26588; ISA35618
+Halo-S-triazines	ISA26588
+Phenyl methylcarbamates	ISA23003
+Alkylarsine oxides	ISA35843
+Trialkylarsine oxides	ISA35843
+Phenylacetic acid esters	ISA33308
+2(hydroxyphenyl)acetic acids	ISA25978; ISA33853
+3(hydroxyphenyl)acetic acids	ISA25978; ISA33853
+"1-hydroxylamino, 2-unsubstituted benzenoids"	ISA24709
+"1-hydroxylamino, 4-unsubstituted benzenoids"	ISA24709
+N-phenylhydroxylamines	ISA24709
+O-phenylhydroxylamines	ISA33659
+N-alkyl-O-phenylhydroxylamines	ISA33659
+N-aryl-N-phenylhydroxylamines	ISA24709
+o-Aminophenols	ISA33853; ISA48975
+m-Aminophenols	ISA33853; ISA48975
+p-Aminophenols	ISA33853; ISA48975
+5-unsubstituted pyrrogallols	ISA22707
+Isoindole organothiophosphates	ISA37512
+Phosphorodithioic acid O-monoesters	ISA37512
+"Phosphorodithioic acid O,O-diesters"	ISA37512
+Phosphoramidothioic acid S-esters	ISA26079
+Phosphoramidothioic acid O-esters	ISA26079
+"Phosphoramidothioic-acid-O,S-diesters"	ISA26079
+N-acylphosphoramidothioic acid and derivatives	ISA26079
+Nitroguanidines	ISA39179
+Pyrimidinyloxybenzylamines	ISA50047; ISA35618
+Benzofuranyl 5-alkylsulfonates	ISA35259; ISA52474
+"Benzoylcyclohexane-1,3-diones"	ISA3992; ISA76224
+Aryloxyphenoxypropionic acids	ISA35618; ISA33575
+Aryloxyphenoxypropionic acid esters	ISA35618; ISA33308
+2-phenoxypropionic acids	ISA35618; ISA33575
+Alkyloxyphenoxypropionic acids	ISA35618; ISA33575
+Alkyloxyphenoxypropionic acid esters	ISA35618; ISA33308
+Hydroxybenzonitriles	ISA18379; ISA33853
+"1,2,4-triazolopyrimidine-2-sulfonamides"	ISA27091; ISA35358
+"1,2,4-triazolopyrimidine-2-sulfonanilides"	ISA27091; ISA35358
+"Aryl 1,2,4-triazolones"	ISA35727; ISA36820
+Diacylhydrazines	ISA35363
+"1,3-thiazole carboxanilides"	ISA38418; ISA62733
+Naphthalene-1-carboxanilides	ISA48739; ISA62733
+1-hydroxynaphthalene-2-carboxanilides	ISA24727; ISA62733
+8-hydroxynaphthalene-2-carboxanilides	ISA24727; ISA62733
+6-hydroxynaphthalene-2-carboxanilides	ISA24727; ISA62733
+Dioxoisoquinoline-4-carboxanilides	ISA24922; ISA62733
+Isothiosemicarbazones	ISA38532
+S-alkylisothiosemicarbazones	ISA38532
+"1,4-dihydroxy-2-halobenzenoids"	ISA33570; ISA36684
+4-halophenylacetic acids	ISA36684; ISA25978
+N-silyl compounds	ISA85315
+p-Hydroxybenzoic acid esters	ISA24676
+Organic thiosulfinic acids	ISA33261
+Pyrimidinyl-2-sulfonylureas	ISA47857; ISA39447
+S-triazinyl-2-sulfonylureas	ISA47857; ISA38102
+Organic nitrogen compounds	ISA35352
+6-substituted-2-pyridinylmethylamines	ISA26421; ISA50047
+2-benzimidazolylcarbamic acids	ISA22715; ISA33709
+Haloacetanilides	ISA22160; ISA36684
+M-haloacetanilides	ISA22160; ISA36684
+P-haloacetanilides	ISA22160; ISA36684
+N-acylcarbazoles	ISA48513; ISA37622
+Chloro-s-triazines	ISA26588; ISA36683
+Cyclic dithiocarbamic acid esters	ISA23003
+Cyclohexene oximes	ISA24983
+Cyclopropylisoxazoles	ISA55373
+3-cyclopropylisoxazoles	ISA55373
+4-cyclopropylisoxazoles	ISA55373
+5-cyclopropylisoxazoles	ISA55373
+Dichlorophenyl dicarboximides	ISA35356; ISA23697
+Formamidines	ISA51917
+Formamidine disulfides	ISA35489
+"2-methoxy-1,3,5-triazines"	ISA26588; ISA35618
+"4-methoxy-1,2,3-triazines"	ISA59099; ISA35618
+Oxadiazines	ISA38101; ISA26912; ISA25693
+"1,2,3-oxadiazines"	ISA38101; ISA26912; ISA25693
+"1,2,4-oxadiazines"	ISA38101; ISA26912; ISA25693
+"1,2,5-oxadiazines"	ISA38101; ISA26912; ISA25693
+"1,3,4-oxadiazines"	ISA38101; ISA26912; ISA25693
+"1,3,5-oxadiazines"	ISA38101; ISA26912; ISA25693
+3-phenoxypropionic acids	ISA35618; ISA33575
+Phenylenediamines	ISA51402
+M-phenylenediamines	ISA51402
+O-phenylenediamines	ISA51402
+P-phenylenediamines	ISA51402
+2-pyrimidinylthiobenzoic acids	ISA39447; ISA33307
+Cyclic sulfite esters	ISA39088
+Aldoxime carbamates	ISA23003
+Ketoxime carbamates	ISA23003
+Furanilides	ISA24129; ISA62733
+Furan-3-carboxylic acids	ISA36055
+Furan-3-carboxylic acid amides	ISA24129; ISA62733
+Furan-3-carboxylic acid esters	ISA24129; ISA33308
+7-benzofuranyl methylcarbamates	ISA35259; ISA23003
+Oxime organothiophosphates	ISA37512
+Phenylphosphonothioates	ISA37512
+Phenyl phenylphosphonothioates	ISA37512
+Cyanoacrylates	ISA18379; ISA79020
+Phenyl ethylphosphonothioates	ISA36360
+"1,3,4-thiadiazol-3-yl-organothiophosphates"	ISA39467
+Pyrimidinyl phosphorothioates	ISA37512
+2-methoxychromones	ISA72013
+3-methoxychromones	ISA72013
+Organic nitroso compounds	ISA35800
+Organic N-nitroso compounds	ISA35803
+Organic O-nitroso compounds	ISA35800
+Organic S-nitroso compounds	ISA35800
+Organic thionitrous acids	ISA35800
+Trialkylglycerols	ISA52575
+Episulfones	ISA35850; ISA38106
+Methoxylated amphetamines	ISA35338
+N-acylimidazoles	ISA38308
+Methylcarbamates	ISA23003
+Diazanaphthalenes	ISA27171
+Benzodiazines	ISA27171
+Thiuram monosulfides	ISA26835
+"Dithiophosphate S,S-diesters"	ISA37512
+CDP-ethanolamines	ISA25604
+Methoxyphenylisopropylamines	ISA35618; ISA50047
+"1,3-oxazolobenzo-1,4-diazepines"	ISA26979
+5'-S-alkylthio-5'-deoxyribonucleosides	ISA36988; ISA16385
+5'-azido-5'-deoxyribonucleosides	ISA36988
+Organic dichromates	ISA35403
+Benzotropolones	ISA36785
+Alkoxides	ISA25696
+Methoxides	ISA25696
+Alpha-chloroketones	ISA51841
+Indole-3-carbinol and derivatives	ISA24828
+"2,5-disubstituted morpholines"	ISA38785
+Acenaphthylenes	ISA38033
+Ecdysteroids	ISA23897
+Punaglandins and related compounds	ISA23899
+Fluoromethoxy benzamides	ISA22702; ISA37143
+"N'-substituted-N,N'-diacylhydrazines"	ISA35363
+B-type proanthocyanidins	ISA26267
+Inorganic chromium trioxides	ISA48235
+Organic chromium trioxides	ISA48235
+C8-prenylated coumarins	ISA23403
+"4-hydroxy-6,7-benzomorphans"	ISA26979; ISA35990
+"2,6-dimethyl-3-benzazocines"	ISA39307
+4-azaandrostanes	ISA50402; ISA35726
+Pyridinolates	ISA25696
+Selenenic acids	ISA25712
+A-type proanthocyanidins	ISA26267
+C-type proanthocyanidins	ISA26267
+Dipeptides	ISA46761
+Oligopeptides	ISA25676

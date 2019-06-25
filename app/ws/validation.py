@@ -432,7 +432,6 @@ class Validation(Resource):
         if log_category is None:
             log_category = 'all'
 
-        levels = Levels(log_category)
         return validate_study(study_id, study_location, user_token, obfuscation_code, section, log_category)
 
 
@@ -666,6 +665,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
         assay_header = get_table_header(assay_df, study_id, assay_file_name)
         for header in assay_header:
+            if len(header) == 0:
+                add_msg(validations, val_section,
+                        "Assay sheet '" + assay.filename + "' has empty column header(s)",
+                        error, assay.filename, val_sequence=2.1, log_category=log_category)
+
             if 'Term ' not in header and 'Protocol REF' not in header and 'Unit' not in header:
                 assays.append(header)
 
@@ -674,7 +678,23 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         if assay_type != 'a':  # Not created from the online editor, so we have to skip this validation
             tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type = \
                 get_assay_headers_and_protcols(assay_type)
-            for template_header in tidy_header_row:
+            for idx, template_header in enumerate(tidy_header_row):
+
+                assay_header_pos = None
+                for idx, key in enumerate(assay_header):
+                    if key == template_header:
+                        assay_header_pos = idx  # template_header[idx]
+                        break
+
+                if idx != assay_header_pos:
+                    add_msg(validations, val_section,
+                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is not in the correct position",
+                            error, assay.filename, val_sequence=2.2, log_category=log_category)
+                else:
+                    add_msg(validations, val_section,
+                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is in the correct position",
+                            success, assay.filename, val_sequence=2.2, log_category=log_category)
+
                 if template_header not in assay_header:
                     msg_type = error
                     if template_header in ('Parameter Value[Guard column]', 'Parameter Value[Autosampler model]'):
@@ -687,6 +707,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         # Are all relevant rows filled in?
         if not assay_df.empty:
             all_rows = assay_df.shape[0]
+            a_header = str(a_header)  # Names like '1' and '2', gets interpereted as '1.0' and '2.0'
             for a_header in assays:
                 validate_column, required_column, val_descr = get_assay_column_validations(validation_schema, a_header)
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
@@ -717,10 +738,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
             if all_assay_names:
                 if len(all_assay_names) < all_rows:
-                    add_msg(validations, val_section, "MS/NMR Assay name column must contain unique values",
+                    add_msg(validations, val_section, "MS/NMR Assay name column must only contain unique values",
                             error, assay.filename, val_sequence=4, log_category=log_category)
                 else:
-                    add_msg(validations, val_section, "MS/NMR Assay name column contains unique values",
+                    add_msg(validations, val_section, "MS/NMR Assay name column only contains unique values",
                             success, assay.filename, val_sequence=4, log_category=log_category)
 
         # Correct MAF?
@@ -887,7 +908,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                 if s_header == 'Characteristics[Organism]':
                     if 'human' == row.lower() or 'man' == row.lower():
                         human_found = True
-                    elif len(row) <= 5:  # ToDo, read from all_val[idx][ontology-details][rules][0][value]
+                    elif len(row) < 5:  # ToDo, read from all_val[idx][ontology-details][rules][0][value]
                         too_short = True
 
                     if row.lower() in incorrect_species:
@@ -913,6 +934,9 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                 if s_header == 'Characteristics[Variant]':  # This is a new column we like to see, but not mandatory
                     val_stat = info
 
+                if 'Factor Value' in s_header:  # User defined factors may not all have data in all rows
+                    val_stat = info
+
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing values. " +
                         str(col_rows) + " rows found, but there should be " + str(all_rows), val_stat, file_name,
                         val_sequence=6, log_category=log_category)
@@ -920,20 +944,20 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' has correct number of rows",
                         success, file_name, val_sequence=7, log_category=log_category)
 
-            if sample_name_list:
-                if len(sample_name_list) != all_rows:
-                    add_msg(validations, val_section, "Sample name column must contain unique values",
-                            error, file_name, val_sequence=4, log_category=log_category)
-                else:
-                    add_msg(validations, val_section, "Sample name column contains unique values",
-                            success, file_name, val_sequence=4, log_category=log_category)
+        if sample_name_list:
+            if len(sample_name_list) != all_rows:
+                add_msg(validations, val_section, "Sample name column must contain unique values",
+                        error, file_name, val_sequence=4, log_category=log_category)
+            else:
+                add_msg(validations, val_section, "Sample name column contains unique values",
+                        success, file_name, val_sequence=4, log_category=log_category)
 
     if human_found:
         add_msg(validations, val_section,
                 "Organism can not be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
                 error, file_name, val_sequence=8, log_category=log_category)
     if too_short:
-        add_msg(validations, val_section, "Organism name is missing or too short (>=5 characters)", error, file_name,
+        add_msg(validations, val_section, "Organism name is missing or too short (<5 characters)", error, file_name,
                 val_sequence=9, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
