@@ -707,8 +707,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         # Are all relevant rows filled in?
         if not assay_df.empty:
             all_rows = assay_df.shape[0]
-            a_header = str(a_header)  # Names like '1' and '2', gets interpereted as '1.0' and '2.0'
             for a_header in assays:
+                a_header = str(a_header)  # Names like '1' and '2', gets interpereted as '1.0' and '2.0'
                 validate_column, required_column, val_descr = get_assay_column_validations(validation_schema, a_header)
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
                 try:
