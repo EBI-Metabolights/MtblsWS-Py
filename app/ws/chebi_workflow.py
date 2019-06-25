@@ -221,8 +221,8 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
             # If you try using unixode delta: '\u03b4', UnicodeEncodeError: 'latin-1' codec can't encode character '\u03b4' in position 8: ordinal not in range(256)
     #        comp_name = comp_name.encode('ascii', 'ignore')  # Make sure it's only searching using ASCII encoding
 
-            if '/' in comp_name and ':' not in comp_name:  # Not a real name if it has a '/', but valid for lipids ':'
-                comp_name = comp_name.replace('/', ' ')
+            # if '/' in comp_name and ':' not in comp_name:  # Not a real name if it has a '/', but valid for lipids ':'
+            #     comp_name = comp_name.replace('/', ' ')
 
             search_res = wsc.get_maf_search("name", comp_name)  # This is the standard MetaboLights aka Plugin search
             if not search_res:
@@ -351,7 +351,7 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
                     # and the classyFire SDF
                     sdf_file_list, classyfire_id = get_sdf(study_location, pc_cid, pc_name, sdf_file_list,
                                             final_inchi, classyfire_search)
-                    pubchem_df.iloc[row_idx, 32] = classyfire_id
+                    #  pubchem_df.iloc[row_idx, 32] = classyfire_id
 
             pubchem_df.iloc[row_idx, 5] = row_idx + 1  # Row id
             pubchem_df.iloc[row_idx, 6] = '1'  # Search flag
@@ -392,6 +392,7 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_
     return_format = 'sdf'  # 'json' will require a new root element to separate the entries before merging
     classyfire_file_name = classyfire_file_name + '.' + return_format
 
+    # ToDo, only write files if we have downloaded SDF files
     # Create a new concatenated SDF file
     with open(sdf_file_name, 'w') as outfile:
         # SDF file list = [file name, classyFire process id]
@@ -805,8 +806,8 @@ def pubchem_search(comp_name, search_type='name'):
             if synonyms:
                 synonyms = synonyms.replace(";", "", 1)  # Remove the leading ";"
 
-            logger.debug('Searching PubChem for "' + comp_name + '", got cid "' + str(cid) +
-                         '" and iupac name "' + iupac + '"')
+            print_log("    -- Searching PubChem for '" + comp_name + "', got cid '" + str(cid) +
+                      "' and iupac name '" + iupac + "'")
     except Exception as error:
         logger.error("Unable to search PubChem for compound " + comp_name)
         logger.error(error)
@@ -815,6 +816,7 @@ def pubchem_search(comp_name, search_type='name'):
 
 
 def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
+    classyfire_id = None
     if study_location and cid:
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
