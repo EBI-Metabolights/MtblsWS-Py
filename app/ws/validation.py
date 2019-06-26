@@ -797,7 +797,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
         full_file_name = os.path.join(study_location, file_name)
 
-        if file_name != 'audit':
+        if file_name != 'audit' or file_name != 'chebi_pipeline_annotations':  # Don't check our internal folders
             if os.path.isdir(os.path.join(full_file_name)):
                 for sub_file_name in os.listdir(full_file_name):
                     if is_empty_file(os.path.join(full_file_name, sub_file_name)):
@@ -946,7 +946,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
 
         if sample_name_list:
             if len(sample_name_list) != all_rows:
-                add_msg(validations, val_section, "Sample name column must contain unique values",
+                add_msg(validations, val_section, "Sample name column must only contain unique values",
                         error, file_name, val_sequence=4, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Sample name column contains unique values",

@@ -790,7 +790,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             return 'compressed', active_status, folder
         else:
             return 'compressed', none_active_status, folder
-    elif fname == 'metexplore_mapping.json':
+    elif fname == 'metexplore_mapping.json' or fname == 'chebi_pipeline_annotations':
         return 'internal_mapping', active_status, folder
     elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
         return 'maf_pipeline_file', active_status, folder

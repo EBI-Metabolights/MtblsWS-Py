@@ -144,7 +144,8 @@ def check_if_unknown(comp_name):
 
 def clean_comp_name(comp_name):
     comp_name = comp_name.replace('/', '').replace(' ', '').replace('(', '').replace(')', '') \
-        .replace(',', '').replace(':', '').replace(';', '').replace('\\', '').replace('-', '')
+        .replace(',', '').replace(':', '').replace(';', '').replace('\\', '').replace('-', '')\
+        .replace('\'', '').replace('"', '')
     return comp_name
 
 
@@ -206,10 +207,12 @@ def search_and_update_maf(study_location, annotation_file_name, classyfire_searc
 
         final_cid = None
         if exiting_pubchem_file:
-            if str(row[2]) == '1.0':  # This is the already searched flag in the spreadsheet
+            if str(row[2]) == '1.0' or str(row[2]) == '1':  # This is the already searched flag in the spreadsheet
                 search = False
             final_cid = row[3]
         print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
+
+        pubchem_df.iloc[row_idx, 5] = row_idx + 1  # Row id
 
         if search and comp_name and check_if_unknown(comp_name):
             # So if have a name, but no ChEBI id, try to search for it  # ToDo, use final_cid
@@ -396,19 +399,23 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_
     # Create a new concatenated SDF file
     with open(sdf_file_name, 'w') as outfile:
         # SDF file list = [file name, classyFire process id]
-        short_df = pubchem_df[["pubchem_cid", "classyfire_search_id"]]
-        for row in short_df.iterrows():
-            fname, cf_id = row[1]
-            fname = fname + '.sdf'
-        # for fname in sdf_file_list:
-            # First remove the hydrogens. OpenBabel 'Delete hydrogens (make implicit)'
-            # remove_hydrogens(fname)
-            try:
-                with open(os.path.join(study_location, fname)) as infile:
-                    for line in infile:
-                        outfile.write(line)
-            except Exception as e:
-                print_log("       -- Warning, no SDF file was downloaded for this PubChem compound")
+        # short_df = pubchem_df[["pubchem_cid", "classyfire_search_id"]]
+        short_df = pubchem_df["pubchem_cid"]
+        for row in short_df:
+            cf_id = None
+            if len(str(row)) > 0:
+                # fname, cf_id = row[1]
+                fname = row
+                fname = fname + '.sdf'
+            # for fname in sdf_file_list:
+                # First remove the hydrogens. OpenBabel 'Delete hydrogens (make implicit)'
+                # remove_hydrogens(fname)
+                try:
+                    with open(os.path.join(study_location, fname)) as infile:
+                        for line in infile:
+                            outfile.write(line)
+                except Exception as e:
+                    print_log("       -- Warning, no SDF file was downloaded for this PubChem compound." + str(e))
 
             # Now, get the classyFire queries, add to classyfire_file_name and get ancestors
             get_classyfire_results(cf_id, classyfire_file_name, return_format, classyfire_search)
@@ -674,7 +681,7 @@ def create_pubchem_df(maf_df):
     pubchem_df['direct_parent'] = ''        # 29
     pubchem_df['alternate_parent'] = ''     # 30
     pubchem_df['mtbls_acc'] = ''            # 31
-    pubchem_df['classyfire_search_id'] = ''  # 32
+    pubchem_df['classyfire_search_id'] = '' # 32
 
     return pubchem_df
 
