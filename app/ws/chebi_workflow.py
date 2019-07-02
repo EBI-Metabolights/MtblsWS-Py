@@ -158,7 +158,7 @@ def check_if_unknown(comp_name):
 
 
 def clean_comp_name(comp_name):
-    remove_chars = ['/', ' ', '(', ')', ')', ',', ':', ';', '\\', '-', '\'', '"', '?', '{', '}']
+    remove_chars = ['/', ' ', '(', ')', ')', ',', ':', ';', '\\', '-', '\'', '"', '?', '{', '}', '*']
 
     for c in remove_chars:
         comp_name = comp_name.replace(c, '')
@@ -258,11 +258,13 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
             alt_name = str(alt_name)
             if len(alt_name) > 0:
                 comp_name = alt_name
-                #  print_log("    -- Using alt_name '" + alt_name + "'")
 
         print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
 
         pubchem_df.iloc[row_idx, 5] = row_idx + 1  # Row id
+
+        if comp_name == alt_name:
+            print_log("    -- Using alt_name '" + alt_name + "'")
 
         if search and comp_name and check_if_unknown(comp_name):
             # So if have a name, but no ChEBI id, try to search for it  # ToDo, use final_cid
@@ -280,7 +282,7 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                 start_time = time.time()
                 chebi_found = False
                 comp_name = comp_name.strip()  # Remove leading/trailing spaces before we search
-                comp_name = comp_name.replace("Î´", "delta").replace("?", "")
+                comp_name = comp_name.replace("Î´", "delta").replace("?", "").replace("*", "")
                 if '[' in comp_name:
                     comp_name = comp_name.replace("[U]", "").replace("[S]", "")
                     comp_name = re.sub(re.escape(r'[iso\d]'), '', comp_name)
@@ -373,29 +375,32 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                     pubchem_df.iloc[row_idx, 32] = study_id             # MTBLS accession
 
                     # Now we may have more information, so let's try to search ChEBI again
-
+                    search_type = ''
                     if final_inchi_key and len(final_inchi_key) > 0:
-                        chebi_id, inchi, inchikey, name, smiles, formula = direct_chebi_search(final_inchi_key, comp_name)
-                    elif comp_name:
-                        chebi_id, inchi, inchikey, name, smiles, formula = direct_chebi_search(
-                            final_inchi_key, comp_name, "external_db")
+                        chebi_id, inchi, inchikey, name, smiles, formula, search_type = direct_chebi_search(
+                            final_inchi_key, comp_name, search_type="inchi")
+                    elif get_relevant_synonym(comp_name):  # Do we know the source, ie. KEGG, HMDB?
+                        chebi_id, inchi, inchikey, name, smiles, formula, search_type = direct_chebi_search(
+                            final_inchi_key, comp_name, search_type="external_db")
                     else:
-                        chebi_id, inchi, inchikey, name, smiles, formula = direct_chebi_search(
-                            final_inchi_key, comp_name, "external_db")  # ToDo, not really required
+                        chebi_id, inchi, inchikey, name, smiles, formula, search_type = direct_chebi_search(
+                            final_inchi_key, comp_name, search_type="synonym")
 
                     if chebi_id:
                         database_identifier = chebi_id
                         chemical_formula = formula
-                        smiles = smiles
-                        inchi = inchi
-                        name = name
+                        # smiles = smiles
+                        # inchi = inchi
+                        # name = name
 
-                        print_log('    -- Found ChEBI id ' + database_identifier + ' based on final InChIKey')
+                        print_log("    -- Found '" + name + "', ChEBI id " + database_identifier +
+                                  " based on direct search, type: " + search_type)
                         pubchem_df.iloc[row_idx, 0] = database_identifier
                         pubchem_df.iloc[row_idx, 1] = chemical_formula
                         pubchem_df.iloc[row_idx, 2] = smiles
                         pubchem_df.iloc[row_idx, 3] = inchi
                         # 4 is name / metabolite_identification from MAF
+                        pubchem_df.iloc[row_idx, 34] = search_type  # ChEBI search category/type for logging
 
                         if name:  # Add to the annotated file as well
                             if database_identifier:
@@ -681,6 +686,9 @@ def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
         elif search_type == "external_db" and comp_name:
             print_log("    -- Querying ChEBI web services for " + comp_name + " using external database id search")
             lite_entity = client.service.getLiteEntity(comp_name, 'DATABASE_LINK_REGISTRY_NUMBER_CITATION', '10', 'ALL')
+        elif search_type == "synonym" and comp_name:
+            print_log("    -- Querying ChEBI web services for " + comp_name + " using synonym search")
+            lite_entity = client.service.getLiteEntity(comp_name, 'ALL_NAMES', '10', 'ALL')
 
         if lite_entity and lite_entity[0]:
             top_result = lite_entity[0]
@@ -706,7 +714,7 @@ def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
     except Exception as e:
         logger.error("ChEBI Search error: " + str(e))
         print_log('    -- Error querying ChEBI')
-    return chebi_id, inchi, inchikey, name, smiles, formula
+    return chebi_id, inchi, inchikey, name, smiles, formula, search_type
 
 
 def get_csid(inchikey):
@@ -783,6 +791,7 @@ def create_pubchem_df(maf_df):
     pubchem_df['alternate_parent'] = ''         # 31
     pubchem_df['mtbls_acc'] = ''                # 32
     pubchem_df['classyfire_search_id'] = ''     # 33
+    pubchem_df['chebi_search_type'] = ''        # 34
 
     return pubchem_df
 

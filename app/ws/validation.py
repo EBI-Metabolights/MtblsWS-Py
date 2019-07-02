@@ -298,6 +298,9 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 except:
                     add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' not found in the MAF",
                             warning, val_sequence=8, log_category=log_category)
+    else:
+        add_msg(validations, val_section, "MAF '" + file_name + "' is empty. Please add metabolite annotation details",
+                error, val_sequence=8, log_category=log_category)
 
 
 def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, log_category=error):
@@ -321,20 +324,6 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
             add_msg(validations, val_section, "Missing values for sample '" + column_name + "' in the MAF. " +
                     str(col_rows) + " rows found, but there should be " + str(all_rows),
                     info, val_sequence=11, log_category=log_category)
-
-
-class Levels(object):
-
-    def __init__(self, level=None):
-        self.level = level
-
-    @property
-    def level(self):
-        return self._level
-
-    @level.setter
-    def level(self, value):
-        self._level = value
 
 
 class Validation(Resource):
