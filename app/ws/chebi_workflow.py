@@ -62,11 +62,12 @@ database_identifier_column = "database_identifier"
 
 def read_sdf_file(sdf_file_name):
     mols = None
-    with open(sdf_file_name, 'r') as infile:
-        mols = ctfile.load(infile)
-
-    if mols:
-        return mols
+    try:
+        with open(sdf_file_name, 'r', encoding='utf-8') as infile:
+            mols = ctfile.load(infile)
+    except Exception as e:
+        print_log("    -- Could not read MOL structure in file " + sdf_file_name + ". Error: " + str(e))
+    return mols
 
 
 def split_rows(maf_df, annotation_file=None):
@@ -419,8 +420,8 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                 changed = True
         else:
             pubchem_df.iloc[row_idx, 6] = '1'  # Search flag set so we don't search for unknown again
-            print_log("    -- Skipping. Already found or no database id/compound name to search for: "
-                      + database_id + " " + comp_name)
+            print_log("    -- Skipping. Already found or no database id/compound name to search for: '"
+                      + database_id + "' '" + comp_name + "'")
 
         pubchem_df.iloc[row_idx, 6] = '1'  # Search flag set so we don't search for unknown again
 
@@ -461,19 +462,20 @@ def create_annotation_folder(folder_loc):
 def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_file_name, classyfire_search):
     return_format = 'sdf'  # 'json' will require a new root element to separate the entries before merging
     classyfire_file_name = classyfire_file_name + '.' + return_format
+    all_ancestors = []
+
+    classyfire_df = get_classyfire_lookup_mapping()
 
     # ToDo, only write files if we have downloaded SDF files
     # Create a new concatenated SDF file
     with open(sdf_file_name, 'w') as outfile:
-        # SDF file list = [file name, classyFire process id]
-        # short_df = pubchem_df[["pubchem_cid", "classyfire_search_id"]]
         short_df = pubchem_df[["pubchem_cid", database_identifier_column, 'classyfire_search_id']]
         for idx, row in short_df.iterrows():
-            cf_id = None
-            db_id = None
             cid = row["pubchem_cid"]
             cid = str(cid).rstrip('.0')
             db_id = row[database_identifier_column]
+            cf_id = row["classyfire_search_id"]
+            cf_id = str(cf_id).rstrip('.0')
 
             if cid and not db_id:
 
@@ -481,12 +483,12 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_
                 full_file = os.path.join(study_location, fname)
 
                 # Now, get the classyFire queries, download sdf files
-                all_ancestors = get_classyfire_results(cf_id, full_file, return_format, classyfire_search)
+                all_ancestors = get_classyfire_results(cf_id, full_file, return_format, classyfire_search,
+                                                       all_ancestors, classyfire_df)
 
                 #ToDo, merge data from Classyfire SDF into new PubChem SDF
                 if all_ancestors:
-                    print_log("       -- adding ancestors to SDF file (" + fname + ".sdf)")
-
+                    print_log("       -- adding ancestors to SDF file " + fname)
 
                 # ToDo, After we have the new PubChem SDF, merge all new SDFs into one larger SDF for ChEBI submission
                 if os.path.isfile(full_file):
@@ -497,7 +499,7 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_
                     except Exception as e:
                         print_log("       -- Warning, can not read SDF file (" + full_file + ")")
                 else:
-                    print_log("    -- Will try to downbload SDF file for CID " + cid)
+                    print_log("    -- Will try to download SDF file for CID " + cid)
                     pcp.download('SDF', full_file, cid, overwrite=True)  # try to pull down the sdf from PubChem
 
         outfile.close()
@@ -535,34 +537,47 @@ def classyfire(inchi):
     return query_id
 
 
-def get_classyfire_results(query_id, classyfire_file_name, return_format, classyfire_search):
-    all_ancestors = None
+def get_classyfire_results(query_id, classyfire_file_name, return_format, classyfire_search,
+                           all_ancestors, classyfire_df):
 
     if classyfire_search and query_id:
         try:
-            url = app.config.get('CLASSYFIRE_ULR')
-            r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
-                             headers={"Content-Type": "application/%s" % return_format})
-            time.sleep(2)  # Give ClassyFire time to recover first ;-)
-            r.raise_for_status()
-
             classyfire_file_name = classyfire_file_name.replace(".sdf", "_classyfire.sdf")
+            if not os.path.isfile(classyfire_file_name):
+                start_time = time.time()
+                print_log("  -- Getting ClassyFire SDF for query id: " + str(query_id))
+                url = app.config.get('CLASSYFIRE_ULR')
+                r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
+                                 headers={"Content-Type": "application/%s" % return_format})
+                time.sleep(3)  # Give ClassyFire time to recover first ;-)
+                r.raise_for_status()
 
-            if len(r.text) > 1:
-                with open(classyfire_file_name) as cf_file:
-                    cf_file.write(r.text)
+                try:
+                    if len(r.text) > 1:
+                        text = r.text
+                        with open(classyfire_file_name, 'w', encoding='utf-8') as cf_file:
+                            cf_file.write(text)
+                except Exception as e:
+                    print_log("    -- ERROR: Could not read classyFire SDF file " + classyfire_file_name
+                              + ". Error:" + str(e))
 
-            if os.path.isfile(classyfire_file_name):
-                mols = read_sdf_file()
-                if mols:
-                    print_log("hi")
+                print_log("    -- ClassyFire SDF download took %s seconds" % round(time.time() - start_time, 2))
+            else:
+                print_log("  -- Already downloaded ClassyFire SDF for query id: " + str(query_id))
+
+            # try:
+            #     if os.path.isfile(classyfire_file_name):
+            #         mols = read_sdf_file(classyfire_file_name)
+            #         if mols:
+            #             print_log("    -- Found MOL structure in file ")
+            # except Exception as e:
+            #     print_log("    -- ERROR: Could not read classyFire SDF for " + query_id)
 
             if classyfire_search:
-                all_ancestors = get_ancestors(classyfire_file_name)
+                all_ancestors = get_ancestors(all_ancestors, classyfire_file_name, classyfire_df)
 
         except Exception as e:
-            logger.error("Could not get classyfire result for " + query_id)
-            logger.error(str(e))
+            print_log("    -- ERROR: Could not get classyFire SDF for " + query_id + ". Error:" + str(e))
 
     return all_ancestors
 
@@ -573,33 +588,42 @@ def load_chebi_classyfire_mapping():
     return read_tsv(mapping_file)
 
 
-def get_ancestors(classyfire_file_name):
+def get_ancestors(all_ancestors, classyfire_file_name, classyfire_df):
 
     lines = []
     inchi_key = ""
     parent_name = ""
     direct_parents = []
-    is_a_list = []
-    all_ancestors = []
-    classyfire_df = get_classyfire_lookup_mapping()
-    with open(classyfire_file_name, 'r') as infile:
-        for line in infile:
-            lines.append(line.rstrip('\n'))
+    try:
+        with open(classyfire_file_name, 'r', encoding="utf-8") as infile:
+            for line in infile:
+                lines.append(line.rstrip('\n'))
 
-    for idx, line in enumerate(lines):
+        for idx, line in enumerate(lines):
 
-        if line == "> <InChIKey>":
-            inchi_key = lines[idx+1]
-        elif line == "> <Direct Parent>":
-            parent_name = lines[idx+1]
-            if parent_name not in direct_parents:
-                direct_parents.append(parent_name)
-        elif line == "> <Alternative Parents>":
-            row = classyfire_df.loc[classyfire_df['name'] == parent_name]
-            is_a = row['map_to']  # Get the IS_A relationships
-            all_ancestors.append({"inchi_key": inchi_key.replace('InChiKey=', ''),
-                                  "direct_parent": parent_name,
-                                  "is_a": is_a})
+            inchi_key = None
+            parent_name = None
+            is_a = None
+
+            if line == "> <InChIKey>":
+                inchi_key = lines[idx+1]
+            elif line == "> <Direct Parent>":
+                parent_name = lines[idx+1]
+                if parent_name not in direct_parents:
+                    direct_parents.append(parent_name)
+            # elif line == "> <Alternative Parents>":
+
+            if parent_name:
+                row = classyfire_df.loc[classyfire_df['name'] == parent_name]
+                is_a = row['map_to']  # Get the IS_A relationships
+
+            if inchi_key and parent_name and is_a:
+                all_ancestors.append({"inchi_key": inchi_key.replace('InChiKey=', ''),
+                                      "direct_parent": parent_name, "c_sdf_file": classyfire_file_name,
+                                      "is_a": is_a})
+
+    except Exception as e:
+        print_log("    -- Could not read from SDF file: " + classyfire_file_name + ". Error: " + str(e))
 
     # onto = get_chebi_obo_file()
     # for compound_name in direct_parents:
@@ -917,7 +941,10 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
             pcp.download('SDF', full_file, cid, overwrite=True)
 
     if classyfire_search and final_inchi:
+        print_log("    -- Getting SDF from ClassyFire for  " + str(final_inchi))
         classyfire_id = classyfire(final_inchi)
+    else:
+        print_log("    -- Final InChI missing, can not download ClassyFire SDF")
 
     sdf_file_list.append([file_name, classyfire_id])
 
