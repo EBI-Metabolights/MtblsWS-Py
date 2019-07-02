@@ -610,7 +610,7 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
             add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
                     success, assay.filename, val_sequence=7, log_category=log_category)
         else:
-            if len(row)==0:
+            if len(row) == 0:
                 add_msg(validations, val_section, "Sample name '" + row + "' can not be empty",
                         error, meta_file=assay.filename, descr="Please add a valid sample name",
                         val_sequence=8, log_category=log_category)
@@ -624,13 +624,39 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
         if file_and_column not in unique_file_names:
             if row != "":  # Do not add a section if a column does not list files
                 unique_file_names.append(file_and_column)
-    elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the
+    elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the assay
         row = str(row)
         if row not in all_assay_names:
             if len(row) >= 1:
                 all_assay_names.append(row)
 
     return all_samples, all_assay_names, validations, unique_file_names
+
+
+def check_assay_file_references(a_header, row, col_rows, validations, val_section, assay, log_category=error):
+    raw_found = False
+    derived_found = False
+    col_rows = str(col_rows)
+
+    if a_header.endswith(' File'):
+        if a_header == 'Raw Spectral Data File':
+            if row:
+                raw_found = True
+        elif a_header == 'Derived Spectral Data File':
+            if row:
+                derived_found = True
+
+        if not raw_found and not derived_found:
+            add_msg(validations, val_section, "Raw or Derived Spectral Data Files were not referenced in assay row " + col_rows,
+                    success, assay.filename, val_sequence=7.1, log_category=log_category)
+        elif raw_found:
+            add_msg(validations, val_section, "Raw Spectral Data Files were referenced in assay row " + col_rows,
+                    success, assay.filename, val_sequence=7.1, log_category=log_category)
+        elif derived_found:
+            add_msg(validations, val_section, "Derived Spectral Data Files were referenced in assay row " + col_rows,
+                    success, assay.filename, val_sequence=7.1, log_category=log_category)
+
+    return validations
 
 
 def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
@@ -720,6 +746,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             check_assay_columns(a_header, all_assays, row, validations, val_section,
                                                 assay, unique_file_names, all_assay_names,
                                                 sample_name_list, log_category=log_category)
+
+                        if a_header.endswith(' File'):
+                            # ToDo, return a counter of raw and derived files, then check against all_rows
+                            validations = check_assay_file_references(a_header, row, col_rows, validations, val_section,
+                                                                      assay, log_category=log_category)
 
                     if (col_rows < all_rows) and validate_column:
                         add_msg(validations, val_section, "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing values. " +
