@@ -953,7 +953,7 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
         print_log("    -- Getting SDF from ClassyFire for  " + str(final_inchi))
         classyfire_id = classyfire(final_inchi)
     else:
-        print_log("    -- Final InChI missing, can not download ClassyFire SDF")
+        print_log("    -- Final InChI missing, do not download ClassyFire SDF")
 
     sdf_file_list.append([file_name, classyfire_id])
 

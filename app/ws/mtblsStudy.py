@@ -874,15 +874,31 @@ class CreateAccession(Resource):
             logger.error('Failed to create new study. ' + study_message)
             abort(503, "Could not create a new study.")
 
-        time.sleep(3)  # give the Java WebService time to recover! ;-)
+        time.sleep(5)  # give the Java WebService time to recover! ;-)
 
         data_dict = json.loads(study_message)
         study_acc = data_dict["message"]
-        logger.info('Created new study ' + study_acc)
+
+        # Now, if the production Tomcats have recently been restarted, we may not have a fully associated study yet
+        all_studies = get_all_studies_for_user(user_token)
+        found_new_study = False
+        for j_study in all_studies:
+            acc = j_study['accession']
+            if acc == study_acc:
+                found_new_study = True
+                break
+
+        if found_new_study:
+            logger.info('Created new study ' + study_acc)
+        else:
+            logger.error('Could not find new study %s for the user', study_acc)
 
         # We should have a new study now, so we need to refresh the local variables based on the new study
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_acc, user_token)
+
+        if not write_access:
+            abort(409, "Something went wrong with the creation of study " + study_acc)
 
         study_path = app.config.get('STUDY_PATH')
         from_path = study_path + 'DUMMY'
@@ -890,8 +906,9 @@ class CreateAccession(Resource):
 
         try:
             copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
-        except:
-            logger.error('Could not copy files from %s to %s', from_path, to_path)
+        except Exception as e:
+            logger.error('Could not copy files from %s to %s, Error ', from_path, to_path, str(e))
+            abort(409, "Something went wrong with the creation of study " + study_acc)
 
         # Create upload folder
         status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)
