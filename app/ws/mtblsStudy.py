@@ -908,12 +908,12 @@ class CreateAccession(Resource):
             copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
         except Exception as e:
             logger.error('Could not copy files from %s to %s, Error ', from_path, to_path, str(e))
-            abort(409, "Something went wrong with copying the ISA-Tab templates to study " + study_acc)
+            abort(409, "Something went wrong with copying the ISA-Tab templates to study " + str(study_acc))
 
         # Create upload folder
         status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)
 
-        if os.path.isfile(os.path.join(study_location, study_acc) + 'i_Investigation.txt'):
+        if os.path.isfile(os.path.join(to_path, 'i_Investigation.txt')):
             # Get the ISA documents so we can edit the investigation file
             isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
                                                              skip_load_tables=True, study_location=study_location)
