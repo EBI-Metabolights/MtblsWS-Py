@@ -115,7 +115,8 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
             destination = os.path.join(dst, item)
 
             if not include_investigation_file and item.startswith('i_'):
-                continue  # Do NOT copy any i_Investigation files from the upload folder
+                logger.info('Do NOT copy any i_Investigation files from the upload folder')
+                continue
 
             if item.startswith('i_') or item.startswith('s_') or item.startswith('a_') or item.startswith('m_'):
                 try:
@@ -124,18 +125,21 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                     diff = source_file_time - desc_file_time
                 except:
                     diff = 1  # if there is no destination file (in the study folder) then copy the file
+                    logger.error('Error copying metadata file %s to %s. Error %s', source, destination, str(e))
 
                 if diff > 0:
+                    logger.info('Will copy files')
                     copy_file(source, destination)
             else:
                 if include_raw_data:
                     try:
                         time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
-                    except FileNotFoundError:
+                    except FileNotFoundError as e:
                         time_diff = 1  # Destination folder does not exist
+                        logger.error('Error copying file %s to %s. Error %s', source, destination, str(e))
 
-                    if os.path.isdir(destination):
-                        pass  # We already have this folder
+                    # if os.path.isdir(destination):
+                    #     pass  # We already have this folder
 
                     if int(time_diff) >= 1:
                         if os.path.isdir(source):
@@ -143,7 +147,8 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                         else:  # elif not os.path.exists(destination):
                             shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
                             logger.info('Copied file %s to %s', source, destination)
-    except Exception:
+    except Exception as e:
+        logger.error(str(e))
         raise
 
 

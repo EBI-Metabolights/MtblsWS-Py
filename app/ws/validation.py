@@ -36,6 +36,9 @@ incorrect_species = \
     "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, chemical, food, matix, " \
     "mus, rat, blood, urine, plasma, hair, fur, skin, saliva, fly, unknown"
 
+last_name_black_list = ['last name', 'asdf', 'name', 'unknown']
+first_name_black_list = ['first name', 'asdf', 'name', 'unknown']
+
 correct_maf_order = [{0: "database_identifier"}, {1: "chemical_formula"}, {2: "smiles"},
                      {3: "inchi"}, {4: "metabolite_identification"}]
 
@@ -1134,13 +1137,21 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                     add_msg(validations, val_section, last_name_val_error, error, file_name, value=last_name,
                             descr=last_name_val_description, val_sequence=2, log_category=log_category)
 
+                if not validate_name(last_name, 'last_name'):
+                    add_msg(validations, val_section, "Person last name '" + last_name + "' is not valid ", error,
+                            file_name, val_sequence=1.1, log_category=log_category)
+
             if first_name:
-                if len(first_name) >= first_name_val_len:
+                if len(first_name) >= first_name_val_len or not validate_name(first_name, 'first_name'):
                     add_msg(validations, val_section, "Person first name '" + first_name + "' validates", success,
                             file_name, val_sequence=3, log_category=log_category)
                 else:
                     add_msg(validations, val_section, first_name_val_error, error, file_name, value=first_name,
                             descr=first_name_val_description, val_sequence=4, log_category=log_category)
+
+                if not validate_name(first_name, 'first_name'):
+                    add_msg(validations, val_section, "Person forst name '" + last_name + "' is not valid ", error,
+                            file_name, val_sequence=3.1, log_category=log_category)
 
             if email:
                 if len(email) >= 7:
@@ -1174,6 +1185,20 @@ def check_doi(pub_doi, doi_val):
         return False
 
     return True
+
+
+def validate_name(name, name_type):
+    validates = True
+    name = name.lower()
+
+    if name_type == 'last_name':
+        if name in last_name_black_list:
+            return False
+    elif name_type == 'first_name':
+        if name in first_name_black_list:
+            return False
+
+    return validates
 
 
 def validate_publication(isa_study, validation_schema, file_name, override_list, val_section="publication",
