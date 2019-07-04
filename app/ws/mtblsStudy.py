@@ -908,46 +908,49 @@ class CreateAccession(Resource):
             copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
         except Exception as e:
             logger.error('Could not copy files from %s to %s, Error ', from_path, to_path, str(e))
-            abort(409, "Something went wrong with the creation of study " + study_acc)
+            abort(409, "Something went wrong with copying the ISA-Tab templates to study " + study_acc)
 
         # Create upload folder
         status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)
 
-        # Get the ISA documents so we can edit the investigation file
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
-                                                         skip_load_tables=True, study_location=study_location)
+        if os.path.isfile(os.path.join(study_location, study_acc) + 'i_Investigation.txt'):
+            # Get the ISA documents so we can edit the investigation file
+            isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
+                                                             skip_load_tables=True, study_location=study_location)
 
-        # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
-        isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_acc)
+            # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
+            isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_acc)
 
-        # Set publication date to one year in the future
-        study_date = get_year_plus_one(isa_format=True)
-        isa_study.public_release_date = study_date
+            # Set publication date to one year in the future
+            study_date = get_year_plus_one(isa_format=True)
+            isa_study.public_release_date = study_date
 
-        # Updated the files with the study accession
-        iac.write_isa_study(
-            inv_obj=isa_inv, api_key=user_token, std_path=to_path,
-            save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
-        )
+            # Updated the files with the study accession
+            iac.write_isa_study(
+                inv_obj=isa_inv, api_key=user_token, std_path=to_path,
+                save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
+            )
 
-        try:
-            wsc.reindex_study(study_acc, user_token)
-        except:
-            logger.info("Could not index study " + study_acc)
+            try:
+                wsc.reindex_study(study_acc, user_token)
+            except:
+                logger.info("Could not index study " + study_acc)
 
-        # For ISA-API to correctly save a set of ISA documents, we need to have one dummy sample row
-        file_name = os.path.join(study_location, sample_file_name)
-        try:
-            sample_df = read_tsv(file_name)
-        except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
-            
-        try:
-            sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row, if there is one
-        except IndexError:
-            logger.info("No empty rows in the default sample sheet template, so nothing to remove")
+            # For ISA-API to correctly save a set of ISA documents, we need to have one dummy sample row
+            file_name = os.path.join(study_location, sample_file_name)
+            try:
+                sample_df = read_tsv(file_name)
+            except FileNotFoundError:
+                abort(400, "The file " + file_name + " was not found")
 
-        write_tsv(sample_df, file_name)
+            try:
+                sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row, if there is one
+            except IndexError:
+                logger.info("No empty rows in the default sample sheet template, so nothing to remove")
+
+            write_tsv(sample_df, file_name)
+        else:
+            abort(409, "Could not find ISA-Tab investigation template for study " + study_acc)
 
         return {"new_study": study_acc}
 

@@ -123,7 +123,7 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                     source_file_time = int(get_single_file_information(source))
                     desc_file_time = int(get_single_file_information(destination))
                     diff = source_file_time - desc_file_time
-                except:
+                except Exception as e:
                     diff = 1  # if there is no destination file (in the study folder) then copy the file
                     logger.error('Error copying metadata file %s to %s. Error %s', source, destination, str(e))
 
