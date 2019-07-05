@@ -523,7 +523,10 @@ class UnzipFiles(Resource):
             {"name": "Raw_files1.zip"},
             {"name": "Folders.zip"}
         ]
-    }</pre></code>''',
+    }</pre></code>
+    </p>
+    Please note that we will not extract "i_Investigation.txt" files into the main study folder.'''
+        ,
         parameters=[
             {
                 "name": "study_id",
@@ -624,11 +627,21 @@ class UnzipFiles(Resource):
 
         audit_status, dest_path = write_audit_files(study_location)
 
+        inv_message = ""
+
         for file in files:
             f_name = file["name"]
             try:
                 with zipfile.ZipFile(os.path.join(study_location, f_name), "r") as zip_ref:
-                    zip_ref.extractall(study_location)
+                    # zip_ref.extractall(study_location)
+                    list_of_file_names = zip_ref.namelist()
+                    for file_name in list_of_file_names:
+                        if not (file_name.startswith('i_') and file_name.endswith('.txt')):
+                            # Extract a single file from zip
+                            zip_ref.extract(file_name, path=study_location)
+                        else:
+                            inv_message = '. Investigation file not extracted'
+
             except Exception as e:
                 msg = 'Could not extract zip file ' + f_name
                 logger.error(msg + ":" + str(e))
@@ -642,9 +655,9 @@ class UnzipFiles(Resource):
                 logger.error(msg)
                 return {'Error': msg}
 
-        ret_msg = 'Files unzipped'
+        ret_msg = 'Files unzipped' + inv_message
         if remove_zip:
-            ret_msg = 'Files unzipped and removed'
+            ret_msg = 'Files unzipped and removed' + inv_message
 
         return {'Success': ret_msg}
 
