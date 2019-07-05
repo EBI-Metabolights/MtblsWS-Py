@@ -26,6 +26,7 @@ import ctfile
 import ssl
 import pronto
 import re
+import urllib.parse
 from subprocess import *
 from flask import current_app as app
 from zeep import Client
@@ -166,18 +167,33 @@ def clean_comp_name(comp_name):
     return comp_name
 
 
-def get_pubchem_substance(substance_id):
-    result = []
-    results = pcp.get_substances(substance_id, 'name')
-    for result in results:
-        return result  # Only return the top hit
+def get_pubchem_substance(comp_name, res_type):
+    results = []
+    result = ""
+    # comp_name = 'Barbatolic acid'
+    comp_name_url = urllib.parse.quote(comp_name)
+    url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/name/" + comp_name_url + "/cids/JSON"
 
+    resp = requests.get(url)
+    if resp.status_code == 200:
+        json_resp = resp.json()
+        results = json_resp
+
+    if resp.status_code == 404:
+        print_log("    -- Cound not find PubChem Substance for '" + comp_name + "'")
+
+    for result in results['InformationList']['Information'] if results else []:
+        print_log("    -- Found PubChem Substance for '" + comp_name + "'")
+        if res_type == 'cid':
+            result = result['CID'][0]  # Only return the top hit
+        else:
+            result = result['SID']
     return result
 
 
 def get_pubchem_synonyms(comp_name):
     result = []
-    results = pcp.get_synonyms(comp_name, namespace='cid', domain='compound', searchtype='synonym')
+    results = pcp.get_synonyms(comp_name + '/cids/', namespace='comp_name', domain='substance', searchtype='name')
     for result in results:
         return result  # Only return the top hit
 
@@ -327,9 +343,9 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                     pubchem_df.iloc[row_idx, 5] = ''  # Row id
                     pubchem_df.iloc[row_idx, 6] = ''  # Search flag
                     pubchem_df.iloc[row_idx, 7] = alt_name  # alt_name, for us to override the submitted name
-                    pubchem_df.iloc[row_idx, 34] = 'plugin_search'  # Search category/type for logging
 
                     if name:
+                        pubchem_df.iloc[row_idx, 34] = 'plugin_search'  # Search category/type for logging
                         if database_identifier:
                             if database_identifier.startswith('CHEBI:'):
                                 chebi_found = True
@@ -343,11 +359,10 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                             maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
 
                 if not chebi_found:  # We could not find this in ChEBI, let's try other sources
-                    pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure = \
-                        pubchem_search(comp_name, 'name')
+                    pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure, \
+                        where_found = pubchem_search(comp_name, 'name')
 
-                    if pc_name:
-                        pubchem_df.iloc[row_idx, 34] = 'pubchem_name'  # Search category/type for logging
+                    pubchem_df.iloc[row_idx, 34] = where_found  # Search category/type for logging
                     cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
                     opsin_stdinchikey = opsin_search(comp_name, 'stdinchikey')
                     cactus_smiles = cactus_search(comp_name, 'smiles')
@@ -436,12 +451,6 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                                 maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
 
                     else:
-                        # ToDo, check PubChem substance. Need substance_id!!!
-                        # substance = get_pubchem_substance(comp_name)
-
-                        # ToDo, check PubChem synonyms
-                        # from_synonym = get_pubchem_synonyms(comp_name)
-
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
                         sdf_file_list, classyfire_id = get_sdf(study_location, str(final_cid).rstrip('.0'), pc_name,
@@ -726,7 +735,7 @@ def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
         else:
             if final_inchi and len(final_inchi) > 0:
                 comp_name = clean_comp_name(comp_name)
-                print_log("    -- Querying ChEBI web services for " + comp_name)
+                print_log("    -- Querying ChEBI web services for " + comp_name + " using ChEBI name search")
                 lite_entity = client.service.getLiteEntity(final_inchi, 'CHEBI_NAME', '10', 'ALL')
                 if lite_entity:
                     top_result = lite_entity[0]
@@ -770,7 +779,7 @@ def get_pubchem_cid_on_inchikey(inchikey1, inchikey2):
     pc_cid = ''
     for inchikey in [inchikey1, inchikey2]:
         if inchikey:
-            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure = \
+            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure, from_where = \
                 pubchem_search(inchikey, search_type='inchikey')
             if pc_cid:
                 return pc_cid
@@ -923,6 +932,7 @@ def pubchem_search(comp_name, search_type='name'):
     formula = ''
     synonyms = ''
     structure = ''
+    where_found = ''
     print_log("    -- Searching PubChem for compound '" + comp_name + "'")
     try:
         compound = None
@@ -931,7 +941,16 @@ def pubchem_search(comp_name, search_type='name'):
         ssl._create_default_https_context = ssl._create_unverified_context  # If no root certificates installed
         try:
             pubchem_compound = get_compounds(comp_name, namespace=search_type)
+            where_found = 'pubchem_compound'
+            if not pubchem_compound:
+                print_log("    -- Querying PubChem Substance '" + comp_name + "'")
+                _cid = get_pubchem_substance(comp_name, 'cid')
+                if _cid:
+                    pubchem_compound = get_compounds(_cid, namespace='cid')
+                    where_found = 'pubchem_substance'
+
             compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
+
             print_log("    -- Found PubChem compound '" + compound.iupac_name + "'")
         except IndexError:
             print_log('    -- Could not find PubChem compound for ' + comp_name)   # Nothing was found
@@ -960,7 +979,7 @@ def pubchem_search(comp_name, search_type='name'):
         logger.error("Unable to search PubChem for compound " + comp_name)
         logger.error(error)
 
-    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, structure
+    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, structure, where_found
 
 
 def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
