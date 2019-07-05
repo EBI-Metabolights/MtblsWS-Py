@@ -47,6 +47,7 @@ iac = IsaApiClient()
 
 pubchem_end = "_pubchem.tsv"
 complete_end = "_complete.sdf"
+pubchem_sdf_extension = '_pubchem.sdf'
 classyfire_end = "_classyfire"
 anno_sub_folder = "chebi_pipeline_annotations"
 final_cid_column_name = "final_external_id"
@@ -165,6 +166,24 @@ def clean_comp_name(comp_name):
     return comp_name
 
 
+def get_pubchem_substance(substance_id):
+    result = []
+    results = pcp.get_substances(substance_id, 'name')
+    for result in results:
+        return result  # Only return the top hit
+
+    return result
+
+
+def get_pubchem_synonyms(comp_name):
+    result = []
+    results = pcp.get_synonyms(comp_name, namespace='cid', domain='compound', searchtype='synonym')
+    for result in results:
+        return result  # Only return the top hit
+
+    return result
+
+
 def get_existing_values(df, comp_name):
     print_log("    -- Checking if we have already searched for '" + comp_name + "'")
     row = df[(df.metabolite_identification == comp_name) &
@@ -277,6 +296,7 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                 pubchem_df.update(pubchem_df[['metabolite_identification']].merge(existing_row, 'left'))
                 pubchem_df.iloc[row_idx, 5] = row_idx + 1  # Update Row id again, not use the copied row
                 pubchem_df.iloc[row_idx, 7] = alt_name     # Add in the original alt name again
+                pubchem_df.iloc[row_idx, 34] = 'copy_existing_row'  # Search category/type for logging
                 changed = True
             else:
                 start_time = time.time()
@@ -307,6 +327,7 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                     pubchem_df.iloc[row_idx, 5] = ''  # Row id
                     pubchem_df.iloc[row_idx, 6] = ''  # Search flag
                     pubchem_df.iloc[row_idx, 7] = alt_name  # alt_name, for us to override the submitted name
+                    pubchem_df.iloc[row_idx, 34] = 'plugin_search'  # Search category/type for logging
 
                     if name:
                         if database_identifier:
@@ -325,6 +346,8 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                     pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure = \
                         pubchem_search(comp_name, 'name')
 
+                    if pc_name:
+                        pubchem_df.iloc[row_idx, 34] = 'pubchem_name'  # Search category/type for logging
                     cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
                     opsin_stdinchikey = opsin_search(comp_name, 'stdinchikey')
                     cactus_smiles = cactus_search(comp_name, 'smiles')
@@ -413,6 +436,12 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                                 maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
 
                     else:
+                        # ToDo, check PubChem substance. Need substance_id!!!
+                        # substance = get_pubchem_substance(comp_name)
+
+                        # ToDo, check PubChem synonyms
+                        # from_synonym = get_pubchem_synonyms(comp_name)
+
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
                         sdf_file_list, classyfire_id = get_sdf(study_location, str(final_cid).rstrip('.0'), pc_name,
@@ -484,7 +513,7 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_
 
             if cid and not db_id:
 
-                fname = cid + '.sdf'
+                fname = cid + pubchem_sdf_extension
                 full_file = os.path.join(study_location, fname)
 
                 # Now, get the classyFire queries, download sdf files
@@ -672,6 +701,8 @@ def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
     formula = ""
     url = app.config.get('CHEBI_URL')
     top_result = None
+
+    comp_name = clean_comp_name(comp_name)
 
     try:
         client = Client(url)
@@ -939,8 +970,8 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
 
-        print_log("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
-        file_name = cid + '.sdf'
+        print_log("    -- Checking if we have SDF for CID " + str(cid))
+        file_name = cid + pubchem_sdf_extension
         full_file = study_location + os.sep + anno_sub_folder + os.sep + file_name
 
         if os.path.isfile(full_file):
