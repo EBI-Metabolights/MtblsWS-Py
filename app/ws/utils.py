@@ -129,6 +129,8 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
 
                 if diff > 0:
                     logger.info('Will copy files')
+
+                    #ToDo, Jira 1418. Sample file contains a number after space. s_MTBLS1.txt vs incorrect s_MTBLS1 1.txt
                     copy_file(source, destination)
             else:
                 if include_raw_data:

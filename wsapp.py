@@ -42,6 +42,7 @@ from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, CheckCompounds
 from app.ws.biostudies import *
 from app.ws.spectra import ExtractMSSpectra
 from app.ws.study_actions import StudyStatus
+from app.ws.user_management import UserManagement
 
 """
 MTBLS WS-Py
@@ -154,6 +155,7 @@ def initialize_app(flask_app):
     api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
+    api.add_resource(UserManagement, res_path + "/ebi-internal/users")
     api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")

@@ -701,7 +701,7 @@ def get_is_a(onto, chebi_compound):
     return is_a_list
 
 
-def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
+def direct_chebi_search(final_inchi_key, comp_name, search_type="inchi"):
     chebi_id = ""
     inchi = ""
     inchikey = ""
@@ -720,9 +720,9 @@ def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
         return chebi_id, inchi, inchikey, name, smiles, formula
 
     try:
-        if search_type == "inchi" and final_inchi:
-            print_log("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi)
-            lite_entity = client.service.getLiteEntity(final_inchi, 'INCHI_INCHI_KEY', '10', 'ALL')
+        if search_type == "inchi" and final_inchi_key:
+            print_log("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi_key)
+            lite_entity = client.service.getLiteEntity(final_inchi_key, 'INCHI_INCHI_KEY', '10', 'ALL')
         elif search_type == "external_db" and comp_name:
             print_log("    -- Querying ChEBI web services for " + comp_name + " using external database id search")
             lite_entity = client.service.getLiteEntity(comp_name, 'DATABASE_LINK_REGISTRY_NUMBER_CITATION', '10', 'ALL')
@@ -733,10 +733,10 @@ def direct_chebi_search(final_inchi, comp_name, search_type="inchi"):
         if lite_entity and lite_entity[0]:
             top_result = lite_entity[0]
         else:
-            if final_inchi and len(final_inchi) > 0:
+            if final_inchi_key and len(final_inchi_key) > 0:
                 comp_name = clean_comp_name(comp_name)
                 print_log("    -- Querying ChEBI web services for " + comp_name + " using ChEBI name search")
-                lite_entity = client.service.getLiteEntity(final_inchi, 'CHEBI_NAME', '10', 'ALL')
+                lite_entity = client.service.getLiteEntity(final_inchi_key, 'CHEBI_NAME', '10', 'ALL')
                 if lite_entity:
                     top_result = lite_entity[0]
 

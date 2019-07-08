@@ -91,6 +91,83 @@ query_user_access_rights = """
 """
 
 
+def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
+                password_encoded, metaspace_api_key):
+
+    insert_user_query = \
+        "INSERT INTO users(address, affiliation, affiliationurl, apitoken, email, firstname, " \
+        "joindate, lastname, password, role, status, username, orcid, metaspace_api_key) " \
+        "VALUES ('address_value', 'affiliation_value', 'affiliationurl_value', 'apitoken_value', 'email_value', " \
+        "'firstname_value', current_timestamp, 'lastname_value', 'password_value', 2, 0, 'email_value', " \
+        "'orcid_value', 'metaspace_api_key_value' );"
+
+    subs = {"address_value": address, "affiliation_value": affiliation,
+            "affiliationurl_value": affiliation_url, "apitoken_value": api_token,
+            "email_value": email, "firstname_value": first_name, "lastname_value": last_name,
+            "password_value": password_encoded, "orcid_value": orcid, "metaspace_api_key_value": metaspace_api_key}
+
+    for key, value in subs.items():
+        insert_user_query = insert_user_query.replace(str(key), str(value))
+
+    query = insert_user_query
+
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn = psycopg2.connect(**params)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        conn.commit()
+        conn.close()
+        return True, "User account '" + email + "' created successfully"
+
+    except Exception as e:
+        return False, str(e)
+
+
+def update_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
+                password_encoded, existing_user_name, is_curator, metaspace_api_key):
+
+    update_user_query = \
+        "update users set address = 'address_value', affiliation = 'affiliation_value', " \
+        "affiliationurl = 'affiliationurl_value', email = 'email_value', " \
+        "firstname = 'firstname_value', lastname = 'lastname_value', username = 'email_value', " \
+        "orcid = 'orcid_value', metaspace_api_key = 'metaspace_api_key_value' " \
+        "where username = 'existing_user_name_value'"
+
+    if not is_curator:
+        update_user_query = update_user_query + " and apitoken = 'apitoken_value'"
+
+    update_user_query = update_user_query + ";"
+
+    subs = {"address_value": address, "affiliation_value": affiliation,
+            "affiliationurl_value": affiliation_url, "apitoken_value": api_token,
+            "email_value": email, "firstname_value": first_name, "lastname_value": last_name,
+            "password_value": password_encoded, "orcid_value": orcid, "username_value": email,
+            "existing_user_name_value": existing_user_name, "metaspace_api_key_value": metaspace_api_key}
+
+    for key, value in subs.items():
+        update_user_query = update_user_query.replace(str(key), str(value))
+
+    query = update_user_query
+
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn = psycopg2.connect(**params)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        number_of_users = cursor.rowcount
+        conn.commit()
+        conn.close()
+
+        if number_of_users == 1:
+            return True, "User account '" + existing_user_name + "' updated successfully"
+        else:
+            return False, "User account '" + existing_user_name + "' could not be updated"
+
+    except Exception as e:
+        return False, str(e)
+
+
 def get_all_studies_for_user(user_token):
     study_list = execute_query(query_studies_user, user_token)
     study_location = app.config.get('STUDY_PATH')
