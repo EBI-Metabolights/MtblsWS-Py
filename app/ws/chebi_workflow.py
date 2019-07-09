@@ -534,16 +534,18 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_
     # ToDo, only write files if we have downloaded SDF files
     # Create a new concatenated SDF file
     with open(sdf_file_name, 'w') as outfile:
-        short_df = pubchem_df[["pubchem_cid", database_identifier_column, 'classyfire_search_id']]
+        short_df = pubchem_df[[final_cid_column_name, database_identifier_column, 'classyfire_search_id']]
+        final_cid_list = []
         for idx, row in short_df.iterrows():
-            cid = row["pubchem_cid"]
-            cid = str(cid).rstrip('.0')
+            cid = row[final_cid_column_name]
+            #cid = str(cid).rstrip('.0')
             db_id = row[database_identifier_column]
             cf_id = row["classyfire_search_id"]
-            cf_id = str(cf_id).rstrip('.0')
+            #cf_id = str(cf_id).rstrip('.0')
 
-            if cid and not db_id:
+            if cid and not db_id and cid not in final_cid_list:
 
+                final_cid_list.append(cid)
                 fname = cid + pubchem_sdf_extension
                 full_file = os.path.join(study_location, fname)
 
@@ -607,7 +609,7 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
 
     if classyfire_search and query_id:
         try:
-            classyfire_file_name = classyfire_file_name.replace(".sdf", "_classyfire.sdf")
+            classyfire_file_name = classyfire_file_name.replace("_pubchem.sdf", "_classyfire.sdf")
             if not os.path.isfile(classyfire_file_name):
                 start_time = time.time()
                 print_log("  -- Getting ClassyFire SDF for query id: " + str(query_id))
