@@ -180,7 +180,7 @@ def get_pubchem_substance(comp_name, res_type):
         results = json_resp
 
     if resp.status_code == 404:
-        print_log("    -- Cound not find PubChem Substance for '" + comp_name + "'")
+        print_log("    -- No PubChem Substance found for '" + comp_name + "'")
 
     for result in results['InformationList']['Information'] if results else []:
         print_log("    -- Found PubChem Substance for '" + comp_name + "'")
@@ -359,8 +359,9 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                             maf_df.iloc[row_idx, int(standard_maf_columns['inchi'])] = inchi
 
                 if not chebi_found:  # We could not find this in ChEBI, let's try other sources
-                    pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure, \
-                        where_found = pubchem_search(comp_name, 'name')
+                    # First, see if we cat find a PubChem compound
+                    pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
+                        where_found = pubchem_search(comp_name, search_type='name', search_category='compound')
 
                     pubchem_df.iloc[row_idx, 34] = where_found  # Search category/type for logging
                     cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
@@ -387,13 +388,34 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                         final_cid = get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey)
                         pubchem_df.iloc[row_idx, 9] = final_cid  # Final PubChem CID should now be the cactus or opsin
                     pubchem_df.iloc[row_idx, 11] = pc_cid    # PubChem CID
-
                     pubchem_df.iloc[row_idx, 12] = csid      # ChemSpider ID (CSID) from INCHI
                     pubchem_df.iloc[row_idx, 13] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # final smiles
                     final_inchi = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # final inchi
                     pubchem_df.iloc[row_idx, 14] = final_inchi
                     final_inchi_key = get_ranked_values(pc_inchi_key, cactus_stdinchikey, opsin_stdinchikey, None)  # final inchikey
                     pubchem_df.iloc[row_idx, 15] = final_inchi_key
+
+                    if not pc_inchi:
+                        # We don't have a PubChem compound, but we may find a uncurated substance record
+                        print_log("    -- Searching for PubChem substance as we did not find a compound")
+                        pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
+                            where_found = pubchem_search(comp_name, search_type='name', search_category='substance')
+
+                        if pc_name:
+                            pubchem_df.iloc[row_idx, 8] = pc_name  # PubChem substance name
+
+                        if not final_cid and pc_cid:
+                            pubchem_df.iloc[row_idx, 9] = final_cid
+                            pubchem_df.iloc[row_idx, 11] = pc_cid  # PubChem CID
+
+                        if not final_inchi and pc_inchi:
+                            pubchem_df.iloc[row_idx, 14] = pc_inchi
+
+                        if not cactus_stdinchikey and pc_inchi_key:
+                            print_log("    -- Searching ChemSpider using PubChem Substance InChIKey")
+                            csid = get_csid(pc_inchi_key)
+                            pubchem_df.iloc[row_idx, 12] = csid
+
                     pubchem_df.iloc[row_idx, 16] = pc_smiles            # pc_smiles
                     pubchem_df.iloc[row_idx, 17] = cactus_smiles        # cactus_smiles
                     pubchem_df.iloc[row_idx, 18] = opsin_smiles         # opsin_smiles
@@ -779,7 +801,7 @@ def get_pubchem_cid_on_inchikey(inchikey1, inchikey2):
     pc_cid = ''
     for inchikey in [inchikey1, inchikey2]:
         if inchikey:
-            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, pc_structure, from_where = \
+            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, from_where = \
                 pubchem_search(inchikey, search_type='inchikey')
             if pc_cid:
                 return pc_cid
@@ -923,7 +945,7 @@ def is_correct_int(num, length):
     return False
 
 
-def pubchem_search(comp_name, search_type='name'):
+def pubchem_search(comp_name, search_type='name', search_category='compound'):
     iupac = ''
     inchi = ''
     inchi_key = ''
@@ -931,29 +953,30 @@ def pubchem_search(comp_name, search_type='name'):
     cid = ''
     formula = ''
     synonyms = ''
-    structure = ''
     where_found = ''
-    print_log("    -- Searching PubChem for compound '" + comp_name + "'")
     try:
         compound = None
         # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
         # or comment out the line below:
         ssl._create_default_https_context = ssl._create_unverified_context  # If no root certificates installed
         try:
+            print_log("    -- Searching PubChem for " + search_category + " '" + comp_name + "'")
             pubchem_compound = get_compounds(comp_name, namespace=search_type)
             where_found = 'pubchem_compound'
-            if not pubchem_compound:
+            if not pubchem_compound and search_category == 'substance':
                 print_log("    -- Querying PubChem Substance '" + comp_name + "'")
                 _cid = get_pubchem_substance(comp_name, 'cid')
                 if _cid:
                     pubchem_compound = get_compounds(_cid, namespace='cid')
                     where_found = 'pubchem_substance'
+                    print_log("    -- Found PubChem substance '" + compound.iupac_name + "'")
 
             compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
 
-            print_log("    -- Found PubChem compound '" + compound.iupac_name + "'")
+            print_log("    -- Found PubChem " + search_category + " '" + compound.iupac_name + "'")
         except IndexError:
-            print_log('    -- Could not find PubChem compound for ' + comp_name)   # Nothing was found
+
+            print_log("    -- Could not find PubChem " + search_category + " for '" + comp_name + "'")   # Nothing was found
 
         if compound:
             inchi = compound.inchi.strip().rstrip('\n')
@@ -976,10 +999,10 @@ def pubchem_search(comp_name, search_type='name'):
             print_log("    -- Searching PubChem for '" + comp_name + "', got cid '" + str(cid) +
                       "' and iupac name '" + iupac + "'")
     except Exception as error:
-        logger.error("Unable to search PubChem for compound " + comp_name)
+        logger.error("Unable to search PubChem for " + search_category + " " + comp_name)
         logger.error(error)
 
-    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, structure, where_found
+    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, where_found
 
 
 def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
