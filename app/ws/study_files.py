@@ -318,7 +318,18 @@ class CopyFilesFolders(Resource):
     @swagger.operation(
         summary="Copy files from upload folder to study folder",
         nickname="Copy from upload folder",
-        notes="Copies files/folder from the upload directory to the study directory",
+        notes="""Copies files/folder from the upload directory to the study directory
+        </p><pre><code>If you only want to copy, or rename, a specific file please use the file_list field: </p> 
+    { 
+        "file_list": [
+            { 
+                "from": "filename2.ext", 
+                "to": "filename.ext" 
+            }
+        ]
+    }
+</code></pre>
+              """,
         parameters=[
             {
                 "name": "study_id",
@@ -349,6 +360,14 @@ class CopyFilesFolders(Resource):
                 "dataType": "string",
             },
             {
+                "name": "file_list",
+                "description": "Only copy specific files",
+                "paramType": "body",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -377,7 +396,7 @@ class CopyFilesFolders(Resource):
         ]
     )
     def get(self, study_id):
-
+        log_request(request)
         # param validation
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
@@ -401,6 +420,16 @@ class CopyFilesFolders(Resource):
             include_raw_data = False if args['include_raw_data'].lower() != 'true' else True
             file_location = args['file_location']
 
+        # body content validation
+        files = {}
+        if request.data:
+            try:
+                data_dict = json.loads(request.data.decode('utf-8'))
+                files = data_dict['data']
+            except KeyError:
+                abort(417, "The JSON string has to have a 'data' element")
+
+
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
@@ -413,6 +442,11 @@ class CopyFilesFolders(Resource):
             upload_location = file_location
 
         audit_status, dest_path = write_audit_files(study_location)
+
+        for file in files:
+            from_file, to_file = file
+            # if not os.path.exists()
+            shutil.copy2(upload_location, study_location)
 
         logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location, study_location)
         status, message = copy_files_and_folders(upload_location, study_location,
