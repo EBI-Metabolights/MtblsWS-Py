@@ -321,7 +321,7 @@ class CopyFilesFolders(Resource):
         notes="""Copies files/folder from the upload directory to the study directory
         </p><pre><code>If you only want to copy, or rename, a specific file please use the files field: </p> 
     { 
-        "data": [
+        "files": [
             { 
                 "from": "filename2.ext", 
                 "to": "filename.ext" 
@@ -427,10 +427,10 @@ class CopyFilesFolders(Resource):
         if request.data:
             try:
                 data_dict = json.loads(request.data.decode('utf-8'))
-                files = data_dict['data']
+                files = data_dict['files']
                 single_files_only = True
             except KeyError:
-                abort(417, "The JSON string has to have a 'data' element")
+                abort(417, "The JSON string has to have a 'files' element")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
