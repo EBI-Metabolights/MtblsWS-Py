@@ -455,14 +455,14 @@ class CopyFilesFolders(Resource):
                 if not from_file or not to_file:
                     abort(417, "Please provide both 'from' and 'to' file parameters")
 
-                if os.path.isfile(os.path.join(upload_location, from_file)) and \
-                        not os.path.isfile(os.path.join(upload_location, to_file)):
+                # if os.path.isfile(os.path.join(upload_location, from_file)) and \
+                #         not os.path.isfile(os.path.join(upload_location, to_file)):
 
-                    os.rename(os.path.join(upload_location, from_file), os.path.join(upload_location, to_file))
-                    shutil.copy2(os.path.join(upload_location, to_file), os.path.join(study_location, to_file))
-                    status = True
-                else:
-                    abort(417, "Unable to rename file '" + from_file + "' to '" + to_file + "', this file already exists in the upload folder")
+                os.rename(os.path.join(upload_location, from_file), os.path.join(upload_location, to_file))
+                shutil.copy2(os.path.join(upload_location, to_file), os.path.join(study_location, to_file))
+                status = True
+                # else:
+                #     abort(417, "Unable to rename file '" + from_file + "' to '" + to_file + "', this file already exists in the upload folder")
 
         else:
             status, message = copy_files_and_folders(upload_location, study_location,
