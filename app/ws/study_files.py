@@ -316,118 +316,10 @@ without setting the "force" parameter to True''',
 
 class CopyFilesFolders(Resource):
     @swagger.operation(
-        summary="Copy files from upload folder to study folder ## GET METHOD DEPRECATED ##",
-        nickname="Copy from upload folder",
-        notes="Copies files/folder from the upload directory to the study directory",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "MTBLS Identifier",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "include_raw_data",
-                "description": "Include raw data file transfer. False = only copy ISA-Tab metadata files.",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "default": True
-            },
-            {
-                "name": "file_location",
-                "description": "Alternative EMBL-EBI filesystem location for raw files, default is private FTP",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK. Files/Folders were copied across."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
-    def get(self, study_id):
-        log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
-        study_id = study_id.upper()
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('include_raw_data', help='Include raw data')
-        parser.add_argument('file_location', help='Alternative file location')
-        include_raw_data = False
-        file_location = None
-
-        # If false, only sync ISA-Tab metadata files
-        if request.args:
-            args = parser.parse_args(req=request)
-            include_raw_data = False if args['include_raw_data'].lower() != 'true' else True
-            file_location = args['file_location']
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
-        status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
-        upload_location = status["os_upload_path"]
-        if file_location:
-            upload_location = file_location
-
-        audit_status, dest_path = write_audit_files(study_location)
-
-        logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location, study_location)
-        status, message = copy_files_and_folders(upload_location, study_location,
-                                                 include_raw_data=include_raw_data, include_investigation_file=False)
-        if status:
-            reindex_status, message = wsc.reindex_study(study_id, user_token)
-            return {'Success': 'Copied files from ' + upload_location}
-        else:
-            return {'Warning': message}
-
-    @swagger.operation(
         summary="Copy files from upload folder to study folder",
         nickname="Copy from upload folder",
         notes="""Copies files/folder from the upload directory to the study directory
-        </p><pre><code>If you only want to copy, or rename, a specific file please use the file_list field: </p> 
+        </p><pre><code>If you only want to copy, or rename, a specific file please use the files field: </p> 
     { 
         "data": [
             { 
@@ -468,7 +360,7 @@ class CopyFilesFolders(Resource):
                 "dataType": "string",
             },
             {
-                "name": "file_list",
+                "name": "files",
                 "description": "Only copy specific files",
                 "paramType": "body",
                 "type": "string",
