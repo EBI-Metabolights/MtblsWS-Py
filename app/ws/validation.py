@@ -630,7 +630,22 @@ def check_assay_file_references(a_header, row, col_rows, validations, val_sectio
     derived_found = False
     col_rows = str(col_rows)
 
-    if a_header.endswith(' File'):
+    if a_header == 'Acquisition Parameter Data File':
+        if row:
+            add_msg(validations, val_section, "Acquisition Parameter Data File was referenced in assay row " + col_rows,
+                    success, assay.filename, val_sequence=7.5, log_category=log_category)
+        else:
+            add_msg(validations, val_section, "Acquisition Parameter Data File was referenced in assay row " + col_rows,
+                    error, assay.filename, val_sequence=7.5, log_category=log_category)
+    elif a_header == 'Free Induction Decay Data File':
+        if row:
+            add_msg(validations, val_section, "Free Induction Decay Data File was referenced in assay row " + col_rows,
+                    success, assay.filename, val_sequence=7.6, log_category=log_category)
+        else:
+            add_msg(validations, val_section, "Free Induction Decay Data File was referenced in assay row " + col_rows,
+                    error, assay.filename, val_sequence=7.6, log_category=log_category)
+
+    elif a_header.endswith(' File'):
         if a_header == 'Raw Spectral Data File':
             if row:
                 raw_found = True
@@ -643,10 +658,10 @@ def check_assay_file_references(a_header, row, col_rows, validations, val_sectio
                     success, assay.filename, val_sequence=7.1, log_category=log_category)
         elif raw_found:
             add_msg(validations, val_section, "Raw Spectral Data Files were referenced in assay row " + col_rows,
-                    success, assay.filename, val_sequence=7.1, log_category=log_category)
+                    success, assay.filename, val_sequence=7.2, log_category=log_category)
         elif derived_found:
             add_msg(validations, val_section, "Derived Spectral Data Files were referenced in assay row " + col_rows,
-                    success, assay.filename, val_sequence=7.1, log_category=log_category)
+                    success, assay.filename, val_sequence=7.3, log_category=log_category)
 
     return validations
 
@@ -739,7 +754,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                                 assay, unique_file_names, all_assay_names,
                                                 sample_name_list, log_category=log_category)
 
-                        if a_header.endswith(' File'):
+                        if a_header.endswith(' File') and a_header != 'Metabolite Assignment File':
                             # ToDo, return a counter of raw and derived files, then check against all_rows
                             validations = check_assay_file_references(a_header, row, col_rows, validations, val_section,
                                                                       assay, log_category=log_category)
@@ -779,7 +794,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                              sample_name_list, is_ms=is_ms, log_category=log_category)
             else:
                 add_msg(validations, val_section, "No MAF file referenced for assay sheet " + assay.filename, warning,
-                        val_sequence=7.1, log_category=log_category)
+                        val_sequence=7.4, log_category=log_category)
 
     for sample_name in sample_name_list:
         if sample_name not in all_assays:
