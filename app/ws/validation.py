@@ -655,7 +655,7 @@ def check_assay_file_references(a_header, row, col_rows, validations, val_sectio
 
         if not raw_found and not derived_found:
             add_msg(validations, val_section, "Raw or Derived Spectral Data Files were not referenced in assay row " + col_rows,
-                    success, assay.filename, val_sequence=7.1, log_category=log_category)
+                    error, assay.filename, val_sequence=7.1, log_category=log_category)
         elif raw_found:
             add_msg(validations, val_section, "Raw Spectral Data Files were referenced in assay row " + col_rows,
                     success, assay.filename, val_sequence=7.2, log_category=log_category)
@@ -744,9 +744,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 a_header = str(a_header)  # Names like '1' and '2', gets interpereted as '1.0' and '2.0'
                 validate_column, required_column, val_descr = get_assay_column_validations(validation_schema, a_header)
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
+                row_idx = 0
                 try:
                     for row in assay_df[a_header]:
                         validate_column = False
+                        row_idx += 1
                         if row:
                             col_rows += 1
                         all_sample_names, all_assay_names, validations, unique_file_names = \
@@ -756,7 +758,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
                         if a_header.endswith(' File') and a_header != 'Metabolite Assignment File':
                             # ToDo, return a counter of raw and derived files, then check against all_rows
-                            validations = check_assay_file_references(a_header, row, col_rows, validations, val_section,
+                            validations = check_assay_file_references(a_header, row, row_idx, validations, val_section,
                                                                       assay, log_category=log_category)
 
                     if (col_rows < all_rows) and validate_column:
