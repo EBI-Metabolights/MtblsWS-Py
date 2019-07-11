@@ -17,7 +17,6 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import logging, pandas as pd, os
-import numpy as np
 import requests
 import cirpy
 import time
@@ -27,6 +26,7 @@ import ssl
 import pronto
 import re
 import urllib.parse
+import fileinput
 from subprocess import *
 from flask import current_app as app
 from zeep import Client
@@ -503,7 +503,8 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
     write_tsv(pubchem_df, pubchem_file)
 
     concatenate_sdf_files(pubchem_df, study_location + os.sep + anno_sub_folder + os.sep,
-                          short_file_name + complete_end, short_file_name + classyfire_end, classyfire_search)
+                          short_file_name + complete_end, short_file_name + classyfire_end,
+                          classyfire_search, study_id)
 
     return maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file
 
@@ -524,24 +525,24 @@ def create_annotation_folder(folder_loc):
         print_log(str(e))
 
 
-def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_file_name, classyfire_search):
+def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_file_name, classyfire_search, study_id):
     return_format = 'sdf'  # 'json' will require a new root element to separate the entries before merging
     classyfire_file_name = classyfire_file_name + '.' + return_format
-    all_ancestors = []
 
     classyfire_df = get_classyfire_lookup_mapping()
 
     # ToDo, only write files if we have downloaded SDF files
     # Create a new concatenated SDF file
     with open(sdf_file_name, 'w') as outfile:
-        short_df = pubchem_df[[final_cid_column_name, database_identifier_column, 'classyfire_search_id']]
+        #short_df = pubchem_df[[final_cid_column_name, database_identifier_column, 'classyfire_search_id', 'organism', 'organism_part']]
         final_cid_list = []
-        for idx, row in short_df.iterrows():
+        for idx, row in pubchem_df.iterrows():
             cid = row[final_cid_column_name]
-            #cid = str(cid).rstrip('.0')
             db_id = row[database_identifier_column]
             cf_id = row["classyfire_search_id"]
-            #cf_id = str(cf_id).rstrip('.0')
+            organism = row['organism']
+            organism_part = row['organism_part']
+            iupac_name = row['iupac_name']
 
             if cid and not db_id and cid not in final_cid_list:
 
@@ -549,12 +550,19 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_
                 fname = cid + pubchem_sdf_extension
                 full_file = os.path.join(study_location, fname)
 
-                # Now, get the classyFire queries, download sdf files
-                all_ancestors = get_classyfire_results(cf_id, full_file, return_format, classyfire_search,
-                                                       all_ancestors, classyfire_df)
+                mtbls_sdf_file_name = remove_pubchem_sdf_parameters(study_location, fname)
 
-                #ToDo, merge data from Classyfire SDF into new PubChem SDF
-                if all_ancestors:
+                # Now, get the classyFire queries, download sdf files
+                classyfire_sdf_values = get_classyfire_results(cf_id, full_file, return_format, classyfire_search, classyfire_df)
+                add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism,
+                                        organism_part=organism_part, iupack_name=iupac_name,
+                                        database_accession='PubChem:CID'+cid)
+
+                # merge data from Classyfire SDF into new PubChem SDF
+                if classyfire_sdf_values:
+                    is_a = classyfire_sdf_values['is_a']
+                    direct_parent = classyfire_sdf_values['direct_parent']
+                    add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a)
                     print_log("       -- adding ancestors to SDF file " + fname)
 
                 # ToDo, After we have the new PubChem SDF, merge all new SDFs into one larger SDF for ChEBI submission
@@ -573,6 +581,102 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_
 
         # If we have a real new SDF file, remove the smaller sdf files
         # remove_sdf_files(sdf_file_name, study_location, sdf_file_list)
+
+
+def remove_pubchem_sdf_parameters(study_location, sdf_file_name):
+
+    lines = []
+    mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + sdf_file_name)
+    template_start = 'M  END\n'
+    template_body = '''>  <ID>
+TEMP_001
+
+>  <NAME>
+#template_name#
+
+>  <DEFINITION>
+#template_definition#
+
+>  <IUPAC_NAME>
+#template_iupack_name#
+
+>  <DATABASE_ACCESSION>
+#template_database_accessions#
+
+>  <RELATIONSHIP>
+#template_relationships#
+
+>  <ORGANISM1>
+#template_organism#
+
+>  <ORGANISM_PART1>
+#template_organism_part#
+
+>  <STRAIN1>
+#template_strain#
+
+>  <SOURCE_METABOLIGHT1>
+#template_mtbls_accession#
+
+$$$$'''
+    try:
+        with open(os.path.join(study_location, sdf_file_name), 'r', encoding="utf-8") as infile:
+            for line in infile:
+                lines.append(line)
+            infile.close()
+
+        with open(mtbls_sdf_file_name, 'w', encoding="utf-8") as outfile:
+            for line in lines:
+                if line == template_start:
+                    outfile.write(line)
+                    outfile.write(template_body)
+                    outfile.close()
+                    break
+                else:
+                    outfile.write(line)
+
+    except Exception as e:
+        print_log("    -- Could not read from SDF file: " + sdf_file_name + ". Error: " + str(e))
+
+    return mtbls_sdf_file_name
+
+
+def add_classyfire_sdf_info(mtbls_pubchem_sdf_file, mtbls_accession=None, relationships=None, name=None,
+                            definition=None, iupack_name=None, database_accession=None, organism=None,
+                            organism_part=None, strain=None):
+
+    with open(mtbls_pubchem_sdf_file, 'r', encoding="utf-8") as infile:
+        filedata = infile.read()
+
+        if name:
+            filedata = filedata.replace('#template_name#', name)
+
+        if definition:
+            filedata = filedata.replace('#template_definition#', definition)
+
+        if iupack_name:
+            filedata = filedata.replace('#template_iupack_name#', iupack_name)
+
+        if database_accession:
+            filedata = filedata.replace('#template_database_accessions#', database_accession)
+
+        if relationships:
+            filedata = filedata.replace('#template_relationships#', relationships)
+
+        if organism:
+            filedata = filedata.replace('#template_organism#', organism)
+
+        if organism_part:
+            filedata = filedata.replace('#template_organism_part#', organism_part)
+
+        if strain:
+            filedata = filedata.replace('#template_strain#', strain)
+
+        if mtbls_accession:
+            filedata = filedata.replace('#template_mtbls_accession#', mtbls_accession)
+
+    with open(mtbls_pubchem_sdf_file, 'w', encoding="utf-8") as outfile:
+        outfile.write(filedata)
 
 
 def remove_sdf_files(sdf_file_name, study_location, sdf_file_list):
@@ -604,8 +708,7 @@ def classyfire(inchi):
     return query_id
 
 
-def get_classyfire_results(query_id, classyfire_file_name, return_format, classyfire_search,
-                           all_ancestors, classyfire_df):
+def get_classyfire_results(query_id, classyfire_file_name, return_format, classyfire_search, classyfire_df):
 
     if classyfire_search and query_id:
         try:
@@ -632,16 +735,8 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
             else:
                 print_log("  -- Already downloaded ClassyFire SDF for query id: " + str(query_id))
 
-            # try:
-            #     if os.path.isfile(classyfire_file_name):
-            #         mols = read_sdf_file(classyfire_file_name)
-            #         if mols:
-            #             print_log("    -- Found MOL structure in file ")
-            # except Exception as e:
-            #     print_log("    -- ERROR: Could not read classyFire SDF for " + query_id)
-
             if classyfire_search:
-                all_ancestors = get_ancestors(all_ancestors, classyfire_file_name, classyfire_df)
+                all_ancestors = get_ancestors(classyfire_file_name, classyfire_df)
 
         except Exception as e:
             print_log("    -- ERROR: Could not get classyFire SDF for " + query_id + ". Error:" + str(e))
@@ -655,22 +750,20 @@ def load_chebi_classyfire_mapping():
     return read_tsv(mapping_file)
 
 
-def get_ancestors(all_ancestors, classyfire_file_name, classyfire_df):
+def get_ancestors(classyfire_file_name, classyfire_df):
 
     lines = []
-    inchi_key = ""
-    parent_name = ""
     direct_parents = []
     try:
         with open(classyfire_file_name, 'r', encoding="utf-8") as infile:
             for line in infile:
                 lines.append(line.rstrip('\n'))
 
-        for idx, line in enumerate(lines):
+        inchi_key = None
+        parent_name = None
+        is_a = None
 
-            inchi_key = None
-            parent_name = None
-            is_a = None
+        for idx, line in enumerate(lines):
 
             if line == "> <InChIKey>":
                 inchi_key = lines[idx+1]
@@ -682,12 +775,11 @@ def get_ancestors(all_ancestors, classyfire_file_name, classyfire_df):
 
             if parent_name:
                 row = classyfire_df.loc[classyfire_df['name'] == parent_name]
-                is_a = row['map_to']  # Get the IS_A relationships
+                p_name, is_a = row.iloc[0]  # Get the IS_A relationships
 
             if inchi_key and parent_name and is_a:
-                all_ancestors.append({"inchi_key": inchi_key.replace('InChiKey=', ''),
-                                      "direct_parent": parent_name, "c_sdf_file": classyfire_file_name,
-                                      "is_a": is_a})
+                return {"inchi_key": inchi_key.replace('InChiKey=', ''),
+                        "direct_parent": parent_name, "c_sdf_file": classyfire_file_name, "is_a": is_a}
 
     except Exception as e:
         print_log("    -- Could not read from SDF file: " + classyfire_file_name + ". Error: " + str(e))
@@ -697,7 +789,7 @@ def get_ancestors(all_ancestors, classyfire_file_name, classyfire_df):
     #     chebi_compound = get_chebi_mapping(compound_name)
     #     is_a_list = get_is_a(onto, chebi_compound)
 
-    return all_ancestors
+
 
 
 def get_classyfire_lookup_mapping():
@@ -827,32 +919,38 @@ def create_pubchem_df(maf_df):
     # These are simply the fixed spreadsheet column headers
     pubchem_df = maf_df[[database_identifier_column, 'chemical_formula', 'smiles', 'inchi', maf_compound_name_column]]
     pubchem_df['row_id'] = ''                   # 5
-    pubchem_df[search_flag] = ''                # 6
-    pubchem_df[alt_name_column] = ''            # 7
-    pubchem_df['iupac_name'] = ''               # 8
-    pubchem_df[final_cid_column_name] = ''      # 9
-    pubchem_df['pubchem_cid'] = ''              # 10
-    pubchem_df['pubchem_cid_ik'] = ''           # 11 PubChem CID from InChIKey search (Cactus, OBSIN)
-    pubchem_df['csid_ik'] = ''                  # 12 ChemSpider ID (CSID) from INCHIKEY
-    pubchem_df['final_smiles'] = ''             # 13
-    pubchem_df['final_inchi'] = ''              # 14
-    pubchem_df['final_inchi_key'] = ''          # 15
-    pubchem_df['pubchem_smiles'] = ''           # 16
-    pubchem_df['cactus_smiles'] = ''            # 17
-    pubchem_df['opsin_smiles'] = ''             # 18
-    pubchem_df['pubchem_inchi'] = ''            # 19
-    pubchem_df['cactus_inchi'] = ''             # 20
-    pubchem_df['opsin_inchi'] = ''              # 21
-    pubchem_df['pubchem_inchi_key'] = ''        # 22
-    pubchem_df['cactus_inchi_key'] = ''         # 23
-    pubchem_df['opsin_inchi_key'] = ''          # 24
-    pubchem_df['pubchem_formula'] = ''          # 25
-    pubchem_df['pubchem_synonyms'] = ''         # 26
-    pubchem_df['cactus_synonyms'] = ''          # 27
-    pubchem_df['organism'] = ''                 # 28
-    pubchem_df['organism_part'] = ''            # 29
+    pubchem_df['cluster'] = ''                  # 6
+    pubchem_df[search_flag] = ''                # 7
+    pubchem_df[alt_name_column] = ''            # 8
+    pubchem_df['iupac_name'] = ''               # 9
+    pubchem_df['definition'] = ''               # 10
+    pubchem_df[final_cid_column_name] = ''      # 11
+    pubchem_df['pubchem_cid'] = ''              # 11
+    pubchem_df['pubchem_cid_ik'] = ''           # 12 PubChem CID from InChIKey search (Cactus, OBSIN)
+    pubchem_df['csid_ik'] = ''                  # 13 ChemSpider ID (CSID) from INCHIKEY
+    pubchem_df['final_smiles'] = ''             # 14
+    pubchem_df['final_inchi'] = ''              # 15
+    pubchem_df['final_inchi_key'] = ''          # 16
+    pubchem_df['pubchem_smiles'] = ''           # 17
+    pubchem_df['cactus_smiles'] = ''            # 18
+    pubchem_df['opsin_smiles'] = ''             # 19
+    pubchem_df['pubchem_inchi'] = ''            # 20
+    pubchem_df['cactus_inchi'] = ''             # 21
+    pubchem_df['opsin_inchi'] = ''              # 22
+    pubchem_df['pubchem_inchi_key'] = ''        # 23
+    pubchem_df['cactus_inchi_key'] = ''         # 24
+    pubchem_df['opsin_inchi_key'] = ''          # 25
+    pubchem_df['pubchem_formula'] = ''          # 26
+    pubchem_df['pubchem_synonyms'] = ''         # 27
+    pubchem_df['cactus_synonyms'] = ''          # 28
+    pubchem_df['cas_no'] = ''                   # 28
+    pubchem_df['organism'] = ''                 # 29
+    pubchem_df['organism_part'] = ''            # 30
+
     pubchem_df['direct_parent'] = ''            # 30
+
     pubchem_df['alternate_parent'] = ''         # 31
+
     pubchem_df['mtbls_acc'] = ''                # 32
     pubchem_df['classyfire_search_id'] = ''     # 33
     pubchem_df['chebi_search_type'] = ''        # 34
@@ -1167,7 +1265,7 @@ class ChEBIPipeLine(Resource):
             },
             {
                 "name": "classyfire_search",
-                "description": "Search ClassyFire?.",
+                "description": "Search ClassyFire?",
                 "paramType": "header",
                 "type": "Boolean",
                 "defaultValue": True,
