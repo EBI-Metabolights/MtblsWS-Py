@@ -576,8 +576,11 @@ def get_assay_column_validations(validation_schema, a_header):
     if a_header.lower() == 'sample name':
         validate_column = True
         required_column = True
+    elif a_header.lower() == 'metabolite assignment file':
+        validate_column = True
+        required_column = False
 
-    if validation_schema and a_header.lower() != 'sample name':
+    if validation_schema and a_header.lower() != 'sample name' and a_header.lower() != 'metabolite assignment file':
         validate_column = validation_schema['is-hidden']
         if validate_column == 'false':
             validate_column = False
@@ -625,12 +628,27 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
     return all_samples, all_assay_names, validations, unique_file_names
 
 
-def check_all_file_rows(assays, assay_df, validations, val_section, filename, log_category=error):
+def check_all_file_rows(assays, assay_df, validations, val_section, filename, all_rows, log_category=error):
     all_file_columns = []
+    missing_all_rows = []
     for assay_header in assays:
         assay_header = str(assay_header)
         if assay_header.endswith(' Data File'):
             all_file_columns.append(assay_header)
+            empty_rows = (assay_df[assay_header].values == '').sum()
+            if empty_rows == all_rows:
+                missing_all_rows.append(assay_header)
+
+    if 'Raw Spectral Data File' in missing_all_rows:
+        if 'Derived Spectral Data File' in missing_all_rows:
+            # OK, all raw/derived files are missing, no point in looking at these anymore
+            all_file_columns.remove('Raw Spectral Data File')
+            all_file_columns.remove('Derived Spectral Data File')
+            missing_all_rows.remove('Raw Spectral Data File')
+            missing_all_rows.remove('Derived Spectral Data File')
+            add_msg(validations, val_section,
+                    "All Raw and Derived Spectral Data Files are missing from assay",
+                    error, filename, val_sequence=7.6, log_category=log_category)
 
     if all_file_columns:
         short_df = assay_df[assay_df.columns.intersection(all_file_columns)]
@@ -642,25 +660,7 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, lo
             derived_tested = False
 
             for header, value in row.iteritems():
-                if header == 'Acquisition Parameter Data File':
-                    if value:
-                        add_msg(validations, val_section,
-                                "Acquisition Parameter Data File was referenced in assay row " + row_idx,
-                                success, filename, val_sequence=7.5, log_category=log_category)
-                    else:
-                        add_msg(validations, val_section,
-                                "Acquisition Parameter Data File was referenced in assay row " + row_idx,
-                                error, filename, val_sequence=7.5, log_category=log_category)
-                elif header == 'Free Induction Decay Data File':
-                    if value:
-                        add_msg(validations, val_section,
-                                "Free Induction Decay Data File was referenced in assay row " + row_idx,
-                                success, filename, val_sequence=7.6, log_category=log_category)
-                    else:
-                        add_msg(validations, val_section,
-                                "Free Induction Decay Data File was referenced in assay row " + row_idx,
-                                error, filename, val_sequence=7.6, log_category=log_category)
-                elif header == 'Raw Spectral Data File':
+                if header == 'Raw Spectral Data File':
                     raw_tested = True
                     if value:
                         raw_found = True
@@ -668,19 +668,26 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, lo
                     derived_tested = True
                     if value:
                         derived_found = True
+                else:
+                    if value:
+                        add_msg(validations, val_section, header + " was referenced in assay row " + row_idx,
+                                success, filename, val_sequence=7.5, log_category=log_category)
+                    else:
+                        add_msg(validations, val_section, header + " was not referenced in assay row " + row_idx,
+                                error, filename, val_sequence=7.5, log_category=log_category)
 
             if derived_tested and raw_tested:
                 if not raw_found and not derived_found:
                     add_msg(validations, val_section,
-                            "Raw and Derived Spectral Data Files were not referenced in assay row " + row_idx,
+                            "Both Raw and Derived Spectral Data Files are missing from assay row " + row_idx,
                             error, filename, val_sequence=7.1, log_category=log_category)
                 elif raw_found:
                     add_msg(validations, val_section,
-                            "Raw Spectral Data Files were referenced in assay row " + row_idx,
+                            "Raw Spectral Data File is referenced in assay row " + row_idx,
                             success, filename, val_sequence=7.2, log_category=log_category)
                 elif derived_found:
                     add_msg(validations, val_section,
-                            "Derived Spectral Data Files were referenced in assay row " + row_idx,
+                            "Derived Spectral Data File is referenced in assay row " + row_idx,
                             success, filename, val_sequence=7.3, log_category=log_category)
 
     return validations
@@ -765,23 +772,27 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 validate_column, required_column, val_descr = get_assay_column_validations(validation_schema, a_header)
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
                 try:
-                    if validate_column:
-                        short_df = assay_df[a_header]
-                        for row in short_df:
+                    if validate_column and not a_header.endswith(' Data File'):
+                        for row in assay_df[a_header]:
                             # validate_column = False
                             if row:
                                 col_rows += 1
 
-                            if not a_header.endswith(' Data File'):
-                                all_sample_names, all_assay_names, validations, unique_file_names = \
-                                    check_assay_columns(a_header, all_assays, row, validations, val_section,
-                                                        assay, unique_file_names, all_assay_names,
-                                                        sample_name_list, log_category=log_category)
+                            all_sample_names, all_assay_names, validations, unique_file_names = \
+                                check_assay_columns(a_header, all_assays, row, validations, val_section,
+                                                    assay, unique_file_names, all_assay_names,
+                                                    sample_name_list, log_category=log_category)
 
                         if col_rows < all_rows:
-                            add_msg(validations, val_section, "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing values. " +
-                                    str(col_rows) + " rows found, but there should be " + str(all_rows),
-                                    warning, assay.filename, val_sequence=4, log_category=log_category)
+                            if col_rows == 0:
+                                add_msg(validations, val_section,
+                                        "Assay sheet '" + assay.filename + "' column '" + a_header + "' is empty",
+                                        warning, assay.filename, val_sequence=4, log_category=log_category)
+                            else:
+                                add_msg(validations,
+                                        val_section, "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing some values. " +
+                                        str(col_rows) + " rows found, but there should be " + str(all_rows),
+                                        warning, assay.filename, val_sequence=4, log_category=log_category)
                         else:
                             add_msg(validations, val_section,
                                     "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
@@ -792,7 +803,9 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             "Assay sheet '" + assay.filename + "' is missing rows for column '" + a_header + "'",
                             error, assay.filename, val_sequence=6, log_category=log_category)
 
-            validations = check_all_file_rows(assays, assay_df, validations, val_section, assay.filename, log_category=log_category)
+            # We validate all file columns separately here
+            validations = check_all_file_rows(assays, assay_df, validations, val_section, assay.filename, all_rows,
+                                              log_category=log_category)
 
             if all_assay_names:
                 if len(all_assay_names) < all_rows:
