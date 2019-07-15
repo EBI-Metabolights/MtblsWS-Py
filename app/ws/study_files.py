@@ -458,8 +458,8 @@ class CopyFilesFolders(Resource):
                     if not from_file or not to_file:
                         abort(417, "Please provide both 'from' and 'to' file parameters")
 
-                    if os.path.isfile(os.path.join(upload_location, to_file)):
-                        logger.info("The filename you are copyig to (%s) already exists, renaming first", to_file)
+                    if from_file != to_file and os.path.isfile(os.path.join(upload_location, to_file)):
+                        logger.info("The filename you are copying to (%s) already exists, renaming first", to_file)
                         os.rename(os.path.join(upload_location, to_file),
                                   os.path.join(upload_location, to_file + '.duplicate'))
 
