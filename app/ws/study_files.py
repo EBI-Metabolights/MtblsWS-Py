@@ -449,24 +449,33 @@ class CopyFilesFolders(Resource):
         audit_status, dest_path = write_audit_files(study_location)
         if single_files_only:
             for file in files:
-                from_file = file["from"]
-                to_file = file["to"]
+                try:
+                    from_file = file["from"]
+                    to_file = file["to"]
 
-                if not from_file or not to_file:
-                    abort(417, "Please provide both 'from' and 'to' file parameters")
+                    logger.info("Copying specific file %s to %s", from_file, to_file)
 
-                # if os.path.isfile(os.path.join(upload_location, from_file)) and \
-                #         not os.path.isfile(os.path.join(upload_location, to_file)):
+                    if not from_file or not to_file:
+                        abort(417, "Please provide both 'from' and 'to' file parameters")
 
-                os.rename(os.path.join(upload_location, from_file), os.path.join(upload_location, to_file))
-                shutil.copy2(os.path.join(upload_location, to_file), os.path.join(study_location, to_file))
-                status = True
-                # else:
-                #     abort(417, "Unable to rename file '" + from_file + "' to '" + to_file + "', this file already exists in the upload folder")
+                    if os.path.isfile(os.path.join(upload_location, to_file)):
+                        logger.info("The filename you are copyig to (%s) already exists, renaming first", to_file)
+                        os.rename(os.path.join(upload_location, to_file),
+                                  os.path.join(upload_location, to_file + '.duplicate'))
+
+                    logger.info("Renaming file %s to %s", from_file, to_file)
+                    os.rename(os.path.join(upload_location, from_file), os.path.join(upload_location, to_file))
+                    logger.info("Copying file %s to study folder %s", to_file, study_location)
+                    shutil.copy2(os.path.join(upload_location, to_file), os.path.join(study_location, to_file))
+                    status = True
+                except Exception as e:
+                    logger.error('File copy failed with error ' + str(e))
 
         else:
+            logger.info("Copying all newer files from '%s' to '%s'", upload_location, study_location)
             status, message = copy_files_and_folders(upload_location, study_location,
-                                                     include_raw_data=include_raw_data, include_investigation_file=False)
+                                                     include_raw_data=include_raw_data,
+                                                     include_investigation_file=False)
 
         if status:
             reindex_status, message = wsc.reindex_study(study_id, user_token)

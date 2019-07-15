@@ -903,7 +903,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
         if is_empty_file(full_file_name):
             if file_name not in 'metexplore_mapping.json':
-                add_msg(validations, val_section, "Empty files are not allowed, '" + file_name+ "'", error, val_section,
+                add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
+                        error, val_section,
                         value=file_name, val_sequence=6, log_category=log_category)
 
         if file_type == 'raw':
