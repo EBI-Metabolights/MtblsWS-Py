@@ -453,20 +453,34 @@ class CopyFilesFolders(Resource):
                     from_file = file["from"]
                     to_file = file["to"]
 
+                    source_file = os.path.join(upload_location, to_file)
+                    destination_file = os.path.join(study_location, to_file)
+
                     logger.info("Copying specific file %s to %s", from_file, to_file)
 
                     if not from_file or not to_file:
                         abort(417, "Please provide both 'from' and 'to' file parameters")
 
-                    if from_file != to_file and os.path.isfile(os.path.join(upload_location, to_file)):
-                        logger.info("The filename you are copying to (%s) already exists, renaming first", to_file)
-                        os.rename(os.path.join(upload_location, to_file),
-                                  os.path.join(upload_location, to_file + '.duplicate'))
+                    if from_file != to_file and os.path.isfile(source_file):
+                        logger.info("The filename/folder you are copying to (%s) already exists in the upload folder, renaming first", to_file)
+                        os.rename(source_file, source_file + '.duplicate')
 
                     logger.info("Renaming file %s to %s", from_file, to_file)
-                    os.rename(os.path.join(upload_location, from_file), os.path.join(upload_location, to_file))
+                    os.rename(os.path.join(upload_location, from_file), source_file)
+
+                    if os.path.isdir(source_file):
+                        logger.info(source_file + ' is a directory')
+                        try:
+                            if os.path.exists(destination_file) and os.path.isdir(destination_file):
+                                logger.info('Removing directory ' + destination_file)
+                                shutil.rmtree(destination_file)  # Remove the destination file/folder first
+                            shutil.copytree(source_file, destination_file, symlinks=False, ignore=True)
+                        except OSError as e:
+                            logger.error('Folder already exists? Can not copy %s to %s',
+                                         source_file, destination_file, str(e))
+
                     logger.info("Copying file %s to study folder %s", to_file, study_location)
-                    shutil.copy2(os.path.join(upload_location, to_file), os.path.join(study_location, to_file))
+                    shutil.copy2(source_file, destination_file)
                     status = True
                 except Exception as e:
                     logger.error('File copy failed with error ' + str(e))
