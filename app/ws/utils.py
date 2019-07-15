@@ -129,8 +129,6 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
 
                 if diff > 0:
                     logger.info('Will copy files')
-
-                    #ToDo, Jira 1418. Sample file contains a number after space. s_MTBLS1.txt vs incorrect s_MTBLS1 1.txt
                     copy_file(source, destination)
             else:
                 if include_raw_data:
@@ -157,6 +155,8 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                 logger.info('Copied file %s to %s', source, destination)
                             except OSError as e:
                                 logger.error('File already exists? Can not copy %s to %s', source, destination, str(e))
+                    else:
+                        logger.info("Newer file already exists. Will not copy '%s' to '%s'", source, destination)
     except Exception as e:
         logger.error(str(e))
         raise
