@@ -190,24 +190,26 @@ class Ontology(Resource):
                     logger.info(e.args)
 
             if len(result) == 0:
-                print("Can't find query in metabolights-zooma.tsv, requesting Zooma")
-                logger.info("Can't find query in MTBLS ontology, requesting Zooma")
-                try:
-                    result = getZoomaTerm(term)
-                except Exception as e:
-                    print(e.args)
-                    logger.info(e.args)
-            if len(result) == 0:
-                print("Can't query it in Zooma, requesting OLS")
-                logger.info("Can't query it in Zooma, requesting OLS")
+                print("Can't query it in Zooma.tsv, requesting OLS")
+                logger.info("Can't query it in Zooma.tsv, requesting OLS")
                 try:
                     result = getOLSTerm(term)
                 except Exception as e:
                     print(e.args)
                     logger.info(e.args)
+
             if len(result) == 0:
-                print("Can't query it in OLS, request Bioportal")
-                logger.info("Can't query it in OLS, request Bioportal")
+                print("Can't find query in OLS, requesting Zooma")
+                logger.info("Can't find query in OLS, requesting Zooma")
+                try:
+                    result = getZoomaTerm(term)
+                except Exception as e:
+                    print(e.args)
+                    logger.info(e.args)
+
+            if len(result) == 0:
+                print("Can't query it in Zooma, request Bioportal")
+                logger.info("Can't query it in Zooma, request Bioportal")
                 try:
                     result = getBioportalTerm(term)
                 except  Exception as e:
@@ -221,11 +223,11 @@ class Ontology(Resource):
             if 'MTBLS_Zooma' in queryFields:
                 result += getMetaboZoomaTerm(term, mapping='fuzzy')
 
-            if 'Zooma' in queryFields:
-                result += getZoomaTerm(term)
-
             if 'OLS' in queryFields:
                 result += getOLSTerm(term)
+
+            if 'Zooma' in queryFields:
+                result += getZoomaTerm(term)
 
             if 'Bioportal' in queryFields:
                 result += getBioportalTerm(term)
@@ -238,7 +240,7 @@ class Ontology(Resource):
         #     result = reorder(result, term)
 
         priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-        result = setPriority(result, priority)
+        # result = setPriority(result, priority)
         result = reorder(result, term)
         result = removeDuplicated(result)
 
@@ -465,9 +467,7 @@ def OLSbranchSearch(keyword, branchName, ontoName):
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         json_str = json.loads(content)
-        # print(json_str['response']['docs'])
         res = json_str['response']['docs'][0]['iri']
-        # return res
         return urllib.parse.quote_plus(res)
 
     branchIRI = getStartIRI(branchName, ontoName)
@@ -510,7 +510,6 @@ def getMetaboTerm(keyword, branch):
                 logger.info("Can't find a branch called " + branch)
                 print("Can't find a branch called " + branch)
                 return []
-
 
         else:  # term = 1, branch = 0, search term in the whole ontology
             try:
@@ -590,9 +589,12 @@ def getMetaboTerm(keyword, branch):
 
             if 'MTBLS' in cls.iri:
                 enti.ontoName = 'MTBLS'
+            else:
+                try:
+                    onto_name = getOnto_Name(enti.iri)[0]
+                except:
+                    onto_name = ''
 
-            if enti.ontoName == '':
-                onto_name = getOnto_Name(enti.iri)[0]
                 enti.ontoName = onto_name
                 enti.provenance_name = onto_name
 
@@ -630,7 +632,7 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
         for i in range(len(temp)):
             iri = temp.iloc[i]['SEMANTIC_TAG']
             name = ' '.join(
-                [w.title() if w.islower() else w for w in temp.iloc[i]['PROPERTY_VALUE'].split()])
+                [w.capitalize() if w.islower() else w for w in temp.iloc[i]['PROPERTY_VALUE'].split()])
             obo_ID = iri.rsplit('/', 1)[-1]
 
             enti = entity(name=name,
@@ -671,14 +673,14 @@ def getZoomaTerm(keyword):
             iri = term['semanticTags'][0]
 
             name = ' '.join(
-                [w.title() if w.islower() else w for w in term["annotatedProperty"]['propertyValue'].split()])
+                [w.capitalize() if w.islower() else w for w in term["annotatedProperty"]['propertyValue'].split()])
 
             enti = entity(name=name,
                           iri=iri,
                           Zooma_confidence=term['confidence'])
 
             if enti.ontoName == '':
-                enti.ontoName,enti.definition = getOnto_Name(iri)
+                enti.ontoName, enti.definition = getOnto_Name(iri)
 
             try:
                 enti.provenance_name = term['derivedFrom']['provenance']['source']['name']
@@ -720,7 +722,7 @@ def getOLSTerm(keyword):
 
         for term in responses:
             name = ' '.join(
-                [w.title() if w.islower() else w for w in term['label'].split()])
+                [w.capitalize() if w.islower() else w for w in term['label'].split()])
 
             try:
                 definition = term['description'][0]
@@ -819,13 +821,14 @@ def getOnto_Name(iri):
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
         try:
-            return j_content['_embedded']['terms'][0]['ontology_prefix'],j_content['_embedded']['terms'][0]['description'][0]
+            return j_content['_embedded']['terms'][0]['ontology_prefix'], \
+                   j_content['_embedded']['terms'][0]['description'][0]
         except:
-            return j_content['_embedded']['terms'][0]['ontology_prefix'],''
+            return j_content['_embedded']['terms'][0]['ontology_prefix'], ''
 
     except:
         substring = iri.rsplit('/', 1)[-1]
-        return ''.join(x for x in substring if x.isalpha()),''
+        return ''.join(x for x in substring if x.isalpha()), ''
 
 
 # def getOnto_version(pre_fix):
