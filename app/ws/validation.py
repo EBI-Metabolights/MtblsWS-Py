@@ -862,6 +862,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
     derived_file_found = False
     for file in study_files:
         file_name = file['file']
+        file_name = str(file_name)
         file_type = file['type']
         file_status = file['status']
         isa_tab_warning = False
@@ -894,7 +895,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
             if sample_cnt > 1:
                 add_msg(validations, val_section, "Only one active sample sheet per study is allowed", error,
-                        val_section, value='Number of active sample sheets ' + sample_cnt,
+                        val_section, value='Number of active sample sheets ' + str(sample_cnt),
                         val_sequence=4, log_category=log_category)
 
             if file_status == 'old':
