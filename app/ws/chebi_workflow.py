@@ -1470,7 +1470,6 @@ class ChEBIPipeLine(Resource):
         parser.add_argument('annotation_file_name', help="Metabolite Annotation File", location="args")
         args = parser.parse_args()
         annotation_file_name = args['annotation_file_name']
-        annotation_file_name = annotation_file_name.strip()
 
         if annotation_file_name is None:
             # Loop through all m_*_v2_maf.tsv files
@@ -1488,6 +1487,7 @@ class ChEBIPipeLine(Resource):
                     if maf_len != new_maf_len:
                         maf_changed += 1
         else:
+            annotation_file_name = annotation_file_name.strip()
             maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = \
                 search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token)
             return {"in_rows": maf_len, "out_rows": new_maf_len,
