@@ -476,6 +476,7 @@ class CopyFilesFolders(Resource):
                                 logger.info('Removing directory ' + destination_file)
                                 shutil.rmtree(destination_file)  # Remove the destination file/folder first
 
+                            logger.info("Copying folder '%s' to study folder '%s'", source_file, destination_file)
                             shutil.copytree(source_file, destination_file)
                             status = True
                         except OSError as e:

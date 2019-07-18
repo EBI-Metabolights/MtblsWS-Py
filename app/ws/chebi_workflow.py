@@ -27,6 +27,7 @@ import pronto
 import re
 import urllib.parse
 import fileinput
+import numpy as np
 from subprocess import *
 from flask import current_app as app
 from zeep import Client
@@ -62,7 +63,7 @@ alt_name_column = 'alt_name'
 database_identifier_column = "database_identifier"
 
 spreadsheet_fields = {database_identifier_column: 0, "chemical_formula": 1, "smiles": 2, "inchi": 3,
-                      maf_compound_name_column: 4,  "row_id": 5, "cluster": 6, search_flag: 7, alt_name_column: 8,
+                      maf_compound_name_column: 4,  "row_id": 5, "combination": 6, search_flag: 7, alt_name_column: 8,
                       "iupac_name": 9, "definition": 10, final_cid_column_name: 11, "pubchem_cid": 12,
                       "pubchem_cid_ik": 13, "csid_ik": 14, "final_smiles": 15, "final_inchi": 16,
                       "final_inchi_key": 17, "pubchem_smiles": 18, "cactus_smiles": 19, "opsin_smiles": 20,
@@ -70,7 +71,7 @@ spreadsheet_fields = {database_identifier_column: 0, "chemical_formula": 1, "smi
                       "cactus_inchi_key": 25, "opsin_inchi_key": 26, "pubchem_formula": 27, "pubchem_synonyms": 28,
                       "cactus_synonyms": 29, "cas_no": 30, "organism": 31, "organism_part": 32, "strain": 33,
                       "doi": 34, "direct_parent": 35, "mtbls_acc": 36, "comment": 37, "classyfire_search_id": 38,
-                      "chebi_search_type": 39}
+                      "search_type": 39}
 
 
 def get_idx(name):
@@ -231,24 +232,98 @@ def get_existing_values(df, comp_name):
     return row
 
 
-def get_sample_details(study_id,user_token, study_location):
-    samples = []
+def get_sample_details(study_id, user_token, study_location):
     start_time = time.time()
     isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                     skip_load_tables=False,
+                                                     skip_load_tables=True,
                                                      study_location=study_location)
     if isa_study:
-        for sample in isa_study.sample:
-            if sample not in samples:
-                samples.append(sample)
-                # 'Characteristics[Organism]'
-    print_log("  -- Reading ISA-Tab sample file took %s seconds" % round(time.time() - start_time, 2))
-    return samples
+        sample_file = isa_study.filename
+        sample_df = read_tsv(os.path.join(study_location, sample_file))
+    print_log("Reading ISA-Tab sample file took %s seconds" % round(time.time() - start_time, 2))
+
+    unique_org_count = 0
+    all_orgs = []
+    all_orgs_with_index = []
+    for idx, sample in sample_df.iterrows():
+        try:
+            org = sample['Characteristics[Organism]'] + ' [' \
+                  + convert_to_chebi_onto(sample['Term Accession Number']) + ']'
+        except:
+            org = ""
+
+        try:
+            org_part = sample['Characteristics[Organism part]'] \
+                       + ' [' + convert_to_chebi_onto(sample['Term Accession Number.1']) + ']'
+        except:
+            org_part = ""
+
+        variant = ""
+        variant_onto = ""
+        try:
+            variant = sample['Characteristics[Variant]']  # There may not always be an ontology for this, so two calls
+            variant_onto = ' [' + convert_to_chebi_onto(sample['Term Accession Number.2']) + ']'
+            variant = variant + variant_onto
+        except:
+            variant = variant + variant_onto
+
+        complete_org = org + "|" + org_part + "|" + variant
+
+        if complete_org not in all_orgs:
+            unique_org_count += 1
+            all_orgs.append(complete_org)
+            all_orgs_with_index.append(complete_org + '|' + str(unique_org_count))
+
+    return all_orgs_with_index  # all_orgs
 
 
-def search_and_update_maf(study_id, study_location, samples, annotation_file_name, classyfire_search):
+def convert_to_chebi_onto(onto_term):
+    # Example: http://purl.bioontology.org/ontology/NCBITAXON/39414
+    chebi_onto = onto_term.lower().replace("ncbitaxon/", "ncbitaxon:")
+    chebi_onto = chebi_onto.rsplit('/', 1)[1]  # Only keep the final part of the URL
+    chebi_onto = chebi_onto.replace("ncbi:", "ncbitaxon:").replace("_", ":").upper()
+    return chebi_onto
+
+
+def populate_sample_rows(pubchem_df, study_id, user_token, study_location):
+    all_organisms = get_sample_details(study_id, user_token, study_location)
+    organism_len = len(all_organisms)
+    newdf = pubchem_df.copy()
+    newdf = newdf.replace(np.nan, '', regex=True)
+    pubchem_len = len(pubchem_df)
+
+    if organism_len > 1:  # Multiply rows by number of unique sample rows
+        newdf = pd.DataFrame(np.repeat(pubchem_df.values, organism_len, axis=0))
+        newdf.columns = pubchem_df.columns
+
+    # For simplicy extend the list to the same length as the dataframe
+    all_organisms = duplicate(all_organisms, pubchem_len)
+
+    for idx, row in newdf.iterrows():   # Loop and add the different unique sample rows
+        if row[0] == "":  # Only add if database is not known
+            s_row = all_organisms[idx]
+            org_parts = s_row.split('|')
+            newdf.iloc[idx, get_idx('organism')] = org_parts[0]
+            newdf.iloc[idx, get_idx('organism_part')] = org_parts[1]
+            newdf.iloc[idx, get_idx('strain')] = org_parts[2]
+            newdf.iloc[idx, get_idx('combination')] = org_parts[3]
+
+    newdf.drop_duplicates(keep='first', inplace=True)
+
+    return newdf
+
+
+def duplicate(my_list, n):
+    new_list = []
+    for i in range(n):
+        new_list.extend(my_list)
+    return new_list
+
+
+def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token):
     sdf_file_list = []
     exiting_pubchem_file = False
+    first_start_time = time.time()
     short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
                                    annotation_file_name.replace('.tsv', ''))
     if annotation_file_name.endswith(pubchem_end):
@@ -259,7 +334,9 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
     annotation_file_name = os.path.join(study_location, annotation_file_name)
     pd.options.mode.chained_assignment = None  # default='warn'
 
-    standard_maf_columns = {database_identifier_column: 0, "chemical_formula": 1, "smiles": 2, "inchi": 3}
+    standard_maf_columns = {database_identifier_column: get_idx(database_identifier_column),
+                            "chemical_formula": get_idx('chemical_formula'),
+                            "smiles": get_idx('smiles'), "inchi": get_idx('inchi')}
 
     try:
         maf_df = read_tsv(annotation_file_name)
@@ -288,6 +365,7 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
             maf_df.iloc[:, standard_maf_columns[column_name]] = ""
 
         pubchem_df = create_pubchem_df(maf_df)
+        pubchem_df = reindex_row_id(pubchem_df)
 
     row_idx = 0
     if exiting_pubchem_file:
@@ -316,23 +394,28 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
 
         print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
 
-        pubchem_df.iloc[row_idx, 5] = row_idx + 1  # Row id
+        if not exiting_pubchem_file:
+            pubchem_df.iloc[row_idx, get_idx('row_id')] = row_idx + 1  # Row id
+            # if not database_id:
+            #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
 
         if comp_name == alt_name:
             print_log("    -- Using alt_name '" + alt_name + "'")
 
         if search and comp_name and check_if_unknown(comp_name):
-            # So if have a name, but no ChEBI id, try to search for it  # ToDo, use final_cid
-
             existing_row = get_existing_values(pubchem_df, original_comp_name)
             if len(existing_row.index) > 0:
                 print_log("    -- Updating row(s) for compound name '" + original_comp_name +
                           "' (alt name = '" + alt_name + "')")
 
                 pubchem_df.update(pubchem_df[[maf_compound_name_column]].merge(existing_row, 'left'))
-                pubchem_df.iloc[row_idx, get_idx('row_id')] = row_idx + 1  # Update Row id again, not use the copied row
+                if not exiting_pubchem_file:
+                    pubchem_df.iloc[row_idx, get_idx('row_id')] = row_idx + 1  # Update Row id again, not use the copied row
+                    # if not database_id:
+                    #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
+
                 pubchem_df.iloc[row_idx, get_idx(alt_name_column)] = alt_name     # Add in the original alt name again
-                pubchem_df.iloc[row_idx, get_idx('chebi_search_type')] = 'copy_existing_row'  # Search category/type for logging
+                pubchem_df.iloc[row_idx, get_idx('search_type')] = 'copy_existing_row'  # Search category/type for logging
                 changed = True
             else:
                 start_time = time.time()
@@ -350,6 +433,8 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                 if search_res and search_res['content']:
                     result = search_res['content'][0]
                     database_identifier = result["databaseId"]
+                    if not database_identifier:
+                        database_identifier = ""
                     chemical_formula = result["formula"]
                     smiles = result["smiles"]
                     inchi = result["inchi"]
@@ -360,12 +445,15 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                     pubchem_df.iloc[row_idx, get_idx('smiles')] = smiles
                     pubchem_df.iloc[row_idx, get_idx('inchi')] = inchi
                     pubchem_df.iloc[row_idx, get_idx(maf_compound_name_column)] = original_comp_name  #  name / metabolite_identification from MAF
-                    pubchem_df.iloc[row_idx, get_idx('row_id')] = ''
+                    if not exiting_pubchem_file:
+                        pubchem_df.iloc[row_idx, get_idx('row_id')] = ''
+                        # if not database_id:
+                        #     pubchem_df.iloc[row_idx, get_idx('combination')] = ''  # Sorting cluster
                     pubchem_df.iloc[row_idx, get_idx('search_flag')] = ''
                     pubchem_df.iloc[row_idx, get_idx(alt_name_column)] = alt_name  # alt_name, for us to override the submitted name
 
                     if name:
-                        pubchem_df.iloc[row_idx, get_idx('chebi_search_type')] = 'plugin_search'  # Search category/type for logging
+                        pubchem_df.iloc[row_idx, get_idx('search_type')] = 'plugin_search'  # Search category/type for logging
                         if database_identifier:
                             if database_identifier.startswith('CHEBI:'):
                                 chebi_found = True
@@ -383,7 +471,7 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                     pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
                         where_found = pubchem_search(comp_name, search_type='name', search_category='compound')
 
-                    pubchem_df.iloc[row_idx, 34] = where_found  # Search category/type for logging
+                    pubchem_df.iloc[row_idx, get_idx('search_type')] = where_found  # Search category/type for logging
                     cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
                     opsin_stdinchikey = opsin_search(comp_name, 'stdinchikey')
                     cactus_smiles = cactus_search(comp_name, 'smiles')
@@ -436,22 +524,20 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                             csid = get_csid(pc_inchi_key)
                             pubchem_df.iloc[row_idx, get_idx('csid_ik')] = csid
 
-                    pubchem_df.iloc[row_idx, get_idx('pubchem_smiles')] = pc_smiles            # pc_smiles
-                    pubchem_df.iloc[row_idx, get_idx('cactus_smiles')] = cactus_smiles        # cactus_smiles
-                    pubchem_df.iloc[row_idx, get_idx('opsin_smiles')] = opsin_smiles         # opsin_smiles
-                    pubchem_df.iloc[row_idx, get_idx('pubchem_inchi')] = pc_inchi             # PubChem inchi
-                    pubchem_df.iloc[row_idx, get_idx('cactus_inchi')] = cactus_inchi         # Cactus inchi
-                    pubchem_df.iloc[row_idx, get_idx('opsin_inchi')] = opsin_inchi          # Opsin inchi
-                    pubchem_df.iloc[row_idx, get_idx('pubchem_inchi_key')] = pc_inchi_key         # PubChem stdinchikey
-                    pubchem_df.iloc[row_idx, get_idx('cactus_inchi_key')] = cactus_stdinchikey   # cactus_stdinchikey
+                    pubchem_df.iloc[row_idx, get_idx('pubchem_smiles')] = pc_smiles             # pc_smiles
+                    pubchem_df.iloc[row_idx, get_idx('cactus_smiles')] = cactus_smiles          # cactus_smiles
+                    pubchem_df.iloc[row_idx, get_idx('opsin_smiles')] = opsin_smiles            # opsin_smiles
+                    pubchem_df.iloc[row_idx, get_idx('pubchem_inchi')] = pc_inchi               # PubChem inchi
+                    pubchem_df.iloc[row_idx, get_idx('cactus_inchi')] = cactus_inchi            # Cactus inchi
+                    pubchem_df.iloc[row_idx, get_idx('opsin_inchi')] = opsin_inchi              # Opsin inchi
+                    pubchem_df.iloc[row_idx, get_idx('pubchem_inchi_key')] = pc_inchi_key       # PubChem stdinchikey
+                    pubchem_df.iloc[row_idx, get_idx('cactus_inchi_key')] = cactus_stdinchikey  # cactus_stdinchikey
                     pubchem_df.iloc[row_idx, get_idx('opsin_inchi_key')] = opsin_stdinchikey    # opsin_stdinchikey
                     pubchem_df.iloc[row_idx, get_idx('pubchem_formula')] = pc_formula           # PubChem formula
-                    pubchem_df.iloc[row_idx, get_idx('pubchem_synonyms')] = pc_synonyms          # PubChem synonyms
+                    pubchem_df.iloc[row_idx, get_idx('pubchem_synonyms')] = pc_synonyms         # PubChem synonyms
                     pubchem_df.iloc[row_idx, get_idx('cactus_synonyms')] = cactus_synonyms      # Cactus synonyms
-                    pubchem_df.iloc[row_idx, get_idx('organism')] = ''                   # Organism from study sample sheet
-                    pubchem_df.iloc[row_idx, get_idx('organism_part')] = ''                   # Organism part from study sample sheet
-                    pubchem_df.iloc[row_idx, get_idx('direct_parent')] = ''                   # direct_parent from ClassyFire
-                    pubchem_df.iloc[row_idx, get_idx('mtbls_acc')] = study_id             # MTBLS accession
+                    pubchem_df.iloc[row_idx, get_idx('direct_parent')] = ''                     # direct_parent from ClassyFire
+                    pubchem_df.iloc[row_idx, get_idx('mtbls_acc')] = study_id                   # MTBLS accession
 
                     # Now we may have more information, so let's try to search ChEBI again
                     search_type = ''
@@ -468,9 +554,6 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                     if chebi_id:
                         database_identifier = chebi_id
                         chemical_formula = formula
-                        # smiles = smiles
-                        # inchi = inchi
-                        # name = name
 
                         print_log("    -- Found '" + name + "', ChEBI id " + database_identifier +
                                   " based on direct search, type: " + search_type)
@@ -479,7 +562,7 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                         pubchem_df.iloc[row_idx, get_idx('smiles')] = smiles
                         pubchem_df.iloc[row_idx, get_idx('inchi')] = inchi
                         # 4 is name / metabolite_identification from MAF
-                        pubchem_df.iloc[row_idx, get_idx('chebi_search_type')] = search_type  # ChEBI search category/type for logging
+                        pubchem_df.iloc[row_idx, get_idx('search_type')] = search_type  # ChEBI search category/type for logging
 
                         if name:  # Add to the annotated file as well
                             if database_identifier:
@@ -498,7 +581,10 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
                                                                sdf_file_list, final_inchi, classyfire_search)
                         pubchem_df.iloc[row_idx, get_idx('classyfire_search_id')] = str(classyfire_id).rstrip('.0')
 
-                pubchem_df.iloc[row_idx, get_idx('row_id')] = row_idx + 1  # Row id
+                if not exiting_pubchem_file:
+                    pubchem_df.iloc[row_idx, get_idx('row_id')] = row_idx + 1  # Row id
+                    # if not database_id:
+                    #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Sorting cluster
                 pubchem_df.iloc[row_idx, get_idx(search_flag)] = '1'  # Search flag
                 print_log("    -- Search took %s seconds" % round(time.time() - start_time, 2))
                 changed = True
@@ -514,21 +600,31 @@ def search_and_update_maf(study_id, study_location, samples, annotation_file_nam
             write_tsv(pubchem_df, pubchem_file)
 
         row_idx += 1
-
-    pubchem_df = reindex_maf_row_id(pubchem_df)
+    if not exiting_pubchem_file:
+        pubchem_df = reindex_row_id(pubchem_df)
+        # Add sample into to all rows, also duplicate rows for all samples
+        pubchem_df = populate_sample_rows(pubchem_df, study_id, user_token, study_location)
 
     write_tsv(maf_df, short_file_name + "_annotated.tsv")
+
     pubchem_file = short_file_name + pubchem_end
     write_tsv(pubchem_df, pubchem_file)
+    pubchem_df = re_sort_pubchem_file(pubchem_df)
 
-    concatenate_sdf_files(pubchem_df, study_location + os.sep + anno_sub_folder + os.sep,
-                          short_file_name + complete_end, short_file_name + classyfire_end,
-                          classyfire_search, study_id)
+    annotated_study_location = study_location + os.sep + anno_sub_folder + os.sep
+    update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search, study_id)
+    concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end)
+    print_log("ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
+    return maf_df, maf_len, new_maf_df, str(len(pubchem_df)), pubchem_file
 
-    return maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file
+
+def re_sort_pubchem_file(pubchem_df):
+    pubchem_df.row_id = pd.to_numeric(pubchem_df.row_id, errors='coerce')
+    pubchem_df = pubchem_df.sort_values(by='row_id', axis=0, ascending=True)
+    return pubchem_df
 
 
-def reindex_maf_row_id(pubchem_df):
+def reindex_row_id(pubchem_df):
     for idx, row in pubchem_df.iterrows():
         pubchem_df.iloc[idx, get_idx('row_id')] = idx + 1  # Row id
     return pubchem_df
@@ -544,71 +640,98 @@ def create_annotation_folder(folder_loc):
         print_log(str(e))
 
 
-def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, classyfire_file_name, classyfire_search, study_id):
+def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, classyfire_search, study_id):
     return_format = 'sdf'  # 'json' will require a new root element to separate the entries before merging
     classyfire_file_name = classyfire_file_name + '.' + return_format
-
     classyfire_df = get_classyfire_lookup_mapping()
 
-    # ToDo, only write files if we have downloaded SDF files
-    # Create a new concatenated SDF file
-    with open(sdf_file_name, 'w') as outfile:
-        #short_df = pubchem_df[[final_cid_column_name, database_identifier_column, 'classyfire_search_id', 'organism', 'organism_part']]
-        final_cid_list = []
-        for idx, row in pubchem_df.iterrows():
-            cid = row[final_cid_column_name]
-            db_id = row[database_identifier_column]
-            cf_id = row["classyfire_search_id"]
-            organism = row['organism']
-            organism_part = row['organism_part']
-            iupac_name = row['iupac_name']
+    cluster_ids = []
+    for idx, row in pubchem_df.iterrows():
+        cid = row[final_cid_column_name]
+        db_id = row[database_identifier_column]
+        cf_id = row["classyfire_search_id"]
+        organism = row['organism']
+        organism_part = row['organism_part']
+        iupac_name = row['iupac_name']
+        strain = row['strain']
+        direct_parent = None
+        combination = row['combination']
+        row_id = row['row_id']
 
-            if cid and not db_id and cid not in final_cid_list:
+        if cid and not db_id:
+            cluster_ids.append(row_id)  # Keep count of the number of ORGANISM sections to add to ChEBI SDF file
+            fname = cid + pubchem_sdf_extension
+            full_file = os.path.join(study_location, fname)
+            cluster_itr = len([p for p in cluster_ids if p == row_id])
 
-                final_cid_list.append(cid)
-                fname = cid + pubchem_sdf_extension
-                full_file = os.path.join(study_location, fname)
+            print_log(" -- Processing PubChem SDF file " + fname)
 
+            if not os.path.isfile(full_file):
+                try:
+                    print_log('       -- PubChem file for CID ' + cid + ' is missing or final id has been added manually to the spreadsheet. Trying to download again')
+                    pcp.download('SDF', full_file, cid)
+                except Exception as e:
+                    print_log(str(e))
+
+            mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + cid + pubchem_sdf_extension)
+            if cluster_itr == 1:  # First time, remove some of the PubChem parameters
                 mtbls_sdf_file_name = remove_pubchem_sdf_parameters(study_location, fname)
 
-                # Now, get the classyFire queries, download sdf files
-                classyfire_sdf_values = get_classyfire_results(cf_id, full_file, return_format, classyfire_search, classyfire_df)
-                add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism,
-                                        organism_part=organism_part, iupack_name=iupac_name,
-                                        database_accession='PubChem:CID'+cid)
+            # Now, get the classyFire queries, download sdf files
+            classyfire_sdf_values = get_classyfire_results(cf_id, full_file, return_format,
+                                                           classyfire_search, classyfire_df)
 
-                # merge data from Classyfire SDF into new PubChem SDF
-                if classyfire_sdf_values:
-                    is_a = classyfire_sdf_values['is_a']
-                    direct_parent = classyfire_sdf_values['direct_parent']
-                    add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a)
-                    print_log("       -- adding ancestors to SDF file " + fname)
+            # merge data from Classyfire SDF into new PubChem SDF
+            if classyfire_sdf_values:
+                is_a = classyfire_sdf_values['is_a']
+                direct_parent = classyfire_sdf_values['direct_parent']
+                add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,
+                                        name=iupac_name, iupack_name=iupac_name)
+                print_log("       -- adding ancestors to SDF file " + fname)
 
-                # ToDo, After we have the new PubChem SDF, merge all new SDFs into one larger SDF for ChEBI submission
-                if os.path.isfile(full_file):
+            add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism,
+                                    strain=strain, organism_part=organism_part, name=iupac_name, iupack_name=iupac_name,
+                                    relationships=direct_parent, database_accession='PubChem:CID'+cid,
+                                    cluster_itr=cluster_itr, temp_id=row_id)
+
+            if not os.path.isfile(full_file):
+                print_log("       -- Will try to download SDF file for CID " + cid)
+                pcp.download('SDF', full_file, cid, overwrite=True)  # try to pull down the sdf from PubChem
+
+
+def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name):
+    print_log("Concatenating the PubChem and ClassyFire SDF information into the ChEBI submission SDF")
+
+    final_cid_list = []
+    with open(sdf_file_name, 'w') as outfile:
+        for idx, row in pubchem_df.iterrows():
+            p_cid = row[final_cid_column_name]
+            p_db_id = row[database_identifier_column]
+            if p_cid and not p_db_id and p_cid not in final_cid_list:
+                final_cid_list.append(p_cid)
+                mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + p_cid + pubchem_sdf_extension)
+                if os.path.isfile(mtbls_sdf_file_name):
                     try:
-                        with open(full_file) as infile:
+                        with open(mtbls_sdf_file_name) as infile:
                             for line in infile:
-                                outfile.write(line)
+                                if not line.startswith("#"):
+                                    outfile.write(line)
+                                else:
+                                    print_log("       -- Not adding comment: " + line.rstrip('\n'))
                     except Exception as e:
-                        print_log("       -- Warning, can not read SDF file (" + full_file + ")")
+                        print_log("       -- Warning, can not read SDF file (" + mtbls_sdf_file_name + ") " + str(e))
                 else:
-                    print_log("    -- Will try to download SDF file for CID " + cid)
-                    pcp.download('SDF', full_file, cid, overwrite=True)  # try to pull down the sdf from PubChem
-
+                    print_log("       -- Error: could not find SDF file: " + mtbls_sdf_file_name)
         outfile.close()
-
-        # If we have a real new SDF file, remove the smaller sdf files
-        # remove_sdf_files(sdf_file_name, study_location, sdf_file_list)
 
 
 def remove_pubchem_sdf_parameters(study_location, sdf_file_name):
-
     lines = []
     mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + sdf_file_name)
+    pubchem_sdf_file_name = os.path.join(study_location, sdf_file_name)
     template_start = 'M  END\n'
     template_body = '''>  <ID>
-TEMP_001
+TEMP_#template_temp_id#
 
 >  <NAME>
 #template_name#
@@ -624,78 +747,104 @@ TEMP_001
 
 >  <RELATIONSHIP>
 #template_relationships#
-
->  <ORGANISM1>
-#template_organism#
-
->  <ORGANISM_PART1>
-#template_organism_part#
-
->  <STRAIN1>
-#template_strain#
-
->  <SOURCE_METABOLIGHT1>
-#template_mtbls_accession#
-
-$$$$'''
+$$$$
+'''
     try:
-        with open(os.path.join(study_location, sdf_file_name), 'r', encoding="utf-8") as infile:
-            for line in infile:
-                lines.append(line)
-            infile.close()
+        if os.path.isfile(pubchem_sdf_file_name):
+            with open(pubchem_sdf_file_name, 'r+', encoding="utf-8") as infile:
+                for line in infile:
+                    lines.append(line)
+                infile.close()
 
-        with open(mtbls_sdf_file_name, 'w', encoding="utf-8") as outfile:
-            for line in lines:
-                if line == template_start:
-                    outfile.write(line)
-                    outfile.write(template_body)
-                    outfile.close()
-                    break
-                else:
-                    outfile.write(line)
+            with open(mtbls_sdf_file_name, 'w', encoding="utf-8") as outfile:
+                for line in lines:
+                    if line == template_start:
+                        outfile.write(line)
+                        outfile.write(template_body)
+                        # outfile.write(get_template_sample_body(1))
+                        outfile.close()
+                        break
+                    else:
+                        outfile.write(line)
+                outfile.close()
+        else:
+            print_log("Error, can not read PubChem SDF file " + pubchem_sdf_file_name)
 
     except Exception as e:
-        print_log("    -- Could not read from SDF file: " + sdf_file_name + ". Error: " + str(e))
+        print_log("    -- Could not read from PubChem SDF file: " + sdf_file_name + ". Error: " + str(e))
 
     return mtbls_sdf_file_name
 
 
+def get_template_sample_body(itr):
+    itr = str(itr)
+    template = '''
+>  <ORGANISM#itr#>
+#template_organism#
+
+>  <ORGANISM_PART#itr#>
+#template_organism_part#
+
+>  <STRAIN#itr#>
+#template_strain#
+
+>  <SOURCE_METABOLIGHT#itr#>
+#template_mtbls_accession#
+
+$$$$'''
+    return template.replace('#itr#', str(itr))
+
+
 def add_classyfire_sdf_info(mtbls_pubchem_sdf_file, mtbls_accession=None, relationships=None, name=None,
                             definition=None, iupack_name=None, database_accession=None, organism=None,
-                            organism_part=None, strain=None):
+                            organism_part=None, strain=None, cluster_itr=None, temp_id=None):
+    body_text = None
+    if cluster_itr:
+        body_text = get_template_sample_body(cluster_itr)
 
-    with open(mtbls_pubchem_sdf_file, 'r', encoding="utf-8") as infile:
-        filedata = infile.read()
+    if os.path.isfile(mtbls_pubchem_sdf_file):
+        with open(mtbls_pubchem_sdf_file, 'r', encoding="utf-8") as infile:
+            filedata = infile.read()
+            infile.close()
 
-        if name:
-            filedata = filedata.replace('#template_name#', name)
+            if body_text:
+                filedata = filedata.replace('$$$$', body_text)
 
-        if definition:
-            filedata = filedata.replace('#template_definition#', definition)
+            if temp_id:
+                filedata = filedata.replace('#template_temp_id#', str(temp_id))
 
-        if iupack_name:
-            filedata = filedata.replace('#template_iupack_name#', iupack_name)
+            if name:
+                filedata = filedata.replace('#template_name#', name)
 
-        if database_accession:
-            filedata = filedata.replace('#template_database_accessions#', database_accession)
+            if definition:
+                filedata = filedata.replace('#template_definition#', definition)
 
-        if relationships:
-            filedata = filedata.replace('#template_relationships#', relationships)
+            if iupack_name:
+                filedata = filedata.replace('#template_iupack_name#', iupack_name)
 
-        if organism:
-            filedata = filedata.replace('#template_organism#', organism)
+            if database_accession:
+                filedata = filedata.replace('#template_database_accessions#', database_accession)
 
-        if organism_part:
-            filedata = filedata.replace('#template_organism_part#', organism_part)
+            if relationships:
+                filedata = filedata.replace('#template_relationships#', relationships)
 
-        if strain:
-            filedata = filedata.replace('#template_strain#', strain)
+            if organism:
+                filedata = filedata.replace('#template_organism#', organism)
 
-        if mtbls_accession:
-            filedata = filedata.replace('#template_mtbls_accession#', mtbls_accession)
+            if organism_part:
+                filedata = filedata.replace('#template_organism_part#', organism_part)
 
-    with open(mtbls_pubchem_sdf_file, 'w', encoding="utf-8") as outfile:
-        outfile.write(filedata)
+            if strain:
+                filedata = filedata.replace('#template_strain#', strain)
+
+            if mtbls_accession:
+                filedata = filedata.replace('#template_mtbls_accession#', mtbls_accession)
+
+        with open(mtbls_pubchem_sdf_file, 'w', encoding="utf-8") as outfile:
+            outfile.write(filedata)
+            outfile.close()
+    else:
+        print_log("File not found: " + mtbls_pubchem_sdf_file)
 
 
 def remove_sdf_files(sdf_file_name, study_location, sdf_file_list):
@@ -735,7 +884,7 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
             classyfire_file_name = classyfire_file_name.replace("_pubchem.sdf", "_classyfire.sdf")
             if not os.path.isfile(classyfire_file_name):
                 start_time = time.time()
-                print_log("  -- Getting ClassyFire SDF for query id: " + str(query_id))
+                print_log("       -- Getting ClassyFire SDF for query id: " + str(query_id))
                 url = app.config.get('CLASSYFIRE_ULR')
                 r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
                                  headers={"Content-Type": "application/%s" % return_format})
@@ -747,13 +896,14 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
                         text = r.text
                         with open(classyfire_file_name, 'w', encoding='utf-8') as cf_file:
                             cf_file.write(text)
+                            cf_file.close()
                 except Exception as e:
-                    print_log("    -- ERROR: Could not read classyFire SDF file " + classyfire_file_name
+                    print_log("       -- ERROR: Could not read classyFire SDF file " + classyfire_file_name
                               + ". Error:" + str(e))
 
-                print_log("    -- ClassyFire SDF download took %s seconds" % round(time.time() - start_time, 2))
+                print_log("       -- ClassyFire SDF download took %s seconds" % round(time.time() - start_time, 2))
             else:
-                print_log("  -- Already downloaded ClassyFire SDF for query id: " + str(query_id))
+                print_log("       -- Already downloaded ClassyFire SDF for query id: " + str(query_id))
 
             if classyfire_search:
                 all_ancestors = get_ancestors(classyfire_file_name, classyfire_df)
@@ -802,7 +952,7 @@ def get_ancestors(classyfire_file_name, classyfire_df):
                         "direct_parent": parent_name, "c_sdf_file": classyfire_file_name, "is_a": is_a}
 
     except Exception as e:
-        print_log("    -- Could not read from SDF file: " + classyfire_file_name + ". Error: " + str(e))
+        print_log("    -- Could not read from Classyfire SDF file: " + classyfire_file_name + ". Error: " + str(e))
 
     # onto = get_chebi_obo_file()
     # for compound_name in direct_parents:
@@ -943,43 +1093,6 @@ def create_pubchem_df(maf_df):
     for idx, name in enumerate(spreadsheet_fields):
         if idx > 4:
             pubchem_df[name] = ''
-
-    # pubchem_df = maf_df[[database_identifier_column, 'chemical_formula', 'smiles', 'inchi', maf_compound_name_column]]
-    # pubchem_df['row_id'] = ''                   # 5
-    # pubchem_df['cluster'] = ''                  # 6
-    # pubchem_df[search_flag] = ''                # 7
-    # pubchem_df[alt_name_column] = ''            # 8
-    # pubchem_df['iupac_name'] = ''               # 9
-    # pubchem_df['definition'] = ''               # 10
-    # pubchem_df[final_cid_column_name] = ''      # 11
-    # pubchem_df['pubchem_cid'] = ''              # 12
-    # pubchem_df['pubchem_cid_ik'] = ''           # 13 PubChem CID from InChIKey search (Cactus, OBSIN)
-    # pubchem_df['csid_ik'] = ''                  # 14 ChemSpider ID (CSID) from INCHIKEY
-    # pubchem_df['final_smiles'] = ''             # 15
-    # pubchem_df['final_inchi'] = ''              # 16
-    # pubchem_df['final_inchi_key'] = ''          # 17
-    # pubchem_df['pubchem_smiles'] = ''           # 18
-    # pubchem_df['cactus_smiles'] = ''            # 19
-    # pubchem_df['opsin_smiles'] = ''             # 20
-    # pubchem_df['pubchem_inchi'] = ''            # 21
-    # pubchem_df['cactus_inchi'] = ''             # 22
-    # pubchem_df['opsin_inchi'] = ''              # 23
-    # pubchem_df['pubchem_inchi_key'] = ''        # 24
-    # pubchem_df['cactus_inchi_key'] = ''         # 25
-    # pubchem_df['opsin_inchi_key'] = ''          # 26
-    # pubchem_df['pubchem_formula'] = ''          # 27
-    # pubchem_df['pubchem_synonyms'] = ''         # 28
-    # pubchem_df['cactus_synonyms'] = ''          # 29
-    # pubchem_df['cas_no'] = ''                   # 30
-    # pubchem_df['organism'] = ''                 # 31
-    # pubchem_df['organism_part'] = ''            # 32
-    # pubchem_df['strain'] = ''                   # 33
-    # pubchem_df['doi'] = ''                      # 34
-    # pubchem_df['direct_parent'] = ''            # 35
-    # pubchem_df['mtbls_acc'] = ''                # 36
-    # pubchem_df['comment'] = ''                  # 37
-    # pubchem_df['classyfire_search_id'] = ''     # 38
-    # pubchem_df['chebi_search_type'] = ''        # 39
 
     return pubchem_df
 
@@ -1358,9 +1471,6 @@ class ChEBIPipeLine(Resource):
         args = parser.parse_args()
         annotation_file_name = args['annotation_file_name'].strip()
 
-        samples = []
-        #samples = get_sample_details(study_id, user_token, study_location)
-
         if annotation_file_name is None:
             # Loop through all m_*_v2_maf.tsv files
             study_files, upload_files, upload_diff, upload_location = \
@@ -1373,13 +1483,13 @@ class ChEBIPipeLine(Resource):
                 if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
                     maf_count += 1
                     maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = \
-                        search_and_update_maf(study_id, study_location, samples, file_name, classyfire_search)
+                        search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token)
                     if maf_len != new_maf_len:
                         maf_changed += 1
         else:
             maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = \
-                search_and_update_maf(study_id, study_location, samples, annotation_file_name, classyfire_search)
-            return {"in_maf_rows": maf_len, "out_maf_rows": new_maf_len,
+                search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token)
+            return {"in_rows": maf_len, "out_rows": new_maf_len,
                     "pubchem_file": http_file_location + pubchem_file.split(study_id)[1]}
 
         return {"success": str(maf_count) + " MAF files checked for pipelines, " +
