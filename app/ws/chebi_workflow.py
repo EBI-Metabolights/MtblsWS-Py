@@ -649,6 +649,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
     for idx, row in pubchem_df.iterrows():
         cid = row[final_cid_column_name]
         db_id = row[database_identifier_column]
+        name = row[maf_compound_name_column]
         cf_id = row["classyfire_search_id"]
         organism = row['organism']
         organism_part = row['organism_part']
@@ -686,11 +687,11 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                 is_a = classyfire_sdf_values['is_a']
                 direct_parent = classyfire_sdf_values['direct_parent']
                 add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,
-                                        name=iupac_name, iupack_name=iupac_name)
+                                        name=name, iupack_name=iupac_name)
                 print_log("       -- adding ancestors to SDF file " + fname)
 
             add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism,
-                                    strain=strain, organism_part=organism_part, name=iupac_name, iupack_name=iupac_name,
+                                    strain=strain, organism_part=organism_part, name=name, iupack_name=iupac_name,
                                     relationships=direct_parent, database_accession='PubChem:CID'+cid,
                                     cluster_itr=cluster_itr, temp_id=row_id)
 

@@ -214,6 +214,8 @@ def check_file(file_name_and_column, study_location, file_name_list):
         return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
     elif file_type == 'compressed' and column_name == 'Free Induction Decay Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+    elif file_type == 'compressed' and column_name == 'Acquisition Parameter Data File':
+        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'fid' and column_name == 'Free Induction Decay Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'raw' and column_name == 'Raw Spectral Data File':
@@ -673,8 +675,12 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                         add_msg(validations, val_section, header + " was referenced in assay row " + row_idx,
                                 success, filename, val_sequence=7.5, log_category=log_category)
                     else:
+                        val_type = error
+                        if 'Acquisition Parameter Data File' in header or 'Free Induction Decay Data File' in header:
+                            val_type = warning
+
                         add_msg(validations, val_section, header + " was not referenced in assay row " + row_idx,
-                                error, filename, val_sequence=7.5, log_category=log_category)
+                                val_type, filename, val_sequence=7.5, log_category=log_category)
 
             if derived_tested and raw_tested:
                 if not raw_found and not derived_found:
@@ -809,8 +815,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
             if all_assay_names:
                 if len(all_assay_names) < all_rows:
-                    add_msg(validations, val_section, "MS/NMR Assay name column must only contain unique values",
-                            error, assay.filename, val_sequence=4, log_category=log_category)
+                    add_msg(validations, val_section, "MS/NMR Assay name column should only contain unique values",
+                            warning, assay.filename, val_sequence=4, log_category=log_category)
                 else:
                     add_msg(validations, val_section, "MS/NMR Assay name column only contains unique values",
                             success, assay.filename, val_sequence=4, log_category=log_category)
@@ -856,7 +862,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
     study_files, upload_files, upload_diff, upload_location = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
-                                      directory=None, include_raw_data=True, validation_only=True)
+                                      directory=None, include_raw_data=True, validation_only=True,
+                                      include_upload_folder=False)
     sample_cnt = 0
     raw_file_found = False
     derived_file_found = False

@@ -36,17 +36,24 @@ iac = IsaApiClient()
 
 
 def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None, include_raw_data=None,
-                                  assay_file_list=None, validation_only=False):
+                                  assay_file_list=None, validation_only=False, include_upload_folder=True):
     logger.info('Getting list of all files for MTBLS Study %s', study_id)
     upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
     logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                 study_location, upload_location)
 
+    start_time = time.time()
+    s_start_time = time.time()
     study_files = get_all_files(study_location, directory=directory,
                                 include_raw_data=include_raw_data, study_id=study_id,
                                 assay_file_list=assay_file_list, validation_only=validation_only)
-    upload_files = get_all_files(upload_location, directory=directory,
+    logger.info("Listing study files for " + study_id + " took %s seconds" % round(time.time() - s_start_time, 2))
+    upload_files = []
+    if include_upload_folder:
+        u_start_time = time.time()
+        upload_files = get_all_files(upload_location, directory=directory,
                                  include_raw_data=include_raw_data, study_id=study_id, validation_only=validation_only)
+        logger.info("Listing upload files for " + study_id + " took %s seconds" % round(time.time() - u_start_time, 2))
 
     # Sort the two lists
     study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
@@ -56,6 +63,8 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
                    {frozenset(row.items()) for row in study_files}]
 
     upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
+
+    logger.info("Listing all files for " + study_id + " took %s seconds" % round(time.time() - start_time, 2))
 
     return study_files, upload_files, upload_diff, upload_location
 
@@ -791,7 +800,8 @@ def get_file_information(path, directory=None, include_raw_data=False, assay_fil
             if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX:
                 if not include_raw_data:  # Only return metadata files
                     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
-                        file_time, raw_time, file_type, status, folder = get_file_times(path, file_name)
+                        file_time, raw_time, file_type, status, folder = \
+                            get_file_times(path, file_name, validation_only=validation_only)
                 else:
                     file_time, raw_time, file_type, status, folder = \
                         get_file_times(path, file_name, assay_file_list=assay_file_list,
