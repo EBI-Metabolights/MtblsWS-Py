@@ -74,7 +74,7 @@ JIRA_PARAMS = {
 }
 
 # Timeout in secounds when listing a large folder for files
-FILE_LIST_TIMEOUT = 30
+FILE_LIST_TIMEOUT = 90
 
 VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
 OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
