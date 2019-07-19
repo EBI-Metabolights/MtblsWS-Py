@@ -176,6 +176,12 @@ def check_if_unknown(comp_name):
 
         if comp_name.startswith(c_name):
             return False
+    try:
+        if int(comp_name) > 0:
+            print_log("Compound name is only a number? Ignoring '" + comp_name + "'")
+            return False  # Name is just a number?
+    except:
+        return True
 
     return True
 
