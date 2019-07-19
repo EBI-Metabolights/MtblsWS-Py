@@ -835,11 +835,11 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
     """ There can be more than one assay, so each MAF must be checked against
     each Assay file. Do not state a MAF as not in use if it's used in the 'other' assay """
     found = False
-
+    start_time = time.time()
     if os.sep + 'audit' + os.sep in directory:
         return False
 
-    if assay_file_list and isa_tab_file_to_check == 'a_':
+    if assay_file_list and isa_tab_file_to_check.startswith('a_'):
         if file_name in assay_file_list:
             return True
         else:
@@ -861,6 +861,7 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
             logger.error('File Format error? Cannot read or open file ' + file_name)
             logger.error(str(e))
 
+    logger.info("Looking for file name " + file_name + " in ISA-Tab files took %s seconds" % round(time.time() - start_time, 2))
     return found
 
 

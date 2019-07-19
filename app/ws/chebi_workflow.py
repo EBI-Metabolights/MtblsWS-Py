@@ -306,7 +306,10 @@ def populate_sample_rows(pubchem_df, study_id, user_token, study_location):
             newdf.iloc[idx, get_idx('organism')] = org_parts[0]
             newdf.iloc[idx, get_idx('organism_part')] = org_parts[1]
             newdf.iloc[idx, get_idx('strain')] = org_parts[2]
-            newdf.iloc[idx, get_idx('combination')] = org_parts[3]
+
+            combination = org_parts[3]
+            if organism_len > 1 and combination:
+                newdf.iloc[idx, get_idx('combination')] = org_parts[3]
 
     newdf.drop_duplicates(keep='first', inplace=True)
 
@@ -495,6 +498,16 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     if not final_cid:
                         final_cid = get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey)
                         pubchem_df.iloc[row_idx, get_idx(final_cid_column_name)] = final_cid  # Final PubChem CID should now be the cactus or opsin
+
+                    # if no pc_name and/or pc_synonyms, then use the final_cid to query pubchem again
+                    if final_cid and (not pc_name or not pc_synonyms):
+                        pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
+                            where_found = pubchem_search(final_cid, search_type='cid', search_category='cid')
+                        if pc_name:
+                            pubchem_df.iloc[row_idx, get_idx('iupac_name')] = pc_name
+                        if pc_synonyms:
+                            pubchem_df.iloc[row_idx, get_idx('pubchem_synonyms')] = pc_synonyms
+
                     pubchem_df.iloc[row_idx, get_idx('pubchem_cid_ik')] = pc_cid    # PubChem CID
                     pubchem_df.iloc[row_idx, get_idx('csid_ik')] = csid      # ChemSpider ID (CSID) from INCHI
                     pubchem_df.iloc[row_idx, get_idx('final_smiles')] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # final smiles
@@ -612,7 +625,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     pubchem_df = re_sort_pubchem_file(pubchem_df)
 
     annotated_study_location = study_location + os.sep + anno_sub_folder + os.sep
-    update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search, study_id)
+    update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search,
+                         study_id, pubchem_file)
     concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end)
     print_log("ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
     return maf_df, maf_len, new_maf_df, str(len(pubchem_df)), pubchem_file
@@ -640,10 +654,12 @@ def create_annotation_folder(folder_loc):
         print_log(str(e))
 
 
-def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, classyfire_search, study_id):
+def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, classyfire_search,
+                         study_id, pubchem_file_name):
     return_format = 'sdf'  # 'json' will require a new root element to separate the entries before merging
     classyfire_file_name = classyfire_file_name + '.' + return_format
     classyfire_df = get_classyfire_lookup_mapping()
+    file_changed = False
 
     cluster_ids = []
     for idx, row in pubchem_df.iterrows():
@@ -656,7 +672,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         iupac_name = row['iupac_name']
         strain = row['strain']
         direct_parent = None
-        combination = row['combination']
+        comment = row['comment']
         row_id = row['row_id']
 
         if cid and not db_id:
@@ -686,6 +702,9 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
             if classyfire_sdf_values:
                 is_a = classyfire_sdf_values['is_a']
                 direct_parent = classyfire_sdf_values['direct_parent']
+                file_changed = True
+                if direct_parent:
+                    pubchem_df.iloc[idx, get_idx('direct_parent')] = ''  # direct_parent from ClassyFire
                 add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,
                                         name=name, iupack_name=iupac_name)
                 print_log("       -- adding ancestors to SDF file " + fname)
@@ -693,12 +712,15 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
             add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism,
                                     strain=strain, organism_part=organism_part, name=name, iupack_name=iupac_name,
                                     relationships=direct_parent, database_accession='PubChem:CID'+cid,
-                                    cluster_itr=cluster_itr, temp_id=row_id)
+                                    cluster_itr=cluster_itr, temp_id=row_id, comment=comment)
 
             if not os.path.isfile(full_file):
                 print_log("       -- Will try to download SDF file for CID " + cid)
                 pcp.download('SDF', full_file, cid, overwrite=True)  # try to pull down the sdf from PubChem
 
+    if file_changed:
+        write_tsv(pubchem_df, pubchem_file_name)
+        
 
 def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name):
     print_log("Concatenating the PubChem and ClassyFire SDF information into the ChEBI submission SDF")
@@ -748,6 +770,10 @@ TEMP_#template_temp_id#
 
 >  <RELATIONSHIP>
 #template_relationships#
+
+>  <COMMENT>
+#template_comment#
+
 $$$$
 '''
     try:
@@ -798,7 +824,7 @@ $$$$'''
 
 def add_classyfire_sdf_info(mtbls_pubchem_sdf_file, mtbls_accession=None, relationships=None, name=None,
                             definition=None, iupack_name=None, database_accession=None, organism=None,
-                            organism_part=None, strain=None, cluster_itr=None, temp_id=None):
+                            organism_part=None, strain=None, cluster_itr=None, temp_id=None, comment=None):
     body_text = None
     if cluster_itr:
         body_text = get_template_sample_body(cluster_itr)
@@ -825,6 +851,7 @@ def add_classyfire_sdf_info(mtbls_pubchem_sdf_file, mtbls_accession=None, relati
 
             if database_accession:
                 filedata = filedata.replace('#template_database_accessions#', database_accession)
+                #ToDo, add ChemSpider (csid_ik) as well + any other synonyms (two columns)
 
             if relationships:
                 filedata = filedata.replace('#template_relationships#', relationships)
@@ -840,6 +867,9 @@ def add_classyfire_sdf_info(mtbls_pubchem_sdf_file, mtbls_accession=None, relati
 
             if mtbls_accession:
                 filedata = filedata.replace('#template_mtbls_accession#', mtbls_accession)
+
+            if comment:
+                filedata = filedata.replace('#template_comment#', comment)
 
         with open(mtbls_pubchem_sdf_file, 'w', encoding="utf-8") as outfile:
             outfile.write(filedata)
@@ -973,7 +1003,7 @@ def get_chebi_obo_file():
     return onto
 
 
-def get_chebi_mapping(compound_name):
+def get_chebi_mapping():
     print_log('Reading ClassyFire to ChEBI mapping file')
     mapping_file = load_chebi_classyfire_mapping()
 
@@ -1203,6 +1233,9 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
             print_log("    -- Searching PubChem for " + search_category + " '" + comp_name + "'")
             pubchem_compound = get_compounds(comp_name, namespace=search_type)
             where_found = 'pubchem_compound'
+            if pubchem_compound and search_category == 'cid':
+                where_found = 'pubchem_compound_on_final_cid'
+
             if not pubchem_compound and search_category == 'substance':
                 print_log("    -- Querying PubChem Substance '" + comp_name + "'")
                 _cid = get_pubchem_substance(comp_name, 'cid')
@@ -1215,14 +1248,13 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
 
             print_log("    -- Found PubChem " + search_category + " '" + compound.iupac_name + "'")
         except IndexError:
-
             print_log("    -- Could not find PubChem " + search_category + " for '" + comp_name + "'")   # Nothing was found
 
         if compound:
             inchi = compound.inchi.strip().rstrip('\n')
             inchi_key = compound.inchikey.strip().rstrip('\n')
             smiles = compound.canonical_smiles.strip().rstrip('\n')
-            iupac = compound.iupac_name.strip().rstrip('\n')  # ToDo, more than one newline encoding??
+            iupac = compound.iupac_name.strip().rstrip('\n')
             # ToDo, generate from structure. Venkat has Marvin license
             iupac = iupac.replace('f', '').replace('{', '').replace('}', '')
             iupac = iupac.strip().rstrip('\n')

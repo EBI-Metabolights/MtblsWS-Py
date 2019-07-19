@@ -863,7 +863,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
     study_files, upload_files, upload_diff, upload_location = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
-                                      include_upload_folder=False)
+                                      include_upload_folder=False, assay_file_list=get_assay_file_list(study_location))
     sample_cnt = 0
     raw_file_found = False
     derived_file_found = False
