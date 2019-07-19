@@ -318,6 +318,7 @@ def populate_sample_rows(pubchem_df, study_id, user_token, study_location):
                 newdf.iloc[idx, get_idx('combination')] = org_parts[3]
 
     newdf.drop_duplicates(keep='first', inplace=True)
+    newdf.reset_index(drop=True, inplace=True)
 
     return newdf
 
@@ -710,7 +711,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                 direct_parent = classyfire_sdf_values['direct_parent']
                 file_changed = True
                 if direct_parent:
-                    pubchem_df.iloc[idx, get_idx('direct_parent')] = ''  # direct_parent from ClassyFire
+                    pubchem_df.iloc[idx, get_idx('direct_parent')] = direct_parent  # direct_parent from ClassyFire
                 add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,
                                         name=name, iupack_name=iupac_name)
                 print_log("       -- adding ancestors to SDF file " + fname)
