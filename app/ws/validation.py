@@ -690,11 +690,11 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                 elif raw_found:
                     add_msg(validations, val_section,
                             "Raw Spectral Data File is referenced in assay row " + row_idx,
-                            success, filename, val_sequence=7.2, log_category=log_category)
+                            success, filename, value=value,  val_sequence=7.2, log_category=log_category)
                 elif derived_found:
                     add_msg(validations, val_section,
                             "Derived Spectral Data File is referenced in assay row " + row_idx,
-                            success, filename, val_sequence=7.3, log_category=log_category)
+                            success, filename, value=value, val_sequence=7.3, log_category=log_category)
 
     return validations
 
@@ -778,7 +778,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 validate_column, required_column, val_descr = get_assay_column_validations(validation_schema, a_header)
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
                 try:
-                    if validate_column and not a_header.endswith(' Data File'):
+                    if validate_column: # and not a_header.endswith(' Data File'):
                         for row in assay_df[a_header]:
                             # validate_column = False
                             if row:
