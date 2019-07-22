@@ -456,12 +456,11 @@ class CopyFilesFolders(Resource):
                     study_location)
 
         audit_status, dest_path = write_audit_files(study_location)
-        if single_files_only:
+        if single_files_only and len(files) >= 1:
             for file in files:
                 try:
                     from_file = file["from"]
                     to_file = file["to"]
-
                     source_file = os.path.join(upload_location, to_file)
                     destination_file = os.path.join(study_location, to_file)
 
