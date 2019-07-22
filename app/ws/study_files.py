@@ -439,7 +439,7 @@ class CopyFilesFolders(Resource):
                 files = data_dict['files']
                 single_files_only = True
             except KeyError:
-                abort(417, "The JSON string has to have a 'files' element")
+                logger.info("No 'files' parameter was provided.")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
