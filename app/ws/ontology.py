@@ -631,8 +631,10 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
 
         for i in range(len(temp)):
             iri = temp.iloc[i]['SEMANTIC_TAG']
-            name = ' '.join(
-                [w.capitalize() if w.islower() else w for w in temp.iloc[i]['PROPERTY_VALUE'].split()])
+            # name = ' '.join(
+            #     [w.capitalize() if w.islower() else w for w in temp.iloc[i]['PROPERTY_VALUE'].split()])
+
+            name = temp.iloc[i]['PROPERTY_VALUE'].capitalize()
             obo_ID = iri.rsplit('/', 1)[-1]
 
             enti = entity(name=name,
@@ -672,8 +674,10 @@ def getZoomaTerm(keyword):
         for term in json_str:
             iri = term['semanticTags'][0]
 
-            name = ' '.join(
-                [w.capitalize() if w.islower() else w for w in term["annotatedProperty"]['propertyValue'].split()])
+            # name = ' '.join(
+            #     [w.capitalize() if w.islower() else w for w in term["annotatedProperty"]['propertyValue'].split()])
+
+            name = term["annotatedProperty"]['propertyValue'].capitalize()
 
             enti = entity(name=name,
                           iri=iri,
@@ -721,8 +725,9 @@ def getOLSTerm(keyword):
         responses = j_content["response"]['docs']
 
         for term in responses:
-            name = ' '.join(
-                [w.capitalize() if w.islower() else w for w in term['label'].split()])
+            # name = ' '.join([w.capitalize() if w.islower() else w for w in term['label'].split()])
+
+            name = term['label'].capitalize()
 
             try:
                 definition = term['description'][0]
