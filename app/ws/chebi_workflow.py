@@ -807,6 +807,8 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name):
         for idx, row in pubchem_df.iterrows():
             p_cid = row[final_cid_column_name]
             p_db_id = row[database_identifier_column]
+            if 'CHEBI:' not in p_db_id:
+                p_db_id = ""
             if p_cid and not p_db_id and p_cid not in final_cid_list:
                 final_cid_list.append(p_cid)
                 mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + p_cid + pubchem_sdf_extension)
