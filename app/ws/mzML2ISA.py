@@ -145,7 +145,6 @@ class ValidateMzML(Resource):
         ]
     )
     def post(self, study_id):
-
         user_token = None
         # User authentication
         if "user_token" in request.headers:
