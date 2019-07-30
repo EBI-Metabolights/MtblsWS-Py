@@ -734,7 +734,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         cactus_synonyms = row['cactus_synonyms']
         database_accession = row['DATABASE_ACCESSION']
 
-        if cid and not db_id:
+        if cid and not db_id.startswith('CHEBI:'):
             cluster_ids.append(row_id)  # Keep count of the number of ORGANISM sections to add to ChEBI SDF file
             fname = cid + pubchem_sdf_extension
             full_file = os.path.join(study_location, fname)
@@ -807,9 +807,7 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name):
         for idx, row in pubchem_df.iterrows():
             p_cid = row[final_cid_column_name]
             p_db_id = row[database_identifier_column]
-            if 'CHEBI:' not in p_db_id:
-                p_db_id = ""
-            if p_cid and not p_db_id and p_cid not in final_cid_list:
+            if p_cid and not p_db_id.startswith('CHEBI:') and p_cid not in final_cid_list:
                 final_cid_list.append(p_cid)
                 mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + p_cid + pubchem_sdf_extension)
                 if os.path.isfile(mtbls_sdf_file_name):
@@ -855,7 +853,6 @@ TEMP_#template_temp_id#
 
 >  <COMMENT>
 #template_comment#
-
 $$$$
 '''
     try:
@@ -905,6 +902,7 @@ def get_template_sample_body(itr):
 
 >  <SOURCE_METABOLIGHT#itr#>
 #template_mtbls_accession#
+
 $$$$'''
     return template.replace('#itr#', str(itr))
 
