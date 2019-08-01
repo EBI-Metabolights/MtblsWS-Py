@@ -578,9 +578,9 @@ def validate_xml(xsd, xml):
         return False, "Can not validate the file " + xml
 
 
-def to_isa_tab(study_id, input_folder, outout_folder):
+def to_isa_tab(study_id, input_folder, output_folder):
     try:
-        isa_convert(input_folder, outout_folder, study_id)
+        isa_convert(input_folder, output_folder, study_id, jobs=2)
     except:
         return False, "Could not convert mzML to ISA-Tab study " + study_id
 
@@ -590,23 +590,7 @@ def to_isa_tab(study_id, input_folder, outout_folder):
 def convert_to_isa(study_location, study_id):
     input_folder = study_location
     output_folder = study_location
-
     status, message = to_isa_tab(study_id, input_folder, output_folder)
-    # if status:
-    #     location = study_location
-    #     files = glob.glob(os.path.join(location, 'i_Investigation.txt'))
-    #     if files:
-    #         file_path = files[0]
-    #         filename = os.path.basename(file_path)
-    #         try:
-    #             return send_file(file_path, cache_timeout=-1,
-    #                              as_attachment=True, attachment_filename=filename)
-    #         except OSError as err:
-    #             logger.error(err)
-    #             return False, "Generated ISA-Tab i_Investigation.txt file could not be read."
-    #     else:
-    #         return False, "Generated ISA-Tab i_Investigation.txt file could not be found."
-    # else:
     return status, message
 
 
