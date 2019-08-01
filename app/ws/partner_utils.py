@@ -28,6 +28,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.utils import validate_mzml_files, convert_to_isa, copy_file, read_tsv, write_tsv, \
     update_correct_sample_file_name, get_year_plus_one
+from app.ws.db_connection import update_release_date
 
 wsc = WsClient()
 iac = IsaApiClient()
@@ -193,9 +194,10 @@ def copy_metabolon_template(study_id, user_token, study_location):
         )
 
         try:
+            update_release_date(study_id, study_date)
             wsc.reindex_study(study_id, user_token)
         except:
-            logger.info("Could not index study " + study_id)
+            logger.info("Could not updated database and re-index study " + study_id)
     except:
         return False, "Could not update Metabolon template for study " + study_id
 

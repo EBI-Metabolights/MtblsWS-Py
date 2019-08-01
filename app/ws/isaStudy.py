@@ -26,7 +26,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
 from flask_restful_swagger import swagger
 from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv
-from app.ws.db_connection import study_submitters
+from app.ws.db_connection import study_submitters, update_release_date
 import logging
 import os
 import datetime
@@ -413,6 +413,8 @@ class StudyReleaseDate(Resource):
         isa_study.public_release_date = new_date
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
+        # update database
+        update_release_date(study_id, new_date)
         status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Applied %s', new_date)
         return jsonify({"release_date": new_date})

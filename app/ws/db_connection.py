@@ -217,6 +217,22 @@ def get_all_studies(user_token):
     return data
 
 
+def update_release_date(study_id, release_date):
+    query_update_release_date = "update studies set releasedate = %s where acc = %s;"
+    query_update_release_date = query_update_release_date.replace('\\', '')
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn = psycopg2.connect(**params)
+        cursor = conn.cursor()
+        cursor.execute(query_update_release_date, (release_date, study_id))
+        conn.commit()
+        conn.close()
+        return True, "Date updated for study " + study_id
+
+    except Exception as e:
+        return False, str(e)
+
+
 def get_curation_log(user_token):
     data = execute_query(query_curation_log, user_token)
     return data
