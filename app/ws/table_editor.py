@@ -20,6 +20,7 @@ import logging
 import json
 import os
 import pandas as pd
+import numpy as np
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -555,9 +556,11 @@ class AddRows(Resource):
         nickname="Add TSV table row",
         notes='''Update an TSV table for a given Study.
         <p>Please make sure you add a value for echo column/cell combination. 
-        Use the GET method to see all the columns for this tsv file<br>
+        Use the GET method to see all the columns for this tsv file<br> If you do not provide the row "index" parameter,
+        the row will be added at the end of the TSV table
 <pre><code>{
     "data": {
+        "index": 4,
         "rows": [
             {
                 "column name 1": "cell value 1",
@@ -628,9 +631,11 @@ class AddRows(Resource):
         log_request(request)
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
-            new_row = data_dict['data']
+            data = data_dict['data']
+            new_row = data["rows"]
         except KeyError:
             new_row = None
+            data = None
 
         if new_row is None:
             abort(417, "Please provide valid data for updated new row(s). The JSON string has to have a 'data' element")
@@ -674,11 +679,24 @@ class AddRows(Resource):
         if not valid_column_name:
             abort(417, message)
 
-        if new_row[0]:
-            file_df = file_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet (TSV file)
-        else:
-            file_df = file_df.append(pd.Series(), ignore_index=True)
+        if data:
+            try:
+                start_index = data['index']
+            except KeyError:
+                start_index = len(file_df.index)
 
+            for row in new_row:
+                line = pd.DataFrame(row, index=[start_index])
+                file_df = file_df.append(line, ignore_index=False)
+                file_df = file_df.sort_index().reset_index(drop=True)
+                start_index += 1
+
+        # if new_row[0]:
+        #     file_df = file_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet (TSV file)
+        # else:
+        #     file_df = file_df.append(pd.Series(), ignore_index=True)
+
+        file_df = file_df.replace(np.nan, '', regex=True)
         message = write_tsv(file_df, file_name)
 
         # Get an indexed header row

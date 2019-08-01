@@ -17,16 +17,21 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import os
+import glob
+import logging
+import pandas as pd
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from flask import current_app as app, request, abort
 from flask.json import jsonify
 from app.ws.mtblsWSclient import WsClient
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.utils import validate_mzml_files, convert_to_isa, copy_file
+from app.ws.utils import validate_mzml_files, convert_to_isa, copy_file, read_tsv, write_tsv, \
+    update_correct_sample_file_name, get_year_plus_one
 
 wsc = WsClient()
 iac = IsaApiClient()
+logger = logging.getLogger('wslog')
 
 
 class Metabolon(Resource):
@@ -93,8 +98,8 @@ class Metabolon(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -117,7 +122,7 @@ class Metabolon(Resource):
         # Create ISA-Tab files using mzml2isa
         try:
             conv_message = 'Could not convert all the mzML files to ISA-Tab'
-            conv_status, conv_message = convert_to_isa(study_location, study_id)
+            conv_status, conv_message = convert_to_isa(study_location, '')
         except:
             abort(417, conv_message)
 
@@ -155,13 +160,15 @@ class Metabolon(Resource):
 def copy_metabolon_template(study_id, user_token, study_location):
     status, message = True, "Copied Metabolon template into study " + study_id
     template_study_id = app.config.get('PARTNER_TEMPLATE_METABOLON')
+    invest_file = 'i_Investigation.txt'
 
     # Get the correct location of the Metabolon template study
     template_study_location = study_location.replace(study_id.upper(), template_study_id)
-    template_study_location = os.path.join(template_study_location, 'i_Investigation.txt')
+    template_study_location = os.path.join(template_study_location, invest_file)
+    dest_file = os.path.join(study_location, invest_file)
 
     try:
-        copy_file(template_study_location, study_location)
+        copy_file(template_study_location, dest_file)
     except:
         return False, "Could not copy Metabolon template into study " + study_id
 
@@ -171,10 +178,24 @@ def copy_metabolon_template(study_id, user_token, study_location):
             study_id=study_id, api_key=user_token, skip_load_tables=True, study_location=study_location)
 
         isa_study.identifier = study_id  # Adding the study identifier
+
+        # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
+        isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_id)
+
+        # Set publication date to one year in the future
+        study_date = get_year_plus_one(isa_format=True)
+        isa_study.public_release_date = study_date
+
         # Updated the files with the study accession
         iac.write_isa_study(
             inv_obj=isa_inv, api_key=user_token, std_path=study_location,
-            save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False)
+            save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
+        )
+
+        try:
+            wsc.reindex_study(study_id, user_token)
+        except:
+            logger.info("Could not index study " + study_id)
     except:
         return False, "Could not update Metabolon template for study " + study_id
 
@@ -182,6 +203,37 @@ def copy_metabolon_template(study_id, user_token, study_location):
 
 
 def split_metabolon_assays(study_location, study_id):
+    p_start = 'a__POS'
+    n_start = 'a__NEG'
+    end = '_m'
+    pos = p_start + end
+    neg = n_start + end
+    sample_col = 'Sample Name'
+
+    for a_files in glob.glob(os.path.join(study_location, 'a__*_metabolite_profiling_mass_spectrometry.txt')):
+        if pos in a_files:
+            p_assay = read_tsv(a_files)
+            p_filename = a_files
+            try:
+                # split based on 'POSEAR' and 'POSLAT'
+                write_tsv(p_assay.loc[p_assay[sample_col].str.contains('POSEAR')],
+                          p_filename.replace(pos, p_start + '_1' + end))
+                write_tsv(p_assay.loc[p_assay[sample_col].str.contains('POSLAT')],
+                          p_filename.replace(pos, p_start + '_2' + end))
+            except:
+                return False, "Failed to generate 2 POSITIVE ISA-Tab assay files for study " + study_id
+
+        elif neg in a_files:
+            n_assay = read_tsv(a_files)
+            n_filename = a_files
+            try:
+                # split based on 'NEG' and 'POL'
+                write_tsv(n_assay.loc[n_assay[sample_col].str.contains('NEG')],
+                          n_filename.replace(neg, n_start + '_1' + end))
+                write_tsv(n_assay.loc[n_assay[sample_col].str.contains('POL')],
+                          n_filename.replace(neg, n_start + '_2' + end))
+            except:
+                return False, "Failed to generate 2 NEGATIVE ISA-Tab assay files for study " + study_id
 
     status, message = True, "Generated 4 ISA-Tab assay files for study " + study_id
 
