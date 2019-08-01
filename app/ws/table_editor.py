@@ -686,7 +686,7 @@ class AddRows(Resource):
                 start_index = len(file_df.index)
 
             for row in new_row:
-                line = pd.DataFrame(row, index=[start_index])
+                line = pd.DataFrame(row, index=[start_index-1])
                 file_df = file_df.append(line, ignore_index=False)
                 file_df = file_df.sort_index().reset_index(drop=True)
                 start_index += 1
