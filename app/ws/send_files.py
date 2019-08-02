@@ -18,7 +18,7 @@
 
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from flask import request, abort, current_app as app, send_file, send_from_directory, safe_join, abort
+from flask import request, send_file, send_from_directory, safe_join, abort, make_response
 from app.ws.mtblsWSclient import WsClient
 import logging, json
 
@@ -95,8 +95,12 @@ class SendFiles(Resource):
         if not read_access:
             abort(403)
         safe_path = safe_join(study_location, file_name)
+
         try:
-            return send_file(safe_path, as_attachment=True, attachment_filename=file_name)
+            resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name))
+            # response.headers["Content-Disposition"] = "attachment; filename={}".format(file_name)
+            resp.headers['Content-Type'] = 'application/octet-stream'
+            return resp
         except FileNotFoundError:
-            abort(404)
+            abort(404, "Could not find file " + file_name)
 
