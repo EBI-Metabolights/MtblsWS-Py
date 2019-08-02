@@ -723,7 +723,9 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         try:
             assay_df = read_tsv(assay_file_name)
         except FileNotFoundError:
-            abort(400, "The file " + assay_file_name + " was not found")
+            add_msg(validations, val_section,
+                    "The file " + assay_file_name + " was not found",
+                    error, assay.filename, val_sequence=2.1, log_category=log_category)
 
         assay_type_onto = assay.technology_type
         if assay_type_onto.term == 'mass spectrometry':
@@ -1401,7 +1403,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
     amber_warning = False
     validations = []
     val_section = "basic"
-    file_name = 'i_Investigation.txt'
+    inv_file_name = 'i_Investigation.txt'
 
     try:
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -1411,9 +1413,11 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
             file_name = isa_study.filename
             isa_sample_df = read_tsv(os.path.join(study_location, file_name))
         except FileNotFoundError:
-            abort(400, "The file " + file_name + " was not found")
+            add_msg(validations, val_section, "The file " + file_name + " was not found", error,
+                    inv_file_name, val_sequence=1.1, log_category=log_category)
         except Exception as e:
-            abort(400, "Could not load the minimum ISA-Tab files")
+            add_msg(validations, val_section, "Could not load the minimum ISA-Tab files", error,
+                    inv_file_name, val_sequence=1.2, log_category=log_category)
 
     except ValueError:
         err = traceback.format_exc()
