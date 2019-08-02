@@ -44,6 +44,7 @@ from app.ws.spectra import ExtractMSSpectra
 from app.ws.study_actions import StudyStatus
 from app.ws.user_management import UserManagement
 from app.ws.metaspace_pipeline import MetaspacePipeLine
+from app.ws.send_files import SendFiles
 
 """
 MTBLS WS-Py
@@ -89,6 +90,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
+    api.add_resource(SendFiles, res_path + "/studies/<string:study_id>/files/download/<string:file_name>")
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
     api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")
