@@ -18,9 +18,10 @@
 
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from flask import request, send_file, send_from_directory, safe_join, abort, make_response
+from flask import request, send_file, safe_join, abort, make_response
 from app.ws.mtblsWSclient import WsClient
-import logging, json
+from app.ws.db_connection import get_obfuscation_code
+import logging
 
 logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client
@@ -49,11 +50,19 @@ class SendFiles(Resource):
                 "dataType": "string"
             },
             {
+                "name": "obfuscation_code",
+                "description": "Study obfuscation code",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -77,7 +86,7 @@ class SendFiles(Resource):
             }
         ]
     )
-    def get(self, study_id, file_name):
+    def get(self, study_id, file_name, obfuscation_code=None):
         # param validation
         if study_id is None or file_name is None:
             logger.info('No study_id and/or file name given')
@@ -85,15 +94,22 @@ class SendFiles(Resource):
         study_id = study_id.upper()
 
         # User authentication
-        user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+        else:
+            user_token = "public_access_only"
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
+
         if not read_access:
+            db_obfuscation_code_list = get_obfuscation_code(study_id)
+            db_obfuscation_code = db_obfuscation_code_list[0][0]
+
+        if db_obfuscation_code != obfuscation_code:
             abort(403)
+
         safe_path = safe_join(study_location, file_name)
 
         try:

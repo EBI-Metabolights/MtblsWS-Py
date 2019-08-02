@@ -282,6 +282,9 @@ class WsClient:
         :return:
         """
 
+        if not user_token:
+            user_token = "public_access_only"
+
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             updated_date, study_status = check_access_rights(user_token, study_id.upper())
 

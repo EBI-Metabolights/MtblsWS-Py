@@ -238,6 +238,18 @@ def get_curation_log(user_token):
     return data
 
 
+def get_obfuscation_code(study_id):
+    query = "select obfuscationcode from studies where acc = '" + study_id + "';"
+    query = query.replace('\\', '')
+    params = app.config.get('DB_PARAMS')
+    conn = psycopg2.connect(**params)
+    cursor = conn.cursor()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    conn.close()
+    return data
+
+
 def biostudies_acc_to_mtbls(biostudies_id):
 
     if not biostudies_id:
