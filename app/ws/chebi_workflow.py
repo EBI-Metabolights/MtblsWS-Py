@@ -347,9 +347,9 @@ def populate_sample_rows(pubchem_df, study_id, user_token, study_location):
         if row[0] == "":  # Only add if database is not known
             s_row = all_organisms[idx]
             org_parts = s_row.split('|')
-            newdf.iloc[idx, get_idx('organism')] = org_parts[0]
-            newdf.iloc[idx, get_idx('organism_part')] = org_parts[1]
-            newdf.iloc[idx, get_idx('strain')] = org_parts[2]
+            newdf.iloc[idx, get_idx('ORGANISM')] = org_parts[0]
+            newdf.iloc[idx, get_idx('ORGANISM_PART')] = org_parts[1]
+            newdf.iloc[idx, get_idx('STRAIN')] = org_parts[2]
 
             combination = org_parts[3]
             if organism_len > 1 and combination:
@@ -830,28 +830,28 @@ def remove_pubchem_sdf_parameters(study_location, sdf_file_name):
     mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + sdf_file_name)
     pubchem_sdf_file_name = os.path.join(study_location, sdf_file_name)
     template_start = 'M  END\n'
-    template_body = '''>  <ID>
+    template_body = '''> <ID>
 TEMP_#template_temp_id#
 
->  <NAME>
+> <NAME>
 #template_name#
 
->  <DEFINITION>
+> <DEFINITION>
 #template_definition#
 
->  <IUPAC_NAME>
+> <IUPAC_NAME>
 #template_iupack_name#
 
->  <DATABASE_ACCESSION>
+> <DATABASE_ACCESSION>
 #template_database_accessions#
 
->  <REFERENCE>
+> <REFERENCE>
 #template_reference#
 
->  <RELATIONSHIP>
+> <RELATIONSHIP>
 #template_relationships#
 
->  <COMMENT>
+> <COMMENT>
 #template_comment#
 $$$$
 '''
@@ -885,22 +885,25 @@ $$$$
 def get_template_sample_body(itr):
     itr = str(itr)
     template = '''
->  <ORGANISM#itr#>
+> <ORGANISM#itr#>
 #template_organism#
 
->  <ORGANISM_PART#itr#>
+> <ORGANISM_PART#itr#>
 #template_organism_part#
 
->  <STRAIN#itr#>
+> <STRAIN#itr#>
 #template_strain#
 
->  <SOURCE_PMID#itr#>
+> <SOURCE_PMID#itr#>
 #template_pmid#
 
->  <SOURCE_ARTICLE#itr#>
+> <SOURCE_DOI#itr#>
+#template_doi#
+
+> <SOURCE_ARTICLE#itr#>
 #template_article#
 
->  <SOURCE_METABOLIGHT#itr#>
+> <SOURCE_METABOLIGHT#itr#>
 #template_mtbls_accession#
 
 $$$$'''
@@ -944,26 +947,26 @@ def add_classyfire_sdf_info(mtbls_pubchem_sdf_file, mtbls_accession=None, relati
             if organism:
                 filedata = filedata.replace('#template_organism#', organism)
 
-            if organism_part:
-                filedata = filedata.replace('#template_organism_part#', organism_part)
+                if organism_part:
+                    filedata = filedata.replace('#template_organism_part#', organism_part)
 
-            if strain:
-                filedata = filedata.replace('#template_strain#', strain)
+                if strain:
+                    filedata = filedata.replace('#template_strain#', strain)
 
-            if mtbls_accession:
-                filedata = filedata.replace('#template_mtbls_accession#', mtbls_accession)
+                if mtbls_accession:
+                    filedata = filedata.replace('#template_mtbls_accession#', mtbls_accession)
+
+                if article:
+                    filedata = filedata.replace('#template_article#', article)
+
+                if pmid:
+                    filedata = filedata.replace('#template_pmid#', pmid)
+
+                if doi:
+                    filedata = filedata.replace('#template_doi#', doi)
 
             if comment:
                 filedata = filedata.replace('#template_comment#', comment)
-
-            if pmid:
-                filedata = filedata.replace('#template_pmid#', pmid)
-
-            if doi:
-                filedata = filedata.replace('#template_doi#', doi)
-
-            if article:
-                filedata = filedata.replace('#template_article#', article)
 
             if reference:
                 filedata = filedata.replace('#template_reference#', reference)
