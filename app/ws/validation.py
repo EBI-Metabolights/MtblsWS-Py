@@ -179,7 +179,7 @@ def get_sample_names(isa_samples):
     return all_samples
 
 
-def check_file(file_name_and_column, study_location, file_name_list):
+def check_file(file_name_and_column, study_location, file_name_list, assay_file_list=None):
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
 
@@ -193,7 +193,7 @@ def check_file(file_name_and_column, study_location, file_name_list):
     if "fid" not in file_name and file_name not in file_name_list:  # Files may be referenced in sub-folders
         return False, ' - unknown - ', "File " + file_name + " does not exist"
 
-    file_type, status, folder = map_file_type(file_name, study_location)
+    file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
     if is_empty_file(os.path.join(study_location, file_name)):
         return False, file_type, "File " + file_name + " is empty"
 
@@ -633,6 +633,7 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
 def check_all_file_rows(assays, assay_df, validations, val_section, filename, all_rows, log_category=error):
     all_file_columns = []
     missing_all_rows = []
+    all_assay_raw_files = []
     for assay_header in assays:
         assay_header = str(assay_header)
         if assay_header.endswith(' Data File'):
@@ -665,10 +666,12 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                 if header == 'Raw Spectral Data File':
                     raw_tested = True
                     if value:
+                        all_assay_raw_files.append(value)
                         raw_found = True
                 elif header == 'Derived Spectral Data File':
                     derived_tested = True
                     if value:
+                        all_assay_raw_files.append(value)
                         derived_found = True
                 else:
                     if value:
@@ -696,7 +699,7 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                             "Derived Spectral Data File is referenced in assay row " + row_idx,
                             success, filename, value=value, val_sequence=7.3, log_category=log_category)
 
-    return validations
+    return validations, all_assay_raw_files
 
 
 def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
@@ -718,6 +721,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         is_ms = False
         assays = []
         all_assay_names = []
+        all_assay_raw_files = []
         unique_file_names = []
         assay_file_name = os.path.join(study_location, assay.filename)
         try:
@@ -812,8 +816,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             error, assay.filename, val_sequence=6, log_category=log_category)
 
             # We validate all file columns separately here
-            validations = check_all_file_rows(assays, assay_df, validations, val_section, assay.filename, all_rows,
-                                              log_category=log_category)
+            validations, all_assay_raw_files = check_all_file_rows(assays, assay_df, validations, val_section,
+                                                                   assay.filename, all_rows, log_category=log_category)
 
             if all_assay_names:
                 if len(all_assay_names) < all_rows:
@@ -845,7 +849,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     for files in unique_file_names:
         file_name = files.split('|')[0]
         column_name = files.split('|')[1]
-        status, file_type, file_description = check_file(files, study_location, file_name_list)
+        status, file_type, file_description = check_file(files, study_location, file_name_list,
+                                                         assay_file_list=all_assay_raw_files)
         if status:
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
                     + column_name + "'", success, descr=file_description, val_sequence=8, log_category=log_category)
@@ -861,11 +866,11 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                    val_section="files", log_category=error):
     # check for Publication
     validations = []
-
+    assay_file_list = get_assay_file_list(study_location)
     study_files, upload_files, upload_diff, upload_location = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
-                                      include_upload_folder=False, assay_file_list=get_assay_file_list(study_location))
+                                      include_upload_folder=False, assay_file_list=assay_file_list)
     sample_cnt = 0
     raw_file_found = False
     derived_file_found = False
