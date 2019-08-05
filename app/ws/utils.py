@@ -839,6 +839,7 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
         One possible problem here is of the maf is found in an old assay file, then we will report it as 
         current """
         try:
+            logger.info("Checking if file " + file_name + " is referenced in " + ref_file_name)
             if file_name in io.open(ref_file_name, 'r', encoding='utf8', errors="ignore").read():
                 found = True
         except Exception as e:
