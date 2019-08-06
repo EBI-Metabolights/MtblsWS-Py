@@ -1119,11 +1119,11 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
 
             if prot_val_name != isa_prot_name:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
-                        "' is not in the correct position or name has different case",
+                        "' is not in the correct position or name has different case/spelling",
                         warning, file_name, val_sequence=1, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
-                        "' is in the correct position and name has correct case",
+                        "' is in the correct position and name has correct case/spelling",
                         success, file_name, val_sequence=2, log_category=log_category)
         except:
             add_msg(validations, val_section, "Protocol '" + prot_val_name + "' was not found", error, file_name,
