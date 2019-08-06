@@ -103,12 +103,12 @@ class SendFiles(Resource):
         is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
 
-        if not read_access:
+        if not read_access and obfuscation_code:
             db_obfuscation_code_list = get_obfuscation_code(study_id)
             db_obfuscation_code = db_obfuscation_code_list[0][0]
 
-        if obfuscation_code and db_obfuscation_code != obfuscation_code:
-            abort(403)
+            if db_obfuscation_code != obfuscation_code:
+                abort(403)
 
         safe_path = safe_join(study_location, file_name)
 
