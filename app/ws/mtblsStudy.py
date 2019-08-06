@@ -304,7 +304,8 @@ class IsaTabSampleFile(Resource):
         sample_filename = None
         if request.args:
             args = parser.parse_args(req=request)
-            sample_filename = args['sample_filename'].lower() if args['sample_filename'] else None
+            sample_filename = args['sample_filename']
+            sample_filename = sample_filename.lower() if args['sample_filename'] else None
         if not sample_filename:
             logger.warning("Missing Sample filename.")
             abort(404, "Missing Sample filename.")
