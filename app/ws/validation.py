@@ -573,16 +573,22 @@ def get_assay_column_validations(validation_schema, a_header):
     validation_schema = get_protocol_assay_rules(validation_schema, a_header)
     validate_column = False
     required_column = False
+    check_schema = True
     val_descr = None
 
-    if a_header.lower() == 'sample name':
+    if a_header.lower() == 'sample name' \
+            or a_header.lower() == 'parameter value[scan polarity]' \
+            or a_header.lower() == 'parameter value[scan m/z range]' \
+            or a_header.lower() == 'parameter value[instrument]':
         validate_column = True
         required_column = True
+        check_schema = False
     elif a_header.lower() == 'metabolite assignment file':
         validate_column = True
         required_column = False
+        check_schema = False
 
-    if validation_schema and a_header.lower() != 'sample name' and a_header.lower() != 'metabolite assignment file':
+    if validation_schema and check_schema:
         validate_column = validation_schema['is-hidden']
         if validate_column == 'false':
             validate_column = False
@@ -780,13 +786,12 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         if not assay_df.empty:
             all_rows = assay_df.shape[0]
             for a_header in assays:
-                a_header = str(a_header)  # Names like '1' and '2', gets interpereted as '1.0' and '2.0'
+                a_header = str(a_header)  # Names like '1' and '2', gets interpreted as '1.0' and '2.0'
                 validate_column, required_column, val_descr = get_assay_column_validations(validation_schema, a_header)
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
                 try:
-                    if validate_column: # and not a_header.endswith(' Data File'):
+                    if validate_column:
                         for row in assay_df[a_header]:
-                            # validate_column = False
                             if row:
                                 col_rows += 1
 
@@ -796,15 +801,21 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                                     sample_name_list, log_category=log_category)
 
                         if col_rows < all_rows:
+
+                            if required_column:
+                                val_type = error
+                            else:
+                                val_type = warning
+
                             if col_rows == 0:
                                 add_msg(validations, val_section,
                                         "Assay sheet '" + assay.filename + "' column '" + a_header + "' is empty",
-                                        warning, assay.filename, val_sequence=4, log_category=log_category)
+                                        val_type, assay.filename, val_sequence=4, log_category=log_category)
                             else:
                                 add_msg(validations,
                                         val_section, "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing some values. " +
                                         str(col_rows) + " rows found, but there should be " + str(all_rows),
-                                        warning, assay.filename, val_sequence=4, log_category=log_category)
+                                        val_type, assay.filename, val_sequence=4, log_category=log_category)
                         else:
                             add_msg(validations, val_section,
                                     "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
@@ -1213,28 +1224,28 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
             affiliation = person.affiliation
 
             if last_name:
-                if len(last_name) >= last_name_val_len:
+                if len(last_name) >= last_name_val_len and validate_name(last_name, 'last_name'):
                     add_msg(validations, val_section, "Person last name '" + last_name + "' validates ", success,
                             file_name, val_sequence=1, log_category=log_category)
                 else:
                     add_msg(validations, val_section, last_name_val_error, error, file_name, value=last_name,
                             descr=last_name_val_description, val_sequence=2, log_category=log_category)
 
-                if not validate_name(last_name, 'last_name'):
-                    add_msg(validations, val_section, "Person last name '" + last_name + "' is not valid ", error,
-                            file_name, val_sequence=1.1, log_category=log_category)
+                # if not validate_name(last_name, 'last_name'):
+                #     add_msg(validations, val_section, "Person last name '" + last_name + "' is not valid ", error,
+                #             file_name, val_sequence=1.1, log_category=log_category)
 
             if first_name:
-                if len(first_name) >= first_name_val_len or not validate_name(first_name, 'first_name'):
+                if len(first_name) >= first_name_val_len and validate_name(first_name, 'first_name'):
                     add_msg(validations, val_section, "Person first name '" + first_name + "' validates", success,
                             file_name, val_sequence=3, log_category=log_category)
                 else:
                     add_msg(validations, val_section, first_name_val_error, error, file_name, value=first_name,
                             descr=first_name_val_description, val_sequence=4, log_category=log_category)
 
-                if not validate_name(first_name, 'first_name'):
-                    add_msg(validations, val_section, "Person forst name '" + last_name + "' is not valid ", error,
-                            file_name, val_sequence=3.1, log_category=log_category)
+                # if not validate_name(first_name, 'first_name'):
+                #     add_msg(validations, val_section, "Person first name '" + last_name + "' is not valid ", error,
+                #             file_name, val_sequence=3.1, log_category=log_category)
 
             if email:
                 if len(email) >= 7:
