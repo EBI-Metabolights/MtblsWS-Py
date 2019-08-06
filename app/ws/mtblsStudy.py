@@ -305,7 +305,7 @@ class IsaTabSampleFile(Resource):
         if request.args:
             args = parser.parse_args(req=request)
             sample_filename = args['sample_filename']
-            sample_filename = sample_filename.lower() if args['sample_filename'] else None
+            # sample_filename = sample_filename.lower() if args['sample_filename'] else None
         if not sample_filename:
             logger.warning("Missing Sample filename.")
             abort(404, "Missing Sample filename.")
@@ -316,7 +316,7 @@ class IsaTabSampleFile(Resource):
         if not read_access:
             abort(401, "Study does not exist or your do not have access to this study.")
 
-        logger.info('Getting ISA-Tab Sample file for %s', study_id)
+        logger.info('Getting ISA-Tab Sample file %s for %s', sample_filename, study_id)
         location = study_location
         files = glob.glob(os.path.join(location, sample_filename))
         if files:
