@@ -109,6 +109,8 @@ class SendFiles(Resource):
 
             if db_obfuscation_code != obfuscation_code:
                 abort(403)
+        else:
+            abort(403)
 
         safe_path = safe_join(study_location, file_name)
 
