@@ -27,6 +27,8 @@ import pronto
 import re
 import urllib.parse
 import fileinput
+import subprocess
+import shlex
 import numpy as np
 from subprocess import *
 from flask import current_app as app
@@ -1692,3 +1694,75 @@ class CheckCompounds(Resource):
         compound_names = args['compound_names']
 
         return {"success": compound_names}
+
+
+class ChEBIPipeLineLoad(Resource):
+    @swagger.operation(
+        summary="Load generate SDF files into ChEBI (curator only)",
+        nickname="Load ChEBI compounds",
+        notes="",
+        parameters=[
+            {
+                "name": "sdf_file_name",
+                "description": "Metabolite Annotation File name",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Metabolite Annotation File (MAF) is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self):
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions('MTBLS1', user_token)
+        if not is_curator:
+            abort(403)
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('sdf_file_name', help="SDF File to load into ChEBI", location="args")
+        args = parser.parse_args()
+        sdf_file_name = args['sdf_file_name']
+
+        shell_script = app.config.get('CHEBI_UPLOAD_SCRIPT')
+        command = shell_script
+        if sdf_file_name:
+            command = shlex.split(shell_script + ' ' + sdf_file_name)
+        if subprocess.call(command) == 0:
+            return {"Success": "ChEBI upload script started"}
+        else:
+            return {"Warning": "ChEBI upload script started"}
+

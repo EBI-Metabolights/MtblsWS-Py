@@ -1687,7 +1687,8 @@ class StudyProtocols(Resource):
 
         force_remove_protocols = True
         args = parser.parse_args()
-        force_remove_protocols = False if args['force'].lower() != 'true' else True
+        force_remove = args['force']
+        force_remove_protocols = False if force_remove.lower() != 'true' else True
         prot_name = args['name'] if args['name'] else None
 
         if not prot_name:

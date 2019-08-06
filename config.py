@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.39.07"
+WS_APP_VERSION = "0.40.01"
 API_VERSION = WS_APP_VERSION
 
 WS_APP_NAME = "MtblsWS-Py"
@@ -83,3 +83,4 @@ CLASSYFIRE_ULR = "http://classyfire.wishartlab.com"
 CLASSYFIRE_MAPPING = "/net/isilon8/ftp_public/databases/metabolights/submissionTool/ClassyFire_Mapping.tsv"
 OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"
 CHEMSPIDER_URL = "http://parts.chemspider.com/JSON.ashx?op="
+CHEBI_UPLOAD_SCRIPT = ""

@@ -874,6 +874,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
     sample_cnt = 0
     raw_file_found = False
     derived_file_found = False
+    compressed_found = False
     for file in study_files:
         file_name = file['file']
         file_name = str(file_name)
@@ -928,11 +929,18 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
         if file_type == 'derived':
             derived_file_found = True
 
+        if file_type == 'compressed':
+            compressed_found = True
+
         file_name_list.append(file_name)
 
     if not raw_file_found and not derived_file_found:
-        add_msg(validations, val_section, "No raw or derived files found", error, val_section,
-                value="", val_sequence=7, log_category=log_category)
+        if compressed_found:
+            add_msg(validations, val_section, "No raw or derived files, but compressed files found", warning,
+                    val_section, value="", val_sequence=7, log_category=log_category)
+        else:
+            add_msg(validations, val_section, "No raw or derived files found", error, val_section,
+                    value="", val_sequence=7, log_category=log_category)
     elif not raw_file_found and derived_file_found:
         add_msg(validations, val_section, "No raw files found, but there are derived files", warning, val_section,
                 value="", descr="Ideally you should provide both raw and derived files",

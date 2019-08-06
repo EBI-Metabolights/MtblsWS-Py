@@ -38,7 +38,7 @@ from app.ws.jira_update import Jira, GoogleDocs
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
 from app.ws.assay_protocol import *
 from app.ws.validation import Validation, OverrideValidation
-from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, CheckCompounds
+from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad, CheckCompounds
 from app.ws.biostudies import *
 from app.ws.spectra import ExtractMSSpectra
 from app.ws.study_actions import StudyStatus
@@ -165,7 +165,8 @@ def initialize_app(flask_app):
     api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
-    api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi_pipeline")
+    api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
+    api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
 
 
