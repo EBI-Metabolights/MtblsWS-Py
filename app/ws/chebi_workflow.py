@@ -29,6 +29,7 @@ import urllib.parse
 import fileinput
 import subprocess
 import shlex
+import glob
 import numpy as np
 from subprocess import *
 from flask import current_app as app
@@ -180,9 +181,10 @@ def jar_wrapper(*args):
     return stdout, stderr
 
 
-def print_log(message):
-    print(str(message))
-    logger.info(str(message))
+def print_log(message, silent=False):
+    if not silent:
+        print(str(message))
+        logger.info(str(message))
 
 
 def check_maf_for_pipes(study_location, annotation_file_name):
@@ -387,7 +389,7 @@ def duplicate(my_list, n):
     return new_list
 
 
-def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token):
+def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token, run_silently):
     sdf_file_list = []
     exiting_pubchem_file = False
     first_start_time = time.time()
@@ -459,17 +461,20 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             if len(alt_name) > 0:
                 comp_name = alt_name
 
-        print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
-
         if not exiting_pubchem_file:
             pubchem_df.iloc[row_idx, get_idx('row_id')] = row_idx + 1  # Row id
             # if not database_id:
             #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
 
-        if alt_name and comp_name == alt_name:
-            print_log("    -- Using alt_name '" + alt_name + "'")
+        if not run_silently:
+            print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
 
         if search and comp_name and check_if_unknown(comp_name):
+            if run_silently:
+                print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
+            if alt_name and comp_name == alt_name:
+                print_log("    -- Using alt_name '" + alt_name + "'")
+
             existing_row = get_existing_values(pubchem_df, original_comp_name)
             if len(existing_row.index) > 0:
                 print_log("    -- Updating row(s) for compound name '" + original_comp_name +
@@ -676,7 +681,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         else:
             pubchem_df.iloc[row_idx, get_idx(search_flag)] = '1'  # Search flag set so we don't search for unknown again
             print_log("    -- Skipping. Already found or no database id/compound name to search for: '"
-                      + database_id + "' '" + comp_name + "'")
+                      + database_id + "' '" + comp_name + "'", run_silently)
 
         pubchem_df.iloc[row_idx, get_idx(search_flag)] = '1'  # Search flag set so we don't search for unknown again
 
@@ -699,9 +704,23 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     annotated_study_location = study_location + os.sep + anno_sub_folder + os.sep
     update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search,
                          study_id, pubchem_file)
-    concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end)
+    concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end, run_silently)
+    change_access_rights(study_location)
     print_log("ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
     return maf_df, maf_len, new_maf_df, str(len(pubchem_df)), pubchem_file
+
+
+def change_access_rights(study_location):
+    chmode = 0o766
+    chebi_folder = os.path.join(study_location, anno_sub_folder)
+    print_log("Changing access right")
+    os.chmod(study_location, chmode)
+    for m_name in glob.glob(os.path.join(study_location, "m_*.tsv")):
+        os.chmod(os.path.join(chebi_folder, m_name), chmode)
+
+    os.chmod(chebi_folder, chmode)
+    for f_name in glob.glob(os.path.join(chebi_folder, "*")):
+        os.chmod(os.path.join(chebi_folder, f_name), chmode)
 
 
 def re_sort_pubchem_file(pubchem_df):
@@ -763,8 +782,9 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
 
             if not os.path.isfile(full_file):
                 try:
-                    print_log('       -- PubChem file for CID ' + cid + ' is missing or final id has been added manually to the spreadsheet. Trying to download again')
-                    pcp.download('SDF', full_file, cid)
+                    if "MTBLS" not in cid:
+                        print_log('       -- PubChem file for CID ' + cid + ' is missing or final id has been added manually to the spreadsheet. Trying to download again')
+                        pcp.download('SDF', full_file, cid)
                 except Exception as e:
                     print_log(str(e))
 
@@ -811,14 +831,15 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                                     pmid=pmid, doi=doi)
 
             if not os.path.isfile(full_file):
-                print_log("       -- Will try to download SDF file for CID " + cid)
-                pcp.download('SDF', full_file, cid, overwrite=True)  # try to pull down the sdf from PubChem
+                if "MTBLS" not in cid:
+                    print_log("       -- Will try to download SDF file for CID " + cid)
+                    pcp.download('SDF', full_file, cid, overwrite=True)  # try to pull down the sdf from PubChem
 
     if file_changed:
         write_tsv(pubchem_df, pubchem_file_name)
         
 
-def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name):
+def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silently):
     print_log("Concatenating the PubChem and ClassyFire SDF information into the ChEBI submission SDF")
 
     final_cid_list = []
@@ -836,7 +857,7 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name):
                                 if not line.startswith("#"):
                                     outfile.write(line)
                                 else:
-                                    print_log("       -- Not adding: " + line.rstrip('\n'))
+                                    print_log("       -- Not adding: " + line.rstrip('\n'), run_silently)
                     except Exception as e:
                         print_log("       -- Warning, can not read SDF file (" + mtbls_sdf_file_name + ") " + str(e))
                 else:
@@ -1029,7 +1050,7 @@ def classyfire(inchi):
 
 def get_classyfire_results(query_id, classyfire_file_name, return_format, classyfire_search, classyfire_df):
     all_ancestors = None
-    if classyfire_search and query_id:
+    if classyfire_search and query_id and query_id != 'None':
         try:
             classyfire_file_name = classyfire_file_name.replace("_pubchem.sdf", "_classyfire.sdf")
             if not os.path.isfile(classyfire_file_name):
@@ -1409,8 +1430,9 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
         if os.path.isfile(full_file):
             print_log("    -- Already have SDF for CID " + str(cid) + " for name: " + iupac)
         else:
-            print_log("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
-            pcp.download('SDF', full_file, cid, overwrite=True)
+            if "MTBLS" not in cid:
+                print_log("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
+                pcp.download('SDF', full_file, cid, overwrite=True)
 
     if classyfire_search and final_inchi:
         print_log("    -- Getting SDF from ClassyFire for  " + str(final_inchi))
@@ -1564,6 +1586,16 @@ class ChEBIPipeLine(Resource):
                 "allowMultiple": False
             },
             {
+                "name": "run_silently",
+                "description": "Do not generate console or log info when skipping rows",
+                "paramType": "header",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -1606,9 +1638,14 @@ class ChEBIPipeLine(Resource):
 
         # Search ClassyFire?
         classyfire_search = False
+        run_silently = False
         if "classyfire_search" in request.headers and \
                 request.headers["classyfire_search"].lower() == 'true':
             classyfire_search = True
+
+        if "run_silently" in request.headers and \
+                request.headers["run_silently"].lower() == 'true':
+            run_silently = True
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -1634,13 +1671,13 @@ class ChEBIPipeLine(Resource):
                 if file_name.startswith('m_') and file_name.endswith('.tsv'):
                     maf_count += 1
                     maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = \
-                        search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token)
+                        search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token, run_silently)
                     if maf_len != new_maf_len:
                         maf_changed += 1
         else:
             annotation_file_name = annotation_file_name.strip()
             maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = \
-                search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token)
+                search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token, run_silently)
             return {"in_rows": maf_len, "out_rows": new_maf_len,
                     "pubchem_file": http_file_location + pubchem_file.split(study_id)[1]}
 
