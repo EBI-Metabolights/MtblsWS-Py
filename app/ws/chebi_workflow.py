@@ -833,8 +833,10 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
             if not os.path.isfile(full_file):
                 if "MTBLS" not in cid:
                     print_log("       -- Will try to download SDF file for CID " + cid)
-                    pcp.download('SDF', full_file, cid, overwrite=True)  # try to pull down the sdf from PubChem
-
+                    try:
+                        pcp.download('SDF', full_file, cid, overwrite=True)  # try to pull down the sdf from PubChem
+                    except Exception as e:
+                        print_log("       -- Error: could not download SDF file for CID " + cid + ". " + str(e))
     if file_changed:
         write_tsv(pubchem_df, pubchem_file_name)
         
@@ -1054,6 +1056,7 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
         try:
             classyfire_file_name = classyfire_file_name.replace("_pubchem.sdf", "_classyfire.sdf")
             if not os.path.isfile(classyfire_file_name):
+                r = None
                 start_time = time.time()
                 print_log("       -- Getting ClassyFire SDF for query id: " + str(query_id))
                 url = app.config.get('CLASSYFIRE_ULR')
