@@ -288,19 +288,34 @@ def get_sample_details(study_id, user_token, study_location):
         sample_df = read_tsv(os.path.join(study_location, sample_file))
     print_log("Reading ISA-Tab sample file took %s seconds" % round(time.time() - start_time, 2))
 
+    try:
+        organism_pos = sample_df.columns.get_loc('Characteristics[Organism]')
+    except:
+        organism_pos = None
+
+    try:
+        organism_part_pos = sample_df.columns.get_loc('Characteristics[Organism part]')
+    except:
+        organism_part_pos = None
+
+    try:
+        variant_pos = sample_df.columns.get_loc('Characteristics[Variant]')
+    except:
+        variant_pos = None
+
     unique_org_count = 0
     all_orgs = []
     all_orgs_with_index = []
     for idx, sample in sample_df.iterrows():
         try:
-            org = sample['Characteristics[Organism]'] + ' [' \
-                  + convert_to_chebi_onto(sample['Term Accession Number']) + ']'
+            org_term = sample[organism_pos + 2]
+            org = sample['Characteristics[Organism]'] + ' [' + convert_to_chebi_onto(org_term) + ']'
         except:
             org = ""
 
         try:
-            org_part = sample['Characteristics[Organism part]'] \
-                       + ' [' + convert_to_chebi_onto(sample['Term Accession Number.1']) + ']'
+            org_part_term = sample[organism_part_pos + 2]
+            org_part = sample['Characteristics[Organism part]'] + ' [' + convert_to_chebi_onto(org_part_term) + ']'
         except:
             org_part = ""
 
@@ -308,7 +323,8 @@ def get_sample_details(study_id, user_token, study_location):
         variant_onto = ""
         try:
             variant = sample['Characteristics[Variant]']  # There may not always be an ontology for this, so two calls
-            variant_onto = ' [' + convert_to_chebi_onto(sample['Term Accession Number.2']) + ']'
+            variant_part_term = sample[variant_pos + 2]
+            variant_onto = ' [' + convert_to_chebi_onto(variant_part_term) + ']'
             variant = variant + variant_onto
         except:
             variant = variant + variant_onto
@@ -327,7 +343,8 @@ def convert_to_chebi_onto(onto_term):
     # Example: http://purl.bioontology.org/ontology/NCBITAXON/39414
     chebi_onto = onto_term.lower().replace("ncbitaxon/", "ncbitaxon:")
     chebi_onto = chebi_onto.rsplit('/', 1)[1]  # Only keep the final part of the URL
-    chebi_onto = chebi_onto.replace("ncbi:", "ncbitaxon:").replace("_", ":").upper()
+    chebi_onto = chebi_onto.replace("ncbitaxon:", "ncbi:").replace("_", ":").replace('txid', '').upper()
+    chebi_onto = chebi_onto.replace('NCBI:', 'NCBI:txid')
     return chebi_onto
 
 
