@@ -250,6 +250,7 @@ class Ontology(Resource):
                             "annotationValue": "",
                             "annotationDefinition": "", 
                             "termAccession": "",
+                            "wormsID": "", 
                             
                             "termSource": {
                                 "comments": [],
@@ -265,6 +266,8 @@ class Ontology(Resource):
             try:
                 d['annotationValue'] = cls.name
                 d["annotationDefinition"] = cls.definition
+                if branch == 'taxonomy':
+                    d['wormsID'] = getWoRMs(cls.name)
                 d["termAccession"] = cls.iri
                 d['termSource']['name'] = cls.ontoName
                 d['termSource']['provenanceName'] = cls.provenance_name
@@ -798,6 +801,16 @@ def getBioportalTerm(keyword):
     except Exception as e:
         logger.error('getBioportal' + str(e))
     return res
+
+
+def getWoRMs(term):
+    try:
+        url = 'http://www.marinespecies.org/rest/AphiaIDByName/' + term.replace(' ', '%20') + "?marine_only=true"
+        fp = urllib.request.urlopen(url)
+        AphiaID = fp.read().decode('utf-8')
+        return AphiaID
+    except:
+        return ''
 
 
 def getOnto_info(pre_fix):
