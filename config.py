@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.40.11"
+WS_APP_VERSION = "0.50.00"
 API_VERSION = WS_APP_VERSION
 
 WS_APP_NAME = "MtblsWS-Py"
@@ -72,6 +72,10 @@ JIRA_PARAMS = {
     'username': 'jira_username',
     'password': 'jira_password'
 }
+
+# Connection Pool parameters
+CONN_POOL_MIN = 1
+CONN_POOL_MAX = 20
 
 # Timeout in secounds when listing a large folder for files
 FILE_LIST_TIMEOUT = 90

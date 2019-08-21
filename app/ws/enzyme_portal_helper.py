@@ -54,9 +54,7 @@ class EnzymePortalHelper(Resource):
         if chebi_id is None:
             abort(404)
 
-        chebi_id = chebi_id.upper()
-
-        status, data = mtblc_on_chebi_accession(chebi_id)
+        status, data = mtblc_on_chebi_accession(chebi_id.upper())
         if not status:
             abort(404, data)
 
