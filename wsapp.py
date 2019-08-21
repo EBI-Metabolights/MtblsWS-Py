@@ -45,6 +45,7 @@ from app.ws.study_actions import StudyStatus
 from app.ws.user_management import UserManagement
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.send_files import SendFiles
+from app.ws.enzyme_portal_helper import EnzymePortalHelper
 
 """
 MTBLS WS-Py
@@ -163,6 +164,7 @@ def initialize_app(flask_app):
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
     api.add_resource(UserManagement, res_path + "/ebi-internal/users")
     api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
+    api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")

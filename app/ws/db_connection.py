@@ -312,6 +312,28 @@ def biostudies_accession(study_id, biostudies_id, method):
         return False, "BioStudies accession was not added to the study"
 
 
+def mtblc_on_chebi_accession(chebi_id):
+
+    if not chebi_id:
+        return None
+
+    # Default query to get the biosd accession
+    query = "select acc from ref_metabolite where temp_id = '#chebi_id#';"
+    query = query.replace("#chebi_id#", chebi_id).replace('\\', '')
+
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn = psycopg2.connect(**params)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        conn.close()
+        return True, data[0]
+
+    except IndexError:
+        return False, "No metabolite was found for this ChEBI id"
+
+
 def check_access_rights(user_token, study_id):
 
     study_list = execute_query(query_user_access_rights, user_token, study_id)
