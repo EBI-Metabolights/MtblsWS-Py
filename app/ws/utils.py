@@ -121,7 +121,9 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
             if item.startswith('i_') or item.startswith('s_') or item.startswith('a_') or item.startswith('m_'):
                 try:
                     source_file_time = int(get_single_file_information(source))
-                    desc_file_time = int(get_single_file_information(destination))
+                    desc_file_time = 0
+                    if os.path.isfile(destination):
+                        desc_file_time = int(get_single_file_information(destination))
                     diff = source_file_time - desc_file_time
                 except Exception as e:
                     diff = 1  # if there is no destination file (in the study folder) then copy the file
