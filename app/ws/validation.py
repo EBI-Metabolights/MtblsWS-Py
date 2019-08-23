@@ -473,7 +473,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
 
     # Validate publications reported on the study
     val_section = "publication"
-    if validation_section == 'all' or val_section in validation_section:
+    if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, pub_validation = validate_publication(
             isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
         all_validations.append(pub_validation)
@@ -497,7 +497,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
 
     # Validate Person (authors)
     val_section = "person"
-    if validation_section == 'all' or val_section in validation_section:
+    if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_person_validation = validate_contacts(
             isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
         all_validations.append(isa_person_validation)
@@ -509,7 +509,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
 
     # Validate Protocols
     val_section = "protocols"
-    if validation_section == 'all' or val_section in validation_section:
+    if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_protocol_validation = validate_protocols(
             isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
         all_validations.append(isa_protocol_validation)
@@ -522,7 +522,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     # Validate Samples
     val_section = "samples"
     sample_name_list = []
-    if validation_section == 'all' or val_section in validation_section:
+    if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_sample_validation = \
             validate_samples(isa_study, isa_samples, validation_schema, s_file, override_list,
                              sample_name_list, val_section, log_category=log_category)
@@ -536,7 +536,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     # Validate files
     val_section = "files"
     file_name_list = []
-    if validation_section == 'all' or val_section in validation_section:
+    if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, files_validation = validate_files(
             study_id, study_location, obfuscation_code, override_list,
             file_name_list, val_section, log_category=log_category)
@@ -549,7 +549,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
 
     # Validate assays
     val_section = "assays"
-    if validation_section == 'all' or val_section in validation_section or 'maf' in validation_section:
+    if isa_study and validation_section == 'all' or val_section in validation_section or 'maf' in validation_section:
         status, amber_warning, assay_validation = \
             validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
                             file_name_list, val_section, log_category=log_category)
@@ -910,7 +910,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                         isa_tab_warning = True
 
         if file_name.startswith('Icon') or file_name.lower() == 'desktop.ini' or file_name.lower() == '.ds_store' \
-                or '~' in file_name or '+' in file_name or file_name.startswith('.'):
+                or '~' in file_name or file_name.startswith('.'):  # "or '+' in file_name" taken out
             add_msg(validations, val_section, "Special files should be removed from the study folder",
                     warning, val_section, value=file_name, val_sequence=3, log_category=log_category)
             continue
@@ -1428,18 +1428,29 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
     validations = []
     val_section = "basic"
     inv_file_name = 'i_Investigation.txt'
+    isa_inv = None
+    isa_study = None
+    isa_sample_df = None
+    std_path = None
+    s_file = None
+    assay_files = None
 
     try:
-        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                         skip_load_tables=True,
-                                                         study_location=study_location)
-        try:
-            file_name = isa_study.filename
-            isa_sample_df = read_tsv(os.path.join(study_location, file_name))
-        except FileNotFoundError:
-            add_msg(validations, val_section, "The file " + file_name + " was not found", error,
-                    inv_file_name, val_sequence=1.1, log_category=log_category)
-        except Exception as e:
+
+        if os.path.isfile(os.path.join(study_location, inv_file_name)):
+            isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                             skip_load_tables=True,
+                                                             study_location=study_location)
+            try:
+                file_name = isa_study.filename
+                isa_sample_df = read_tsv(os.path.join(study_location, file_name))
+            except FileNotFoundError:
+                add_msg(validations, val_section, "The file " + file_name + " was not found", error,
+                        inv_file_name, val_sequence=1.1, log_category=log_category)
+            except Exception as e:
+                add_msg(validations, val_section, "Could not load the minimum ISA-Tab files", error,
+                        inv_file_name, val_sequence=1.2, log_category=log_category)
+        else:
             add_msg(validations, val_section, "Could not load the minimum ISA-Tab files", error,
                     inv_file_name, val_sequence=1.2, log_category=log_category)
 
@@ -1522,20 +1533,22 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
                         error, file_name, val_sequence=17, log_category=log_category)
 
     else:
-        add_msg(validations, "ISA-Tab", "Can not find or read the investigation files",
-                error, file_name, val_sequence=18, log_category=log_category)
+        add_msg(validations, "ISA-Tab", "Can not find or read the investigation file",
+                error, inv_file_name, val_sequence=18, log_category=log_category)
 
     validates, amber_warning, ret_list = return_validations(val_section, validations, override_list)
 
     inv_file = 'i_Investigation.txt'
-    s_file = isa_study.filename
-    assays = isa_study.assays
-    assay_files = []
-    for assay in assays:
-        assay_files.append(assay.filename)
+
+    if isa_study:
+        s_file = isa_study.filename
+        assays = isa_study.assays
+        assay_files = []
+        for assay in assays:
+            assay_files.append(assay.filename)
 
     return isa_study, isa_inv, isa_sample_df, std_path, validates, amber_warning, \
-            ret_list, inv_file, s_file, assay_files
+           ret_list, inv_file, s_file, assay_files
 
 
 def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list,
@@ -1577,7 +1590,7 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
                     value=isa_study.description, descr=desc_desrc, val_sequence=4, log_category=log_category)
 
     else:
-        add_msg(validations, val_section, "Can not find or read the investigation files", error,
+        add_msg(validations, val_section, "Can not find or read the investigation file", error,
                 val_sequence=5, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)

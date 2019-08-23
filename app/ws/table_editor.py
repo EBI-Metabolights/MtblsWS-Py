@@ -638,7 +638,7 @@ class AddRows(Resource):
             data = None
 
         if new_row is None:
-            abort(417, "Please provide valid data for updated new row(s). The JSON string has to have a 'data' element")
+            abort(417, "Please provide valid data for updated new row(s). The JSON string has to have a 'rows' element")
 
         try:
             for element in new_row:
@@ -682,11 +682,19 @@ class AddRows(Resource):
         if data:
             try:
                 start_index = data['index']
+                if start_index == -1:
+                    start_index = 0
+                start_index = start_index - 0.5
+
             except KeyError:
                 start_index = len(file_df.index)
 
             for row in new_row:
-                line = pd.DataFrame(row, index=[start_index-1])
+                if not row:
+                    col0 = file_df.columns[0]
+                    row = {col0: ""}
+
+                line = pd.DataFrame(row, index=[start_index])
                 file_df = file_df.append(line, ignore_index=False)
                 file_df = file_df.sort_index().reset_index(drop=True)
                 start_index += 1
