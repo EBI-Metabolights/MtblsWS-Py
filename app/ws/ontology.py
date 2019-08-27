@@ -81,7 +81,7 @@ class Ontology(Resource):
                 "paramType": "query",
                 "dataType": "string",
                 "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
-                         "column type", "instruments", "confidence"]
+                         "column type", "instruments", "confidence", "sample type"]
             },
 
             {
@@ -174,17 +174,18 @@ class Ontology(Resource):
 
         if term in [None, ''] and branch is None:
             return []
-        if queryFields == None:  # if found the term, STOP
+
+        if queryFields in [None, '']:  # if found the term, STOP
 
             logger.info('Search %s from resources one by one' % term)
             print('Search %s from resources one by one' % term)
-            result = getMetaboTerm(term, branch)
+            result = getMetaboTerm(term, branch, mapping)
 
             if len(result) == 0:
                 print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                 logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                 try:
-                    result = getMetaboZoomaTerm(term)
+                    result = getMetaboZoomaTerm(term, mapping)
                 except Exception as e:
                     print(e.args)
                     logger.info(e.args)
@@ -193,7 +194,7 @@ class Ontology(Resource):
                 print("Can't query it in Zooma.tsv, requesting OLS")
                 logger.info("Can't query it in Zooma.tsv, requesting OLS")
                 try:
-                    result = getOLSTerm(term)
+                    result = getOLSTerm(term, mapping)
                 except Exception as e:
                     print(e.args)
                     logger.info(e.args)
@@ -218,28 +219,35 @@ class Ontology(Resource):
 
         else:
             if 'MTBLS' in queryFields:
-                result += getMetaboTerm(term, branch)
+                result += getMetaboTerm(term, branch, mapping)
 
             if 'MTBLS_Zooma' in queryFields:
-                result += getMetaboZoomaTerm(term, mapping='fuzzy')
+                result += getMetaboZoomaTerm(term, mapping)
 
             if 'OLS' in queryFields:
-                result += getOLSTerm(term)
+                result += getOLSTerm(term, mapping)
 
             if 'Zooma' in queryFields:
-                result += getZoomaTerm(term)
+                result += getZoomaTerm(term, mapping)
 
             if 'Bioportal' in queryFields:
                 result += getBioportalTerm(term)
 
         response = []
 
+        # result = removeDuplicated(result)
+        exact = [x for x in result if x.name.lower() == term.lower()]
+        rest = [x for x in result if x not in exact]
+        priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+        exact = setPriority(exact, priority)
+        rest = reorder(rest, term)
+        result = exact + rest
+
         # if queryFields and ('OLS' not in queryFields) and ('Bioportal' not in queryFields):
         #     priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
         #     result = setPriority(result, priority)
         #     result = reorder(result, term)
-
-        priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+        # priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
         # result = setPriority(result, priority)
         result = reorder(result, term)
         result = removeDuplicated(result)
@@ -495,9 +503,10 @@ def OLSbranchSearch(keyword, branchName, ontoName):
     return res
 
 
-def getMetaboTerm(keyword, branch):
+def getMetaboTerm(keyword, branch, mapping=''):
     logger.info('Search %s in Metabolights ontology' % keyword)
     print('Search "%s" in Metabolights ontology' % keyword)
+
     onto = get_ontology('./tests/Metabolights.owl').load()
     info = onto_information(onto)
     set_priortity = False
@@ -528,11 +537,13 @@ def getMetaboTerm(keyword, branch):
                 res_cls = [cls] + subs
 
         # if not exact match, do fuzzy match
+
         if len(res_cls) == 0:
-            for cls in clses:
-                if cls.label[0].lower().startswith(keyword.lower()):
-                    res_cls.append(cls)
-                    res_cls += info.get_subs(cls)
+            if mapping != 'exact':
+                for cls in clses:
+                    if cls.label[0].lower().startswith(keyword.lower()):
+                        res_cls.append(cls)
+                        res_cls += info.get_subs(cls)
 
         # synonym match
         if branch == 'taxonomy' or branch == 'factors':
@@ -608,7 +619,7 @@ def getMetaboTerm(keyword, branch):
     return result
 
 
-def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
+def getMetaboZoomaTerm(keyword, mapping):
     logger.info('Searching Metabolights-zooma.tsv')
     print('Searching Metabolights-zooma.tsv')
     res = []
@@ -621,14 +632,14 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
         df = pd.read_csv(fileName, sep="\t", header=0, encoding='utf-8')
         df = df.drop_duplicates(subset='PROPERTY_VALUE', keep="last")
 
-        if mapping == 'fuzzy':
+        if mapping == 'exact':
+            temp = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
+        else:
             temp1 = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
             reg = "^" + keyword + "+"
             temp2 = df.loc[df['PROPERTY_VALUE'].str.contains(reg, case=False)]
             frame = [temp1, temp2]
             temp = pd.concat(frame).reset_index(drop=True)
-        else:
-            temp = df.loc[df['PROPERTY_VALUE'].str.lower() == keyword.lower()]
 
         temp = temp.drop_duplicates(subset='PROPERTY_VALUE', keep="last", inplace=False)
 
@@ -658,7 +669,7 @@ def getMetaboZoomaTerm(keyword, mapping='fuzzy'):
     return res
 
 
-def getZoomaTerm(keyword):
+def getZoomaTerm(keyword, mapping):
     logger.info('Requesting Zooma...')
     print('Requesting Zooma...')
     res = []
@@ -682,6 +693,9 @@ def getZoomaTerm(keyword):
 
             name = term["annotatedProperty"]['propertyValue'].capitalize()
 
+            if mapping == 'exact' and name != keyword:
+                continue
+
             enti = entity(name=name,
                           iri=iri,
                           Zooma_confidence=term['confidence'])
@@ -699,14 +713,14 @@ def getZoomaTerm(keyword):
             else:
                 res.append(enti)
 
-            if len(res) >= 5:
+            if len(res) >= 10:
                 break
     except Exception as e:
         logger.error('getZooma' + str(e))
     return res
 
 
-def getOLSTerm(keyword):
+def getOLSTerm(keyword, map):
     logger.info('Requesting OLS...')
     print('Requesting OLS...')
     res = []
@@ -722,6 +736,8 @@ def getOLSTerm(keyword):
               '&type=class' \
               '&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
               '&rows=30'  # &exact=true
+        if map == 'exact':
+            url += '&exact=true'
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
@@ -738,8 +754,7 @@ def getOLSTerm(keyword):
                 definition = ''
 
             try:
-                ontoName = term['ontology_prefix']
-                provenance_name = term['ontology_prefix']
+                ontoName, provenance_name = getOnto_Name(term['iri'])
             except:
                 ontoName = ''
                 provenance_name = ''
@@ -789,7 +804,7 @@ def getBioportalTerm(keyword):
             elif 'meddra' in iri.lower():
                 ontoName = 'MEDDRA'
             else:
-                ontoName = getOnto_Name(iri)
+                ontoName = getOnto_Name(iri)[0]
 
             enti = entity(name=term['prefLabel'],
                           iri=iri,
@@ -849,15 +864,15 @@ def getOnto_Name(iri):
         return ''.join(x for x in substring if x.isalpha()), ''
 
 
-# def getOnto_version(pre_fix):
-#     try:
-#         url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
-#         fp = urllib.request.urlopen(url)
-#         content = fp.read().decode('utf-8')
-#         j_content = json.loads(content)
-#         return j_content['config']['version']
-#     except:
-#         return ''
+def getOnto_version(pre_fix):
+    try:
+        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+        return j_content['config']['version']
+    except:
+        return ''
 
 
 def getOnto_url(pre_fix):
@@ -872,22 +887,8 @@ def getOnto_url(pre_fix):
 
 
 def setPriority(res_list, priority):
-    # priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-    res = {}
-    for enti in res_list:
-        term_name = enti.name.lower()
-        onto_name = enti.ontoName
-        prior = priority.get(onto_name, 1000)
-
-        if term_name in res:
-            old_prior = priority.get(res[term_name].ontoName, 999)
-
-            if prior < old_prior:
-                res[term_name] = enti
-        else:
-            res[term_name] = enti
-
-    return list(res.values())
+    res = sorted(res_list, key=lambda x: priority.get(x.ontoName, 1000))
+    return res
 
 
 def reorder(res_list, keyword):
@@ -908,8 +909,11 @@ def reorder(res_list, keyword):
 
         return exact, start, partial
 
-    res = sorted(res_list, key=lambda x: sort_key(x.name, keyword), reverse=True)
-    return res
+    try:
+        res = sorted(res_list, key=lambda x: sort_key(x.name, keyword), reverse=True)
+        return res
+    except:
+        return res_list
 
 
 def removeDuplicated(res_list):
