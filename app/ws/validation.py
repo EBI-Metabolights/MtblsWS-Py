@@ -187,6 +187,10 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     fname = fname.lower()
     ext = ext.lower()
 
+    fid_file = 'Free Induction Decay Data File'
+    raw_file = 'Raw Spectral Data File'
+    derived_file = 'Derived Spectral Data File'
+
     if os.path.isdir(os.path.join(study_location, file_name)) and ext not in ('.raw', '.d'):
         return False, 'folder', file_name + " is a sub-folder, please reference a file"
 
@@ -203,22 +207,24 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
         else:
             return False, file_type,  "The " + column_name + " must start with 'm_' and end in '_v2_maf.tsv'"
 
-    if (file_type == 'raw' or file_type == 'compressed') and column_name == 'Raw Spectral Data File':
+    if (file_type == 'raw' or file_type == 'compressed') and column_name == raw_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif (file_type == 'derived' or file_type == 'raw' or file_type == 'compressed') \
-            and (column_name == 'Derived Spectral Data File' or column_name == 'Raw Spectral Data File'):
+            and (column_name == derived_file or column_name == raw_file):
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif file_type == 'spreadsheet' and column_name == 'Derived Spectral Data File':
+    elif file_type == 'spreadsheet' and column_name == derived_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif file_type != 'derived' and column_name == 'Derived Spectral Data File':
+    elif file_type != 'derived' and column_name == derived_file:
         return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
-    elif file_type == 'compressed' and column_name == 'Free Induction Decay Data File':
+    elif file_type == 'compressed' and column_name == fid_file:
+        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+    elif file_type == 'folder' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'compressed' and column_name == 'Acquisition Parameter Data File':
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif file_type == 'fid' and column_name == 'Free Induction Decay Data File':
+    elif file_type == 'fid' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif file_type != 'raw' and column_name == 'Raw Spectral Data File':
+    elif file_type != 'raw' and column_name == raw_file:
         return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
 
     return status, file_type, 'n/a'
@@ -587,6 +593,14 @@ def get_assay_column_validations(validation_schema, a_header):
         validate_column = True
         required_column = False
         check_schema = False
+    elif ' assay name' in a_header.lower():  # NMR and MS assay names are not always present, maybe change?
+        validate_column = True
+        required_column = False
+        check_schema = False
+    elif ' data file' in a_header.lower():  # Files are checked separately
+        validate_column = True
+        required_column = False
+        check_schema = False
 
     if validation_schema and check_schema:
         validate_column = validation_schema['is-hidden']
@@ -622,7 +636,7 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
                         error, meta_file=assay.filename,
                         descr="Please create the sample in the sample sheet first",
                         val_sequence=9, log_category=log_category)
-    elif a_header.endswith(' File'):  # files exists?
+    elif a_header.endswith(' File'):  # files exist?
         file_and_column = row + '|' + a_header
         if file_and_column not in unique_file_names:
             if row != "":  # Do not add a section if a column does not list files
@@ -1171,7 +1185,9 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                 add_msg(validations, val_section, "Protocol description validates", success, file_name,
                         value=prot_desc, val_sequence=9, log_category=log_category)
             else:
-                if prot_desc.lower() in('no metabolites', 'not applicable', 'no metabolites were identified'):
+                if prot_desc.lower().rstrip('.') in('no metabolites', 'not applicable',
+                                                    'no metabolites were identified',
+                                                    'no data transformation was required'):
                     add_msg(validations, val_section, "Protocol description validates", success, file_name,
                             value=prot_desc, val_sequence=10, log_category=log_category)
                 else:
@@ -1504,9 +1520,9 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
             if isa_study.samples:
                 add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
                         val_sequence=9, log_category=log_category)
-            elif not isa_sample_df.empty:
-                add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
-                        val_sequence=10, log_category=log_category)
+            # elif not isa_sample_df.empty:
+            #     add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
+            #             val_sequence=10, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Could not find any samples",
                         error, file_name, val_sequence=11, log_category=log_category)
