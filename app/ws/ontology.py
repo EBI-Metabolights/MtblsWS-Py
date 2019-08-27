@@ -235,22 +235,20 @@ class Ontology(Resource):
 
         response = []
 
-        # result = removeDuplicated(result)
+        result = removeDuplicated(result)
         exact = [x for x in result if x.name.lower() == term.lower()]
         rest = [x for x in result if x not in exact]
-        priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+
+        if branch == 'taxonomy':
+            priority = {'MTBLS': 0, 'NCBITAXON': 1, 'EFO': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+        else:
+            priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+
         exact = setPriority(exact, priority)
         rest = reorder(rest, term)
         result = exact + rest
 
-        # if queryFields and ('OLS' not in queryFields) and ('Bioportal' not in queryFields):
-        #     priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-        #     result = setPriority(result, priority)
-        #     result = reorder(result, term)
-        # priority = {'MTBLS': 0, 'NCBITAXON': 1, 'BTO': 2, 'EFO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
-        # result = setPriority(result, priority)
-        result = reorder(result, term)
-        result = removeDuplicated(result)
+        # result = removeDuplicated(result)
 
         for cls in result:
             temp = '''    {
@@ -492,12 +490,6 @@ def OLSbranchSearch(keyword, branchName, ontoName):
     for ele in json_str['response']['docs']:
         enti = entity(name=ele['label'],
                       iri=ele['iri'], ontoName=ontoName, provenance_name=ontoName)
-
-        # if enti.ontoName == '':
-        #     enti.ontoName = getOnto_Name(enti.iri)
-        #
-        # if enti.provenance_uri == '':
-        #     enti.provenance_uri = getOnto_url(enti.ontoName)
 
         res.append(enti)
     return res
