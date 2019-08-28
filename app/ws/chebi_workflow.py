@@ -481,8 +481,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                           "' (alt name = '" + alt_name + "')")
 
                 pubchem_df.update(pubchem_df[[maf_compound_name_column]].merge(existing_row, 'left'))
-                if not exiting_pubchem_file:
-                    pubchem_df.iloc[row_idx, get_idx('row_id')] = row_idx + 1  # Update Row id again, not use the copied row
+                #if not exiting_pubchem_file:
+                pubchem_df.iloc[row_idx, get_idx('row_id')] = row_idx + 1  # Update Row id again, not use the copied row
                     # if not database_id:
                     #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
 
@@ -1229,7 +1229,7 @@ def get_csid(inchikey):
             if resp2.status_code == 200:
                 csid = resp2.text
                 csid = csid.replace('[', '').replace(']', '').split(',')[0]
-                print_log("    -- Found CSID using ChemSpider: " + inchikey)
+                print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
                 return csid
     return csid
 
