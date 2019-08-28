@@ -39,6 +39,7 @@ api_fields = {
     'ApiVersion': fields.String,
     'ApiDocumentation': fields.String,
     'ApiSpecification': fields.String,
+    'IsatoolsApi': fields.String,
 }
 
 about_fields = {
@@ -69,7 +70,8 @@ class About(Resource):
         logger.info('Getting WS-about onto_information')
         api = {"ApiVersion": app.config.get('API_VERSION'),
                "ApiDocumentation": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".html",
-               "ApiSpecification": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".json"
+               "ApiSpecification": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".json",
+               "IsatoolsApi": app.config.get('ISA_API_VERSION')
                }
         appl = {"WsName": app.config.get('WS_APP_NAME'),
                 "WsVersion": app.config.get('WS_APP_VERSION'),
