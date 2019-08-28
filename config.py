@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "0.50.05"
+WS_APP_VERSION = "0.51.00"
 API_VERSION = WS_APP_VERSION
 
 WS_APP_NAME = "MtblsWS-Py"
@@ -88,3 +88,8 @@ CLASSYFIRE_MAPPING = "/net/isilon8/ftp_public/databases/metabolights/submissionT
 OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"
 CHEMSPIDER_URL = "http://parts.chemspider.com/JSON.ashx?op="
 CHEBI_UPLOAD_SCRIPT = ""
+
+# METASPACE
+METASPACE_ACCESS_KEY_ID = ''
+METASPACE_SECRET_ACCESS_KEY = ''
+METASPACE_BUCKET = ''
