@@ -667,9 +667,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     else:
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
-                        sdf_file_list, classyfire_id = get_sdf(study_location, str(final_cid).rstrip('.0'), pc_name,
+                        sdf_file_list, classyfire_id = get_sdf(study_location, str(final_cid), pc_name,
                                                                sdf_file_list, final_inchi, classyfire_search)
-                        pubchem_df.iloc[row_idx, get_idx('classyfire_search_id')] = str(classyfire_id).rstrip('.0')
+                        pubchem_df.iloc[row_idx, get_idx('classyfire_search_id')] = str(classyfire_id)
 
                 if not exiting_pubchem_file:
                     pubchem_df.iloc[row_idx, get_idx('row_id')] = row_idx + 1  # Row id
@@ -1432,7 +1432,7 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
         full_file = study_location + os.sep + anno_sub_folder + os.sep + file_name
 
         if os.path.isfile(full_file):
-            print_log("    -- Already have SDF for CID " + str(cid) + " for name: " + iupac)
+            print_log("    -- Already have PubChem SDF for CID " + str(cid) + " for name: " + iupac)
         else:
             if "MTBLS" not in cid:
                 print_log("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
