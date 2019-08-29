@@ -762,7 +762,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
                     return 'metadata_investigation', active_status, folder
         return 'metadata', none_active_status, folder
     elif file_name == 'fid':  # NMR data
-        return 'fid', active_status, True
+        return 'fid', active_status, folder
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
     elif ext in ('.sdf', '.mol'):
