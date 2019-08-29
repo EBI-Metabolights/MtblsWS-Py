@@ -103,6 +103,16 @@ class Ontology(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
+            },
+
+            {
+                "name": "ontology",
+                "description": "Restrict a search to a set of ontologies",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
             }
 
         ],
@@ -170,68 +180,92 @@ class Ontology(Resource):
                     except Exception as e:
                         print(e.args)
 
+        parser.add_argument('ontology', help='ontology')
+        ontology = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            ontology = args['ontology']
+            if ontology:
+                try:
+                    reg = '\{([^}]+)\}'
+                    ontology = re.findall(reg, ontology)[0].split(',')
+                except:
+                    try:
+                        ontology = ontology.split(',')
+                    except Exception as e:
+                        print(e.args)
+
         result = []
 
         if term in [None, ''] and branch is None:
             return []
 
-        if queryFields in [None, '']:  # if found the term, STOP
-
-            logger.info('Search %s from resources one by one' % term)
-            print('Search %s from resources one by one' % term)
-            result = getMetaboTerm(term, branch, mapping)
-
-            if len(result) == 0:
-                print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
-                logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
-                try:
-                    result = getMetaboZoomaTerm(term, mapping)
-                except Exception as e:
-                    print(e.args)
-                    logger.info(e.args)
-
-            if len(result) == 0:
-                print("Can't query it in Zooma.tsv, requesting OLS")
-                logger.info("Can't query it in Zooma.tsv, requesting OLS")
-                try:
-                    result = getOLSTerm(term, mapping)
-                except Exception as e:
-                    print(e.args)
-                    logger.info(e.args)
-
-            if len(result) == 0:
-                print("Can't find query in OLS, requesting Zooma")
-                logger.info("Can't find query in OLS, requesting Zooma")
-                try:
-                    result = getZoomaTerm(term)
-                except Exception as e:
-                    print(e.args)
-                    logger.info(e.args)
-
-            if len(result) == 0:
-                print("Can't query it in Zooma, request Bioportal")
-                logger.info("Can't query it in Zooma, request Bioportal")
-                try:
-                    result = getBioportalTerm(term)
-                except  Exception as e:
-                    print(e.args)
-                    logger.info(e.args)
+        if ontology not in [None, '']:  # if has ontology searching restriction
+            logger.info('Search %s in' % ','.join(ontology))
+            print('Search %s in' % ','.join(ontology))
+            try:
+                result = getOLSTerm(term, mapping, ontology=ontology)
+            except Exception as e:
+                print(e.args)
+                logger.info(e.args)
 
         else:
-            if 'MTBLS' in queryFields:
-                result += getMetaboTerm(term, branch, mapping)
+            if queryFields in [None, '']:  # if found the term, STOP
+                logger.info('Search %s from resources one by one' % term)
+                print('Search %s from resources one by one' % term)
+                result = getMetaboTerm(term, branch, mapping)
 
-            if 'MTBLS_Zooma' in queryFields:
-                result += getMetaboZoomaTerm(term, mapping)
+                if len(result) == 0:
+                    print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
+                    logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
+                    try:
+                        result = getMetaboZoomaTerm(term, mapping)
+                    except Exception as e:
+                        print(e.args)
+                        logger.info(e.args)
 
-            if 'OLS' in queryFields:
-                result += getOLSTerm(term, mapping)
+                if len(result) == 0:
+                    print("Can't query it in Zooma.tsv, requesting OLS")
+                    logger.info("Can't query it in Zooma.tsv, requesting OLS")
+                    try:
+                        result = getOLSTerm(term, mapping, ontology=ontology)
+                    except Exception as e:
+                        print(e.args)
+                        logger.info(e.args)
 
-            if 'Zooma' in queryFields:
-                result += getZoomaTerm(term, mapping)
+                if len(result) == 0:
+                    print("Can't find query in OLS, requesting Zooma")
+                    logger.info("Can't find query in OLS, requesting Zooma")
+                    try:
+                        result = getZoomaTerm(term)
+                    except Exception as e:
+                        print(e.args)
+                        logger.info(e.args)
 
-            if 'Bioportal' in queryFields:
-                result += getBioportalTerm(term)
+                if len(result) == 0:
+                    print("Can't query it in Zooma, request Bioportal")
+                    logger.info("Can't query it in Zooma, request Bioportal")
+                    try:
+                        result = getBioportalTerm(term)
+                    except  Exception as e:
+                        print(e.args)
+                        logger.info(e.args)
+
+            else:
+                if 'MTBLS' in queryFields:
+                    result += getMetaboTerm(term, branch, mapping)
+
+                if 'MTBLS_Zooma' in queryFields:
+                    result += getMetaboZoomaTerm(term, mapping)
+
+                if 'OLS' in queryFields:
+                    result += getOLSTerm(term, mapping)
+
+                if 'Zooma' in queryFields:
+                    result += getZoomaTerm(term, mapping)
+
+                if 'Bioportal' in queryFields:
+                    result += getBioportalTerm(term)
 
         response = []
 
@@ -529,7 +563,6 @@ def getMetaboTerm(keyword, branch, mapping=''):
                 res_cls = [cls] + subs
 
         # if not exact match, do fuzzy match
-
         if len(res_cls) == 0:
             if mapping != 'exact':
                 for cls in clses:
@@ -661,7 +694,7 @@ def getMetaboZoomaTerm(keyword, mapping):
     return res
 
 
-def getZoomaTerm(keyword, mapping):
+def getZoomaTerm(keyword, mapping=''):
     logger.info('Requesting Zooma...')
     print('Requesting Zooma...')
     res = []
@@ -712,7 +745,7 @@ def getZoomaTerm(keyword, mapping):
     return res
 
 
-def getOLSTerm(keyword, map):
+def getOLSTerm(keyword, map, ontology=''):
     logger.info('Requesting OLS...')
     print('Requesting OLS...')
     res = []
@@ -730,6 +763,11 @@ def getOLSTerm(keyword, map):
               '&rows=30'  # &exact=true
         if map == 'exact':
             url += '&exact=true'
+
+        if ontology not in [None, '']:
+            onto_list = ','.join(ontology)
+            url += '&ontology=' + onto_list
+
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
