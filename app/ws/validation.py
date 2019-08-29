@@ -751,6 +751,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             add_msg(validations, val_section,
                     "The file " + assay_file_name + " was not found",
                     error, assay.filename, val_sequence=2.1, log_category=log_category)
+            continue
 
         assay_type_onto = assay.technology_type
         if assay_type_onto.term == 'mass spectrometry':
