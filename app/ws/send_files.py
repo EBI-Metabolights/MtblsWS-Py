@@ -114,14 +114,13 @@ class SendFiles(Resource):
                     abort(403)
             else:
                 abort(403)
-
-        safe_path = safe_join(study_location, file_name)
-        if os.path.isdir(safe_path):
-            safe_path = shutil.make_archive(safe_path, 'zip', safe_path, base_dir=file_name)
-            logger.info('Created zip file ' + safe_path)
-            file_name = file_name + '.zip'
-
         try:
+            safe_path = safe_join(study_location, file_name)
+            if os.path.isdir(safe_path):
+                safe_path = shutil.make_archive(safe_path, 'zip', root_dir=study_location, base_dir=file_name)
+                logger.info('Created zip file ' + safe_path)
+                file_name = file_name + '.zip'
+
             resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name))
             # response.headers["Content-Disposition"] = "attachment; filename={}".format(file_name)
             resp.headers['Content-Type'] = 'application/octet-stream'
