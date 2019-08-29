@@ -22,6 +22,8 @@ from flask import request, send_file, safe_join, abort, make_response
 from app.ws.mtblsWSclient import WsClient
 from app.ws.db_connection import get_obfuscation_code
 import logging
+import os
+import shutil
 
 logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client
@@ -114,6 +116,10 @@ class SendFiles(Resource):
                 abort(403)
 
         safe_path = safe_join(study_location, file_name)
+        if os.path.isdir(safe_path):
+            safe_path = shutil.make_archive(safe_path, 'zip', safe_path)
+            logger.info('Created zip file ' + safe_path)
+            file_name = file_name + '.zip'
 
         try:
             resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name))
@@ -122,4 +128,7 @@ class SendFiles(Resource):
             return resp
         except FileNotFoundError:
             abort(404, "Could not find file " + file_name)
+        finally:
+            os.remove(safe_path)
+            logger.info('Removed zip file ' + safe_path)
 
