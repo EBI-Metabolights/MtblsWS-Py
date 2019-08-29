@@ -271,7 +271,7 @@ without setting the "force" parameter to True''',
         if request.args:
             args = parser.parse_args(req=request)
             files = args['files'] if args['files'] else None
-            file_location = args['location'] if args['location'] else None
+            file_location = args['location'] if args['location'] else 'study'
             allways_remove = False if args['force'].lower() != 'true' else True
 
         # body content validation

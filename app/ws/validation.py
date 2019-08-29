@@ -744,6 +744,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         all_assay_raw_files = []
         unique_file_names = []
         assay_file_name = os.path.join(study_location, assay.filename)
+        assay_df = None
         try:
             assay_df = read_tsv(assay_file_name)
         except FileNotFoundError:
