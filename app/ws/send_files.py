@@ -16,7 +16,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from flask import request, send_file, safe_join, abort, make_response
 from app.ws.mtblsWSclient import WsClient
@@ -44,11 +44,11 @@ class SendFiles(Resource):
                 "dataType": "string"
             },
             {
-                "name": "file_name",
-                "description": "File name",
+                "name": "file",
+                "description": "File or folder name (relative to study folder)",
                 "required": True,
                 "allowMultiple": False,
-                "paramType": "path",
+                "paramType": "query",
                 "dataType": "string"
             },
             {
@@ -88,10 +88,10 @@ class SendFiles(Resource):
             }
         ]
     )
-    def get(self, study_id, file_name, obfuscation_code=None):
+    def get(self, study_id, obfuscation_code=None):
         # param validation
-        if study_id is None or file_name is None:
-            logger.info('No study_id and/or file name given')
+        if study_id is None:
+            logger.info('No study_id given')
             abort(404)
         study_id = study_id.upper()
 
@@ -100,6 +100,19 @@ class SendFiles(Resource):
             user_token = request.headers["user_token"]
         else:
             user_token = "public_access_only"
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('file', help='The file or sub-directory to download')
+        file_name = None
+
+        if request.args:
+            args = parser.parse_args(req=request)
+            file_name = args['file'] if args['file'] else None
+
+        if file_name is None:
+            logger.info('No file name given')
+            abort(404)
 
         # check for access rights
         is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \

@@ -92,8 +92,8 @@ def initialize_app(flask_app):
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
     api.add_resource(SendFiles,
-                     res_path + "/studies/<string:study_id>/download/<string:file_name>",
-                     res_path + "/studies/<string:study_id>/download/<string:file_name>/<string:obfuscation_code>")
+                     res_path + "/studies/<string:study_id>/download",
+                     res_path + "/studies/<string:study_id>/download/<string:obfuscation_code>")
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
     api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")
