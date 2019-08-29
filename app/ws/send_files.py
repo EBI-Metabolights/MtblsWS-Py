@@ -117,7 +117,7 @@ class SendFiles(Resource):
 
         safe_path = safe_join(study_location, file_name)
         if os.path.isdir(safe_path):
-            safe_path = shutil.make_archive(safe_path, 'zip', safe_path)
+            safe_path = shutil.make_archive(safe_path, 'zip', safe_path, base_dir=file_name)
             logger.info('Created zip file ' + safe_path)
             file_name = file_name + '.zip'
 
