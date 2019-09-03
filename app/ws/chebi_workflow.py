@@ -153,7 +153,7 @@ def split_rows(maf_df, annotation_file=None):
                     f.close()
                     break
     except UnicodeDecodeError:
-        print_log('    -- ERROR: Checking for pipelines failed. Trying to read using "ISO-8859-1"' encoding)
+        print_log('    -- ERROR: Checking for pipelines failed. Trying to read using "ISO-8859-1" encoding')
         with open(annotation_file, 'r', encoding="ISO-8859-1") as f:
             for line in f:
                 if '|' in line:
