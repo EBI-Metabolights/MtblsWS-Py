@@ -1731,7 +1731,10 @@ class StudyProtocols(Resource):
                 if protocol.name.lower() == "sample collection":
                     can_remove_protocol = False
                     break
-                assay_df = read_tsv(os.path.join(study_location, assay.filename))
+                try:
+                    assay_df = read_tsv(os.path.join(study_location, assay.filename))
+                except FileNotFoundError:
+                    assay_df = None
                 if protocol.name in assay_df:
                     can_remove_protocol = False
                     break

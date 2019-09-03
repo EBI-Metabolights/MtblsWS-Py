@@ -184,7 +184,7 @@ class StudyAssayDelete(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -207,7 +207,7 @@ class StudyAssayDelete(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                          skip_load_tables=True, study_location=study_location)
         # Remove the assay from the study
-        for assay in isa_study.assays:
+        for assay in isa_study.assays:  # ToDo, check if we can delete the correct assay if the file is missing
             a_file = assay.filename
             a_file = a_file.strip().rstrip('\n')
 

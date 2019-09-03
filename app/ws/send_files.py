@@ -128,11 +128,13 @@ class SendFiles(Resource):
             else:
                 abort(403)
         try:
+            remove_file = False
             safe_path = safe_join(study_location, file_name)
             if os.path.isdir(safe_path):
                 safe_path = shutil.make_archive(safe_path, 'zip', root_dir=study_location, base_dir=file_name)
                 logger.info('Created zip file ' + safe_path)
                 file_name = file_name + '.zip'
+                remove_file = True
 
             resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name))
             # response.headers["Content-Disposition"] = "attachment; filename={}".format(file_name)
@@ -141,6 +143,7 @@ class SendFiles(Resource):
         except FileNotFoundError:
             abort(404, "Could not find file " + file_name)
         finally:
-            os.remove(safe_path)
-            logger.info('Removed zip file ' + safe_path)
+            if remove_file:
+                os.remove(safe_path)
+                logger.info('Removed zip file ' + safe_path)
 

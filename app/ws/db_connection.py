@@ -391,16 +391,16 @@ def study_submitters(study_id, user_email, method):
         return None
 
     if method == 'add':
-        query = 'insert into study_user(userid,studyid) ' \
-                'select u.id, s.id from users u, studies s where u.email = %s and acc=%s;'
+        query = 'insert into study_user(userid, studyid) ' \
+                'select u.id, s.id from users u, studies s where lower(u.email) = %s and acc=%s;'
     elif method == 'delete':
         query = 'delete from study_user su where exists(' \
                 'select u.id, s.id from users u, studies s ' \
-                'where su.userid = u.id and su.studyid = s.id and u.email = %s and acc=%s);'
+                'where su.userid = u.id and su.studyid = s.id and lower(u.email) = %s and acc=%s);'
 
     try:
         postgreSQL_pool, conn, cursor = get_connection()
-        cursor.execute(query, (user_email, study_id))
+        cursor.execute(query, (user_email.lower(), study_id))
         conn.commit()
         # conn.close()
         release_connection(postgreSQL_pool, conn)

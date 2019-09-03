@@ -145,12 +145,21 @@ def split_rows(maf_df, annotation_file=None):
     # Split rows with pipe-lines "|"
     pipe_found = False
     new_maf = maf_df
-    with open(annotation_file, 'r') as f:
-        for line in f:
-            if '|' in line:
-                pipe_found = True
-                f.close()
-                break
+    try:
+        with open(annotation_file, 'r') as f:
+            for line in f:
+                if '|' in line:
+                    pipe_found = True
+                    f.close()
+                    break
+    except UnicodeDecodeError:
+        print_log('    -- ERROR: Checking for pipelines failed. Trying to read using "ISO-8859-1"' encoding)
+        with open(annotation_file, 'r', encoding="ISO-8859-1") as f:
+            for line in f:
+                if '|' in line:
+                    pipe_found = True
+                    f.close()
+                    break
 
     if pipe_found:
         print_log("    -- Found pipe-line '|' will split MAF rows")
