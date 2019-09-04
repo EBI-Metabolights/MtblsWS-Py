@@ -1008,7 +1008,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
             add_msg(validations, val_section, "Sample column '" + sample_val_name + "' found in the sample file",
                     success, file_name, val_sequence=1, log_category=log_category)
         else:
-            if sample_val_name == 'Characteristics[Variant]':  # Not all studies have this present
+            if sample_val_name == 'Characteristics[Variant]' or sample_val_name == 'Characteristics[Sample type]':  # Not all studies have these present
                 add_msg(validations, val_section, "Sample column '" + sample_val_name + "' was not found", info,
                         file_name, val_sequence=2, log_category=log_category)
                 continue
