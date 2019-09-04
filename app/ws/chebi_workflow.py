@@ -26,7 +26,6 @@ import ssl
 import pronto
 import re
 import urllib.parse
-import fileinput
 import subprocess
 import shlex
 import glob
@@ -499,7 +498,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                 print_log("    -- Using alt_name '" + alt_name + "'")
 
             # existing_row = get_existing_values(pubchem_df, original_comp_name)
-            if len(existing_row.index) > 0:
+            if existing_row and len(existing_row.index) > 0:
                 print_log("    -- Updating row(s) for compound name '" + original_comp_name +
                           "' (alt name = '" + alt_name + "')")
 
