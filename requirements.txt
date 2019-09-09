@@ -24,4 +24,4 @@ plotly
 boto3
 pillow
 requests
-metaspace
+metaspace2020
