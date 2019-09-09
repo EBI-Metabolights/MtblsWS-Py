@@ -43,7 +43,7 @@ from app.ws.biostudies import *
 from app.ws.spectra import ExtractMSSpectra
 from app.ws.study_actions import StudyStatus
 from app.ws.user_management import UserManagement
-#from app.ws.metaspace_pipeline import MetaspacePipeLine
+from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.send_files import SendFiles
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
 
@@ -152,7 +152,7 @@ def initialize_app(flask_app):
 
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
- #   api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
+    api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
 
     # EBI utils
     api.add_resource(MapStudies, res_path + "/ebi-internal/zooma")

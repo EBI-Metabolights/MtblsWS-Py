@@ -583,8 +583,8 @@ def validate_xml(xsd, xml):
 def to_isa_tab(study_id, input_folder, output_folder):
     try:
         isa_convert(input_folder, output_folder, study_id, jobs=2)
-    except:
-        return False, "Could not convert mzML to ISA-Tab study " + study_id
+    except Exception as e:
+        return False, "Could not convert mzML to ISA-Tab study " + study_id + ". " + str(e)
 
     return True, "ISA-Tab files generated for study " + study_id
 

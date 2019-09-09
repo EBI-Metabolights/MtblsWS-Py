@@ -300,9 +300,14 @@ def get_sample_details(study_id, user_token, study_location):
     isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                      skip_load_tables=True,
                                                      study_location=study_location)
-    if isa_study:
-        sample_file = isa_study.filename
-        sample_df = read_tsv(os.path.join(study_location, sample_file))
+    try:
+        if isa_study:
+            sample_file = isa_study.filename
+            sample_df = read_tsv(os.path.join(study_location, sample_file))
+    except FileNotFoundError:
+        print_log("Error: Could not find ISA-Tab metadata files")
+        abort(500, 'Error: Could not find ISA-Tab metadata files')
+
     print_log("Reading ISA-Tab sample file took %s seconds" % round(time.time() - start_time, 2))
 
     try:
@@ -1185,6 +1190,26 @@ def get_is_a(onto, chebi_compound):
     return is_a_list
 
 
+def get_chebi_client():
+    url = app.config.get('CHEBI_URL')
+    wait_time = app.config.get('CHEBI_URL_WAIT')
+    client = None
+    retries = 20
+    attempts = 0
+
+    while not client and retries - attempts >= 0:
+        try:
+            client = Client(url)
+        except Exception as e:
+            print_log("    -- Could not set up ChEBI webservice call. " + str(e))
+            print_log("      -- Trying to set up a new ChEBI webservice client in 5 minutes.")
+            attempts += 1
+            client = None
+            time.sleep(wait_time)  # Wait as the resync of the ChEBI webservice in London can take up to 5 mins
+
+    return client
+
+
 def direct_chebi_search(final_inchi_key, comp_name, search_type="inchi"):
     chebi_id = ""
     inchi = ""
@@ -1192,17 +1217,16 @@ def direct_chebi_search(final_inchi_key, comp_name, search_type="inchi"):
     name = ""
     smiles = ""
     formula = ""
-    url = app.config.get('CHEBI_URL')
     top_result = None
     lite_entity = None
 
     comp_name = clean_comp_name(comp_name)
 
-    try:
-        client = Client(url)
-    except Exception as e:
-        print_log("    -- Could not set up ChEBI webservice calls. " + str(e))
-        return chebi_id, inchi, inchikey, name, smiles, formula
+    client = get_chebi_client()
+    if not client:
+        print_log("    -- Could not set up any ChEBI webservice calls. ")
+        abort(500, 'ERROR: Could not set up any direct ChEBI webservice calls, ChEBI WS may be down')
+        return chebi_id, inchi, inchikey, name, smiles, formula, search_type
 
     try:
         if search_type == "inchi" and final_inchi_key:

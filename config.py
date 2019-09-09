@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.00.12"
+WS_APP_VERSION = "1.01.01"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.10.3"
 METASPACE_APP_VERSION = "0.7.1"
@@ -85,6 +85,7 @@ FILE_LIST_TIMEOUT = 90
 VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
 OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
 CHEBI_URL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
+CHEBI_URL_WAIT = 300
 CLASSYFIRE_ULR = "http://classyfire.wishartlab.com"
 CLASSYFIRE_MAPPING = "/net/isilon8/ftp_public/databases/metabolights/submissionTool/ClassyFire_Mapping.tsv"
 OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"
@@ -92,10 +93,8 @@ CHEMSPIDER_URL = "http://parts.chemspider.com/JSON.ashx?op="
 CHEBI_UPLOAD_SCRIPT = ""
 
 # METASPACE
-METASPACE_ACCESS_KEY_ID = ''
-METASPACE_SECRET_ACCESS_KEY = ''
-METASPACE_BUCKET = ''
 METASPACE_DATABASE = "HMDB-v4"
 METASPACE_FDR = 0.1
 METASPACE_APP_NAME = "MMIT"
 METASPACE_APP_DESCRIPTION = "METASPACE-MetaboLights Interface Tools"
+AWS_CREDENTIALS = './instance/aws_credentials.cfg'
