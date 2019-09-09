@@ -23,7 +23,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from app.ws.metaspace_isa_api_client import MetaSpaceIsaApiClient
 from isatools.model import *
-from metaspace.sm_annotation_utils import *
+#from metaspace.sm_annotation_utils import *
 from collections import OrderedDict
 import configparser
 import json

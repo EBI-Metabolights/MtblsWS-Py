@@ -21,7 +21,7 @@ from flask import abort
 from app.ws.utils import *
 from isatools.isatab import dump
 from isatools.model import *
-from metaspace.sm_annotation_utils import *
+# from metaspace.sm_annotation_utils import *
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 import time
@@ -139,7 +139,7 @@ class MetaSpaceIsaApiClient(Resource):
         # CONNECT TO METASPACE SERVICES
         # database = config.METASPACE_DATABASE
         # fdr = config.METASPACE_FDR
-        sm = SMInstance()  # connect to the main metaspace service
+        # sm = SMInstance()  # connect to the main metaspace service
         # db = sm._moldb_client.getDatabase(database)  # connect to the molecular database service
 
         # for assay in isa_study.assay:
