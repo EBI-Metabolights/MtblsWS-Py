@@ -152,7 +152,7 @@ def initialize_app(flask_app):
 
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
-    api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
+    # api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
 
     # EBI utils
     api.add_resource(MapStudies, res_path + "/ebi-internal/zooma")

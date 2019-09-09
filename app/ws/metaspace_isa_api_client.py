@@ -21,7 +21,6 @@ from flask import abort
 from app.ws.utils import *
 from isatools.isatab import dump
 from isatools.model import *
-# from metaspace.sm_annotation_utils import *
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 import time
