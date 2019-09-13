@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.01.05"
+WS_APP_VERSION = "1.01.10"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.10.3"
 METASPACE_APP_VERSION = "0.7.1"
@@ -49,7 +49,8 @@ MTBLS_ZOOMA_FILE = "<local file>"
 BIOPORTAL_TOKEN = '<your bioportal token>'
 MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
 
-PARTNER_TEMPLATE_METABOLON = 'MTBLS study with the template files'
+PARTNER_TEMPLATE_METABOLON = 'TEMPLATES/METABOLON'
+DEFAULT_TEMPLATE = 'TEMPLATES/DUMMY'
 
 CORS_HOSTS = "http://localhost:8000",\
              "http://localhost:4200",\

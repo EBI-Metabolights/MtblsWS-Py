@@ -1582,7 +1582,7 @@ class SplitMaf(Resource):
             study_files, upload_files, upload_diff, upload_location = \
                 get_all_files_from_filesystem(
                     study_id, obfuscation_code, study_location, directory=None, include_raw_data=False,
-                    assay_file_list=get_assay_file_list(study_location))
+                    assay_file_list=get_assay_file_list(study_location))  # ToDo, Overkill just loop through the folder
             maf_count = 0
             maf_changed = 0
             for file in study_files:

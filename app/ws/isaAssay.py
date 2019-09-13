@@ -574,11 +574,10 @@ def get_all_unique_protocols_from_study_assays(study_id, assays):
     return short_list
 
 
-def create_assay(assay_type, columns, study_id, ontology):
+def create_assay(assay_type, columns, study_id, ontology, output_folder=None):
     profiling = 'metabolite_profiling'
     studies_path = app.config.get('STUDY_PATH')  # Root folder for all studies
     study_path = os.path.join(studies_path, study_id)  # This particular study
-
     polarity = ''
     column = ''
     for key_val in columns:
@@ -602,6 +601,8 @@ def create_assay(assay_type, columns, study_id, ontology):
     file_name = get_valid_assay_file_name(file_name, study_path)
     assay, overall_technology = get_new_assay(file_name, assay_platform, assay_type, ontology)
 
+    if output_folder:
+        study_path = output_folder
     file_name = os.path.join(study_path, file_name)
 
     try:

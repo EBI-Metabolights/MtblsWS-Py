@@ -23,6 +23,7 @@ from isatools.isatab import dump
 from isatools.model import *
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.isaAssay import create_assay
 import time
 import errno
 
@@ -55,6 +56,7 @@ class MetaSpaceIsaApiClient(Resource):
         isa_inv = None
         ppal_inv = None
         ct_ppal_inv = None
+        ct_submitter = None
 
         try:
             # status, message = convert_to_isa(output_dir, study_id)
@@ -66,18 +68,27 @@ class MetaSpaceIsaApiClient(Resource):
         if not isa_inv:
             try:
                 study_path = app.config.get('STUDY_PATH')
-                from_path = study_path + 'DUMMY'
+                from_path = study_path + app.config.get('DEFAULT_TEMPLATE')  # 'DUMMY'
                 to_path = output_dir
                 copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
             except Exception as e:
                 logger.error('Could not copy files from %s to %s, Error ', from_path, to_path, str(e))
                 abort(409, "Something went wrong with copying the ISA-Tab templates to study " + str(study_id))
 
+            isa_study, isa_inv, std_path = isa_api.get_isa_study(study_id, user_token, skip_load_tables=True,
+                                                                 study_location=output_dir)
+
             # Create upload folder
             status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
 
-            isa_study, isa_inv, std_path = isa_api.get_isa_study(study_id, user_token, skip_load_tables=True,
-                                                                 study_location=output_dir)
+            isa_inv, obi = add_ontology_to_investigation(isa_inv, 'OBI', '29',
+                                                         'http://data.bioontology.org/ontologies/OBI',
+                                                         'Ontology for Biomedical Investigations')
+
+            # Add the new assay to the investigation file
+            assay_file_name, assay, protocol_params, overall_technology = create_assay(
+                "MSImaging", "", study_id, obi, output_folder=output_dir)
+
             # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
             isa_study, sample_file_name = update_correct_sample_file_name(isa_study, output_dir, study_id)
         else:
@@ -122,7 +133,7 @@ class MetaSpaceIsaApiClient(Resource):
                 isa_study.public_release_date = time.strftime("%d-%m-%Y")
 
             # If different submitters, PI becomes submitter
-            if ppal_inv['name'] != submitter['name']:
+            if ppal_inv and ppal_inv['name'] != submitter['name']:
                 isa_inv.contacts.append(ct_ppal_inv)
                 isa_inv.contacts.append(ct_submitter)
                 isa_study.contacts.append(ct_ppal_inv)
@@ -141,13 +152,20 @@ class MetaSpaceIsaApiClient(Resource):
         # sm = SMInstance()  # connect to the main metaspace service
         # db = sm._moldb_client.getDatabase(database)  # connect to the molecular database service
 
-        # for assay in isa_study.assay:
-        #     # assay file
-        #     for sample in mtspc_obj:
-        #         metaspace_options = sample['metaspace_options']
-        #         ds_name = metaspace_options['Dataset_Name']
-        #         # ds = sm.dataset(name=ds_name)
-        #         assay.samples.append(sample)
+        if assay:
+            # assay file
+            for sample in mtspc_obj:
+                metaspace_options = sample['metaspace_options']
+                sample_info = sample['Sample_Information']
+                ds_name = metaspace_options['Dataset_Name']
+                # ds = sm.dataset(name=ds_name)
+                if sample_info:
+                    organism = sample_info['Organism']
+                    organism_part = sample_info['Organism_Part']
+                #assay.samples.append(sample)
+
+            # add the assay to the study
+            isa_study.assays.append(assay)
 
         if persist:
             isa_api.write_isa_study(isa_inv, user_token, output_dir,

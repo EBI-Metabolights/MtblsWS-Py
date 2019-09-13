@@ -889,15 +889,51 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     return return_validations(val_section, validations, override_list)
 
 
+def get_files_in_sub_folders(study_location):
+    folder_list = []
+    file_folder_list = []
+    folder_exclusion_list = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup']
+    for file_name in os.listdir(study_location):
+        if os.path.isdir(os.path.join(study_location, file_name)):
+            fname, ext = os.path.splitext(file_name)
+            ext = ext.lower()
+            if ext and ext not in folder_exclusion_list:
+                if file_name not in folder_list:
+                    folder_list.append(file_name)
+
+            if file_name.lower() not in folder_exclusion_list and file_name.lower() not in folder_list:
+                folder_list.append(file_name)
+
+    # for folder in folder_list:
+    #     full_folder = os.path.join(study_location, folder)
+    #     for file_name in os.listdir(full_folder):
+    #         file_folder = os.path.join(folder, file_name)
+    #         if file_folder not in file_folder_list:
+    #             file_folder_list.append(file_folder)
+
+    return folder_list
+
+
 def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list,
                    val_section="files", log_category=error):
     # check for Publication
     validations = []
     assay_file_list = get_assay_file_list(study_location)
+    folder_list = get_files_in_sub_folders(study_location)
     study_files, upload_files, upload_diff, upload_location = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
                                       include_upload_folder=False, assay_file_list=assay_file_list)
+    if folder_list:
+        for folder in folder_list:
+            study_files_sub, upload_files, upload_diff, upload_location = \
+                get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
+                                              directory=folder, include_raw_data=True, validation_only=True,
+                                              include_upload_folder=False, assay_file_list=assay_file_list)
+
+            if study_files_sub:
+                study_files.extend(study_files_sub)  # Adding files in first subfolder to the files in the (root) study folder
+
     sample_cnt = 0
     raw_file_found = False
     derived_file_found = False

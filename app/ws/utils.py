@@ -376,18 +376,20 @@ def log_request(request_obj):
 
 
 def read_tsv(file_name):
+    table_df = pd.DataFrame()  # Empty file
     try:
-        if os.path.getsize(file_name) == 0:
-            table_df = pd.DataFrame()  # Empty file
-            logger.info("Could not read file " + file_name)
+        if os.path.getsize(file_name) == 0:  # Empty file
+            logger.error("Could not read file " + file_name)
         else:
             # Enforce str datatype for all columns we read from ISA-Tab tables
             col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
             types_dict = {col: str for col in col_names}
             table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8', dtype=types_dict)
-    except:  # Todo, should check if the file format is Excel. ie. not in the exception handler
-        table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1')  # Excel format
-        logger.info("Have to open as Excel tsv file 'ISO-8859-1' file " + file_name)
+    except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
+        if os.path.getsize(file_name) > 0:
+            table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1')  # Excel format
+            logger.info("Tried to open as Excel tsv file 'ISO-8859-1' file " + file_name + ". " + str(e))
+
     table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
     return table_df
 
@@ -739,7 +741,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
     active_status = 'active'
     none_active_status = 'unreferenced'
     folder = False
-    fname, ext = os.path.splitext(file_name)
+    fname, ext = os.path.splitext(file_name)  # ToDo, will this work with folders?
     fname = fname.lower()
     ext = ext.lower()
     # Metadata first, current is if the files are present in the investigation and assay files

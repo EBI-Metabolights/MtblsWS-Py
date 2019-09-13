@@ -338,6 +338,8 @@ def aws_get_annotations(mtspc_obj, output_dir, database=config.METASPACE_DATABAS
 
 
 def get_metadata(dataset_ids, output_dir, database=None, metaspace_api_key=None):
+    annotation_json = None
+    info_json = None
 
     if dataset_ids:
         db = get_database(database=database, metaspace_api_key=metaspace_api_key)
@@ -422,7 +424,7 @@ def get_database(database=None, metaspace_api_key=None):
         db = sm
         logger.info('NB! Only public datasets can be retrieved')
 
-    #  return db #  ToDo, check why we cannot connect
+    # return db #  ToDo, check why we cannot connect
     return sm
 
 

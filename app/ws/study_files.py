@@ -51,8 +51,8 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
     upload_files = []
     if include_upload_folder:
         u_start_time = time.time()
-        upload_files = get_all_files(upload_location, directory=directory,
-                                 include_raw_data=include_raw_data, study_id=study_id, validation_only=validation_only)
+        upload_files = get_all_files(upload_location, directory=directory, include_raw_data=include_raw_data,
+                                     study_id=study_id, validation_only=validation_only)
         logger.info("Listing upload files for " + study_id + " took %s seconds" % round(time.time() - u_start_time, 2))
 
     # Sort the two lists

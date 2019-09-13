@@ -902,7 +902,7 @@ class CreateAccession(Resource):
             abort(409, "Something went wrong with the creation of study " + study_acc)
 
         study_path = app.config.get('STUDY_PATH')
-        from_path = study_path + 'DUMMY'
+        from_path = study_path + app.config.get('DEFAULT_TEMPLATE')  # 'DUMMY'
         to_path = study_location
 
         try:
