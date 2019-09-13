@@ -184,7 +184,6 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     column_name = file_name_and_column.split('|')[1]
 
     fname, ext = os.path.splitext(file_name)
-    fname = fname.lower()
     ext = ext.lower()
 
     fid_file = 'Free Induction Decay Data File'

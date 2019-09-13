@@ -719,7 +719,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         if changed and row_idx > 0 and row_idx % 20 == 0:  # Save every 20 rows
             pubchem_file = short_file_name + pubchem_end
             write_tsv(pubchem_df, pubchem_file)
-            print_log('  -- Updating PubChem file. Record ' + str(idx + 1) + ' of ' + str(new_maf_len))
+            write_tsv(maf_df, short_file_name + "_annotated.tsv")
+            print_log('  -- Updating PubChem and annotated file. Record ' + str(idx + 1) + ' of ' + str(new_maf_len))
 
         row_idx += 1
     if not exiting_pubchem_file:

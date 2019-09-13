@@ -652,6 +652,13 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     except FileNotFoundError:
         update_maf = True
         maf_df = pd.read_csv(annotation_file_template, sep="\t", header=0, encoding='utf-8')
+        logger.info("Creating new MAF: " + full_annotation_file_name)
+    except UnicodeDecodeError as e:
+        if os.path.getsize(full_annotation_file_name) > 0:
+            logger.info(
+                "Trying to open as Excel tsv file 'ISO-8859-1' file " + full_annotation_file_name + ". " + str(e))
+            maf_df = pd.read_csv(full_annotation_file_name, sep="\t", header=0, encoding='ISO-8859-1')  # Excel format
+
     # Get rid of empty numerical values
     maf_df = maf_df.replace(np.nan, '', regex=True)
 
