@@ -41,10 +41,13 @@ class MetaspacePipeLine(Resource):
     @swagger.operation(
         summary="Import files files and metadata from METASPACE to a MTBLS study",
         nickname="Import data from METASPACE",
-        notes="""Import files files and metadata from METASPACE to a MetaboLights study
+        notes="""Import files files and metadata from METASPACE to a MetaboLights study. 
+        </p>Please note that METASPACE API keys are not yet available, so use username/password for now
             </p><pre><code>{
     "project": {
         "metaspace-api-key": "12489afjhadkjfhajfh",
+        "metaspace-password": "asdfjsahdf",
+        "metaspace-email": "someone@here.com",
         "metaspace-projects": "project_id1,project_id2"
     }
 } </code></pre>""",
@@ -118,9 +121,15 @@ class MetaspacePipeLine(Resource):
                 project = data_dict['project']
                 if project:
                     metaspace_api_key = project['metaspace-api-key']
+                    metaspace_password = project['metaspace-password']
+                    metaspace_email = project['metaspace-email']
                     metaspace_projects = project['metaspace-projects']
                     logger.info('Requesting METASPACE projects ' + metaspace_projects)
                     study_location = os.path.join(study_location, 'METASPACE')
+                    # ToDo, remove this when we have an API key (not yet implemented in METASPACE)
+                    if metaspace_password and metaspace_email:
+                        sm.login(metaspace_email, metaspace_password)
+
                     if not os.path.isdir(study_location):
                         os.makedirs(study_location, exist_ok=True)
                     investigation = import_metaspace(study_id, project=metaspace_projects,

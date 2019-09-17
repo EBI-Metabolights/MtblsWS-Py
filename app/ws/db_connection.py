@@ -231,6 +231,21 @@ def update_release_date(study_id, release_date):
         return False, str(e)
 
 
+def add_placeholder_flag(study_id):
+    query_update = "update studies set placeholder = 1 where acc = '" + study_id + "';"
+    query_update = query_update.replace('\\', '')
+    try:
+        postgreSQL_pool, conn, cursor = get_connection()
+        cursor.execute(query_update)
+        conn.commit()
+        # conn.close()
+        release_connection(postgreSQL_pool, conn)
+        return True, "Placeholder flag updated for study " + study_id
+
+    except Exception as e:
+        return False, str(e)
+
+
 def get_curation_log(user_token):
     data = execute_query(query_curation_log, user_token)
     return data
@@ -242,7 +257,6 @@ def get_obfuscation_code(study_id):
     postgreSQL_pool, conn, cursor = get_connection()
     cursor.execute(query)
     data = cursor.fetchall()
-    # conn.close()
     release_connection(postgreSQL_pool, conn)
     return data
 
@@ -409,6 +423,24 @@ def study_submitters(study_id, user_email, method):
         return False
 
 
+def query_study_submitters(study_id):
+
+    if not study_id:
+        return None
+
+    query = "select u.email from users u, studies s, study_user su " \
+            "where su.userid = u.id and su.studyid = s.id and acc='" + study_id + "';"
+    query = query.replace('\\', '')
+    try:
+        postgreSQL_pool, conn, cursor = get_connection()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        release_connection(postgreSQL_pool, conn)
+        return data
+    except Exception as e:
+        return False
+
+
 def override_validations(study_id, method, override=""):
 
     if not study_id:
@@ -427,7 +459,6 @@ def override_validations(study_id, method, override=""):
             query = query.replace('\\', '')
             cursor.execute(query)
             data = cursor.fetchall()
-            # conn.close()
             release_connection(postgreSQL_pool, conn)
             return data[0]
         elif method == 'update' and override:
@@ -462,7 +493,6 @@ def update_study_status(study_id, study_status):
         postgreSQL_pool, conn, cursor = get_connection()
         cursor.execute(query)
         conn.commit()
-        # conn.close()
         release_connection(postgreSQL_pool, conn)
         return True
     except Exception as e:
@@ -486,7 +516,6 @@ def execute_query(query, user_token, study_id=None):
             query2 = query2.replace("#study_id#", study_id)
             cursor.execute(query2)
         data = cursor.fetchall()
-        # conn.close()
         release_connection(postgreSQL_pool, conn)
 
         return data

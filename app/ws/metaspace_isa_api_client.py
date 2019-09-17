@@ -54,6 +54,7 @@ class MetaSpaceIsaApiClient(Resource):
         print("Creating ISA-Tab investigation file.")
         isa_study = None
         isa_inv = None
+        assay = None
         ppal_inv = None
         ct_ppal_inv = None
         ct_submitter = None
@@ -71,6 +72,7 @@ class MetaSpaceIsaApiClient(Resource):
                 from_path = study_path + app.config.get('DEFAULT_TEMPLATE')  # 'DUMMY'
                 to_path = output_dir
                 copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
+                # status, message = convert_to_isa(to_path, study_id)
             except Exception as e:
                 logger.error('Could not copy files from %s to %s, Error ', from_path, to_path, str(e))
                 abort(409, "Something went wrong with copying the ISA-Tab templates to study " + str(study_id))

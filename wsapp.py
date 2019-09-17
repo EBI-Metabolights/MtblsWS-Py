@@ -102,6 +102,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyAssayDelete, res_path + "/studies/<string:study_id>/assays/<string:assay_file_name>")
     api.add_resource(CreateAccession, res_path + "/studies/create")
     api.add_resource(CloneAccession, res_path + "/studies/clone")
+    api.add_resource(DeleteStudy, res_path + "/studies/<string:study_id>/delete")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
     api.add_resource(StudyStatus, res_path + "/studies/<string:study_id>/status")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")

@@ -25,7 +25,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
-from app.ws.db_connection import get_all_studies_for_user
+from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, query_study_submitters
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -954,6 +954,98 @@ class CreateAccession(Resource):
             abort(409, "Could not find ISA-Tab investigation template for study " + study_acc)
 
         return {"new_study": study_acc}
+
+
+class DeleteStudy(Resource):
+    @swagger.operation(
+        summary="Delete an existing study (curator only)",
+        notes='''Please note that deleting a study will release the accession number back to be reused. 
+        This will be available for the MetaboLights team as a placeholder''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Existing Study to delete",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def delete(self, study_id):
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if not user_token:
+            abort(404)
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        # Need to check that the user is actually an active user, ie the user_token exists
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not is_curator:
+            abort(401)
+
+        logger.info('Deleting study ' + study_id)
+
+        # Remove the submitter from the study
+        submitter_emails = query_study_submitters(study_id)
+        if submitter_emails:
+            for submitter in submitter_emails:
+                study_submitters(study_id, submitter[0], 'delete')
+
+        # Add the placeholder flag and MetaboLights user to the study
+        mtbls_email = app.config.get("MTBLS_SUBMITTER_EMAIL")
+        add_placeholder_flag(study_id)
+        study_submitters(study_id, mtbls_email, 'add')
+
+        # Remove all files in the study folder
+        for file_name in os.listdir(study_location):
+            status, message = remove_file(study_location, file_name, True)
+
+        # Remove all files in the upload folder
+        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
+        for file_name in os.listdir(upload_location):
+            status, message = remove_file(upload_location, file_name, True)
+
+        status, message = wsc.reindex_study(study_id, user_token)
+        if not status:
+            abort(500, "Could not reindex the study")
+
+        return {"Success": "Study " + study_id + " has been removed"}
 
 
 def write_audit_files(study_location):
