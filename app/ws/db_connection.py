@@ -232,7 +232,7 @@ def update_release_date(study_id, release_date):
 
 
 def add_placeholder_flag(study_id):
-    query_update = "update studies set placeholder = 1 where acc = '" + study_id + "';"
+    query_update = "update studies set placeholder = 1, status = 0 where acc = '" + study_id + "';"
     query_update = query_update.replace('\\', '')
     try:
         postgreSQL_pool, conn, cursor = get_connection()

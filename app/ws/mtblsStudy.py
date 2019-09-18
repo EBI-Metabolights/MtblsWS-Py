@@ -167,6 +167,15 @@ class IsaTabInvestigationFile(Resource):
                 "dataType": "string"
             },
             {
+                "name": "version",
+                "description": "Version of Investigation file (audit record)",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -205,13 +214,19 @@ class IsaTabInvestigationFile(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('investigation_filename', help='Investigation filename')
+        parser.add_argument('version', help='Version of metadata/Audit record')
+        study_version = None
         inv_filename = None
         if request.args:
             args = parser.parse_args(req=request)
             inv_filename = args['investigation_filename'].lower() if args['investigation_filename'] else None
+            study_version = args['version'].lower() if args['version'] else None
         if not inv_filename:
             logger.warning("Missing Investigation filename. Using default i_Investigation.txt")
             inv_filename = 'i_Investigation.txt'
+
+        if study_version:
+            logger.info("Loading version " + study_version + " of the metadata")
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
@@ -219,7 +234,11 @@ class IsaTabInvestigationFile(Resource):
             abort(403, "Study does not exist or your do not have access to this study")
 
         logger.info('Getting ISA-Tab Investigation file for %s', study_id)
-        location = study_location  # wsc.get_study_location(study_id, user_token)
+        location = study_location
+        if study_version:
+            audit = os.path.join('audit', study_version)
+            location = os.path.join(study_location, audit)
+
         files = glob.glob(os.path.join(location, inv_filename))
         if files:
             file_path = files[0]
@@ -748,7 +767,7 @@ class CreateUploadFolder(Resource):
         return status
 
 
-class SaveAuditFiles(Resource):
+class AuditFiles(Resource):
     @swagger.operation(
         summary="Save a copy of the metadata into an audit folder",
         parameters=[
@@ -815,6 +834,65 @@ class SaveAuditFiles(Resource):
             return {'Success': 'Created audit record for ' + study_id}
         else:
             return {'Error': 'Failed to create audit folder ' + dest_path}
+
+    @swagger.operation(
+        summary="Get an overview of the available audit folders for a study",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier to retrieve audit record names",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(404)
+        study_id = study_id.upper()
+
+        # param validation
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not read_access:
+            abort(401, "Unauthorized. Read access to the resource requires user authentication. "
+                       "Please provide a study id and a valid user token")
+
+        return jsonify(get_audit_files(study_location))
 
 
 class CreateAccession(Resource):
@@ -1071,6 +1149,17 @@ def write_audit_files(study_location):
         return False, dest_path
 
     return True, dest_path
+
+
+def get_audit_files(study_location):
+    folder_list = []
+    audit_path = os.path.join(study_location, 'audit')
+
+    try:
+        folder_list = os.listdir(os.path.join(audit_path))
+    except:
+        return folder_list
+    return folder_list
 
 
 class ReindexStudy(Resource):

@@ -915,7 +915,7 @@ def get_files_in_sub_folders(study_location):
 
 def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list,
                    val_section="files", log_category=error):
-    # check for Publication
+    empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json']
     validations = []
     assay_file_list = get_assay_file_list(study_location)
     folder_list = get_files_in_sub_folders(study_location)
@@ -979,8 +979,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                 add_msg(validations, val_section, "Old metadata file should be removed", warning,
                         val_section, value=file_name, val_sequence=5, log_category=log_category)
 
-        if is_empty_file(full_file_name):
-            if file_name not in 'metexplore_mapping.json':
+        if is_empty_file(full_file_name) and file_name not in empty_exclude_list:
+            if file_name.split("/")[1] not in empty_exclude_list:  # In case the file is in a folder
                 add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
                         error, val_section,
                         value=file_name, val_sequence=6, log_category=log_category)
