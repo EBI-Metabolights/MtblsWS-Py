@@ -117,13 +117,13 @@ def return_validations(section, validations, override_list=[]):
                 for db_val in override_list:
                     val_step = db_val.split(':')[0]
                     val_msg = db_val.split(':')[1]
-                    if val_sequence == val_step or val_step == '*':
+                    if val_sequence == val_step or val_step == '*':  # "*" overrides all errors/warning/info etc
                         val_status = val['status']
                         val["val_override"] = 'true'
                         val["val_message"] = val_msg
                         if val_status == warning or val_status == error or val_status == info:
                             val["status"] = success
-                        elif val_status == success:
+                        elif val_status == success and val_step != '*':
                             val["status"] = error
             except:
                 logger.error('Could not read the validation override list, is the required ":" there?')
@@ -278,7 +278,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
             add_msg(validations, val_section,
                     "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and "
                     "'metabolite_identification' found in the correct column position in '" + file_name + "'",
-                    success, val_sequence=4, log_category=log_category)
+                    success, val_sequence=4.2, log_category=log_category)
 
         try:
             if is_ms and maf_header['mass_to_charge']:
@@ -848,10 +848,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             if all_assay_names:
                 if len(all_assay_names) < all_rows:
                     add_msg(validations, val_section, "MS/NMR Assay name column should only contain unique values",
-                            warning, assay.filename, val_sequence=4, log_category=log_category)
+                            warning, assay.filename, val_sequence=4.1, log_category=log_category)
                 else:
                     add_msg(validations, val_section, "MS/NMR Assay name column only contains unique values",
-                            success, assay.filename, val_sequence=4, log_category=log_category)
+                            success, assay.filename, val_sequence=4.1, log_category=log_category)
 
         # Correct MAF?
         if header.lower() == 'metabolite assignment file':
@@ -1071,7 +1071,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                     if row.lower() in incorrect_species:
                         add_msg(validations, val_section,
                                 "Organism can not be '" + row + "', choose the appropriate taxonomy term",
-                                error, file_name, val_sequence=4, log_category=log_category)
+                                error, file_name, val_sequence=4.3, log_category=log_category)
 
                     if ':' in row:
                         add_msg(validations, val_section,
