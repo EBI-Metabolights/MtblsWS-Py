@@ -323,7 +323,7 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
 
     if col_rows == all_rows:
         add_msg(validations, val_section, "All values for '" + column_name + "' found in the MAF",
-                success, val_sequence=9, log_category=log_category)
+                success, val_sequence=9.1, log_category=log_category)
     else:
         # For MS we should have m/z values, for NMR the chemical shift is equally important.
         if (is_ms and column_name == 'mass_to_charge') or (not is_ms and column_name == 'chemical_shift'):
