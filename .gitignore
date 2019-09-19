@@ -82,4 +82,3 @@ tests/.pytest_cache/
 examples/
 venv37
 old_venv37
-aws_credentials.cfg

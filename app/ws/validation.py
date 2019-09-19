@@ -112,12 +112,12 @@ def return_validations(section, validations, override_list=[]):
         val["val_sequence"] = val_sequence
         val["val_override"] = 'false'
         val["val_message"] = ''
-        if len(override_list) > 0:
+        if len(override_list) > 0:  # These are from the database, ie. already over-ridden
             try:
-                for db_val in override_list:  # These are from the database, ie. already over-ridden
+                for db_val in override_list:
                     val_step = db_val.split(':')[0]
                     val_msg = db_val.split(':')[1]
-                    if val_sequence == val_step:
+                    if val_sequence == val_step or val_step == '*':
                         val_status = val['status']
                         val["val_override"] = 'true'
                         val["val_message"] = val_msg
@@ -915,7 +915,7 @@ def get_files_in_sub_folders(study_location):
 
 def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list,
                    val_section="files", log_category=error):
-    empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json']
+    empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF']
     validations = []
     assay_file_list = get_assay_file_list(study_location)
     folder_list = get_files_in_sub_folders(study_location)
@@ -950,7 +950,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
             if os.path.isdir(os.path.join(full_file_name)):
                 for sub_file_name in os.listdir(full_file_name):
                     if is_empty_file(os.path.join(full_file_name, sub_file_name)):
-                        add_msg(validations, val_section, "Empty files found is sub-directory", info, val_section,
+                        add_msg(validations, val_section, "Empty files found in a sub-directory", info, val_section,
                                 value=os.path.join(file_name, sub_file_name), val_sequence=1, log_category=log_category)
 
                     # warning for sub folders with ISA tab
@@ -1652,7 +1652,7 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
 class OverrideValidation(Resource):
     @swagger.operation(
         summary="Approve or reject a specific validation rule (curator only)",
-        notes='''For EBI curatiors to manually approve or fail a validation step.</br>
+        notes='''For EBI curators to manually approve or fail a validation step.</br> "*" will override *all* errors!
         <pre><code>
     { 
       "validations": [
