@@ -37,7 +37,6 @@ iac = IsaApiClient()
 
 def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None, include_raw_data=None,
                                   assay_file_list=None, validation_only=False, include_upload_folder=True):
-    logger.info('Getting list of all files for MTBLS Study %s', study_id)
     upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
     logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                 study_location, upload_location)
