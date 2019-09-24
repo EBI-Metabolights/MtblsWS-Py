@@ -981,7 +981,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                         val_section, value=file_name, val_sequence=5, log_category=log_category)
 
         if is_empty_file(full_file_name) and file_name not in empty_exclude_list:
-            if file_name.split("/")[1] not in empty_exclude_list:  # In case the file is in a folder
+            if '/' in file_name and file_name.split("/")[1] not in empty_exclude_list:  # In case the file is in a folder
                 add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
                         error, val_section,
                         value=file_name, val_sequence=6, log_category=log_category)
@@ -1520,11 +1520,20 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
         add_msg(validations, val_section, "Successfully read the investigation file", success,
                 'i_Investigation.txt', val_sequence=2, log_category=log_category)
 
-        if isa_study:
+        study_num = 0
+        if isa_inv.studies:
+            study_num = len(isa_inv.studies)
+            if study_num > 1:
+                add_msg(validations, val_section,
+                        "You can only submit one study per submission, this submission has " + str(study_num) + " studies",
+                        error, 'i_Investigation.txt', val_sequence=2.1, log_category=log_category)
+
+
+        if isa_study and study_num == 1:
             add_msg(validations, val_section, "Successfully read the study section of the investigation file", success,
                     'i_Investigation.txt', val_sequence=3, log_category=log_category)
         else:
-            add_msg(validations, val_section, "Can not read the study section of the investigation file", error,
+            add_msg(validations, val_section, "Can not correctly read the study section of the investigation file", error,
                     'i_Investigation.txt', val_sequence=4, log_category=log_category)
             validates = False
 

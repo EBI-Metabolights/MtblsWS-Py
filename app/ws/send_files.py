@@ -16,6 +16,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+from zipfile import ZipFile
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from flask import request, send_file, safe_join, abort, make_response
@@ -24,6 +25,7 @@ from app.ws.db_connection import get_obfuscation_code
 import logging
 import os
 import shutil
+from os import scandir
 
 logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client
@@ -45,7 +47,7 @@ class SendFiles(Resource):
             },
             {
                 "name": "file",
-                "description": "File or folder name (relative to study folder)",
+                "description": "File(s) or folder name (comma separated, relative to study folder)",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -129,19 +131,46 @@ class SendFiles(Resource):
                 abort(403)
         try:
             remove_file = False
-            safe_path = safe_join(study_location, file_name)
-            if os.path.isdir(safe_path):
-                safe_path = shutil.make_archive(safe_path, 'zip', root_dir=study_location, base_dir=file_name)
-                logger.info('Created zip file ' + safe_path)
-                file_name = file_name + '.zip'
+
+            short_zip = study_id + "_compressed_files.zip"
+            zip_name = os.path.join(study_location, short_zip)
+            if os.path.isfile(zip_name):
+                os.remove(zip_name)
+
+            if ',' in file_name:
+                zipfile = ZipFile(zip_name, mode='a')
                 remove_file = True
+                files = file_name.split(',')
+                for file in files:
+                    safe_path = safe_join(study_location, file)
+                    if os.path.isdir(safe_path):
+                        for sub_file in scandir(safe_path):
+                            zipfile.write(sub_file.path, arcname=os.path.join(file, sub_file.name))
+                    else:
+                        zipfile.write(safe_path, arcname=file)
+                zipfile.close()
+                remove_file = True
+                safe_path = zip_name
+                file_name = short_zip
+            else:
+                safe_path = safe_join(study_location, file_name)
+                if os.path.isdir(safe_path):
+                    zipfile = ZipFile(zip_name, mode='a')
+                    for sub_file in scandir(safe_path):
+                        zipfile.write(sub_file.path, arcname=os.path.join(file_name, sub_file.name))
+                    zipfile.close()
+                    remove_file = True
+                    safe_path = zip_name
+                    file_name = short_zip
 
             resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name))
             # response.headers["Content-Disposition"] = "attachment; filename={}".format(file_name)
             resp.headers['Content-Type'] = 'application/octet-stream'
             return resp
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             abort(404, "Could not find file " + file_name)
+        except Exception as e:
+            abort(404, "Could not create zip file " + str(e))
         finally:
             if remove_file:
                 os.remove(safe_path)

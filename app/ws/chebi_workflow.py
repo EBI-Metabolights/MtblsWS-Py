@@ -254,7 +254,6 @@ def clean_comp_name(comp_name):
 def get_pubchem_substance(comp_name, res_type):
     results = []
     result = ""
-    # comp_name = 'Barbatolic acid'
     comp_name_url = urllib.parse.quote(comp_name)
     url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/name/" + comp_name_url + "/cids/JSON"
 
