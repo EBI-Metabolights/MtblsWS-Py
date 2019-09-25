@@ -56,7 +56,7 @@ class SendFiles(Resource):
             {
                 "name": "obfuscation_code",
                 "description": "Study obfuscation code",
-                "required": False,
+                "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
                 "dataType": "string"
@@ -144,8 +144,9 @@ class SendFiles(Resource):
                 for file in files:
                     safe_path = safe_join(study_location, file)
                     if os.path.isdir(safe_path):
-                        for sub_file in scandir(safe_path):
-                            zipfile.write(sub_file.path, arcname=os.path.join(file, sub_file.name))
+                        for sub_file in recursively_get_files(safe_path):
+                            f_name = sub_file.path.replace(study_location, '')
+                            zipfile.write(sub_file.path, arcname=f_name)
                     else:
                         zipfile.write(safe_path, arcname=file)
                 zipfile.close()
@@ -156,8 +157,9 @@ class SendFiles(Resource):
                 safe_path = safe_join(study_location, file_name)
                 if os.path.isdir(safe_path):
                     zipfile = ZipFile(zip_name, mode='a')
-                    for sub_file in scandir(safe_path):
-                        zipfile.write(sub_file.path, arcname=os.path.join(file_name, sub_file.name))
+                    for sub_file in recursively_get_files(safe_path):
+                        zipfile.write(sub_file.path.replace(os.path.join(study_location, study_id), ''),
+                                      arcname=sub_file.name)
                     zipfile.close()
                     remove_file = True
                     safe_path = zip_name
@@ -176,3 +178,10 @@ class SendFiles(Resource):
                 os.remove(safe_path)
                 logger.info('Removed zip file ' + safe_path)
 
+
+def recursively_get_files(base_dir):
+    for entry in os.scandir(base_dir):
+        if entry.is_file():
+            yield entry
+        elif entry.is_dir(follow_symlinks=False):
+            yield from recursively_get_files(entry.path)
