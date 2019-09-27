@@ -273,8 +273,18 @@ class Ontology(Resource):
         exact = [x for x in result if x.name.lower() == term.lower()]
         rest = [x for x in result if x not in exact]
 
+        # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
+        #                          "column type", "instruments", "confidence", "sample type"
+
         if branch == 'taxonomy':
             priority = {'MTBLS': 0, 'NCBITAXON': 1, 'EFO': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+
+        if branch == 'factor':
+            priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+
+        if branch == 'design descriptor':
+            priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+
         else:
             priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
 
