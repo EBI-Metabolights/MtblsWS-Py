@@ -273,14 +273,10 @@ class Ontology(Resource):
 
         # add WoRMs terms as a entity
         if branch == 'taxonomy':
-            wormID = getWoRMs(term)
-            if wormID != '':
-                iri = 'http://www.marinespecies.org/aphia.php?p=taxdetails&id={wormID}'.format(wormID=wormID)
-                enti = entity(name=term, iri=iri, ontoName='WoRMs', provenance_name='WoRMs',
-                              provenance_uri='http://www.marinespecies.org/index.php')
-                result.append(enti)
-            else:
-                pass
+            r = getWormsTerm(term)
+            result += r
+        else:
+            pass
 
         exact = [x for x in result if x.name.lower() == term.lower()]
         rest = [x for x in result if x not in exact]
@@ -329,8 +325,8 @@ class Ontology(Resource):
             try:
                 d['annotationValue'] = cls.name
                 d["annotationDefinition"] = cls.definition
-                # if branch == 'taxonomy':
-                #     d['wormsID'] = getWoRMs(cls.name)
+                if branch == 'taxonomy':
+                     d['wormsID'] = cls.iri.rsplit('id=', 1)[-1]
                 d["termAccession"] = cls.iri
                 d['termSource']['name'] = cls.ontoName
                 d['termSource']['provenanceName'] = cls.provenance_name
@@ -825,6 +821,39 @@ def getOLSTerm(keyword, map, ontology=''):
     return res
 
 
+def getWormsTerm(keyword):
+    logger.info('Requesting WoRMs ...')
+    print('Requesting WoRMs ...')
+
+    res = []
+    if keyword in [None, '']:
+        return res
+
+    try:
+        url = 'http://www.marinespecies.org/rest/AphiaRecordsByName/{keyword}?like=true&marine_only=true&offset=1'.format(
+            keyword=keyword.replace(' ', '%20'))
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+
+        for term in j_content:
+            name = term["scientificname"]
+            iri = term["url"]
+            definition = term["authority"]
+            ontoName = 'WoRMs'
+            provenance_name = 'World Register of Marine Species'
+
+            enti = entity(name=name, iri=iri, definition=definition, ontoName=ontoName, provenance_name=provenance_name)
+            res.append(enti)
+
+            if len(res) >= 10:
+                break
+    except Exception as e:
+        logger.error(str(e))
+
+    return res
+
+
 def getBioportalTerm(keyword):
     logger.info('Requesting Bioportal...')
     print('Requesting Bioportal...')
@@ -871,7 +900,7 @@ def getBioportalTerm(keyword):
     return res
 
 
-def getWoRMs(term):
+def getWoRMsID(term):
     try:
         url = 'http://www.marinespecies.org/rest/AphiaIDByName/' + term.replace(' ', '%20') + "?marine_only=true"
         fp = urllib.request.urlopen(url)
