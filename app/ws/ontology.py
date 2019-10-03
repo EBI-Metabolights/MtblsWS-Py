@@ -876,7 +876,9 @@ def getWoRMs(term):
         url = 'http://www.marinespecies.org/rest/AphiaIDByName/' + term.replace(' ', '%20') + "?marine_only=true"
         fp = urllib.request.urlopen(url)
         AphiaID = fp.read().decode('utf-8')
-        return AphiaID
+        if AphiaID != '-999':
+            return AphiaID
+        return ''
     except:
         return ''
 
