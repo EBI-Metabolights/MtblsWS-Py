@@ -270,6 +270,18 @@ class Ontology(Resource):
         response = []
 
         result = removeDuplicated(result)
+
+        # add WoRMs terms as a entity
+        if branch == 'taxonomy':
+            wormID = getWoRMs(term)
+            if wormID != '':
+                iri = 'http://www.marinespecies.org/aphia.php?p=taxdetails&id={wormID}'.format(wormID=wormID)
+                enti = entity(name=term, iri=iri, ontoName='WoRMs', provenance_name='WoRMs',
+                              provenance_uri='http://www.marinespecies.org/index.php')
+                result.append(enti)
+            else:
+                pass
+
         exact = [x for x in result if x.name.lower() == term.lower()]
         rest = [x for x in result if x not in exact]
 
@@ -277,7 +289,8 @@ class Ontology(Resource):
         #                          "column type", "instruments", "confidence", "sample type"
 
         if branch == 'taxonomy':
-            priority = {'MTBLS': 0, 'NCBITAXON': 1, 'EFO': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+            priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'CHEBI': 5, 'CHMO': 6, 'NCIT': 6,
+                        'PO': 8}
 
         if branch == 'factor':
             priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
@@ -316,8 +329,8 @@ class Ontology(Resource):
             try:
                 d['annotationValue'] = cls.name
                 d["annotationDefinition"] = cls.definition
-                if branch == 'taxonomy':
-                    d['wormsID'] = getWoRMs(cls.name)
+                # if branch == 'taxonomy':
+                #     d['wormsID'] = getWoRMs(cls.name)
                 d["termAccession"] = cls.iri
                 d['termSource']['name'] = cls.ontoName
                 d['termSource']['provenanceName'] = cls.provenance_name
