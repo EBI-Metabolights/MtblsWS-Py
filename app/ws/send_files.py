@@ -35,7 +35,9 @@ wsc = WsClient()
 class SendFiles(Resource):
     @swagger.operation(
         summary="Stream file(s) to the browser",
-        notes="Download/Stream files from the study folder",
+        notes="Download/Stream files from the study folder</p>"
+              "The 'obfuscation_code' path parameter is mandatory, but for any <b>PUBLIC</b> studies you can use the "
+              "keyword 'public' instead of the real obfuscation code",
         parameters=[
             {
                 "name": "study_id",
@@ -59,7 +61,8 @@ class SendFiles(Resource):
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",
-                "dataType": "string"
+                "dataType": "string",
+                "default": "public"
             },
             {
                 "name": "user_token",
@@ -70,6 +73,7 @@ class SendFiles(Resource):
                 "allowMultiple": False
             }
         ],
+        defaults=[{"obfuscation_code": "public"}],
         responseMessages=[
             {
                 "code": 200,
@@ -90,7 +94,7 @@ class SendFiles(Resource):
             }
         ]
     )
-    def get(self, study_id, obfuscation_code=None):
+    def get(self, study_id, obfuscation_code):
         # param validation
         if study_id is None:
             logger.info('No study_id given')

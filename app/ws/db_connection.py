@@ -113,11 +113,11 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
     query = insert_user_query
 
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
         conn.commit()
         # conn.close()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
         return True, "User account '" + email + "' created successfully"
 
     except Exception as e:
@@ -151,12 +151,12 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
     query = update_user_query
 
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
         number_of_users = cursor.rowcount
         conn.commit()
         # conn.close()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
 
         if number_of_users == 1:
             return True, "User account '" + existing_user_name + "' updated successfully"
@@ -216,15 +216,25 @@ def get_all_studies(user_token):
     return data
 
 
+def get_public_studies_with_methods():
+    query = "select acc, studytype from studies where status = 3;"
+    query = query.replace('\\', '')
+    postgresql_pool, conn, cursor = get_connection()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    release_connection(postgresql_pool, conn)
+    return data
+
+
 def update_release_date(study_id, release_date):
     query_update_release_date = "update studies set releasedate = %s where acc = %s;"
     query_update_release_date = query_update_release_date.replace('\\', '')
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query_update_release_date, (release_date, study_id))
         conn.commit()
         # conn.close()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
         return True, "Date updated for study " + study_id
 
     except Exception as e:
@@ -235,11 +245,11 @@ def add_placeholder_flag(study_id):
     query_update = "update studies set placeholder = 1, status = 0 where acc = '" + study_id + "';"
     query_update = query_update.replace('\\', '')
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query_update)
         conn.commit()
         # conn.close()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
         return True, "Placeholder flag updated for study " + study_id
 
     except Exception as e:
@@ -254,10 +264,10 @@ def get_curation_log(user_token):
 def get_obfuscation_code(study_id):
     query = "select obfuscationcode from studies where acc = '" + study_id + "';"
     query = query.replace('\\', '')
-    postgreSQL_pool, conn, cursor = get_connection()
+    postgresql_pool, conn, cursor = get_connection()
     cursor.execute(query)
     data = cursor.fetchall()
-    release_connection(postgreSQL_pool, conn)
+    release_connection(postgresql_pool, conn)
     return data
 
 
@@ -272,11 +282,11 @@ def biostudies_acc_to_mtbls(biostudies_id):
     query = query.replace('\\', '')
 
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
         data = cursor.fetchall()
         # conn.close()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
         return data[0]
 
     except Exception as e:
@@ -305,7 +315,7 @@ def biostudies_accession(study_id, biostudies_id, method):
     query = query.replace('\\', '')
 
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
 
         if method == 'add' or method == 'delete':
@@ -314,7 +324,7 @@ def biostudies_accession(study_id, biostudies_id, method):
 
         data = cursor.fetchall()
         # conn.close()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
         return True, data[0]
 
     except Exception as e:
@@ -331,11 +341,11 @@ def mtblc_on_chebi_accession(chebi_id):
     query = query.replace("#chebi_id#", chebi_id).replace('\\', '')
 
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
         data = cursor.fetchall()
         # conn.close()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
         return True, data[0]
 
     except IndexError:
@@ -413,11 +423,11 @@ def study_submitters(study_id, user_email, method):
                 'where su.userid = u.id and su.studyid = s.id and lower(u.email) = %s and acc=%s);'
 
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query, (user_email.lower(), study_id))
         conn.commit()
         # conn.close()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
         return True
     except Exception as e:
         return False
@@ -432,10 +442,10 @@ def query_study_submitters(study_id):
             "where su.userid = u.id and su.studyid = s.id and acc='" + study_id + "';"
     query = query.replace('\\', '')
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
         data = cursor.fetchall()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
         return data
     except Exception as e:
         return False
@@ -452,14 +462,14 @@ def override_validations(study_id, method, override=""):
         query = "update studies set override = '#override#' where acc = '#study_id#';"
 
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
 
         if method == 'query':
             query = query.replace("#study_id#", study_id.upper())
             query = query.replace('\\', '')
             cursor.execute(query)
             data = cursor.fetchall()
-            release_connection(postgreSQL_pool, conn)
+            release_connection(postgresql_pool, conn)
             return data[0]
         elif method == 'update' and override:
             query = query.replace("#study_id#", study_id.upper())
@@ -468,7 +478,7 @@ def override_validations(study_id, method, override=""):
             cursor.execute(query)
             conn.commit()
             # conn.close()
-            release_connection(postgreSQL_pool, conn)
+            release_connection(postgresql_pool, conn)
     except Exception as e:
         return False
 
@@ -490,10 +500,10 @@ def update_study_status(study_id, study_status):
     query = "update studies set status = '" + status + "' where acc = '" + study_id + "';"
 
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
         conn.commit()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
         return True
     except Exception as e:
         logger.error('Database update of study status failed with error ' + str(e))
@@ -507,7 +517,7 @@ def execute_query(query, user_token, study_id=None):
 
     data = []
     try:
-        postgreSQL_pool, conn, cursor = get_connection()
+        postgresql_pool, conn, cursor = get_connection()
         query = query.replace('\\', '')
         if study_id is None:
             cursor.execute(query, [user_token])
@@ -516,7 +526,7 @@ def execute_query(query, user_token, study_id=None):
             query2 = query2.replace("#study_id#", study_id)
             cursor.execute(query2)
         data = cursor.fetchall()
-        release_connection(postgreSQL_pool, conn)
+        release_connection(postgresql_pool, conn)
 
         return data
 
@@ -532,18 +542,18 @@ def get_connection():
         params = app.config.get('DB_PARAMS')
         conn_pool_min = app.config.get('CONN_POOL_MIN')
         conn_pool_max = app.config.get('CONN_POOL_MAX')
-        postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
-        conn = postgreSQL_pool.getconn()
+        postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
+        conn = postgresql_pool.getconn()
         cursor = conn.cursor()
     except Exception as e:
         logger.error("Could not query the database " + str(e))
-        postgreSQL_pool.closeall
-    return postgreSQL_pool, conn, cursor
+        postgresql_pool.closeall
+    return postgresql_pool, conn, cursor
 
 
-def release_connection(postgreSQL_pool, ps_connection):
+def release_connection(postgresql_pool, ps_connection):
     try:
-        postgreSQL_pool.putconn(ps_connection)
+        postgresql_pool.putconn(ps_connection)
     except (Exception, psycopg2.DatabaseError) as error:
         print("Error while connecting to PostgreSQL", error)
         logger.error("Error while releasing PostgreSQL connection. " + str(error))

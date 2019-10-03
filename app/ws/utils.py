@@ -798,7 +798,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             return 'derived', active_status, folder
         else:
             return 'derived', none_active_status, folder
-    elif ext in ('.zip', 'zipx', '.gz', '.CDF.gz', '.tar', '.7z', '.z', '.g7z', '.arj', 'rar',
+    elif ext in ('.zip', 'zipx', '.gz', '.cdf', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', 'rar',
                  '.bz2', '.arj', '.z', '.war'):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'compressed', active_status, folder
@@ -815,7 +815,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             else:
                 return 'raw', active_status, folder
         else:
-            if ext in ('.d', '.raw', '.idb', 'cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp'):
+            if ext in ('.d', '.raw', '.idb', 'cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf', '.cdf.cmp'):
                 if os.path.isdir(os.path.join(directory, file_name)):
                     return 'raw', none_active_status, True
                 else:

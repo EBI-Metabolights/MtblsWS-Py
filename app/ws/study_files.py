@@ -326,7 +326,8 @@ class CopyFilesFolders(Resource):
     @swagger.operation(
         summary="Copy files from upload folder to study folder",
         nickname="Copy from upload folder",
-        notes="""Copies files/folder from the upload directory to the study directory
+        notes="""Copies files/folder from the upload directory to the study directory</p> 
+        Note that MetaboLights curators will also trigger copy any new investionation files!</p>
         </p><pre><code>If you only want to copy, or rename, a specific file please use the files field: </p> 
     { 
         "files": [
@@ -498,9 +499,12 @@ class CopyFilesFolders(Resource):
 
         else:
             logger.info("Copying all newer files from '%s' to '%s'", upload_location, study_location)
+            include_inv = False
+            if is_curator:
+                include_inv = True
             status, message = copy_files_and_folders(upload_location, study_location,
                                                      include_raw_data=include_raw_data,
-                                                     include_investigation_file=False)
+                                                     include_investigation_file=include_inv)
 
         if status:
             reindex_status, message = wsc.reindex_study(study_id, user_token)

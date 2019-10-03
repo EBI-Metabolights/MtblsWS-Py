@@ -25,7 +25,8 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
-from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, query_study_submitters
+from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
+    query_study_submitters, get_public_studies_with_methods
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -67,6 +68,33 @@ class MtblsStudies(Resource):
         pub_list = wsc.get_public_studies()
         logger.info('... found %d public studies', len(pub_list['content']))
         return jsonify(pub_list)
+
+
+class MtblsStudiesWithMethods(Resource):
+    @swagger.operation(
+        summary="Get all Studies",
+        notes="Get a list of all public Studies, with the method used.",
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+        log_request(request)
+        logger.info('Getting all public studies')
+        study_list = get_public_studies_with_methods()
+        studies = []
+        for acc, method in study_list:
+            studies.append({
+                "accession": acc, "method": method
+            })
+        return studies
 
 
 class MyMtblsStudies(Resource):
