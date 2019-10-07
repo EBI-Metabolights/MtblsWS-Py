@@ -49,7 +49,7 @@ def log_request(request_obj):
 
 class MtblsStudies(Resource):
     @swagger.operation(
-        summary="Get all Studies",
+        summary="Get all public studies",
         notes="Get a list of all public Studies.",
         responseMessages=[
             {
@@ -72,8 +72,8 @@ class MtblsStudies(Resource):
 
 class MtblsStudiesWithMethods(Resource):
     @swagger.operation(
-        summary="Get all Studies",
-        notes="Get a list of all public Studies, with the method used.",
+        summary="Get all public studies, with technology used",
+        notes="Get a list of all public Studies, with the technology used.",
         responseMessages=[
             {
                 "code": 200,
@@ -91,9 +91,7 @@ class MtblsStudiesWithMethods(Resource):
         study_list = get_public_studies_with_methods()
         studies = []
         for acc, method in study_list:
-            studies.append({
-                "accession": acc, "method": method
-            })
+            studies.append({"accession": acc, "technology": method})
         return studies
 
 
