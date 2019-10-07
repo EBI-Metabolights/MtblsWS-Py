@@ -916,7 +916,7 @@ def get_files_in_sub_folders(study_location):
 
 def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list,
                    val_section="files", log_category=error):
-    empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF']
+    empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF', 'prosol_History']
     validations = []
     assay_file_list = get_assay_file_list(study_location)
     folder_list = get_files_in_sub_folders(study_location)
