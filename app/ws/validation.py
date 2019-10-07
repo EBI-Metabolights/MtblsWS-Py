@@ -1105,7 +1105,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
         if sample_name_list:
             if len(sample_name_list) != all_rows:
                 add_msg(validations, val_section, "Sample name column must only contain unique values",
-                        error, file_name, val_sequence=4, log_category=log_category)
+                        warning, file_name, val_sequence=4, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Sample name column contains unique values",
                         success, file_name, val_sequence=4, log_category=log_category)
