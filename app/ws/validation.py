@@ -1305,9 +1305,9 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                 if len(email) >= 7:
                     add_msg(validations, val_section, "Person email '" + email + "' validates", success, file_name,
                             val_sequence=5, log_category=log_category)
-                else:
-                    add_msg(validations, val_section, email_val_error, info, file_name, value=email,
-                            descr=email_val_error, val_sequence=6, log_category=log_category)
+            else:
+                add_msg(validations, val_section, email_val_error, warning, file_name, value=email,
+                        descr=email_val_error, val_sequence=6, log_category=log_category)
 
             if affiliation:
                 if len(affiliation) >= affiliation_val_len:
