@@ -752,7 +752,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
     fname = fname.lower()
     ext = ext.lower()
     # Metadata first, current is if the files are present in the investigation and assay files
-    if fname.startswith(('i_', 'a_', 's_', 'm_')):
+    if fname.startswith(('i_', 'a_', 's_', 'm_')) and (ext == '.txt' or ext == '.tsv'):
         if fname.startswith('a_'):
             if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_assay', active_status, folder

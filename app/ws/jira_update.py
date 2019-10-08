@@ -35,7 +35,7 @@ options = {
 logger = logging.getLogger('wslog')
 wsc = WsClient()
 project = 12732  # The id for the 'METLIGHT' project
-curation_epic = 'METLIGHT-1' # id 10236 'METLIGHT-1 Epic'
+curation_epic = 'METLIGHT-1'  # id 10236 'METLIGHT-1 Epic'
 curation_lable = 'curation'
 
 
@@ -166,7 +166,7 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                     else:
                         continue  # Only create new cases if the study is in status Submitted
             except Exception:  # We could not find or create a Jira issue
-                    continue
+                continue
 
             summary = issue.fields.summary  # Follow pattern 'MTBLS123 - YYYYMMDD - Status'
             try:
@@ -207,8 +207,8 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 updated_studies.append(study_id)
                 logger.info('Updated Jira case for study ' + study_id)
                 print('Updated Jira case for study ' + study_id)
-    except Exception:
-        return False, 'Update failed', updated_studies
+    except Exception as e:
+        return False, 'Update failed: ' + str(e), updated_studies
     return True, 'Ticket(s) updated successfully', updated_studies
 
 
@@ -337,7 +337,7 @@ class GoogleDocs(Resource):
         google_json = json.loads(google_creds, encoding='utf-8')
         credentials = SAC.from_json_keyfile_dict(google_json, scopes=scope)
         gc = gspread.authorize(credentials)
-        query_wks = gc.open('MTBLS Curation Status Log').get_worksheet(5)   # "Database query" sheet
+        query_wks = gc.open('MTBLS Curation Status Log').get_worksheet(5)  # "Database query" sheet
         query_records = query_wks.get_all_records()
 
         update_wks = gc.open('MTBLS Curation Status Log').get_worksheet(6)  # "Database update" sheet
