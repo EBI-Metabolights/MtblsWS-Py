@@ -17,19 +17,21 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import logging
-import string
 import json
+import datetime
 from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.db_connection import update_study_status
 from app.ws.validation import validate_study
+from app.ws.isaApiClient import IsaApiClient
 
 logger = logging.getLogger('wslog')
 
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
+iac = IsaApiClient()
 
 
 class StudyStatus(Resource):
@@ -37,6 +39,7 @@ class StudyStatus(Resource):
         summary="Change study status",
         nickname="Change study status",
         notes='''Change study status from 'Submitted' to 'In Curation'.<br>
+        Please note a *minimum* of 28 days is required for curation, this will be added to the release date</p>
                 <pre><code>Curators can change to any of: 'Submitted', 'In Curation', 'In Review', 'Public' or 'Dormant'
                 </p>Example: { "status": "In Curation" }
                 </code></pre>''',
@@ -113,24 +116,36 @@ class StudyStatus(Resource):
             abort(406, "Nothing to change")
 
         if is_curator:  # User is a curator, so just update status without any further checks
-            self.update_status(study_id, study_status)
+            self.update_status(study_id, study_status, is_curator)
         elif write_access:
-            if db_study_status != 'Submitted' and study_status != 'In Curation':
+            if db_study_status != 'Submitted':  # and study_status != 'In Curation':
                 abort(403, "You can not change to this status")
 
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
-                self.update_status(study_id, study_status)
+                new_date = datetime.datetime.now() + datetime.timedelta(+28)
+                new_date = new_date.strftime('%Y-%m-%d')
+                if release_date < new_date:  # Set the release date to a minimum of 28 days in the future
+                    self.update_status(study_id, study_status, is_curator)
+                    isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                                     skip_load_tables=True,
+                                                                     study_location=study_location)
+                    isa_inv.public_release_date = new_date
+                    isa_study.public_release_date = new_date
+                    iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True)
+
             else:
                 abort(403, "There are validation errors. Fix any problems before attempting to change study status.")
         else:
             abort(403, "You do not have rights to change the status for this study")
 
+        status, message = wsc.reindex_study(study_id, user_token)
         return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'"}
 
     @staticmethod
-    def update_status(study_id, study_status):
+    def update_status(study_id, study_status, is_curator=False):
         # Update database
-        update_study_status(study_id, study_status)
+        update_study_status(study_id, study_status, is_curator=is_curator)
+
 
     @staticmethod
     def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):

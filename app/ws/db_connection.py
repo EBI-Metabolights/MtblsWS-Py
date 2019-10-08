@@ -233,7 +233,6 @@ def update_release_date(study_id, release_date):
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query_update_release_date, (release_date, study_id))
         conn.commit()
-        # conn.close()
         release_connection(postgresql_pool, conn)
         return True, "Date updated for study " + study_id
 
@@ -248,7 +247,6 @@ def add_placeholder_flag(study_id):
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query_update)
         conn.commit()
-        # conn.close()
         release_connection(postgresql_pool, conn)
         return True, "Placeholder flag updated for study " + study_id
 
@@ -483,7 +481,7 @@ def override_validations(study_id, method, override=""):
         return False
 
 
-def update_study_status(study_id, study_status):
+def update_study_status(study_id, study_status, is_curator=False):
     status = '0'
     study_status = study_status.lower()
     if study_status == 'submitted':
@@ -497,7 +495,10 @@ def update_study_status(study_id, study_status):
     elif study_status == 'dormant':
         status = '4'
 
-    query = "update studies set status = '" + status + "' where acc = '" + study_id + "';"
+    query = "update studies set status = '" + status + "'"
+    if not is_curator:  # Add 28 days to the database release date when a submitter change the status
+        query = query + ", releasedate = CURRENT_DATE + integer '28'"
+    query = query + " where acc = '" + study_id + "';"
 
     try:
         postgresql_pool, conn, cursor = get_connection()
