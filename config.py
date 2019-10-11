@@ -47,7 +47,10 @@ MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
 MTBLS_ZOOMA_FILE = "<local file>"
 BIOPORTAL_TOKEN = '<your bioportal token>'
+METABOLIGHTS_TOKEN = '<your metabolights token>'
 MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
+
+GOOGLE_SHEET_URL = '<Google sheet url>'
 
 PARTNER_TEMPLATE_METABOLON = 'TEMPLATES/METABOLON'
 DEFAULT_TEMPLATE = 'TEMPLATES/DUMMY'
