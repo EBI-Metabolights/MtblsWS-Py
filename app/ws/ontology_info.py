@@ -95,6 +95,21 @@ class entity():
             return '', '', ''
 
 
+class factor():
+    def __init__(self, studyID, name, type, iri):
+        self.studyID = studyID
+        self.name = name
+        self.type = type
+        self.iri = iri
+
+
+class Descriptor():
+    def __init__(self, studyID, design_type, iri):
+        self.studyID = studyID
+        self.design_type = design_type
+        self.iri = iri
+
+
 def list_supers(onto_c, sup):
     if onto_c.label == '' or onto_c.iri == 'http://www.w3.org/2002/07/owl#Thing':
         return
@@ -202,7 +217,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
                     pass
 
         if branch == 'instruments':
-            r = OLSbranchSearch(keyword, 'instrument', 'msio')
+            result += OLSbranchSearch(keyword, 'instrument', 'msio')
             print()
 
         if branch == 'column type':
