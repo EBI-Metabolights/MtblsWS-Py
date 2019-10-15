@@ -51,6 +51,7 @@ METABOLIGHTS_TOKEN = '<your metabolights token>'
 MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
 
 GOOGLE_SHEET_URL = '<Google sheet url>'
+GOOGLE_TOKEN= './instance/metabolights-d3c2b1b419d0.json'
 
 PARTNER_TEMPLATE_METABOLON = 'TEMPLATES/METABOLON'
 DEFAULT_TEMPLATE = 'TEMPLATES/DUMMY'
