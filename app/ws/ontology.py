@@ -19,11 +19,15 @@
 import datetime
 import re
 
+import gspread
 import numpy as np
+import requests
 from flask import jsonify
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from gspread_dataframe import set_with_dataframe
+from oauth2client.service_account import ServiceAccountCredentials
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -275,12 +279,12 @@ class Ontology(Resource):
             exact = [x for x in result if x.name.lower() == term.lower()]
             rest = [x for x in result if x not in exact]
 
-
             # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
             #                          "column type", "instruments", "confidence", "sample type"
 
             if branch == 'taxonomy':
-                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'CHEBI': 5, 'CHMO': 6, 'NCIT': 6,
+                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'CHEBI': 5, 'CHMO': 6,
+                            'NCIT': 6,
                             'PO': 8}
 
             if branch == 'factor':
@@ -511,3 +515,289 @@ class Ontology(Resource):
             table_df.to_csv(file_name, sep="\t", header=True, encoding='utf-8', index=False)
         except FileNotFoundError:
             abort(400, "The file %s was not found", file_name)
+
+
+class Placeholder(Resource):
+    @swagger.operation(
+        summary="Get placeholder terms from study files",
+        notes="Get placeholder terms",
+        parameters=[
+            {
+                "name": "query",
+                "description": "Data field to extract from study",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["factor", "design descriptor"]
+            },
+
+            {
+                "name": "sheet_name",
+                "description": "Google sheet name",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+
+            {
+                "name": "capture_type",
+                "description": "paticular type of data to extracted, placeholder/wrong_match",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["placeholder", "wrong_match"]
+            },
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        query_type = ''
+        parser.add_argument('query', help='data extract from study')
+        if request.args:
+            args = parser.parse_args(req=request)
+            query_type = args['query']
+            if query_type is None:
+                abort(404)
+            if query_type:
+                query = query_type.strip().lower()
+
+        capture_type = ''
+        parser.add_argument('capture_type', help='capture type')
+        if request.args:
+            args = parser.parse_args(req=request)
+            capture_type = args['capture_type']
+            if capture_type is None:
+                capture_type = 'placeholder'.strip().lower()
+            if capture_type:
+                capture_type = capture_type.strip().lower()
+
+        sheet_name = ''
+        parser.add_argument('sheet_name', help='Google sheet name')
+        if request.args:
+            args = parser.parse_args(req=request)
+            sheet_name = args['sheet_name']
+            if sheet_name is None:
+                sheet_name = str(datetime.date.today())
+
+        # datalist1 = ['', '', 'MTBLS123', 'age', 'www.google.com','', '']
+        # datalist2 = ['', '', 'MTBLS321', 'male', 'www.github.com','', '']
+        # url = app.config.get('GOOGLE_SHEET_URL')
+        # insertGoogleSheet(datalist1, url, sheet_name)
+        # insertGoogleSheet(datalist2,url,sheet_name)
+
+        data = get_metainfo(query_type, capture_type)
+        url = app.config.get('GOOGLE_SHEET_URL')
+        data_list = ''
+
+        for term in data:
+            if query_type == 'factor' and capture_type == 'placeholder':
+                sheet_name = 'temp1'
+                data_list = ['', '', term['studyID'], term['factorName'], term['annotationValue'],
+                             '', '']
+
+            elif query_type == 'factor' and capture_type == 'wrong_match':
+                sheet_name = 'temp2'
+                data_list = ['', '', term['studyID'], term['factorName'], term['annotationValue'],
+                             term['termAccession'], '']
+
+            elif query_type == 'design descriptor' and capture_type == 'placeholder':
+                sheet_name = 'temp3'
+                data_list = ['', '', term['studyID'], term['name'], '', '']
+
+            elif query_type == 'design descriptor' and capture_type == 'wrong_match':
+                sheet_name = 'temp4'
+                data_list = ['', '', term['studyID'], term['name'], term['matched_iri'], '']
+
+            else:
+
+                abort(404)
+
+            insertGoogleSheet(data_list, url, sheet_name)
+
+
+def get_metainfo(query, capture_type):
+    '''
+    get placeholder/wrong-match terms from study investigation file
+    :param query: factor / descriptor ...
+    :param capture_type: placeholder / wrong_match
+    :return: list of dictionary results
+    '''
+    res = []
+
+    def getStudyIDs():
+        def atoi(text):
+            return int(text) if text.isdigit() else text
+
+        def natural_keys(text):
+            return [atoi(c) for c in re.split('(\d+)', text)]
+
+        url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
+        resp = requests.get(url, headers={'user_token': 'b6cb38b7-8504-43bf-9281-a0c68fc06263'})
+        studyIDs = resp.json()['content']
+        studyIDs.sort(key=natural_keys)
+        return studyIDs
+
+    logger.info('Getting {query} {capture_type} terms'.format(query=query, capture_type=capture_type))
+    studyIDs = getStudyIDs()
+
+    for studyID in studyIDs:
+        print(studyID)
+        if query.lower() == "factor":
+            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+
+            try:
+                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                data = resp.json()
+
+                for factor in data["factors"]:
+                    temp_dict = {'studyID': studyID,
+                                 'factorName': factor['factorName'],
+                                 'annotationValue': factor['factorType']['annotationValue'],
+                                 'termAccession': factor['factorType']['termAccession']}
+                    # Placeholder
+                    if capture_type == 'placeholder':
+                        if 'placeholder' in factor['factorType']['termAccession']:
+                            res.append(temp_dict)
+
+                    # Wrong match
+                    elif capture_type == 'wrong_match':
+                        if factor['factorName'].lower() != factor['factorType']['annotationValue'].lower():
+                            res.append(temp_dict)
+                    else:
+                        abort(400)
+            except:
+                pass
+
+
+        elif query.lower() == "design descriptor":
+            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+
+            try:
+                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                data = resp.json()
+
+                for descriptor in data['studyDesignDescriptors']:
+
+                    temp_dict = {'studyID': studyID,
+                                 'name': descriptor['annotationValue'],
+                                 'matched_iri': descriptor['termAccession']}
+
+                    # Placeholder
+                    if capture_type == 'placeholder':
+                        if 'placeholder' in temp_dict['matched_iri']:
+                            res.append(temp_dict)
+
+                    # Wrong match
+                    elif capture_type == 'wrong_match':
+                        if len(temp_dict['matched_iri']) == 0:
+                            res.append(temp_dict)
+                    else:
+                        abort(400)
+            except:
+                pass
+        else:
+            abort(400)
+
+    return res
+
+
+def insertGoogleSheet(data, url, worksheetName):
+    '''
+    :param data: list of data
+    :param url: url of google sheet
+    :param worksheetName: worksheet name
+    :return: Nan
+    '''
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+    gc = gspread.authorize(credentials)
+    try:
+        wks = gc.open_by_url(url).worksheet(worksheetName)
+        wks.append_row(data, value_input_option='RAW')
+    except Exception as e:
+        print(e.args)
+        logger.info(e.args)
+
+
+def setGoogleSheet(df, url, worksheetName):
+    '''
+    set whole dataframe to google sheet, if sheet existed create a new one
+    :param df: dataframe want to save to google sheet
+    :param url: url of google sheet
+    :param worksheetName: worksheet name
+    :return: Nan
+    '''
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+    gc = gspread.authorize(credentials)
+    try:
+        wks = gc.open_by_url(url).worksheet(worksheetName)
+        print(worksheetName + ' existed... create a new one')
+        wks = gc.open_by_url(url).add_worksheet(title=worksheetName + '_1', rows=df.shape[0], cols=df.shape[1])
+    except:
+        wks = gc.open_by_url(url).add_worksheet(title=worksheetName, rows=df.shape[0], cols=df.shape[1])
+    set_with_dataframe(wks, df)
+
+
+def getGoogleSheet(url, worksheetName):
+    '''
+    get google sheet
+    :param url: url of google sheet
+    :param worksheetName: work sheet name
+    :return: data frame
+    '''
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name('../instance/metabolights-d3c2b1b419d0.json', scope)
+    gc = gspread.authorize(credentials)
+    # wks = gc.open('Zooma terms').worksheet('temp')
+    wks = gc.open_by_url(url).worksheet(worksheetName)
+    content = wks.get_all_records()
+    # max_rows = len(wks.get_all_values())
+    df = pd.DataFrame(content)
+    return df
+
+
+def replaceGoogleSheet(df, url, worksheetName):
+    '''
+    replace the old google sheet with new data frame, old sheet will be clear
+    :param df: dataframe
+    :param url: url of google sheet
+    :param worksheetName: work sheet name
+    :return: Nan
+    '''
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name('../instance/metabolights-d3c2b1b419d0.json', scope)
+    gc = gspread.authorize(credentials)
+    wks = gc.open_by_url(url).worksheet(worksheetName)
+    wks.clear()
+    set_with_dataframe(wks, df)
