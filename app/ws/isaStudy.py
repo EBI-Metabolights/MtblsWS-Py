@@ -2994,7 +2994,7 @@ class StudyDescriptors(Resource):
                                                          skip_load_tables=True,
                                                          study_location=study_location)
         found = False
-        for index, descriptor in enumerate(isa_study.design_descriptors):
+        for index, descriptor in enumerate(isa_study.design_descriptors):  # ToDo, fails with "+" in the term
             if descriptor.term == descriptor_term:
                 found = True
                 # update protocol details
@@ -5263,6 +5263,3 @@ class StudySubmitters(Resource):
             logger.error("Could not delete user " + email + " from study " + study_id)
 
         return jsonify({"submitters": "Successfully deleted"})
-
-
-

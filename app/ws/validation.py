@@ -33,7 +33,7 @@ wsc = WsClient()
 iac = IsaApiClient()
 
 incorrect_species = \
-    "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, chemical, food, matix, " \
+    "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, food, matix, " \
     "mus, rat, blood, urine, plasma, hair, fur, skin, saliva, fly, unknown"
 
 last_name_black_list = ['last name', 'asdf', 'name', 'unknown']
