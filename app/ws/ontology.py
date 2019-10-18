@@ -617,6 +617,7 @@ class Placeholder(Resource):
             google_df = pd.DataFrame(columns=col)
             print(e.args)
             logger.info('Fail to load spreadsheet from Google')
+            logger.info(e.args)
 
         df = pd.DataFrame(get_metainfo(query, capture_type))
         df_connect = pd.concat([google_df, df], ignore_index=True)
@@ -747,8 +748,9 @@ def setGoogleSheet(df, url, worksheetName):
         wks = gc.open_by_url(url).worksheet(worksheetName)
         print(worksheetName + ' existed... create a new one')
         wks = gc.open_by_url(url).add_worksheet(title=worksheetName + '_1', rows=df.shape[0], cols=df.shape[1])
-    except:
+    except Exception as e:
         wks = gc.open_by_url(url).add_worksheet(title=worksheetName, rows=df.shape[0], cols=df.shape[1])
+        logger.info(e.args)
     set_with_dataframe(wks, df)
 
 
@@ -759,13 +761,16 @@ def getGoogleSheet(url, worksheetName):
     :param worksheetName: work sheet name
     :return: data frame
     '''
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
-    gc = gspread.authorize(credentials)
-    wks = gc.open_by_url(url).worksheet(worksheetName)
-    content = wks.get_all_records()
-    df = pd.DataFrame(content)
-    return df
+    try:
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+        gc = gspread.authorize(credentials)
+        wks = gc.open_by_url(url).worksheet(worksheetName)
+        content = wks.get_all_records()
+        df = pd.DataFrame(content)
+        return df
+    except Exception as e:
+        logger.info(e.args)
 
 
 def replaceGoogleSheet(df, url, worksheetName):
@@ -776,9 +781,12 @@ def replaceGoogleSheet(df, url, worksheetName):
     :param worksheetName: work sheet name
     :return: Nan
     '''
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
-    gc = gspread.authorize(credentials)
-    wks = gc.open_by_url(url).worksheet(worksheetName)
-    wks.clear()
-    set_with_dataframe(wks, df)
+    try:
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+        gc = gspread.authorize(credentials)
+        wks = gc.open_by_url(url).worksheet(worksheetName)
+        wks.clear()
+        set_with_dataframe(wks, df)
+    except Exception as e:
+        logger.info(e.args)
