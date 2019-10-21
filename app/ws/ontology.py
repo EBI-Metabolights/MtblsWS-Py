@@ -620,13 +620,117 @@ class Placeholder(Resource):
             logger.info(e.args)
 
         df = pd.DataFrame(get_metainfo(query, capture_type))
-        df_connect = pd.concat([google_df, df], ignore_index=True)
+        df_connect = pd.concat([google_df, df], ignore_index=True,sort=False)
         df_connect = df_connect.reindex(columns=col) \
             .replace(np.nan, '', regex=True) \
             .drop_duplicates(keep='first', subset=["studyID", "name"])
 
+        adding_count = df_connect.shape[0] - google_df.shape[0]
+
+        def extractNum(s):
+            num = re.findall("\d+", s)[0]
+            return int(num)
+
+        df_connect['num'] = df_connect['studyID'].apply(extractNum)
+        df_connect = df_connect.sort_values(by=['num'])
+        df_connect = df_connect.drop('num', axis=1)
+
         replaceGoogleSheet(df_connect, url, sheet_name)
-        return jsonify(success=True)
+        return jsonify({'success':True, 'add': adding_count})
+
+
+    # ============================ Placeholder put ===============================
+    @swagger.operation(
+        summary="Make changes according to google term sheets",
+        notes="Update/add/Delete placeholder terms",
+        parameters=[
+            {
+                "name": "query",
+                "description": "Data field to change",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["factor", "design descriptor"]
+            },
+
+            {
+                "name": "change_type",
+                "description": "type of data to change, placeholder/wrong_match",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "defaultValue": "placeholder",
+                "default": True,
+                "enum": ["placeholder", "wrong_match"]
+            },
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self):
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        query = ''
+        parser.add_argument('query', help='data field to update')
+        if request.args:
+            args = parser.parse_args(req=request)
+            query = args['query']
+            if query is None:
+                abort(400)
+            if query:
+                query = query.strip().lower()
+
+        capture_type = ''
+        parser.add_argument('change_type', help='change type')
+        if request.args:
+            args = parser.parse_args(req=request)
+            capture_type = args['change_type']
+            if capture_type is None:
+                capture_type = 'placeholder'
+            if capture_type:
+                capture_type = capture_type.strip().lower()
+
+        url = app.config.get('GOOGLE_SHEET_URL')
+        sheet_name = ''
+        col = []
+
+        if query == 'factor':
+            if capture_type == 'placeholder':
+                sheet_name = 'factor placeholder'
+            elif capture_type == 'wrong_match':
+                sheet_name = 'factor wrong match'
+
+            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'name', 'annotationValue',
+                   'termAccession']
+
+        elif query == 'design descriptor':
+            if capture_type == 'placeholder':
+                sheet_name = 'descriptor placeholder'
+
+            elif capture_type == 'wrong_match':
+                sheet_name = 'descriptor wrong match'
+
+            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'name', 'matched_iri']
+
+        else:
+            abort(400)
 
 
 
