@@ -269,7 +269,7 @@ def get_assay_headers_and_protcols(assay_type):
         protocols = get_protocols_for_assay(protocol_row, assay_type)
         assay_desc = get_desc_for_assay(assay_desc_row, assay_type)
         assay_data_type = get_data_type_for_assay(assay_data_type_row, assay_type)
-        assay_file_type = get_data_type_for_assay(assay_file_type_row, assay_type)
+        assay_file_type = get_file_type_for_assay(assay_file_type_row, assay_type)
         assay_mandatory_type = get_mandatory_data_for_assay(assay_data_mandatory_row, assay_type)
         tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
         tidy_data_row = tidy_template_row(data_row)
@@ -447,6 +447,24 @@ def get_data_type_for_assay(df_row, assay_type):
 
     for cell in row:
         if cell == assay_type + '-type':
+            continue  # skip the label
+        else:
+            if cell == '':
+                cell = 'string'  # 'string' is the default value if we have not defined a value
+
+            if cell != 'row-end':
+                new_row.append(cell)
+            if cell == 'row-end':
+                return new_row  # We have all the columns now
+    return new_row
+
+
+def get_file_type_for_assay(df_row, assay_type):
+    row = df_row.iloc[0]
+    new_row = []
+
+    for cell in row:
+        if cell == assay_type + '-file':
             continue  # skip the label
         else:
             if cell == '':
