@@ -6,13 +6,9 @@ check_host .
 echo "Host $HOST approved, starting Green Unicorn server"
 
 APPDIR=$PWD
-VENVDIR=$APPDIR/venv363
-
+VENVDIR=$APPDIR/venv368
 PYTHONPATH=$APPDIR
 cd $APPDIR
-
-# activate RH collections for Python 3.6.3
-source scl_source enable rh-python36
 
 # activate Python virtual environment and launch WS
 source $VENVDIR/bin/activate

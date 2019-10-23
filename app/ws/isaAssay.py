@@ -218,8 +218,8 @@ class StudyAssayDelete(Resource):
                     # Get all unique protocols for the study, ie. any protocol that is only used once
                     unique_protocols = get_all_unique_protocols_from_study_assays(study_id, isa_study.assays)
                     assay_type = get_assay_type_from_file_name(study_id, assay.filename)
-                    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type = \
-                        get_assay_headers_and_protcols(assay_type)
+                    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
+                        assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
 
                     for protcol in protocols:
                         prot_name = protcol[1]
@@ -553,8 +553,8 @@ def get_all_unique_protocols_from_study_assays(study_id, assays):
     try:
         for assay in assays:
             assay_type = get_assay_type_from_file_name(study_id, assay.filename)
-            tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type = \
-                get_assay_headers_and_protcols(assay_type)
+            tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
+                assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
             all_protocols = all_protocols + protocols
     except:
         return []
@@ -587,8 +587,8 @@ def create_assay(assay_type, columns, study_id, ontology, output_folder=None):
         if key_val['name'].lower() == 'column type':
             column = key_val['value']
 
-    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_types, assay_data_mandatory \
-        = get_assay_headers_and_protcols(assay_type)
+    tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_types, assay_file_type, \
+        assay_data_mandatory = get_assay_headers_and_protcols(assay_type)
 
     assay_platform = assay_desc + ' - ' + polarity
     if column != '':
