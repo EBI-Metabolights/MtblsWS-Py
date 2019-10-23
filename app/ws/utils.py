@@ -241,11 +241,13 @@ def get_assay_headers_and_protcols(assay_type):
     protocols = ""
     assay_desc = ""
     assay_data_type = ""
+    assay_file_type = ""
     assay_mandatory_type = ""
 
     if assay_type is None or assay_type == 'a':
         logger.error('Assay Type is empty or incorrect!')
-        return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type
+        return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, \
+               assay_file_type, assay_mandatory_type
 
     logger.info(' - get_assay_headers_and_protcols for assay type ' + assay_type)
     assay_master_template = './resources/MetaboLightsAssayMaster.tsv'
@@ -256,19 +258,21 @@ def get_assay_headers_and_protcols(assay_type):
     protocol_row = master_df.loc[master_df['name'] == assay_type + '-protocol']
     assay_desc_row = master_df.loc[master_df['name'] == assay_type + '-assay']
     assay_data_type_row = master_df.loc[master_df['name'] == assay_type + '-type']
+    assay_file_type_row = master_df.loc[master_df['name'] == assay_type + '-file']
     assay_data_mandatory_row = master_df.loc[master_df['name'] == assay_type + '-mandatory']
 
     try:
         protocols = get_protocols_for_assay(protocol_row, assay_type)
         assay_desc = get_desc_for_assay(assay_desc_row, assay_type)
         assay_data_type = get_data_type_for_assay(assay_data_type_row, assay_type)
+        assay_file_type = get_data_type_for_assay(assay_file_type_row, assay_type)
         assay_mandatory_type = get_mandatory_data_for_assay(assay_data_mandatory_row, assay_type)
         tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
         tidy_data_row = tidy_template_row(data_row)
     except:
         logger.error('Could not retrieve all required template info for this assay type: ' + assay_type)
 
-    return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type
+    return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, assay_mandatory_type
 
 
 def get_table_header(table_df, study_id=None, file_name=None):
@@ -772,6 +776,8 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'metadata', none_active_status, folder
     elif file_name == 'fid':  # NMR data
         return 'fid', active_status, folder
+    elif file_name == 'acqus':  # NMR data
+        return 'acqus', active_status, folder
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
     elif ext in ('.sdf', '.mol'):
