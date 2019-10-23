@@ -110,6 +110,7 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
             logger.info('Creating a new folder for the study, %s', dst)
             os.makedirs(dst, exist_ok=True)
 
+        file_list = {}
         for item in os.listdir(src):
             source = os.path.join(src, item)
             destination = os.path.join(dst, item)
@@ -144,6 +145,9 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                     #     pass  # We already have this folder
 
                     if int(time_diff) >= 1:
+                        # ToDo, rsync all (non-metadata) files
+                        file_list = {source, destination}
+
                         if os.path.isdir(source):
                             logger.info(source + ' is a directory')
                             try:
@@ -289,13 +293,16 @@ def get_table_header(table_df, study_id=None, file_name=None):
             assay_type = None
 
     if assay_type is not None and assay_type != "a":
-        tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_data_mandatory = \
-            get_assay_headers_and_protcols(assay_type)
+        tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
+            assay_data_mandatory = get_assay_headers_and_protcols(assay_type)
         df_header['type'] = assay_data_type
+        df_header['file-type'] = assay_file_type
         df_header['mandatory'] = assay_data_mandatory
+
         try:
             for i in range(0, len(df_header['index'])):
                 mapping[df_header[0][i]] = {"index": df_header['index'][i], "data-type": df_header['type'][i],
+                                            "file-type": df_header['file-type'][i],
                                             "mandatory": df_header['mandatory'][i]}
         except:  # Using new assay file pattern, but not correct columns, so try the legacy mapping
             mapping = get_legacy_assay_mapping(df_header)
