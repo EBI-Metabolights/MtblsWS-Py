@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.04.04"
+WS_APP_VERSION = "1.05.00"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.10.3"
 METASPACE_APP_VERSION = "0.7.1"
@@ -61,8 +61,8 @@ CORS_HOSTS = "http://localhost:8000",\
              "http://localhost:8080",\
              "http://localhost.ebi.ac.uk:8080",\
              "http://wwwdev.ebi.ac.uk",\
-             "http://ves-ebi-8d:8080",\
-             "http://ves-ebi-8d.ebi.ac.uk:8080"
+             "http://wp-np3-15:8080",\
+             "http://wp-np3-15.ebi.ac.uk:8080"
 
 DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"
 
@@ -103,4 +103,6 @@ METASPACE_DATABASE = "HMDB-v4"
 METASPACE_FDR = 0.1
 METASPACE_APP_NAME = "MMIT"
 METASPACE_APP_DESCRIPTION = "METASPACE-MetaboLights Interface Tools"
-AWS_CREDENTIALS = './instance/aws_credentials.cfg'
+AWS_CREDENTIALS = "./instance/aws_credentials.cfg"
+
+LSF_COMMAND_PATH = '/net/isilonP/public/rw/homes/tc_cm01/metabolights/software/bin/'
