@@ -34,19 +34,23 @@ def lsf_job(job_cmd, job_param=None):
     job_status = ""
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
-    message = "Successfully executed LSF cluster job: '" + job_cmd
+    email = app.config.get('LSF_COMMAND_EMAIL')
+    message = "Successfully submitted LSF cluster job: '" + job_cmd
     if job_param:
         message = message + " " + job_param
-    message = message + "'"
+    message = message + "'. Please see LSF cluster email sent to " + email
+
+    if job_param.startswith('rm '):
+        abort(403, 'Nope, cannot remove any files!')
 
     cmd = os.path.join(app.config.get('LSF_COMMAND_PATH'), job_cmd)
-    cmd = cmd + " -u metabolights-curation " + job_param
+    cmd = cmd + " -u " + email + " " + job_param
     try:
-        job_status = subprocess.run(cmd, shell=True, check=True)
+        job_status = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
         if job_status.stdout:
-            msg_out = job_status.stdout
+            msg_out = job_status.stdout.decode("utf-8")
         if job_status.stderr:
-            msg_err = job_status.stderr
+            msg_err = job_status.stderr.decode("utf-8")
     except Exception as e:
         status = False
         message = 'Could not execute or list LSF jobs, try to Log into the EBI cluster and run "bjobs" to see all running jobs'
@@ -54,7 +58,7 @@ def lsf_job(job_cmd, job_param=None):
             msg_err = "LSF Job " + job_param + " was not found. Check if the process still exists"
         logger.error(message + '. ' + str(e))
 
-    return status, message, msg_out, msg_err
+    return status, message, str(msg_out), str(msg_err)
 
 
 class LsfUtils(Resource):
@@ -100,7 +104,7 @@ class LsfUtils(Resource):
     )
     def delete(self):
         user_token = None
-        lsf_job_id = None
+        lsf_job_id = ""
 
         # User authentication
         if "user_token" in request.headers:
@@ -112,7 +116,7 @@ class LsfUtils(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('lsf_job_id', help="LSF job to terminate", location="args")
         if request.args:
-            args = parser.parse_args(req=request)
+            args = parser.parse_args()
             lsf_job_id = args['lsf_job_id']
 
         if lsf_job_id is None:

@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.05.00"
+WS_APP_VERSION = "1.05.02"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.10.3"
 METASPACE_APP_VERSION = "0.7.1"
@@ -105,4 +105,5 @@ METASPACE_APP_NAME = "MMIT"
 METASPACE_APP_DESCRIPTION = "METASPACE-MetaboLights Interface Tools"
 AWS_CREDENTIALS = "./instance/aws_credentials.cfg"
 
-LSF_COMMAND_PATH = '/net/isilonP/public/rw/homes/tc_cm01/metabolights/software/bin/'
+LSF_COMMAND_PATH = '<path to LSF command, bsub/bkill/bjobs>'
+LSF_COMMAND_EMAIL = '<email to use for EBI LSF jobs>'
