@@ -620,7 +620,7 @@ class Placeholder(Resource):
             logger.info(e.args)
 
         df = pd.DataFrame(get_metainfo(query, capture_type))
-        df_connect = pd.concat([google_df, df], ignore_index=True,sort=False)
+        df_connect = pd.concat([google_df, df], ignore_index=True, sort=False)
         df_connect = df_connect.reindex(columns=col) \
             .replace(np.nan, '', regex=True) \
             .drop_duplicates(keep='first', subset=["studyID", "name"])
@@ -636,8 +636,7 @@ class Placeholder(Resource):
         df_connect = df_connect.drop('num', axis=1)
 
         replaceGoogleSheet(df_connect, url, sheet_name)
-        return jsonify({'success':True, 'add': adding_count})
-
+        return jsonify({'success': True, 'add': adding_count})
 
     # ============================ Placeholder put ===============================
     @swagger.operation(
@@ -707,10 +706,11 @@ class Placeholder(Resource):
             if capture_type:
                 capture_type = capture_type.strip().lower()
 
-        url = app.config.get('GOOGLE_SHEET_URL')
+        google_url = app.config.get('GOOGLE_SHEET_URL')
         sheet_name = ''
         col = []
 
+        # get sheet_name
         if query == 'factor':
             if capture_type == 'placeholder':
                 sheet_name = 'factor placeholder'
@@ -732,6 +732,180 @@ class Placeholder(Resource):
         else:
             abort(400)
 
+        # Load google sheet
+        google_df = getGoogleSheet(google_url, sheet_name)
+
+        ch = google_df[(google_df['operation(Update/Add/Delete)'] != '') & (google_df['status (Done/Error)'] == '')]
+
+        for index, row in ch.iterrows():
+            studyID = row['studyID']
+
+            if query == 'factor':
+                operation, studyID, term, annotationValue, termAccession = \
+                    row['operation(Update/Add/Delete)'], row['studyID'], row['name'], row['annotationValue'], row[
+                        'termAccession']
+
+                ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                protocol = '''
+                            {
+                                "factorName": "",
+                                "factorType": {
+                                  "annotationValue": "",
+                                  "termSource": {
+                                    "name": "",
+                                    "file": "",
+                                    "version": "",
+                                    "description": ""
+                                  },
+                                  "termAccession": ""
+                                }                       
+                            }
+                            '''
+
+                # Update factor
+                if row['operation(Update/Add/Delete)'].lower() in ['update', 'u']:
+                    try:
+                        onto_name = getOnto_Name(termAccession)
+                        onto_iri, onto_version, onto_description = getOnto_info(onto_name)
+
+                        temp = json.loads(protocol)
+                        temp["factorName"] = term
+                        temp["factorType"]["annotationValue"] = annotationValue
+                        temp["factorType"]['termSource']['name'] = onto_name
+                        temp["factorType"]['termSource']['file'] = onto_iri
+                        temp["factorType"]['termSource']['version'] = onto_version
+                        temp["factorType"]['termSource']['description'] = onto_description
+                        temp["factorType"]['termAccession'] = termAccession
+
+                        data = json.dumps({"factor": temp})
+
+                        response = requests.put(ws_url, params={'name': term},
+                                                headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                data=data)
+                        print('Made correction from {term} to {matchterm}({matchiri}) in {studyID}'.
+                              format(term=term, matchterm=annotationValue, matchiri=termAccession, studyID=studyID))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = response.text
+
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
+
+                    except Exception as e:
+                        row['status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                # Add factor
+                elif row['operation(Update/Add/Delete)'].lower() in ['add', 'A']:
+                    try:
+                        row['status (Done/Error)'] = 'Done'
+                    except Exception as e:
+                        row['status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                # Delete factor
+                elif row['operation(Update/Add/Delete)'].lower() in ['delete', 'D']:
+                    try:
+                        row['status (Done/Error)'] = 'Done'
+                    except Exception as e:
+                        row['status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                # Keep factor
+                elif row['operation(Update/Add/Delete)'].lower() in ['keep', 'K']:
+                    try:
+                        row['status (Done/Error)'] = 'Done'
+                    except Exception as e:
+                        row['status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                else:
+                    logger.info('Wrong operation tag in the spreadsheet')
+                    abort(400)
+
+
+            elif query == 'design descriptor':
+
+                operation, studyID, term, matched_iri = row['operation(Update/Add/Delete)'], row['studyID'], row[
+                    'name'], row['matched_iri']
+
+                ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+                protocol = '''
+                        {
+                            "annotationValue": " ",
+                            "termSource": {
+                                "name": " ",
+                                "file": " ",
+                                "version": " ",
+                                "description": " "
+                            },
+                            "termAccession": " "
+                        }
+                    '''
+
+                # Update descriptor
+                if row['operation(Update/Add/Delete)'].lower() in ['update', 'U']:
+                    try:
+                        onto_name = getOnto_Name(matched_iri)
+                        onto_iri, onto_version, onto_description = getOnto_info(onto_name)
+
+                        temp = json.loads(protocol)
+                        temp["annotationValue"] = term
+                        temp["termSource"]["name"] = onto_name
+                        temp["termSource"]["file"] = onto_iri
+                        temp["termSource"]["version"] = onto_version
+                        temp["termSource"]["description"] = onto_description
+                        temp["termAccession"] = matched_iri
+
+                        data = json.dumps({"studyDesignDescriptor": temp})
+
+                        response = requests.put(google_url, params={'term': term},
+                                                headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')}, data=data)
+                        print('Made correction from {term} to {matchterm}({matchiri}) in {studyID}'.
+                              format(term=term, matchterm=term, matchiri=matched_iri, studyID=studyID))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = response.text
+
+
+                    except Exception as e:
+                        row['status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                # Add descriptor
+                elif row['operation(Update/Add/Delete)'].lower() in ['add', 'A']:
+                    try:
+                        row['status (Done/Error)'] = 'Done'
+                    except Exception as e:
+                        row['status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                # Delete descriptor
+                elif row['operation(Update/Add/Delete)'].lower() in ['delete', 'D']:
+                    try:
+                        row['status (Done/Error)'] = 'Done'
+                    except Exception as e:
+                        row['status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                # Keep descriptor
+                elif row['operation(Update/Add/Delete)'].lower() in ['keep', 'K']:
+                    try:
+                        row['status (Done/Error)'] = 'Done'
+                    except Exception as e:
+                        row['status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                else:
+                    logger.info('Wrong operation tag in the spreadsheet')
+                    abort(400)
+
+            else:
+                logger.info('Wrong query field requested')
+                abort(404)
 
 
 def get_metainfo(query, capture_type):
@@ -751,7 +925,7 @@ def get_metainfo(query, capture_type):
             return [atoi(c) for c in re.split('(\d+)', text)]
 
         url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
-        resp = requests.get(url, headers={'user_token': 'b6cb38b7-8504-43bf-9281-a0c68fc06263'})
+        resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
         studyIDs = resp.json()['content']
         studyIDs.sort(key=natural_keys)
         return studyIDs
