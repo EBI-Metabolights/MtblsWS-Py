@@ -1721,17 +1721,17 @@ class ChEBIPipeLine(Resource):
         run_silently = args['run_silently']
         run_on_cluster = args['run_on_cluster']
 
-        if run_silently.lower() == 'true':
+        if run_silently == 'true':
             run_silently = True
         else:
             run_silently = False
 
-        if classyfire_search.lower() == 'true':
+        if classyfire_search == 'true':
             classyfire_search = True
         else:
             classyfire_search = False
 
-        if run_on_cluster.lower() == 'true':
+        if run_on_cluster == 'true':
             run_on_cluster = True
         else:
             run_on_cluster = False
