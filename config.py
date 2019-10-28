@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-May-23
+#  Last modified: 2019-Oct-24
 #  Modified by:   kenneth
 #
 #  Copyright 2019 EMBL - European Bioinformatics Institute
@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.05.02"
+WS_APP_VERSION = "1.06.01"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.10.3"
 METASPACE_APP_VERSION = "0.7.1"
@@ -91,6 +91,7 @@ VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/con
 OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
 CHEBI_URL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
 CHEBI_URL_WAIT = 300
+CHEBI_PIPLINE_URL = WS_APP_BASE_LINK + "/ws/ebi-internal/"
 CLASSYFIRE_ULR = "http://classyfire.wishartlab.com"
 CLASSYFIRE_MAPPING = "/net/isilon8/ftp_public/databases/metabolights/submissionTool/ClassyFire_Mapping.tsv"
 OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"

@@ -42,6 +42,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study_files import get_all_files_from_filesystem
+from app.ws.cluster_jobs import lsf_job
 
 logger = logging.getLogger('wslog')
 
@@ -408,7 +409,8 @@ def duplicate(my_list, n):
     return new_list
 
 
-def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token, run_silently):
+def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
+                          run_silently):
     sdf_file_list = []
     exiting_pubchem_file = False
     first_start_time = time.time()
@@ -739,7 +741,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end, run_silently)
     change_access_rights(study_location)
     print_log("ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
-    return maf_df, maf_len, new_maf_df, str(len(pubchem_df)), pubchem_file
+    return maf_len, str(len(pubchem_df)), pubchem_file
 
 
 def change_access_rights(study_location):
@@ -1632,7 +1634,7 @@ class ChEBIPipeLine(Resource):
             {
                 "name": "classyfire_search",
                 "description": "Search ClassyFire?",
-                "paramType": "header",
+                "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
                 "format": "application/json",
@@ -1642,7 +1644,17 @@ class ChEBIPipeLine(Resource):
             {
                 "name": "run_silently",
                 "description": "Do not generate console or log info when skipping rows",
-                "paramType": "header",
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
+                "name": "run_on_cluster",
+                "description": "Run in the background on the EBI LSF cluster",
+                "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
                 "format": "application/json",
@@ -1691,17 +1703,6 @@ class ChEBIPipeLine(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # Search ClassyFire?
-        classyfire_search = False
-        run_silently = False
-        if "classyfire_search" in request.headers and \
-                request.headers["classyfire_search"].lower() == 'true':
-            classyfire_search = True
-
-        if "run_silently" in request.headers and \
-                request.headers["run_silently"].lower() == 'true':
-            run_silently = True
-
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
@@ -1711,10 +1712,43 @@ class ChEBIPipeLine(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('annotation_file_name', help="Metabolite Annotation File", location="args")
+        parser.add_argument('classyfire_search', help="Search ClaayFire?", location="args")
+        parser.add_argument('run_silently', help="Run without process logging", location="args")
+        parser.add_argument('run_on_cluster', help="Run on EBI LSF cluster", location="args")
         args = parser.parse_args()
         annotation_file_name = args['annotation_file_name']
+        classyfire_search = args['classyfire_search']
+        run_silently = args['run_silently']
+        run_on_cluster = args['run_on_cluster']
+
+        if run_silently.lower() == 'true':
+            run_silently = True
+        else:
+            run_silently = False
+
+        if classyfire_search.lower() == 'true':
+            classyfire_search = True
+        else:
+            classyfire_search = False
+
+        if run_on_cluster.lower() == 'true':
+            run_on_cluster = True
+        else:
+            run_on_cluster = False
+
+        cmd = ""
+        if run_on_cluster:
+            cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' "
+            cmd = cmd + app.config.get('CHEBI_PIPLINE_URL') + study_id + \
+                  "/chebi-pipeline?annotation_file_name=#FILE_NAME#&classyfire_search=" + str(classyfire_search) + \
+                  "&run_silently=" + str(run_silently) + "&run_on_cluster=true"
+
+        maf_len = 0
+        new_maf_len = 0
+        pubchem_file = "Executed on the cluster"
 
         if annotation_file_name is None:
+            old_file_name = ""
             # Loop through all m_*_v2_maf.tsv files
             study_files, upload_files, upload_diff, upload_location = \
                 get_all_files_from_filesystem(
@@ -1725,19 +1759,45 @@ class ChEBIPipeLine(Resource):
                 file_name = file['file']
                 if file_name.startswith('m_') and file_name.endswith('.tsv'):
                     maf_count += 1
-                    maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = \
-                        search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token, run_silently)
-                    if maf_len != new_maf_len:
-                        maf_changed += 1
+
+                    if run_on_cluster:
+                        cmd = cmd.replace("#FILE_NAME#", file_name)  # Replace the dummy file name ref, first run only
+                        if old_file_name:  # Replace the last file name ref, additional runs only
+                            cmd = cmd.replace(old_file_name, file_name)
+                        old_file_name = file_name
+                        logger.info("Starting cluster job for ChEBI pipeline: " + cmd)
+                        status, message, job_out, job_err = lsf_job('bsub', cmd)
+
+                        if status:
+                            return {"success": message, "message": job_out, "error": job_err}
+                        else:
+                            return {"error": message, "message": job_out, "error": job_err}
+                    else:
+                        maf_len, new_maf_len, pubchem_file = \
+                            search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token,
+                                                  run_silently)
+                        if maf_len != new_maf_len:
+                            maf_changed += 1
         else:
             annotation_file_name = annotation_file_name.strip()
-            maf_df, maf_len, new_maf_df, new_maf_len, pubchem_file = \
-                search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token, run_silently)
-            return {"in_rows": maf_len, "out_rows": new_maf_len,
-                    "pubchem_file": http_file_location + pubchem_file.split(study_id)[1]}
+            cmd = cmd.replace("#FILE_NAME#", annotation_file_name)  # Replace the dummy file name reference in URL
+            if run_on_cluster:
+                logger.info("Starting cluster job for ChEBI pipeline: " + cmd)
+                status, message, job_out, job_err = lsf_job('bsub', cmd)
 
-        return {"success": str(maf_count) + " MAF files checked for pipelines, " +
-                           str(maf_changed) + " files needed updating."}
+                if status:
+                    return {"success": message, "message": job_out, "error": job_err}
+                else:
+                    return {"error": message, "message": job_out, "error": job_err}
+            else:
+                maf_len, new_maf_len, pubchem_file = \
+                    search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
+                                          run_silently)
+                pubchem_file = http_file_location + pubchem_file.split(study_id)[1]
+
+            return {"in_rows": maf_len, "out_rows": new_maf_len, "pubchem_file": pubchem_file}
+
+        return {"success": str(maf_count) + " MAF files found, " + str(maf_changed) + " files needed updating."}
 
 
 class CheckCompounds(Resource):

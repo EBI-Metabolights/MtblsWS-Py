@@ -163,11 +163,11 @@ def initialize_app(flask_app):
     api.add_resource(Placeholder, res_path + "/ebi-internal/placeholder") # Add placeholder
     api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml2isatab")
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml")
+    api.add_resource(UserManagement, res_path + "/ebi-internal/users")
     api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
-    api.add_resource(UserManagement, res_path + "/ebi-internal/users")
-    api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
+    # api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
