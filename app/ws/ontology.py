@@ -744,7 +744,7 @@ class Placeholder(Resource):
                         'termAccession']
 
                 source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
-                ws_url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + source
+                ws_url = app.config.get('MTBLS_WS_HOST') + ':'+ str(app.config.get('PORT')) + source
 
                 # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
                 protocol = '''
@@ -832,7 +832,7 @@ class Placeholder(Resource):
                     'name'], row['matched_iri']
 
                 source = 'metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-                ws_url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + source
+                ws_url = app.config.get('MTBLS_WS_HOST') + ':'+ str(app.config.get('PORT')) + source
 
                 protocol = '''
                         {
