@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-May-23
+#  Last modified: 2019-Oct-29
 #  Modified by:   kenneth
 #
 #  Copyright 2019 EMBL - European Bioinformatics Institute
@@ -16,33 +16,54 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import logging, pandas as pd, os
-import requests
-import cirpy
-import time
-import pubchempy as pcp
-import ctfile
-import ssl
-import pronto
-import re
-import urllib.parse
-import subprocess
-import shlex
+#  EMBL-EBI MetaboLights - https://www.ebi.ac.uk/metabolights
+#  Metabolomics team
+#
+#  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
+#
+#  Last modified: 2019-May-23
+#  Modified by:   kenneth
+#
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
 import glob
-import numpy as np
-from subprocess import *
-from flask import current_app as app
-from zeep import Client
+import logging
+import os
+import pandas as pd
+import re
+import shlex
+import ssl
+import subprocess
+import time
+import urllib.parse
 from pathlib import Path
+from subprocess import *
+
+import cirpy
+import ctfile
+import numpy as np
+import pronto
+import pubchempy as pcp
+import requests
+from flask import current_app as app
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
-from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import read_tsv, write_tsv, get_assay_file_list
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.study_files import get_all_files_from_filesystem
+from zeep import Client
+
 from app.ws.cluster_jobs import lsf_job
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.mtblsWSclient import WsClient
+from app.ws.study_files import get_all_files_from_filesystem
+from app.ws.utils import read_tsv, write_tsv, get_assay_file_list
 
 logger = logging.getLogger('wslog')
 
@@ -1738,10 +1759,10 @@ class ChEBIPipeLine(Resource):
 
         cmd = ""
         if run_on_cluster:
-            cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' "
+            cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
             cmd = cmd + app.config.get('CHEBI_PIPLINE_URL') + study_id + \
                   "/chebi-pipeline?annotation_file_name=#FILE_NAME#&classyfire_search=" + str(classyfire_search) + \
-                  "&run_silently=" + str(run_silently) + "&run_on_cluster=true"
+                  "&run_silently=" + str(run_silently) + "&run_on_cluster=true'"
 
         maf_len = 0
         new_maf_len = 0
