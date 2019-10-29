@@ -789,7 +789,7 @@ class Placeholder(Resource):
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
                         else:
-                            google_df.loc[index, 'status (Done/Error)'] = response.text
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
 
                         replaceGoogleSheet(google_df, google_url, sheet_name)
 
@@ -871,7 +871,7 @@ class Placeholder(Resource):
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
                         else:
-                            google_df.loc[index, 'status (Done/Error)'] = response.text
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
 
                         replaceGoogleSheet(google_df, google_url, sheet_name)
 
