@@ -738,14 +738,15 @@ class Placeholder(Resource):
         ch = google_df[(google_df['operation(Update/Add/Delete)'] != '') & (google_df['status (Done/Error)'] == '')]
 
         for index, row in ch.iterrows():
-            studyID = row['studyID']
-
             if query == 'factor':
                 operation, studyID, term, annotationValue, termAccession = \
                     row['operation(Update/Add/Delete)'], row['studyID'], row['name'], row['annotationValue'], row[
                         'termAccession']
 
-                ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                ws_url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + source
+
+                # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
                 protocol = '''
                             {
                                 "factorName": "",
@@ -765,7 +766,7 @@ class Placeholder(Resource):
                 # Update factor
                 if row['operation(Update/Add/Delete)'].lower() in ['update', 'u']:
                     try:
-                        onto_name = getOnto_Name(termAccession)
+                        onto_name = getOnto_Name(termAccession)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
 
                         temp = json.loads(protocol)
@@ -830,7 +831,9 @@ class Placeholder(Resource):
                 operation, studyID, term, matched_iri = row['operation(Update/Add/Delete)'], row['studyID'], row[
                     'name'], row['matched_iri']
 
-                ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+                source = 'metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+                ws_url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + source
+
                 protocol = '''
                         {
                             "annotationValue": " ",
@@ -847,7 +850,7 @@ class Placeholder(Resource):
                 # Update descriptor
                 if row['operation(Update/Add/Delete)'].lower() in ['update', 'U']:
                     try:
-                        onto_name = getOnto_Name(matched_iri)
+                        onto_name = getOnto_Name(matched_iri)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
 
                         temp = json.loads(protocol)
@@ -870,6 +873,7 @@ class Placeholder(Resource):
                         else:
                             google_df.loc[index, 'status (Done/Error)'] = response.text
 
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
 
                     except Exception as e:
                         row['status (Done/Error)'] = 'Error'

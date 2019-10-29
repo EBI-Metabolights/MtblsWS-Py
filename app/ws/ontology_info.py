@@ -528,21 +528,25 @@ def getWoRMsID(term):
 
 
 def getOnto_info(pre_fix):
+    '''
+     get ontology information include  "name", "file", "version", "description"
+     :param pre_fix: ontology prefix
+     :return: "ontology iri", "version", "ontology description"
+     '''
     try:
-        if 'nmr' in pre_fix.lower():
-            onto_id = 'NMRCV'
-        else:
-            onto_id = pre_fix
-
-        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + onto_id
+        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
-        title = j_content['config']['title']
+
+        iri = j_content['config']['id']
         version = j_content['config']['version']
-        return title, version
+        description = j_content['config']['title']
+        return iri, version, description
     except:
-        return '', ''
+        if pre_fix == "MTBLS":
+            return 'http://www.ebi.ac.uk/metabolights/ontology', '1.0', 'EBI Metabolights ontology'
+        return '', '', 'prefix'
 
 
 def getOnto_Name(iri):
@@ -557,10 +561,14 @@ def getOnto_Name(iri):
                    j_content['_embedded']['terms'][0]['description'][0]
         except:
             return j_content['_embedded']['terms'][0]['ontology_prefix'], ''
-
     except:
-        substring = iri.rsplit('/', 1)[-1]
-        return ''.join(x for x in substring if x.isalpha()), ''
+        if 'MTBLS' in iri:
+            return 'MTBLS','Metabolights ontology'
+        elif 'BAO' in iri:
+            return 'BAO', 'BioAssay Ontology'
+        else:
+            substring = iri.rsplit('/', 1)[-1]
+            return ''.join(x for x in substring if x.isalpha()), ''
 
 
 def getOnto_version(pre_fix):
