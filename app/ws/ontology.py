@@ -763,7 +763,7 @@ class Placeholder(Resource):
                             }
                             '''
 
-                if operation in ['update', 'u', 'add', 'A']:
+                if operation.lower() in ['update', 'u', 'add', 'A']:
                     try:
                         onto_name = getOnto_Name(termAccession)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
@@ -779,7 +779,7 @@ class Placeholder(Resource):
 
                         data = json.dumps({"factor": temp})
 
-                        if operation in ['update', 'u']:  # Update factor
+                        if operation.lower() in ['update', 'u']:  # Update factor
                             response = requests.put(ws_url, params={'name': term},
                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                     data=data)
@@ -802,14 +802,14 @@ class Placeholder(Resource):
                         replaceGoogleSheet(google_df, google_url, sheet_name)
 
                     except Exception as e:
-                        row['status (Done/Error)'] = 'Error'
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
                 # Delete factor
-                elif row['operation(Update/Add/Delete)'].lower() in ['delete', 'D']:
+                elif operation.lower() in ['delete', 'D']:
                     try:
                         response = requests.delete(ws_url, params={'name': term},
-                                                 headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
 
                         print('delete {term} from {studyID}'.format(term=term, studyID=studyID))
 
@@ -821,15 +821,15 @@ class Placeholder(Resource):
                         replaceGoogleSheet(google_df, google_url, sheet_name)
 
                     except Exception as e:
-                        row['status (Done/Error)'] = 'Error'
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
                 # Keep factor
-                elif row['operation(Update/Add/Delete)'].lower() in ['keep', 'K']:
+                elif operation.lower() in ['keep', 'K']:
                     try:
                         row['status (Done/Error)'] = 'Done'
                     except Exception as e:
-                        row['status (Done/Error)'] = 'Error'
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
                 else:
@@ -842,7 +842,7 @@ class Placeholder(Resource):
                 operation, studyID, term, matched_iri = row['operation(Update/Add/Delete)'], row['studyID'], row[
                     'name'], row['matched_iri']
 
-                source = 'metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+                source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
                 ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
                 protocol = '''
@@ -858,8 +858,7 @@ class Placeholder(Resource):
                         }
                     '''
 
-                # Update descriptor
-                if row['operation(Update/Add/Delete)'].lower() in ['update', 'U']:
+                if operation.lower() in ['update', 'U', 'add', 'A']:
                     try:
                         onto_name = getOnto_Name(matched_iri)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
@@ -874,10 +873,18 @@ class Placeholder(Resource):
 
                         data = json.dumps({"studyDesignDescriptor": temp})
 
-                        response = requests.put(google_url, params={'term': term},
-                                                headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')}, data=data)
-                        print('Made correction from {term} to {matchterm}({matchiri}) in {studyID}'.
-                              format(term=term, matchterm=term, matchiri=matched_iri, studyID=studyID))
+                        if operation.lower() in ['update', 'U']:  # Update descriptor
+                            response = requests.put(ws_url, params={'term': term},
+                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                    data=data)
+                            print('Made correction from {term} to {matchterm}({matchiri}) in {studyID}'.
+                                  format(term=term, matchterm=term, matchiri=matched_iri, studyID=studyID))
+                        else:  # Add descriptor
+                            response = requests.post(ws_url,
+                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                     data=data)
+                            print('Add {term} to ({matchiri}) in {studyID}'.
+                                  format(term=term, matchiri=matched_iri, studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -887,23 +894,26 @@ class Placeholder(Resource):
                         replaceGoogleSheet(google_df, google_url, sheet_name)
 
                     except Exception as e:
-                        row['status (Done/Error)'] = 'Error'
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
-                # Add descriptor
-                elif row['operation(Update/Add/Delete)'].lower() in ['add', 'A']:
-                    try:
-                        row['status (Done/Error)'] = 'Done'
-                    except Exception as e:
-                        row['status (Done/Error)'] = 'Error'
-                        logger.info(e)
 
                 # Delete descriptor
-                elif row['operation(Update/Add/Delete)'].lower() in ['delete', 'D']:
+                elif operation.lower() in ['delete', 'D']:
                     try:
-                        row['status (Done/Error)'] = 'Done'
+                        response = requests.delete(ws_url, params={'term': term},
+                                                headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                        print('delete {term} from in {studyID}'.format(term=term,studyID=studyID))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
+
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
+
                     except Exception as e:
-                        row['status (Done/Error)'] = 'Error'
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
                 # Keep descriptor
