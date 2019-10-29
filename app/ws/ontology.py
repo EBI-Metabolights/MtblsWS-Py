@@ -744,7 +744,7 @@ class Placeholder(Resource):
                         'termAccession']
 
                 source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
-                ws_url = app.config.get('MTBLS_WS_HOST') + ':'+ str(app.config.get('PORT')) + source
+                ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
                 # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
                 protocol = '''
@@ -763,8 +763,7 @@ class Placeholder(Resource):
                             }
                             '''
 
-                # Update factor
-                if row['operation(Update/Add/Delete)'].lower() in ['update', 'u']:
+                if operation in ['update', 'u', 'add', 'A']:
                     try:
                         onto_name = getOnto_Name(termAccession)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
@@ -780,11 +779,20 @@ class Placeholder(Resource):
 
                         data = json.dumps({"factor": temp})
 
-                        response = requests.put(ws_url, params={'name': term},
-                                                headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
-                                                data=data)
-                        print('Made correction from {term} to {matchterm}({matchiri}) in {studyID}'.
-                              format(term=term, matchterm=annotationValue, matchiri=termAccession, studyID=studyID))
+                        if operation in ['update', 'u']:  # Update factor
+                            response = requests.put(ws_url, params={'name': term},
+                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                    data=data)
+                            print('Made correction from {term} to {matchterm}({matchiri}) in {studyID}'.
+                                  format(term=term, matchterm=annotationValue, matchiri=termAccession, studyID=studyID))
+
+                        else:  # Add factor
+                            response = requests.post(ws_url,
+                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                     data=data)
+
+                            print('Add {term} ({matchiri}) in {studyID}'.format(term=term, matchiri=termAccession,
+                                                                                studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -797,18 +805,21 @@ class Placeholder(Resource):
                         row['status (Done/Error)'] = 'Error'
                         logger.info(e)
 
-                # Add factor
-                elif row['operation(Update/Add/Delete)'].lower() in ['add', 'A']:
-                    try:
-                        row['status (Done/Error)'] = 'Done'
-                    except Exception as e:
-                        row['status (Done/Error)'] = 'Error'
-                        logger.info(e)
-
                 # Delete factor
                 elif row['operation(Update/Add/Delete)'].lower() in ['delete', 'D']:
                     try:
-                        row['status (Done/Error)'] = 'Done'
+                        response = requests.delete(ws_url, params={'name': term},
+                                                 headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+
+                        print('delete {term} from {studyID}'.format(term=term, studyID=studyID))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
+
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
+
                     except Exception as e:
                         row['status (Done/Error)'] = 'Error'
                         logger.info(e)
@@ -832,7 +843,7 @@ class Placeholder(Resource):
                     'name'], row['matched_iri']
 
                 source = 'metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
-                ws_url = app.config.get('MTBLS_WS_HOST') + ':'+ str(app.config.get('PORT')) + source
+                ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
                 protocol = '''
                         {
