@@ -651,6 +651,44 @@ def get_maf_name_from_assay_name(assay_file_name):
     return maf_name
 
 
+def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, study_location, isa_study):
+    try:
+        """ 
+        Update column header in sample and assay file(s). The column will look like 'Factor Value[<factor name>]' or 
+        'Characteristics[<characteristics name>']
+        """
+
+        prefix = ""
+        postfix = "]"
+        if ontology_type.lower() == 'factor':
+            prefix = 'Factor Value['
+        elif ontology_type.lower() == 'characteristics':
+            prefix = 'Characteristics['
+
+        file_names = []
+        # Sample sheet
+        file_names.append(os.path.join(study_location, isa_study.filename))
+        #  assay_sheet(s)
+        for assay in isa_study.assays:
+            file_names.append(os.path.join(study_location, assay.filename))
+
+        if file_names:
+            for file in file_names:
+                file_df = read_tsv(file)
+                try:
+                    old = prefix + old_value + postfix
+                    new = prefix + new_value + postfix
+                    file_df.rename(columns={old: new}, inplace=True)
+                    write_tsv(file_df, file)
+                    logger.info(ontology_type + " " + new_value + " has been renamed in " + file)
+                except Exception as e:
+                    logger.warning(ontology_type + " " + new_value +
+                                   " was not used in the sheet or we failed updating " + file + ". Error: " +str(e))
+
+    except Exception as e:
+        logger.error("Could not update the ontology value " + old_value + " in all sheets")
+
+
 def create_maf(technology, study_location, assay_file_name, annotation_file_name):
     resource_folder = "./resources/"
     update_maf = False

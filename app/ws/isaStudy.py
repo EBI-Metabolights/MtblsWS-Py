@@ -25,7 +25,7 @@ from app.ws.mm_models import *
 from app.ws.mtblsWSclient import WsClient
 from app.ws.models import *
 from flask_restful_swagger import swagger
-from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv
+from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv, update_ontolgies_in_isa_tab_sheets
 from app.ws.db_connection import study_submitters, update_release_date
 import logging
 import os
@@ -2355,7 +2355,7 @@ class StudyFactors(Resource):
                 "dataType": "string"
             },
             {
-                "name": "protocol",
+                "name": "data",
                 "description": 'Factor in ISA-JSON format.',
                 "paramType": "body",
                 "type": "string",
@@ -2465,14 +2465,20 @@ class StudyFactors(Resource):
         logger.info('Updating Study Factor details for %s', study_id)
 
         found = False
+        old_factor = ""
         for index, factor in enumerate(isa_study.factors):
             if factor.name == factor_name:
                 found = True
-                # update protocol details
+                old_factor = factor.name
+                # update factor details
                 isa_study.factors[index] = updated_factor
                 break
         if not found:
-            abort(404)
+            abort(404, "The factor was not found")
+
+        if found:
+            update_ontolgies_in_isa_tab_sheets('factor', old_factor, updated_factor.name, study_location, isa_study)
+
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_factor.name)
