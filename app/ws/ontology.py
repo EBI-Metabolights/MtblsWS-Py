@@ -595,7 +595,8 @@ class Placeholder(Resource):
             elif capture_type == 'wrong_match':
                 sheet_name = 'factor wrong match'
 
-            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'name', 'annotationValue',
+            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+                   'annotationValue',
                    'termAccession']
 
         elif query == 'design descriptor':
@@ -605,7 +606,7 @@ class Placeholder(Resource):
             elif capture_type == 'wrong_match':
                 sheet_name = 'descriptor wrong match'
 
-            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'name', 'matched_iri']
+            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'old_name', 'name', 'matched_iri']
 
         else:
             abort(400)
@@ -623,7 +624,7 @@ class Placeholder(Resource):
         df_connect = pd.concat([google_df, df], ignore_index=True, sort=False)
         df_connect = df_connect.reindex(columns=col) \
             .replace(np.nan, '', regex=True) \
-            .drop_duplicates(keep='first', subset=["studyID", "name"])
+            .drop_duplicates(keep='first', subset=["studyID", "old_name"])
 
         adding_count = df_connect.shape[0] - google_df.shape[0]
 
@@ -902,8 +903,8 @@ class Placeholder(Resource):
                 elif operation.lower() in ['delete', 'D']:
                     try:
                         response = requests.delete(ws_url, params={'term': term},
-                                                headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-                        print('delete {term} from in {studyID}'.format(term=term,studyID=studyID))
+                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                        print('delete {term} from in {studyID}'.format(term=term, studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -969,7 +970,7 @@ def get_metainfo(query, capture_type):
 
                 for factor in data["factors"]:
                     temp_dict = {'studyID': studyID,
-                                 'name': factor['factorName'],
+                                 'old_name': factor['factorName'],
                                  'annotationValue': factor['factorType']['annotationValue'],
                                  'termAccession': factor['factorType']['termAccession']}
                     # Placeholder
@@ -997,7 +998,7 @@ def get_metainfo(query, capture_type):
                 for descriptor in data['studyDesignDescriptors']:
 
                     temp_dict = {'studyID': studyID,
-                                 'name': descriptor['annotationValue'],
+                                 'old_name': descriptor['annotationValue'],
                                  'matched_iri': descriptor['termAccession']}
 
                     # Placeholder
