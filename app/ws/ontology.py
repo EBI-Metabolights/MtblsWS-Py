@@ -595,9 +595,8 @@ class Placeholder(Resource):
             elif capture_type == 'wrong_match':
                 sheet_name = 'factor wrong match'
 
-            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
-                   'annotationValue',
-                   'termAccession']
+            col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+                   'annotationValue', 'termAccession', 'superclass', 'definition']
 
         elif query == 'design descriptor':
             if capture_type == 'placeholder':
@@ -606,7 +605,8 @@ class Placeholder(Resource):
             elif capture_type == 'wrong_match':
                 sheet_name = 'descriptor wrong match'
 
-            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'old_name', 'name', 'matched_iri']
+            col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+                   'matched_iri', 'superclass', 'definition']
 
         else:
             abort(400)
@@ -641,7 +641,7 @@ class Placeholder(Resource):
 
     # ============================ Placeholder put ===============================
     @swagger.operation(
-        summary="Make changes according to google term sheets",
+        summary="Make changes according to google old_term sheets",
         notes="Update/add/Delete placeholder terms",
         parameters=[
             {
@@ -718,9 +718,6 @@ class Placeholder(Resource):
             elif capture_type == 'wrong_match':
                 sheet_name = 'factor wrong match'
 
-            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'name', 'annotationValue',
-                   'termAccession']
-
         elif query == 'design descriptor':
             if capture_type == 'placeholder':
                 sheet_name = 'descriptor placeholder'
@@ -728,21 +725,23 @@ class Placeholder(Resource):
             elif capture_type == 'wrong_match':
                 sheet_name = 'descriptor wrong match'
 
-            col = ['operation(Update/Add/Delete)', 'status (Done/Error)', 'studyID', 'name', 'matched_iri']
-
         else:
             abort(400)
 
         # Load google sheet
         google_df = getGoogleSheet(google_url, sheet_name)
 
-        ch = google_df[(google_df['operation(Update/Add/Delete)'] != '') & (google_df['status (Done/Error)'] == '')]
+        # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+        #        'annotationValue', 'termAccession', 'superclass', 'definition']
+
+        ch = google_df[
+            (google_df['operation(Update/Add/Delete/Zooma/MTBLS)'] != '') & (google_df['status (Done/Error)'] == '')]
 
         for index, row in ch.iterrows():
             if query == 'factor':
-                operation, studyID, term, annotationValue, termAccession = \
-                    row['operation(Update/Add/Delete)'], row['studyID'], row['name'], row['annotationValue'], row[
-                        'termAccession']
+                operation, studyID, old_term, term, annotationValue, termAccession = \
+                    row['operation(Update/Add/Delete/Zooma/MTBLS)'], row['studyID'], row['old_name'], row['name'], row[
+                        'annotationValue'], row['termAccession']
 
                 source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
                 ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
@@ -781,19 +780,21 @@ class Placeholder(Resource):
                         data = json.dumps({"factor": temp})
 
                         if operation.lower() in ['update', 'u']:  # Update factor
-                            response = requests.put(ws_url, params={'name': term},
+                            response = requests.put(ws_url, params={'name': old_term},
                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                     data=data)
-                            print('Made correction from {term} to {matchterm}({matchiri}) in {studyID}'.
-                                  format(term=term, matchterm=annotationValue, matchiri=termAccession, studyID=studyID))
+                            print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.format(
+                                old_term=old_term, matchterm=annotationValue, matchiri=termAccession, studyID=studyID))
 
                         else:  # Add factor
                             response = requests.post(ws_url,
                                                      headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                      data=data)
 
-                            print('Add {term} ({matchiri}) in {studyID}'.format(term=term, matchiri=termAccession,
-                                                                                studyID=studyID))
+                            print(
+                                'Add {old_term} ({matchiri}) in {studyID}'.format(old_term=old_term,
+                                                                                  matchiri=termAccession,
+                                                                                  studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -809,10 +810,10 @@ class Placeholder(Resource):
                 # Delete factor
                 elif operation.lower() in ['delete', 'D']:
                     try:
-                        response = requests.delete(ws_url, params={'name': term},
+                        response = requests.delete(ws_url, params={'name': old_term},
                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
 
-                        print('delete {term} from {studyID}'.format(term=term, studyID=studyID))
+                        print('delete {old_term} from {studyID}'.format(old_term=old_term, studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -840,8 +841,8 @@ class Placeholder(Resource):
 
             elif query == 'design descriptor':
 
-                operation, studyID, term, matched_iri = row['operation(Update/Add/Delete)'], row['studyID'], row[
-                    'name'], row['matched_iri']
+                operation, studyID, old_term, term, matched_iri = row['operation(Update/Add/Delete/Zooma/MTBLS)'], row[
+                    'studyID'], row['old_name'], row['name'], row['matched_iri']
 
                 source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
                 ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
@@ -875,17 +876,17 @@ class Placeholder(Resource):
                         data = json.dumps({"studyDesignDescriptor": temp})
 
                         if operation.lower() in ['update', 'U']:  # Update descriptor
-                            response = requests.put(ws_url, params={'term': term},
+                            response = requests.put(ws_url, params={'term': old_term},
                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                     data=data)
-                            print('Made correction from {term} to {matchterm}({matchiri}) in {studyID}'.
-                                  format(term=term, matchterm=term, matchiri=matched_iri, studyID=studyID))
+                            print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
+                                  format(old_term=old_term, matchterm=old_term, matchiri=matched_iri, studyID=studyID))
                         else:  # Add descriptor
                             response = requests.post(ws_url,
                                                      headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                      data=data)
-                            print('Add {term} to ({matchiri}) in {studyID}'.
-                                  format(term=term, matchiri=matched_iri, studyID=studyID))
+                            print('Add {old_term} to ({matchiri}) in {studyID}'.
+                                  format(old_term=old_term, matchiri=matched_iri, studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -902,9 +903,9 @@ class Placeholder(Resource):
                 # Delete descriptor
                 elif operation.lower() in ['delete', 'D']:
                     try:
-                        response = requests.delete(ws_url, params={'term': term},
+                        response = requests.delete(ws_url, params={'term': old_term},
                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-                        print('delete {term} from in {studyID}'.format(term=term, studyID=studyID))
+                        print('delete {old_term} from in {studyID}'.format(term=old_term, studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -918,7 +919,7 @@ class Placeholder(Resource):
                         logger.info(e)
 
                 # Keep descriptor
-                elif row['operation(Update/Add/Delete)'].lower() in ['keep', 'K']:
+                elif operation.lower() in ['keep', 'K']:
                     try:
                         row['status (Done/Error)'] = 'Done'
                     except Exception as e:
@@ -1094,3 +1095,12 @@ def replaceGoogleSheet(df, url, worksheetName):
         set_with_dataframe(wks, df)
     except Exception as e:
         logger.info(e.args)
+
+
+def addZoomaTerm():
+    zooma_path = app.config.get('MTBLS_ZOOMA_FILE')
+
+
+def addOntologyTerm():
+    onto_path = app.config.get('MTBLS_ONTOLOGY_FILE')
+    

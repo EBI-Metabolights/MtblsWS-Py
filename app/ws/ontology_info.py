@@ -167,7 +167,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
     logger.info('Search %s in Metabolights ontology' % keyword)
     print('Search "%s" in Metabolights ontology' % keyword)
 
-    onto = get_ontology('./tests/Metabolights.owl').load()
+    onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
     info = onto_information(onto)
     set_priortity = False
 
@@ -563,7 +563,7 @@ def getOnto_Name(iri):
             return j_content['_embedded']['terms'][0]['ontology_prefix'], ''
     except:
         if 'MTBLS' in iri:
-            return 'MTBLS','Metabolights ontology'
+            return 'MTBLS', 'Metabolights ontology'
         elif 'BAO' in iri:
             return 'BAO', 'BioAssay Ontology'
         else:

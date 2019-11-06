@@ -46,6 +46,7 @@ MTBLS_FILE_BASE = "<some local filesystem>/"
 MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
 MTBLS_ZOOMA_FILE = "<local file>"
+MTBLS_ONTOLOGY_FILE = "<local file>"
 BIOPORTAL_TOKEN = '<your bioportal token>'
 METABOLIGHTS_TOKEN = '<your administrative metabolights token>'
 MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
