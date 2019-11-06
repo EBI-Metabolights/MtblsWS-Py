@@ -18,6 +18,7 @@
 
 import datetime
 import re
+import types
 
 import gspread
 import numpy as np
@@ -363,66 +364,33 @@ class Ontology(Resource):
     # =========================== put =============================================
 
     @swagger.operation(
-        summary="Put ontology entity to metabolights-zooma.tsv",
-        notes="Put ontology entity to metabolights-zooma.tsv",
+        summary="Add new entity to metabolights ontology",
+        notes='''Add new entity to metabolights ontology.
+              <br>
+              <pre><code>
+{
+  "ontologyEntity": {
+    "termName": "ABCC5",
+    "definition": "The protein-coding gene ABCC5 located on the chromosome 3 mapped at 3q27.",
+    "superclass": "design descriptor"
+  }
+}</code></pre>''',
+
         parameters=[
-            {
-                "name": "term",
-                "description": "Ontology term",
-                "required": True,
-                "allowEmptyValue": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
-
-            {
-                "name": "attribute_name",
-                "description": "Attribute name",
-                "required": True,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
-                         "column type", "instruments"]
-            },
-
-            {
-                "name": "term_iri",
-                "description": "iri/url of the mapping term",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-
-            {
-                "name": "study_ID",
-                "description": "Study ID of the term",
-                "required": True,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-
-            {
-                "name": "annotator",
-                "description": "annotator's name",
-                "required": True,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-
             {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "protocol",
+                "description": 'Ontology Entity in JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
                 "required": True,
                 "allowMultiple": False
             }
@@ -452,69 +420,39 @@ class Ontology(Resource):
     )
     def put(self):
         log_request(request)
-
         parser = reqparse.RequestParser()
-        parser.add_argument('term', help="Ontology term")
-        term = None
-        parser.add_argument('attribute_name', help='Attribute name')
-        attribute_name = None
-        parser.add_argument('term_iri', help='iri of the mapped term')
-        term_iri = None
-        parser.add_argument('study_ID', help='study_ID')
-        study_ID = None
-        parser.add_argument('annotator', help='annotator name')
-        annotator = None
-
-        if request.args:
-            args = parser.parse_args(req=request)
-            term = args['term']
-            attribute_name = args['attribute_name']
-            term_iri = args['term_iri']
-            study_ID = args['study_ID']
-            annotator = args['annotator']
-
-        if term is None:
-            abort(404, 'Please provide new term name')
-
-        if term_iri is None:
-            abort(404, 'Please provide mapped iri of the new term')
-
-        if study_ID is None or annotator is None:
-            abort(404, 'Please provide valid parameters for study identifier and file name')
 
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+        else:
+            abort(401)
 
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
-        submission_date, study_status = wsc.get_permissions("MTBLS1", user_token)
-
-        if not is_curator:
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+        if not write_access:
             abort(403)
-        file_name = app.config.get('MTBLS_ZOOMA_FILE')
 
-        logger.info('Trying to load metabolights-zooma.tsv file')
-        # Get the Assay table or create a new one if it does not already exist
+        data_dict = None
         try:
-            table_df = pd.read_csv(file_name, sep="\t", encoding='utf-8')
-            table_df = table_df.replace(np.nan, '', regex=True)
+            data_dict = json.loads(request.data.decode('utf-8'))['ontologyEntity']
+        except Exception as e:
+            logger.info(e)
+            abort(400)
 
-            s2 = pd.Series(
-                [study_ID, '', attribute_name, term, term_iri, annotator,
-                 datetime.datetime.now().strftime('%d/%m/%Y %I:%M')],
-                index=['STUDY',
-                       'BIOENTITY',
-                       'PROPERTY_TYPE',
-                       'PROPERTY_VALUE',
-                       'SEMANTIC_TAG',
-                       'ANNOTATOR',
-                       'ANNOTATION_DATE'])
+        logger.info('Add %s to Metabolights ontology' %data_dict['termName'])
+        print('Add %s to Metabolights ontology' % data_dict['termName'])
 
-            table_df = table_df.append(s2, ignore_index=True)
-            table_df.to_csv(file_name, sep="\t", header=True, encoding='utf-8', index=False)
-        except FileNotFoundError:
-            abort(400, "The file %s was not found", file_name)
+        description = None
+        if len(data_dict['definition']) > 0:
+            description = data_dict['definition']
+
+
+        onto_path = app.config.get("MTBLS_ONTOLOGY_FILE")
+        addEntity(onto_path, new_term=data_dict['termName'], supclass=data_dict['superclass'],
+                  definition=description)
 
 
 class Placeholder(Resource):
@@ -905,7 +843,7 @@ class Placeholder(Resource):
                     try:
                         response = requests.delete(ws_url, params={'term': old_term},
                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-                        print('delete {old_term} from in {studyID}'.format(term=old_term, studyID=studyID))
+                        print('delete {old_term} from in {studyID}'.format(old_term=old_term, studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -1101,6 +1039,57 @@ def addZoomaTerm():
     zooma_path = app.config.get('MTBLS_ZOOMA_FILE')
 
 
-def addOntologyTerm():
-    onto_path = app.config.get('MTBLS_ONTOLOGY_FILE')
-    
+def addEntity(ontoPath, new_term, supclass, definition=None):
+    '''
+    add new term to the ontology and save it
+
+    :param ontoPath: Ontology Path
+    :param new_term: new entity to be added
+    :param supclass:  superclass/branch name or iri of new term
+    :param definition (optional): definition of the new term
+    '''
+
+    def getid(onto):
+        '''
+        this method usd for get the last un-take continuously term ID
+        :param onto: ontology
+        :return: the last id for the new term
+        '''
+
+        temp = []
+        for c in onto.classes():
+            if str(c).lower().startswith('metabolights'):
+                temp.append(str(c))
+
+        last = max(temp)
+        temp = str(int(last[-6:]) + 1).zfill(6)
+        id = 'MTBLS_' + temp
+
+        return id
+
+    try:
+        onto = get_ontology(ontoPath).load()
+        id = getid(onto)
+        namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
+
+        with namespace:
+            try:
+                cls = onto.search_one(label=supclass)
+            except:
+                try:
+                    cls = onto.search_one(iri=supclass)
+                except Exception as e:
+                    print(e)
+
+            newEntity = types.new_class(id, (cls,))
+            newEntity.label = new_term
+            if definition != None:
+                newEntity.isDefinedBy = definition
+            else:
+                pass
+
+        onto.save(file=ontoPath, format='rdfxml')
+
+    except Exception as e:
+        logger.info(e)
+        print(e)
