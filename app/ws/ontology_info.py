@@ -35,12 +35,12 @@ class onto_information():
         '''initialization'''
         self.onto = onto
 
-    def get_subs(self, cls, num=100):
+    def get_subs(self, cls):
         '''return list of sub classes -> list'''
         # print('matching subs of %s' % cls.label)
         sub = []
 
-        list_subs(cls, sub, num)
+        list_subs(cls, sub)
         # print(type(sub[0]))
         return sub
 
@@ -121,14 +121,14 @@ def list_supers(onto_c, sup):
             continue
 
 
-def list_subs(onto_c, sub, num):
+def list_subs(onto_c, sub):
     if onto_c.label and onto_c.label == '' and onto_c.iri != 'http://www.w3.org/2002/07/owl#Thing':
         return
     for children in onto_c.subclasses():
         try:
-            list_subs(children, sub, num)
-            if len(sub) >= num:
-                return
+            list_subs(children, sub)
+            # if len(sub) >= num:
+            #     return
             sub.append(children)
         except:
             continue
