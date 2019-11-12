@@ -192,6 +192,9 @@ class Ontology(Resource):
                         ontology = ontology.split(',')
                     except Exception as e:
                         print(e.args)
+        
+        if ontology != None:
+            ontology = [x.lower() for x in ontology]
 
         result = []
 
@@ -764,10 +767,16 @@ class Placeholder(Resource):
                         google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
-                # Keep factor
-                elif operation.lower() in ['keep', 'K']:
+                # add factor term
+                elif operation.lower() == 'mtbls':
                     try:
                         row['status (Done/Error)'] = 'Done'
+                        source = '/metabolights/ws/ebi-internal/ontology'
+                        ws_url = app.config.put('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+
+                        #TODO
+
+
                     except Exception as e:
                         google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
