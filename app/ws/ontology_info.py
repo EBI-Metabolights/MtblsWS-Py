@@ -546,7 +546,7 @@ def getOnto_info(pre_fix):
     except:
         if pre_fix == "MTBLS":
             return 'http://www.ebi.ac.uk/metabolights/ontology', '1.0', 'EBI Metabolights ontology'
-        return '', '', 'prefix'
+        return '', '', ''
 
 
 def getOnto_Name(iri):
