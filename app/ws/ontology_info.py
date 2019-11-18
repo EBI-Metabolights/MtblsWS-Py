@@ -163,7 +163,7 @@ def OLSbranchSearch(keyword, branchName, ontoName):
     return res
 
 
-def getMetaboTerm2(keyword, branch, mapping=''):
+def getMetaboTerm(keyword, branch, mapping=''):
     try:
         onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
     except:
@@ -174,10 +174,9 @@ def getMetaboTerm2(keyword, branch, mapping=''):
     cls = []
 
     if keyword not in [None, '']:
-
         # exact match
         try:
-            cls += onto.search(label=keyword)
+            cls += onto.search(label=keyword, _case_sensitive=False)
         except:
             logger.info("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
             print("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
@@ -186,14 +185,17 @@ def getMetaboTerm2(keyword, branch, mapping=''):
         if mapping != 'exact':
             # fuzzy match
             try:
-                cls += onto.search(label=keyword + '*')
+                cls += onto.search(label=keyword + '*', _case_sensitive=False)
             except:
                 logger.info("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
                 print("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
 
+        if len(cls) == 0:
+            return []
+
         if branch not in [None, '']:  # term = 1 , branch = 1, search branch
             try:
-                sup = onto.search_one(label=branch)
+                sup = onto.search_one(label=branch, _case_sensitive=False)
                 logger.info("Search {term} in MTBLS ontology {branch}".format(term=keyword, branch=branch))
                 print("Search {term} in MTBLS ontology {branch}".format(term=keyword, branch=branch))
             except:
@@ -207,7 +209,6 @@ def getMetaboTerm2(keyword, branch, mapping=''):
             except:
                 pass
             result += list(set(subs) & set(cls))
-
 
             # synonym match
             if branch == 'taxonomy' or branch == 'factors':
@@ -229,7 +230,7 @@ def getMetaboTerm2(keyword, branch, mapping=''):
             print("Search Metabolights ontology whole {branch} branch ... ".format(branch=branch))
 
             try:
-                sup = onto.search_one(label=branch)
+                sup = onto.search_one(label=branch, _case_sensitive=False)
                 sub = sup.descendants()
                 try:
                     sub.remove(sup)
@@ -244,7 +245,7 @@ def getMetaboTerm2(keyword, branch, mapping=''):
                                             'untargeted metabolites', 'targeted metabolites']
 
                     for term in first_priority_terms:
-                        temp = onto.search_one(label = term)
+                        temp = onto.search_one(label=term, _case_sensitive=False)
                         result.remove(temp)
                         result = [temp] + result
 
@@ -255,7 +256,7 @@ def getMetaboTerm2(keyword, branch, mapping=''):
                 logger.info("Can't find a branch called " + branch)
                 print("Can't find a branch called " + branch)
                 return []
-        else: # term = None, branch = None
+        else:  # term = None, branch = None
             return []
 
     res = []
@@ -296,7 +297,7 @@ def getMetaboTerm2(keyword, branch, mapping=''):
     return res
 
 
-def getMetaboTerm(keyword, branch, mapping=''):
+def getMetaboTerm2(keyword, branch, mapping=''):
     logger.info('Search %s in Metabolights ontology' % keyword)
     print('Search "%s" in Metabolights ontology' % keyword)
 
@@ -639,7 +640,8 @@ def getWormsTerm(keyword):
                 ontoName = 'WoRMs'
                 provenance_name = 'World Register of Marine Species'
 
-                enti = entity(name=name, iri=iri, definition=definition, ontoName=ontoName, provenance_name=provenance_name)
+                enti = entity(name=name, iri=iri, definition=definition, ontoName=ontoName,
+                              provenance_name=provenance_name)
                 res.append(enti)
 
             if len(res) >= 10:
