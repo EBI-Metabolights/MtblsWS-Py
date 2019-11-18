@@ -248,6 +248,8 @@ def getMetaboTerm2(keyword, branch, mapping=''):
                         result.remove(temp)
                         result = [temp] + result
 
+                result = result[:20]
+
             except Exception as e:
                 print(e)
                 logger.info("Can't find a branch called " + branch)
@@ -630,14 +632,15 @@ def getWormsTerm(keyword):
         j_content = json.loads(content)
 
         for term in j_content:
-            name = term["scientificname"]
-            iri = term["url"]
-            definition = term["authority"]
-            ontoName = 'WoRMs'
-            provenance_name = 'World Register of Marine Species'
+            if term["scientificname"] != None and term["url"] != None:
+                name = term["scientificname"]
+                iri = term["url"]
+                definition = term["authority"]
+                ontoName = 'WoRMs'
+                provenance_name = 'World Register of Marine Species'
 
-            enti = entity(name=name, iri=iri, definition=definition, ontoName=ontoName, provenance_name=provenance_name)
-            res.append(enti)
+                enti = entity(name=name, iri=iri, definition=definition, ontoName=ontoName, provenance_name=provenance_name)
+                res.append(enti)
 
             if len(res) >= 10:
                 break
