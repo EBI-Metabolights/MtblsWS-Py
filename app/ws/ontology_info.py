@@ -163,6 +163,137 @@ def OLSbranchSearch(keyword, branchName, ontoName):
     return res
 
 
+def getMetaboTerm2(keyword, branch, mapping=''):
+    try:
+        onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
+    except:
+        logger.info("Fail to load ontology from {path}".format(path=app.config.get('MTBLS_ONTOLOGY_FILE')))
+        return None
+
+    result = []
+    cls = []
+
+    if keyword not in [None, '']:
+
+        # exact match
+        try:
+            cls += onto.search(label=keyword)
+        except:
+            logger.info("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
+            print("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
+            pass
+
+        if mapping != 'exact':
+            # fuzzy match
+            try:
+                cls += onto.search(label=keyword + '*')
+            except:
+                logger.info("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
+                print("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
+
+        if branch not in [None, '']:  # term = 1 , branch = 1, search branch
+            try:
+                sup = onto.search_one(label=branch)
+                logger.info("Search {term} in MTBLS ontology {branch}".format(term=keyword, branch=branch))
+                print("Search {term} in MTBLS ontology {branch}".format(term=keyword, branch=branch))
+            except:
+                logger.info("Can't find a branch called " + branch)
+                print("Can't find a branch called " + branch)
+                return []
+
+            subs = sup.descendants()
+            try:
+                subs.remove(sup)
+            except:
+                pass
+            result += list(set(subs) & set(cls))
+
+
+            # synonym match
+            if branch == 'taxonomy' or branch == 'factors':
+                for cls in subs:
+                    try:
+                        map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
+                        Synonym = list(map[cls])
+                        if keyword.lower() in [syn.lower() for syn in Synonym]:
+                            result.append(cls)
+                    except Exception as e:
+                        pass
+
+        else:  # term =1 branch = 0, search whole ontology
+            result += cls
+
+    else:  # term = None
+        if branch not in [None, '']:  # term = 0, branch = 1, return whole ontology
+            logger.info("Search Metabolights ontology whole {branch} branch ... ".format(branch=branch))
+            print("Search Metabolights ontology whole {branch} branch ... ".format(branch=branch))
+
+            try:
+                sup = onto.search_one(label=branch)
+                sub = sup.descendants()
+                try:
+                    sub.remove(sup)
+                except:
+                    pass
+
+                result += sub
+
+                # Change entity priority
+                if branch == 'design descriptor' and keyword in [None, '']:
+                    first_priority_terms = ['ultra-performance liquid chromatography-mass spectrometry',
+                                            'untargeted metabolites', 'targeted metabolites']
+
+                    for term in first_priority_terms:
+                        temp = onto.search_one(label = term)
+                        result.remove(temp)
+                        result = [temp] + result
+
+            except Exception as e:
+                print(e)
+                logger.info("Can't find a branch called " + branch)
+                print("Can't find a branch called " + branch)
+                return []
+        else: # term = None, branch = None
+            return []
+
+    res = []
+
+    for cls in result:
+        enti = entity(name=cls.label[0], iri=cls.iri,
+                      provenance_name='Metabolights')
+
+        if cls.isDefinedBy:
+            enti.definition = cls.isDefinedBy[0]
+
+        if 'MTBLS' in cls.iri:
+            enti.ontoName = 'MTBLS'
+
+        else:
+            try:
+                onto_name = getOnto_Name(enti.iri)[0]
+            except:
+                onto_name = ''
+
+            enti.ontoName = onto_name
+            enti.provenance_name = onto_name
+
+        res.append(enti)
+
+    # OLS branch search
+    if branch == 'instruments':
+        if keyword in [None, '']:
+            res += OLSbranchSearch('*', 'instrument', 'msio')
+        else:
+            res += OLSbranchSearch(keyword, 'instrument', 'msio')
+    elif branch == 'column type':
+        if keyword in [None, '']:
+            res += OLSbranchSearch('*', 'chromatography', 'chmo')
+        else:
+            res += OLSbranchSearch(keyword, 'chromatography', 'chmo')
+
+    return res
+
+
 def getMetaboTerm(keyword, branch, mapping=''):
     logger.info('Search %s in Metabolights ontology' % keyword)
     print('Search "%s" in Metabolights ontology' % keyword)
@@ -175,6 +306,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
     result = []
     if keyword not in [None, '']:
         if branch:  # term = 1, branch = 1, search term in the branch
+
             start_cls = onto.search_one(label=branch)
             try:
                 clses = info.get_subs(start_cls)
@@ -226,7 +358,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
     elif keyword in [None, ''] and branch:  # term = 0, branch = 1, return whole branch
         start_cls = onto.search_one(label=branch)
         try:
-            res_cls = info.get_subs(start_cls, num=30)
+            res_cls = info.get_subs(start_cls)
 
             if branch == 'design descriptor':
                 set_priortity = True
