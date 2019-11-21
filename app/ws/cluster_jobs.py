@@ -53,7 +53,8 @@ def lsf_job(job_cmd, job_param=None):
             msg_err = job_status.stderr.decode("utf-8")
     except Exception as e:
         status = False
-        message = 'Could not execute or list LSF jobs, try to Log into the EBI cluster and run "bjobs" to see all running jobs'
+        message = 'Could not execute or list LSF jobs, try to Log into the EBI cluster and run "bjobs" to see all ' \
+                  'running jobs '
         if e.returncode == 255:
             msg_err = "LSF Job " + job_param + " was not found. Check if the process still exists"
         logger.error(message + '. ' + str(e))
@@ -251,7 +252,7 @@ class LsfUtils(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions('MTBLS2', user_token)
+            study_status = wsc.get_permissions('MTBLS2', user_token)
         if not is_curator:
             abort(403)
 
@@ -260,4 +261,4 @@ class LsfUtils(Resource):
         if status:
             return {"success": message, "message": job_out, "error": job_err}
         else:
-            return {"error": message, "message": job_out, "error": job_err}
+            return {"Failure": message, "message": job_out, "error": job_err}

@@ -513,10 +513,10 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                           "' (alt name = '" + alt_name + "')")
 
                 pubchem_df.update(pubchem_df[[maf_compound_name_column]].merge(existing_row, 'left'))
-                #if not exiting_pubchem_file:
+                # f not exiting_pubchem_file:
                 pubchem_df.iloc[row_idx, get_idx('row_id', pubchem_df_headers)] = row_idx + 1  # Update Row id again, not use the copied row
-                    # if not database_id:
-                    #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
+                # if not database_id:
+                #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
 
                 pubchem_df.iloc[row_idx, get_idx(alt_name_column, pubchem_df_headers)] = alt_name     # Add in the original alt name again
                 pubchem_df.iloc[row_idx, get_idx('search_type', pubchem_df_headers)] = 'copy_existing_row'  # Search category/type for logging
