@@ -46,6 +46,7 @@ from app.ws.user_management import UserManagement
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.send_files import SendFiles
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
+from app.ws.cluster_jobs import LsfUtils
 
 """
 MTBLS WS-Py
@@ -159,18 +160,20 @@ def initialize_app(flask_app):
     # EBI utils
     api.add_resource(MapStudies, res_path + "/ebi-internal/zooma")
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
+    api.add_resource(Placeholder, res_path + "/ebi-internal/placeholder") # Add placeholder
     api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml2isatab")
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml")
+    api.add_resource(UserManagement, res_path + "/ebi-internal/users")
     api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
-    api.add_resource(UserManagement, res_path + "/ebi-internal/users")
-    api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
+    # api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
+    api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
 
 

@@ -692,7 +692,9 @@ class AddRows(Resource):
             for row in new_row:
                 if not row:
                     col0 = file_df.columns[0]
-                    row = {col0: ""}
+                    row = {col0: ""}  # Take the first column header from the file, use this to add new row
+                    logger.warning("No row new information provided, adding an empty row to file " + file_name +
+                                   ", row " + str(row))
 
                 line = pd.DataFrame(row, index=[start_index])
                 file_df = file_df.append(line, ignore_index=False)
@@ -1041,7 +1043,7 @@ class GetTsvFile(Resource):
         logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 

@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-May-23
+#  Last modified: 2019-Oct-29
 #  Modified by:   kenneth
 #
 #  Copyright 2019 EMBL - European Bioinformatics Institute
@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.03.07"
+WS_APP_VERSION = "1.06.11"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.10.3"
 METASPACE_APP_VERSION = "0.7.1"
@@ -46,8 +46,13 @@ MTBLS_FILE_BASE = "<some local filesystem>/"
 MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
 MTBLS_ZOOMA_FILE = "<local file>"
+MTBLS_ONTOLOGY_FILE = "<local file>"
 BIOPORTAL_TOKEN = '<your bioportal token>'
+METABOLIGHTS_TOKEN = '<your administrative metabolights token>'
 MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
+
+GOOGLE_SHEET_URL = "<Google sheet url>"
+GOOGLE_TOKEN= "./instance/metabolights-d3c2b1b419d0.json"
 
 PARTNER_TEMPLATE_METABOLON = 'TEMPLATES/METABOLON'
 DEFAULT_TEMPLATE = 'TEMPLATES/DUMMY'
@@ -57,8 +62,8 @@ CORS_HOSTS = "http://localhost:8000",\
              "http://localhost:8080",\
              "http://localhost.ebi.ac.uk:8080",\
              "http://wwwdev.ebi.ac.uk",\
-             "http://ves-ebi-8d:8080",\
-             "http://ves-ebi-8d.ebi.ac.uk:8080"
+             "http://wp-np3-15:8080",\
+             "http://wp-np3-15.ebi.ac.uk:8080"
 
 DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"
 
@@ -87,6 +92,7 @@ VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/con
 OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
 CHEBI_URL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
 CHEBI_URL_WAIT = 300
+CHEBI_PIPLINE_URL = WS_APP_BASE_LINK + "/ws/ebi-internal/"
 CLASSYFIRE_ULR = "http://classyfire.wishartlab.com"
 CLASSYFIRE_MAPPING = "/net/isilon8/ftp_public/databases/metabolights/submissionTool/ClassyFire_Mapping.tsv"
 OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"
@@ -99,4 +105,7 @@ METASPACE_DATABASE = "HMDB-v4"
 METASPACE_FDR = 0.1
 METASPACE_APP_NAME = "MMIT"
 METASPACE_APP_DESCRIPTION = "METASPACE-MetaboLights Interface Tools"
-AWS_CREDENTIALS = './instance/aws_credentials.cfg'
+AWS_CREDENTIALS = "./instance/aws_credentials.cfg"
+
+LSF_COMMAND_PATH = '<path to LSF command, bsub/bkill/bjobs>'
+LSF_COMMAND_EMAIL = '<email to use for EBI LSF jobs>'

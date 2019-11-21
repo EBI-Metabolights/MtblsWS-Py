@@ -18,12 +18,17 @@
 
 import datetime
 import re
+import types
 
+import gspread
 import numpy as np
+import requests
 from flask import jsonify
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from gspread_dataframe import set_with_dataframe
+from oauth2client.service_account import ServiceAccountCredentials
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -187,6 +192,9 @@ class Ontology(Resource):
                         ontology = ontology.split(',')
                     except Exception as e:
                         print(e.args)
+        
+        if ontology != None:
+            ontology = [x.lower() for x in ontology]
 
         result = []
 
@@ -275,12 +283,12 @@ class Ontology(Resource):
             exact = [x for x in result if x.name.lower() == term.lower()]
             rest = [x for x in result if x not in exact]
 
-
             # "factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
             #                          "column type", "instruments", "confidence", "sample type"
 
             if branch == 'taxonomy':
-                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'CHEBI': 5, 'CHMO': 6, 'NCIT': 6,
+                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'CHEBI': 5, 'CHMO': 6,
+                            'NCIT': 6,
                             'PO': 8}
 
             if branch == 'factor':
@@ -359,66 +367,33 @@ class Ontology(Resource):
     # =========================== put =============================================
 
     @swagger.operation(
-        summary="Put ontology entity to metabolights-zooma.tsv",
-        notes="Put ontology entity to metabolights-zooma.tsv",
+        summary="Add new entity to metabolights ontology",
+        notes='''Add new entity to metabolights ontology.
+              <br>
+              <pre><code>
+{
+  "ontologyEntity": {
+    "termName": "ABCC5",
+    "definition": "The protein-coding gene ABCC5 located on the chromosome 3 mapped at 3q27.",
+    "superclass": "design descriptor"
+  }
+}</code></pre>''',
+
         parameters=[
-            {
-                "name": "term",
-                "description": "Ontology term",
-                "required": True,
-                "allowEmptyValue": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
-
-            {
-                "name": "attribute_name",
-                "description": "Attribute name",
-                "required": True,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
-                         "column type", "instruments"]
-            },
-
-            {
-                "name": "term_iri",
-                "description": "iri/url of the mapping term",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-
-            {
-                "name": "study_ID",
-                "description": "Study ID of the term",
-                "required": True,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-
-            {
-                "name": "annotator",
-                "description": "annotator's name",
-                "required": True,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-
             {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "protocol",
+                "description": 'Ontology Entity in JSON format.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
                 "required": True,
                 "allowMultiple": False
             }
@@ -448,66 +423,682 @@ class Ontology(Resource):
     )
     def put(self):
         log_request(request)
-
         parser = reqparse.RequestParser()
-        parser.add_argument('term', help="Ontology term")
-        term = None
-        parser.add_argument('attribute_name', help='Attribute name')
-        attribute_name = None
-        parser.add_argument('term_iri', help='iri of the mapped term')
-        term_iri = None
-        parser.add_argument('study_ID', help='study_ID')
-        study_ID = None
-        parser.add_argument('annotator', help='annotator name')
-        annotator = None
-
-        if request.args:
-            args = parser.parse_args(req=request)
-            term = args['term']
-            attribute_name = args['attribute_name']
-            term_iri = args['term_iri']
-            study_ID = args['study_ID']
-            annotator = args['annotator']
-
-        if term is None:
-            abort(404, 'Please provide new term name')
-
-        if term_iri is None:
-            abort(404, 'Please provide mapped iri of the new term')
-
-        if study_ID is None or annotator is None:
-            abort(404, 'Please provide valid parameters for study identifier and file name')
 
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+        else:
+            abort(401)
 
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
-        submission_date, study_status = wsc.get_permissions("MTBLS1", user_token)
-
-        if not is_curator:
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+        if not write_access:
             abort(403)
-        file_name = app.config.get('MTBLS_ZOOMA_FILE')
 
-        logger.info('Trying to load metabolights-zooma.tsv file')
-        # Get the Assay table or create a new one if it does not already exist
+        data_dict = None
         try:
-            table_df = pd.read_csv(file_name, sep="\t", encoding='utf-8')
-            table_df = table_df.replace(np.nan, '', regex=True)
+            data_dict = json.loads(request.data.decode('utf-8'))['ontologyEntity']
+        except Exception as e:
+            logger.info(e)
+            abort(400)
 
-            s2 = pd.Series(
-                [study_ID, '', attribute_name, term, term_iri, annotator,
-                 datetime.datetime.now().strftime('%d/%m/%Y %I:%M')],
-                index=['STUDY',
-                       'BIOENTITY',
-                       'PROPERTY_TYPE',
-                       'PROPERTY_VALUE',
-                       'SEMANTIC_TAG',
-                       'ANNOTATOR',
-                       'ANNOTATION_DATE'])
+        logger.info('Add %s to Metabolights ontology' %data_dict['termName'])
+        print('Add %s to Metabolights ontology' % data_dict['termName'])
 
-            table_df = table_df.append(s2, ignore_index=True)
-            table_df.to_csv(file_name, sep="\t", header=True, encoding='utf-8', index=False)
-        except FileNotFoundError:
-            abort(400, "The file %s was not found", file_name)
+        description = None
+        if len(data_dict['definition']) > 0:
+            description = data_dict['definition']
+
+
+        onto_path = app.config.get("MTBLS_ONTOLOGY_FILE")
+        addEntity(onto_path, new_term=data_dict['termName'], supclass=data_dict['superclass'],
+                  definition=description)
+
+
+class Placeholder(Resource):
+    @swagger.operation(
+        summary="Get placeholder terms from study files",
+        notes="Get placeholder terms",
+        parameters=[
+            {
+                "name": "query",
+                "description": "Data field to extract from study",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["factor", "design descriptor"]
+            },
+
+            {
+                "name": "capture_type",
+                "description": "particular type of data to extracted, placeholder/wrong_match",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "defaultValue": "placeholder",
+                "default": True,
+                "enum": ["placeholder", "wrong_match"]
+            },
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        query = ''
+        parser.add_argument('query', help='data field to extract from studies')
+        if request.args:
+            args = parser.parse_args(req=request)
+            query = args['query']
+            if query is None:
+                abort(400)
+            if query:
+                query = query.strip().lower()
+
+        capture_type = ''
+        parser.add_argument('capture_type', help='capture type')
+        if request.args:
+            args = parser.parse_args(req=request)
+            capture_type = args['capture_type']
+            if capture_type is None:
+                capture_type = 'placeholder'
+            if capture_type:
+                capture_type = capture_type.strip().lower()
+
+        url = app.config.get('GOOGLE_SHEET_URL')
+        sheet_name = ''
+        col = []
+
+        if query == 'factor':
+            if capture_type == 'placeholder':
+                sheet_name = 'factor placeholder'
+            elif capture_type == 'wrong_match':
+                sheet_name = 'factor wrong match'
+
+            col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+                   'annotationValue', 'termAccession', 'superclass', 'definition']
+
+        elif query == 'design descriptor':
+            if capture_type == 'placeholder':
+                sheet_name = 'descriptor placeholder'
+
+            elif capture_type == 'wrong_match':
+                sheet_name = 'descriptor wrong match'
+
+            col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+                   'matched_iri', 'superclass', 'definition']
+
+        else:
+            abort(400)
+
+        try:
+            google_df = getGoogleSheet(url, sheet_name)
+
+        except Exception as e:
+            google_df = pd.DataFrame(columns=col)
+            print(e.args)
+            logger.info('Fail to load spreadsheet from Google')
+            logger.info(e.args)
+
+        df = pd.DataFrame(get_metainfo(query, capture_type))
+        df_connect = pd.concat([google_df, df], ignore_index=True, sort=False)
+        df_connect = df_connect.reindex(columns=col) \
+            .replace(np.nan, '', regex=True) \
+            .drop_duplicates(keep='first', subset=["studyID", "old_name"])
+
+        adding_count = df_connect.shape[0] - google_df.shape[0]
+
+        def extractNum(s):
+            num = re.findall("\d+", s)[0]
+            return int(num)
+
+        df_connect['num'] = df_connect['studyID'].apply(extractNum)
+        df_connect = df_connect.sort_values(by=['num'])
+        df_connect = df_connect.drop('num', axis=1)
+
+        replaceGoogleSheet(df_connect, url, sheet_name)
+        return jsonify({'success': True, 'add': adding_count})
+
+    # ============================ Placeholder put ===============================
+    @swagger.operation(
+        summary="Make changes according to google old_term sheets",
+        notes="Update/add/Delete placeholder terms",
+        parameters=[
+            {
+                "name": "query",
+                "description": "Data field to change",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["factor", "design descriptor"]
+            },
+
+            {
+                "name": "change_type",
+                "description": "type of data to change, placeholder/wrong_match",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "defaultValue": "placeholder",
+                "default": True,
+                "enum": ["placeholder", "wrong_match"]
+            },
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self):
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        query = ''
+        parser.add_argument('query', help='data field to update')
+        if request.args:
+            args = parser.parse_args(req=request)
+            query = args['query']
+            if query is None:
+                abort(400)
+            if query:
+                query = query.strip().lower()
+
+        capture_type = ''
+        parser.add_argument('change_type', help='change type')
+        if request.args:
+            args = parser.parse_args(req=request)
+            capture_type = args['change_type']
+            if capture_type is None:
+                capture_type = 'placeholder'
+            if capture_type:
+                capture_type = capture_type.strip().lower()
+
+        google_url = app.config.get('GOOGLE_SHEET_URL')
+        sheet_name = ''
+        col = []
+
+        # get sheet_name
+        if query == 'factor':
+            if capture_type == 'placeholder':
+                sheet_name = 'factor placeholder'
+            elif capture_type == 'wrong_match':
+                sheet_name = 'factor wrong match'
+
+        elif query == 'design descriptor':
+            if capture_type == 'placeholder':
+                sheet_name = 'descriptor placeholder'
+
+            elif capture_type == 'wrong_match':
+                sheet_name = 'descriptor wrong match'
+
+        else:
+            abort(400)
+
+        # Load google sheet
+        google_df = getGoogleSheet(google_url, sheet_name)
+
+        # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+        #        'annotationValue', 'termAccession', 'superclass', 'definition']
+
+        ch = google_df[
+            (google_df['operation(Update/Add/Delete/Zooma/MTBLS)'] != '') & (google_df['status (Done/Error)'] == '')]
+
+        for index, row in ch.iterrows():
+            if query == 'factor':
+                operation, studyID, old_term, term, annotationValue, termAccession = \
+                    row['operation(Update/Add/Delete/Zooma/MTBLS)'], row['studyID'], row['old_name'], row['name'], row[
+                        'annotationValue'], row['termAccession']
+
+                source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+
+                # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                protocol = '''
+                            {
+                                "factorName": "",
+                                "factorType": {
+                                  "annotationValue": "",
+                                  "termSource": {
+                                    "name": "",
+                                    "file": "",
+                                    "version": "",
+                                    "description": ""
+                                  },
+                                  "termAccession": ""
+                                }                       
+                            }
+                            '''
+
+                if operation.lower() in ['update', 'u', 'add', 'A']:
+                    try:
+                        onto_name = getOnto_Name(termAccession)[0]
+                        onto_iri, onto_version, onto_description = getOnto_info(onto_name)
+
+                        temp = json.loads(protocol)
+                        temp["factorName"] = term
+                        temp["factorType"]["annotationValue"] = annotationValue
+                        temp["factorType"]['termSource']['name'] = onto_name
+                        temp["factorType"]['termSource']['file'] = onto_iri
+                        temp["factorType"]['termSource']['version'] = onto_version
+                        temp["factorType"]['termSource']['description'] = onto_description
+                        temp["factorType"]['termAccession'] = termAccession
+
+                        data = json.dumps({"factor": temp})
+
+                        if operation.lower() in ['update', 'u']:  # Update factor
+                            response = requests.put(ws_url, params={'name': old_term},
+                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                    data=data)
+                            print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.format(
+                                old_term=old_term, matchterm=annotationValue, matchiri=termAccession, studyID=studyID))
+
+                        else:  # Add factor
+                            response = requests.post(ws_url,
+                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                     data=data)
+
+                            print(
+                                'Add {old_term} ({matchiri}) in {studyID}'.format(old_term=old_term,
+                                                                                  matchiri=termAccession,
+                                                                                  studyID=studyID))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
+
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
+
+                    except Exception as e:
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                # Delete factor
+                elif operation.lower() in ['delete', 'D']:
+                    try:
+                        response = requests.delete(ws_url, params={'name': old_term},
+                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+
+                        print('delete {old_term} from {studyID}'.format(old_term=old_term, studyID=studyID))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
+
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
+
+                    except Exception as e:
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                # add factor term
+                elif operation.lower() == 'mtbls':
+                    try:
+                        row['status (Done/Error)'] = 'Done'
+                        source = '/metabolights/ws/ebi-internal/ontology'
+                        ws_url = app.config.put('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+
+                        #TODO
+
+
+                    except Exception as e:
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                else:
+                    logger.info('Wrong operation tag in the spreadsheet')
+                    abort(400)
+
+
+            elif query == 'design descriptor':
+
+                operation, studyID, old_term, term, matched_iri = row['operation(Update/Add/Delete/Zooma/MTBLS)'], row[
+                    'studyID'], row['old_name'], row['name'], row['matched_iri']
+
+                source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+                ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+
+                protocol = '''
+                        {
+                            "annotationValue": " ",
+                            "termSource": {
+                                "name": " ",
+                                "file": " ",
+                                "version": " ",
+                                "description": " "
+                            },
+                            "termAccession": " "
+                        }
+                    '''
+
+                if operation.lower() in ['update', 'U', 'add', 'A']:
+                    try:
+                        onto_name = getOnto_Name(matched_iri)[0]
+                        onto_iri, onto_version, onto_description = getOnto_info(onto_name)
+
+                        temp = json.loads(protocol)
+                        temp["annotationValue"] = term
+                        temp["termSource"]["name"] = onto_name
+                        temp["termSource"]["file"] = onto_iri
+                        temp["termSource"]["version"] = onto_version
+                        temp["termSource"]["description"] = onto_description
+                        temp["termAccession"] = matched_iri
+
+                        data = json.dumps({"studyDesignDescriptor": temp})
+
+                        if operation.lower() in ['update', 'U']:  # Update descriptor
+                            response = requests.put(ws_url, params={'term': old_term},
+                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                    data=data)
+                            print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
+                                  format(old_term=old_term, matchterm=old_term, matchiri=matched_iri, studyID=studyID))
+                        else:  # Add descriptor
+                            response = requests.post(ws_url,
+                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                     data=data)
+                            print('Add {old_term} to ({matchiri}) in {studyID}'.
+                                  format(old_term=old_term, matchiri=matched_iri, studyID=studyID))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
+
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
+
+                    except Exception as e:
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+
+                # Delete descriptor
+                elif operation.lower() in ['delete', 'D']:
+                    try:
+                        response = requests.delete(ws_url, params={'term': old_term},
+                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                        print('delete {old_term} from in {studyID}'.format(old_term=old_term, studyID=studyID))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
+
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
+
+                    except Exception as e:
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                # Keep descriptor
+                elif operation.lower() in ['keep', 'K']:
+                    try:
+                        row['status (Done/Error)'] = 'Done'
+                    except Exception as e:
+                        row['status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                else:
+                    logger.info('Wrong operation tag in the spreadsheet')
+                    abort(400)
+
+            else:
+                logger.info('Wrong query field requested')
+                abort(404)
+
+
+def get_metainfo(query, capture_type):
+    '''
+    get placeholder/wrong-match terms from study investigation file
+    :param query: factor / descriptor ...
+    :param capture_type: placeholder / wrong_match
+    :return: list of dictionary results
+    '''
+    res = []
+
+    def getStudyIDs():
+        def atoi(text):
+            return int(text) if text.isdigit() else text
+
+        def natural_keys(text):
+            return [atoi(c) for c in re.split('(\d+)', text)]
+
+        url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
+        resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+        studyIDs = resp.json()['content']
+        studyIDs.sort(key=natural_keys)
+        return studyIDs
+
+    logger.info('Getting {query} {capture_type} terms'.format(query=query, capture_type=capture_type))
+    studyIDs = getStudyIDs()
+
+    for studyID in studyIDs:
+        print(studyID)
+        if query.lower() == "factor":
+            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+
+            try:
+                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                data = resp.json()
+
+                for factor in data["factors"]:
+                    temp_dict = {'studyID': studyID,
+                                 'old_name': factor['factorName'],
+                                 'annotationValue': factor['factorType']['annotationValue'],
+                                 'termAccession': factor['factorType']['termAccession']}
+                    # Placeholder
+                    if capture_type == 'placeholder':
+                        if 'placeholder' in factor['factorType']['termAccession']:
+                            res.append(temp_dict)
+
+                    # Wrong match
+                    elif capture_type == 'wrong_match':
+                        if factor['factorName'].lower() != factor['factorType']['annotationValue'].lower():
+                            res.append(temp_dict)
+                    else:
+                        abort(400)
+            except:
+                pass
+
+
+        elif query.lower() == "design descriptor":
+            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+
+            try:
+                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                data = resp.json()
+
+                for descriptor in data['studyDesignDescriptors']:
+
+                    temp_dict = {'studyID': studyID,
+                                 'old_name': descriptor['annotationValue'],
+                                 'matched_iri': descriptor['termAccession']}
+
+                    # Placeholder
+                    if capture_type == 'placeholder':
+                        if 'placeholder' in temp_dict['matched_iri']:
+                            res.append(temp_dict)
+
+                    # Wrong match
+                    elif capture_type == 'wrong_match':
+                        if len(temp_dict['matched_iri']) == 0:
+                            res.append(temp_dict)
+                    else:
+                        abort(400)
+            except:
+                pass
+        else:
+            abort(400)
+    return res
+
+
+def insertGoogleSheet(data, url, worksheetName):
+    '''
+    :param data: list of data
+    :param url: url of google sheet
+    :param worksheetName: worksheet name
+    :return: Nan
+    '''
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+    gc = gspread.authorize(credentials)
+    try:
+        wks = gc.open_by_url(url).worksheet(worksheetName)
+        wks.append_row(data, value_input_option='RAW')
+    except Exception as e:
+        print(e.args)
+        logger.info(e.args)
+
+
+def setGoogleSheet(df, url, worksheetName):
+    '''
+    set whole dataframe to google sheet, if sheet existed create a new one
+    :param df: dataframe want to save to google sheet
+    :param url: url of google sheet
+    :param worksheetName: worksheet name
+    :return: Nan
+    '''
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+    gc = gspread.authorize(credentials)
+    try:
+        wks = gc.open_by_url(url).worksheet(worksheetName)
+        print(worksheetName + ' existed... create a new one')
+        wks = gc.open_by_url(url).add_worksheet(title=worksheetName + '_1', rows=df.shape[0], cols=df.shape[1])
+    except Exception as e:
+        wks = gc.open_by_url(url).add_worksheet(title=worksheetName, rows=df.shape[0], cols=df.shape[1])
+        logger.info(e.args)
+    set_with_dataframe(wks, df)
+
+
+def getGoogleSheet(url, worksheetName):
+    '''
+    get google sheet
+    :param url: url of google sheet
+    :param worksheetName: work sheet name
+    :return: data frame
+    '''
+    try:
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+        gc = gspread.authorize(credentials)
+        wks = gc.open_by_url(url).worksheet(worksheetName)
+        content = wks.get_all_records()
+        df = pd.DataFrame(content)
+        return df
+    except Exception as e:
+        logger.info(e.args)
+
+
+def replaceGoogleSheet(df, url, worksheetName):
+    '''
+    replace the old google sheet with new data frame, old sheet will be clear
+    :param df: dataframe
+    :param url: url of google sheet
+    :param worksheetName: work sheet name
+    :return: Nan
+    '''
+    try:
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+        gc = gspread.authorize(credentials)
+        wks = gc.open_by_url(url).worksheet(worksheetName)
+        wks.clear()
+        set_with_dataframe(wks, df)
+    except Exception as e:
+        logger.info(e.args)
+
+
+def addZoomaTerm():
+    zooma_path = app.config.get('MTBLS_ZOOMA_FILE')
+
+
+def addEntity(ontoPath, new_term, supclass, definition=None):
+    '''
+    add new term to the ontology and save it
+
+    :param ontoPath: Ontology Path
+    :param new_term: new entity to be added
+    :param supclass:  superclass/branch name or iri of new term
+    :param definition (optional): definition of the new term
+    '''
+
+    def getid(onto):
+        '''
+        this method usd for get the last un-take continuously term ID
+        :param onto: ontology
+        :return: the last id for the new term
+        '''
+
+        temp = []
+        for c in onto.classes():
+            if str(c).lower().startswith('metabolights'):
+                temp.append(str(c))
+
+        last = max(temp)
+        temp = str(int(last[-6:]) + 1).zfill(6)
+        id = 'MTBLS_' + temp
+
+        return id
+
+    try:
+        onto = get_ontology(ontoPath).load()
+        id = getid(onto)
+        namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
+
+        with namespace:
+            try:
+                cls = onto.search_one(label=supclass)
+            except:
+                try:
+                    cls = onto.search_one(iri=supclass)
+                except Exception as e:
+                    print(e)
+
+            newEntity = types.new_class(id, (cls,))
+            newEntity.label = new_term
+            if definition != None:
+                newEntity.isDefinedBy = definition
+            else:
+                pass
+
+        onto.save(file=ontoPath, format='rdfxml')
+
+    except Exception as e:
+        logger.info(e)
+        print(e)

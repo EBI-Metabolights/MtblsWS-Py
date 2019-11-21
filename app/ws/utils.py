@@ -110,6 +110,7 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
             logger.info('Creating a new folder for the study, %s', dst)
             os.makedirs(dst, exist_ok=True)
 
+        file_list = {}
         for item in os.listdir(src):
             source = os.path.join(src, item)
             destination = os.path.join(dst, item)
@@ -144,6 +145,9 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                     #     pass  # We already have this folder
 
                     if int(time_diff) >= 1:
+                        # ToDo, rsync all (non-metadata) files
+                        file_list = {source, destination}
+
                         if os.path.isdir(source):
                             logger.info(source + ' is a directory')
                             try:
@@ -241,11 +245,13 @@ def get_assay_headers_and_protcols(assay_type):
     protocols = ""
     assay_desc = ""
     assay_data_type = ""
+    assay_file_type = ""
     assay_mandatory_type = ""
 
     if assay_type is None or assay_type == 'a':
         logger.error('Assay Type is empty or incorrect!')
-        return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type
+        return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, \
+               assay_file_type, assay_mandatory_type
 
     logger.info(' - get_assay_headers_and_protcols for assay type ' + assay_type)
     assay_master_template = './resources/MetaboLightsAssayMaster.tsv'
@@ -256,19 +262,21 @@ def get_assay_headers_and_protcols(assay_type):
     protocol_row = master_df.loc[master_df['name'] == assay_type + '-protocol']
     assay_desc_row = master_df.loc[master_df['name'] == assay_type + '-assay']
     assay_data_type_row = master_df.loc[master_df['name'] == assay_type + '-type']
+    assay_file_type_row = master_df.loc[master_df['name'] == assay_type + '-file']
     assay_data_mandatory_row = master_df.loc[master_df['name'] == assay_type + '-mandatory']
 
     try:
         protocols = get_protocols_for_assay(protocol_row, assay_type)
         assay_desc = get_desc_for_assay(assay_desc_row, assay_type)
         assay_data_type = get_data_type_for_assay(assay_data_type_row, assay_type)
+        assay_file_type = get_file_type_for_assay(assay_file_type_row, assay_type)
         assay_mandatory_type = get_mandatory_data_for_assay(assay_data_mandatory_row, assay_type)
         tidy_header_row = tidy_template_row(header_row)  # Remove empty cells after end of column definition
         tidy_data_row = tidy_template_row(data_row)
     except:
         logger.error('Could not retrieve all required template info for this assay type: ' + assay_type)
 
-    return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type
+    return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, assay_mandatory_type
 
 
 def get_table_header(table_df, study_id=None, file_name=None):
@@ -285,13 +293,16 @@ def get_table_header(table_df, study_id=None, file_name=None):
             assay_type = None
 
     if assay_type is not None and assay_type != "a":
-        tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_data_mandatory = \
-            get_assay_headers_and_protcols(assay_type)
+        tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
+            assay_data_mandatory = get_assay_headers_and_protcols(assay_type)
         df_header['type'] = assay_data_type
+        df_header['file-type'] = assay_file_type
         df_header['mandatory'] = assay_data_mandatory
+
         try:
             for i in range(0, len(df_header['index'])):
                 mapping[df_header[0][i]] = {"index": df_header['index'][i], "data-type": df_header['type'][i],
+                                            "file-type": df_header['file-type'][i],
                                             "mandatory": df_header['mandatory'][i]}
         except:  # Using new assay file pattern, but not correct columns, so try the legacy mapping
             mapping = get_legacy_assay_mapping(df_header)
@@ -436,6 +447,24 @@ def get_data_type_for_assay(df_row, assay_type):
 
     for cell in row:
         if cell == assay_type + '-type':
+            continue  # skip the label
+        else:
+            if cell == '':
+                cell = 'string'  # 'string' is the default value if we have not defined a value
+
+            if cell != 'row-end':
+                new_row.append(cell)
+            if cell == 'row-end':
+                return new_row  # We have all the columns now
+    return new_row
+
+
+def get_file_type_for_assay(df_row, assay_type):
+    row = df_row.iloc[0]
+    new_row = []
+
+    for cell in row:
+        if cell == assay_type + '-file':
             continue  # skip the label
         else:
             if cell == '':
@@ -622,6 +651,44 @@ def get_maf_name_from_assay_name(assay_file_name):
     return maf_name
 
 
+def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, study_location, isa_study):
+    try:
+        """ 
+        Update column header in sample and assay file(s). The column will look like 'Factor Value[<factor name>]' or 
+        'Characteristics[<characteristics name>']
+        """
+
+        prefix = ""
+        postfix = "]"
+        if ontology_type.lower() == 'factor':
+            prefix = 'Factor Value['
+        elif ontology_type.lower() == 'characteristics':
+            prefix = 'Characteristics['
+
+        file_names = []
+        # Sample sheet
+        file_names.append(os.path.join(study_location, isa_study.filename))
+        #  assay_sheet(s)
+        for assay in isa_study.assays:
+            file_names.append(os.path.join(study_location, assay.filename))
+
+        if file_names:
+            for file in file_names:
+                file_df = read_tsv(file)
+                try:
+                    old = prefix + old_value + postfix
+                    new = prefix + new_value + postfix
+                    file_df.rename(columns={old: new}, inplace=True)
+                    write_tsv(file_df, file)
+                    logger.info(ontology_type + " " + new_value + " has been renamed in " + file)
+                except Exception as e:
+                    logger.warning(ontology_type + " " + new_value +
+                                   " was not used in the sheet or we failed updating " + file + ". Error: " +str(e))
+
+    except Exception as e:
+        logger.error("Could not update the ontology value " + old_value + " in all sheets")
+
+
 def create_maf(technology, study_location, assay_file_name, annotation_file_name):
     resource_folder = "./resources/"
     update_maf = False
@@ -772,6 +839,8 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'metadata', none_active_status, folder
     elif file_name == 'fid':  # NMR data
         return 'fid', active_status, folder
+    elif file_name == 'acqus':  # NMR data
+        return 'acqus', active_status, folder
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
     elif ext in ('.sdf', '.mol'):

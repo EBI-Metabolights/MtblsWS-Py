@@ -33,7 +33,7 @@ wsc = WsClient()
 iac = IsaApiClient()
 
 incorrect_species = \
-    "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, chemical, food, matix, " \
+    "cat, dog, mouse, horse, flower, man, fish, leave, root, mice, steam, bacteria, value, food, matix, " \
     "mus, rat, blood, urine, plasma, hair, fur, skin, saliva, fly, unknown"
 
 last_name_black_list = ['last name', 'asdf', 'name', 'unknown']
@@ -769,8 +769,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         # Are the template headers present in the assay
         assay_type = get_assay_type_from_file_name(study_id, assay.filename)
         if assay_type != 'a':  # Not created from the online editor, so we have to skip this validation
-            tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_mandatory_type = \
-                get_assay_headers_and_protcols(assay_type)
+            tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
+                assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
             for idx, template_header in enumerate(tidy_header_row):
 
                 assay_header_pos = None

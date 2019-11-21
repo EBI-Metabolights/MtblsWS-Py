@@ -30,6 +30,14 @@ Using
 - [pyopenms](https://pypi.org/project/pyopenms/)
 - [gspread](https://gspread.readthedocs.io/en/latest/)
 - [oauth2client](https://github.com/googleapis/oauth2client)
+- [gspread_dataframe](gspread_dataframe)
+- [gspread](https://github.com/burnash/gspread)
+- [oauth2client](http://github.com/google/oauth2client/)
+- [plotly](https://github.com/plotly/plotly.py)
+- [boto3](https://github.com/boto/boto3)
+- [pillow](http://python-pillow.org/)
+- [requests](http://python-requests.org/)
+- [metaspace2020](https://github.com/metaspace2020/metaspace/tree/master/metaspace/python-client)
 
 
 Installing the required Python libraries

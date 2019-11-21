@@ -35,12 +35,12 @@ class onto_information():
         '''initialization'''
         self.onto = onto
 
-    def get_subs(self, cls, num=100):
+    def get_subs(self, cls):
         '''return list of sub classes -> list'''
         # print('matching subs of %s' % cls.label)
         sub = []
 
-        list_subs(cls, sub, num)
+        list_subs(cls, sub)
         # print(type(sub[0]))
         return sub
 
@@ -95,6 +95,21 @@ class entity():
             return '', '', ''
 
 
+class factor():
+    def __init__(self, studyID, name, type, iri):
+        self.studyID = studyID
+        self.name = name
+        self.type = type
+        self.iri = iri
+
+
+class Descriptor():
+    def __init__(self, studyID, design_type, iri):
+        self.studyID = studyID
+        self.design_type = design_type
+        self.iri = iri
+
+
 def list_supers(onto_c, sup):
     if onto_c.label == '' or onto_c.iri == 'http://www.w3.org/2002/07/owl#Thing':
         return
@@ -106,14 +121,14 @@ def list_supers(onto_c, sup):
             continue
 
 
-def list_subs(onto_c, sub, num):
+def list_subs(onto_c, sub):
     if onto_c.label and onto_c.label == '' and onto_c.iri != 'http://www.w3.org/2002/07/owl#Thing':
         return
     for children in onto_c.subclasses():
         try:
-            list_subs(children, sub, num)
-            if len(sub) >= num:
-                return
+            list_subs(children, sub)
+            # if len(sub) >= num:
+            #     return
             sub.append(children)
         except:
             continue
@@ -152,7 +167,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
     logger.info('Search %s in Metabolights ontology' % keyword)
     print('Search "%s" in Metabolights ontology' % keyword)
 
-    onto = get_ontology('./tests/Metabolights.owl').load()
+    onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
     info = onto_information(onto)
     set_priortity = False
 
@@ -202,7 +217,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
                     pass
 
         if branch == 'instruments':
-            r = OLSbranchSearch(keyword, 'instrument', 'msio')
+            result += OLSbranchSearch(keyword, 'instrument', 'msio')
             print()
 
         if branch == 'column type':
@@ -513,21 +528,25 @@ def getWoRMsID(term):
 
 
 def getOnto_info(pre_fix):
+    '''
+     get ontology information include  "name", "file", "version", "description"
+     :param pre_fix: ontology prefix
+     :return: "ontology iri", "version", "ontology description"
+     '''
     try:
-        if 'nmr' in pre_fix.lower():
-            onto_id = 'NMRCV'
-        else:
-            onto_id = pre_fix
-
-        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + onto_id
+        url = 'https://www.ebi.ac.uk/ols/api/ontologies/' + pre_fix
         fp = urllib.request.urlopen(url)
         content = fp.read().decode('utf-8')
         j_content = json.loads(content)
-        title = j_content['config']['title']
+
+        iri = j_content['config']['id']
         version = j_content['config']['version']
-        return title, version
+        description = j_content['config']['title']
+        return iri, version, description
     except:
-        return '', ''
+        if pre_fix == "MTBLS":
+            return 'http://www.ebi.ac.uk/metabolights/ontology', '1.0', 'EBI Metabolights ontology'
+        return '', '', ''
 
 
 def getOnto_Name(iri):
@@ -542,10 +561,14 @@ def getOnto_Name(iri):
                    j_content['_embedded']['terms'][0]['description'][0]
         except:
             return j_content['_embedded']['terms'][0]['ontology_prefix'], ''
-
     except:
-        substring = iri.rsplit('/', 1)[-1]
-        return ''.join(x for x in substring if x.isalpha()), ''
+        if 'MTBLS' in iri:
+            return 'MTBLS', 'Metabolights ontology'
+        elif 'BAO' in iri:
+            return 'BAO', 'BioAssay Ontology'
+        else:
+            substring = iri.rsplit('/', 1)[-1]
+            return ''.join(x for x in substring if x.isalpha()), ''
 
 
 def getOnto_version(pre_fix):
