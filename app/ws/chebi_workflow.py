@@ -78,6 +78,7 @@ spreadsheet_fields = [database_identifier_column,
                       "combination",
                       search_flag,
                       alt_name_column,
+                      "pubchem_first_synonym",
                       final_cid_column_name,
                       "pubchem_cid",
                       "pubchem_cid_ik",
@@ -577,7 +578,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
                     # First, see if we cat find a PubChem compound
                     pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
-                        where_found = pubchem_search(comp_name, search_type='name', search_category='compound')
+                        where_found, first_synonym = pubchem_search(comp_name, search_type='name', search_category='compound')
 
                     pubchem_df.iloc[row_idx, get_idx('search_type', pubchem_df_headers)] = where_found  # Search category/type for logging
                     cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
@@ -607,7 +608,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     # if no pc_name and/or pc_synonyms, then use the final_cid to query pubchem again
                     if final_cid and (not pc_name or not pc_synonyms):
                         pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
-                            where_found = pubchem_search(final_cid, search_type='cid', search_category='cid')
+                            where_found, first_synonym = pubchem_search(final_cid, search_type='cid', search_category='cid')
                         if pc_name:
                             pubchem_df.iloc[row_idx, get_idx('iupac_name', pubchem_df_headers)] = pc_name
                         if pc_synonyms:
@@ -625,7 +626,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                         # We don't have a PubChem compound, but we may find a uncurated substance record
                         print_log("    -- Searching for PubChem substance as we did not find a compound")
                         pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
-                            where_found = pubchem_search(comp_name, search_type='name', search_category='substance')
+                            where_found, first_synonym = pubchem_search(comp_name, search_type='name', search_category='substance')
 
                         if pc_name:
                             pubchem_df.iloc[row_idx, get_idx('iupac_name', pubchem_df_headers)] = pc_name  # PubChem substance name
@@ -653,6 +654,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     pubchem_df.iloc[row_idx, get_idx('opsin_inchi_key', pubchem_df_headers)] = opsin_stdinchikey    # opsin_stdinchikey
                     pubchem_df.iloc[row_idx, get_idx('pubchem_formula', pubchem_df_headers)] = pc_formula           # PubChem formula
                     pubchem_df.iloc[row_idx, get_idx('pubchem_synonyms', pubchem_df_headers)] = pc_synonyms         # PubChem synonyms
+                    pubchem_df.iloc[row_idx, get_idx('pubchem_first_synonym', pubchem_df_headers)] = first_synonym  # PubChem first synonym, ie. the compound name
                     if not cactus_synonyms:
                         cactus_synonyms = alt_name
                     pubchem_df.iloc[row_idx, get_idx('cactus_synonyms', pubchem_df_headers)] = cactus_synonyms      # Cactus synonyms
@@ -1294,7 +1296,7 @@ def get_pubchem_cid_on_inchikey(inchikey1, inchikey2):
     pc_cid = ''
     for inchikey in [inchikey1, inchikey2]:
         if inchikey:
-            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, from_where = \
+            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, from_where, first_synonym = \
                 pubchem_search(inchikey, search_type='inchikey')
             if pc_cid:
                 return pc_cid
@@ -1423,6 +1425,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
     formula = ''
     synonyms = ''
     where_found = ''
+    first_synonym = ''
     try:
         compound = None
         # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
@@ -1460,7 +1463,9 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
             cid = compound.cid
             cid = str(cid).strip().rstrip('\n')
             formula = compound.molecular_formula.strip().rstrip('\n')
-            for synonym in compound.synonyms:
+            for idx, synonym in enumerate(compound.synonyms):
+                if idx == 1:  # The first synonym is also the PubChem name, so always add this to the return set
+                    first_synonym = synonym
                 if get_relevant_synonym(synonym):
                     synonyms = synonyms + ';' + synonym.strip().rstrip('\n')
 
@@ -1473,7 +1478,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
         logger.error("Unable to search PubChem for " + search_category + " " + comp_name)
         logger.error(error)
 
-    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, where_found
+    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, where_found, first_synonym
 
 
 def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
