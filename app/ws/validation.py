@@ -822,6 +822,9 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             else:
                                 val_type = warning
 
+                            if 'factor value' in a_header.lower():  # User defined factors may not all have data in all rows
+                                val_type = info
+
                             if col_rows == 0:
                                 add_msg(validations, val_section,
                                         "Assay sheet '" + assay.filename + "' column '" + a_header + "' is empty",
@@ -1093,7 +1096,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                 if s_header == 'Characteristics[Variant]':  # This is a new column we like to see, but not mandatory
                     val_stat = info
 
-                if 'Factor Value' in s_header:  # User defined factors may not all have data in all rows
+                if 'factor value' in s_header.lower():  # User defined factors may not all have data in all rows
                     val_stat = info
 
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing values. " +
@@ -1105,8 +1108,8 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
 
         if sample_name_list:
             if len(sample_name_list) != all_rows:
-                add_msg(validations, val_section, "Sample name column must only contain unique values",
-                        warning, file_name, val_sequence=4, log_category=log_category)
+                add_msg(validations, val_section, "Sample name column should ideally only contain unique values",
+                        info, file_name, val_sequence=4, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Sample name column contains unique values",
                         success, file_name, val_sequence=4, log_category=log_category)
@@ -1528,7 +1531,6 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
                 add_msg(validations, val_section,
                         "You can only submit one study per submission, this submission has " + str(study_num) + " studies",
                         error, 'i_Investigation.txt', val_sequence=2.1, log_category=log_category)
-
 
         if isa_study and study_num == 1:
             add_msg(validations, val_section, "Successfully read the study section of the investigation file", success,
