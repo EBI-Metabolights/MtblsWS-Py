@@ -658,8 +658,14 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     if not cactus_synonyms:
                         cactus_synonyms = alt_name
                     pubchem_df.iloc[row_idx, get_idx('cactus_synonyms', pubchem_df_headers)] = cactus_synonyms      # Cactus synonyms
-                    db_acc = 'ChemSpiderID:' + csid + ';' + cactus_synonyms
-                    pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(';')  # Cactus synonyms for SDF export
+
+                    db_acc = ""
+                    if csid:
+                        db_acc = 'ChemSpiderID:' + csid + ';'
+                    if cactus_synonyms:
+                        db_acc = db_acc + cactus_synonyms
+                    if db_acc:
+                        pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(';')  # Cactus synonyms for SDF export
                     pubchem_df.iloc[row_idx, get_idx('direct_parent', pubchem_df_headers)] = ''                     # direct_parent from ClassyFire
                     pubchem_df.iloc[row_idx, get_idx('source_metabolights', pubchem_df_headers)] = study_id         # MTBLS accession
 
