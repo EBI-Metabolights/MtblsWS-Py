@@ -1470,7 +1470,12 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
             cid = str(cid).strip().rstrip('\n')
             formula = compound.molecular_formula.strip().rstrip('\n')
             for idx, synonym in enumerate(compound.synonyms):
-                if idx == 1:  # The first synonym is also the PubChem name, so always add this to the return set
+                if idx == 0 and synonym.lower() != comp_name.lower():
+                    # The first synonym is also the PubChem name,
+                    # so always add this to the return set unless it's the same as the compound name we searched for
+                    first_synonym = synonym
+                elif idx == 1 and first_synonym is None and synonym.lower() != comp_name.lower():
+                    # Pick the 2nd synonym if the first one is the same as the compounds we searched for
                     first_synonym = synonym
                 if get_relevant_synonym(synonym):
                     synonyms = synonyms + ';' + synonym.strip().rstrip('\n')
