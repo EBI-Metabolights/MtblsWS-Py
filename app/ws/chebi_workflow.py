@@ -1480,6 +1480,9 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
                 if get_relevant_synonym(synonym):
                     synonyms = synonyms + ';' + synonym.strip().rstrip('\n')
 
+                if first_synonym:
+                    print_log("    -- Found PubChem first synonym '" + first_synonym)
+
             if synonyms:
                 synonyms = synonyms.replace(";", "", 1)  # Remove the leading ";"
 
