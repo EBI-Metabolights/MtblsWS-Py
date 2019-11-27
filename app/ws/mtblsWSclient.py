@@ -267,7 +267,7 @@ class WsClient:
     CAN_WRITE = 1
 
     @staticmethod
-    def get_permissions(study_id, user_token):
+    def get_permissions(study_id, user_token, obfuscation_code=None):
         """
         Check MTBLS-WS for permissions on this Study for this user
 
@@ -286,7 +286,8 @@ class WsClient:
             user_token = "public_access_only"
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            updated_date, study_status = check_access_rights(user_token, study_id.upper())
+            updated_date, study_status = check_access_rights(user_token, study_id.upper(),
+                                                             study_obfuscation_code=obfuscation_code)
 
         logger.info("Read access: " + str(read_access) + ". Write access: " + str(write_access))
 

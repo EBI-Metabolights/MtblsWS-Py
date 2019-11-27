@@ -791,11 +791,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
                 if idx != assay_header_pos:
                     add_msg(validations, val_section,
-                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is not in the correct position",
+                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is not in the correct position for assay type " + assay_type,
                             info, assay.filename, val_sequence=2.2, log_category=log_category)
                 else:
                     add_msg(validations, val_section,
-                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is in the correct position",
+                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is in the correct position for assay type " + assay_type,
                             success, assay.filename, val_sequence=2.2, log_category=log_category)
 
                 if template_header not in assay_header:

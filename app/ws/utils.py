@@ -324,7 +324,7 @@ def get_assay_type_from_file_name(study_id, file_name):
     assay_type = None
     file_name = file_name.replace("a_" + study_id + "_", "")  # Remove study_id and assay refs from filename
     for file_part in file_name.split("_"):  # Split string on assay
-        assay_type = file_part  # Only interested in the assay type part
+        assay_type = file_part  # Only interested in the assay type part, ie. first part
         break
 
     if assay_type == 'a':  # Legacy filename
