@@ -458,19 +458,6 @@ class Placeholder(Resource):
                 "dataType": "string",
                 "enum": ["factor", "design descriptor"]
             },
-
-            # {
-            #     "name": "capture_type",
-            #     "description": "particular type of data to extracted, placeholder/wrong_match",
-            #     "required": False,
-            #     "allowEmptyValue": False,
-            #     "allowMultiple": False,
-            #     "paramType": "query",
-            #     "dataType": "string",
-            #     "defaultValue": "placeholder",
-            #     "default": True,
-            #     "enum": ["placeholder", "wrong_match"]
-            # },
         ],
         responseMessages=[
             {
@@ -562,19 +549,6 @@ class Placeholder(Resource):
                 "dataType": "string",
                 "enum": ["factor", "design descriptor"]
             },
-
-            {
-                "name": "change_type",
-                "description": "type of data to change, placeholder/wrong_match",
-                "required": False,
-                "allowEmptyValue": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "defaultValue": "placeholder",
-                "default": True,
-                "enum": ["placeholder", "wrong_match"]
-            },
         ],
         responseMessages=[
             {
@@ -605,42 +579,25 @@ class Placeholder(Resource):
             if query:
                 query = query.strip().lower()
 
-        capture_type = ''
-        parser.add_argument('change_type', help='change type')
-        if request.args:
-            args = parser.parse_args(req=request)
-            capture_type = args['change_type']
-            if capture_type is None:
-                capture_type = 'placeholder'
-            if capture_type:
-                capture_type = capture_type.strip().lower()
-
         google_url = app.config.get('GOOGLE_SHEET_URL')
         sheet_name = ''
         col = []
 
         # get sheet_name
         if query == 'factor':
-            if capture_type == 'placeholder':
-                sheet_name = 'factor placeholder'
-            elif capture_type == 'wrong_match':
-                sheet_name = 'factor wrong match'
+            sheet_name = 'factor'
+            # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+            #        'annotationValue', 'termAccession', 'superclass', 'definition']
 
         elif query == 'design descriptor':
-            if capture_type == 'placeholder':
-                sheet_name = 'descriptor placeholder'
-
-            elif capture_type == 'wrong_match':
-                sheet_name = 'descriptor wrong match'
-
+            sheet_name = 'design descriptor'
+            # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+            #        'matched_iri', 'superclass', 'definition']
         else:
             abort(400)
 
         # Load google sheet
         google_df = getGoogleSheet(google_url, sheet_name)
-
-        # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
-        #        'annotationValue', 'termAccession', 'superclass', 'definition']
 
         ch = google_df[
             (google_df['operation(Update/Add/Delete/Zooma/MTBLS)'] != '') & (google_df['status (Done/Error)'] == '')]
