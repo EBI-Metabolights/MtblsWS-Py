@@ -350,10 +350,11 @@ def mtblc_on_chebi_accession(chebi_id):
         return False, "No metabolite was found for this ChEBI id"
 
 
-def check_access_rights(user_token, study_id):
+def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
     try:
-        study_list = execute_query(query_user_access_rights, user_token, study_id)
+        study_list = execute_query(query_user_access_rights, user_token, study_id,
+                                   study_obfuscation_code=study_obfuscation_code)
     except Exception as e:
         logger.error("Could not query the database " + str(e))
 
@@ -511,21 +512,31 @@ def update_study_status(study_id, study_status, is_curator=False):
         return False
 
 
-def execute_query(query, user_token, study_id=None):
+def execute_query(query, user_token, study_id=None, study_obfuscation_code=None):
 
-    if not user_token:
+    if not user_token and study_obfuscation_code:
         return None
 
     data = []
     try:
         postgresql_pool, conn, cursor = get_connection()
         query = query.replace('\\', '')
-        if study_id is None:
+        if study_id is None and study_obfuscation_code is None:
             cursor.execute(query, [user_token])
-        else:
+        elif study_id and user_token and not study_obfuscation_code:
             query2 = query_user_access_rights.replace("#user_token#", user_token)
             query2 = query2.replace("#study_id#", study_id)
             cursor.execute(query2)
+        elif study_id and study_obfuscation_code:
+            cursor.execute("select distinct 'user', 'True', 'False', obfuscationcode, releasedate, submissiondate, "
+                           "case when status = 0 then 'Submitted' "
+                           "     when status = 1 then 'In Curation' "
+                           "     when status = 2 then 'In Review' "
+                           "     when status = 3 then 'Public' "
+                           "     else 'Dormant' end as status, " 
+                           "acc from studies "
+                           "where obfuscationcode = '" + study_obfuscation_code + "' and acc='" + study_id + "';")
+
         data = cursor.fetchall()
         release_connection(postgresql_pool, conn)
 

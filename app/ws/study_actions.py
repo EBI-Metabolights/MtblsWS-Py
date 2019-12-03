@@ -124,14 +124,20 @@ class StudyStatus(Resource):
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
                 new_date = datetime.datetime.now() + datetime.timedelta(+28)
                 new_date = new_date.strftime('%Y-%m-%d')
+
+                isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                                 skip_load_tables=True,
+                                                                 study_location=study_location)
+
+                self.update_status(study_id, study_status, is_curator)
+
                 if release_date < new_date:  # Set the release date to a minimum of 28 days in the future
-                    self.update_status(study_id, study_status, is_curator)
-                    isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                                     skip_load_tables=True,
-                                                                     study_location=study_location)
                     isa_inv.public_release_date = new_date
                     isa_study.public_release_date = new_date
+                    release_date = new_date
+                else:  # Release date is already set to more than 28 days in the future
                     iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True)
+
 
             else:
                 abort(403, "There are validation errors. Fix any problems before attempting to change study status.")
@@ -139,7 +145,8 @@ class StudyStatus(Resource):
             abort(403, "You do not have rights to change the status for this study")
 
         status, message = wsc.reindex_study(study_id, user_token)
-        return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'"}
+        return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
+                "release-date": release_date}
 
     @staticmethod
     def update_status(study_id, study_status, is_curator=False):

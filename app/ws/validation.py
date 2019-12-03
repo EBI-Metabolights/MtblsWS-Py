@@ -257,6 +257,16 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
         add_msg(validations, val_section, "Could not find or read Metabolite Annotation File '" + file_name + "'",
                 error, val_sequence=11, log_category=log_category)
 
+    all_rows = maf_df.shape[0]
+    if all_rows == 1:
+        for index, row in maf_df.iterrows():
+            db_id_value = row["database_identifier"]
+            cf_value = row["chemical_formula"]
+            if row["database_identifier"] == '0' and not row["chemical_formula"]:
+                add_msg(validations, val_section,
+                        "Incomplete Metabolite Annotation File '" + file_name + "'",
+                        error, descr="Please complete the MAF", val_sequence=11.1, log_category=log_category)
+
     incorrect_pos = False
     incorrect_message = ""
     maf_order = correct_maf_order.copy()
@@ -781,11 +791,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
                 if idx != assay_header_pos:
                     add_msg(validations, val_section,
-                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is not in the correct position",
+                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is not in the correct position for assay type " + assay_type,
                             info, assay.filename, val_sequence=2.2, log_category=log_category)
                 else:
                     add_msg(validations, val_section,
-                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is in the correct position",
+                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is in the correct position for assay type " + assay_type,
                             success, assay.filename, val_sequence=2.2, log_category=log_category)
 
                 if template_header not in assay_header:
@@ -1176,7 +1186,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
             if prot_val_name != isa_prot_name:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
                         "' is not in the correct position or name has different case/spelling",
-                        warning, file_name, val_sequence=1, log_category=log_category)
+                        warning, file_name, val_sequence=2, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
                         "' is in the correct position and name has correct case/spelling",
@@ -1441,14 +1451,14 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                             val_sequence=12, log_category=log_category)
                     pmid = False
 
-            if not doi or not pmid:
-                add_msg(validations, val_section,
-                        "Please provide both a valid doi and pmid for the publication",
-                        warning, file_name, val_sequence=13, log_category=log_category)
-            elif doi and pmid:
-                add_msg(validations, val_section,
-                        "Found both doi and pmid for the publication", success, file_name,
-                        val_sequence=14, log_category=log_category)
+            # if not doi or not pmid:
+            #     add_msg(validations, val_section,
+            #             "Please provide both a valid DOI and PubMedID for the publication",
+            #             warning, file_name, val_sequence=13, log_category=log_category)
+            # elif doi and pmid:
+            #     add_msg(validations, val_section,
+            #             "Found both DOI and PubMedID for the publication", success, file_name,
+            #             val_sequence=14, log_category=log_category)
 
             if not publication.author_list:
                 add_msg(validations, val_section, author_val_error, error, file_name,

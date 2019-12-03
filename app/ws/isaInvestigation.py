@@ -48,7 +48,9 @@ class IsaInvestigation(Resource):
 
     @swagger.operation(
         summary="Get ISA Investigation",
-        notes="Get the whole ISA Investigation in a single JSON.",
+        notes="Get the whole ISA Investigation in a single JSON. "
+              "Study obfuscation code is read first and will provide read-only access to the study. "
+              "User API token will give read/write access",
         parameters=[
             {
                 "name": "study_id",
@@ -70,11 +72,19 @@ class IsaInvestigation(Resource):
                 "default": True
             },
             {
+                "name": "obfuscation_code",
+                "description": "Study obfuscation code",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
-                "required": True,
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -112,8 +122,12 @@ class IsaInvestigation(Resource):
 
         # User authentication
         user_token = None
+        obfuscation_code = None
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
+
+        if 'obfuscation_code' in request.headers:
+            obfuscation_code = request.headers['obfuscation_code']
 
         # query validation
         parser = reqparse.RequestParser()
@@ -126,7 +140,7 @@ class IsaInvestigation(Resource):
         logger.info('Getting Investigation %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403)
 
