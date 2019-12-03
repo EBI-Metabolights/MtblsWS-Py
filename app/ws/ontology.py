@@ -192,7 +192,7 @@ class Ontology(Resource):
                         ontology = ontology.split(',')
                     except Exception as e:
                         print(e.args)
-        
+
         if ontology != None:
             ontology = [x.lower() for x in ontology]
 
@@ -339,20 +339,6 @@ class Ontology(Resource):
                     d['termSource']['provenanceName'] = 'Metabolights'
                     d['termSource']['version'] = '1.0'
                     d['termSource']['description'] = 'Metabolights Ontology'
-                # else:
-                #     d['termSource']['file'] = cls.provenance_uri
-                #     d['termSource']['description'] = cls.definition
-                #     fullName, version = getOnto_info(cls.ontoName)
-                #     d['termSource']['version'] = version
-                #     d['termSource']['ontology_description'] = fullName
-                #
-                #     if cls.provenance_name != '':
-                #         d['termSource']['provenance_name'] = str(cls.provenance_name)
-                #     else:
-                #         d['termSource']['provenance_name'] = str(cls.ontoName)
-
-                # d['termSource']['description_url'] = str(getDescriptionURL(cls.ontoName, cls.iri))
-
             except:
                 pass
 
@@ -445,13 +431,12 @@ class Ontology(Resource):
             logger.info(e)
             abort(400)
 
-        logger.info('Add %s to Metabolights ontology' %data_dict['termName'])
+        logger.info('Add %s to Metabolights ontology' % data_dict['termName'])
         print('Add %s to Metabolights ontology' % data_dict['termName'])
 
         description = None
         if len(data_dict['definition']) > 0:
             description = data_dict['definition']
-
 
         onto_path = app.config.get("MTBLS_ONTOLOGY_FILE")
         addEntity(onto_path, new_term=data_dict['termName'], supclass=data_dict['superclass'],
@@ -474,18 +459,18 @@ class Placeholder(Resource):
                 "enum": ["factor", "design descriptor"]
             },
 
-            {
-                "name": "capture_type",
-                "description": "particular type of data to extracted, placeholder/wrong_match",
-                "required": False,
-                "allowEmptyValue": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-                "defaultValue": "placeholder",
-                "default": True,
-                "enum": ["placeholder", "wrong_match"]
-            },
+            # {
+            #     "name": "capture_type",
+            #     "description": "particular type of data to extracted, placeholder/wrong_match",
+            #     "required": False,
+            #     "allowEmptyValue": False,
+            #     "allowMultiple": False,
+            #     "paramType": "query",
+            #     "dataType": "string",
+            #     "defaultValue": "placeholder",
+            #     "default": True,
+            #     "enum": ["placeholder", "wrong_match"]
+            # },
         ],
         responseMessages=[
             {
@@ -516,39 +501,21 @@ class Placeholder(Resource):
             if query:
                 query = query.strip().lower()
 
-        capture_type = ''
-        parser.add_argument('capture_type', help='capture type')
-        if request.args:
-            args = parser.parse_args(req=request)
-            capture_type = args['capture_type']
-            if capture_type is None:
-                capture_type = 'placeholder'
-            if capture_type:
-                capture_type = capture_type.strip().lower()
-
         url = app.config.get('GOOGLE_SHEET_URL')
         sheet_name = ''
         col = []
 
         if query == 'factor':
-            if capture_type == 'placeholder':
-                sheet_name = 'factor placeholder'
-            elif capture_type == 'wrong_match':
-                sheet_name = 'factor wrong match'
+            sheet_name = 'factor'
 
             col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
                    'annotationValue', 'termAccession', 'superclass', 'definition']
 
         elif query == 'design descriptor':
-            if capture_type == 'placeholder':
-                sheet_name = 'descriptor placeholder'
-
-            elif capture_type == 'wrong_match':
-                sheet_name = 'descriptor wrong match'
+            sheet_name = 'design descriptor'
 
             col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
                    'matched_iri', 'superclass', 'definition']
-
         else:
             abort(400)
 
@@ -561,7 +528,7 @@ class Placeholder(Resource):
             logger.info('Fail to load spreadsheet from Google')
             logger.info(e.args)
 
-        df = pd.DataFrame(get_metainfo(query, capture_type))
+        df = pd.DataFrame(get_metainfo(query))
         df_connect = pd.concat([google_df, df], ignore_index=True, sort=False)
         df_connect = df_connect.reindex(columns=col) \
             .replace(np.nan, '', regex=True) \
@@ -774,8 +741,17 @@ class Placeholder(Resource):
                         source = '/metabolights/ws/ebi-internal/ontology'
                         ws_url = app.config.put('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
-                        #TODO
+                        # TODO
 
+
+                    except Exception as e:
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                elif operation.lower() == 'zooma':
+                    try:
+                        zooma_path = app.config.get('MTBLS_ZOOMA_FILE')
+                        df = pd.read_csv(zooma_path, sep='\t')
 
                     except Exception as e:
                         google_df.loc[index, 'status (Done/Error)'] = 'Error'
@@ -882,7 +858,7 @@ class Placeholder(Resource):
                 abort(404)
 
 
-def get_metainfo(query, capture_type):
+def get_metainfo(query):
     '''
     get placeholder/wrong-match terms from study investigation file
     :param query: factor / descriptor ...
@@ -904,7 +880,7 @@ def get_metainfo(query, capture_type):
         studyIDs.sort(key=natural_keys)
         return studyIDs
 
-    logger.info('Getting {query} {capture_type} terms'.format(query=query, capture_type=capture_type))
+    logger.info('Getting {query} terms'.format(query=query))
     studyIDs = getStudyIDs()
 
     for studyID in studyIDs:
@@ -921,20 +897,14 @@ def get_metainfo(query, capture_type):
                                  'old_name': factor['factorName'],
                                  'annotationValue': factor['factorType']['annotationValue'],
                                  'termAccession': factor['factorType']['termAccession']}
-                    # Placeholder
-                    if capture_type == 'placeholder':
-                        if 'placeholder' in factor['factorType']['termAccession']:
-                            res.append(temp_dict)
 
-                    # Wrong match
-                    elif capture_type == 'wrong_match':
-                        if factor['factorName'].lower() != factor['factorType']['annotationValue'].lower():
-                            res.append(temp_dict)
+                    if ('placeholder' in factor['factorType']['termAccession']) or (
+                            factor['factorName'].lower() != factor['factorType']['annotationValue'].lower()):
+                        res.append(temp_dict)
                     else:
                         abort(400)
             except:
                 pass
-
 
         elif query.lower() == "design descriptor":
             url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
@@ -949,15 +919,8 @@ def get_metainfo(query, capture_type):
                                  'old_name': descriptor['annotationValue'],
                                  'matched_iri': descriptor['termAccession']}
 
-                    # Placeholder
-                    if capture_type == 'placeholder':
-                        if 'placeholder' in temp_dict['matched_iri']:
-                            res.append(temp_dict)
-
-                    # Wrong match
-                    elif capture_type == 'wrong_match':
-                        if len(temp_dict['matched_iri']) == 0:
-                            res.append(temp_dict)
+                    if ('placeholder' in temp_dict['matched_iri']) or (len(temp_dict['matched_iri']) == 0):
+                        res.append(temp_dict)
                     else:
                         abort(400)
             except:
