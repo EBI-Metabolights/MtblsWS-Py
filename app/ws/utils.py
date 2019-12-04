@@ -324,7 +324,7 @@ def get_assay_type_from_file_name(study_id, file_name):
     assay_type = None
     file_name = file_name.replace("a_" + study_id + "_", "")  # Remove study_id and assay refs from filename
     for file_part in file_name.split("_"):  # Split string on assay
-        assay_type = file_part  # Only interested in the assay type part
+        assay_type = file_part  # Only interested in the assay type part, ie. first part
         break
 
     if assay_type == 'a':  # Legacy filename
@@ -678,9 +678,10 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
                 try:
                     old = prefix + old_value + postfix
                     new = prefix + new_value + postfix
-                    file_df.rename(columns={old: new}, inplace=True)
-                    write_tsv(file_df, file)
-                    logger.info(ontology_type + " " + new_value + " has been renamed in " + file)
+                    if old != new:  # Do we need to change the column value?
+                        file_df.rename(columns={old: new}, inplace=True)
+                        write_tsv(file_df, file)
+                        logger.info(ontology_type + " " + new_value + " has been renamed in " + file)
                 except Exception as e:
                     logger.warning(ontology_type + " " + new_value +
                                    " was not used in the sheet or we failed updating " + file + ". Error: " +str(e))
@@ -928,6 +929,21 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
             logger.error(str(e))
 
     logger.info("Looking for file name " + file_name + " in ISA-Tab files took %s seconds" % round(time.time() - start_time, 2))
+    return found
+
+
+def find_text_in_isatab_file(study_folder, text_to_find):
+    found = False
+    isa_tab_file = os.path.join(study_folder, 'i_*.txt')
+    for ref_file in glob.glob(isa_tab_file):
+        try:
+            logger.info("Checking if text " + text_to_find + " is referenced in " + ref_file)
+            if text_to_find in io.open(ref_file, 'r', encoding='utf8', errors="ignore").read():
+                found = True
+        except Exception as e:
+            logger.error('File Format error? Cannot read or open file ' + ref_file)
+            logger.error(str(e))
+
     return found
 
 

@@ -257,6 +257,16 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
         add_msg(validations, val_section, "Could not find or read Metabolite Annotation File '" + file_name + "'",
                 error, val_sequence=11, log_category=log_category)
 
+    all_rows = maf_df.shape[0]
+    if all_rows == 1:
+        for index, row in maf_df.iterrows():
+            db_id_value = row["database_identifier"]
+            cf_value = row["chemical_formula"]
+            if row["database_identifier"] == '0' and not row["chemical_formula"]:
+                add_msg(validations, val_section,
+                        "Incomplete Metabolite Annotation File '" + file_name + "'",
+                        error, descr="Please complete the MAF", val_sequence=11.1, log_category=log_category)
+
     incorrect_pos = False
     incorrect_message = ""
     maf_order = correct_maf_order.copy()
@@ -463,7 +473,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
             for val in query_list[0].split('|'):
                 override_list.append(val)
     except Exception as e:
-        logger.error('Can not query overridden validations from the database')
+        logger.error('Could not query overridden validations from the database')
 
     # Validate basic ISA-Tab structure
     isa_study, isa_inv, isa_samples, std_path, status, amber_warning, isa_validation, inv_file, s_file, assay_files = \
@@ -627,7 +637,7 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
                     success, assay.filename, val_sequence=7, log_category=log_category)
         else:
             if len(row) == 0:
-                add_msg(validations, val_section, "Sample name '" + row + "' can not be empty",
+                add_msg(validations, val_section, "Sample name '" + row + "' cannot be empty",
                         error, meta_file=assay.filename, descr="Please add a valid sample name",
                         val_sequence=8, log_category=log_category)
             else:
@@ -781,11 +791,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
                 if idx != assay_header_pos:
                     add_msg(validations, val_section,
-                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is not in the correct position",
+                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is not in the correct position for assay type " + assay_type,
                             info, assay.filename, val_sequence=2.2, log_category=log_category)
                 else:
                     add_msg(validations, val_section,
-                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is in the correct position",
+                            "Assay sheet '" + assay.filename + "' column '" + template_header + "' is in the correct position for assay type " + assay_type,
                             success, assay.filename, val_sequence=2.2, log_category=log_category)
 
                 if template_header not in assay_header:
@@ -821,6 +831,9 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                 val_type = error
                             else:
                                 val_type = warning
+
+                            if 'factor value' in a_header.lower():  # User defined factors may not all have data in all rows
+                                val_type = info
 
                             if col_rows == 0:
                                 add_msg(validations, val_section,
@@ -1072,7 +1085,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
 
                     if row.lower() in incorrect_species:
                         add_msg(validations, val_section,
-                                "Organism can not be '" + row + "', choose the appropriate taxonomy term",
+                                "Organism cannot be '" + row + "', choose the appropriate taxonomy term",
                                 error, file_name, val_sequence=4.3, log_category=log_category)
 
                     if ':' in row:
@@ -1093,7 +1106,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                 if s_header == 'Characteristics[Variant]':  # This is a new column we like to see, but not mandatory
                     val_stat = info
 
-                if 'Factor Value' in s_header:  # User defined factors may not all have data in all rows
+                if 'factor value' in s_header.lower():  # User defined factors may not all have data in all rows
                     val_stat = info
 
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing values. " +
@@ -1105,15 +1118,15 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
 
         if sample_name_list:
             if len(sample_name_list) != all_rows:
-                add_msg(validations, val_section, "Sample name column must only contain unique values",
-                        warning, file_name, val_sequence=4, log_category=log_category)
+                add_msg(validations, val_section, "Sample name column should ideally only contain unique values",
+                        info, file_name, val_sequence=4, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Sample name column contains unique values",
                         success, file_name, val_sequence=4, log_category=log_category)
 
     if human_found:
         add_msg(validations, val_section,
-                "Organism can not be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
+                "Organism cannot be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
                 error, file_name, val_sequence=8, log_category=log_category)
     if too_short:
         add_msg(validations, val_section, "Organism name is missing or too short (<5 characters)", error, file_name,
@@ -1173,7 +1186,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
             if prot_val_name != isa_prot_name:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
                         "' is not in the correct position or name has different case/spelling",
-                        warning, file_name, val_sequence=1, log_category=log_category)
+                        warning, file_name, val_sequence=2, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
                         "' is in the correct position and name has correct case/spelling",
@@ -1438,14 +1451,14 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                             val_sequence=12, log_category=log_category)
                     pmid = False
 
-            if not doi or not pmid:
-                add_msg(validations, val_section,
-                        "Please provide both a valid doi and pmid for the publication",
-                        warning, file_name, val_sequence=13, log_category=log_category)
-            elif doi and pmid:
-                add_msg(validations, val_section,
-                        "Found both doi and pmid for the publication", success, file_name,
-                        val_sequence=14, log_category=log_category)
+            # if not doi or not pmid:
+            #     add_msg(validations, val_section,
+            #             "Please provide both a valid DOI and PubMedID for the publication",
+            #             warning, file_name, val_sequence=13, log_category=log_category)
+            # elif doi and pmid:
+            #     add_msg(validations, val_section,
+            #             "Found both DOI and PubMedID for the publication", success, file_name,
+            #             val_sequence=14, log_category=log_category)
 
             if not publication.author_list:
                 add_msg(validations, val_section, author_val_error, error, file_name,
@@ -1529,12 +1542,11 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
                         "You can only submit one study per submission, this submission has " + str(study_num) + " studies",
                         error, 'i_Investigation.txt', val_sequence=2.1, log_category=log_category)
 
-
         if isa_study and study_num == 1:
             add_msg(validations, val_section, "Successfully read the study section of the investigation file", success,
                     'i_Investigation.txt', val_sequence=3, log_category=log_category)
         else:
-            add_msg(validations, val_section, "Can not correctly read the study section of the investigation file", error,
+            add_msg(validations, val_section, "Could not correctly read the study section of the investigation file", error,
                     'i_Investigation.txt', val_sequence=4, log_category=log_category)
             validates = False
 
@@ -1596,8 +1608,15 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
                 add_msg(validations, val_section, "Could not find any study design descriptors",
                         error, file_name, val_sequence=17, log_category=log_category)
 
+            if find_text_in_isatab_file(study_location, 'Thesaurus.owl#'):
+                # The hash in an ontology URL will cause problems for the ISA-API
+                add_msg(validations, val_section,
+                        "URL's containing # will not load properly, please change to '%23'",
+                        error, 'i_Investigation.txt', val_sequence=17.1, log_category=log_category)
+
+
     else:
-        add_msg(validations, "ISA-Tab", "Can not find or read the investigation file",
+        add_msg(validations, "ISA-Tab", "Could not find or read the investigation file",
                 error, inv_file_name, val_sequence=18, log_category=log_category)
 
     validates, amber_warning, ret_list = return_validations(val_section, validations, override_list)
@@ -1654,7 +1673,7 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
                     value=isa_study.description, descr=desc_desrc, val_sequence=4, log_category=log_category)
 
     else:
-        add_msg(validations, val_section, "Can not find or read the investigation file", error,
+        add_msg(validations, val_section, "Could not find or read the investigation file", error,
                 val_sequence=5, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
@@ -1748,7 +1767,7 @@ class OverrideValidation(Resource):
                 for val in query_list[0].split('|'):
                     override_list.append(val)
         except Exception as e:
-            logger.error('Can not query existing overridden validations from the database')
+            logger.error('Could not query existing overridden validations from the database')
 
         # Get the new validations submitted
         data_dict = json.loads(request.data.decode('utf-8'))
@@ -1772,6 +1791,6 @@ class OverrideValidation(Resource):
         try:
             query_list = override_validations(study_id, 'update', override=db_update_string)
         except Exception as e:
-            logger.error('Can not store overridden validations on the database')
+            logger.error('Could not store overridden validations on the database')
 
         return {"success": "Validations stored in the database"}

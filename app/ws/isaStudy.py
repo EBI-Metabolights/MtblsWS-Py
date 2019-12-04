@@ -658,12 +658,12 @@ class StudyDescription(Resource):
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                          skip_load_tables=True,
                                                          study_location=study_location)
-        isa_study.description = new_description
+        isa_study.description = new_description.replace('"', '\'').replace('#', '')  # ISA-API can not deal with these
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         status, message = wsc.reindex_study(study_id, user_token)
         logger.info('Applied %s', new_description)
-        return jsonify({"description": new_description})
+        return jsonify({"description":  isa_study.description})
 
 
 def roles_to_contacts(isa_inv, new_contact):
@@ -2466,12 +2466,12 @@ class StudyFactors(Resource):
 
         found = False
         old_factor = ""
-        for index, factor in enumerate(isa_study.factors):
+        for idx, factor in enumerate(isa_study.factors):
             if factor.name == factor_name:
                 found = True
                 old_factor = factor.name
                 # update factor details
-                isa_study.factors[index] = updated_factor
+                isa_study.factors[idx] = updated_factor
                 break
         if not found:
             abort(404, "The factor was not found")

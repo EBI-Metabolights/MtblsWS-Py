@@ -78,6 +78,7 @@ spreadsheet_fields = [database_identifier_column,
                       "combination",
                       search_flag,
                       alt_name_column,
+                      "pubchem_first_synonym",
                       final_cid_column_name,
                       "pubchem_cid",
                       "pubchem_cid_ik",
@@ -513,10 +514,10 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                           "' (alt name = '" + alt_name + "')")
 
                 pubchem_df.update(pubchem_df[[maf_compound_name_column]].merge(existing_row, 'left'))
-                #if not exiting_pubchem_file:
+                # f not exiting_pubchem_file:
                 pubchem_df.iloc[row_idx, get_idx('row_id', pubchem_df_headers)] = row_idx + 1  # Update Row id again, not use the copied row
-                    # if not database_id:
-                    #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
+                # if not database_id:
+                #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
 
                 pubchem_df.iloc[row_idx, get_idx(alt_name_column, pubchem_df_headers)] = alt_name     # Add in the original alt name again
                 pubchem_df.iloc[row_idx, get_idx('search_type', pubchem_df_headers)] = 'copy_existing_row'  # Search category/type for logging
@@ -577,7 +578,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
                     # First, see if we cat find a PubChem compound
                     pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
-                        where_found = pubchem_search(comp_name, search_type='name', search_category='compound')
+                        where_found, first_synonym = pubchem_search(comp_name, search_type='name', search_category='compound')
 
                     pubchem_df.iloc[row_idx, get_idx('search_type', pubchem_df_headers)] = where_found  # Search category/type for logging
                     cactus_stdinchikey = cactus_search(comp_name, 'stdinchikey')
@@ -607,7 +608,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     # if no pc_name and/or pc_synonyms, then use the final_cid to query pubchem again
                     if final_cid and (not pc_name or not pc_synonyms):
                         pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
-                            where_found = pubchem_search(final_cid, search_type='cid', search_category='cid')
+                            where_found, first_synonym = pubchem_search(final_cid, search_type='cid', search_category='cid')
                         if pc_name:
                             pubchem_df.iloc[row_idx, get_idx('iupac_name', pubchem_df_headers)] = pc_name
                         if pc_synonyms:
@@ -625,7 +626,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                         # We don't have a PubChem compound, but we may find a uncurated substance record
                         print_log("    -- Searching for PubChem substance as we did not find a compound")
                         pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, \
-                            where_found = pubchem_search(comp_name, search_type='name', search_category='substance')
+                            where_found, first_synonym = pubchem_search(comp_name, search_type='name', search_category='substance')
 
                         if pc_name:
                             pubchem_df.iloc[row_idx, get_idx('iupac_name', pubchem_df_headers)] = pc_name  # PubChem substance name
@@ -653,11 +654,18 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     pubchem_df.iloc[row_idx, get_idx('opsin_inchi_key', pubchem_df_headers)] = opsin_stdinchikey    # opsin_stdinchikey
                     pubchem_df.iloc[row_idx, get_idx('pubchem_formula', pubchem_df_headers)] = pc_formula           # PubChem formula
                     pubchem_df.iloc[row_idx, get_idx('pubchem_synonyms', pubchem_df_headers)] = pc_synonyms         # PubChem synonyms
+                    pubchem_df.iloc[row_idx, get_idx('pubchem_first_synonym', pubchem_df_headers)] = first_synonym  # PubChem first synonym, ie. the compound name
                     if not cactus_synonyms:
                         cactus_synonyms = alt_name
                     pubchem_df.iloc[row_idx, get_idx('cactus_synonyms', pubchem_df_headers)] = cactus_synonyms      # Cactus synonyms
-                    db_acc = 'ChemSpiderID:' + csid + ';' + cactus_synonyms
-                    pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(';')  # Cactus synonyms for SDF export
+
+                    db_acc = ""
+                    if csid:
+                        db_acc = 'ChemSpiderID:' + csid + ';'
+                    if cactus_synonyms:
+                        db_acc = db_acc + cactus_synonyms
+                    if db_acc:
+                        pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(';')  # Cactus synonyms for SDF export
                     pubchem_df.iloc[row_idx, get_idx('direct_parent', pubchem_df_headers)] = ''                     # direct_parent from ClassyFire
                     pubchem_df.iloc[row_idx, get_idx('source_metabolights', pubchem_df_headers)] = study_id         # MTBLS accession
 
@@ -1294,7 +1302,7 @@ def get_pubchem_cid_on_inchikey(inchikey1, inchikey2):
     pc_cid = ''
     for inchikey in [inchikey1, inchikey2]:
         if inchikey:
-            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, from_where = \
+            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, from_where, first_synonym = \
                 pubchem_search(inchikey, search_type='inchikey')
             if pc_cid:
                 return pc_cid
@@ -1423,6 +1431,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
     formula = ''
     synonyms = ''
     where_found = ''
+    first_synonym = ''
     try:
         compound = None
         # For this to work on Mac, run: cd "/Applications/Python 3.6/"; sudo "./Install Certificates.command
@@ -1460,9 +1469,19 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
             cid = compound.cid
             cid = str(cid).strip().rstrip('\n')
             formula = compound.molecular_formula.strip().rstrip('\n')
-            for synonym in compound.synonyms:
+            for idx, synonym in enumerate(compound.synonyms):
+                if idx == 0 and synonym.lower() != comp_name.lower():
+                    # The first synonym is also the PubChem name,
+                    # so always add this to the return set unless it's the same as the compound name we searched for
+                    first_synonym = synonym
+                elif idx == 1 and first_synonym is None and synonym.lower() != comp_name.lower():
+                    # Pick the 2nd synonym if the first one is the same as the compounds we searched for
+                    first_synonym = synonym
                 if get_relevant_synonym(synonym):
                     synonyms = synonyms + ';' + synonym.strip().rstrip('\n')
+
+                if first_synonym:
+                    print_log("    -- Found PubChem first synonym '" + first_synonym)
 
             if synonyms:
                 synonyms = synonyms.replace(";", "", 1)  # Remove the leading ";"
@@ -1473,7 +1492,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
         logger.error("Unable to search PubChem for " + search_category + " " + comp_name)
         logger.error(error)
 
-    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, where_found
+    return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, where_found, first_synonym
 
 
 def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
