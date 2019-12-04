@@ -1612,7 +1612,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
                 # The hash in an ontology URL will cause problems for the ISA-API
                 add_msg(validations, val_section,
                         "URL's containing # will not load properly, please change to '%23'",
-                        error, 'i_Investigation.txt', val_sequence=17.1, log_category=log_category)
+                        warning, 'i_Investigation.txt', val_sequence=17.1, log_category=log_category)
 
 
     else:
