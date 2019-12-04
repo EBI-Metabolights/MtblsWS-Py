@@ -95,7 +95,8 @@ class Ontology(Resource):
 
             {
                 "name": "queryFields",
-                "description": "Specifcy the fields to return, the default is all options: {MTBLS,MTBLS_Zooma,Zooma,OLS, Bioportal}",
+                "description": "Specifcy the fields to return, the default is all options: {MTBLS,MTBLS_Zooma,Zooma,"
+                               "OLS, Bioportal}",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -248,7 +249,7 @@ class Ontology(Resource):
                     logger.info("Can't query it in Zooma, request Bioportal")
                     try:
                         result = getBioportalTerm(term)
-                    except  Exception as e:
+                    except Exception as e:
                         print(e.args)
                         logger.info(e.args)
 
@@ -339,7 +340,7 @@ class Ontology(Resource):
                     d['termSource']['provenanceName'] = 'Metabolights'
                     d['termSource']['version'] = '1.0'
                     d['termSource']['description'] = 'Metabolights Ontology'
-            except:
+            except Exception as e:
                 pass
 
             if cls.provenance_name == 'metabolights-zooma':
@@ -581,7 +582,6 @@ class Placeholder(Resource):
 
         google_url = app.config.get('GOOGLE_SHEET_URL')
         sheet_name = ''
-        col = []
 
         # get sheet_name
         if query == 'factor':
@@ -646,15 +646,15 @@ class Placeholder(Resource):
 
                         if operation.lower() in ['update', 'u']:  # Update factor
                             response = requests.put(ws_url, params={'name': old_term},
-                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
-                                                    data=data)
+                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                             'save_audit_copy': 'true'}, data=data)
                             print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.format(
                                 old_term=old_term, matchterm=annotationValue, matchiri=termAccession, studyID=studyID))
 
                         else:  # Add factor
                             response = requests.post(ws_url,
-                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
-                                                     data=data)
+                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                              'save_audit_copy': 'true'}, data=data)
 
                             print(
                                 'Add {old_term} ({matchiri}) in {studyID}'.format(old_term=old_term,
@@ -676,7 +676,8 @@ class Placeholder(Resource):
                 elif operation.lower() in ['delete', 'D']:
                     try:
                         response = requests.delete(ws_url, params={'name': old_term},
-                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                            'save_audit_copy': 'true'})
 
                         print('delete {old_term} from {studyID}'.format(old_term=old_term, studyID=studyID))
 
@@ -757,13 +758,15 @@ class Placeholder(Resource):
 
                         if operation.lower() in ['update', 'U']:  # Update descriptor
                             response = requests.put(ws_url, params={'term': old_term},
-                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                             'save_audit_copy': 'true'},
                                                     data=data)
                             print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
                                   format(old_term=old_term, matchterm=old_term, matchiri=matched_iri, studyID=studyID))
                         else:  # Add descriptor
                             response = requests.post(ws_url,
-                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                              'save_audit_copy': 'true'},
                                                      data=data)
                             print('Add {old_term} to ({matchiri}) in {studyID}'.
                                   format(old_term=old_term, matchiri=matched_iri, studyID=studyID))
@@ -784,7 +787,8 @@ class Placeholder(Resource):
                 elif operation.lower() in ['delete', 'D']:
                     try:
                         response = requests.delete(ws_url, params={'term': old_term},
-                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                            'save_audit_copy': 'true'})
                         print('delete {old_term} from in {studyID}'.format(old_term=old_term, studyID=studyID))
 
                         if response.status_code == 200:
@@ -819,7 +823,6 @@ def get_metainfo(query):
     '''
     get placeholder/wrong-match terms from study investigation file
     :param query: factor / descriptor ...
-    :param capture_type: placeholder / wrong_match
     :return: list of dictionary results
     '''
     res = []
@@ -979,11 +982,11 @@ def addEntity(ontoPath, new_term, supclass, definition=None):
     '''
 
     def getid(onto):
-        '''
+        """
         this method usd for get the last un-take continuously term ID
         :param onto: ontology
         :return: the last id for the new term
-        '''
+        """
 
         temp = []
         for c in onto.classes():
