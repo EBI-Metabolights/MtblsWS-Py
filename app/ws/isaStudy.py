@@ -2466,12 +2466,12 @@ class StudyFactors(Resource):
 
         found = False
         old_factor = ""
-        for index, factor in enumerate(isa_study.factors):
+        for idx, factor in enumerate(isa_study.factors):
             if factor.name == factor_name:
                 found = True
                 old_factor = factor.name
                 # update factor details
-                isa_study.factors[index] = updated_factor
+                isa_study.factors[idx] = updated_factor
                 break
         if not found:
             abort(404, "The factor was not found")
