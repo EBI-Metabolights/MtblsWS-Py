@@ -169,7 +169,7 @@ class SendFiles(Resource):
                     safe_path = zip_name
                     file_name = short_zip
 
-            resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name))
+            resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name, cache_timeout=0))
             # response.headers["Content-Disposition"] = "attachment; filename={}".format(file_name)
             resp.headers['Content-Type'] = 'application/octet-stream'
             return resp
