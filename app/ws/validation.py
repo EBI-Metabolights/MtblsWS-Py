@@ -26,7 +26,7 @@ from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.db_connection import override_validations
+from app.ws.db_connection import override_validations, update_validation_status
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -576,11 +576,14 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
         warning_found = True
 
     if error_found:
+        update_validation_status(study_id=study_id, validation_status=error)
         return {"validation": {"status": error, "validations": all_validations}}
 
     if warning_found:
+        update_validation_status(study_id=study_id, validation_status=warning)
         return {"validation": {"status": warning, "validations": all_validations}}
 
+    update_validation_status(study_id=study_id, validation_status=success)
     return {"validation": {"status": success, "validations": all_validations}}
 
 
@@ -1464,7 +1467,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                 add_msg(validations, val_section, author_val_error, error, file_name,
                         val_sequence=15, log_category=log_category)
             elif publication.author_list:
-                if len(publication.author_list) >= author_val_len:
+                if len(publication.author_list) >= 1:  # author_val_len
                     add_msg(validations, val_section, "Found the author list for the publication",
                             success, file_name, val_sequence=16, log_category=log_category)
                 else:
