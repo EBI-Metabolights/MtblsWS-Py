@@ -482,6 +482,23 @@ def override_validations(study_id, method, override=""):
         return False
 
 
+def update_validation_status(study_id, validation_status):
+
+    if study_id and validation_status:
+        query = "update studies set validation_status = '" + validation_status + "' where acc = '" + study_id + "';"
+        try:
+            postgresql_pool, conn, cursor = get_connection()
+            cursor.execute(query)
+            conn.commit()
+            release_connection(postgresql_pool, conn)
+            return True
+        except Exception as e:
+            logger.error('Database update of validation status failed with error ' + str(e))
+            return False
+    else:
+        return False
+
+
 def update_study_status(study_id, study_status, is_curator=False):
     status = '0'
     study_status = study_status.lower()
