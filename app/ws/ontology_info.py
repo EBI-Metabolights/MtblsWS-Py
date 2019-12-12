@@ -19,6 +19,7 @@
 import json
 import logging
 import ssl
+import types
 from urllib.parse import quote_plus
 
 import pandas as pd
@@ -26,46 +27,6 @@ from flask import current_app as app
 from owlready2 import get_ontology, urllib, IRIS
 
 logger = logging.getLogger('wslog')
-
-
-class onto_information():
-    ''' basic onto_information of entities'''
-
-    def __init__(self, onto):
-        '''initialization'''
-        self.onto = onto
-
-    def get_subs(self, cls):
-        '''return list of sub classes -> list'''
-        # print('matching subs of %s' % cls.label)
-        sub = []
-
-        list_subs(cls, sub)
-        # print(type(sub[0]))
-        return sub
-
-    def get_supers(self, cls):
-        ''''return list of super classes'''
-        # print('matching sups of %s ' % cls.label)
-        sup = []
-        list_supers(cls, sup)
-        return [x for x in sup if len(x.label) > 0]
-
-    def sub_count(self, cls):
-        '''return subclass count'''
-        # print('counting subclass of %s..' % cls.label)
-        return len(self.get_subs(cls))
-
-    def sup_count(self, cls):
-        '''return subclass count'''
-        # print('counting superclass of %s..' % cls.label)
-        return len(self.get_supers(cls))
-
-    def get_iri(self, cls):
-        return cls.iri
-
-    def get_factors(self, cls):
-        return list(cls.seeAlso)
 
 
 class entity():
@@ -110,28 +71,60 @@ class Descriptor():
         self.iri = iri
 
 
-def list_supers(onto_c, sup):
-    if onto_c.label == '' or onto_c.iri == 'http://www.w3.org/2002/07/owl#Thing':
-        return
-    for parent in onto_c.is_a:
-        try:
-            list_supers(parent, sup)
-            sup.append(parent)
-        except:
-            continue
+def addEntity(ontoPath, new_term, supclass, definition=None):
+    '''
+        add new term to the ontology and save it
 
+        :param ontoPath: Ontology Path
+        :param new_term: new entity to be added
+        :param supclass:  superclass/branch name or iri of new term
+        :param definition (optional): definition of the new term
+        '''
 
-def list_subs(onto_c, sub):
-    if onto_c.label and onto_c.label == '' and onto_c.iri != 'http://www.w3.org/2002/07/owl#Thing':
-        return
-    for children in onto_c.subclasses():
-        try:
-            list_subs(children, sub)
-            # if len(sub) >= num:
-            #     return
-            sub.append(children)
-        except:
-            continue
+    def getid(onto):
+        '''
+        this method usd for get the last un-take continuously term ID
+        :param onto: ontology
+        :return: the last id for the new term
+        '''
+
+        temp = []
+        for c in onto.classes():
+            print(str(c))
+            if str(c).lower().startswith('metabolights'):
+                temp.append(str(c))
+
+        last = max(temp)
+        temp = str(int(last[-6:]) + 1).zfill(6)
+        id = 'MTBLS_' + temp
+
+        return id
+
+    try:
+        onto = get_ontology(ontoPath).load()
+        id = getid(onto)
+        namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
+
+        with namespace:
+            try:
+                cls = onto.search_one(label=supclass)
+            except:
+                try:
+                    cls = onto.search_one(iri=supclass)
+                except Exception as e:
+                    print(e)
+
+            newEntity = types.new_class(id, (cls,))
+            newEntity.label = new_term
+            if definition != None:
+                newEntity.isDefinedBy = definition
+            else:
+                pass
+
+        onto.save(file=ontoPath, format='rdfxml')
+
+    except Exception as e:
+        print(e)
 
 
 def OLSbranchSearch(keyword, branchName, ontoName):
@@ -295,122 +288,6 @@ def getMetaboTerm(keyword, branch, mapping=''):
             res += OLSbranchSearch(keyword, 'chromatography', 'chmo')
 
     return res
-
-
-def getMetaboTerm2(keyword, branch, mapping=''):
-    logger.info('Search %s in Metabolights ontology' % keyword)
-    print('Search "%s" in Metabolights ontology' % keyword)
-
-    onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
-    info = onto_information(onto)
-    set_priortity = False
-
-    res_cls = []
-    result = []
-    if keyword not in [None, '']:
-        if branch:  # term = 1, branch = 1, search term in the branch
-
-            start_cls = onto.search_one(label=branch)
-            try:
-                clses = info.get_subs(start_cls)
-            except:
-                logger.info("Can't find a branch called " + branch)
-                print("Can't find a branch called " + branch)
-                return []
-
-        else:  # term = 1, branch = 0, search term in the whole ontology
-            try:
-                clses = list(onto.classes())
-            except Exception as e:
-                print(e.args)
-                return []
-
-        #  exact match
-        for cls in clses:
-            if keyword.lower() == cls.label[0].lower():
-                subs = info.get_subs(cls)
-                res_cls = [cls] + subs
-
-        # if not exact match, do fuzzy match
-        if len(res_cls) == 0:
-            if mapping != 'exact':
-                for cls in clses:
-                    if cls.label[0].lower().startswith(keyword.lower()):
-                        res_cls.append(cls)
-                        res_cls += info.get_subs(cls)
-
-        # synonym match
-        if branch == 'taxonomy' or branch == 'factors':
-            for cls in clses:
-                try:
-                    map = IRIS['http://www.geneontology.org/formats/oboInOwl#hasExactSynonym']
-                    Synonym = list(map[cls])
-                    if keyword.lower() in [syn.lower() for syn in Synonym]:
-                        res_cls.append(cls)
-                except Exception as e:
-                    print(e.args)
-                    pass
-
-        if branch == 'instruments':
-            result += OLSbranchSearch(keyword, 'instrument', 'msio')
-            print()
-
-        if branch == 'column type':
-            result += OLSbranchSearch(keyword, 'chromatography', 'chmo')
-
-    elif keyword in [None, ''] and branch:  # term = 0, branch = 1, return whole branch
-        start_cls = onto.search_one(label=branch)
-        try:
-            res_cls = info.get_subs(start_cls)
-
-            if branch == 'design descriptor':
-                set_priortity = True
-                first_priority_terms = ['ultra-performance liquid chromatography-mass spectrometry',
-                                        'untargeted metabolites', 'targeted metabolites']
-
-                for term in first_priority_terms:
-                    ele = onto.search_one(label=term)
-                    res_cls = [ele] + res_cls
-
-        except Exception as e:
-            logger.info("Can't find a branch called" + branch)
-            print("Can't find a branch called" + branch)
-            return []
-
-        if branch == 'instruments':
-            result += OLSbranchSearch("*", 'instrument', 'msio')
-
-        if branch == 'column type':
-            result += OLSbranchSearch("*", 'chromatography', 'chmo')
-
-    else:  # term = 0, branch = 0, return []
-        return []
-
-    if len(res_cls) > 0:
-        for cls in res_cls:
-
-            enti = entity(name=cls.label[0], iri=cls.iri,
-                          provenance_name='Metabolights')
-
-            if cls.isDefinedBy:
-                enti.definition = cls.isDefinedBy[0]
-
-            if 'MTBLS' in cls.iri:
-                enti.ontoName = 'MTBLS'
-            else:
-                try:
-                    onto_name = getOnto_Name(enti.iri)[0]
-                except:
-                    onto_name = ''
-
-                enti.ontoName = onto_name
-                enti.provenance_name = onto_name
-
-            result.append(enti)
-        if not set_priortity:
-            result.insert(0, result.pop())
-
-    return result
 
 
 def getMetaboZoomaTerm(keyword, mapping):
