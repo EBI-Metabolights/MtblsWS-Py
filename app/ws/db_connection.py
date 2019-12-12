@@ -46,7 +46,7 @@ query_all_studies = """
           study_user su,
           users u
         where
-           date_trunc('day',s.updatedate)>=date_trunc('day',current_date-90) and
+           date_trunc('day',s.updatedate)>=date_trunc('day',current_date-365) and
            s.id = su.studyid and
            su.userid = u.id
     group by 1,3,4,5,6) status
@@ -479,6 +479,23 @@ def override_validations(study_id, method, override=""):
             # conn.close()
             release_connection(postgresql_pool, conn)
     except Exception as e:
+        return False
+
+
+def update_validation_status(study_id, validation_status):
+
+    if study_id and validation_status:
+        query = "update studies set validation_status = '" + validation_status + "' where acc = '" + study_id + "';"
+        try:
+            postgresql_pool, conn, cursor = get_connection()
+            cursor.execute(query)
+            conn.commit()
+            release_connection(postgresql_pool, conn)
+            return True
+        except Exception as e:
+            logger.error('Database update of validation status failed with error ' + str(e))
+            return False
+    else:
         return False
 
 

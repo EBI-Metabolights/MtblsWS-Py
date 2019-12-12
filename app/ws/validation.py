@@ -26,7 +26,7 @@ from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.db_connection import override_validations
+from app.ws.db_connection import override_validations, update_validation_status
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -473,7 +473,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
             for val in query_list[0].split('|'):
                 override_list.append(val)
     except Exception as e:
-        logger.error('Can not query overridden validations from the database')
+        logger.error('Could not query overridden validations from the database')
 
     # Validate basic ISA-Tab structure
     isa_study, isa_inv, isa_samples, std_path, status, amber_warning, isa_validation, inv_file, s_file, assay_files = \
@@ -576,11 +576,14 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
         warning_found = True
 
     if error_found:
+        update_validation_status(study_id=study_id, validation_status=error)
         return {"validation": {"status": error, "validations": all_validations}}
 
     if warning_found:
+        update_validation_status(study_id=study_id, validation_status=warning)
         return {"validation": {"status": warning, "validations": all_validations}}
 
+    update_validation_status(study_id=study_id, validation_status=success)
     return {"validation": {"status": success, "validations": all_validations}}
 
 
@@ -637,7 +640,7 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
                     success, assay.filename, val_sequence=7, log_category=log_category)
         else:
             if len(row) == 0:
-                add_msg(validations, val_section, "Sample name '" + row + "' can not be empty",
+                add_msg(validations, val_section, "Sample name '" + row + "' cannot be empty",
                         error, meta_file=assay.filename, descr="Please add a valid sample name",
                         val_sequence=8, log_category=log_category)
             else:
@@ -1085,7 +1088,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
 
                     if row.lower() in incorrect_species:
                         add_msg(validations, val_section,
-                                "Organism can not be '" + row + "', choose the appropriate taxonomy term",
+                                "Organism cannot be '" + row + "', choose the appropriate taxonomy term",
                                 error, file_name, val_sequence=4.3, log_category=log_category)
 
                     if ':' in row:
@@ -1126,7 +1129,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
 
     if human_found:
         add_msg(validations, val_section,
-                "Organism can not be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
+                "Organism cannot be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
                 error, file_name, val_sequence=8, log_category=log_category)
     if too_short:
         add_msg(validations, val_section, "Organism name is missing or too short (<5 characters)", error, file_name,
@@ -1464,7 +1467,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                 add_msg(validations, val_section, author_val_error, error, file_name,
                         val_sequence=15, log_category=log_category)
             elif publication.author_list:
-                if len(publication.author_list) >= author_val_len:
+                if len(publication.author_list) >= 1:  # author_val_len
                     add_msg(validations, val_section, "Found the author list for the publication",
                             success, file_name, val_sequence=16, log_category=log_category)
                 else:
@@ -1546,7 +1549,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
             add_msg(validations, val_section, "Successfully read the study section of the investigation file", success,
                     'i_Investigation.txt', val_sequence=3, log_category=log_category)
         else:
-            add_msg(validations, val_section, "Can not correctly read the study section of the investigation file", error,
+            add_msg(validations, val_section, "Could not correctly read the study section of the investigation file", error,
                     'i_Investigation.txt', val_sequence=4, log_category=log_category)
             validates = False
 
@@ -1608,8 +1611,15 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
                 add_msg(validations, val_section, "Could not find any study design descriptors",
                         error, file_name, val_sequence=17, log_category=log_category)
 
+            if find_text_in_isatab_file(study_location, 'Thesaurus.owl#'):
+                # The hash in an ontology URL will cause problems for the ISA-API
+                add_msg(validations, val_section,
+                        "URL's containing # will not load properly, please change to '%23'",
+                        warning, 'i_Investigation.txt', val_sequence=17.1, log_category=log_category)
+
+
     else:
-        add_msg(validations, "ISA-Tab", "Can not find or read the investigation file",
+        add_msg(validations, "ISA-Tab", "Could not find or read the investigation file",
                 error, inv_file_name, val_sequence=18, log_category=log_category)
 
     validates, amber_warning, ret_list = return_validations(val_section, validations, override_list)
@@ -1666,7 +1676,7 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
                     value=isa_study.description, descr=desc_desrc, val_sequence=4, log_category=log_category)
 
     else:
-        add_msg(validations, val_section, "Can not find or read the investigation file", error,
+        add_msg(validations, val_section, "Could not find or read the investigation file", error,
                 val_sequence=5, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
@@ -1760,7 +1770,7 @@ class OverrideValidation(Resource):
                 for val in query_list[0].split('|'):
                     override_list.append(val)
         except Exception as e:
-            logger.error('Can not query existing overridden validations from the database')
+            logger.error('Could not query existing overridden validations from the database')
 
         # Get the new validations submitted
         data_dict = json.loads(request.data.decode('utf-8'))
@@ -1784,6 +1794,6 @@ class OverrideValidation(Resource):
         try:
             query_list = override_validations(study_id, 'update', override=db_update_string)
         except Exception as e:
-            logger.error('Can not store overridden validations on the database')
+            logger.error('Could not store overridden validations on the database')
 
         return {"success": "Validations stored in the database"}

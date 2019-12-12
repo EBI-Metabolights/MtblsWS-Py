@@ -153,7 +153,6 @@ class StudyStatus(Resource):
         # Update database
         update_study_status(study_id, study_status, is_curator=is_curator)
 
-
     @staticmethod
     def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
         validates = validate_study(study_id, study_location, user_token, obfuscation_code, log_category='error')
