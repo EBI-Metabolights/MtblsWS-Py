@@ -827,7 +827,6 @@ class StudyContacts(Resource):
                                                          study_location=study_location)
 
         contact_persons = []
-
         for contact in isa_study.contacts:
             contact_persons.append((contact.first_name+contact.last_name).lower())
 
