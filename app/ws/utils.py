@@ -690,6 +690,41 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
         logger.error("Could not update the ontology value " + old_value + " in all sheets")
 
 
+def update_characteristics_in_sample_sheet(onto_name, new_url, header, old_value, new_value, study_location, isa_study):
+    try:
+        """ 
+        Update column values in sample file(s). The column header looks like 'Characteristics[<characteristics name>']
+        """
+        sample_file_name = os.path.join(study_location, isa_study.filename)  # Sample sheet
+        header = 'Characteristics[' + header + ']'
+
+        if sample_file_name:
+            df = read_tsv(sample_file_name)
+            ''' 
+            This is slightly complicated in a DF, identical columns are separated with .n. "Organism part" should 
+            always be the 2nd group of columns, but to be sure we should use the column position (col_pos)
+            '''
+            col_pos = df.columns.get_loc(header)  # Use this to determine the location of the additional columns
+            header_source_ref = df.columns[col_pos+1]  # 'Term Source REF' (+.n)
+            header_acc_number = df.columns[col_pos+2]  # 'Term Accession Number' (+.n)
+
+            try:
+
+                if old_value != new_value:  # Do we need to change the cell values?
+                    df.loc[df[header] == old_value, header_source_ref] = onto_name   # Term Source REF(.n) changed
+                    df.loc[df[header] == old_value, header_acc_number] = new_url    # Term Accession Number(.n) changed
+                    df.loc[df[header] == old_value, header] = new_value  # Characteristics name changed
+                    write_tsv(df, sample_file_name)
+                    logger.info(old_value + " " + new_value + " has been renamed in " + sample_file_name)
+            except Exception as e:
+                logger.warning(old_value + " " + new_value +
+                               " was not used in the sheet or we failed updating " + sample_file_name +
+                               ". Error: " + str(e))
+
+    except Exception as e:
+        logger.error("Could not update the ontology value " + old_value + " in " + sample_file_name)
+
+
 def create_maf(technology, study_location, assay_file_name, annotation_file_name):
     resource_folder = "./resources/"
     update_maf = False
@@ -842,6 +877,8 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'fid', active_status, folder
     elif file_name == 'acqus':  # NMR data
         return 'acqus', active_status, folder
+    elif ext in ('.aspx'):
+        return 'aspera_control', active_status, folder
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
     elif ext in ('.sdf', '.mol'):

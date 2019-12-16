@@ -125,7 +125,7 @@ class MetaspacePipeLine(Resource):
                     metaspace_email = project['metaspace-email']
                     metaspace_projects = project['metaspace-projects']
                     logger.info('Requesting METASPACE projects ' + metaspace_projects)
-                    study_location = os.path.join(study_location, 'METASPACE')
+                    # study_location = os.path.join(study_location, 'METASPACE')
                     # ToDo, remove this when we have an API key (not yet implemented in METASPACE)
                     if metaspace_password and metaspace_email:
                         sm.login(metaspace_email, metaspace_password)

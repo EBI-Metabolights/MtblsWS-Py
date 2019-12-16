@@ -1003,6 +1003,11 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                         error, val_section,
                         value=file_name, val_sequence=6, log_category=log_category)
 
+        if file_type == 'aspera_control':
+            add_msg(validations, val_section,
+                    "Incomplete Aspera transfer? .ascp control files are present in the study folder: '" + file_name + "'",
+                    error, val_section, value=file_name, val_sequence=6.1, log_category=log_category)
+
         if file_type == 'raw':
             raw_file_found = True
 
@@ -1323,7 +1328,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
                     add_msg(validations, val_section, "Person email '" + email + "' validates", success, file_name,
                             val_sequence=5, log_category=log_category)
             else:
-                add_msg(validations, val_section, email_val_error, warning, file_name, value=email,
+                add_msg(validations, val_section, email_val_error, info, file_name, value=email,
                         descr=email_val_error, val_sequence=6, log_category=log_category)
 
             if affiliation:

@@ -46,6 +46,7 @@ from app.ws.user_management import UserManagement
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.send_files import SendFiles
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
+from app.ws.organism import Organism
 from app.ws.cluster_jobs import LsfUtils
 
 """
@@ -123,6 +124,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyFactors, res_path + "/studies/<string:study_id>/factors")
     api.add_resource(StudyDescriptors, res_path + "/studies/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/studies/<string:study_id>/publications")
+    api.add_resource(Organism, res_path + "/studies/<string:study_id>/organisms")
 
     # Metabolite Annotation File (MAF)
     api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validate")
