@@ -363,6 +363,9 @@ def read_characteristics_from_sample_sheet(study_location, isa_study):
             new_df = df[['Characteristics[Organism]', header_source_ref1, header_acc_number1,
                          'Characteristics[Organism part]', header_source_ref2, header_acc_number2]].copy()
 
+            new_df.columns=['Characteristics[Organism]', 'Term Source REF', 'Term Accession Number',
+                         'Characteristics[Organism part]', 'Term Source REF.1', 'Term Accession Number.1' ]
+
     except Exception as e:
         logger.error("Could not read 'Characteristics[Organism]' and/or 'Characteristics[Organism part]' in " +
                      sample_file_name)
