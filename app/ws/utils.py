@@ -690,6 +690,7 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
         logger.error("Could not update the ontology value " + old_value + " in all sheets")
 
 
+
 def create_maf(technology, study_location, assay_file_name, annotation_file_name):
     resource_folder = "./resources/"
     update_maf = False
@@ -842,6 +843,8 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'fid', active_status, folder
     elif file_name == 'acqus':  # NMR data
         return 'acqus', active_status, folder
+    elif ext in ('.aspx'):
+        return 'aspera_control', active_status, folder
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
     elif ext in ('.sdf', '.mol'):
