@@ -843,8 +843,6 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'fid', active_status, folder
     elif file_name == 'acqus':  # NMR data
         return 'acqus', active_status, folder
-    elif ext in ('.aspx'):
-        return 'aspera_control', active_status, folder
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
     elif ext in ('.sdf', '.mol'):
@@ -860,7 +858,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'temp', none_active_status, folder
     elif ext in ('.r', '.java', '.py', '.rdata', '.xsd', '.scan'):
         return 'programmatic', none_active_status, folder
-    elif ext in ('.partial', '.aspera-ckpt'):
+    elif ext in ('.partial', '.aspera-ckpt', '.aspx'):
         return 'aspera-control', none_active_status, folder
     elif file_name == 'audit':
         return 'audit', none_active_status, True
