@@ -16,17 +16,19 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask import request, abort, jsonify
-from flask_restful import Resource, reqparse
-from marshmallow import ValidationError
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.mtblsWSclient import WsClient
-from app.ws.models import *
-from flask_restful_swagger import swagger
-from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv, write_tsv, \
-    update_ontolgies_in_isa_tab_sheets, totuples
 import logging
 import os
+
+from flask import request, abort
+from flask_restful import Resource, reqparse
+from flask_restful_swagger import swagger
+from marshmallow import ValidationError
+
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.models import *
+from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv, write_tsv, \
+    update_ontolgies_in_isa_tab_sheets, totuples
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -302,7 +304,6 @@ class Organism(Resource):
                                                          study_location=study_location)
 
         samples = read_characteristics_from_sample_sheet(study_location, isa_study)
-
         return totuples(samples, 'organisms')
 
 
@@ -321,14 +322,14 @@ def update_characteristics_in_sample_sheet(onto_name, new_url, header, old_value
             always be the 2nd group of columns, but to be sure we should use the column position (col_pos)
             '''
             col_pos = df.columns.get_loc(header)  # Use this to determine the location of the additional columns
-            header_source_ref = df.columns[col_pos+1]  # 'Term Source REF' (+.n)
-            header_acc_number = df.columns[col_pos+2]  # 'Term Accession Number' (+.n)
+            header_source_ref = df.columns[col_pos + 1]  # 'Term Source REF' (+.n)
+            header_acc_number = df.columns[col_pos + 2]  # 'Term Accession Number' (+.n)
 
             try:
 
                 if old_value != new_value:  # Do we need to change the cell values?
-                    df.loc[df[header] == old_value, header_source_ref] = onto_name   # Term Source REF(.n) changed
-                    df.loc[df[header] == old_value, header_acc_number] = new_url    # Term Accession Number(.n) changed
+                    df.loc[df[header] == old_value, header_source_ref] = onto_name  # Term Source REF(.n) changed
+                    df.loc[df[header] == old_value, header_acc_number] = new_url  # Term Accession Number(.n) changed
                     df.loc[df[header] == old_value, header] = new_value  # Characteristics name changed
                     write_tsv(df, sample_file_name)
                     logger.info(old_value + " " + new_value + " has been renamed in " + sample_file_name)
@@ -352,9 +353,10 @@ def read_characteristics_from_sample_sheet(study_location, isa_study):
             This is slightly complicated in a DF, identical columns are separated with .n. "Organism part" should 
             always be the 2nd group of columns, but to be sure we should use the column position (col_pos)
             '''
-            col_pos1 = df.columns.get_loc('Characteristics[Organism]')  # Use this to determine the location of the additional columns
-            header_source_ref1 = df.columns[col_pos1+1]  # 'Term Source REF'
-            header_acc_number1 = df.columns[col_pos1+2]  # 'Term Accession Number'
+            col_pos1 = df.columns.get_loc(
+                'Characteristics[Organism]')  # Use this to determine the location of the additional columns
+            header_source_ref1 = df.columns[col_pos1 + 1]  # 'Term Source REF'
+            header_acc_number1 = df.columns[col_pos1 + 2]  # 'Term Accession Number'
 
             col_pos2 = df.columns.get_loc('Characteristics[Organism part]')
             header_source_ref2 = df.columns[col_pos2 + 1]  # 'Term Source REF' (+.n)
@@ -363,11 +365,13 @@ def read_characteristics_from_sample_sheet(study_location, isa_study):
             new_df = df[['Characteristics[Organism]', header_source_ref1, header_acc_number1,
                          'Characteristics[Organism part]', header_source_ref2, header_acc_number2]].copy()
 
-            new_df.columns=['Characteristics[Organism]', 'Term Source REF', 'Term Accession Number',
-                         'Characteristics[Organism part]', 'Term Source REF.1', 'Term Accession Number.1' ]
+            new_df.columns = ['Characteristics[Organism]', 'Term Source REF', 'Term Accession Number',
+                              'Characteristics[Organism part]', 'Term Source REF.1', 'Term Accession Number.1']
+
+            return new_df.drop_duplicates()
 
     except Exception as e:
         logger.error("Could not read 'Characteristics[Organism]' and/or 'Characteristics[Organism part]' in " +
                      sample_file_name)
 
-    return new_df.drop_duplicates()
+        abort(400)
