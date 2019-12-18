@@ -1762,7 +1762,7 @@ class ChEBIPipeLine(Resource):
         cmd = ""
         if run_on_cluster:
             cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-            cmd = cmd + app.config.get('CHEBI_PIPLINE_URL') + study_id + \
+            cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + \
                   "/chebi-pipeline?annotation_file_name=#FILE_NAME#&classyfire_search=" + str(classyfire_search) + \
                   "&run_silently=" + str(run_silently) + "&run_on_cluster=true'"
 
