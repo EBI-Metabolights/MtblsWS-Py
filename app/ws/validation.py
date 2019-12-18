@@ -458,7 +458,7 @@ class Validation(Resource):
 
         try:
             cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-            cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file"
+            cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
             logger.info("Starting cluster job for ChEBI pipeline: " + cmd)
             status, message, job_out, job_err = lsf_job('bsub', cmd)
         except Exception as e:
