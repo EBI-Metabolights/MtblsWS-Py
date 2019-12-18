@@ -303,8 +303,8 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
             for assay_name in all_assay_names:
                 try:
                     maf_header[assay_name]
-                    add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF",
-                            success, val_sequence=5, log_category=log_category)
+                    # add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' found in the MAF",
+                    #         success, val_sequence=5, log_category=log_category)
                     check_maf_rows(validations, val_section, maf_df, assay_name, is_ms=is_ms, log_category=log_category)
                 except KeyError as e:
                     add_msg(validations, val_section, "MS/NMR Assay Name '" + assay_name + "' not found in the MAF",
@@ -314,8 +314,8 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
             for sample_name in sample_name_list:
                 try:
                     maf_header[sample_name]
-                    add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' found in the MAF",
-                            success, val_sequence=7, log_category=log_category)
+                    # add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' found in the MAF",
+                    #         success, val_sequence=7, log_category=log_category)
                     check_maf_rows(validations, val_section, maf_df, sample_name, is_ms=is_ms, log_category=log_category)
                 except:
                     add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' not found in the MAF",
@@ -333,10 +333,11 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
         if row:
             col_rows += 1
 
-    if col_rows == all_rows:
-        add_msg(validations, val_section, "All values for '" + column_name + "' found in the MAF",
-                success, val_sequence=9.1, log_category=log_category)
-    else:
+    # if col_rows == all_rows:
+        # add_msg(validations, val_section, "All values for column '" + column_name + "' found in the MAF",
+        #         success, val_sequence=9.1, log_category=log_category)
+    # else:
+    if col_rows != all_rows:
         # For MS we should have m/z values, for NMR the chemical shift is equally important.
         if (is_ms and column_name == 'mass_to_charge') or (not is_ms and column_name == 'chemical_shift'):
             add_msg(validations, val_section, "Missing values for '" + column_name + "' in the MAF. " +
@@ -734,10 +735,11 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
     # Correct sample names?
     if a_header.lower() == 'sample name':
         all_samples.append(row)
-        if row in sample_name_list:
-            add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
-                    success, assay.filename, val_sequence=7, log_category=log_category)
-        else:
+        # if row in sample_name_list:
+            # add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
+            #         success, assay.filename, val_sequence=7, log_category=log_category)
+        # else:
+        if row not in sample_name_list:
             if len(row) == 0:
                 add_msg(validations, val_section, "Sample name '" + row + "' cannot be empty",
                         error, meta_file=assay.filename, descr="Please add a valid sample name",
@@ -805,10 +807,11 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                         all_assay_raw_files.append(value)
                         derived_found = True
                 else:
-                    if value:
-                        add_msg(validations, val_section, header + " was referenced in assay row " + row_idx,
-                                success, filename, val_sequence=7.5, log_category=log_category)
-                    else:
+                    # if value:
+                        # add_msg(validations, val_section, header + " was referenced in assay row " + row_idx,
+                        #         success, filename, val_sequence=7.5, log_category=log_category)
+                    # else:
+                    if not value:
                         val_type = error
                         if 'Acquisition Parameter Data File' in header or 'Free Induction Decay Data File' in header:
                             val_type = warning
@@ -821,14 +824,14 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                     add_msg(validations, val_section,
                             "Both Raw and Derived Spectral Data Files are missing from assay row " + row_idx,
                             error, filename, val_sequence=7.1, log_category=log_category)
-                elif raw_found:
-                    add_msg(validations, val_section,
-                            "Raw Spectral Data File is referenced in assay row " + row_idx,
-                            success, filename, value=value,  val_sequence=7.2, log_category=log_category)
-                elif derived_found:
-                    add_msg(validations, val_section,
-                            "Derived Spectral Data File is referenced in assay row " + row_idx,
-                            success, filename, value=value, val_sequence=7.3, log_category=log_category)
+                # elif raw_found:
+                #     add_msg(validations, val_section,
+                #             "Raw Spectral Data File is referenced in assay row " + row_idx,
+                #             success, filename, value=value,  val_sequence=7.2, log_category=log_category)
+                # elif derived_found:
+                #     add_msg(validations, val_section,
+                #             "Derived Spectral Data File is referenced in assay row " + row_idx,
+                #             success, filename, value=value, val_sequence=7.3, log_category=log_category)
 
     return validations, all_assay_raw_files
 
@@ -992,10 +995,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         column_name = files.split('|')[1]
         status, file_type, file_description = check_file(files, study_location, file_name_list,
                                                          assay_file_list=all_assay_raw_files)
-        if status:
-            add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
-                    + column_name + "'", success, descr=file_description, val_sequence=8, log_category=log_category)
-        else:
+        # if status:
+        #     add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
+        #             + column_name + "'", success, descr=file_description, val_sequence=8, log_category=log_category)
+        # else:
+        if not status:
             add_msg(validations, val_section, "File '" + file_name + "' of type '" + file_type +
                     "' is missing or not correct for column '" + column_name + "'", error, descr=file_description,
                     val_sequence=9, log_category=log_category)
