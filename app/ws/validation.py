@@ -384,6 +384,16 @@ class Validation(Resource):
                 "dataType": "string",
             },
             {
+                "name": "static_validation_file",
+                "description": "Read validation from pre-generated file",
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -434,9 +444,11 @@ class Validation(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('section', help="Validation section", location="args")
         parser.add_argument('level', help="Validation message levels", location="args")
+        parser.add_argument('static_validation_file', help="Use pre-generated validations", location="args")
         args = parser.parse_args()
         section = args['section']
         log_category = args['level']
+        static_validation_file = True if args['static_validation_file'].lower() == 'true' else False
 
         if section is None:
             section = 'all'
@@ -444,31 +456,35 @@ class Validation(Resource):
         if log_category is None:
             log_category = 'all'
 
-        validation_file = os.path.join(study_location, 'validation_report.json')
-        if os.path.isfile(validation_file):
-            try:
-                with open(validation_file, 'r', encoding='utf-8') as f:
-                    validation_schema = json.load(f)
-            except Exception as e:
-                logger.error(str(e))
+        if static_validation_file:
+            validation_file = os.path.join(study_location, 'validation_report.json')
+            if os.path.isfile(validation_file):
+                try:
+                    with open(validation_file, 'r', encoding='utf-8') as f:
+                        validation_schema = json.load(f)
+                except Exception as e:
+                    logger.error(str(e))
+                    validation_schema = \
+                        validate_study(study_id, study_location, user_token, obfuscation_code, section, log_category)
+            else:
                 validation_schema = \
                     validate_study(study_id, study_location, user_token, obfuscation_code, section, log_category)
+
+            try:
+                cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
+                cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
+                logger.info("Starting cluster job for Validation schema update: " + cmd)
+                status, message, job_out, job_err = lsf_job('bsub', job_cmd=cmd, send_email=False)
+                lsf_msg = message + '. ' + job_out + '. ' + job_err
+                if not status:
+                    logger.error("LSF job error: " + lsf_msg)
+                else:
+                    logger.info("LSF job submitted: " + lsf_msg)
+            except Exception as e:
+                logger.error(str(e))
         else:
             validation_schema = \
                 validate_study(study_id, study_location, user_token, obfuscation_code, section, log_category)
-
-        try:
-            cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-            cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
-            logger.info("Starting cluster job for Validation schema update: " + cmd)
-            status, message, job_out, job_err = lsf_job('bsub', cmd, email=False)
-            lsf_msg = message + '. ' + job_out + '. ' + job_err
-            if not status:
-                logger.error("LSF job error: " + lsf_msg)
-            else:
-                logger.info("LSF job submitted: " + lsf_msg)
-        except Exception as e:
-            logger.error(str(e))
 
         return validation_schema
 
