@@ -1789,7 +1789,7 @@ class ChEBIPipeLine(Resource):
                             cmd = cmd.replace(old_file_name, file_name)
                         old_file_name = file_name
                         logger.info("Starting cluster job for ChEBI pipeline: " + cmd)
-                        status, message, job_out, job_err = lsf_job('bsub', cmd)
+                        status, message, job_out, job_err = lsf_job('bsub', job_param=cmd)
 
                         if status:
                             return {"success": message, "message": job_out, "error": job_err}
@@ -1806,7 +1806,7 @@ class ChEBIPipeLine(Resource):
             cmd = cmd.replace("#FILE_NAME#", annotation_file_name)  # Replace the dummy file name reference in URL
             if run_on_cluster:
                 logger.info("Starting cluster job for ChEBI pipeline: " + cmd)
-                status, message, job_out, job_err = lsf_job('bsub', cmd)
+                status, message, job_out, job_err = lsf_job('bsub', job_param=cmd)
 
                 if status:
                     return {"success": message, "message": job_out, "error": job_err}

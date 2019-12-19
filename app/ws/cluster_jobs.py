@@ -133,7 +133,7 @@ class LsfUtils(Resource):
         if not is_curator:
             abort(403)
 
-        status, message, job_out, job_err = lsf_job('bkill', lsf_job_id)
+        status, message, job_out, job_err = lsf_job('bkill', job_param=lsf_job_id)
 
         if status:
             return {"success": message, "message": job_out, "error": job_err}
@@ -187,7 +187,7 @@ class LsfUtils(Resource):
         if not is_curator:
             abort(403)
 
-        status, message, job_out, job_err = lsf_job('bjobs', "")
+        status, message, job_out, job_err = lsf_job('bjobs', job_param="")
 
         if status:
             return {"success": message, "message": job_out, "error": job_err}
@@ -260,7 +260,7 @@ class LsfUtils(Resource):
         if not is_curator:
             abort(403)
 
-        status, message, job_out, job_err = lsf_job('bsub', cluster_job)
+        status, message, job_out, job_err = lsf_job('bsub', job_param=cluster_job)
 
         if status:
             return {"success": message, "message": job_out, "error": job_err}

@@ -448,6 +448,7 @@ class Validation(Resource):
         args = parser.parse_args()
         section = args['section']
         log_category = args['level']
+        static_validation_file = True
         static_validation_file = True if args['static_validation_file'].lower() == 'true' else False
 
         if section is None:
@@ -474,7 +475,7 @@ class Validation(Resource):
                 cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
                 cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
                 logger.info("Starting cluster job for Validation schema update: " + cmd)
-                status, message, job_out, job_err = lsf_job('bsub', job_cmd=cmd, send_email=False)
+                status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=False)
                 lsf_msg = message + '. ' + job_out + '. ' + job_err
                 if not status:
                     logger.error("LSF job error: " + lsf_msg)
