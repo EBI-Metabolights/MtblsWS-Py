@@ -539,7 +539,8 @@ def update_val_schema_file(validation_file, study_id, study_location, user_token
     validation_schema = validate_study(study_id, study_location, user_token, obfuscation_code)
     try:
         with open(validation_file, 'w', encoding='utf-8') as f:
-            json.dump(validation_schema, f, ensure_ascii=False, indent=4)
+            # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
+            json.dump(validation_schema, f)
     except Exception as e:
         logger.error(str(e))
 
