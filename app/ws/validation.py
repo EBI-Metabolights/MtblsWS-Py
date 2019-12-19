@@ -448,8 +448,10 @@ class Validation(Resource):
         args = parser.parse_args()
         section = args['section']
         log_category = args['level']
-        static_validation_file = True
-        static_validation_file = True if args['static_validation_file'].lower() == 'true' else False
+        static_validation_file = args['static_validation_file']
+        if not static_validation_file:
+            static_validation_file = 'true'  # Default to same as input default value
+        static_validation_file = True if static_validation_file.lower() == 'true' else False
 
         if section is None:
             section = 'all'
