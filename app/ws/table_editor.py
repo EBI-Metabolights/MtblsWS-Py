@@ -48,7 +48,7 @@ class SimpleColumns(Resource):
     @swagger.operation(
         summary="Add a new column to the given TSV file",
         nickname="Add table column",
-        notes="Update an csv/tsv table for a given Study",
+        notes="Update an csv/tsv table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.",
         parameters=[
             {
                 "name": "study_id",
@@ -142,6 +142,11 @@ class SimpleColumns(Resource):
             abort(404, 'Please provide valid parameters for study identifier and file name')
         study_id = study_id.upper()
 
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -183,7 +188,7 @@ class ComplexColumns(Resource):
     @swagger.operation(
         summary="Add new columns to the given TSV file",
         nickname="Add table columns",
-        notes="Update an csv/tsv table for a given Study. "
+        notes="Update an csv/tsv table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed. "
               "Please note that if the column name already exists at the given position, "
               "this will <b>update</b> the rows for the column",
         parameters=[
@@ -256,6 +261,11 @@ class ComplexColumns(Resource):
             abort(404, 'Please provide valid parameters for study identifier and/or file name')
         study_id = study_id.upper()
 
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -314,7 +324,8 @@ class ComplexColumns(Resource):
     @swagger.operation(
         summary="Delete columns from a tsv file",
         nickname="Delete columns from a tsv file",
-        notes='''Delete given columns from a sample, assay or MAF sheet (tsv files).
+        notes='''Delete given columns from a sample, assay or MAF sheet (tsv files). 
+        Only '.tsv', '.csv' or '.txt' files are allowed.
 <pre><code> 
 {  
   "data": { 
@@ -387,7 +398,12 @@ class ComplexColumns(Resource):
 
         # param validation
         if study_id is None or file_name is None:
-            abort(417)
+            abort(417, "Please provide a study id and TSV file name")
+
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
 
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -433,7 +449,7 @@ class ColumnsRows(Resource):
     @swagger.operation(
         summary="Update a given cell, based on row and column index",
         nickname="Add table columns",
-        notes="Update an TSV table for a given Study",
+        notes="Update an TSV table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.",
         parameters=[
             {
                 "name": "study_id",
@@ -506,6 +522,12 @@ class ColumnsRows(Resource):
         # param validation
         if study_id is None or file_name is None:
             abort(404, 'Please provide valid parameters for study identifier and/or file name')
+
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+
         study_id = study_id.upper()
 
         # User authentication
@@ -515,7 +537,7 @@ class ColumnsRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -554,7 +576,7 @@ class AddRows(Resource):
     @swagger.operation(
         summary="Add a new row to the given TSV file",
         nickname="Add TSV table row",
-        notes='''Update an TSV table for a given Study.
+        notes='''Update an TSV table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.
         <p>Please make sure you add a value for echo column/cell combination. 
         Use the GET method to see all the columns for this tsv file<br> If you do not provide the row "index" parameter,
         the row will be added at the end of the TSV table
@@ -649,6 +671,12 @@ class AddRows(Resource):
         # param validation
         if study_id is None or file_name is None:
             abort(404, 'Please provide valid parameters for study identifier and TSV file name')
+
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+
         study_id = study_id.upper()
 
         # User authentication
@@ -723,7 +751,7 @@ class AddRows(Resource):
     @swagger.operation(
         summary="Update existing rows in the given TSV file",
         nickname="Update TSV rows",
-        notes='''Update rows in the TSV file for a given Study.
+        notes='''Update rows in the TSV file for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.
         <p>Please make sure you add a value for echo column/cell combination. 
         Use the GET method to see all the columns for this tsv file<br>
 <pre><code>{
@@ -800,6 +828,12 @@ class AddRows(Resource):
         # param validation
         if study_id is None or file_name is None:
             abort(406, 'Please provide valid parameters for study identifier and TSV file name')
+
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+
         study_id = study_id.upper()
 
         try:
@@ -870,7 +904,7 @@ class AddRows(Resource):
     @swagger.operation(
         summary="Delete a row of the given TSV file",
         nickname="Delete TSV row",
-        notes="Update TSV file for a given Study.",
+        notes="Update TSV file for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed",
         parameters=[
             {
                 "name": "study_id",
@@ -934,6 +968,12 @@ class AddRows(Resource):
         # param validation
         if study_id is None or file_name is None or row_num is None:
             abort(404)
+
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+
         study_id = study_id.upper()
 
         # User authentication
@@ -943,7 +983,7 @@ class AddRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -981,7 +1021,7 @@ class GetTsvFile(Resource):
     @swagger.operation(
         summary="Get TSV table for a study using filename",
         nickname="Get TSV table for a given study",
-        notes="Get a given TSV table for a MTBLS Study with in JSON format.",
+        notes="Get a given TSV table for a MTBLS Study with in JSON format. Only '.tsv', '.csv' or '.txt' files are allowed",
         parameters=[
             {
                 "name": "study_id",
@@ -1032,6 +1072,12 @@ class GetTsvFile(Resource):
         if study_id is None or file_name is None:
             logger.info('No study_id and/or TSV file name given')
             abort(404)
+
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+
         study_id = study_id.upper()
         file_name_param = file_name  # store the passed filename for simplicity
 

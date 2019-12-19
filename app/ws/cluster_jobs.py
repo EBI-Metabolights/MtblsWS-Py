@@ -29,7 +29,7 @@ logger = logging.getLogger('wslog')
 wsc = WsClient()
 
 
-def lsf_job(job_cmd, job_param=None):
+def lsf_job(job_cmd, job_param=None, email=True):
     status = True
     job_status = ""
     msg_out = "No LSF job output"
@@ -44,7 +44,11 @@ def lsf_job(job_cmd, job_param=None):
         abort(403, 'Nope, cannot remove any files!')
 
     cmd = os.path.join(app.config.get('LSF_COMMAND_PATH'), job_cmd)
-    cmd = cmd + " -u " + email + " " + job_param
+    if email:
+        cmd = cmd + " -u " + email + " " + job_param
+    else:
+        cmd = cmd + " " + job_param
+        logger.info('LSF job triggered with no email: ' + cmd)
     try:
         job_status = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
         if job_status.stdout:
