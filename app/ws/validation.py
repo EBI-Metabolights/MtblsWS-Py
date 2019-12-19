@@ -460,8 +460,13 @@ class Validation(Resource):
         try:
             cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
             cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
-            logger.info("Starting cluster job for ChEBI pipeline: " + cmd)
-            status, message, job_out, job_err = lsf_job('bsub', cmd)
+            logger.info("Starting cluster job for Validation schema update: " + cmd)
+            status, message, job_out, job_err = lsf_job('bsub', cmd, email=False)
+            lsf_msg = message + '. ' + job_out + '. ' + job_err
+            if not status:
+                logger.error("LSF job error: " + lsf_msg)
+            else:
+                logger.info("LSF job submitted: " + lsf_msg)
         except Exception as e:
             logger.error(str(e))
 
@@ -533,6 +538,8 @@ class UpdateValidationFile(Resource):
         threading.Thread(
             target=update_val_schema_file(validation_file, study_id, study_location, user_token, obfuscation_code),
             daemon=True).start()
+
+        return {"success": "Validation schema file updated"}
 
 
 def update_val_schema_file(validation_file, study_id, study_location, user_token, obfuscation_code):
