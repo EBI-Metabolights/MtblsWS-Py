@@ -237,7 +237,7 @@ class WsClient:
             studies.append(acc[0])
 
         logger.info('... found %d public studies', len(studies))
-        return {"content": studies, "studies": len(studies)}
+        return {"studies": len(studies), "content": studies}
 
     @staticmethod
     def get_all_studies_for_user(user_token):

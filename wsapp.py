@@ -74,7 +74,6 @@ def initialize_app(flask_app):
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
 
-    print("Initialising Google Analytics")
     track_event(
         tracking_id=application.config.get('GA_TRACKING_ID'),
         category='MetaboLights-WS',
@@ -201,13 +200,10 @@ def track_event(category, action, tracking_id=None, label=None, value=0):
         'ev': value,  # Event value, must be an integer
     }
 
-    response = requests.post(
-        'https://www.google-analytics.com/collect', data=data)
+    response = requests.post('https://www.google-analytics.com/collect', data=data)
 
-    # If the request fails, this will raise a RequestException. Depending
-    # on your application's needs, this may be a non-error and can be caught
-    # by the caller.
-    response.raise_for_status()
+    print("Calling Google Analytics with tracking id: " + application.config.get('GA_TRACKING_ID') +
+          " returned response code: " + str(response.status_code))
 
 
 def main():
