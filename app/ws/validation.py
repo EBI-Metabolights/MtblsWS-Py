@@ -450,7 +450,7 @@ class Validation(Resource):
         log_category = args['level']
         static_validation_file = args['static_validation_file']
         if not static_validation_file:
-            static_validation_file = 'true'  # Default to same as input default value
+            static_validation_file = 'true'  # Set to same as input default value
         static_validation_file = True if static_validation_file.lower() == 'true' else False
 
         if section is None:
