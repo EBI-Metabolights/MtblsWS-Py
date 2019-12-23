@@ -226,6 +226,16 @@ def get_public_studies_with_methods():
     return data
 
 
+def get_public_studies():
+    query = "select acc from studies where status = 3;"
+    query = query.replace('\\', '')
+    postgresql_pool, conn, cursor = get_connection()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    release_connection(postgresql_pool, conn)
+    return data
+
+
 def update_release_date(study_id, release_date):
     query_update_release_date = "update studies set releasedate = %s where acc = %s;"
     query_update_release_date = query_update_release_date.replace('\\', '')

@@ -29,7 +29,7 @@ logger = logging.getLogger('wslog')
 wsc = WsClient()
 
 
-def lsf_job(job_cmd, job_param=None):
+def lsf_job(job_cmd, job_param=None, send_email=True):
     status = True
     job_status = ""
     msg_out = "No LSF job output"
@@ -44,7 +44,11 @@ def lsf_job(job_cmd, job_param=None):
         abort(403, 'Nope, cannot remove any files!')
 
     cmd = os.path.join(app.config.get('LSF_COMMAND_PATH'), job_cmd)
-    cmd = cmd + " -u " + email + " " + job_param
+    if send_email:
+        cmd = cmd + " -u " + email + " " + job_param
+    else:
+        cmd = cmd + " " + job_param
+        logger.info('LSF job triggered with no email: ' + cmd)
     try:
         job_status = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
         if job_status.stdout:
@@ -129,7 +133,7 @@ class LsfUtils(Resource):
         if not is_curator:
             abort(403)
 
-        status, message, job_out, job_err = lsf_job('bkill', lsf_job_id)
+        status, message, job_out, job_err = lsf_job('bkill', job_param=lsf_job_id)
 
         if status:
             return {"success": message, "message": job_out, "error": job_err}
@@ -183,7 +187,7 @@ class LsfUtils(Resource):
         if not is_curator:
             abort(403)
 
-        status, message, job_out, job_err = lsf_job('bjobs', "")
+        status, message, job_out, job_err = lsf_job('bjobs', job_param="")
 
         if status:
             return {"success": message, "message": job_out, "error": job_err}
@@ -256,7 +260,7 @@ class LsfUtils(Resource):
         if not is_curator:
             abort(403)
 
-        status, message, job_out, job_err = lsf_job('bsub', cluster_job)
+        status, message, job_out, job_err = lsf_job('bsub', job_param=cluster_job)
 
         if status:
             return {"success": message, "message": job_out, "error": job_err}

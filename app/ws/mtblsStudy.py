@@ -64,9 +64,7 @@ class MtblsStudies(Resource):
     )
     def get(self):
         log_request(request)
-        logger.info('Getting all public studies')
         pub_list = wsc.get_public_studies()
-        logger.info('... found %d public studies', len(pub_list['content']))
         return jsonify(pub_list)
 
 
@@ -87,7 +85,7 @@ class MtblsStudiesWithMethods(Resource):
     )
     def get(self):
         log_request(request)
-        logger.info('Getting all public studies')
+        logger.info('Getting all public studies (with methods)')
         study_list = get_public_studies_with_methods()
         studies = []
         for acc, method in study_list:

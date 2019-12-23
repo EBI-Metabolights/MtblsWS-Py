@@ -37,7 +37,7 @@ from app.ws.partner_utils import Metabolon
 from app.ws.jira_update import Jira, GoogleDocs
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
 from app.ws.assay_protocol import *
-from app.ws.validation import Validation, OverrideValidation
+from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad, CheckCompounds
 from app.ws.biostudies import *
 from app.ws.spectra import ExtractMSSpectra
@@ -73,6 +73,12 @@ def initialize_app(flask_app):
          origins={application.config.get('CORS_HOSTS')},
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
+
+    track_event(
+        tracking_id=application.config.get('GA_TRACKING_ID'),
+        category='MetaboLights-WS',
+        action='Initialising application'
+        )
 
     res_path = application.config.get('RESOURCES_PATH')
     api = swagger.docs(Api(application),
@@ -153,7 +159,6 @@ def initialize_app(flask_app):
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
-    api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
 
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
@@ -171,12 +176,34 @@ def initialize_app(flask_app):
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
     # api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
+    api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
+    api.add_resource(UpdateValidationFile, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
+
+
+def track_event(category, action, tracking_id=None, label=None, value=0):
+    data = {
+        'v': '1',  # API Version.
+        'tid': tracking_id,  # Tracking ID / Property ID.
+        # Anonymous Client Identifier. Ideally, this should be a UUID that
+        # is associated with particular user, device, or browser instance.
+        'cid': '555',
+        't': 'event',  # Event hit type.
+        'ec': category,  # Event category.
+        'ea': action,  # Event action.
+        'el': label,  # Event label.
+        'ev': value,  # Event value, must be an integer
+    }
+
+    response = requests.post('https://www.google-analytics.com/collect', data=data)
+
+    print("Calling Google Analytics with tracking id: " + application.config.get('GA_TRACKING_ID') +
+          " returned response code: " + str(response.status_code))
 
 
 def main():
@@ -185,11 +212,11 @@ def main():
     logger.info("Starting server %s v%s", application.config.get('WS_APP_NAME'), application.config.get('WS_APP_VERSION'))
     # application.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG, ssl_context=context)
     print("Starting application")
-    application.run(host="0.0.0.0", port=application.config.get('PORT'), debug=application.config.get('DEBUG'))
+    application.run(host="0.0.0.0", port=application.config.get('PORT'), debug=application.config.get('DEBUG'), threaded=True)
     logger.info("Finished server %s v%s", application.config.get('WS_APP_NAME'), application.config.get('WS_APP_VERSION'))
 
 
-print ("before main")
+print("before main")
 if __name__ == "__main__":
     print("Setting ssl context for Flask server")
     context = ('ssl/wsapp.crt', 'ssl/wsapp.key')  # SSL certificate and key files
