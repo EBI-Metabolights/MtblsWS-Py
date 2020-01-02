@@ -1640,6 +1640,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
     validations = []
     val_section = "basic"
     inv_file_name = 'i_Investigation.txt'
+    # inv_file_format = re.compile(r'i_(.*?)\.txt')
     isa_inv = None
     isa_study = None
     isa_sample_df = None
@@ -1660,7 +1661,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
                 add_msg(validations, val_section, "The file " + file_name + " was not found", error,
                         inv_file_name, val_sequence=1.1, log_category=log_category)
             except Exception as e:
-                add_msg(validations, val_section, "Could not load the minimum ISA-Tab files", error,
+                add_msg(validations, val_section, "Could not load the minimum ISA-Tab files " + str(e), error,
                         inv_file_name, val_sequence=1.2, log_category=log_category)
         else:
             add_msg(validations, val_section, "Could not load the minimum ISA-Tab files", error,
