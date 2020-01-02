@@ -1285,6 +1285,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
     if isa_study.assays:
         for assay in isa_study.assays:
             assay_type_onto = assay.technology_type
+            term_type = assay_type_onto.term
             if assay_type_onto.term == 'mass spectrometry':
                 is_ms = True
             elif assay_type_onto.term == 'NMR spectroscopy':
@@ -1305,8 +1306,13 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                     default_prots.append(prot)
 
     # protocol order
+    all_prots = ""
     for idx, protocol in enumerate(default_prots):
         prot_val_name = protocol['title']
+        if all_prots:
+            all_prots = all_prots + ", " + prot_val_name
+        else:
+            all_prots = prot_val_name
         try:
             isa_prot = isa_study.protocols[idx]
             isa_prot_name = isa_prot.name
@@ -1318,20 +1324,20 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                         "' does not match the protocol type name '" + isa_prot_type_name + "'",
                         warning, file_name, val_sequence=1, log_category=log_category)
             else:
-                add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' match the protocol type",
+                add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' match the protocol type definition",
                         success, file_name, val_sequence=1, log_category=log_category)
 
             if prot_val_name != isa_prot_name:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
-                        "' is not in the correct position or name has different case/spelling",
-                        warning, file_name, val_sequence=2, log_category=log_category)
+                        "' is not in the correct position or name has different case/spelling. Expected '" +
+                        prot_val_name + "'", warning, file_name, val_sequence=2, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
                         "' is in the correct position and name has correct case/spelling",
                         success, file_name, val_sequence=2, log_category=log_category)
-        except:
-            add_msg(validations, val_section, "Protocol '" + prot_val_name + "' was not found", error, file_name,
-                    val_sequence=3, log_category=log_category)
+        except IndexError:
+            add_msg(validations, val_section, "Could not find all required protocols '" + all_prots + "' for " +
+                    term_type, error, file_name, val_sequence=3, log_category=log_category)
 
     name_rules, name_val_description = get_complex_validation_rules(
         validation_schema, part='protocols', sub_part='protocol', sub_set='name')
