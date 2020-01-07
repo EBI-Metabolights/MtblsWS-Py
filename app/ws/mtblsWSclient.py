@@ -23,7 +23,7 @@ import json
 from datetime import datetime
 from flask_restful import abort
 from flask import current_app as app
-from app.ws.db_connection import check_access_rights
+from app.ws.db_connection import check_access_rights, get_public_studies
 
 """
 MetaboLights WS client
@@ -97,15 +97,18 @@ class WsClient:
         return update_folder
 
     def get_study_status_and_release_date(self, study_id, user_token):
+        """
+        Get the study status and public release date
+        @param study_id:
+        @param user_token:
+        @return:
+        """
         study_json = self.get_study(study_id, user_token)
         std_status = study_json["content"]["studyStatus"]
         release_date = study_json["content"]["studyPublicReleaseDate"]
         # 2012-02-14 00:00:00.0
         readable = datetime.fromtimestamp(release_date/1000).strftime('%Y-%m-%d %H:%M:%S.%f')
         return [std_status, readable]
-
-    def get_sample_names(self, study_id, user_token):
-        sample_json = self.get
 
     def get_study(self, study_id, user_token):
         """
@@ -138,7 +141,8 @@ class WsClient:
         logger.info('... found Study  %s', json_resp['content']['title'])
         return json_resp
 
-    def get_study_maf(self, study_id, assay_id, user_token):
+    @staticmethod
+    def get_study_maf(study_id, assay_id, user_token):
         """
         Get the JSON object for a given MAF for a MTBLS study
         by calling current Java-based WS
@@ -158,7 +162,8 @@ class WsClient:
         json_resp = resp.json()
         return json_resp
 
-    def get_maf_search(self, search_type, search_value):
+    @staticmethod
+    def get_maf_search(search_type, search_value):
         """
         Get the JSON object for a given MAF for a MTBLS study
         by calling current Java-based WS
@@ -223,19 +228,19 @@ class WsClient:
         logger.info('... found Study is %s', std_status)
         return is_public
 
-    def get_public_studies(self):
+    @staticmethod
+    def get_public_studies():
         logger.info('Getting all public studies')
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/list"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url)
-        if resp.status_code != 200:
-            abort(resp.status_code)
+        studies = []
+        study_list = get_public_studies()
+        for acc in study_list:
+            studies.append(acc[0])
 
-        json_resp = resp.json()
-        logger.info('... found %d public studies', len(json_resp['content']))
-        return json_resp
+        logger.info('... found %d public studies', len(studies))
+        return {"studies": len(studies), "content": studies}
 
-    def get_all_studies_for_user(self, user_token):
+    @staticmethod
+    def get_all_studies_for_user(user_token):
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         logger.info('Getting all studies for user_token %s using url %s', user_token, url)
@@ -247,7 +252,8 @@ class WsClient:
         logger.info('Found the following studies %s', text_resp)
         return text_resp
 
-    def is_user_token_valid(self, user_token):
+    @staticmethod
+    def is_user_token_valid(user_token):
         logger.info('Checking for user credentials in MTBLS-Labs')
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/labs/" + "authenticateToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
@@ -277,9 +283,11 @@ class WsClient:
         INREVIEW    ----    Read        Read+Write
         PUBLIC      Read    Read        Read+Write
 
+        :param obfuscation_code:
         :param study_id:
         :param user_token:
         :return:
+
         """
 
         if not user_token:
@@ -375,10 +383,8 @@ class WsClient:
         message = resp.text
         return True, message
 
-
     @staticmethod
     def add_user_to_study(study_id, email):
-        # TODO, new Java ws method to add user to study
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/reindexStudyOnToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
         logger.info('Reindex study ' + study_id)

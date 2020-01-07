@@ -19,7 +19,6 @@
 import glob
 import logging
 import os
-import pandas as pd
 import re
 import shlex
 import ssl
@@ -32,6 +31,7 @@ from subprocess import *
 import cirpy
 import ctfile
 import numpy as np
+import pandas as pd
 import pronto
 import pubchempy as pcp
 import requests
@@ -48,7 +48,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger('wslog_chebi')
 
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
@@ -1470,6 +1470,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
             cid = str(cid).strip().rstrip('\n')
             formula = compound.molecular_formula.strip().rstrip('\n')
             for idx, synonym in enumerate(compound.synonyms):
+                first_synonym = None
                 if idx == 0 and synonym.lower() != comp_name.lower():
                     # The first synonym is also the PubChem name,
                     # so always add this to the return set unless it's the same as the compound name we searched for

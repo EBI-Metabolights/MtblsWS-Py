@@ -74,6 +74,14 @@ def initialize_app(flask_app):
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
 
+    tracking_id = application.config.get('GA_TRACKING_ID')
+    if tracking_id:
+        track_event(
+            tracking_id=application.config.get('GA_TRACKING_ID'),
+            category='MetaboLights-WS',
+            action='Initialising application'
+            )
+
     res_path = application.config.get('RESOURCES_PATH')
     api = swagger.docs(Api(application),
                        description='MetaboLights RESTful WebService',
@@ -180,6 +188,26 @@ def initialize_app(flask_app):
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
 
 
+def track_event(category, action, tracking_id=None, label=None, value=0):
+    data = {
+        'v': '1',  # API Version.
+        'tid': tracking_id,  # Tracking ID / Property ID.
+        # Anonymous Client Identifier. Ideally, this should be a UUID that
+        # is associated with particular user, device, or browser instance.
+        'cid': '555',
+        't': 'event',  # Event hit type.
+        'ec': category,  # Event category.
+        'ea': action,  # Event action.
+        'el': label,  # Event label.
+        'ev': value,  # Event value, must be an integer
+    }
+
+    response = requests.post('https://www.google-analytics.com/collect', data=data)
+
+    print("Calling Google Analytics with tracking id: " + tracking_id +
+          " returned response code: " + str(response.status_code))
+
+
 def main():
     print("Initialising application")
     initialize_app(application)
@@ -190,7 +218,7 @@ def main():
     logger.info("Finished server %s v%s", application.config.get('WS_APP_NAME'), application.config.get('WS_APP_VERSION'))
 
 
-print ("before main")
+print("before main")
 if __name__ == "__main__":
     print("Setting ssl context for Flask server")
     context = ('ssl/wsapp.crt', 'ssl/wsapp.key')  # SSL certificate and key files
