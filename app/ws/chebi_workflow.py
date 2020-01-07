@@ -48,7 +48,7 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger('wslog_chebi')
 
 # MetaboLights (Java-Based) WebService client
 wsc = WsClient()
