@@ -34,7 +34,6 @@ import csv
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
-sm = SMInstance()  # connect to the main metaspace service
 
 
 class MetaspacePipeLine(Resource):
@@ -114,6 +113,9 @@ class MetaspacePipeLine(Resource):
         if not write_access:
             abort(403)
 
+        sm = SMInstance()
+        investigation = None
+
         # body content validation
         if request.data:
             try:
@@ -136,7 +138,8 @@ class MetaspacePipeLine(Resource):
                                                      study_location=study_location,
                                                      metaspace_api_key=metaspace_api_key,
                                                      user_token=user_token,
-                                                     obfuscation_code=obfuscation_code)
+                                                     obfuscation_code=obfuscation_code,
+                                                     sm_instance=sm)
             except KeyError:
                 abort(419, "No 'project' parameter was provided.")
             except AttributeError as e:
@@ -276,17 +279,17 @@ def save_file(content, path, filename, data_type='text'):
 
 
 def aws_get_annotations(mtspc_obj, output_dir, database=config.METASPACE_DATABASE, fdr=config.METASPACE_FDR,
-                        metaspace_api_key=None):
+                        metaspace_api_key=None, sm_instance=None):
 
     filename = 'annotations'
     # CONNECT TO METASPACE SERVICES
-    db = get_database(database=database, metaspace_api_key=metaspace_api_key)
+    db = get_database(database=database, metaspace_api_key=metaspace_api_key, sm_instance=sm_instance)
     # db = sm._moldb_client.getDatabase(database)  # connect to the molecular database service
 
     for sample in mtspc_obj:
         metaspace_options = sample['metaspace_options']
         ds_name = metaspace_options['Dataset_Name']
-        ds = sm.dataset(name=ds_name)
+        ds = sm_instance.dataset(name=ds_name)
         # print('Dataset name: ', ds_name)
         # print('Dataset id: ', ds.id)
         # print('Dataset config: ', ds.config)
@@ -346,16 +349,17 @@ def aws_get_annotations(mtspc_obj, output_dir, database=config.METASPACE_DATABAS
             return
 
 
-def get_metadata(dataset_ids, output_dir, database=None, metaspace_api_key=None):
+def get_metadata(dataset_ids, output_dir, database=None, metaspace_api_key=None, sm_instance=None):
     annotation_json = None
     info_json = None
 
     if dataset_ids:
-        db = get_database(database=database, metaspace_api_key=metaspace_api_key)
+        db = get_database(database=database, metaspace_api_key=metaspace_api_key, sm_instance=sm_instance)
 
         annos = []
         infos = []
         metas = []
+        dataset = None
 
         for ds_id in dataset_ids:
             try:
@@ -400,13 +404,13 @@ def tidy_chars(text):
     return t2
 
 
-def aws_get_images(mtspc_obj, output_dir, use_path=False):
+def aws_get_images(mtspc_obj, output_dir, use_path=False, sm_instance=None):
     # sm = SMInstance()
 
     for sample in mtspc_obj:
         metaspace_options = sample['metaspace_options']
         ds_name = metaspace_options['Dataset_Name']
-        ds = sm.dataset(name=ds_name)
+        ds = sm_instance.dataset(name=ds_name)
         opt_im = ds._gqclient.getRawOpticalImage(ds.id)['rawOpticalImage']
 
         path = opt_im['url']
@@ -423,27 +427,27 @@ def aws_get_images(mtspc_obj, output_dir, use_path=False):
                           filename=img_name + '.jpg', data_type='binary')
 
 
-def get_database(database=None, metaspace_api_key=None):
+def get_database(database=None, metaspace_api_key=None, sm_instance=None):
     # CONNECT TO METASPACE SERVICES
     # sm = SMInstance()  # connect to the main metaspace service
 
     if database:
-        db = sm._moldb_client.getDatabase(database)  # connect to the molecular database service
+        db = sm_instance._moldb_client.getDatabase(database)  # connect to the molecular database service
     else:
-        db = sm
+        db = sm_instance
         logger.info('NB! Only public datasets can be retrieved')
 
     # return db #  ToDo, check why we cannot connect
-    return sm
+    return sm_instance
 
 
-def get_study_json(ds_ids, output_dir, std_title):
+def get_study_json(ds_ids, output_dir, std_title, sm_instance=None):
     #  db = sm._moldb_client.getDatabase(config.METASPACE_DATABASE)
     std_json = []
     for ii, ds_id in enumerate(ds_ids):
         logger.info("Getting JSON information for %s", ds_id)
         try:
-            ds = sm.dataset(id=ds_id)
+            ds = sm_instance.dataset(id=ds_id)
         except:
             logger.error('Could not find dataset ' + ds_id + ' in the METASPACE database')
             continue
@@ -477,11 +481,11 @@ def get_study_json(ds_ids, output_dir, std_title):
     return std_json
 
 
-def get_all_files(ds_ids, file_types, output_dir, use_path=False):
+def get_all_files(ds_ids, file_types, output_dir, use_path=False, sm_instance=None):
     for ii, ds_id in enumerate(ds_ids):
         logger.info("Getting all files for %s", ds_id)
         try:
-            ds = sm.dataset(id=ds_id)
+            ds = sm_instance.dataset(id=ds_id)
         except:
             logger.error('Could not find dataset ' + ds_id + ' in the METASPACE database')
             continue
@@ -501,7 +505,7 @@ def get_all_files(ds_ids, file_types, output_dir, use_path=False):
 
 
 def import_metaspace(study_id, project=None, study_location=None, metaspace_api_key=None, user_token=None,
-                     obfuscation_code=None):
+                     obfuscation_code=None, sm_instance=None):
     mtspc_obj = None
     input_folder = study_location
     output_dir = study_location
@@ -509,9 +513,10 @@ def import_metaspace(study_id, project=None, study_location=None, metaspace_api_
     std_description = "Please update abstract of study " + study_id
     use_path = False
     study_ids = project.split(',')
-    get_study_json(study_ids, output_dir, study_id)
+    get_study_json(study_ids, output_dir, study_id, sm_instance=sm_instance)
     input_file = os.path.join(input_folder, study_id + ".json")
-    get_metadata(study_ids, output_dir, database=config.METASPACE_DATABASE, metaspace_api_key=metaspace_api_key)
+    get_metadata(study_ids, output_dir, database=config.METASPACE_DATABASE,
+                 metaspace_api_key=metaspace_api_key, sm_instance=sm_instance)
 
     if os.path.isfile(input_file):
         mtspc_obj = parse(input_file)
@@ -519,10 +524,11 @@ def import_metaspace(study_id, project=None, study_location=None, metaspace_api_
     if mtspc_obj:
         aws_download_files(mtspc_obj, output_dir, 'imzML', data_type='utf-8', use_path=use_path)
         aws_download_files(mtspc_obj, output_dir, 'ibd', data_type='binary', use_path=use_path)
-        aws_get_annotations(mtspc_obj, output_dir, metaspace_api_key=metaspace_api_key)
-        aws_get_images(mtspc_obj, output_dir, use_path=use_path)
+        aws_get_annotations(mtspc_obj, output_dir, metaspace_api_key=metaspace_api_key, sm_instance=sm_instance)
+        aws_get_images(mtspc_obj, output_dir, use_path=use_path, sm_instance=sm_instance)
 
-    get_all_files(study_ids, ['.imzML', '.ibd', '.jpg', '.jpeg', '.png'], output_dir, use_path=use_path)
+    get_all_files(study_ids, ['.imzML', '.ibd', '.jpg', '.jpeg', '.png'], output_dir,
+                  use_path=use_path, sm_instance=sm_instance)
     #get_all_files(study_ids, ['.jpg', '.jpeg', '.png'], output_dir, use_path=use_path)
 
     iac = MetaSpaceIsaApiClient()

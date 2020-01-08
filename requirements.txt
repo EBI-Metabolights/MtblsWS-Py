@@ -27,3 +27,4 @@ pillow
 requests
 metaspace2020
 recommonmark
+cython

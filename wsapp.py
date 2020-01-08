@@ -74,11 +74,13 @@ def initialize_app(flask_app):
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
 
-    track_event(
-        tracking_id=application.config.get('GA_TRACKING_ID'),
-        category='MetaboLights-WS',
-        action='Initialising application'
-        )
+    tracking_id = application.config.get('GA_TRACKING_ID')
+    if tracking_id:
+        track_event(
+            tracking_id=application.config.get('GA_TRACKING_ID'),
+            category='MetaboLights-WS',
+            action='Initialising application'
+            )
 
     res_path = application.config.get('RESOURCES_PATH')
     api = swagger.docs(Api(application),
@@ -202,7 +204,7 @@ def track_event(category, action, tracking_id=None, label=None, value=0):
 
     response = requests.post('https://www.google-analytics.com/collect', data=data)
 
-    print("Calling Google Analytics with tracking id: " + application.config.get('GA_TRACKING_ID') +
+    print("Calling Google Analytics with tracking id: " + tracking_id +
           " returned response code: " + str(response.status_code))
 
 

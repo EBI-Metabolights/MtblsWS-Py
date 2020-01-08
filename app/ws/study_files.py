@@ -16,19 +16,21 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import json
+import zipfile
+from operator import itemgetter
+from os import scandir
+
 from flask import request, abort
 from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from marshmallow import ValidationError
+
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.mtblsStudy import write_audit_files
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
-from app.ws.mtblsStudy import write_audit_files
-from app.ws.isaApiClient import IsaApiClient
-from operator import itemgetter
-from marshmallow import ValidationError
-import json
-import zipfile
-from os import scandir, walk
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -327,7 +329,7 @@ class CopyFilesFolders(Resource):
         summary="Copy files from upload folder to study folder",
         nickname="Copy from upload folder",
         notes="""Copies files/folder from the upload directory to the study directory</p> 
-        Note that MetaboLights curators will also trigger copy any new investionation files!</p>
+        Note that MetaboLights curators will also trigger a copy of any new investigation file!</p>
         </p><pre><code>If you only want to copy, or rename, a specific file please use the files field: </p> 
     { 
         "files": [
