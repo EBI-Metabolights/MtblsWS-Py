@@ -1135,7 +1135,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
         if file_type == 'aspera-control':
             add_msg(validations, val_section,
-                    "Incomplete Aspera transfer? .ascp control files are present in the study folder: '" + file_name + "'",
+                    "Incomplete Aspera transfer? '.partial', '.aspera-ckpt' or '.aspx' Aspera control files are present in the study folder: '" + file_name + "'",
                     error, val_section, value=file_name, val_sequence=6.1, log_category=log_category)
 
         if file_type == 'raw':
