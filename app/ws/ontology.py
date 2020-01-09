@@ -18,7 +18,6 @@
 
 import datetime
 import re
-import types
 
 import gspread
 import numpy as np
@@ -457,7 +456,7 @@ class Placeholder(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["factor", "design descriptor"]
+                "enum": ["factor", "design descriptor", "organism"]
             },
         ],
         responseMessages=[
@@ -504,6 +503,12 @@ class Placeholder(Resource):
 
             col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
                    'matched_iri', 'superclass', 'definition']
+        elif query == 'organism':
+            sheet_name = 'organism'
+
+            col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_organism',
+                   'organism', 'organism_ref', 'organism_url', 'old_organismPart', 'organismPart', 'organismPart_ref',
+                   'organismPart_url', 'superclass', 'definition']
         else:
             abort(400)
 
@@ -518,12 +523,21 @@ class Placeholder(Resource):
 
         df = pd.DataFrame(get_metainfo(query))
         df_connect = pd.concat([google_df, df], ignore_index=True, sort=False)
-        df_connect = df_connect.reindex(columns=col) \
-            .replace(np.nan, '', regex=True) \
-            .drop_duplicates(keep='first', subset=["studyID", "old_name"])
+        if query in ['factor', 'design descriptor']:
+            df_connect = df_connect.reindex(columns=col) \
+                .replace(np.nan, '', regex=True) \
+                .drop_duplicates(keep='first', subset=["studyID", "old_name"])
+
+        if query == 'organism':
+            df_connect = df_connect.replace('', np.nan, regex=True)
+            df_connect = df_connect.dropna(subset=['old_organism', 'old_organismPart'], thresh=1)
+            df_connect = df_connect.reindex(columns=col) \
+                .replace(np.nan, '', regex=True) \
+                .drop_duplicates(keep='first', subset=["studyID", "old_organism", "old_organismPart"])
 
         adding_count = df_connect.shape[0] - google_df.shape[0]
 
+        # Ranking the row according to studyIDs
         def extractNum(s):
             num = re.findall("\d+", s)[0]
             return int(num)
@@ -548,7 +562,7 @@ class Placeholder(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["factor", "design descriptor"]
+                "enum": ["factor", "design descriptor", "organism"]
             },
         ],
         responseMessages=[
@@ -844,7 +858,7 @@ def get_metainfo(query):
     studyIDs = getStudyIDs()
 
     for studyID in studyIDs:
-        print(studyID)
+        print(f'get {query} from {studyID}.')
         if query.lower() == "factor":
             url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
 
@@ -881,6 +895,33 @@ def get_metainfo(query):
 
                     if ('placeholder' in temp_dict['matched_iri']) or (len(temp_dict['matched_iri']) == 0):
                         res.append(temp_dict)
+                    else:
+                        abort(400)
+            except:
+                pass
+
+        elif query.lower() == "organism":
+            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+
+            try:
+                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                data = resp.json()
+                for organism in data['organisms']:
+                    temp_dict = {'studyID': studyID,
+                                 'old_organism': organism['Characteristics[Organism]'],
+                                 'organism_ref': organism["Term Source REF"],
+                                 'organism_url': organism["Term Accession Number"],
+                                 'old_organismPart': organism['Characteristics[Organism part]'],
+                                 'organismPart_ref': organism["Term Source REF.1"],
+                                 'organismPart_url': organism["Term Accession Number.1"]
+                                 }
+
+                    # res.append(temp_dict)
+
+                    if ('placeholder' in temp_dict['organism_url']) or ('placeholder' in temp_dict['organismPart_url']) \
+                            or (len(temp_dict['organism_url']) == 0) or (len(temp_dict['organismPart_url']) == 0):
+                        res.append(temp_dict)
+
                     else:
                         abort(400)
             except:
