@@ -1115,6 +1115,10 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
             continue
 
         if file_name.startswith(('i_', 'a_', 's_', 'm_')):
+            if file_status != 'active':
+                add_msg(validations, val_section, "Inactive ISA-Tab metadata files should be removed", error,
+                        val_section, value=file_name, val_sequence=5.1, log_category=log_category)
+
             if file_name.startswith('s_') and file_status == 'active':
                 sample_cnt += 1
 
@@ -1124,7 +1128,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                         val_sequence=4, log_category=log_category)
 
             if file_status == 'old':
-                add_msg(validations, val_section, "Old metadata file should be removed", warning,
+                add_msg(validations, val_section, "Old ISA-Tab metadata file should be removed", error,
                         val_section, value=file_name, val_sequence=5, log_category=log_category)
 
         if is_empty_file(full_file_name) and file_name not in empty_exclude_list:
@@ -1135,7 +1139,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
         if file_type == 'aspera-control':
             add_msg(validations, val_section,
-                    "Incomplete Aspera transfer? '.partial', '.aspera-ckpt' or '.aspx' Aspera control files are present in the study folder: '" + file_name + "'",
+                    "Incomplete Aspera transfer? '.partial', '.aspera-ckpt' or '.aspx' Aspera control files "
+                    "are present in the study folder: '" + file_name + "'",
                     error, val_section, value=file_name, val_sequence=6.1, log_category=log_category)
 
         if file_type == 'raw':
