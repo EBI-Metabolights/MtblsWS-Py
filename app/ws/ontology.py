@@ -1008,8 +1008,23 @@ def replaceGoogleSheet(df, url, worksheetName):
         logger.info(e.args)
 
 
-def addZoomaTerm():
-    zooma_path = app.config.get('MTBLS_ZOOMA_FILE')
+def addZoomaTerm(studyID, Property_type, Property_value, url):
+    '''
+    :param studyID: studyID
+    :param Property_type: Term to be annotated
+    :param Property_value: annotation value
+    :param url: annotation url
+    :return: Nan
+    '''
+    zooma_path = app.config.get("MTBLS_ZOOMA_FILE")
+    zooma_df = pd.read_csv(zooma_path, sep='\t')
+    lastID = int(zooma_df.iloc[-1]['BIOENTITY'].split('_')[1])
+    bioentity = 'metabo_' + str(lastID + 1)
+    t = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+    temp = {'STUDY': studyID, 'BIOENTITY': bioentity, 'PROPERTY_TYPE': Property_type, 'PROPERTY_VALUE': Property_value,
+            'SEMANTIC_TAG': url, 'ANNOTATOR': 'Jiakang Chang', 'ANNOTATION_DATE': t}
+    zooma_df = zooma_df.append(temp, ignore_index=True)
+    zooma_df.to_csv(zooma_path, sep='\t', index=False)
 
 
 def addEntity(ontoPath, new_term, supclass, definition=None):
