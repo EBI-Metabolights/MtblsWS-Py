@@ -3,10 +3,10 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-Jun-06
+#  Last modified: 2020-Jan-09
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,16 +16,18 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import logging
-import json
 import datetime
+import json
+import logging
+
 from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from app.ws.mtblsWSclient import WsClient
+
 from app.ws.db_connection import update_study_status
-from app.ws.validation import validate_study
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.mtblsWSclient import WsClient
+from app.ws.validation import validate_study
 
 logger = logging.getLogger('wslog')
 
@@ -138,7 +140,6 @@ class StudyStatus(Resource):
                 else:  # Release date is already set to more than 28 days in the future
                     iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True)
 
-
             else:
                 abort(403, "There are validation errors. Fix any problems before attempting to change study status.")
         else:
@@ -152,6 +153,8 @@ class StudyStatus(Resource):
     def update_status(study_id, study_status, is_curator=False):
         # Update database
         update_study_status(study_id, study_status, is_curator=is_curator)
+        #  ToDo, move the private obfuscated folder
+        #  ./mtblight/prod/<mtbls>-<obfuscation_code> to ./mtblight/prod/old/<mtbls>-<obfuscation_code>
 
     @staticmethod
     def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
