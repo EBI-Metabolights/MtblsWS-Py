@@ -3,10 +3,10 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-May-23
+#  Last modified: 2020-Jan-09
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,18 +17,19 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import json
-import traceback
-import requests
 import threading
-from app.ws.study_files import get_all_files_from_filesystem
-from flask import request, abort
+import traceback
+
+from flask import abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import *
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.db_connection import override_validations, update_validation_status
+
 from app.ws.cluster_jobs import lsf_job
+from app.ws.db_connection import override_validations, update_validation_status
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.mtblsWSclient import WsClient
+from app.ws.study_files import get_all_files_from_filesystem
+from app.ws.utils import *
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -168,9 +169,16 @@ def remove_nonprintable(text):
 
 
 def is_empty_file(full_file_name):
-    file_stats = os.stat(full_file_name)
-    file_size = file_stats.st_size
-    empty_file = file_size == 0
+    # This will return False if a filename is not correct, ie. has a space etc.
+    empty_file = True
+    try:
+        file_stats = os.stat(full_file_name)
+        file_size = file_stats.st_size
+        empty_file = file_size == 0
+    except Exception as e:
+        message = "File '" + full_file_name + "' can not be checked/found. " + str(e)
+        logger.error(message)
+        return empty_file
     return empty_file
 
 
@@ -184,7 +192,7 @@ def get_sample_names(isa_samples):
 def check_file(file_name_and_column, study_location, file_name_list, assay_file_list=None):
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
-
+    full_file = os.path.join(study_location, file_name)
     fname, ext = os.path.splitext(file_name)
     ext = ext.lower()
 
@@ -192,15 +200,16 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     raw_file = 'Raw Spectral Data File'
     derived_file = 'Derived Spectral Data File'
 
-    if os.path.isdir(os.path.join(study_location, file_name)) and ext not in ('.raw', '.d'):
+    if os.path.isdir(full_file) and ext not in ('.raw', '.d'):
         return False, 'folder', file_name + " is a sub-folder, please reference a file"
 
     if "fid" not in file_name and file_name not in file_name_list:  # Files may be referenced in sub-folders
         return False, ' - unknown - ', "File " + file_name + " does not exist"
 
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
-    if is_empty_file(os.path.join(study_location, file_name)):
-        return False, file_type, "File " + file_name + " is empty"
+
+    if is_empty_file(full_file):
+        return False, file_type, "File '" + file_name + "' is empty or incorrect"
 
     if file_type == 'metadata_maf' and column_name == 'Metabolite Assignment File':
         if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
@@ -1098,7 +1107,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
             if os.path.isdir(os.path.join(full_file_name)):
                 for sub_file_name in os.listdir(full_file_name):
                     if is_empty_file(os.path.join(full_file_name, sub_file_name)):
-                        add_msg(validations, val_section, "Empty files found in a sub-directory", info, val_section,
+                        add_msg(validations, val_section, "Empty file found in a sub-directory", info, val_section,
                                 value=os.path.join(file_name, sub_file_name), val_sequence=1, log_category=log_category)
 
                     # warning for sub folders with ISA tab
@@ -1116,8 +1125,9 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
         if file_name.startswith(('i_', 'a_', 's_', 'm_')):
             if file_status != 'active':
-                add_msg(validations, val_section, "Inactive ISA-Tab metadata files should be removed", error,
-                        val_section, value=file_name, val_sequence=5.1, log_category=log_category)
+                add_msg(validations, val_section, "Inactive ISA-Tab metadata file should be removed ("
+                        + file_name + ")", error, val_section, value=file_name,
+                        val_sequence=5.1, log_category=log_category)
 
             if file_name.startswith('s_') and file_status == 'active':
                 sample_cnt += 1
@@ -1128,8 +1138,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                         val_sequence=4, log_category=log_category)
 
             if file_status == 'old':
-                add_msg(validations, val_section, "Old ISA-Tab metadata file should be removed", error,
-                        val_section, value=file_name, val_sequence=5, log_category=log_category)
+                add_msg(validations, val_section, "Old ISA-Tab metadata file should be removed ("
+                        + file_name + ")", error, val_section, value=file_name, val_sequence=5, log_category=log_category)
 
         if is_empty_file(full_file_name) and file_name not in empty_exclude_list:
             if '/' in file_name and file_name.split("/")[1] not in empty_exclude_list:  # In case the file is in a folder
@@ -1290,11 +1300,12 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
     if isa_study.assays:
         for assay in isa_study.assays:
             assay_type_onto = assay.technology_type
-            term_type = assay_type_onto.term
-            if assay_type_onto.term == 'mass spectrometry':
-                is_ms = True
-            elif assay_type_onto.term == 'NMR spectroscopy':
-                is_nmr = True
+            if assay_type_onto.term:
+                term_type = assay_type_onto.term
+                if assay_type_onto.term == 'mass spectrometry':
+                    is_ms = True
+                elif assay_type_onto.term == 'NMR spectroscopy':
+                    is_nmr = True
 
     # List if standard protocols that should be present
     if validation_schema:

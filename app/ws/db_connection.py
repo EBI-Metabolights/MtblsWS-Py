@@ -3,10 +3,10 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-May-16
+#  Last modified: 2020-Jan-09
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,13 +16,15 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import psycopg2
-import traceback
-import os
 import logging
+import os
 import re
-from psycopg2 import pool
+import traceback
+
+import psycopg2
 from flask import current_app as app
+from psycopg2 import pool
+
 from app.ws.utils import get_single_file_information, check_user_token
 
 logger = logging.getLogger('wslog')
@@ -46,7 +48,7 @@ query_all_studies = """
           study_user su,
           users u
         where
-           date_trunc('day',s.updatedate)>=date_trunc('day',current_date-365) and
+           -- date_trunc('day',s.updatedate)>=date_trunc('day',current_date-365) and
            s.id = su.studyid and
            su.userid = u.id
     group by 1,3,4,5,6) status

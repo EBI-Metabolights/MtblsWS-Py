@@ -518,6 +518,7 @@ class CopyFilesFolders(Resource):
 class SampleStudyFiles(Resource):
     @swagger.operation(
         summary="Get a list of all sample names, mapped to files in the study and upload folder(s)",
+        notes="A prefect match gives reliability score of '1.0'. Use the highest score possible for matching",
         parameters=[
             {
                 "name": "study_id",
@@ -595,11 +596,11 @@ class SampleStudyFiles(Resource):
 
                 # Now, let's try to match up
                 if f == s:  # File name and sample name is an exact match
-                    samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "exact_match"})
+                    samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "1.0"})
                 elif s in f or f in s:  # Sample name appears in the file name, or file name appears in sample name
-                    samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "pattern"})
+                    samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "0.9"})
                 elif s_clean in f_clean or f_clean in s_clean:  # Sample name appears in the file name, and other way
-                    samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "fuzzy"})
+                    samples_and_files.append({"sample_name": s_name, "file_name": f_name, "reliability": "0.5"})
 
         return jsonify({'sample_files': samples_and_files})
 
@@ -758,6 +759,7 @@ def clean_name(name):
     name = name.replace('-', '')
     name = name.replace('&', '')
     name = name.replace('#', '')
+    name = name.replace('.', '')
     return name
 
 
