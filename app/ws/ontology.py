@@ -1027,12 +1027,11 @@ def addZoomaTerm(studyID, Property_type, Property_value, url):
     zooma_df.to_csv(zooma_path, sep='\t', index=False)
 
 
-def addEntity(ontoPath, new_term, supclass, definition=None):
+def addEntity(new_term, supclass, definition=None):
     '''
     add new term to the ontology and save it
 
     :param ontoPath: Ontology Path
-    :param new_term: new entity to be added
     :param supclass:  superclass/branch name or iri of new term
     :param definition (optional): definition of the new term
     '''
@@ -1056,7 +1055,7 @@ def addEntity(ontoPath, new_term, supclass, definition=None):
         return id
 
     try:
-        onto = get_ontology(ontoPath).load()
+        onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
         id = getid(onto)
         namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
 
@@ -1076,7 +1075,7 @@ def addEntity(ontoPath, new_term, supclass, definition=None):
             else:
                 pass
 
-        onto.save(file=ontoPath, format='rdfxml')
+        onto.save(file=app.config.get('MTBLS_ONTOLOGY_FILE'), format='rdfxml')
 
     except Exception as e:
         logger.info(e)
