@@ -140,6 +140,9 @@ class IsaApiClient:
                 and path to the Study in the file system
         """
 
+        if skip_load_tables == 'false':
+            skip_load_tables = False
+
         if study_location is None:
             logger.info("Study location is not set, will have load study from filesystem")
             std_path = self.wsc.get_study_location(study_id, api_key)

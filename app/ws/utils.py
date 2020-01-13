@@ -3,10 +3,10 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-May-23
+#  Last modified: 2020-Jan-08
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,22 +16,25 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import datetime
 import glob
+import io
 import logging
 import os
 import os.path
+import re
 import shutil
 import time
-import datetime
-from flask import current_app as app
-import pandas as pd
+
 import numpy as np
-import re
-import io
+import pandas as pd
+import requests
+from flask import current_app as app, request
 from isatools.model import Protocol, ProtocolParameter, OntologySource
-from app.ws.mm_models import OntologyAnnotation
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
+
+from app.ws.mm_models import OntologyAnnotation
 
 """
 Utils
@@ -969,3 +972,34 @@ def get_assay_file_list(study_location):
                     all_files.append(a_file)
 
     return all_files
+
+
+def track_ga_event(category, action, tracking_id=None, label=None, value=0):
+    data = {
+        'v': '1',  # API Version.
+        'tid': tracking_id,  # Tracking ID / Property ID.
+        # Anonymous Client Identifier. Ideally, this should be a UUID that
+        # is associated with particular user, device, or browser instance.
+        'cid': '555',
+        't': 'event',  # Event hit type.
+        'ec': category,  # Event category.
+        'ea': action,  # Event action.
+        'el': label,  # Event label.
+        'ev': value,  # Event value, must be an integer
+    }
+
+    response = requests.post('https://www.google-analytics.com/collect', data=data)
+
+    print("Calling Google Analytics with tracking id: " + tracking_id +
+          " returned response code: " + str(response.status_code))
+
+
+def google_analytics():
+    tracking_id = app.config.get('GA_TRACKING_ID')
+    if tracking_id:
+        environ = request.headers.environ
+        url = environ['REQUEST_URI']
+        track_ga_event(
+            tracking_id=tracking_id,
+            category='MetaboLights-WS',
+            action=url)

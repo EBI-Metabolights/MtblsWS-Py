@@ -1,12 +1,13 @@
+
 #  EMBL-EBI MetaboLights - https://www.ebi.ac.uk/metabolights
 #  Metabolomics team
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-Oct-29
+#  Last modified: 2020-Jan-09
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -116,7 +117,8 @@ spreadsheet_fields = [database_identifier_column,
                       "opsin_inchi_key",
                       "pubchem_formula",
                       "pubchem_synonyms",
-                      "cactus_synonyms"]
+                      "cactus_synonyms",
+                      "glytoucan_id"]
 
 
 def get_idx(col_name, pubchem_df_headers=None):
@@ -433,6 +435,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                             "chemical_formula": get_idx('chemical_formula'),
                             "smiles": get_idx('smiles'), "inchi": get_idx('inchi')}
 
+    glytoucan_file_df = read_glytoucan_file()
+
     try:
         maf_df = read_tsv(annotation_file_name)
     except FileNotFoundError:
@@ -482,6 +486,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         changed = False
         alt_name = ''
         existing_row = None
+        final_inchi_key = None
 
         final_cid = None
         if exiting_pubchem_file:
@@ -544,6 +549,14 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     smiles = result["smiles"]
                     inchi = result["inchi"]
                     name = result["name"]
+
+                    if chemical_formula and '-' in chemical_formula:  # MTBLS search adds the charge at the end
+                        # Need to get the conjugate acid of this base compound
+                        print_log("    -- Searching for conjugate acid of " + comp_name)
+                        database_identifier, inchi, inchikey, name, smiles, formula, search_type = \
+                            direct_chebi_search(final_inchi_key, comp_name,
+                                                acid_chebi_id=database_identifier,
+                                                search_type="get_conjugate_acid")
 
                     pubchem_df.iloc[row_idx, get_idx(database_identifier_column)] = database_identifier
                     pubchem_df.iloc[row_idx, get_idx('chemical_formula')] = chemical_formula
@@ -657,8 +670,14 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     pubchem_df.iloc[row_idx, get_idx('pubchem_first_synonym', pubchem_df_headers)] = first_synonym  # PubChem first synonym, ie. the compound name
                     if not cactus_synonyms:
                         cactus_synonyms = alt_name
-                    pubchem_df.iloc[row_idx, get_idx('cactus_synonyms', pubchem_df_headers)] = cactus_synonyms      # Cactus synonyms
 
+                    if final_cid:
+                        glytoucan_id = get_glytoucan_id(final_cid, glytoucan_file_df)
+                        if glytoucan_id:
+                            pubchem_df.iloc[row_idx, get_idx('glytoucan_id', pubchem_df_headers)] = glytoucan_id
+                            # GlyToucan id for ChEBI/UniProt colab
+
+                    pubchem_df.iloc[row_idx, get_idx(final_cid_column_name, pubchem_df_headers)] = final_cid
                     db_acc = ""
                     if csid:
                         db_acc = 'ChemSpiderID:' + csid + ';'
@@ -1180,7 +1199,7 @@ def get_ancestors(classyfire_file_name, classyfire_df):
 
 
 def get_classyfire_lookup_mapping():
-    assay_master_template = './resources/ClassyFire_Mapping_VLOOKUP.tsv'
+    assay_master_template = resource_folder + 'ClassyFire_Mapping_VLOOKUP.tsv'
     return read_tsv(assay_master_template)
 
 
@@ -1224,7 +1243,7 @@ def get_chebi_client():
     return client
 
 
-def direct_chebi_search(final_inchi_key, comp_name, search_type="inchi"):
+def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_type="inchi"):
     chebi_id = ""
     inchi = ""
     inchikey = ""
@@ -1252,6 +1271,8 @@ def direct_chebi_search(final_inchi_key, comp_name, search_type="inchi"):
         elif search_type == "synonym" and comp_name:
             print_log("    -- Querying ChEBI web services for " + comp_name + " using synonym search")
             lite_entity = client.service.getLiteEntity(comp_name, 'ALL_NAMES', '10', 'ALL')
+        elif search_type == "get_conjugate_acid" and acid_chebi_id:
+            lite_entity = client.service.getAllOntologyChildrenInPath(acid_chebi_id, 'is conjugate acid of', False)
 
         if lite_entity and lite_entity[0]:
             top_result = lite_entity[0]
@@ -1271,12 +1292,21 @@ def direct_chebi_search(final_inchi_key, comp_name, search_type="inchi"):
             inchikey = complete_entity.inchiKey
             name = complete_entity.chebiAsciiName
             smiles = complete_entity.smiles
+            charge = complete_entity.charge
             if complete_entity.Formulae and complete_entity.Formulae[0]:
                 formula = complete_entity.Formulae[0].data
 
     except Exception as e:
         logger.error("ChEBI Search error: " + str(e))
         print_log('    -- Error querying ChEBI')
+
+    # if formula and formula.endswith('-') and not acid_chebi_id:
+    if formula and charge and '-' in charge:
+        # Need to get the conjugate acid compound of this base compound
+        # Only call if we do not have the acid_chebi_id, otherwise it may loop (maybe...)
+        print_log("    -- Searching for conjugate acid of " + chebi_id)
+        return direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=chebi_id, search_type="get_conjugate_acid")
+
     return chebi_id, inchi, inchikey, name, smiles, formula, search_type
 
 
@@ -1523,6 +1553,28 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
     sdf_file_list.append([file_name, classyfire_id])
 
     return sdf_file_list, classyfire_id
+
+
+def read_glytoucan_file():
+    glytoucan_file_df = None
+    try:
+        glytoucan_file_df = read_tsv(resource_folder + 'glytoucan.tsv')
+        glytoucan_file_df = glytoucan_file_df.drop_duplicates(subset='cid', keep="last")
+    except Exception as e:
+        print_log("ERROR: Could not read " + resource_folder + "glytoucan.tsv file")
+    return glytoucan_file_df
+
+
+def get_glytoucan_id(final_cid, df):
+    glytoucan_id = ""
+    try:
+        result = df.loc[df['cid'] == 'CID'+ final_cid]
+        #glytoucan_id = result['glytoucan']
+        if len(result.index) >= 1:
+            glytoucan_id = result.iloc[0]['glytoucan']
+    except Exception as e:
+        print_log("    -- WARNING: Could not search glytoucan dataframe. " + str(e))
+    return glytoucan_id
 
 
 class SplitMaf(Resource):
@@ -1958,4 +2010,3 @@ class ChEBIPipeLineLoad(Resource):
             return {"Success": "ChEBI upload script started"}
         else:
             return {"Warning": "ChEBI upload script started"}
-

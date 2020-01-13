@@ -137,6 +137,10 @@ class IsaInvestigation(Resource):
             args = parser.parse_args(req=request)
             investigation_only = args['investigation_only']
 
+        skip_load_tables = True
+        if investigation_only == 'false':
+            skip_load_tables = False
+
         logger.info('Getting Investigation %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -146,7 +150,7 @@ class IsaInvestigation(Resource):
 
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id,
                                                          user_token,
-                                                         skip_load_tables=investigation_only,
+                                                         skip_load_tables=skip_load_tables,
                                                          study_location=study_location)
 
         logger.info('Got %s', isa_inv.identifier)
