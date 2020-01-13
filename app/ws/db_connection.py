@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2020-Jan-09
+#  Last modified: 2020-Jan-13
 #  Modified by:   kenneth
 #
 #  Copyright 2020 EMBL - European Bioinformatics Institute
@@ -48,7 +48,7 @@ query_all_studies = """
           study_user su,
           users u
         where
-           -- date_trunc('day',s.updatedate)>=date_trunc('day',current_date-365) and
+           date_trunc('day',s.updatedate)>=date_trunc('day',current_date-180) and
            s.id = su.studyid and
            su.userid = u.id
     group by 1,3,4,5,6) status
