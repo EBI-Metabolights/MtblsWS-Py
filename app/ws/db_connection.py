@@ -44,7 +44,8 @@ query_all_studies = """
                when s.status = 3 then 'Public'
                else 'Dormant' end as status,
           curator,
-          to_char(s.status_date, 'DD.MM.YYYY HH24:MI') as status_date
+          to_char(s.status_date, 'YYYY-MM-DD HH24:MI') as status_date,
+          to_char(s.status_date + INTERVAL '28 day', 'YYYY-MM-DD') as due_date
         from 
           studies s,
           study_user su,
@@ -53,7 +54,7 @@ query_all_studies = """
            date_trunc('day',s.updatedate) >= date_trunc('day',current_date-180) and
            s.id = su.studyid and
            su.userid = u.id
-    group by 1,3,4,5,6,7) status
+    group by 1,3,4,5,6,7,8) status
     where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
 query_studies_user = """
@@ -366,6 +367,7 @@ def mtblc_on_chebi_accession(chebi_id):
 
 def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
+    study_list = None
     try:
         study_list = execute_query(query_user_access_rights, user_token, study_id,
                                    study_obfuscation_code=study_obfuscation_code)

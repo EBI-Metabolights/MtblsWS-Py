@@ -16,16 +16,23 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import datetime
 import json
 import logging
+import os.path
+import pickle
+import sys
 
 import gspread
 import pandas as pd
 from flask import request, abort, current_app as app, jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from oauth2client.service_account import ServiceAccountCredentials
 from jira import JIRA
-from oauth2client.service_account import ServiceAccountCredentials as SAC
 
 from app.ws.db_connection import get_all_studies
 from app.ws.mtblsWSclient import WsClient
@@ -38,6 +45,96 @@ wsc = WsClient()
 project = 12732  # The id for the 'METLIGHT' project
 curation_epic = 'METLIGHT-1'  # id 10236 'METLIGHT-1 Epic'
 curation_lable = 'curation'
+
+
+def get_google_calendar_events():
+    # https://developers.google.com/calendar/quickstart/python
+    SCOPES = ['https://www.googleapis.com/auth/calendar']
+    creds = None
+    # The file token.pickle stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(app.config.get('GOOGLE_CALENDAR_TOKEN'), SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(creds, token)
+    service = build('calendar', 'v3', credentials=creds)
+
+    calendar_id = app.config.get('GOOGLE_CALENDAR_ID')
+    events = service.events().list(calendarId=calendar_id, maxResults=2500).execute()
+
+    return service, events
+
+
+def add_calendar_event(events, service, study_id=None, study_status=None, due_date=None):
+    if study_status.lower() == 'in curation':
+        add_google_calendar_event(events, service, event_text=study_id, event_date=due_date, delete_only=False)
+    else:
+        add_google_calendar_event(events, service, event_text=study_id, event_date=due_date, delete_only=True)
+
+
+def add_google_calendar_event(events, service,  event_text=None, event_date=None, delete_only=False):
+    # Refer to the Python quickstart on how to setup the environment:
+    # https://developers.google.com/calendar/quickstart/python
+    # Change the scope to 'https://www.googleapis.com/auth/calendar' and delete any
+    # stored credentials.
+
+    _event = {
+        'summary': event_text,
+        'start': {
+            'date': event_date
+        },
+        'end': {
+            'date': event_date
+        },
+        'reminders': {
+            'useDefault': False,
+            'overrides': [
+                {'method': 'email', 'minutes': 24 * 60},
+                {'method': 'popup', 'minutes': 10},
+            ],
+        },
+    }
+
+    # events = None
+    calendar_id = app.config.get('GOOGLE_CALENDAR_ID')
+    for existing_event in events['items']:
+        existing_id = existing_event['summary']
+        if event_text == existing_id:
+            msg = 'Event already exists, deleting: ' + event_text + ' ' + event_date + ' ' + existing_event.get('id')
+            logger.info(msg)
+            print(msg)
+            service.events().delete(calendarId=calendar_id, eventId=existing_event['id']).execute()
+
+    # Add new event
+    if not delete_only:
+        try:
+            new_event = service.events().insert(calendarId=calendar_id, body=_event).execute()
+            created_text = 'Event created: ' + event_text + ' ' + event_date
+            logger.info(created_text)
+            print(created_text)
+        except Exception as e:
+            error_text = 'Event ' + event_text + ' could not be created on the ' + event_date + '. Error: ' + str(e)
+            logger.error(error_text)
+            print('Error: ' + error_text)
+
+
+def safe_str(obj):
+    if not obj:
+        return ""
+    try:
+        return obj.encode('ascii', 'ignore').decode('ascii')
+    except UnicodeEncodeError:
+        return ""
 
 
 class Jira(Resource):
@@ -140,41 +237,29 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
         if not study_id and is_curator:
             studies = get_all_studies(user_token)
 
+        service, events = get_google_calendar_events()
+
         for study in studies:
-            study_id = study[0]
-            user_name = study[1]
-            release_date = study[2]
-            update_date = study[3]
-            study_status = study[4]
-            curator = study[5]
-            status_change = study[6]
+            study_id = safe_str(study[0])
+            user_name = safe_str(study[1])
+            release_date = safe_str(study[2])
+            update_date = safe_str(study[3])
+            study_status = safe_str(study[4])
+            curator = safe_str(study[5])
+            status_change = safe_str(study[6])
+            due_date = safe_str(study[7])
             issue = []
             summary = None
 
-            if not study_id:
-                study_id = ""
+            # date is 'YYYY-MM-DD HH24:MI'
+            due_date = status_change[:10]
 
-            if not user_name:
-                user_name = ""
-
-            if not release_date:
-                release_date = ""
-
-            if not update_date:
-                update_date = ""
-
-            if not study_status:
-                study_status = ""
-
-            if not curator:
-                curator = ""
-
-            if not status_change:
-                status_change = ""
-
-            logger.info('Updating Jira ticket for ' + study_id + '. Values: ' +
+            logger.info('Updating Jira ticket/Google Calendar for ' + study_id + '. Values: ' +
                         user_name + '|' + release_date + '|' + update_date + '|' + study_status + '|' +
-                        curator + '|' + status_change)
+                        curator + '|' + status_change + '|' + due_date)
+
+            add_calendar_event(events, service, study_id=study_id, study_status=study_status, due_date=due_date)
+
             # Get an issue based on a study accession search pattern
             search_param = "project='" + mtbls_project.key + "' AND summary  ~ '" + study_id + " \\\-\\\ 20*'"
             issues = jira.search_issues(search_param)  # project = MetaboLights AND summary ~ 'MTBLS121 '
@@ -223,9 +308,8 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 labels = maintain_jira_labels(issue, study_status, user_name)
 
                 # Add a comment to the issue.
-                comment_text = 'Current status ' + study_status + \
-                               '. Status last changed date ' + status_change \
-                               + '. Database update date ' + update_date
+                comment_text = 'Current status ' + study_status + '. Status last changed date ' + status_change + \
+                               '. Curation due date ' + due_date + '. Database update date ' + update_date
                 jira.add_comment(issue, comment_text)
 
                 # Change the issue's summary, comments and description.
@@ -239,7 +323,7 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 print('Updated Jira case for study ' + study_id)
     except Exception as e:
         logger.error("Jira updated failed for " + study_id + ". " + str(e))
-        return False, 'Update failed: ' + str(e), study_id
+        return False, 'Update failed: ' + str(e), str(study_id)
     return True, 'Ticket(s) updated successfully', updated_studies
 
 
@@ -366,7 +450,7 @@ class GoogleDocs(Resource):
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         google_creds = app.config.get('GOOGLE_CREDS')
         google_json = json.loads(google_creds, encoding='utf-8')
-        credentials = SAC.from_json_keyfile_dict(google_json, scopes=scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_dict(google_json, scopes=scope)
         gc = gspread.authorize(credentials)
         query_wks = gc.open('MTBLS Curation Status Log').get_worksheet(5)  # "Database query" sheet
         query_records = query_wks.get_all_records()
