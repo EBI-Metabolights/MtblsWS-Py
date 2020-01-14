@@ -151,6 +151,27 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
             issue = []
             summary = None
 
+            if not study_id:
+                study_id = ""
+
+            if not user_name:
+                user_name = ""
+
+            if not release_date:
+                release_date = ""
+
+            if not update_date:
+                update_date = ""
+
+            if not study_status:
+                study_status = ""
+
+            if not curator:
+                curator = ""
+
+            if not status_change:
+                status_change = ""
+
             logger.info('Updating Jira ticket for ' + study_id + '. Values: ' +
                         user_name + '|' + release_date + '|' + update_date + '|' + study_status + '|' +
                         curator + '|' + status_change)
