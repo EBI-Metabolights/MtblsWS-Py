@@ -191,6 +191,8 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
             else:
                 jira_curator = ""
 
+            if not status_change:
+                status_change = "No status changed date reported"
             # Release date or status has changed, or the assignee (curator) has changed
             if summary.startswith('MTBLS') and (summary != new_summary or assignee != jira_curator):
 
@@ -215,7 +217,8 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 logger.info('Updated Jira case for study ' + study_id)
                 print('Updated Jira case for study ' + study_id)
     except Exception as e:
-        return False, 'Update failed: ' + str(e), updated_studies
+        logger.error("Jira updated failed for " + study_id + ". " + str(e))
+        return False, 'Update failed: ' + str(e), study_id
     return True, 'Ticket(s) updated successfully', updated_studies
 
 
