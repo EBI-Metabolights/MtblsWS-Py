@@ -437,10 +437,11 @@ class Ontology(Resource):
         description = None
         if len(data_dict['definition']) > 0:
             description = data_dict['definition']
-
-        onto_path = app.config.get("MTBLS_ONTOLOGY_FILE")
-        addEntity(onto_path, new_term=data_dict['termName'], supclass=data_dict['superclass'],
-                  definition=description)
+        try:
+            addEntity(new_term=data_dict['termName'], supclass=data_dict['superclass'], definition=description)
+        except Exception as e:
+            logger.info(e)
+            abort(400)
 
 
 class Placeholder(Resource):
@@ -607,6 +608,13 @@ class Placeholder(Resource):
             sheet_name = 'design descriptor'
             # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
             #        'matched_iri', 'superclass', 'definition']
+
+        elif query == 'organism':
+            sheet_name = 'organism'
+            # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_organism',
+            #        'organism', 'organism_ref', 'organism_url', 'old_organismPart', 'organismPart', 'organismPart_ref',
+            #        'organismPart_url', 'superclass', 'definition']
+
         else:
             abort(400)
 
@@ -670,18 +678,15 @@ class Placeholder(Resource):
                                                      headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
                                                               'save_audit_copy': 'true'}, data=data)
 
-                            print(
-                                'Add {old_term} ({matchiri}) in {studyID}'.format(old_term=old_term,
-                                                                                  matchiri=termAccession,
-                                                                                  studyID=studyID))
-
+                            print('Add {old_term} ({matchiri}) in {studyID}'.format(old_term=old_term,
+                                                                                    matchiri=termAccession,
+                                                                                    studyID=studyID))
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
                         else:
                             google_df.loc[index, 'status (Done/Error)'] = 'Error'
 
                         replaceGoogleSheet(google_df, google_url, sheet_name)
-
                     except Exception as e:
                         google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
@@ -706,7 +711,7 @@ class Placeholder(Resource):
                         google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
-                # add factor term
+                # add factor term to MTBLS ontology
                 elif operation.lower() == 'mtbls':
                     try:
                         row['status (Done/Error)'] = 'Done'
@@ -1051,32 +1056,35 @@ def addEntity(new_term, supclass, definition=None):
         last = max(temp)
         temp = str(int(last[-6:]) + 1).zfill(6)
         id = 'MTBLS_' + temp
-
         return id
 
     try:
         onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
-        id = getid(onto)
-        namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
-
-        with namespace:
-            try:
-                cls = onto.search_one(label=supclass)
-            except:
-                try:
-                    cls = onto.search_one(iri=supclass)
-                except Exception as e:
-                    print(e)
-
-            newEntity = types.new_class(id, (cls,))
-            newEntity.label = new_term
-            if definition != None:
-                newEntity.isDefinedBy = definition
-            else:
-                pass
-
-        onto.save(file=app.config.get('MTBLS_ONTOLOGY_FILE'), format='rdfxml')
 
     except Exception as e:
-        logger.info(e)
-        print(e)
+        print('fail to load MTBLS ontoloty from '+ app.config.get('MTBLS_ONTOLOGY_FILE'))
+        logger.info(e.args)
+        abort(400)
+        return []
+
+    id = getid(onto)
+    namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
+
+    with namespace:
+        cls = onto.search_one(label=supclass)
+        if cls is None:
+            cls = onto.search_one(iri=supclass)
+        if cls is None:
+            logger.info(f"Can't find superclass named {supclass}")
+            print(f"Can't find superclass named {supclass}")
+            abort(400)
+            return []
+
+        newEntity = types.new_class(id, (cls,))
+        newEntity.label = new_term
+        if definition != None:
+            newEntity.isDefinedBy = definition
+        else:
+            pass
+
+        onto.save(file=app.config.get('MTBLS_ONTOLOGY_FILE'), format='rdfxml')
