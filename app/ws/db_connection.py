@@ -42,13 +42,14 @@ query_all_studies = """
                when s.status = 2 then 'In Review'
                when s.status = 3 then 'Public'
                else 'Dormant' end as status,
-          curator
+          curator,
+          s.status_date
         from 
           studies s,
           study_user su,
           users u
         where
-           date_trunc('day',s.updatedate)>=date_trunc('day',current_date-180) and
+           date_trunc('day',s.updatedate) >= date_trunc('day',current_date-180) and
            s.id = su.studyid and
            su.userid = u.id
     group by 1,3,4,5,6) status
