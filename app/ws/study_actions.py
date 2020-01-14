@@ -19,12 +19,15 @@
 import datetime
 import json
 import logging
+import os
+import shutil
 
+from flask import current_app as app
 from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 
-from app.ws.db_connection import update_study_status
+from app.ws.db_connection import update_study_status, update_study_status_change_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.validation import validate_study
@@ -117,21 +120,26 @@ class StudyStatus(Resource):
         if study_status.lower() == db_study_status.lower():
             abort(406, "Nothing to change")
 
+        new_date = datetime.datetime.now() + datetime.timedelta(+28)
+        new_date = new_date.strftime('%Y-%m-%d')
+
+        # Update the last status change date field
+        status_date_logged = update_study_status_change_date(study_id)
+        if not status_date_logged:
+            logger.error("Could not update the status_date column for " + study_id)
+
         if is_curator:  # User is a curator, so just update status without any further checks
-            self.update_status(study_id, study_status, is_curator)
+            self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
         elif write_access:
             if db_study_status != 'Submitted':  # and study_status != 'In Curation':
                 abort(403, "You can not change to this status")
 
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
-                new_date = datetime.datetime.now() + datetime.timedelta(+28)
-                new_date = new_date.strftime('%Y-%m-%d')
-
                 isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                                  skip_load_tables=True,
                                                                  study_location=study_location)
 
-                self.update_status(study_id, study_status, is_curator)
+                self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
 
                 if release_date < new_date:  # Set the release date to a minimum of 28 days in the future
                     isa_inv.public_release_date = new_date
@@ -150,11 +158,20 @@ class StudyStatus(Resource):
                 "release-date": release_date}
 
     @staticmethod
-    def update_status(study_id, study_status, is_curator=False):
+    def update_status(study_id, study_status, is_curator=False, obfuscation_code=None):
         # Update database
         update_study_status(study_id, study_status, is_curator=is_curator)
-        #  ToDo, move the private obfuscated folder
-        #  ./mtblight/prod/<mtbls>-<obfuscation_code> to ./mtblight/prod/old/<mtbls>-<obfuscation_code>
+        # Move the private fto folder if the new status is Public
+        if study_status.lower() == 'public':
+            #  ./mtblight/prod/<mtbls>-<obfuscation_code> to ./mtblight/prod/old/<mtbls>-<obfuscation_code>
+            private_ftp_root = app.config.get("MTBLS_PRIVATE_FTP_ROOT")
+            study_folder = study_id.lower() + '-' + obfuscation_code
+            src = os.path.join(private_ftp_root, study_folder)
+            dst = os.path.join(os.path.join(private_ftp_root, 'old'), study_folder)
+            try:
+                shutil.move(src, dst)
+            except Exception as e:
+                logger.error('Could not move private FTP folder ' + src + '. Error: ' + str(e))
 
     @staticmethod
     def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):

@@ -511,6 +511,21 @@ def update_validation_status(study_id, validation_status):
         return False
 
 
+def update_study_status_change_date(study_id):
+    # ToDo, add Jira comment on existing ticket
+    query = "update studies set status_date = current_timestamp where acc = '" + study_id + "';"
+
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query)
+        conn.commit()
+        release_connection(postgresql_pool, conn)
+        return True
+    except Exception as e:
+        logger.error('Database update of study status date failed with error ' + str(e))
+        return False
+
+
 def update_study_status(study_id, study_status, is_curator=False):
     status = '0'
     study_status = study_status.lower()
