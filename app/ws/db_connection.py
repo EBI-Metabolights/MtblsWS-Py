@@ -44,7 +44,7 @@ query_all_studies = """
                when s.status = 3 then 'Public'
                else 'Dormant' end as status,
           curator,
-          s.status_date
+          to_char(s.status_date, 'YYYYMMDD HH24:MI') as status_date
         from 
           studies s,
           study_user su,
