@@ -155,6 +155,7 @@ class IsaApiClient:
             fp = open(i_filename, encoding='utf-8', errors='ignore')
             # loading tables also load Samples and Assays
             isa_inv = load(fp, skip_load_tables)
+            # ToDo. Add MAF to isa_study
             isa_study = isa_inv.studies[0]
         except IndexError as e:
             logger.exception("Failed to find Investigation file from %s", study_id, std_path)

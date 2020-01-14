@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2020-Jan-09
+#  Last modified: 2020-Jan-13
 #  Modified by:   kenneth
 #
 #  Copyright 2020 EMBL - European Bioinformatics Institute
@@ -33,7 +33,8 @@ query_curation_log = "select * from curation_log_temp order by acc_short asc;"
 
 query_all_studies = """
     select * from (
-        select s.acc, 
+        select 
+          s.acc, 
           string_agg(u.firstname || ' ' || u.lastname, ', ') as username, 
           to_char(s.releasedate, 'YYYYMMDD') as release_date,
           to_char(s.updatedate, 'YYYYMMDD') as update_date, 
@@ -42,16 +43,17 @@ query_all_studies = """
                when s.status = 2 then 'In Review'
                when s.status = 3 then 'Public'
                else 'Dormant' end as status,
-          curator
+          curator,
+          to_char(s.status_date, 'DD.MM.YYYY HH24:MI') as status_date
         from 
           studies s,
           study_user su,
           users u
         where
-           -- date_trunc('day',s.updatedate)>=date_trunc('day',current_date-365) and
+           date_trunc('day',s.updatedate) >= date_trunc('day',current_date-180) and
            s.id = su.studyid and
            su.userid = u.id
-    group by 1,3,4,5,6) status
+    group by 1,3,4,5,6,7) status
     where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
 query_studies_user = """
@@ -508,6 +510,20 @@ def update_validation_status(study_id, validation_status):
             logger.error('Database update of validation status failed with error ' + str(e))
             return False
     else:
+        return False
+
+
+def update_study_status_change_date(study_id):
+    query = "update studies set status_date = current_timestamp where acc = '" + study_id + "';"
+
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query)
+        conn.commit()
+        release_connection(postgresql_pool, conn)
+        return True
+    except Exception as e:
+        logger.error('Database update of study status date failed with error ' + str(e))
         return False
 
 

@@ -3,10 +3,10 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-May-23
+#  Last modified: 2020-Jan-07
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,18 +16,19 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import json
+import logging
+
+import gspread
+import pandas as pd
+from flask import request, abort, current_app as app, jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from flask import request, abort, current_app as app, jsonify
-from app.ws.mtblsWSclient import WsClient
 from jira import JIRA
-from app.ws.db_connection import get_all_studies
-import logging
-import gspread
-import numpy as np
-import json
-import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials as SAC
+
+from app.ws.db_connection import get_all_studies
+from app.ws.mtblsWSclient import WsClient
 
 # https://jira.readthedocs.io
 options = {
@@ -135,7 +136,7 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
         # Get the MetaboLights project
         mtbls_project = jira.project(project)
 
-        studies = [study_id]
+        studies = [study_id]  # ToDo, read a study from the database, accession number as string will not work!
         if not study_id and is_curator:
             studies = get_all_studies(user_token)
 
@@ -146,9 +147,34 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
             update_date = study[3]
             study_status = study[4]
             curator = study[5]
+            status_change = study[6]
             issue = []
             summary = None
 
+            if not study_id:
+                study_id = ""
+
+            if not user_name:
+                user_name = ""
+
+            if not release_date:
+                release_date = ""
+
+            if not update_date:
+                update_date = ""
+
+            if not study_status:
+                study_status = ""
+
+            if not curator:
+                curator = ""
+
+            if not status_change:
+                status_change = ""
+
+            logger.info('Updating Jira ticket for ' + study_id + '. Values: ' +
+                        user_name + '|' + release_date + '|' + update_date + '|' + study_status + '|' +
+                        curator + '|' + status_change)
             # Get an issue based on a study accession search pattern
             search_param = "project='" + mtbls_project.key + "' AND summary  ~ '" + study_id + " \\\-\\\ 20*'"
             issues = jira.search_issues(search_param)  # project = MetaboLights AND summary ~ 'MTBLS121 '
@@ -186,6 +212,8 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
             else:
                 jira_curator = ""
 
+            if not status_change:
+                status_change = "No status changed date reported"
             # Release date or status has changed, or the assignee (curator) has changed
             if summary.startswith('MTBLS') and (summary != new_summary or assignee != jira_curator):
 
@@ -195,7 +223,9 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 labels = maintain_jira_labels(issue, study_status, user_name)
 
                 # Add a comment to the issue.
-                comment_text = 'Status ' + study_status + '. Database update date ' + update_date
+                comment_text = 'Current status ' + study_status + \
+                               '. Status last changed date ' + status_change \
+                               + '. Database update date ' + update_date
                 jira.add_comment(issue, comment_text)
 
                 # Change the issue's summary, comments and description.
@@ -208,7 +238,8 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 logger.info('Updated Jira case for study ' + study_id)
                 print('Updated Jira case for study ' + study_id)
     except Exception as e:
-        return False, 'Update failed: ' + str(e), updated_studies
+        logger.error("Jira updated failed for " + study_id + ". " + str(e))
+        return False, 'Update failed: ' + str(e), study_id
     return True, 'Ticket(s) updated successfully', updated_studies
 
 

@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.10.07"
+WS_APP_VERSION = "1.10.16"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.10.4"
 METASPACE_APP_VERSION = "0.7.1"
@@ -52,6 +52,8 @@ MTBLS_ONTOLOGY_FILE = "<local file>"
 BIOPORTAL_TOKEN = '<your bioportal token>'
 METABOLIGHTS_TOKEN = '<your administrative metabolights token>'
 MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
+
+MTBLS_PRIVATE_FTP_ROOT = ""
 
 GOOGLE_SHEET_URL = "<Google sheet url>"
 GOOGLE_TOKEN= "./instance/metabolights-d3c2b1b419d0.json"
