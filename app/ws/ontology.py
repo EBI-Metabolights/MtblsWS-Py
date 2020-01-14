@@ -626,31 +626,30 @@ class Placeholder(Resource):
 
         for index, row in ch.iterrows():
             if query == 'factor':
-                operation, studyID, old_term, term, annotationValue, termAccession = \
+                operation, studyID, old_term, term, annotationValue, termAccession, superclass, definition = \
                     row['operation(Update/Add/Delete/Zooma/MTBLS)'], row['studyID'], row['old_name'], row['name'], row[
-                        'annotationValue'], row['termAccession']
+                        'annotationValue'], row['termAccession'], row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
                 ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
-                # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
-                protocol = '''
-                            {
-                                "factorName": "",
-                                "factorType": {
-                                  "annotationValue": "",
-                                  "termSource": {
-                                    "name": "",
-                                    "file": "",
-                                    "version": "",
-                                    "description": ""
-                                  },
-                                  "termAccession": ""
-                                }                       
-                            }
-                            '''
-
                 if operation.lower() in ['update', 'u', 'add', 'A']:
+                    # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+                    protocol = '''
+                                                {
+                                                    "factorName": "",
+                                                    "factorType": {
+                                                      "annotationValue": "",
+                                                      "termSource": {
+                                                        "name": "",
+                                                        "file": "",
+                                                        "version": "",
+                                                        "description": ""
+                                                      },
+                                                      "termAccession": ""
+                                                    }                       
+                                                }
+                                                '''
                     try:
                         onto_name = getOnto_Name(termAccession)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
@@ -716,23 +715,51 @@ class Placeholder(Resource):
                     try:
                         row['status (Done/Error)'] = 'Done'
                         source = '/metabolights/ws/ebi-internal/ontology'
-                        ws_url = app.config.put('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
-                        # TODO
+                        protocol = '''
+                                     {
+                                      "ontologyEntity": {
+                                        "termName": " ",
+                                        "definition": " ",
+                                        "superclass": " "
+                                      }
+                                    }
+                                   '''
 
+                        temp = json.loads(protocol)
+                        temp["ontologyEntity"]["termName"] = annotationValue
+                        temp["ontologyEntity"]["definition"] = definition
+                        temp["ontologyEntity"]["superclass"] = superclass
+
+                        data = json.dumps({"ontologyEntity": temp})
+                        response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                protocol=data)
+                        print('add term {newterm} to {superclass} branch'.format(newterm=annotationValue,
+                                                                                 superclass=superclass))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
+
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
 
                     except Exception as e:
                         google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
+                # add factor term to zooma
                 elif operation.lower() == 'zooma':
                     try:
-                        zooma_path = app.config.get('MTBLS_ZOOMA_FILE')
-                        df = pd.read_csv(zooma_path, sep='\t')
-
+                        addZoomaTerm(studyID, term, annotationValue, termAccession)
+                        result = 'Done'
                     except Exception as e:
+                        result = 'Error'
                         google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
+
+                    google_df.loc[index, 'status (Done/Error)'] = result
+                    replaceGoogleSheet(google_df, google_url, sheet_name)
 
                 else:
                     logger.info('Wrong operation tag in the spreadsheet')
@@ -741,26 +768,27 @@ class Placeholder(Resource):
 
             elif query == 'design descriptor':
 
-                operation, studyID, old_term, term, matched_iri = row['operation(Update/Add/Delete/Zooma/MTBLS)'], row[
-                    'studyID'], row['old_name'], row['name'], row['matched_iri']
+                operation, studyID, old_term, term, matched_iri, superclass, \
+                definition = row['operation(Update/Add/Delete/Zooma/MTBLS)'], row['studyID'], row['old_name'], row[
+                    'name'], row['matched_iri'], row['superclass'], row['definition']
 
                 source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
                 ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
-                protocol = '''
-                        {
-                            "annotationValue": " ",
-                            "termSource": {
-                                "name": " ",
-                                "file": " ",
-                                "version": " ",
-                                "description": " "
-                            },
-                            "termAccession": " "
-                        }
-                    '''
-
+                # add / update descriptor
                 if operation.lower() in ['update', 'U', 'add', 'A']:
+                    protocol = '''
+                                    {
+                                        "annotationValue": " ",
+                                        "termSource": {
+                                            "name": " ",
+                                            "file": " ",
+                                            "version": " ",
+                                            "description": " "
+                                        },
+                                        "termAccession": " "
+                                    }
+                              '''
                     try:
                         onto_name = getOnto_Name(matched_iri)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
@@ -801,7 +829,6 @@ class Placeholder(Resource):
                         google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
-
                 # Delete descriptor
                 elif operation.lower() in ['delete', 'D']:
                     try:
@@ -821,18 +848,60 @@ class Placeholder(Resource):
                         google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
 
-                # Keep descriptor
-                elif operation.lower() in ['keep', 'K']:
+                # add descriptor to MTBLS ontology
+                elif operation.lower() == 'mtbls':
                     try:
                         row['status (Done/Error)'] = 'Done'
+                        source = '/metabolights/ws/ebi-internal/ontology'
+
+                        protocol = '''
+                                     {
+                                      "ontologyEntity": {
+                                        "termName": " ",
+                                        "definition": " ",
+                                        "superclass": " "
+                                      }
+                                    }
+                                   '''
+
+                        temp = json.loads(protocol)
+                        temp["ontologyEntity"]["termName"] = term
+                        temp["ontologyEntity"]["definition"] = definition
+                        temp["ontologyEntity"]["superclass"] = superclass
+
+                        data = json.dumps({"ontologyEntity": temp})
+                        response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                protocol=data)
+                        print('add term {newterm} to {superclass} branch'.format(newterm=term,
+                                                                                 superclass=superclass))
+
+                        if response.status_code == 200:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                        else:
+                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
+
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
+
                     except Exception as e:
-                        row['status (Done/Error)'] = 'Error'
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
                         logger.info(e)
+
+                # add descriptor term to zooma
+                elif operation.lower() == 'zooma':
+                    try:
+                        addZoomaTerm(studyID, term, term, matched_iri)
+                        result = 'Done'
+                    except Exception as e:
+                        result = 'Error'
+                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
+                        logger.info(e)
+
+                    google_df.loc[index, 'status (Done/Error)'] = result
+                    replaceGoogleSheet(google_df, google_url, sheet_name)
 
                 else:
                     logger.info('Wrong operation tag in the spreadsheet')
                     abort(400)
-
             else:
                 logger.info('Wrong query field requested')
                 abort(404)
@@ -1062,7 +1131,7 @@ def addEntity(new_term, supclass, definition=None):
         onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
 
     except Exception as e:
-        print('fail to load MTBLS ontoloty from '+ app.config.get('MTBLS_ONTOLOGY_FILE'))
+        print('fail to load MTBLS ontoloty from ' + app.config.get('MTBLS_ONTOLOGY_FILE'))
         logger.info(e.args)
         abort(400)
         return []
