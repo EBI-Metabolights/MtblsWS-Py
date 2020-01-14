@@ -136,7 +136,7 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
         # Get the MetaboLights project
         mtbls_project = jira.project(project)
 
-        studies = [study_id]
+        studies = [study_id]  # ToDo, read a study from the database, accession number as string will not work!
         if not study_id and is_curator:
             studies = get_all_studies(user_token)
 
@@ -151,6 +151,9 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
             issue = []
             summary = None
 
+            logger.info('Updating Jira ticket for ' + study_id + '. Values: ' +
+                        user_name + '|' + release_date + '|' + update_date + '|' + study_status + '|' +
+                        curator + '|' + status_change)
             # Get an issue based on a study accession search pattern
             search_param = "project='" + mtbls_project.key + "' AND summary  ~ '" + study_id + " \\\-\\\ 20*'"
             issues = jira.search_issues(search_param)  # project = MetaboLights AND summary ~ 'MTBLS121 '

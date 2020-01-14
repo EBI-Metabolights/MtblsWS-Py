@@ -33,7 +33,8 @@ query_curation_log = "select * from curation_log_temp order by acc_short asc;"
 
 query_all_studies = """
     select * from (
-        select s.acc, 
+        select 
+          s.acc, 
           string_agg(u.firstname || ' ' || u.lastname, ', ') as username, 
           to_char(s.releasedate, 'YYYYMMDD') as release_date,
           to_char(s.updatedate, 'YYYYMMDD') as update_date, 
@@ -52,7 +53,7 @@ query_all_studies = """
            date_trunc('day',s.updatedate) >= date_trunc('day',current_date-180) and
            s.id = su.studyid and
            su.userid = u.id
-    group by 1,3,4,5,6) status
+    group by 1,3,4,5,6,7) status
     where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
 query_studies_user = """
