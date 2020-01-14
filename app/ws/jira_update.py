@@ -147,6 +147,7 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
             update_date = study[3]
             study_status = study[4]
             curator = study[5]
+            status_change = study[6]
             issue = []
             summary = None
 
@@ -196,7 +197,9 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 labels = maintain_jira_labels(issue, study_status, user_name)
 
                 # Add a comment to the issue.
-                comment_text = 'Status ' + study_status + '. Database update date ' + update_date
+                comment_text = 'Current status ' + study_status + \
+                               '. Status last changed date ' + status_change \
+                               + '. Database update date ' + update_date
                 jira.add_comment(issue, comment_text)
 
                 # Change the issue's summary, comments and description.

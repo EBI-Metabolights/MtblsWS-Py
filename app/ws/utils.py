@@ -883,7 +883,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             or fname == 'validation_report.json':
         return 'internal_mapping', active_status, folder
     elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
-        return 'maf_pipeline_file', active_status, folder
+        return 'chebi_pipeline_file', active_status, folder
     else:
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             if os.path.isdir(os.path.join(directory, file_name)):

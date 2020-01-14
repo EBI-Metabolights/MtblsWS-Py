@@ -42,13 +42,14 @@ query_all_studies = """
                when s.status = 2 then 'In Review'
                when s.status = 3 then 'Public'
                else 'Dormant' end as status,
-          curator
+          curator,
+          s.status_date
         from 
           studies s,
           study_user su,
           users u
         where
-           date_trunc('day',s.updatedate)>=date_trunc('day',current_date-180) and
+           date_trunc('day',s.updatedate) >= date_trunc('day',current_date-180) and
            s.id = su.studyid and
            su.userid = u.id
     group by 1,3,4,5,6) status
@@ -508,6 +509,20 @@ def update_validation_status(study_id, validation_status):
             logger.error('Database update of validation status failed with error ' + str(e))
             return False
     else:
+        return False
+
+
+def update_study_status_change_date(study_id):
+    query = "update studies set status_date = current_timestamp where acc = '" + study_id + "';"
+
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query)
+        conn.commit()
+        release_connection(postgresql_pool, conn)
+        return True
+    except Exception as e:
+        logger.error('Database update of study status date failed with error ' + str(e))
         return False
 
 
