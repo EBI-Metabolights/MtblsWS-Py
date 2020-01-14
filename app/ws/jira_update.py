@@ -198,8 +198,8 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
 
                 # Add a comment to the issue.
                 comment_text = 'Current status ' + study_status + \
-                               '. Status date ' + status_change \
-                               + 'Database update date ' + update_date
+                               '. Status last changed date ' + status_change \
+                               + '. Database update date ' + update_date
                 jira.add_comment(issue, comment_text)
 
                 # Change the issue's summary, comments and description.

@@ -513,7 +513,6 @@ def update_validation_status(study_id, validation_status):
 
 
 def update_study_status_change_date(study_id):
-    # ToDo, add Jira comment on existing ticket
     query = "update studies set status_date = current_timestamp where acc = '" + study_id + "';"
 
     try:
