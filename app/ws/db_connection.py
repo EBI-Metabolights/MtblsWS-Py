@@ -546,6 +546,9 @@ def update_study_status(study_id, study_status, is_curator=False):
     query = "update studies set status = '" + status + "'"
     if not is_curator:  # Add 28 days to the database release date when a submitter change the status
         query = query + ", releasedate = CURRENT_DATE + integer '28'"
+    if study_status == 'public' and is_curator:
+        query = query + ", releasedate = CURRENT_DATE"
+
     query = query + " where acc = '" + study_id + "';"
 
     try:

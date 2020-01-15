@@ -3,10 +3,10 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-Apr-05
+#  Last modified: 2020-Jan-15
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,16 +16,18 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import logging
 import json
+import logging
 import os
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from app.ws.mtblsWSclient import WsClient
+
 from app.ws.mtblsStudy import write_audit_files
+from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv
 
 """
@@ -686,7 +688,7 @@ class AddRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -719,9 +721,13 @@ class AddRows(Resource):
 
             for row in new_row:
                 if not row:
-                    col0 = file_df.columns[0]
-                    row = {col0: ""}  # Take the first column header from the file, use this to add new row
-                    logger.warning("No row new information provided, adding an empty row to file " + file_name +
+                    complete_row = {}
+                    for col in file_df.columns:
+                        complete_row[col] = ""
+
+                    row = complete_row
+                    # row = {col0: ""}  # Take the first column header from the file, use this to add new row
+                    logger.warning("No row new information provided, ignoring " + file_name +
                                    ", row " + str(row))
 
                 line = pd.DataFrame(row, index=[start_index])
