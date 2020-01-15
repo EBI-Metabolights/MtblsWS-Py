@@ -136,13 +136,13 @@ class StudyStatus(Resource):
         new_date = new_date.strftime('%Y-%m-%d')
 
         if is_curator:  # User is a curator, so just update status without any further checks
-            if study_status == 'public':
+            if study_status.lower() == 'public':
                 isa_inv.public_release_date = new_date
                 isa_study.public_release_date = new_date
                 release_date = new_date
             self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
         elif write_access:
-            if db_study_status != 'Submitted':  # and study_status != 'In Curation':
+            if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':
                 abort(403, "You can not change to this status")
 
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):

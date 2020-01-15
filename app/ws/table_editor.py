@@ -719,29 +719,25 @@ class AddRows(Resource):
             except KeyError:
                 start_index = len(file_df.index)
 
-            for row in new_row:
-                if not row:
-                    complete_row = {}
-                    for col in file_df.columns:
-                        complete_row[col] = ""
+            # Map the complete row first, update with new_row
+            complete_row = {}
+            for col in file_df.columns:
+                complete_row[col] = ""
 
-                    row = complete_row
-                    # row = {col0: ""}  # Take the first column header from the file, use this to add new row
-                    logger.warning("No row new information provided, ignoring " + file_name +
-                                   ", row " + str(row))
+            if not new_row:
+                logger.warning("No new row information provided. Adding empty row " + file_name + ", row " + str(complete_row))
+            else:
+                for row in new_row:
+                    complete_row.update(row)
 
-                line = pd.DataFrame(row, index=[start_index])
-                file_df = file_df.append(line, ignore_index=False)
-                file_df = file_df.sort_index().reset_index(drop=True)
-                start_index += 1
+            row = complete_row
+            line = pd.DataFrame(row, index=[start_index])
+            file_df = file_df.append(line, ignore_index=False)
+            file_df = file_df.sort_index().reset_index(drop=True)
+            start_index += 1
 
-        # if new_row[0]:
-        #     file_df = file_df.append(new_row, ignore_index=True)  # Add new row to the spreadsheet (TSV file)
-        # else:
-        #     file_df = file_df.append(pd.Series(), ignore_index=True)
-
-        file_df = file_df.replace(np.nan, '', regex=True)
-        message = write_tsv(file_df, file_name)
+            file_df = file_df.replace(np.nan, '', regex=True)
+            message = write_tsv(file_df, file_name)
 
         # Get an indexed header row
         df_header = get_table_header(file_df)
