@@ -129,10 +129,17 @@ class StudyStatus(Resource):
                                                          skip_load_tables=True,
                                                          study_location=study_location)
 
+        if is_curator:  # Curators can change the date to current date, submitters can not!
+            new_date = datetime.datetime.now()
+        else:
+            new_date = datetime.datetime.now() + datetime.timedelta(+28)
+        new_date = new_date.strftime('%Y-%m-%d')
+
         if is_curator:  # User is a curator, so just update status without any further checks
-            isa_inv.public_release_date = datetime.datetime.now()
-            isa_study.public_release_date = datetime.datetime.now()
-            release_date = datetime.datetime.now()
+            if study_status == 'public':
+                isa_inv.public_release_date = new_date
+                isa_study.public_release_date = new_date
+                release_date = new_date
             self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
         elif write_access:
             if db_study_status != 'Submitted':  # and study_status != 'In Curation':
@@ -140,9 +147,6 @@ class StudyStatus(Resource):
 
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
                 self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
-
-                new_date = datetime.datetime.now() + datetime.timedelta(+28)
-                new_date = new_date.strftime('%Y-%m-%d')
 
                 if release_date < new_date:  # Set the release date to a minimum of 28 days in the future
                     isa_inv.public_release_date = new_date
