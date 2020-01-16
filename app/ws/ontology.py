@@ -935,25 +935,21 @@ class Placeholder(Resource):
                     for change in list_changes:
                         protocol = '''
                                     {
-                                            "characteristics": [
-                                                {
-                                                    "comments": [],
-                                                    "characteristicsName": "",
-                                                    "characteristicsType": {
-                                                        "comments": [],
-                                                        "annotationValue": " ",
-                                                        "termSource": {
-                                                            "comments": [],
-                                                            "name": " ",
-                                                            "file": " ",
-                                                            "version": " ",
-                                                            "description": " "
-                                                        },
-                                                        "termAccession": " "
-                                                    }
-                                                }
-                                            ]
+                                        "comments": [],
+                                        "characteristicsName": "",
+                                        "characteristicsType": {
+                                            "comments": [],
+                                            "annotationValue": " ",
+                                            "termSource": {
+                                                "comments": [],
+                                                "name": " ",
+                                                "file": " ",
+                                                "version": " ",
+                                                "description": " "
+                                            },
+                                            "termAccession": " "
                                         }
+                                    }
                                 '''
                         try:
                             if change['onto_name'] in ['', None]:
@@ -976,19 +972,23 @@ class Placeholder(Resource):
                             temp['characteristicsType']['termSource']['file'] = onto_iri
                             temp['characteristicsType']['termSource']['version'] = onto_version
                             temp['characteristicsType']['termSource']['description'] = onto_description
+                            temp['characteristicsType']['termAccession'] = change['term_url']
 
-                            data = json.dumps({"characteristics": temp})
+                            data = json.dumps({"characteristics": [temp]})
 
                             if operation.lower() in ['update', 'U']:  # Update descriptor
-                                response = requests.put(ws_url, params={'term': change['old_term']},
-                                                        headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
-                                                                 'save_audit_copy': 'true'},
-                                                        data=data)
+                                response = requests.post(ws_url,
+                                                         params={'existing_char_name': change['characteristicsName'],
+                                                                 'existing_char_value': change['old_term']},
+                                                         headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                                  'save_audit_copy': 'true'},
+                                                         data=data)
                                 print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
                                       format(old_term=change['old_term'], matchterm=change['new_term'],
                                              matchiri=change['term_url'], studyID=studyID))
                             else:  # Add characteristic
-                                response = requests.post(ws_url,headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                response = requests.post(ws_url,
+                                                         headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                          data=data)
                                 print('Add {old_term} to ({matchiri}) in {studyID}'.
                                       format(old_term=old_term, matchiri=matched_iri, studyID=studyID))
