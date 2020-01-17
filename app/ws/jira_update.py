@@ -36,6 +36,7 @@ from jira import JIRA
 
 from app.ws.db_connection import get_all_studies
 from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import safe_str
 
 # https://jira.readthedocs.io
 options = {
@@ -126,15 +127,6 @@ def add_google_calendar_event(events, service,  event_text=None, event_date=None
             error_text = 'Event ' + event_text + ' could not be created on the ' + event_date + '. Error: ' + str(e)
             logger.error(error_text)
             print('Error: ' + error_text)
-
-
-def safe_str(obj):
-    if not obj:
-        return ""
-    try:
-        return obj.encode('ascii', 'ignore').decode('ascii')
-    except UnicodeEncodeError:
-        return ""
 
 
 class Jira(Resource):

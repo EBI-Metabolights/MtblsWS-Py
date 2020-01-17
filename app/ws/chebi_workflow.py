@@ -4,7 +4,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2020-Jan-09
+#  Last modified: 2020-Jan-17
 #  Modified by:   kenneth
 #
 #  Copyright 2020 EMBL - European Bioinformatics Institute
@@ -47,7 +47,7 @@ from app.ws.cluster_jobs import lsf_job
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem
-from app.ws.utils import read_tsv, write_tsv, get_assay_file_list
+from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
 
 logger = logging.getLogger('wslog_chebi')
 
@@ -421,6 +421,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     sdf_file_list = []
     exiting_pubchem_file = False
     first_start_time = time.time()
+    original_maf_name = annotation_file_name.replace("_pubchem.tsv", ".tsv")
     short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
                                    annotation_file_name.replace('.tsv', ''))
     if annotation_file_name.endswith(pubchem_end):
@@ -473,13 +474,15 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     if exiting_pubchem_file:
         short_df = maf_df[[database_identifier_column, maf_compound_name_column, alt_name_column, search_flag,
                            final_cid_column_name, "row_id"]]
+        # Make sure we re-read the original MAF so that we don't add the extra PubChem columns
+        maf_df = read_tsv(os.path.join(study_location, original_maf_name))
     else:
         short_df = maf_df[[database_identifier_column, maf_compound_name_column]]
 
     # Search using the compound name column
     for idx, row in short_df.iterrows():
         database_id = row[0]
-        comp_name = row[1]
+        comp_name = safe_str(row[1])
         org_row_id = None
         original_comp_name = comp_name
         search = True
@@ -550,13 +553,24 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     inchi = result["inchi"]
                     name = result["name"]
 
+                    new_formula = None
+
                     if chemical_formula and '-' in chemical_formula:  # MTBLS search adds the charge at the end
                         # Need to get the conjugate acid of this base compound
                         print_log("    -- Searching for conjugate acid of " + comp_name)
-                        database_identifier, inchi, inchikey, name, smiles, formula, search_type = \
+                        database_identifier, inchi, inchikey, name, smiles, new_formula, search_type = \
                             direct_chebi_search(final_inchi_key, comp_name,
                                                 acid_chebi_id=database_identifier,
                                                 search_type="get_conjugate_acid")
+
+                    # if no formula or new_formula is returned, check the first "is_a" and report the formula from that
+                    if database_identifier and not new_formula and not chemical_formula:
+                        database_identifier, inchi, inchikey, name, smiles, formula, search_type = \
+                            direct_chebi_search(final_inchi_key, comp_name,
+                                                acid_chebi_id=database_identifier,
+                                                search_type="is_a")
+                    elif new_formula:
+                        chemical_formula = new_formula
 
                     pubchem_df.iloc[row_idx, get_idx(database_identifier_column)] = database_identifier
                     pubchem_df.iloc[row_idx, get_idx('chemical_formula')] = chemical_formula
@@ -577,7 +591,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                                 chebi_found = True
                                 print_log("    -- Found ChEBI id " + database_identifier + " in the MetaboLights search")
                             elif get_relevant_synonym(comp_name):  # Do we know the source, ie. KEGG, HMDB?
-                                chebi_id, inchi, inchikey, name, smiles, formula, search_type = direct_chebi_search(
+                                chebi_id, inchi, inchikey, name, smiles, chemical_formula, search_type = direct_chebi_search(
                                     final_inchi_key, comp_name, search_type="external_db")
                             maf_df.iloc[row_idx, get_idx(database_identifier_column)] = database_identifier
                         if chemical_formula:
@@ -751,7 +765,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         if changed and row_idx > 0 and row_idx % 20 == 0:  # Save every 20 rows
             pubchem_file = short_file_name + pubchem_end
             write_tsv(pubchem_df, pubchem_file)
-            write_tsv(maf_df, short_file_name + "_annotated.tsv")
+            update_original_maf(maf_df, original_maf_name=original_maf_name, study_location=study_location)
             print_log('  -- Updating PubChem and annotated file. Record ' + str(idx + 1) + ' of ' + str(new_maf_len))
 
         row_idx += 1
@@ -760,7 +774,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         # Add sample into to all rows, also duplicate rows for all samples
         pubchem_df = populate_sample_rows(pubchem_df, study_id, user_token, study_location)
 
-    write_tsv(maf_df, short_file_name + "_annotated.tsv")
+    update_original_maf(maf_df, original_maf_name=original_maf_name, study_location=study_location)
 
     pubchem_file = short_file_name + pubchem_end
     write_tsv(pubchem_df, pubchem_file)
@@ -773,6 +787,13 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     change_access_rights(study_location)
     print_log("ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
     return maf_len, str(len(pubchem_df)), pubchem_file
+
+
+def update_original_maf(maf_df, original_maf_name=None, study_location=None):
+    # pass in the "annotation_file_name" to update a copy of the original maf
+    if original_maf_name and study_location:
+        chebi_folder = os.path.join(study_location, anno_sub_folder)
+        write_tsv(maf_df, os.path.join(chebi_folder, original_maf_name))
 
 
 def change_access_rights(study_location):
@@ -1273,6 +1294,8 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
             lite_entity = client.service.getLiteEntity(comp_name, 'ALL_NAMES', '10', 'ALL')
         elif search_type == "get_conjugate_acid" and acid_chebi_id:
             lite_entity = client.service.getAllOntologyChildrenInPath(acid_chebi_id, 'is conjugate acid of', False)
+        elif search_type == "is_a":
+            lite_entity = client.service.getAllOntologyChildrenInPath(acid_chebi_id, 'is a', False)
 
         if lite_entity and lite_entity[0]:
             top_result = lite_entity[0]
@@ -1354,7 +1377,6 @@ def get_ranked_values(pubchem, cactus, opsin, chemspider):
 
 def create_pubchem_df(maf_df):
     # These are simply the fixed spreadsheet column headers
-
     # Copy existing values from the MAF
     pubchem_df = maf_df[[database_identifier_column, 'chemical_formula', 'smiles', 'inchi', maf_compound_name_column]]
     # add the rest of the rows
@@ -1686,9 +1708,9 @@ class ChEBIPipeLine(Resource):
     @swagger.operation(
         summary="Search external resources using compound names in MAF (curator only)",
         nickname="Search compound names",
-        notes="Search and populate a given Metabolite Annotation File based on the 'metabolite_identification' column. "
-              "New MAF files will be created with extensions '_annotated.tsv' and '_pubchem.tsv'. These form part of "
-              "the ChEBI submission pipeline. If no annotation_file_name is given, all MAF in the study are processed",
+        notes="""Search and populate a given Metabolite Annotation File based on the 'metabolite_identification' column. 
+              New MAF files will be created in the 'chebi_pipeline_annotations' folder with extension '_pubchem.tsv'. These form part of 
+              the ChEBI submission pipeline. If no annotation_file_name is given, all MAF in the study are processed""",
         parameters=[
             {
                 "name": "study_id",

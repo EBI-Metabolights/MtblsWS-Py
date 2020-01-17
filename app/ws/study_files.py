@@ -18,10 +18,11 @@
 
 import json
 import zipfile
+from copy import deepcopy
 from operator import itemgetter
 from os import scandir
 
-from flask import request, abort
+from flask import abort
 from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -59,9 +60,19 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
     # Sort the two lists
     study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
 
+    # Now, the status for each file can differ from upload and study folder as only study files are
+    # referenced in the ISA-Tab files. If they are referenced, they get status 'active'
+    u_files = deepcopy(upload_files)
+    for row in u_files:
+        row.pop('status')
+
+    s_files = deepcopy(study_files)
+    for row in s_files:
+        row.pop('status')
+
     upload_diff = [dict(i) for i in
-                   {frozenset(row.items()) for row in upload_files} -
-                   {frozenset(row.items()) for row in study_files}]
+                   {frozenset(row.items()) for row in u_files} -
+                   {frozenset(row.items()) for row in s_files}]
 
     upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
 
@@ -473,8 +484,8 @@ class CopyFilesFolders(Resource):
 
                     if from_file != to_file:
                         if os.path.isfile(source_file):
-                            logger.info("The filename/folder you are copying to (%s) already exists in the upload folder, renaming first", to_file)
-                            os.rename(source_file, source_file + '.duplicate')
+                            logger.info("The filename/folder you are copying to (%s) already exists in the upload folder, deleting first", to_file)
+                            os.remove(source_file, source_file)
                         else:
                             logger.info("Renaming file %s to %s", from_file, to_file)
                             os.rename(os.path.join(upload_location, from_file), source_file)

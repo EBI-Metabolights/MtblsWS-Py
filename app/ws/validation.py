@@ -394,7 +394,7 @@ class Validation(Resource):
             },
             {
                 "name": "static_validation_file",
-                "description": "Read validation from pre-generated file",
+                "description": "Read validation from pre-generated file for 'In Review' and 'Public' status",
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
@@ -468,7 +468,7 @@ class Validation(Resource):
         if log_category is None:
             log_category = 'all'
 
-        if static_validation_file:
+        if static_validation_file and study_status.lower() == 'in review' or study_status.lower() == 'public':
             validation_file = os.path.join(study_location, 'validation_report.json')
             if os.path.isfile(validation_file):
                 try:

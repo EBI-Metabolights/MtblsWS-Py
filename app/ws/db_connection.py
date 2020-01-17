@@ -216,8 +216,8 @@ def get_all_studies_for_user(user_token):
     return complete_list
 
 
-def get_all_studies(user_token):
-    data = execute_query(query_all_studies, user_token)
+def get_all_studies(user_token, date_from=None):
+    data = execute_query(query_all_studies, user_token, date_from=None)
     return data
 
 
@@ -448,13 +448,27 @@ def study_submitters(study_id, user_email, method):
         return False
 
 
+def query_all_studies():
+    # query = "select acc from studies where acc in('MTBLS1','MTBLS2','MTBLS3', 'MTBLS4', 'MTBLS5');"
+    query = "select acc from studies;"
+    query = query.replace('\\', '')
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        release_connection(postgresql_pool, conn)
+        return data
+    except Exception as e:
+        return False
+
+
 def query_study_submitters(study_id):
 
     if not study_id:
         return None
 
-    query = "select u.email from users u, studies s, study_user su " \
-            "where su.userid = u.id and su.studyid = s.id and acc='" + study_id + "';"
+    query = "select u.email from users u, studies s, study_user su where " \
+            "su.userid = u.id and su.studyid = s.id and acc='" + study_id + "';"
     query = query.replace('\\', '')
     try:
         postgresql_pool, conn, cursor = get_connection()
@@ -517,16 +531,24 @@ def update_validation_status(study_id, validation_status):
 
 def update_study_status_change_date(study_id):
     query = "update studies set status_date = current_timestamp where acc = '" + study_id + "';"
+    status, msg = insert_update_data(query)
+    if not status:
+        logger.error('Database update of study status date failed with error ' + msg)
+        return False
+    return True
 
+
+def insert_update_data(query):
     try:
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
         conn.commit()
         release_connection(postgresql_pool, conn)
-        return True
+        return True, "Database command success " + query
     except Exception as e:
-        logger.error('Database update of study status date failed with error ' + str(e))
-        return False
+        msg = 'Database command ' + query + 'failed with error ' + str(e)
+        logger.error(msg)
+        return False, msg
 
 
 def update_study_status(study_id, study_status, is_curator=False):
@@ -619,3 +641,20 @@ def release_connection(postgresql_pool, ps_connection):
     except (Exception, psycopg2.DatabaseError) as error:
         print("Error while connecting to PostgreSQL", error)
         logger.error("Error while releasing PostgreSQL connection. " + str(error))
+
+
+def create_maf_info_table():
+    sql_trunc = "truncate table maf_info;"
+    sql_drop = "drop table maf_info;"
+    sql_create = "create table maf_info(acc VARCHAR, database_identifier VARCHAR, metabolite_identification VARCHAR, database_found VARCHAR, metabolite_found VARCHAR);"
+    status, msg = insert_update_data(sql_trunc)
+    status, msg = insert_update_data(sql_drop)
+    status, msg = insert_update_data(sql_create)
+
+
+def add_maf_info_data(acc, database_identifier, metabolite_identification, database_found, metabolite_found):
+    sql = "insert into maf_info values('" + acc + "','" + database_identifier + "','" + metabolite_identification + "','" + database_found + "','" + metabolite_found + "');"
+    status, msg = insert_update_data(sql)
+    return status, msg
+
+

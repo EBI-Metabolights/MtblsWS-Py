@@ -1003,3 +1003,11 @@ def google_analytics():
             tracking_id=tracking_id,
             category='MetaboLights-WS',
             action=url)
+
+def safe_str(obj):
+    if not obj:
+        return ""
+    try:
+        return obj.encode('ascii', 'ignore').decode('ascii')
+    except UnicodeEncodeError:
+        return ""
