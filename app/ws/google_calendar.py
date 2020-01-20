@@ -43,23 +43,30 @@ def get_google_calendar_events():
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is created automatically
     # when the authorization flow completes for the first time.
+    logger.info("Looking for Google Calendar credentials " + pickle_file)
     if os.path.exists(pickle_file):
+        logger.info("Reading Google Calendar credentials " + pickle_file)
         with open(pickle_file, 'rb') as token:
             creds = pickle.load(token)
     # If there are no (valid) credentials available, let the user log in.
     # Run this locally to get a new pickle file
     if not creds or not creds.valid:
+        logger.info("Google Calendar credentials not found or not valid " + pickle_file)
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(app.config.get('GOOGLE_CALENDAR_TOKEN'), SCOPES)
+            cal_token = app.config.get('GOOGLE_CALENDAR_TOKEN')
+            logger.info("Looking for Google Calendar Token: " + cal_token)
+            flow = InstalledAppFlow.from_client_secrets_file(cal_token, SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open(pickle_file, 'wb') as token:
+            logger.info("Writing new Google Calendar credentials pickle file " + pickle_file)
             pickle.dump(creds, token)
     service = build('calendar', 'v3', credentials=creds)
 
     calendar_id = app.config.get('GOOGLE_CALENDAR_ID')
+    logger.info("Reading Google Calendar events for calendar id " + calendar_id)
     events = service.events().list(calendarId=calendar_id, maxResults=2500).execute()
 
     return service, events
@@ -181,6 +188,15 @@ def update_or_create_calendar_entries(user_token=None):
 
         studies = get_all_studies(user_token)
         service, events = get_google_calendar_events()
+
+        study_id = None
+        user_name = None
+        release_date = None
+        update_date = None
+        study_status = None
+        curator = None
+        status_change = None
+        curation_due_date = None
 
         for study in studies:
             study_id = safe_str(study[0])
