@@ -23,7 +23,7 @@ from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.db_connection import query_all_studies, create_maf_info_table, add_maf_info_data
+from app.ws.db_connection import get_all_study_acc, create_maf_info_table, add_maf_info_data
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import read_tsv
 
@@ -93,7 +93,7 @@ class MAfStats(Resource):
 
 def update_maf_stats(user_token):
 
-    for acc in query_all_studies():
+    for acc in get_all_study_acc():
         study_id = acc[0]
         print(study_id)
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -130,13 +130,17 @@ def update_maf_stats(user_token):
 
             for idx, row in maf_df.iterrows():
                 maf_row = {}
-                database_identifier = row['database_identifier']
-                metabolite_identification = row['metabolite_identification']
-                maf_row.update({"acc": study_id})
-                maf_row.update({"database_identifier": database_identifier})
-                maf_row.update({"metabolite_identification": metabolite_identification})
-                maf_row.update({"database_found": is_identified(database_identifier)})
-                maf_row.update({"metabolite_found": is_identified(database_identifier)})
+                try:
+                    database_identifier = row['database_identifier']
+                    metabolite_identification = row['metabolite_identification']
+                    maf_row.update({"acc": study_id})
+                    maf_row.update({"database_identifier": database_identifier})
+                    maf_row.update({"metabolite_identification": metabolite_identification})
+                    maf_row.update({"database_found": is_identified(database_identifier)})
+                    maf_row.update({"metabolite_found": is_identified(database_identifier)})
+                except Exception as e:
+                    logger.error('MAF stats failed for ' + study_id + '. Error: ' + str(e))
+                    continue
 
                 complete_maf.append(maf_row)
 

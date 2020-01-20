@@ -49,6 +49,7 @@ from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.organism import Organism
 from app.ws.cluster_jobs import LsfUtils
 from app.ws.stats import MAfStats
+from app.ws.google_calendar import GoogleCalendar
 
 """
 MTBLS WS-Py
@@ -154,6 +155,7 @@ def initialize_app(flask_app):
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
+    api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
 
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
@@ -171,7 +173,6 @@ def initialize_app(flask_app):
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
     # api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
-    api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
     api.add_resource(UpdateValidationFile, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
@@ -179,6 +180,8 @@ def initialize_app(flask_app):
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
     api.add_resource(MAfStats, res_path + "/ebi-internal/maf-stats")
+    api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
+
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
 
 

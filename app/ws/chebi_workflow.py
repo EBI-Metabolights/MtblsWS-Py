@@ -63,7 +63,7 @@ anno_sub_folder = "chebi_pipeline_annotations"
 final_cid_column_name = "final_external_id"
 unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
                "not identified", "unmatched"
-resource_folder = "./resources/"
+resource_folder = os.path.join(".", "resources")
 
 search_flag = 'search_flag'
 maf_compound_name_column = "metabolite_identification"
