@@ -118,7 +118,8 @@ def update_maf_stats(user_token):
                 assay_maf_name = file_df['Metabolite Assignment File'].iloc[0]
                 if not assay_maf_name:
                     continue  # No MAF referenced in this assay
-            except KeyError:
+            except Exception:
+                logger.error("Error in identifying MAF column in assay")
                 continue  # No MAF column found in this assay
 
             maf_file_name = os.path.join(study_location, assay_maf_name)  # MAF sheet
