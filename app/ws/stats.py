@@ -159,11 +159,11 @@ def update_database_stats():
         metabolite_identification = row['metabolite_identification']
         database_found = row['database_found']
         metabolite_found = row['metabolite_found']
-        status, msg = add_maf_info_data(str(acc),
-                                        str(database_identifier),
-                                        str(metabolite_identification),
-                                        str(database_found),
-                                        str(metabolite_found))
+        status, msg = add_maf_info_data(str(acc).strip(),
+                                        str(database_identifier).strip(),
+                                        str(metabolite_identification).strip(),
+                                        str(database_found).strip(),
+                                        str(metabolite_found).strip())
         if not status:
             return status, msg
 
