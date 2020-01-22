@@ -462,11 +462,12 @@ class Validation(Resource):
             static_validation_file = 'true'  # Set to same as input default value
         static_validation_file = True if static_validation_file.lower() == 'true' else False
 
-        if section is None:
-            section = 'all'
+        log_categories = "error", "warning", "info", "success", "all"
+        if log_category is None or log_category not in log_categories:
+            log_category = 'all'
 
-        section_categories = "error", "warning", "info", "success", "all"
-        if section is None or section not in section_categories:
+        val_sections = "all", "isa-tab", "publication", "protocols", "people", "samples", "assays", "maf", "files"
+        if section is None or section not in val_sections:
             section = 'all'
 
         if static_validation_file and study_status.lower() == 'in review' or study_status.lower() == 'public':
