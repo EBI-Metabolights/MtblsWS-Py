@@ -465,9 +465,9 @@ class Validation(Resource):
         if section is None:
             section = 'all'
 
-        log_categories = "error", "warning", "info", "success", "all"
-        if log_category is None or log_category not in log_categories:
-            log_category = 'all'
+        section_categories = "error", "warning", "info", "success", "all"
+        if section is None or section not in section_categories:
+            section = 'all'
 
         if static_validation_file and study_status.lower() == 'in review' or study_status.lower() == 'public':
             validation_file = os.path.join(study_location, 'validation_report.json')

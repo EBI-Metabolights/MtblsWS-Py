@@ -277,16 +277,16 @@ class WsClient:
         """
         Check MTBLS-WS for permissions on this Study for this user
 
-        Study       User    Submitter   Curator
-        SUBMITTED   ----    Read+Write  Read+Write
-        INCURATION  ----    Read        Read+Write
-        INREVIEW    ----    Read        Read+Write
-        PUBLIC      Read    Read        Read+Write
+        Study       User    Submitter   Curator     Reviewer/Read-only
+        SUBMITTED   ----    Read+Write  Read+Write  Read
+        INCURATION  ----    Read        Read+Write  Read
+        INREVIEW    ----    Read        Read+Write  Read
+        PUBLIC      Read    Read        Read+Write  Read
 
         :param obfuscation_code:
         :param study_id:
         :param user_token:
-        :return:
+        :return: study details and permission levels
 
         """
 

@@ -593,10 +593,14 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
     stop_words = "select", "drop", "delete", "from", "into", "studies", "users", "stableid", "study_user", \
                  "curation_log_temp", "ref_", "ebi_reporting", "exists"
 
+    obfuscation_code = None
+    if not study_obfuscation_code:
+        obfuscation_code = ""
+    else:
+        obfuscation_code = study_obfuscation_code
+
     # Check that study_id, study_obfuscation_code does not contain any sql statements etc
-    if not study_id.startswith('MTBLS') \
-            or study_obfuscation_code.lower() in stop_words \
-            or user_token.lower() in stop_words:
+    if not study_id.startswith('MTBLS') or obfuscation_code.lower() in stop_words or user_token.lower() in stop_words:
         logger.error("ERROR parameter study_id and/or study_obfuscation_code not correct")
         return []
 
@@ -632,6 +636,9 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
         print(e.pgcode)
         print(e.pgerror)
         print(traceback.format_exc())
+    except Exception as e:
+        print("Error: " + str(e))
+        logger.error("Error: " + str(e))
 
 
 def get_connection():
