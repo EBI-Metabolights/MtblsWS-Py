@@ -598,13 +598,17 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
         obfuscation_code = ""
     else:
         obfuscation_code = study_obfuscation_code
-
-    # Check that study_id, study_obfuscation_code does not contain any sql statements etc
-    if not study_id.startswith('MTBLS') or obfuscation_code.lower() in stop_words or user_token.lower() in stop_words:
-        logger.error("ERROR parameter study_id and/or study_obfuscation_code not correct")
-        return []
-
+        
     data = []
+
+    if study_id and not study_id.startswith("MTBLS"):
+        logger.error("ERROR parameter study_id not correct")
+        return data
+    # Check that study_id, study_obfuscation_code does not contain any sql statements etc
+    if obfuscation_code.lower() in stop_words or user_token.lower() in stop_words:
+        logger.error("ERROR parameter study_obfuscation_code not correct")
+        return data
+
     try:
         postgresql_pool, conn, cursor = get_connection()
         query = query.replace('\\', '')
