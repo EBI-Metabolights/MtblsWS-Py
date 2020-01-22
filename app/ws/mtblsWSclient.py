@@ -293,6 +293,11 @@ class WsClient:
         if not user_token:
             user_token = "public_access_only"
 
+        # Reviewer access will pass the study obfuscation code instead of api_key
+        if study_id and not obfuscation_code and user_token.startswith("ocode:"):
+            logger.info("Study obfuscation code passed instead of user API_CODE")
+            obfuscation_code = user_token.replace("ocode:", "")
+
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             updated_date, study_status = check_access_rights(user_token, study_id.upper(),
                                                              study_obfuscation_code=obfuscation_code)

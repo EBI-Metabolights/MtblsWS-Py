@@ -31,8 +31,6 @@ logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
 
-complete_maf = []
-
 
 class MAfStats(Resource):
     @swagger.operation(
@@ -93,7 +91,10 @@ class MAfStats(Resource):
 
 def update_maf_stats(user_token):
 
+    create_maf_info_table()  # Truncate, drop and create the database table
+
     for acc in get_all_study_acc():
+        complete_maf = []
         study_id = acc[0]
         print(study_id)
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -145,23 +146,22 @@ def update_maf_stats(user_token):
 
                 complete_maf.append(maf_row)
 
-    status, msg = update_database_stats()
+        status, msg = update_database_stats(complete_maf)
 
     return status, msg
 
 
-def update_database_stats():
-    create_maf_info_table()  # Truncate, drop and create the database table
+def update_database_stats(complete_maf_list):
 
-    for row in complete_maf:
+    for row in complete_maf_list:
         acc = row['acc']
         database_identifier = row['database_identifier']
         metabolite_identification = row['metabolite_identification']
         database_found = row['database_found']
         metabolite_found = row['metabolite_found']
         status, msg = add_maf_info_data(str(acc).strip(),
-                                        str(database_identifier).strip(),
-                                        str(metabolite_identification).strip(),
+                                        str(database_identifier).strip().replace("'", ""),
+                                        str(metabolite_identification).strip().replace("'", ""),
                                         str(database_found).strip(),
                                         str(metabolite_found).strip())
         if not status:

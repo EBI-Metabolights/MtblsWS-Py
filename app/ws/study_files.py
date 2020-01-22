@@ -312,6 +312,9 @@ without setting the "force" parameter to True''',
             try:
                 f_name = file["name"]
 
+                if f_name.startswith('i_') and f_name.endswith('.txt') and not is_curator:
+                    return {'Error': "Only MetaboLights curators can remove the investigation file"}
+
                 if file_location == "study":
                     status, message = remove_file(study_location, f_name, allways_remove)
                 elif file_location == "upload":

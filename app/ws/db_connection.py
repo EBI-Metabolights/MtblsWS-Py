@@ -450,7 +450,8 @@ def study_submitters(study_id, user_email, method):
 
 def get_all_study_acc():
     # query = "select acc from studies where acc in('MTBLS1','MTBLS2','MTBLS3', 'MTBLS4', 'MTBLS5');"
-    query = "select acc from studies;"
+    # Select all study accessions which are not in Dormant status or currently only a placeholder
+    query = "select acc from studies where placeholder != '1' and status != 4;"
     query = query.replace('\\', '')
     try:
         postgresql_pool, conn, cursor = get_connection()
@@ -589,6 +590,16 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
     if not user_token and study_obfuscation_code:
         return None
 
+    stop_words = "select", "drop", "delete", "from", "into", "studies", "users", "stableid", "study_user", \
+                 "curation_log_temp", "ref_", "ebi_reporting", "exists"
+
+    # Check that study_id, study_obfuscation_code does not contain any sql statements etc
+    if not study_id.startswith('MTBLS') \
+            or study_obfuscation_code.lower() in stop_words \
+            or user_token.lower() in stop_words:
+        logger.error("ERROR parameter study_id and/or study_obfuscation_code not correct")
+        return []
+
     data = []
     try:
         postgresql_pool, conn, cursor = get_connection()
@@ -647,16 +658,21 @@ def release_connection(postgresql_pool, ps_connection):
 
 def create_maf_info_table():
     sql_trunc = "truncate table maf_info;"
-    sql_drop = "drop table maf_info;"
-    sql_create = "create table maf_info(acc VARCHAR, database_identifier VARCHAR, metabolite_identification VARCHAR, database_found VARCHAR, metabolite_found VARCHAR);"
+    # sql_drop = "drop table maf_info;"
+    # sql_create = "create table maf_info(acc VARCHAR, database_identifier VARCHAR, metabolite_identification VARCHAR, database_found VARCHAR, metabolite_found VARCHAR);"
     status, msg = insert_update_data(sql_trunc)
-    status, msg = insert_update_data(sql_drop)
-    status, msg = insert_update_data(sql_create)
+    # status, msg = insert_update_data(sql_drop)
+    # status, msg = insert_update_data(sql_create)
 
 
 def add_maf_info_data(acc, database_identifier, metabolite_identification, database_found, metabolite_found):
+    status = False
+    msg = None
     sql = "insert into maf_info values('" + acc + "','" + database_identifier + "','" + metabolite_identification + "','" + database_found + "','" + metabolite_found + "');"
-    status, msg = insert_update_data(sql)
+    try:
+        status, msg = insert_update_data(sql)
+    except Exception as e:
+        return False, str(e)
     return status, msg
 
 
