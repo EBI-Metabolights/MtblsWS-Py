@@ -44,7 +44,8 @@ query_all_studies = """
                when s.status = 3 then 'Public'
                else 'Dormant' end as status,
           curator,
-          to_char(s.status_date, 'DD.MM.YYYY HH24:MI') as status_date
+          to_char(s.status_date, 'YYYY-MM-DD HH24:MI') as status_date,
+          to_char(s.status_date + INTERVAL '28 day', 'YYYY-MM-DD') as due_date
         from 
           studies s,
           study_user su,
@@ -53,7 +54,7 @@ query_all_studies = """
            date_trunc('day',s.updatedate) >= date_trunc('day',current_date-180) and
            s.id = su.studyid and
            su.userid = u.id
-    group by 1,3,4,5,6,7) status
+    group by 1,3,4,5,6,7,8) status
     where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
 query_studies_user = """
@@ -172,7 +173,7 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
 
 
 def get_all_studies_for_user(user_token):
-    study_list = execute_query(query_studies_user, user_token)
+    study_list = execute_query(query=query_studies_user, user_token=user_token)
     study_location = app.config.get('STUDY_PATH')
     file_name = 'i_Investigation.txt'
     isa_title = 'Study Title'
@@ -215,8 +216,8 @@ def get_all_studies_for_user(user_token):
     return complete_list
 
 
-def get_all_studies(user_token):
-    data = execute_query(query_all_studies, user_token)
+def get_all_studies(user_token, date_from=None):
+    data = execute_query(query=query_all_studies, user_token=user_token, date_from=date_from)
     return data
 
 
@@ -269,7 +270,7 @@ def add_placeholder_flag(study_id):
 
 
 def get_curation_log(user_token):
-    data = execute_query(query_curation_log, user_token)
+    data = execute_query(query=query_curation_log, user_token=user_token)
     return data
 
 
@@ -366,8 +367,9 @@ def mtblc_on_chebi_accession(chebi_id):
 
 def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
+    study_list = None
     try:
-        study_list = execute_query(query_user_access_rights, user_token, study_id,
+        study_list = execute_query(query=query_user_access_rights, user_token=user_token, study_id=study_id,
                                    study_obfuscation_code=study_obfuscation_code)
     except Exception as e:
         logger.error("Could not query the database " + str(e))
@@ -446,13 +448,28 @@ def study_submitters(study_id, user_email, method):
         return False
 
 
+def get_all_study_acc():
+    # query = "select acc from studies where acc in('MTBLS1','MTBLS2','MTBLS3', 'MTBLS4', 'MTBLS5');"
+    # Select all study accessions which are not in Dormant status or currently only a placeholder
+    query = "select acc from studies where placeholder != '1' and status != 4;"
+    query = query.replace('\\', '')
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        release_connection(postgresql_pool, conn)
+        return data
+    except Exception as e:
+        return False
+
+
 def query_study_submitters(study_id):
 
     if not study_id:
         return None
 
-    query = "select u.email from users u, studies s, study_user su " \
-            "where su.userid = u.id and su.studyid = s.id and acc='" + study_id + "';"
+    query = "select u.email from users u, studies s, study_user su where " \
+            "su.userid = u.id and su.studyid = s.id and acc='" + study_id + "';"
     query = query.replace('\\', '')
     try:
         postgresql_pool, conn, cursor = get_connection()
@@ -515,16 +532,24 @@ def update_validation_status(study_id, validation_status):
 
 def update_study_status_change_date(study_id):
     query = "update studies set status_date = current_timestamp where acc = '" + study_id + "';"
+    status, msg = insert_update_data(query)
+    if not status:
+        logger.error('Database update of study status date failed with error ' + msg)
+        return False
+    return True
 
+
+def insert_update_data(query):
     try:
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
         conn.commit()
         release_connection(postgresql_pool, conn)
-        return True
+        return True, "Database command success " + query
     except Exception as e:
-        logger.error('Database update of study status date failed with error ' + str(e))
-        return False
+        msg = 'Database command ' + query + 'failed with error ' + str(e)
+        logger.error(msg)
+        return False, msg
 
 
 def update_study_status(study_id, study_status, is_curator=False):
@@ -543,7 +568,10 @@ def update_study_status(study_id, study_status, is_curator=False):
 
     query = "update studies set status = '" + status + "'"
     if not is_curator:  # Add 28 days to the database release date when a submitter change the status
-        query = query + ", releasedate = CURRENT_DATE + integer '28'"
+        query = query + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE + integer '28'"
+    if study_status == 'public' and is_curator:
+        query = query + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE"
+
     query = query + " where acc = '" + study_id + "';"
 
     try:
@@ -557,16 +585,36 @@ def update_study_status(study_id, study_status, is_curator=False):
         return False
 
 
-def execute_query(query, user_token, study_id=None, study_obfuscation_code=None):
+def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_code=None, date_from=None):
 
     if not user_token and study_obfuscation_code:
         return None
 
+    stop_words = "select", "drop", "delete", "from", "into", "studies", "users", "stableid", "study_user", \
+                 "curation_log_temp", "ref_", "ebi_reporting", "exists"
+
+    obfuscation_code = None
+    if not study_obfuscation_code:
+        obfuscation_code = ""
+    else:
+        obfuscation_code = study_obfuscation_code
+        
     data = []
+
+    if study_id and not study_id.startswith("MTBLS"):
+        logger.error("ERROR parameter study_id not correct")
+        return data
+    # Check that study_id, study_obfuscation_code does not contain any sql statements etc
+    if obfuscation_code.lower() in stop_words or user_token.lower() in stop_words:
+        logger.error("ERROR parameter study_obfuscation_code not correct")
+        return data
+
     try:
         postgresql_pool, conn, cursor = get_connection()
         query = query.replace('\\', '')
         if study_id is None and study_obfuscation_code is None:
+            if date_from:
+                query = query.replace("current_date", date_from)
             cursor.execute(query, [user_token])
         elif study_id and user_token and not study_obfuscation_code:
             query2 = query_user_access_rights.replace("#user_token#", user_token)
@@ -592,6 +640,9 @@ def execute_query(query, user_token, study_id=None, study_obfuscation_code=None)
         print(e.pgcode)
         print(e.pgerror)
         print(traceback.format_exc())
+    except Exception as e:
+        print("Error: " + str(e))
+        logger.error("Error: " + str(e))
 
 
 def get_connection():
@@ -614,3 +665,25 @@ def release_connection(postgresql_pool, ps_connection):
     except (Exception, psycopg2.DatabaseError) as error:
         print("Error while connecting to PostgreSQL", error)
         logger.error("Error while releasing PostgreSQL connection. " + str(error))
+
+
+def create_maf_info_table():
+    sql_trunc = "truncate table maf_info;"
+    # sql_drop = "drop table maf_info;"
+    # sql_create = "create table maf_info(acc VARCHAR, database_identifier VARCHAR, metabolite_identification VARCHAR, database_found VARCHAR, metabolite_found VARCHAR);"
+    status, msg = insert_update_data(sql_trunc)
+    # status, msg = insert_update_data(sql_drop)
+    # status, msg = insert_update_data(sql_create)
+
+
+def add_maf_info_data(acc, database_identifier, metabolite_identification, database_found, metabolite_found):
+    status = False
+    msg = None
+    sql = "insert into maf_info values('" + acc + "','" + database_identifier + "','" + metabolite_identification + "','" + database_found + "','" + metabolite_found + "');"
+    try:
+        status, msg = insert_update_data(sql)
+    except Exception as e:
+        return False, str(e)
+    return status, msg
+
+

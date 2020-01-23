@@ -277,21 +277,26 @@ class WsClient:
         """
         Check MTBLS-WS for permissions on this Study for this user
 
-        Study       User    Submitter   Curator
-        SUBMITTED   ----    Read+Write  Read+Write
-        INCURATION  ----    Read        Read+Write
-        INREVIEW    ----    Read        Read+Write
-        PUBLIC      Read    Read        Read+Write
+        Study       User    Submitter   Curator     Reviewer/Read-only
+        SUBMITTED   ----    Read+Write  Read+Write  Read
+        INCURATION  ----    Read        Read+Write  Read
+        INREVIEW    ----    Read        Read+Write  Read
+        PUBLIC      Read    Read        Read+Write  Read
 
         :param obfuscation_code:
         :param study_id:
         :param user_token:
-        :return:
+        :return: study details and permission levels
 
         """
 
         if not user_token:
             user_token = "public_access_only"
+
+        # Reviewer access will pass the study obfuscation code instead of api_key
+        if study_id and not obfuscation_code and user_token.startswith("ocode:"):
+            logger.info("Study obfuscation code passed instead of user API_CODE")
+            obfuscation_code = user_token.replace("ocode:", "")
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             updated_date, study_status = check_access_rights(user_token, study_id.upper(),

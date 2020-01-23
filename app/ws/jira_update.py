@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2020-Jan-07
+#  Last modified: 2020-Jan-17
 #  Modified by:   kenneth
 #
 #  Copyright 2020 EMBL - European Bioinformatics Institute
@@ -22,13 +22,14 @@ import logging
 import gspread
 import pandas as pd
 from flask import request, abort, current_app as app, jsonify
-from flask_restful import Resource, reqparse
+from flask_restful import Resource
 from flask_restful_swagger import swagger
 from jira import JIRA
-from oauth2client.service_account import ServiceAccountCredentials as SAC
+from oauth2client.service_account import ServiceAccountCredentials
 
 from app.ws.db_connection import get_all_studies
 from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import safe_str
 
 # https://jira.readthedocs.io
 options = {
@@ -43,16 +44,7 @@ curation_lable = 'curation'
 class Jira(Resource):
     @swagger.operation(
         summary="Create (or update) Jira tickets for MetaboLights study curation (curator only)",
-        notes="If no study id (accession number) is given, all tickets will be updated.",
         parameters=[
-            {
-                "name": "study_id",
-                "description": "Study Identifier to update Jira ticket for, leave empty for all",
-                "required": False,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
             {
                 "name": "user_token",
                 "description": "User API token",
@@ -83,10 +75,7 @@ class Jira(Resource):
         ]
     )
     def put(self):
-
         user_token = None
-        study_id = None
-        passed_id = None
         # User authentication
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
@@ -94,26 +83,13 @@ class Jira(Resource):
         if user_token is None:
             abort(401)
 
-        parser = reqparse.RequestParser()
-        parser.add_argument('study_id', help="Study Identifier to update Jira ticket for, leave empty for all")
-        if request.args:
-            args = parser.parse_args(req=request)
-            study_id = args['study_id']
-            passed_id = study_id
-
-        if study_id is None:
-            study_id = 'MTBLS121'  # Template LC-MS study. If no study id has been passed, assume curator
-            passed_id = None
-
-        study_id = study_id.upper()
-
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions('MTBLS3', user_token)
         if not is_curator:
             abort(403)
 
-        status, message, updated_studies_list = update_or_create_jira_issue(passed_id, user_token, is_curator)
+        status, message, updated_studies_list = update_or_create_jira_issue(user_token, is_curator)
 
         if status:
             return {'Success': message}
@@ -121,7 +97,7 @@ class Jira(Resource):
             return {'Error': message}
 
 
-def update_or_create_jira_issue(study_id, user_token, is_curator):
+def update_or_create_jira_issue(user_token, is_curator):
     try:
         params = app.config.get('JIRA_PARAMS')
         user_name = params['username']
@@ -136,45 +112,40 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
         # Get the MetaboLights project
         mtbls_project = jira.project(project)
 
-        studies = [study_id]  # ToDo, read a study from the database, accession number as string will not work!
-        if not study_id and is_curator:
+        if is_curator:
             studies = get_all_studies(user_token)
 
         for study in studies:
-            study_id = study[0]
-            user_name = study[1]
-            release_date = study[2]
-            update_date = study[3]
-            study_status = study[4]
-            curator = study[5]
-            status_change = study[6]
+            study_id = None
+            user_name = None
+            release_date = None
+            update_date = None
+            study_status = None
+            curator = None
+            status_change = None
+            curation_due_date = None
+
+            try:
+                study_id = safe_str(study[0])
+                user_name = safe_str(study[1])
+                release_date = safe_str(study[2])
+                update_date = safe_str(study[3])
+                study_status = safe_str(study[4])
+                curator = safe_str(study[5])
+                status_change = safe_str(study[6])
+                curation_due_date = safe_str(study[7])
+            except Exception as e:
+                logger.error(str(e))
             issue = []
             summary = None
 
-            if not study_id:
-                study_id = ""
+            # date is 'YYYY-MM-DD HH24:MI'
+            due_date = status_change[:10]
 
-            if not user_name:
-                user_name = ""
-
-            if not release_date:
-                release_date = ""
-
-            if not update_date:
-                update_date = ""
-
-            if not study_status:
-                study_status = ""
-
-            if not curator:
-                curator = ""
-
-            if not status_change:
-                status_change = ""
-
-            logger.info('Updating Jira ticket for ' + study_id + '. Values: ' +
+            logger.info('Updating Jira ticket/Google Calendar for ' + study_id + '. Values: ' +
                         user_name + '|' + release_date + '|' + update_date + '|' + study_status + '|' +
-                        curator + '|' + status_change)
+                        curator + '|' + status_change + '|' + due_date)
+
             # Get an issue based on a study accession search pattern
             search_param = "project='" + mtbls_project.key + "' AND summary  ~ '" + study_id + " \\\-\\\ 20*'"
             issues = jira.search_issues(search_param)  # project = MetaboLights AND summary ~ 'MTBLS121 '
@@ -223,9 +194,8 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 labels = maintain_jira_labels(issue, study_status, user_name)
 
                 # Add a comment to the issue.
-                comment_text = 'Current status ' + study_status + \
-                               '. Status last changed date ' + status_change \
-                               + '. Database update date ' + update_date
+                comment_text = 'Current status ' + study_status + '. Status last changed date ' + status_change + \
+                               '. Curation due date ' + due_date + '. Database update date ' + update_date
                 jira.add_comment(issue, comment_text)
 
                 # Change the issue's summary, comments and description.
@@ -239,7 +209,7 @@ def update_or_create_jira_issue(study_id, user_token, is_curator):
                 print('Updated Jira case for study ' + study_id)
     except Exception as e:
         logger.error("Jira updated failed for " + study_id + ". " + str(e))
-        return False, 'Update failed: ' + str(e), study_id
+        return False, 'Update failed: ' + str(e), str(study_id)
     return True, 'Ticket(s) updated successfully', updated_studies
 
 
@@ -366,7 +336,7 @@ class GoogleDocs(Resource):
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         google_creds = app.config.get('GOOGLE_CREDS')
         google_json = json.loads(google_creds, encoding='utf-8')
-        credentials = SAC.from_json_keyfile_dict(google_json, scopes=scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_dict(google_json, scopes=scope)
         gc = gspread.authorize(credentials)
         query_wks = gc.open('MTBLS Curation Status Log').get_worksheet(5)  # "Database query" sheet
         query_records = query_wks.get_all_records()

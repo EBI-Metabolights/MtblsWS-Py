@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2020-Jan-08
+#  Last modified: 2020-Jan-17
 #  Modified by:   kenneth
 #
 #  Copyright 2020 EMBL - European Bioinformatics Institute
@@ -256,8 +256,9 @@ def get_assay_headers_and_protcols(assay_type):
         return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, \
                assay_file_type, assay_mandatory_type
 
+    resource_folder = os.path.join(".", "resources")
     logger.info(' - get_assay_headers_and_protcols for assay type ' + assay_type)
-    assay_master_template = './resources/MetaboLightsAssayMaster.tsv'
+    assay_master_template = os.path.join(resource_folder,'MetaboLightsAssayMaster.tsv')
     master_df = read_tsv(assay_master_template)
 
     header_row = master_df.loc[master_df['name'] == assay_type + '-header']
@@ -693,9 +694,8 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
         logger.error("Could not update the ontology value " + old_value + " in all sheets")
 
 
-
 def create_maf(technology, study_location, assay_file_name, annotation_file_name):
-    resource_folder = "./resources/"
+    resource_folder = os.path.join(".", "resources")
     update_maf = False
 
     if technology is None:
@@ -1003,3 +1003,15 @@ def google_analytics():
             tracking_id=tracking_id,
             category='MetaboLights-WS',
             action=url)
+
+
+def safe_str(obj):
+    if not obj:
+        return ""
+    try:
+        return obj.encode('ascii', 'ignore').decode('ascii')
+    except UnicodeEncodeError:
+        return ""
+    except Exception as e:
+        logger.error(str(e))
+        return ""

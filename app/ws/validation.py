@@ -394,7 +394,7 @@ class Validation(Resource):
             },
             {
                 "name": "static_validation_file",
-                "description": "Read validation from pre-generated file",
+                "description": "Read validation from pre-generated file for 'In Review' and 'Public' status",
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
@@ -462,13 +462,15 @@ class Validation(Resource):
             static_validation_file = 'true'  # Set to same as input default value
         static_validation_file = True if static_validation_file.lower() == 'true' else False
 
-        if section is None:
-            section = 'all'
-
-        if log_category is None:
+        log_categories = "error", "warning", "info", "success", "all"
+        if log_category is None or log_category not in log_categories:
             log_category = 'all'
 
-        if static_validation_file:
+        val_sections = "all", "isa-tab", "publication", "protocols", "people", "samples", "assays", "maf", "files"
+        if section is None or section not in val_sections:
+            section = 'all'
+
+        if static_validation_file and study_status.lower() == 'in review' or study_status.lower() == 'public':
             validation_file = os.path.join(study_location, 'validation_report.json')
             if os.path.isfile(validation_file):
                 try:

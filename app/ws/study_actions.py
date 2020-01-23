@@ -120,38 +120,45 @@ class StudyStatus(Resource):
         if study_status.lower() == db_study_status.lower():
             abort(406, "Nothing to change")
 
-        new_date = datetime.datetime.now() + datetime.timedelta(+28)
-        new_date = new_date.strftime('%Y-%m-%d')
-
         # Update the last status change date field
         status_date_logged = update_study_status_change_date(study_id)
         if not status_date_logged:
             logger.error("Could not update the status_date column for " + study_id)
 
+        isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                         skip_load_tables=True,
+                                                         study_location=study_location)
+
+        if is_curator:  # Curators can change the date to current date, submitters can not!
+            new_date = datetime.datetime.now()
+        else:
+            new_date = datetime.datetime.now() + datetime.timedelta(+28)
+        new_date = new_date.strftime('%Y-%m-%d')
+
         if is_curator:  # User is a curator, so just update status without any further checks
+            if study_status.lower() == 'public':
+                isa_inv.public_release_date = new_date
+                isa_study.public_release_date = new_date
+                release_date = new_date
             self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
         elif write_access:
-            if db_study_status != 'Submitted':  # and study_status != 'In Curation':
+            if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':
                 abort(403, "You can not change to this status")
 
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
-                isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                                 skip_load_tables=True,
-                                                                 study_location=study_location)
-
                 self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
 
                 if release_date < new_date:  # Set the release date to a minimum of 28 days in the future
                     isa_inv.public_release_date = new_date
                     isa_study.public_release_date = new_date
                     release_date = new_date
-                else:  # Release date is already set to more than 28 days in the future
-                    iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True)
 
             else:
                 abort(403, "There are validation errors. Fix any problems before attempting to change study status.")
         else:
             abort(403, "You do not have rights to change the status for this study")
+
+        iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=True)
 
         status, message = wsc.reindex_study(study_id, user_token)
         return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
