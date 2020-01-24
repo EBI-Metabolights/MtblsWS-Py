@@ -1220,7 +1220,7 @@ def get_ancestors(classyfire_file_name, classyfire_df):
 
 
 def get_classyfire_lookup_mapping():
-    assay_master_template = resource_folder + 'ClassyFire_Mapping_VLOOKUP.tsv'
+    assay_master_template = os.path.join(resource_folder, 'ClassyFire_Mapping_VLOOKUP.tsv')
     return read_tsv(assay_master_template)
 
 
