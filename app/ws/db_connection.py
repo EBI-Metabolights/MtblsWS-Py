@@ -449,7 +449,6 @@ def study_submitters(study_id, user_email, method):
 
 
 def get_all_study_acc():
-    # query = "select acc from studies where acc in('MTBLS1','MTBLS2','MTBLS3', 'MTBLS4', 'MTBLS5');"
     # Select all study accessions which are not in Dormant status or currently only a placeholder
     query = "select acc from studies where placeholder != '1' and status != 4;"
     query = query.replace('\\', '')
@@ -598,7 +597,7 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
         obfuscation_code = ""
     else:
         obfuscation_code = study_obfuscation_code
-        
+
     data = []
 
     if study_id and not study_id.startswith("MTBLS"):

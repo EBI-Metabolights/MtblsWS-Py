@@ -81,12 +81,10 @@ class MAfStats(Resource):
         if not is_curator:
             abort(403)
 
-        status = update_maf_stats(user_token)
-
-        if status:
+        if update_maf_stats(user_token):
             return {'Success': "MAF statistics updated in database"}
-        else:
-            return {'Error': "MAF statistics could not be updated in database"}
+
+        return {'Error': "MAF statistics could not be updated in database"}
 
 
 def update_maf_stats(user_token):
@@ -94,9 +92,8 @@ def update_maf_stats(user_token):
     create_maf_info_table()  # Truncate, drop and create the database table
 
     for acc in get_all_study_acc():
-        complete_maf = []
         study_id = acc[0]
-        print(study_id)
+        print("------------------------------------------ " + study_id + " ------------------------------------------")
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
 
@@ -105,9 +102,10 @@ def update_maf_stats(user_token):
                                                              skip_load_tables=True, study_location=study_location)
         except Exception as e:
             logger.error("Failed to load ISA-Tab files for study " + study_id + ". " + str(e))
-            continue
+            continue  # Cannot find the required metadata files, skip to the next study
 
         for assay in isa_study.assays:
+            complete_maf = []
             file_name = os.path.join(study_location, assay.filename)
             logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
             # Get the Assay table or create a new one if it does not already exist
@@ -125,10 +123,16 @@ def update_maf_stats(user_token):
 
             maf_file_name = os.path.join(study_location, assay_maf_name)  # MAF sheet
 
-            try:
-                maf_df = read_tsv(maf_file_name)
-            except Exception as e:
-                logger.error("The file " + maf_file_name + " was not found")
+            if os.path.isfile(maf_file_name):
+                try:
+                    maf_df = read_tsv(maf_file_name)
+                except Exception as e:
+                    logger.error("The file " + maf_file_name + " was not found")
+
+                print(study_id + " - Rows: " + str(len(maf_df)) + ". File: " + maf_file_name)
+            else:
+                print("Could not find file " + maf_file_name)
+                continue
 
             for idx, row in maf_df.iterrows():
                 maf_row = {}
@@ -146,43 +150,57 @@ def update_maf_stats(user_token):
 
                 complete_maf.append(maf_row)
 
-        status, msg = update_database_stats(complete_maf)
+            status, msg = update_database_stats(complete_maf)  # Update once per MAF
 
     return status, msg
 
 
 def update_database_stats(complete_maf_list):
+    status = False
+    msg = 'Database successfully updated'
 
     for row in complete_maf_list:
         acc = row['acc']
+        acc = acc.strip()
         database_identifier = row['database_identifier']
+        database_identifier = clean_string(database_identifier)
         metabolite_identification = row['metabolite_identification']
+        metabolite_id = clean_string(metabolite_identification)
+        if metabolite_id != metabolite_identification:
+            print('Compound name "' + metabolite_identification + '" changed to "' + metabolite_id + '"')
+            metabolite_identification = metabolite_id
         database_found = row['database_found']
+        database_found = clean_string(database_found)
         metabolite_found = row['metabolite_found']
-        status, msg = add_maf_info_data(str(acc).strip(),
-                                        str(database_identifier).strip().replace("'", ""),
-                                        str(metabolite_identification).strip().replace("'", ""),
-                                        str(database_found).strip(),
-                                        str(metabolite_found).strip())
+        metabolite_found = clean_string(metabolite_found)
+        status, msg = add_maf_info_data(acc, database_identifier, metabolite_identification,
+                                        database_found, metabolite_found)
         if not status:
             return status, msg
 
-    return True, 'Database successfully updated'
+    return status, msg
+
+
+def clean_string(string):
+    new_string = ""
+    if string:
+        new_string = str(string).strip().replace("'", "").replace("  ", " ").replace("\t", "")
+    return new_string
 
 
 def is_identified(identifier):
     unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
                    "not identified", "unmatched"
 
-    identified = 0
+    identified = '0'
     if not identifier:
         return identified
 
     identifier = identifier.lower()
     if identifier in unknown_list:
-        identified = 0
+        identified = '0'
     else:
-        identified = 1
+        identified = '1'
 
     return identified
 
