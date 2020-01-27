@@ -23,7 +23,7 @@ from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.db_connection import get_all_study_acc, create_maf_info_table, add_maf_info_data
+from app.ws.db_connection import get_all_study_acc, database_maf_info_table_actions, add_maf_info_data
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import read_tsv
 
@@ -89,11 +89,13 @@ class MAfStats(Resource):
 
 def update_maf_stats(user_token):
 
-    create_maf_info_table()  # Truncate, drop and create the database table
+    #database_maf_info_table_actions()  # Truncate, drop and create the database table
 
     for acc in get_all_study_acc():
         study_id = acc[0]
         print("------------------------------------------ " + study_id + " ------------------------------------------")
+        database_maf_info_table_actions(study_id)
+
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
 
@@ -143,7 +145,7 @@ def update_maf_stats(user_token):
                     maf_row.update({"database_identifier": database_identifier})
                     maf_row.update({"metabolite_identification": metabolite_identification})
                     maf_row.update({"database_found": is_identified(database_identifier)})
-                    maf_row.update({"metabolite_found": is_identified(database_identifier)})
+                    maf_row.update({"metabolite_found": is_identified(metabolite_identification)})
                 except Exception as e:
                     logger.error('MAF stats failed for ' + study_id + '. Error: ' + str(e))
                     continue
@@ -184,20 +186,24 @@ def update_database_stats(complete_maf_list):
 def clean_string(string):
     new_string = ""
     if string:
-        new_string = str(string).strip().replace("'", "").replace("  ", " ").replace("\t", "")
+        new_string = str(string).strip().replace("'", "").replace("  ", " ").replace("\t", "").replace("*", "")
     return new_string
 
 
-def is_identified(identifier):
+def is_identified(maf_identifier):
     unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
-                   "not identified", "unmatched"
+                   "not identified", "unmatched", "0", "na", "nan"
 
     identified = '0'
-    if not identifier:
+    if not maf_identifier:
         return identified
 
-    identifier = identifier.lower()
-    if identifier in unknown_list:
+    maf_ident = maf_identifier.lower()
+
+    if 'unknown' in maf_ident or 'unk-' in maf_ident or 'x - ' in maf_ident:
+        return identified
+
+    if maf_ident in unknown_list:
         identified = '0'
     else:
         identified = '1'

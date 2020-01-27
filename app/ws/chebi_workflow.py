@@ -565,7 +565,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
                     # if no formula or new_formula is returned, check the first "is_a" and report the formula from that
                     if database_identifier and not new_formula and not chemical_formula:
-                        database_identifier, inchi, inchikey, name, smiles, formula, search_type = \
+                        new_database_identifier, new_inchi, new_inchikey, new_name, new_smiles, chemical_formula, search_type = \
                             direct_chebi_search(final_inchi_key, comp_name,
                                                 acid_chebi_id=database_identifier,
                                                 search_type="is_a")
@@ -1580,10 +1580,10 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
 def read_glytoucan_file():
     glytoucan_file_df = None
     try:
-        glytoucan_file_df = read_tsv(resource_folder + 'glytoucan.tsv')
+        glytoucan_file_df = read_tsv(os.path.join(resource_folder,'glytoucan.tsv'))
         glytoucan_file_df = glytoucan_file_df.drop_duplicates(subset='cid', keep="last")
     except Exception as e:
-        print_log("ERROR: Could not read " + resource_folder + "glytoucan.tsv file")
+        print_log("ERROR: Could not read " + resource_folder + "/glytoucan.tsv file")
     return glytoucan_file_df
 
 
