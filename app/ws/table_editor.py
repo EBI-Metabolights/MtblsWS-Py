@@ -729,12 +729,11 @@ class AddRows(Resource):
             else:
                 for row in new_row:
                     complete_row.update(row)
-
-            row = complete_row
-            line = pd.DataFrame(row, index=[start_index])
-            file_df = file_df.append(line, ignore_index=False)
-            file_df = file_df.sort_index().reset_index(drop=True)
-            start_index += 1
+                    row = complete_row
+                    line = pd.DataFrame(row, index=[start_index])
+                    file_df = file_df.append(line, ignore_index=False)
+                    file_df = file_df.sort_index().reset_index(drop=True)
+                    start_index += 1
 
             file_df = file_df.replace(np.nan, '', regex=True)
             message = write_tsv(file_df, file_name)

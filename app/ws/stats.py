@@ -200,7 +200,7 @@ def is_identified(maf_identifier):
 
     maf_ident = maf_identifier.lower()
 
-    if 'unknown' in maf_ident or 'unk-' in maf_ident or 'x - ' in maf_ident:
+    if 'unknown' in maf_ident or 'unk-' in maf_ident or 'x - ' in maf_ident or 'm/z' in maf_ident:
         return identified
 
     if maf_ident in unknown_list:
