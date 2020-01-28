@@ -22,8 +22,10 @@ import os.path
 from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+
+from app.ws.db_connection import get_all_study_acc, database_maf_info_table_actions, add_maf_info_data, \
+    insert_update_data
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.db_connection import get_all_study_acc, database_maf_info_table_actions, add_maf_info_data
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import read_tsv
 
@@ -93,6 +95,9 @@ def update_maf_stats(user_token):
 
     for acc in get_all_study_acc():
         study_id = acc[0]
+        maf_len = 0
+        sample_len = 0
+        assay_len = 0
         print("------------------------------------------ " + study_id + " ------------------------------------------")
         database_maf_info_table_actions(study_id)
 
@@ -106,17 +111,25 @@ def update_maf_stats(user_token):
             logger.error("Failed to load ISA-Tab files for study " + study_id + ". " + str(e))
             continue  # Cannot find the required metadata files, skip to the next study
 
+        try:
+            smaple_file_name = isa_study.filename
+            sample_df = read_tsv(os.path.join(study_location, smaple_file_name))
+            sample_len = sample_df.shape[0]
+        except FileNotFoundError:
+            logger.warning('No sample file found for ' + study_id)
+
         for assay in isa_study.assays:
             complete_maf = []
             file_name = os.path.join(study_location, assay.filename)
             logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
             # Get the Assay table or create a new one if it does not already exist
             try:
-                file_df = read_tsv(file_name)
+                assay_file_df = read_tsv(file_name)
             except Exception as e:
                 logger.error("The file " + file_name + " was not found")
             try:
-                assay_maf_name = file_df['Metabolite Assignment File'].iloc[0]
+                assay_len = assay_len + assay_file_df.shape[0]
+                assay_maf_name = assay_file_df['Metabolite Assignment File'].iloc[0]
                 if not assay_maf_name:
                     continue  # No MAF referenced in this assay
             except Exception:
@@ -136,6 +149,8 @@ def update_maf_stats(user_token):
                 print("Could not find file " + maf_file_name)
                 continue
 
+            maf_len = maf_len + maf_df.shape[0]
+
             for idx, row in maf_df.iterrows():
                 maf_row = {}
                 try:
@@ -154,6 +169,12 @@ def update_maf_stats(user_token):
 
             status, msg = update_database_stats(complete_maf)  # Update once per MAF
 
+        study_sql = "UPDATE STUDIES SET sample_rows = " + str(sample_len) + ", assay_rows = " + str(assay_len) + \
+                    ", maf_rows = " + str(maf_len) + " WHERE ACC = '" + str(study_id) + "';"
+
+        status, msg = insert_update_data(study_sql)
+        print("Database updated: " + study_sql)
+
     return status, msg
 
 
@@ -169,7 +190,7 @@ def update_database_stats(complete_maf_list):
         metabolite_identification = row['metabolite_identification']
         metabolite_id = clean_string(metabolite_identification)
         if metabolite_id != metabolite_identification:
-            print('Compound name "' + metabolite_identification + '" changed to "' + metabolite_id + '"')
+            # print('Compound name "' + metabolite_identification + '" changed to "' + metabolite_id + '"')
             metabolite_identification = metabolite_id
         database_found = row['database_found']
         database_found = clean_string(database_found)
