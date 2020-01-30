@@ -69,6 +69,7 @@ search_flag = 'search_flag'
 maf_compound_name_column = "metabolite_identification"
 alt_name_column = "alt_name"
 database_identifier_column = "database_identifier"
+final_inchi_column = "final_inchi"
 
 spreadsheet_fields = [database_identifier_column,
                       "chemical_formula",
@@ -85,7 +86,7 @@ spreadsheet_fields = [database_identifier_column,
                       "pubchem_cid_ik",
                       "csid_ik",
                       "final_smiles",
-                      "final_inchi",
+                      final_inchi_column,
                       "final_inchi_key",
                       "direct_parent",
                       "classyfire_search_id",
@@ -421,6 +422,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     sdf_file_list = []
     exiting_pubchem_file = False
     first_start_time = time.time()
+    # Please note that the original MAF must exist without the _pubchem.tsv extension!!
     original_maf_name = annotation_file_name.replace("_pubchem.tsv", ".tsv")
     short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
                                    annotation_file_name.replace('.tsv', ''))
@@ -473,7 +475,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     row_idx = 0
     if exiting_pubchem_file:
         short_df = maf_df[[database_identifier_column, maf_compound_name_column, alt_name_column, search_flag,
-                           final_cid_column_name, "row_id"]]
+                           final_cid_column_name, "row_id", final_inchi_column]]
         # Make sure we re-read the original MAF so that we don't add the extra PubChem columns
         maf_df = read_tsv(os.path.join(study_location, original_maf_name))
     else:
@@ -490,6 +492,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         alt_name = ''
         existing_row = None
         final_inchi_key = None
+        final_inchi = None
 
         final_cid = None
         if exiting_pubchem_file:
@@ -501,6 +504,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             alt_name = str(alt_name)
             if len(alt_name) > 0:
                 comp_name = alt_name
+            final_inchi = row[6]
 
         if not exiting_pubchem_file:
             pubchem_df.iloc[row_idx, get_idx('row_id', pubchem_df_headers)] = row_idx + 1  # Row id
@@ -509,6 +513,11 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
         if not run_silently:
             print_log(str(idx + 1) + ' of ' + str(new_maf_len) + ' : ' + comp_name)
+
+        if final_cid.endswith('.mol') and final_inchi:
+            classyfire_search_id = classyfire(final_inchi)
+            if classyfire_search_id:
+                pubchem_df.iloc[row_idx, get_idx('classyfire_search_id', pubchem_df_headers)] = str(classyfire_search_id)
 
         if search and comp_name and check_if_unknown(comp_name):
             if run_silently:
@@ -860,7 +869,11 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
 
         if cid and not db_id.startswith('CHEBI:'):
             cluster_ids.append(row_id)  # Keep count of the number of ORGANISM sections to add to ChEBI SDF file
-            fname = cid + pubchem_sdf_extension
+            if cid.endswith('.mol'):
+                fname = cid
+            else:
+                fname = cid + pubchem_sdf_extension
+
             full_file = os.path.join(study_location, fname)
             cluster_itr = len([p for p in cluster_ids if p == row_id])
 
@@ -938,6 +951,8 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
             if p_cid and not p_db_id.startswith('CHEBI:') and p_cid not in final_cid_list:
                 final_cid_list.append(p_cid)
                 mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + p_cid + pubchem_sdf_extension)
+                if p_cid.endswith('.mol'):
+                    mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + p_cid)
                 if os.path.isfile(mtbls_sdf_file_name):
                     try:
                         with open(mtbls_sdf_file_name) as infile:
@@ -1141,6 +1156,8 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
     if classyfire_search and query_id and query_id != 'None':
         try:
             classyfire_file_name = classyfire_file_name.replace("_pubchem.sdf", "_classyfire.sdf")
+            if classyfire_file_name.endswith('.mol'):
+                classyfire_file_name = classyfire_file_name + "_classyfire.sdf"
             if not os.path.isfile(classyfire_file_name):
                 r = None
                 start_time = time.time()
@@ -1555,16 +1572,25 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
 
-        print_log("    -- Checking if we have SDF for CID " + str(cid))
-        file_name = cid + pubchem_sdf_extension
-        full_file = study_location + os.sep + anno_sub_folder + os.sep + file_name
+        if cid.endswith('.mol'):  # We have added a manually created/downloaded mol file
+            mol_file_name = study_location + os.sep + anno_sub_folder + os.sep + file_name
 
-        if os.path.isfile(full_file):
-            print_log("    -- Already have PubChem SDF for CID " + str(cid) + " for name: " + iupac)
+            if os.path.isfile(mol_file_name):
+                print_log("    -- Found manually created MOL structure " + str(cid))
+                file_name = mol_file_name
+            else:
+                print_log("    -- ERROR: Could not find manually created MOl structure " + mol_file_name)
         else:
-            if "MTBLS" not in cid:
-                print_log("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
-                pcp.download('SDF', full_file, cid, overwrite=True)
+            print_log("    -- Checking if we have SDF for CID " + str(cid))
+            file_name = cid + pubchem_sdf_extension
+            full_file = study_location + os.sep + anno_sub_folder + os.sep + file_name
+
+            if os.path.isfile(full_file):
+                print_log("    -- Already have PubChem SDF for CID " + str(cid) + " for name: " + iupac)
+            else:
+                if "MTBLS" not in cid:
+                    print_log("    -- Getting SDF for CID " + str(cid) + " for name: " + iupac)
+                    pcp.download('SDF', full_file, cid, overwrite=True)
 
     if classyfire_search and final_inchi:
         print_log("    -- Getting SDF from ClassyFire for  " + str(final_inchi))
@@ -1694,6 +1720,10 @@ class SplitMaf(Resource):
                     if maf_len != new_maf_len:
                         maf_changed += 1
         else:
+
+            if not annotation_file_name.endswith('_maf.tsv') or not annotation_file_name.endswith('_pubchem.tsv'):
+                abort(404, "Annotation file name must end with '_maf.tsv' or '_pubchem.tsv'")
+
             maf_df, maf_len, new_maf_df, new_maf_len, split_file_name = \
                 check_maf_for_pipes(study_location, annotation_file_name)
 
@@ -1891,7 +1921,7 @@ class ChEBIPipeLine(Resource):
                 maf_len, new_maf_len, pubchem_file = \
                     search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
                                           run_silently)
-                pubchem_file = http_file_location + pubchem_file.split(study_id)[1]
+                pubchem_file = http_file_location + pubchem_file.split('/'+study_id)[1]
 
             return {"in_rows": maf_len, "out_rows": new_maf_len, "pubchem_file": pubchem_file}
 

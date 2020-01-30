@@ -34,9 +34,9 @@ wsc = WsClient()
 iac = IsaApiClient()
 
 
-class MAfStats(Resource):
+class StudyStats(Resource):
     @swagger.operation(
-        summary="Update MAF stats for all MetaboLights studies (curator only)",
+        summary="Update sample, assay and maf stats for all MetaboLights studies (curator only)",
         parameters=[
             {
                 "name": "user_token",
@@ -84,9 +84,9 @@ class MAfStats(Resource):
             abort(403)
 
         if update_maf_stats(user_token):
-            return {'Success': "MAF statistics updated in database"}
+            return {'Success': "Study statistics updated in database"}
 
-        return {'Error': "MAF statistics could not be updated in database"}
+        return {'Error': "Study statistics could not be updated in database"}
 
 
 def update_maf_stats(user_token):
