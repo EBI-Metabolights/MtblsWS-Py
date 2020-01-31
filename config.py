@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.2.6"
+WS_APP_VERSION = "1.2.8"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.11.0"
 METASPACE_APP_VERSION = "0.7.1"

@@ -1743,7 +1743,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
             if isa_study.samples:
                 add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
                         val_sequence=9, log_category=log_category)
-            elif not isa_sample_df.empty:
+            elif len(isa_sample_df) != 0 and not isa_sample_df.empty:
                 add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
                         val_sequence=10, log_category=log_category)
             else:

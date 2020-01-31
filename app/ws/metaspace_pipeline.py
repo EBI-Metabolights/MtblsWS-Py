@@ -3,10 +3,10 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-Jul-24
+#  Last modified: 2020-Jan-30
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,21 +16,21 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask import request, abort
+import configparser
+import csv
+import sys
+from collections import OrderedDict
+
+import boto3
+from flask import abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from metaspace.sm_annotation_utils import *
+
+import config
+from app.ws.metaspace_isa_api_client import MetaSpaceIsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
-from app.ws.metaspace_isa_api_client import MetaSpaceIsaApiClient
-from isatools.model import *
-from metaspace.sm_annotation_utils import *
-from collections import OrderedDict
-import configparser
-import json
-import config
-import boto3
-import sys
-import csv
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -41,13 +41,15 @@ class MetaspacePipeLine(Resource):
         summary="Import files files and metadata from METASPACE to a MTBLS study",
         nickname="Import data from METASPACE",
         notes="""Import files files and metadata from METASPACE to a MetaboLights study. 
-        </p>Please note that METASPACE API keys are not yet available, so use username/password for now
+        </p>Please note that METASPACE API keys will take priority over username/password. 
+        Datasets mush belong to the relevant project if you supply both values.
             </p><pre><code>{
     "project": {
         "metaspace-api-key": "12489afjhadkjfhajfh",
         "metaspace-password": "asdfjsahdf",
         "metaspace-email": "someone@here.com",
-        "metaspace-projects": "project_id1,project_id2"
+        "metaspace-projects": "project_id1,project_id2",
+        "metaspace-datasets": "ds_id1,ds_id2"
     }
 } </code></pre>""",
         parameters=[
@@ -113,7 +115,6 @@ class MetaspacePipeLine(Resource):
         if not write_access:
             abort(403)
 
-        sm = SMInstance()
         investigation = None
 
         # body content validation
@@ -125,15 +126,53 @@ class MetaspacePipeLine(Resource):
                     metaspace_api_key = project['metaspace-api-key']
                     metaspace_password = project['metaspace-password']
                     metaspace_email = project['metaspace-email']
+                    metaspace_datasets = project['metaspace-datasets']
                     metaspace_projects = project['metaspace-projects']
-                    logger.info('Requesting METASPACE projects ' + metaspace_projects)
+                    logger.info('Requesting METASPACE datasets ' + metaspace_datasets)
                     # study_location = os.path.join(study_location, 'METASPACE')
-                    # ToDo, remove this when we have an API key (not yet implemented in METASPACE)
-                    if metaspace_password and metaspace_email:
-                        sm.login(metaspace_email, metaspace_password)
+
+                    if metaspace_api_key:
+                        # Log in with API key
+                        # Users can generate an API key in the "API access" section of https://metaspace2020.eu/user/me
+                        sm = SMInstance(api_keys='metaspace_api_key')
+                    else:
+                        if metaspace_password and metaspace_email:
+                            sm = SMInstance()
+                            sm.login(metaspace_email, metaspace_password)
 
                     if not os.path.isdir(study_location):
                         os.makedirs(study_location, exist_ok=True)
+
+                    if not metaspace_projects:
+                        # Get user's projects
+                        metaspace_projects = sm.projects.get_my_projects()
+
+                    # Get all datasets in project (including other users)
+                    # NOTE: "status='FINISHED'" filters out failed datasets - normally users don't see failed datasets
+                    # through the UI, so this should help prevent confusion.
+                    project_id = metaspace_projects[0]['id']
+                    datasets = sm.datasets(project=project_id, status='FINISHED')
+
+                    # Get current user's datasets in project
+                    project_id = metaspace_projects[0]['id']
+                    user_id = sm.current_user_id()
+                    datasets = sm.datasets(project=project_id, submitter=user_id, status='FINISHED')
+
+                    if not metaspace_datasets:
+                        # Get all current user's datasets
+                        user_id = sm.current_user_id()
+                        metaspace_datasets = sm.datasets(submitter=user_id, status='FINISHED')
+
+                    # Add a link from a project back to MetaboLights
+                    # Note that the user must be a project manager in the project to do this
+                    sm.projects.add_project_external_link(project_id, 'MetaboLights',
+                                                          'https://www.ebi.ac.uk/metabolights/' + study_id)
+
+                    # Add a link from a dataset back to MetaboLights
+                    # Note that the user must be the submitter of the dataset to do this
+                    ds_id = '2018-11-07_14h15m28s'
+                    sm.add_dataset_external_link(ds_id, 'MetaboLights', 'https://www.ebi.ac.uk/metabolights/MTBLS313')
+
                     investigation = import_metaspace(study_id, project=metaspace_projects,
                                                      study_location=study_location,
                                                      metaspace_api_key=metaspace_api_key,
