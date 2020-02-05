@@ -155,13 +155,13 @@ def update_or_create_jira_issue(user_token, is_curator):
                 if issues:
                     issue = issues[0]
                 else:
-                    if study_status == 'Submitted':
+                    if study_status == 'Submitted' or study_status == 'In Curation':
                         logger.info("Could not find Jira issue for " + search_param)
                         print("Creating new Jira issue for " + search_param)
                         issue = jira.create_issue(project=mtbls_project.key, summary='MTBLS study - To be updated',
                                                   description='Created by API', issuetype={'name': 'Story'})
                     else:
-                        continue  # Only create new cases if the study is in status Submitted
+                        continue  # Only create new cases if the study is in status Submitted/In Curation
             except Exception:  # We could not find or create a Jira issue
                 continue
 
