@@ -449,7 +449,6 @@ def study_submitters(study_id, user_email, method):
 
 
 def get_all_study_acc():
-    # query = "select acc from studies where acc in('MTBLS1','MTBLS2','MTBLS3', 'MTBLS4', 'MTBLS5');"
     # Select all study accessions which are not in Dormant status or currently only a placeholder
     query = "select acc from studies where placeholder != '1' and status != 4;"
     query = query.replace('\\', '')
@@ -598,7 +597,7 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
         obfuscation_code = ""
     else:
         obfuscation_code = study_obfuscation_code
-        
+
     data = []
 
     if study_id and not study_id.startswith("MTBLS"):
@@ -667,13 +666,20 @@ def release_connection(postgresql_pool, ps_connection):
         logger.error("Error while releasing PostgreSQL connection. " + str(error))
 
 
-def create_maf_info_table():
-    sql_trunc = "truncate table maf_info;"
-    # sql_drop = "drop table maf_info;"
-    # sql_create = "create table maf_info(acc VARCHAR, database_identifier VARCHAR, metabolite_identification VARCHAR, database_found VARCHAR, metabolite_found VARCHAR);"
-    status, msg = insert_update_data(sql_trunc)
-    # status, msg = insert_update_data(sql_drop)
-    # status, msg = insert_update_data(sql_create)
+def database_maf_info_table_actions(study_id=None):
+
+    if study_id:
+        status, msg = insert_update_data("delete from maf_info where acc = '" + study_id + "';")
+    else:
+        try:
+            sql_trunc = "truncate table maf_info;"
+            sql_drop = "drop table maf_info;"
+            sql_create = "create table maf_info(acc VARCHAR, database_identifier VARCHAR, metabolite_identification VARCHAR, database_found VARCHAR, metabolite_found VARCHAR);"
+            status, msg = insert_update_data(sql_trunc)
+            status, msg = insert_update_data(sql_drop)
+            status, msg = insert_update_data(sql_create)
+        except Exception as e:
+            logger.warning("Database table maf_info error " + str(e))
 
 
 def add_maf_info_data(acc, database_identifier, metabolite_identification, database_found, metabolite_found):

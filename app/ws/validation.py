@@ -1396,6 +1396,20 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                     add_msg(validations, "Protocol", prot_name + ": " + desc_val_error, warning, file_name,
                             value=prot_desc, descr='Please update this protocol description',
                             val_sequence=8, log_category=log_category)
+
+                sentence2 = None
+                reg_ex = re.search("(\.\s\w+)", prot_desc)
+                if reg_ex:
+                    try:
+                        sentence2 = reg_ex[1]  # get the 2nd sentence in the paragraph
+                    except IndexError:
+                        sentence2 = None
+                if not sentence2:  # More than one line in the description?
+                    add_msg(validations, "Protocol", prot_name + " description should be more than just one sentence",
+                            warning, file_name, value=prot_desc,
+                            descr='Please update this protocol description to contain more than one sentence',
+                            val_sequence=8.1, log_category=log_category)
+
                 add_msg(validations, val_section, "Protocol description validates", success, file_name,
                         value=prot_desc, val_sequence=9, log_category=log_category)
             else:
@@ -1743,7 +1757,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
             if isa_study.samples:
                 add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
                         val_sequence=9, log_category=log_category)
-            elif not isa_sample_df.empty:
+            elif len(isa_sample_df) != 0 and not isa_sample_df.empty:
                 add_msg(validations, val_section, "Successfully found one or more samples", success, file_name,
                         val_sequence=10, log_category=log_category)
             else:

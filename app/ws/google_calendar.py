@@ -129,7 +129,7 @@ def add_google_calendar_event(events, service,  event_text=None, event_date=None
 
 class GoogleCalendar(Resource):
     @swagger.operation(
-        summary="Create (or update) Jira tickets for MetaboLights study curation (curator only)",
+        summary="Create (or update) Google Calendar entries for MetaboLights study curation (curator only)",
         parameters=[
             {
                 "name": "user_token",

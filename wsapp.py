@@ -48,7 +48,7 @@ from app.ws.send_files import SendFiles
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.organism import Organism
 from app.ws.cluster_jobs import LsfUtils
-from app.ws.stats import MAfStats
+from app.ws.stats import StudyStats
 from app.ws.google_calendar import GoogleCalendar
 
 """
@@ -179,7 +179,7 @@ def initialize_app(flask_app):
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
-    api.add_resource(MAfStats, res_path + "/ebi-internal/maf-stats")
+    api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats", res_path + "/ebi-internal/maf-stats")
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")

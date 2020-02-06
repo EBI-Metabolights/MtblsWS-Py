@@ -3,10 +3,10 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2020-Jan-08
+#  Last modified: 2020-Jan-24
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 
 import logging
 
-from flask import current_app as app
 from flask_restful import Resource, fields, marshal_with
 from flask_restful_swagger import swagger
 

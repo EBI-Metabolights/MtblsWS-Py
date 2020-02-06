@@ -19,13 +19,15 @@
 import glob
 import os
 import time
+
+from flask import current_app as app
 from flask_restful import abort
 from isatools.convert import isatab2json
 from isatools.isatab import load, dump
+from isatools.model import *
+
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import copy_file, new_timestamped_folder
-from isatools.model import *
-from flask import current_app as app
 
 """
 MetaboLights ISA-API client
