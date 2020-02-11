@@ -705,11 +705,11 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     # Fixed column headers to look for in the MAF, defaults to MS
     sample_name = 'Sample Name'
     assay_name = 'MS Assay Name'
-    annotation_file_template = resource_folder + 'm_metabolite_profiling_mass_spectrometry_v2_maf.tsv'
+    annotation_file_template = os.path.join(resource_folder, 'm_metabolite_profiling_mass_spectrometry_v2_maf.tsv')
 
     # NMR MAF and assay name
     if technology == "NMR":
-        annotation_file_template = resource_folder + 'm_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv'
+        annotation_file_template = os.path.join(resource_folder, 'm_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv')
         assay_name = 'NMR Assay Name'
 
     if annotation_file_name is None or len(annotation_file_name) == 0:

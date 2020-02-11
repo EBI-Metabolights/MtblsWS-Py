@@ -50,6 +50,8 @@ error = "error"
 success = "success"
 info = "info"
 
+unknown_file = ' - unknown - '
+
 
 def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0, log_category=error):
     if log_category == status or log_category == 'all':
@@ -211,7 +213,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
         return False, 'folder', file_name + " is a sub-folder, please reference a file"
 
     if "fid" not in file_name and file_name.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
-        return False, ' - unknown - ', "File " + file_name + " does not exist"
+        return False, unknown_file, "File " + file_name + " does not exist"
 
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
 
@@ -1045,8 +1047,12 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         #             + column_name + "'", success, descr=file_description, val_sequence=8, log_category=log_category)
         # else:
         if not status:
-            add_msg(validations, val_section, "File '" + file_name + "' of type '" + file_type +
-                    "' is missing or not correct for column '" + column_name + "'", error, descr=file_description,
+            err_msg = "File '" + file_name + "'"
+            if file_type == unknown_file:
+                err_msg = err_msg + " of type '" + file_type + "'"
+
+            err_msg = err_msg + " is missing or not correct for column '" + column_name + "'"
+            add_msg(validations, val_section, err_msg, error, descr=file_description,
                     val_sequence=9, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
