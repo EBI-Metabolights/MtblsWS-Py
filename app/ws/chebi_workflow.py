@@ -186,7 +186,7 @@ def split_maf_df(maf_file_name):
     stderr = None
 
     try:
-        args = [resource_folder + 'maf-splitter.jar', maf_file_name]  # Any number of args
+        args = [os.path.join(resource_folder, 'maf-splitter.jar'), maf_file_name]  # Any number of args
         stdout, stderr = jar_wrapper(*args)
     except Exception as e:
         print_log("    -- Could not split MAF file. Error: " + str(e) + str(stderr))

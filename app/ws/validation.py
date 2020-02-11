@@ -168,9 +168,16 @@ def remove_nonprintable(text):
     return text.translate({ord(character): None for character in nonprintable})
 
 
-def is_empty_file(full_file_name):
+def is_empty_file(full_file_name, study_location=None):
     # This will return False if a filename is not correct, ie. has a space etc.
     empty_file = True
+
+    # The file in the assay may be locally referenced, so check full path. Only for files, not folders
+    if not os.path.isfile(full_file_name) and not os.path.isdir(full_file_name):
+        f_file = os.path.join(study_location, full_file_name.lstrip('/'))
+        if os.path.isfile(f_file):
+            full_file_name = f_file
+
     try:
         file_stats = os.stat(full_file_name)
         file_size = file_stats.st_size
@@ -203,12 +210,12 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     if os.path.isdir(full_file) and ext not in ('.raw', '.d'):
         return False, 'folder', file_name + " is a sub-folder, please reference a file"
 
-    if "fid" not in file_name and file_name not in file_name_list:  # Files may be referenced in sub-folders
+    if "fid" not in file_name and file_name.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
         return False, ' - unknown - ', "File " + file_name + " does not exist"
 
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
 
-    if is_empty_file(full_file):
+    if is_empty_file(full_file, study_location=study_location):
         return False, file_type, "File '" + file_name + "' is empty or incorrect"
 
     if file_type == 'metadata_maf' and column_name == 'Metabolite Assignment File':
