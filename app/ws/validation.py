@@ -898,6 +898,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         add_msg(validations, val_section, "Could not find any assays", error, descr="Add assay(s) to the study",
                 val_sequence=2, log_category=log_category)
 
+    all_assay_rows = 0
+
     for assay in isa_study.assays:
         is_ms = False
         assays = []
@@ -962,6 +964,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         # Are all relevant rows filled in?
         if not assay_df.empty:
             all_rows = assay_df.shape[0]
+            all_assay_rows = all_assay_rows + all_rows
             for a_header in assays:
                 a_header = str(a_header)  # Names like '1' and '2', gets interpreted as '1.0' and '2.0'
                 validate_column, required_column, val_descr = get_assay_column_validations(validation_schema, a_header)
@@ -1036,6 +1039,12 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         if sample_name not in all_assays:
             add_msg(validations, val_section, "Sample name '" + str(sample_name) + "' is not used in any assay",
                     info, val_sequence=7, log_category=log_category)
+
+    sample_len = len(sample_name_list)
+    if all_assay_rows < sample_len:
+        add_msg(validations, val_section, "There are more sample rows (" + str(sample_len)
+                + ") than assay rows (" + str(all_assay_rows) + "), must be the same or more",
+                error, val_sequence=7.7, log_category=log_category)
 
     for files in unique_file_names:
         file_name = files.split('|')[0]
@@ -1205,7 +1214,8 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
     # check for Publication
     validations = []
     samples = []
-
+    sample_coll_found = True
+    prot_ref = 'protocol ref'
     if validation_schema:
         study_val = validation_schema['study']
         val = study_val['samples']
@@ -1267,6 +1277,17 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                         row = str(row)
                         if row not in sample_name_list:
                             sample_name_list.append(row)
+
+                elif s_header.lower() == prot_ref:
+                    if row:
+                        row = str(row)
+                        if row != "Sample collection":
+                            sample_coll_found = False
+
+            if not sample_coll_found and s_header.lower() == prot_ref:
+                add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing required values. "
+                                                  "All rows must contain the text 'Sample collection'",
+                        error, file_name, val_sequence=7.8, log_category=log_category)
 
             if col_rows < all_rows:
                 val_stat = error
