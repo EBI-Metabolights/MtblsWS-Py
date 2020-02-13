@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='MtblsWSPy',
+    name='app',
     version='1.4.0',
     packages=['app', 'app.ws', 'tests'],
     url='https://github.com/EBI-Metabolights/MtblsWS-Py',
