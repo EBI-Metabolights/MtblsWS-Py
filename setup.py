@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='MtblsWS-Py',
+    name='MtblsWSPy',
     version='1.1',
     packages=['app', 'app.ws', 'tests'],
     url='',
