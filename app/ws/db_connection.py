@@ -22,12 +22,15 @@ import re
 import traceback
 
 import psycopg2
-from flask import current_app as app
+from flask import current_app as app, abort
 from psycopg2 import pool
 
-from app.ws.utils import get_single_file_information, check_user_token
+from app.ws.utils import get_single_file_information, check_user_token, val_email_or_username
 
 logger = logging.getLogger('wslog')
+
+stop_words = "insert", "select", "drop", "delete", "from", "into", "studies", "users", "stableid", "study_user", \
+             "curation_log_temp", "ref_", "ebi_reporting", "exists"
 
 query_curation_log = "select * from curation_log_temp order by acc_short asc;"
 
@@ -100,6 +103,8 @@ query_user_access_rights = """
 def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, metaspace_api_key):
 
+    val_email_or_username(email)
+
     insert_user_query = \
         "INSERT INTO users(address, affiliation, affiliationurl, apitoken, email, firstname, " \
         "joindate, lastname, password, role, status, username, orcid, metaspace_api_key) " \
@@ -113,9 +118,12 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
             "password_value": password_encoded, "orcid_value": orcid, "metaspace_api_key_value": metaspace_api_key}
 
     for key, value in subs.items():
+        val_query_params(value)
         insert_user_query = insert_user_query.replace(str(key), str(value))
 
     query = insert_user_query
+
+
 
     try:
         postgresql_pool, conn, cursor = get_connection()
@@ -131,6 +139,9 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
 
 def update_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, existing_user_name, is_curator, metaspace_api_key):
+
+    val_email_or_username(existing_user_name)
+    val_email_or_username(email)
 
     update_user_query = \
         "update users set address = 'address_value', affiliation = 'affiliation_value', " \
@@ -151,6 +162,7 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
             "existing_user_name_value": existing_user_name, "metaspace_api_key_value": metaspace_api_key}
 
     for key, value in subs.items():
+        val_query_params(str(value))
         update_user_query = update_user_query.replace(str(key), str(value))
 
     query = update_user_query
@@ -160,7 +172,6 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
         cursor.execute(query)
         number_of_users = cursor.rowcount
         conn.commit()
-        # conn.close()
         release_connection(postgresql_pool, conn)
 
         if number_of_users == 1:
@@ -173,6 +184,8 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
 
 
 def get_all_studies_for_user(user_token):
+    val_query_params(user_token)
+
     study_list = execute_query(query=query_studies_user, user_token=user_token)
     study_location = app.config.get('STUDY_PATH')
     file_name = 'i_Investigation.txt'
@@ -242,6 +255,7 @@ def get_public_studies():
 
 
 def update_release_date(study_id, release_date):
+    val_acc(study_id)
     query_update_release_date = "update studies set releasedate = %s where acc = %s;"
     query_update_release_date = query_update_release_date.replace('\\', '')
     try:
@@ -256,6 +270,7 @@ def update_release_date(study_id, release_date):
 
 
 def add_placeholder_flag(study_id):
+    val_acc(study_id)
     query_update = "update studies set placeholder = 1, status = 0 where acc = '" + study_id + "';"
     query_update = query_update.replace('\\', '')
     try:
@@ -270,11 +285,13 @@ def add_placeholder_flag(study_id):
 
 
 def get_curation_log(user_token):
+    val_query_params(user_token)
     data = execute_query(query=query_curation_log, user_token=user_token)
     return data
 
 
 def get_obfuscation_code(study_id):
+    val_acc(study_id)
     query = "select obfuscationcode from studies where acc = '" + study_id + "';"
     query = query.replace('\\', '')
     postgresql_pool, conn, cursor = get_connection()
@@ -289,6 +306,7 @@ def biostudies_acc_to_mtbls(biostudies_id):
     if not biostudies_id:
         return None
 
+    val_query_params(biostudies_id)
     # Default query to get the mtbls accession
     query = "SELECT acc from studies where biostudies_acc = '#biostudies_id#';"
     query = query.replace("#biostudies_id#", biostudies_id)
@@ -310,6 +328,8 @@ def biostudies_accession(study_id, biostudies_id, method):
 
     if not study_id:
         return None
+
+    val_acc(study_id)
 
     # Default query to get the biosd accession
     s_query = "SELECT biostudies_acc from studies where acc = '#study_id#';"
@@ -349,6 +369,10 @@ def mtblc_on_chebi_accession(chebi_id):
     if not chebi_id:
         return None
 
+    if not chebi_id.startswith('CHEBI'):
+        logger.error("Incorrect ChEBI accession number string pattern")
+        abort(406, chebi_id + " incorrect ChEBI accession number string pattern")
+
     # Default query to get the biosd accession
     query = "select acc from ref_metabolite where temp_id = '#chebi_id#';"
     query = query.replace("#chebi_id#", chebi_id).replace('\\', '')
@@ -366,6 +390,9 @@ def mtblc_on_chebi_accession(chebi_id):
 
 
 def check_access_rights(user_token, study_id, study_obfuscation_code=None):
+    val_acc(study_id)
+    val_query_params(user_token)
+    val_query_params(study_obfuscation_code)
 
     study_list = None
     try:
@@ -429,6 +456,10 @@ def study_submitters(study_id, user_email, method):
     if not study_id or len(user_email) < 5:
         return None
 
+    val_acc(study_id)
+    if user_email:
+        val_email_or_username(user_email)
+
     if method == 'add':
         query = 'insert into study_user(userid, studyid) ' \
                 'select u.id, s.id from users u, studies s where lower(u.email) = %s and acc=%s;'
@@ -463,6 +494,7 @@ def get_all_study_acc():
 
 
 def query_study_submitters(study_id):
+    val_acc(study_id)
 
     if not study_id:
         return None
@@ -481,6 +513,7 @@ def query_study_submitters(study_id):
 
 
 def override_validations(study_id, method, override=""):
+    val_acc(study_id)
 
     if not study_id:
         return None
@@ -513,6 +546,7 @@ def override_validations(study_id, method, override=""):
 
 
 def update_validation_status(study_id, validation_status):
+    val_acc(study_id)
 
     if study_id and validation_status:
         query = "update studies set validation_status = '" + validation_status + "' where acc = '" + study_id + "';"
@@ -530,6 +564,8 @@ def update_validation_status(study_id, validation_status):
 
 
 def update_study_status_change_date(study_id):
+    val_acc(study_id)
+
     query = "update studies set status_date = current_timestamp where acc = '" + study_id + "';"
     status, msg = insert_update_data(query)
     if not status:
@@ -552,6 +588,8 @@ def insert_update_data(query):
 
 
 def update_study_status(study_id, study_status, is_curator=False):
+    val_acc(study_id)
+
     status = '0'
     study_status = study_status.lower()
     if study_status == 'submitted':
@@ -589,9 +627,6 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
     if not user_token and study_obfuscation_code:
         return None
 
-    stop_words = "select", "drop", "delete", "from", "into", "studies", "users", "stableid", "study_user", \
-                 "curation_log_temp", "ref_", "ebi_reporting", "exists"
-
     obfuscation_code = None
     if not study_obfuscation_code:
         obfuscation_code = ""
@@ -600,13 +635,12 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
 
     data = []
 
-    if study_id and not study_id.startswith("MTBLS"):
-        logger.error("ERROR parameter study_id not correct")
-        return data
+    if study_id:
+        val_acc(study_id)
+
     # Check that study_id, study_obfuscation_code does not contain any sql statements etc
-    if obfuscation_code.lower() in stop_words or user_token.lower() in stop_words:
-        logger.error("ERROR parameter study_obfuscation_code not correct")
-        return data
+    val_query_params(user_token)
+    val_query_params(obfuscation_code)
 
     try:
         postgresql_pool, conn, cursor = get_connection()
@@ -669,6 +703,9 @@ def release_connection(postgresql_pool, ps_connection):
 def database_maf_info_table_actions(study_id=None):
 
     if study_id:
+
+        val_acc(study_id)
+
         status, msg = insert_update_data("delete from maf_info where acc = '" + study_id + "';")
     else:
         try:
@@ -683,6 +720,7 @@ def database_maf_info_table_actions(study_id=None):
 
 
 def add_maf_info_data(acc, database_identifier, metabolite_identification, database_found, metabolite_found):
+    val_acc(acc)
     status = False
     msg = None
     sql = "insert into maf_info values('" + acc + "','" + database_identifier + "','" + metabolite_identification + "','" + database_found + "','" + metabolite_found + "');"
@@ -692,4 +730,17 @@ def add_maf_info_data(acc, database_identifier, metabolite_identification, datab
         return False, str(e)
     return status, msg
 
+
+def val_acc(study_id=None):
+    if study_id:
+        if not study_id.startswith('MTBLS') or study_id.lower() in stop_words:
+            logger.error("Incorrect accession number string pattern")
+            abort(406, "'" + study_id + "' incorrect accession number string pattern")
+
+
+def val_query_params(text_to_val):
+    if text_to_val:
+        for word in str(text_to_val).split():
+            if word.lower() in stop_words:
+                abort(406, "'" + text_to_val + "' not allowed.")
 

@@ -30,6 +30,7 @@ wsc = WsClient()
 
 
 def lsf_job(job_cmd, job_param=None, send_email=True):
+    no_jobs = "rm", "mv", "cat", "more", "ln", "ls", "mount", "kill", "who", "hostname", "ifconfig"
     status = True
     job_status = ""
     msg_out = "No LSF job output"
@@ -40,8 +41,9 @@ def lsf_job(job_cmd, job_param=None, send_email=True):
         message = message + " " + job_param
     message = message + "'. Please see LSF cluster email sent to " + email
 
-    if job_param.startswith('rm '):
-        abort(403, 'Nope, cannot remove any files!')
+    for no_cmd in no_jobs:
+        if job_param.startswith(no_cmd):
+            abort(403, 'Nope, you cannot do that! ' + job_param)
 
     cmd = os.path.join(app.config.get('LSF_COMMAND_PATH'), job_cmd)
     if send_email:

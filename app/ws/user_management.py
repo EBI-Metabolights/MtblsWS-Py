@@ -3,10 +3,10 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2019-Jul-08
+#  Last modified: 2020-Feb-13
 #  Modified by:   kenneth
 #
-#  Copyright 2019 EMBL - European Bioinformatics Institute
+#  Copyright 2020 EMBL - European Bioinformatics Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,23 +16,22 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import base64
+import json
+import logging
+import random
+import string
+import uuid
+
 from flask import request, abort
-from flask_restful import Resource, reqparse
-from marshmallow import ValidationError
-from app.ws.mm_models import *
+from flask_restful import Resource
 from flask_restful_swagger import swagger
+from marshmallow import ValidationError
+
+from app.ws.db_connection import create_user, update_user
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from flask import current_app as app
-from app.ws.db_connection import create_user, update_user
-from app.ws.utils import *
-import logging
-import json
-import uuid
-import base64
-import string
-import random
-
+from app.ws.utils import log_request, val_email_or_username
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -149,8 +148,9 @@ class UserManagement(Resource):
         password_encoded = base64.b64encode(password.encode("utf-8"))
         password_encoded = str(password_encoded, 'utf-8')
 
+        val_email_or_username(email)
         status, message = create_user(firstName, lastName, email, affiliation, affiliation_url,
-                    address, orcid, api_token, password_encoded, metaspace_api_key)
+                                      address, orcid, api_token, password_encoded, metaspace_api_key)
 
         if status:
             return {"user_name": email, "api_token": str(api_token), "password": str(password)}
@@ -159,7 +159,7 @@ class UserManagement(Resource):
 
     @swagger.operation(
         summary='Update a MetaboLights user account',
-        notes='''Update a MetaboLights user account<pre><code>
+        notes='''Update/change a MetaboLights user/submitter account<pre><code>
     { 
          "user": 
             {
@@ -250,8 +250,8 @@ class UserManagement(Resource):
         if not read_access:
             abort(403)
 
-        firstName = None
-        lastName = None
+        first_name = None
+        last_name = None
         email = None
         affiliation = None
         affiliation_url = None
@@ -263,8 +263,8 @@ class UserManagement(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['user']
             try:
-                firstName = data['firstName']
-                lastName = data['lastName']
+                first_name = data['firstName']
+                last_name = data['lastName']
                 email = data['email']
                 affiliation = data['affiliation']
                 affiliation_url = data['affiliation_url']
@@ -282,7 +282,7 @@ class UserManagement(Resource):
         password_encoded = base64.b64encode(password.encode("utf-8"))
         password_encoded = str(password_encoded, 'utf-8')
 
-        status, message = update_user(firstName, lastName, email, affiliation, affiliation_url,
+        status, message = update_user(first_name, last_name, email, affiliation, affiliation_url,
                                       address, orcid, api_token, password_encoded, existing_user_name,
                                       is_curator, metaspace_api_key)
 

@@ -99,7 +99,12 @@ def update_maf_stats(user_token):
         sample_len = 0
         assay_len = 0
         print("------------------------------------------ " + study_id + " ------------------------------------------")
-        database_maf_info_table_actions(study_id)
+
+        try:
+            database_maf_info_table_actions(study_id)
+        except ValueError:
+            logger.error("Failed to update database for " + study_id)
+            continue
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)

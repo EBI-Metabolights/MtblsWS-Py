@@ -6,7 +6,7 @@ flask-restful-swagger==0.20.1
 Flask-Cors==3.0.8
 isatools==0.11.0
 mzml2isa==1.0.2
-marshmallow==2.19.5
+marshmallow==2.20.5
 owlready2==0.23
 gunicorn==20.0.4
 gevent==1.4.0
@@ -24,7 +24,7 @@ gspread==3.2.0
 oauth2client==4.1.3
 gspread_dataframe==3.0.3
 plotly==4.4.1
-boto3==1.11.14
+boto3==1.11.15
 pillow==7.0.0
 requests==2.22.0
 metaspace2020==1.7.1

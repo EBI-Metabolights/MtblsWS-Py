@@ -29,7 +29,7 @@ import time
 import numpy as np
 import pandas as pd
 import requests
-from flask import current_app as app, request
+from flask import current_app as app, request, abort
 from isatools.model import Protocol, ProtocolParameter, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
@@ -1015,3 +1015,10 @@ def safe_str(obj):
     except Exception as e:
         logger.error(str(e))
         return ""
+
+
+def val_email_or_username(email=None):
+    email_username_pattern = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
+    if not re.search(email_username_pattern, email):
+        abort(406, "Incorrect email " + email)
+
