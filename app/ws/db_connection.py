@@ -25,7 +25,7 @@ import psycopg2
 from flask import current_app as app, abort
 from psycopg2 import pool
 
-from app.ws.utils import get_single_file_information, check_user_token, val_email_or_username
+from app.ws.utils import get_single_file_information, check_user_token, val_email
 
 logger = logging.getLogger('wslog')
 
@@ -103,7 +103,7 @@ query_user_access_rights = """
 def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, metaspace_api_key):
 
-    val_email_or_username(email)
+    val_email(email)
 
     insert_user_query = \
         "INSERT INTO users(address, affiliation, affiliationurl, apitoken, email, firstname, " \
@@ -140,8 +140,8 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
 def update_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, existing_user_name, is_curator, metaspace_api_key):
 
-    val_email_or_username(existing_user_name)
-    val_email_or_username(email)
+    val_email(existing_user_name)
+    val_email(email)
 
     update_user_query = \
         "update users set address = 'address_value', affiliation = 'affiliation_value', " \
@@ -458,7 +458,7 @@ def study_submitters(study_id, user_email, method):
 
     val_acc(study_id)
     if user_email:
-        val_email_or_username(user_email)
+        val_email(user_email)
 
     if method == 'add':
         query = 'insert into study_user(userid, studyid) ' \

@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2020-Jan-17
+#  Last modified: 2020-Feb-13
 #  Modified by:   kenneth
 #
 #  Copyright 2020 EMBL - European Bioinformatics Institute
@@ -16,15 +16,19 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import base64
 import datetime
 import glob
 import io
 import logging
 import os
 import os.path
+import random
 import re
 import shutil
+import string
 import time
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -1017,8 +1021,15 @@ def safe_str(obj):
         return ""
 
 
-def val_email_or_username(email=None):
+def val_email(email=None):
     email_username_pattern = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
     if not re.search(email_username_pattern, email):
         abort(406, "Incorrect email " + email)
 
+
+def get_new_password_and_api_token():
+    api_token = uuid.uuid1()
+    password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
+    password_encoded = base64.b64encode(password.encode("utf-8"))
+    password_encoded = str(password_encoded, 'utf-8')
+    return password, password_encoded, api_token

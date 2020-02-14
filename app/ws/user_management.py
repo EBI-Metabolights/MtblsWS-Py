@@ -16,12 +16,8 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import base64
 import json
 import logging
-import random
-import string
-import uuid
 
 from flask import request, abort
 from flask_restful import Resource
@@ -31,7 +27,7 @@ from marshmallow import ValidationError
 from app.ws.db_connection import create_user, update_user
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import log_request, val_email_or_username
+from app.ws.utils import log_request, val_email, get_new_password_and_api_token
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -116,8 +112,8 @@ class UserManagement(Resource):
         if not read_access:
             abort(403)
 
-        firstName = None
-        lastName = None
+        first_name = None
+        last_name = None
         email = None
         affiliation = None
         affiliation_url = None
@@ -130,8 +126,8 @@ class UserManagement(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['user']
             try:
-                firstName = data['firstName']
-                lastName = data['lastName']
+                first_name = data['firstName']
+                last_name = data['lastName']
                 email = data['email']
                 affiliation = data['affiliation']
                 affiliation_url = data['affiliation_url']
@@ -143,13 +139,10 @@ class UserManagement(Resource):
         except (ValidationError, Exception):
             abort(400, 'Incorrect JSON provided')
 
-        api_token = uuid.uuid1()
-        password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
-        password_encoded = base64.b64encode(password.encode("utf-8"))
-        password_encoded = str(password_encoded, 'utf-8')
+        password, password_encoded, api_token = get_new_password_and_api_token()
 
-        val_email_or_username(email)
-        status, message = create_user(firstName, lastName, email, affiliation, affiliation_url,
+        val_email(email)
+        status, message = create_user(first_name, last_name, email, affiliation, affiliation_url,
                                       address, orcid, api_token, password_encoded, metaspace_api_key)
 
         if status:
@@ -277,10 +270,7 @@ class UserManagement(Resource):
         except (ValidationError, Exception):
             abort(400, 'Incorrect JSON provided')
 
-        api_token = uuid.uuid1()
-        password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
-        password_encoded = base64.b64encode(password.encode("utf-8"))
-        password_encoded = str(password_encoded, 'utf-8')
+        password, password_encoded, api_token = get_new_password_and_api_token()
 
         status, message = update_user(first_name, last_name, email, affiliation, affiliation_url,
                                       address, orcid, api_token, password_encoded, existing_user_name,
