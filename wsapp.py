@@ -16,40 +16,42 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import config
 import logging.config
+
 from flask import Flask
-from flask_restful import Api
 from flask_cors import CORS
-from app.ws.about import About
-from app.ws.mtbls_maf import *
-from app.ws.mtblsStudy import *
-from app.ws.isaStudy import *
-from app.ws.isaInvestigation import IsaInvestigation
-from app.ws.isaAssay import *
-from app.ws.ontology import *
-from app.ws.assay_table import *
-from app.ws.sample_table import *
-from app.ws.table_editor import *
+from flask_restful import Api
+
+import config
 from app.ws.MapStudies import *
-from app.ws.mzML2ISA import *
-from app.ws.partner_utils import Metabolon
-from app.ws.jira_update import Jira, GoogleDocs
-from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
+from app.ws.about import About
 from app.ws.assay_protocol import *
-from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
-from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad, CheckCompounds
+from app.ws.assay_table import *
 from app.ws.biostudies import *
-from app.ws.spectra import ExtractMSSpectra
-from app.ws.study_actions import StudyStatus
-from app.ws.user_management import UserManagement
-from app.ws.metaspace_pipeline import MetaspacePipeLine
-from app.ws.send_files import SendFiles
-from app.ws.enzyme_portal_helper import EnzymePortalHelper
-from app.ws.organism import Organism
+from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
 from app.ws.cluster_jobs import LsfUtils
-from app.ws.stats import StudyStats
+from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.google_calendar import GoogleCalendar
+from app.ws.isaAssay import *
+from app.ws.isaInvestigation import IsaInvestigation
+from app.ws.isaStudy import *
+from app.ws.jira_update import Jira
+from app.ws.metaspace_pipeline import MetaspacePipeLine
+from app.ws.mtblsStudy import *
+from app.ws.mtbls_maf import *
+from app.ws.mzML2ISA import *
+from app.ws.ontology import *
+from app.ws.organism import Organism
+from app.ws.partner_utils import Metabolon
+from app.ws.sample_table import *
+from app.ws.send_files import SendFiles
+from app.ws.spectra import ExtractMSSpectra
+from app.ws.stats import StudyStats
+from app.ws.study_actions import StudyStatus
+from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
+from app.ws.table_editor import *
+from app.ws.user_management import UserManagement
+from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
 
 """
 MTBLS WS-Py
@@ -96,8 +98,7 @@ def initialize_app(flask_app):
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
-    api.add_resource(SendFiles,
-                     res_path + "/studies/<string:study_id>/download",
+    api.add_resource(SendFiles, res_path + "/studies/<string:study_id>/download",
                      res_path + "/studies/<string:study_id>/download/<string:obfuscation_code>")
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
@@ -152,7 +153,6 @@ def initialize_app(flask_app):
     api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/cells/<string:file_name>")
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")
     api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
-
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
@@ -164,13 +164,15 @@ def initialize_app(flask_app):
     # EBI utils
     api.add_resource(MapStudies, res_path + "/ebi-internal/zooma")
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
-    api.add_resource(Placeholder, res_path + "/ebi-internal/placeholder") # Add placeholder
+    api.add_resource(Placeholder, res_path + "/ebi-internal/placeholder")  # Add placeholder
+    api.add_resource(Cellosaurus, res_path + "/ebi-internal/cellosaurus")  # Cellosaurus
     api.add_resource(Convert2ISAtab, res_path + "/ebi-internal/<string:study_id>/mzml2isatab")
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml")
     api.add_resource(UserManagement, res_path + "/ebi-internal/users")
     api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
+
     # api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
@@ -188,11 +190,14 @@ def initialize_app(flask_app):
 def main():
     print("Initialising application")
     initialize_app(application)
-    logger.info("Starting server %s v%s", application.config.get('WS_APP_NAME'), application.config.get('WS_APP_VERSION'))
+    logger.info("Starting server %s v%s", application.config.get('WS_APP_NAME'),
+                application.config.get('WS_APP_VERSION'))
     # application.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG, ssl_context=context)
     print("Starting application")
-    application.run(host="0.0.0.0", port=application.config.get('PORT'), debug=application.config.get('DEBUG'), threaded=True)
-    logger.info("Finished server %s v%s", application.config.get('WS_APP_NAME'), application.config.get('WS_APP_VERSION'))
+    application.run(host="0.0.0.0", port=application.config.get('PORT'), debug=application.config.get('DEBUG'),
+                    threaded=True)
+    logger.info("Finished server %s v%s", application.config.get('WS_APP_NAME'),
+                application.config.get('WS_APP_VERSION'))
 
 
 print("before main")

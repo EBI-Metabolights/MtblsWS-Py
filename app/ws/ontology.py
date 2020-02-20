@@ -18,10 +18,12 @@
 
 import datetime
 import re
+from urllib.request import urlopen
 
 import gspread
 import numpy as np
 import requests
+from bs4 import BeautifulSoup
 from flask import jsonify
 from flask import request, abort
 from flask_restful import Resource, reqparse
@@ -1084,6 +1086,108 @@ class Placeholder(Resource):
             else:
                 logger.info('Wrong query field requested')
                 abort(404)
+
+
+class Cellosaurus(Resource):
+    @swagger.operation(
+        summary="Get Cellosaurus entity and synonyms",
+        notes="Get Cellosaurus terms",
+        parameters=[
+            {
+                "name": "query",
+                "description": "Query to search Cellosaurus",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        query = ''
+        parser.add_argument('query', help='Query to search Cellosaurus')
+        if request.args:
+            args = parser.parse_args(req=request)
+            query = args['query']
+            if query is None:
+                abort(400)
+            if query:
+                query = query.strip()
+
+        def getlink(query):
+            try:
+                keyword = query.replace(' ', '+')
+                url = f'https://web.expasy.org/cgi-bin/cellosaurus/search?input={keyword}'
+                soup = BeautifulSoup(requests.get(url).text, "html.parser")
+                links = []
+                for rows in soup.find_all('tr'):
+                    cells = rows.find_all('td')
+                    cell_name = cells[0].get_text()
+                    prefix = 'https://web.expasy.org/cellosaurus/'
+                    links.append(prefix + cell_name + '.txt')
+                return links
+            except Exception as e:
+                print(e.args)
+                logger.info(e)
+
+        def getSynonyms(url):
+            try:
+                lines = urlopen(url).readlines()
+                term = ''
+                synonyms = []
+                ID = ''
+                for line in lines:
+                    line = line.decode('utf-8')
+                    if line.startswith('<pre>ID'):
+                        line = ' '.join(line.split())
+                        term = line.partition('ID')[2].strip()
+
+                    if line.startswith('AC'):
+                        line = ' '.join(line.split())
+                        ID = line.partition('AC')[2].strip()
+
+                    if line.startswith('SY'):
+                        line = ' '.join(line.split())
+                        syn = line.partition('SY')[2].strip()
+                        synonyms = syn.split(';')
+                        synonyms = [x.strip() for x in synonyms]
+                return ID, term, synonyms
+            except Exception as e:
+                print(e.args)
+                logger.info(e)
+
+        links = getlink(query)
+        result = []
+
+        for link in links:
+            ID, term, synoyms = getSynonyms(link)
+            l = [term] + synoyms
+            if query.lower() in [x.lower() for x in l]:
+                result = l
+                break
+
+        if len(result) == 0:
+            return []
+        else:
+            return jsonify({"CellosaurusTerm": [{'ID': ID, 'synoyms': l}]})
 
 
 def get_metainfo(query):
