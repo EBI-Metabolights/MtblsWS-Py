@@ -1289,7 +1289,7 @@ def get_chebi_client():
     return client
 
 
-def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_type="inchi"):
+def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_type="inchi", loop_counter=False):
     chebi_id = ""
     inchi = ""
     inchikey = ""
@@ -1350,11 +1350,12 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
         print_log('    -- Error querying ChEBI')
 
     # if formula and formula.endswith('-') and not acid_chebi_id:
-    if formula and charge and '-' in charge:
+    if formula and charge and '-' in charge and not loop_counter:
         # Need to get the conjugate acid compound of this base compound
         # Only call if we do not have the acid_chebi_id, otherwise it may loop (maybe...)
-        print_log("    -- Searching for conjugate acid of " + chebi_id)
-        return direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=chebi_id, search_type="get_conjugate_acid")
+        print_log("    -- Searching final time for conjugate acid of " + chebi_id)
+        return direct_chebi_search(final_inchi_key, comp_name,
+                                   acid_chebi_id=chebi_id, search_type="get_conjugate_acid", loop_counter=True)
 
     return chebi_id, inchi, inchikey, name, smiles, formula, search_type
 

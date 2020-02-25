@@ -55,6 +55,7 @@ def diff_pd(df1, df2):
         return pd.DataFrame({'from': changed_from, 'to': changed_to},
                             index=changed.index)
 
+
 class CompareTsvFiles(Resource):
     @swagger.operation(
         summary="Find the difference between two tsv (ISA-Tab) files",

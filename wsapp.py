@@ -30,6 +30,7 @@ from app.ws.assay_table import *
 from app.ws.biostudies import *
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
 from app.ws.cluster_jobs import LsfUtils
+from app.ws.compare_files import CompareTsvFiles
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.isaAssay import *
@@ -51,14 +52,6 @@ from app.ws.study_actions import StudyStatus
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
-from app.ws.metaspace_pipeline import MetaspacePipeLine
-from app.ws.send_files import SendFiles
-from app.ws.enzyme_portal_helper import EnzymePortalHelper
-from app.ws.organism import Organism
-from app.ws.cluster_jobs import LsfUtils
-from app.ws.stats import StudyStats
-from app.ws.google_calendar import GoogleCalendar
-from app.ws.compare_files import CompareTsvFiles
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
 
 """
