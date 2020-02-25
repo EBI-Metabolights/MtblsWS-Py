@@ -51,6 +51,14 @@ from app.ws.study_actions import StudyStatus
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
+from app.ws.metaspace_pipeline import MetaspacePipeLine
+from app.ws.send_files import SendFiles
+from app.ws.enzyme_portal_helper import EnzymePortalHelper
+from app.ws.organism import Organism
+from app.ws.cluster_jobs import LsfUtils
+from app.ws.stats import StudyStats
+from app.ws.google_calendar import GoogleCalendar
+from app.ws.compare_files import CompareTsvFiles
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
 
 """
@@ -98,7 +106,8 @@ def initialize_app(flask_app):
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
-    api.add_resource(SendFiles, res_path + "/studies/<string:study_id>/download",
+    api.add_resource(SendFiles,
+                     res_path + "/studies/<string:study_id>/download",
                      res_path + "/studies/<string:study_id>/download/<string:obfuscation_code>")
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
@@ -153,6 +162,8 @@ def initialize_app(flask_app):
     api.add_resource(ColumnsRows, res_path + "/studies/<string:study_id>/cells/<string:file_name>")
     api.add_resource(AddRows, res_path + "/studies/<string:study_id>/rows/<string:file_name>")
     api.add_resource(GetTsvFile, res_path + "/studies/<string:study_id>/<string:file_name>")
+    api.add_resource(CompareTsvFiles, res_path + "/studies/<string:study_id>/compare-files")
+
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
