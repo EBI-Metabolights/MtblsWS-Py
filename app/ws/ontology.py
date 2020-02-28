@@ -849,30 +849,26 @@ class Placeholder(Resource):
                 # add descriptor to MTBLS ontology
                 elif operation.lower() == 'mtbls':
                     try:
-                        row['status (Done/Error)'] = 'Done'
                         source = '/metabolights/ws/ebi-internal/ontology'
-
-                        protocol = '''
-                                     {
-                                      "ontologyEntity": {
+                        protocol = '''{
                                         "termName": " ",
                                         "definition": " ",
                                         "superclass": " "
-                                      }
-                                    }
+                                      }  
                                    '''
 
                         temp = json.loads(protocol)
-                        temp["ontologyEntity"]["termName"] = term
-                        temp["ontologyEntity"]["definition"] = definition
-                        temp["ontologyEntity"]["superclass"] = superclass
+                        temp["termName"] = term
+                        temp["definition"] = definition
+                        temp["superclass"] = superclass
 
                         data = json.dumps({"ontologyEntity": temp})
+                        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+
                         response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
-                                                protocol=data)
+                                                data=data)
                         print('add term {newterm} to {superclass} branch'.format(newterm=term,
                                                                                  superclass=superclass))
-
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
                         else:
