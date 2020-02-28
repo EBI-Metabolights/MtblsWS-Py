@@ -377,7 +377,7 @@ class Ontology(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "protocol",
+                "name": "data",
                 "description": 'Ontology Entity in JSON format.',
                 "paramType": "body",
                 "type": "string",
@@ -442,6 +442,7 @@ class Ontology(Resource):
         try:
             addEntity(new_term=data_dict['termName'], supclass=data_dict['superclass'], definition=description)
         except Exception as e:
+            print(e)
             logger.info(e)
             abort(400)
 
@@ -638,20 +639,20 @@ class Placeholder(Resource):
                 if operation.lower() in ['update', 'u', 'add', 'A']:
                     # ws_url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
                     protocol = '''
-                                                {
-                                                    "factorName": "",
-                                                    "factorType": {
-                                                      "annotationValue": "",
-                                                      "termSource": {
-                                                        "name": "",
-                                                        "file": "",
-                                                        "version": "",
-                                                        "description": ""
-                                                      },
-                                                      "termAccession": ""
-                                                    }                       
-                                                }
-                                                '''
+                                    {
+                                        "factorName": "",
+                                        "factorType": {
+                                          "annotationValue": "",
+                                          "termSource": {
+                                            "name": "",
+                                            "file": "",
+                                            "version": "",
+                                            "description": ""
+                                          },
+                                          "termAccession": ""
+                                        }                       
+                                    }
+                                '''
                     try:
                         onto_name = getOnto_Name(termAccession)[0]
                         onto_iri, onto_version, onto_description = getOnto_info(onto_name)
@@ -715,30 +716,25 @@ class Placeholder(Resource):
                 # add factor term to MTBLS ontology
                 elif operation.lower() == 'mtbls':
                     try:
-                        row['status (Done/Error)'] = 'Done'
                         source = '/metabolights/ws/ebi-internal/ontology'
-
-                        protocol = '''
-                                     {
-                                      "ontologyEntity": {
+                        protocol = '''{
                                         "termName": " ",
                                         "definition": " ",
                                         "superclass": " "
-                                      }
-                                    }
+                                      }  
                                    '''
 
                         temp = json.loads(protocol)
-                        temp["ontologyEntity"]["termName"] = annotationValue
-                        temp["ontologyEntity"]["definition"] = definition
-                        temp["ontologyEntity"]["superclass"] = superclass
+                        temp["termName"] = annotationValue
+                        temp["definition"] = definition
+                        temp["superclass"] = superclass
 
                         data = json.dumps({"ontologyEntity": temp})
-                        response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
-                                                protocol=data)
-                        print('add term {newterm} to {superclass} branch'.format(newterm=annotationValue,
-                                                                                 superclass=superclass))
+                        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
+                        response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                data=data)
+                        print('add term {newterm} to {superclass} branch'.format(newterm=annotationValue,superclass=superclass))
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
                         else:
@@ -1423,20 +1419,26 @@ def addEntity(new_term, supclass, definition=None):
     namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
 
     with namespace:
-        cls = onto.search_one(label=supclass)
-        if cls is None:
-            cls = onto.search_one(iri=supclass)
-        if cls is None:
-            logger.info(f"Can't find superclass named {supclass}")
-            print(f"Can't find superclass named {supclass}")
+        try:
+            cls = onto.search_one(label=supclass)
+            if cls is None:
+                cls = onto.search_one(iri=supclass)
+            if cls is None:
+                logger.info(f"Can't find superclass named {supclass}")
+                print(f"Can't find superclass named {supclass}")
+                abort(400)
+                return []
+
+            newEntity = types.new_class(id, (cls,))
+            newEntity.label = new_term
+            if definition != None:
+                newEntity.isDefinedBy = definition
+            else:
+                pass
+        except Exception as e:
+            print(e)
+            logger.info(e.args)
             abort(400)
             return []
-
-        newEntity = types.new_class(id, (cls,))
-        newEntity.label = new_term
-        if definition != None:
-            newEntity.isDefinedBy = definition
-        else:
-            pass
 
         onto.save(file=app.config.get('MTBLS_ONTOLOGY_FILE'), format='rdfxml')
