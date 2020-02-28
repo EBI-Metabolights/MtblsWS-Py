@@ -877,7 +877,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         doi = row['SOURCE_DOI']
         row_id = row['row_id']
         chemspider = row['csid_ik']
-        # cactus_synonyms = row['cactus_synonyms']
+        cactus_synonyms = row['cactus_synonyms']
         database_accession = row['DATABASE_ACCESSION']
 
         if cid and not db_id.startswith('CHEBI:'):
@@ -932,9 +932,13 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                 chemspider = 'ChemSpiderID:' + chemspider + ';'
                 comment = chemspider + comment
 
-            # if database_accession:
-            #     # ToDo, add ChemSpider (csid_ik) as well + any other synonyms (two columns)
-            #     database_accession = database_accession + chemspider + cactus_synonyms
+            # add ChemSpider (csid_ik) + any other approved synonyms (two columns) in the database acc for ChEBI SDF
+            if database_accession:
+                if chemspider and chemspider.strip(';') not in database_accession:
+                    database_accession = database_accession + chemspider
+
+                if cactus_synonyms and cactus_synonyms.strip(';') not in database_accession:
+                    database_accession = database_accession + cactus_synonyms
 
             add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism,
                                     strain=strain, organism_part=organism_part, name=name, iupack_name=iupac_name,
@@ -1354,6 +1358,7 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
         # Need to get the conjugate acid compound of this base compound
         # Only call if we do not have the acid_chebi_id, otherwise it may loop (maybe...)
         print_log("    -- Searching final time for conjugate acid of " + chebi_id)
+        # Set the loop_counter to True to stop if trying yet again if there is no conjugate acid of this compound
         return direct_chebi_search(final_inchi_key, comp_name,
                                    acid_chebi_id=chebi_id, search_type="get_conjugate_acid", loop_counter=True)
 
@@ -1362,20 +1367,41 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
 
 def get_csid(inchikey):
     csid = ""
-    csurl_base = app.config.get('CHEMSPIDER_URL')
+    csurl_base = 'http://www.chemspider.com/InChI.asmx/InChIKeyToCSID?inchi_key='
 
     if inchikey:
-        url1 = csurl_base + 'SimpleSearch&searchOptions.QueryText=' + inchikey
+        url1 = csurl_base + inchikey
         resp1 = requests.get(url1)
         if resp1.status_code == 200:
-            url2 = csurl_base + 'GetSearchResult&rid=' + resp1.text
-            resp2 = requests.get(url2)
-            if resp2.status_code == 200:
-                csid = resp2.text
-                csid = csid.replace('[', '').replace(']', '').split(',')[0]
-                print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
-                return csid
+            csid = resp1.text
+            # Something like: '<?xml version="1.0" encoding="utf-8"?><string xmlns="http://www.chemspider.com/">4471938</string>'
+            if csid:
+                try:
+                    csid = csid.split('www.chemspider.com/">')[1]
+                    csid = csid.replace('</string>', '')
+                    print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
+                    return csid
+                except IndexError:
+                    print_log("    -- Could not find CSID in string: '" + csid + "' using ChemSpider, inchikey: " + inchikey)
+                    return ""
     return csid
+
+# def get_csid(inchikey):
+#     csid = ""
+#     csurl_base = app.config.get('CHEMSPIDER_URL')
+#
+#     if inchikey:
+#         url1 = csurl_base + 'SimpleSearch&searchOptions.QueryText=' + inchikey
+#         resp1 = requests.get(url1)
+#         if resp1.status_code == 200:
+#             url2 = csurl_base + 'GetSearchResult&rid=' + resp1.text
+#             resp2 = requests.get(url2)
+#             if resp2.status_code == 200:
+#                 csid = resp2.text
+#                 csid = csid.replace('[', '').replace(']', '').split(',')[0]
+#                 print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
+#                 return csid
+#     return csid
 
 
 def get_pubchem_cid_on_inchikey(inchikey1, inchikey2):
@@ -1461,6 +1487,21 @@ def get_relevant_synonym(synonym):
 
     elif synonym.startswith('LM'):  # LipidMaps
         synonym = synonym[4:]
+        """
+        MTBLS1267
+        
+        https://www.lipidmaps.org/data/classification/LM_classification_exp.php
+        Fatty Acyls [FA]
+        Glycerolipids [GL]
+        Glycerophospholipids [GP]
+        Sphingolipids [SP]
+        Sterol Lipids [ST]
+        Prenol Lipids [PR]
+        Saccharolipids [SL]
+        Polyketides [PK]
+        """
+
+
         return is_correct_int(synonym, 8)
 
     elif synonym.startswith('YMDB'):

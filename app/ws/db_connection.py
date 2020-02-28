@@ -679,6 +679,9 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
 
 
 def get_connection():
+    postgresql_pool = None
+    conn = None
+    cursor = None
     try:
         params = app.config.get('DB_PARAMS')
         conn_pool_min = app.config.get('CONN_POOL_MIN')
@@ -688,7 +691,8 @@ def get_connection():
         cursor = conn.cursor()
     except Exception as e:
         logger.error("Could not query the database " + str(e))
-        postgresql_pool.closeall
+        if postgresql_pool:
+            postgresql_pool.closeall
     return postgresql_pool, conn, cursor
 
 
