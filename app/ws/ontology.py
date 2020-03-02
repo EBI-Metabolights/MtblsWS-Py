@@ -600,23 +600,24 @@ class Placeholder(Resource):
 
         google_url = app.config.get('GOOGLE_SHEET_URL')
         sheet_name = ''
+        col = []
 
         # get sheet_name
         if query == 'factor':
             sheet_name = 'factor'
-            # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
-            #        'annotationValue', 'termAccession', 'superclass', 'definition']
+            col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+                   'annotationValue', 'termAccession', 'superclass', 'definition']
 
         elif query == 'design descriptor':
             sheet_name = 'design descriptor'
-            # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
-            #        'matched_iri', 'superclass', 'definition']
+            col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_name', 'name',
+                   'matched_iri', 'superclass', 'definition']
 
         elif query == 'organism':
             sheet_name = 'organism'
-            # col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_organism',
-            #        'organism', 'organism_ref', 'organism_url', 'old_organismPart', 'organismPart', 'organismPart_ref',
-            #        'organismPart_url', 'superclass', 'definition']
+            col = ['operation(Update/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_organism',
+                   'organism', 'organism_ref', 'organism_url', 'old_organismPart', 'organismPart', 'organismPart_ref',
+                   'organismPart_url', 'superclass', 'definition']
 
         else:
             abort(400)
@@ -625,7 +626,7 @@ class Placeholder(Resource):
         google_df = getGoogleSheet(google_url, sheet_name)
 
         ch = google_df[
-            (google_df['operation(Update/Add/Delete/Zooma/MTBLS)'] != '') & (google_df['status (Done/Error)'] == '')]
+            (google_df[col[0]] != '') & (google_df[col[1]] == '')]
 
         for index, row in ch.iterrows():
             if query == 'factor':
@@ -734,7 +735,8 @@ class Placeholder(Resource):
 
                         response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                 data=data)
-                        print('add term {newterm} to {superclass} branch'.format(newterm=annotationValue,superclass=superclass))
+                        print('add term {newterm} to {superclass} branch'.format(newterm=annotationValue,
+                                                                                 superclass=superclass))
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
                         else:
@@ -749,7 +751,7 @@ class Placeholder(Resource):
                 # add factor term to zooma
                 elif operation.lower() == 'zooma':
                     try:
-                        addZoomaTerm(studyID, term, annotationValue, termAccession)
+                        addZoomaTerm(studyID, Property_type='Factor', Property_value=term, url=termAccession)
                         result = 'Done'
                     except Exception as e:
                         result = 'Error'
@@ -883,7 +885,7 @@ class Placeholder(Resource):
                 # add descriptor term to zooma
                 elif operation.lower() == 'zooma':
                     try:
-                        addZoomaTerm(studyID, term, term, matched_iri)
+                        addZoomaTerm(studyID, 'Design Descriptor', term, matched_iri)
                         result = 'Done'
                     except Exception as e:
                         result = 'Error'
@@ -897,13 +899,9 @@ class Placeholder(Resource):
                     logger.info('Wrong operation tag in the spreadsheet')
                     abort(400)
 
-            # -------------------------------------------------------
-            # -------------------------------------------------------
-            # -------------------------------------------------------
 
             elif query == 'organism':
-
-                operation, studyID = row['operation(Update/Add/Delete/Zooma/MTBLS)'], row['studyID']
+                operation, studyID = row[col[0]], row[col[2]]
                 old_organism, organism, organism_ref, organism_url \
                     = row['old_organism'], row['organism'], row['organism_ref'], row['organism_url']
                 old_organismPart, organismPart, organismPart_ref, organismPart_url \
@@ -913,19 +911,19 @@ class Placeholder(Resource):
                 source = '/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
                 ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
-                # add / update descriptor
-                if operation.lower() in ['update', 'U', 'add', 'A']:
+                list_changes = []
 
-                    list_changes = []
-
-                    if organism not in ['', None]:
-                        list_changes.append({'old_term': old_organism, 'new_term': organism, 'onto_name': organism_ref,
-                                             'term_url': organism_url, 'characteristicsName': 'Organism'})
-                    if organismPart not in ['', None]:
-                        list_changes.append({'old_term': old_organismPart, 'new_term': organismPart,
-                                             'onto_name': organismPart_ref, 'term_url': organismPart_url,
-                                             'characteristicsName': 'Organism part'})
-
+                if organism not in ['', None]:
+                    list_changes.append({'old_term': old_organism, 'new_term': organism, 'onto_name': organism_ref,
+                                         'term_url': organism_url, 'superclass': superclass, 'definition': definition,
+                                         'characteristicsName': 'Organism'})
+                if organismPart not in ['', None]:
+                    list_changes.append({'old_term': old_organismPart, 'new_term': organismPart,
+                                         'onto_name': organismPart_ref, 'term_url': organismPart_url,
+                                         'superclass': superclass, 'definition': definition,
+                                         'characteristicsName': 'Organism part'})
+                # Update organism
+                if operation.lower() in ['update', 'U']:
                     for change in list_changes:
                         protocol = '''
                                     {
@@ -970,22 +968,15 @@ class Placeholder(Resource):
 
                             data = json.dumps({"characteristics": [temp]})
 
-                            if operation.lower() in ['update', 'U']:  # Update descriptor
-                                response = requests.post(ws_url,
-                                                         params={'existing_char_name': change['characteristicsName'],
-                                                                 'existing_char_value': change['old_term']},
-                                                         headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
-                                                                  'save_audit_copy': 'true'},
-                                                         data=data)
-                                print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
-                                      format(old_term=change['old_term'], matchterm=change['new_term'],
-                                             matchiri=change['term_url'], studyID=studyID))
-                            else:  # Add characteristic
-                                response = requests.post(ws_url,
-                                                         headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
-                                                         data=data)
-                                print('Add {old_term} to ({matchiri}) in {studyID}'.
-                                      format(old_term=old_term, matchiri=matched_iri, studyID=studyID))
+                            response = requests.post(ws_url,
+                                                     params={'existing_char_name': change['characteristicsName'],
+                                                             'existing_char_value': change['old_term']},
+                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
+                                                              'save_audit_copy': 'true'},
+                                                     data=data)
+                            print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
+                                  format(old_term=change['old_term'], matchterm=change['new_term'],
+                                         matchiri=change['term_url'], studyID=studyID))
 
                             if response.status_code == 200:
                                 google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -998,82 +989,60 @@ class Placeholder(Resource):
                             google_df.loc[index, 'status (Done/Error)'] = 'Error'
                             logger.info(e)
 
-                # Delete descriptor
-                elif operation.lower() in ['delete', 'D']:
-                    try:
-                        response = requests.delete(ws_url, params={'term': old_term},
-                                                   headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
-                                                            'save_audit_copy': 'true'})
-                        print('delete {old_term} from in {studyID}'.format(old_term=old_term, studyID=studyID))
-
-                        if response.status_code == 200:
-                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
-                        else:
-                            google_df.loc[index, 'status (Done/Error)'] = 'Error'
-
-                        replaceGoogleSheet(google_df, google_url, sheet_name)
-
-                    except Exception as e:
-                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
-                        logger.info(e)
-
-                # add descriptor to MTBLS ontology
+                # add organism to MTBLS ontology
+                # add organism/organism separately
                 elif operation.lower() == 'mtbls':
-                    try:
-                        row['status (Done/Error)'] = 'Done'
-                        source = '/metabolights/ws/ebi-internal/ontology'
+                    for change in list_changes:
+                        try:
+                            source = '/metabolights/ws/ebi-internal/ontology'
+                            protocol = '''{
+                                            "termName": " ",
+                                            "definition": " ",
+                                            "superclass": " "
+                                          }  
+                                       '''
 
-                        protocol = '''
-                                      {
-                                       "ontologyEntity": {
-                                         "termName": " ",
-                                         "definition": " ",
-                                         "superclass": " "
-                                       }
-                                     }
-                                    '''
+                            temp = json.loads(protocol)
+                            temp["termName"] = change['new_term']
+                            temp["definition"] = change['definition']
+                            temp["superclass"] = change['superclass']
 
-                        temp = json.loads(protocol)
-                        temp["ontologyEntity"]["termName"] = term
-                        temp["ontologyEntity"]["definition"] = definition
-                        temp["ontologyEntity"]["superclass"] = superclass
+                            data = json.dumps({"ontologyEntity": temp})
+                            ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
-                        data = json.dumps({"ontologyEntity": temp})
-                        response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
-                                                protocol=data)
-                        print('add term {newterm} to {superclass} branch'.format(newterm=term,
-                                                                                 superclass=superclass))
+                            response = requests.put(ws_url,
+                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                                                    data=data)
+                            print('add term {newterm} to {superclass} branch'.format(newterm=change['new_term'],
+                                                                                     superclass=change['superclass']))
+                            if response.status_code == 200:
+                                google_df.loc[index, 'status (Done/Error)'] = 'Done'
+                            else:
+                                google_df.loc[index, 'status (Done/Error)'] = 'Error'
 
-                        if response.status_code == 200:
-                            google_df.loc[index, 'status (Done/Error)'] = 'Done'
-                        else:
+                            replaceGoogleSheet(google_df, google_url, sheet_name)
+
+                        except Exception as e:
                             google_df.loc[index, 'status (Done/Error)'] = 'Error'
+                            logger.info(e)
 
-                        replaceGoogleSheet(google_df, google_url, sheet_name)
-
-                    except Exception as e:
-                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
-                        logger.info(e)
-
-                # add descriptor term to zooma
+                # add organism term to zooma
                 elif operation.lower() == 'zooma':
-                    try:
-                        addZoomaTerm(studyID, term, term, matched_iri)
-                        result = 'Done'
-                    except Exception as e:
-                        result = 'Error'
-                        google_df.loc[index, 'status (Done/Error)'] = 'Error'
-                        logger.info(e)
+                    for change in list_changes:
+                        try:
+                            property_type = change['characteristicsName'].replace(' ',"_")
+                            addZoomaTerm(studyID, property_type, change['new_term'], change['term_url'])
+                            result = 'Done'
+                        except Exception as e:
+                            result = 'Error'
+                            logger.info(e)
 
-                    google_df.loc[index, 'status (Done/Error)'] = result
-                    replaceGoogleSheet(google_df, google_url, sheet_name)
+                        google_df.loc[index, 'status (Done/Error)'] = result
+                        replaceGoogleSheet(google_df, google_url, sheet_name)
 
                 else:
                     logger.info('Wrong operation tag in the spreadsheet')
                     abort(400)
-            # -------------------------------------------------------
-            # -------------------------------------------------------
-            # -------------------------------------------------------
 
             else:
                 logger.info('Wrong query field requested')
