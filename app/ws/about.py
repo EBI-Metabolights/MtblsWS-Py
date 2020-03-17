@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2020-Jan-24
+#  Last modified: 2020-Feb-28
 #  Modified by:   kenneth
 #
 #  Copyright 2020 EMBL - European Bioinformatics Institute
@@ -41,6 +41,7 @@ api_fields = {
     'ApiDocumentation': fields.String,
     'ApiSpecification': fields.String,
     'IsatoolsApi': fields.String,
+    'METASPACE-Api': fields.String
 }
 
 about_fields = {
@@ -72,7 +73,8 @@ class About(Resource):
         api = {"ApiVersion": app.config.get('API_VERSION'),
                "ApiDocumentation": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".html",
                "ApiSpecification": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".json",
-               "IsatoolsApi": app.config.get('ISA_API_VERSION')
+               "IsatoolsApi": app.config.get('ISA_API_VERSION'),
+               "METASPACE-Api": app.config.get('METASPACE_API_VERSION')
                }
         appl = {"WsName": app.config.get('WS_APP_NAME'),
                 "WsVersion": app.config.get('WS_APP_VERSION'),

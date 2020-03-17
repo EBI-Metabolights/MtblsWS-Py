@@ -429,7 +429,7 @@ def duplicate(my_list, n):
 
 
 def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
-                          run_silently=None, update_study_maf=None):
+                          run_silently=None, update_study_maf=None, obfuscation_code=None):
     sdf_file_list = []
     exiting_pubchem_file = False
     first_start_time = time.time()
@@ -458,6 +458,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         abort(400, "The file " + annotation_file_name + " was not found")
 
     create_annotation_folder(study_location + os.sep + anno_sub_folder)
+    if obfuscation_code:  # So the curators can FTP new files into the private upload folder for the study
+        create_annotation_folder(app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" +
+                                 obfuscation_code + os.sep + anno_sub_folder)
 
     # First make sure the existing pubchem annotated spreadsheet is loaded
     pubchem_df = maf_df.copy()
@@ -1957,7 +1960,8 @@ class ChEBIPipeLine(Resource):
                     else:
                         maf_len, new_maf_len, pubchem_file = \
                             search_and_update_maf(study_id, study_location, file_name, classyfire_search, user_token,
-                                                  run_silently=run_silently, update_study_maf=update_study_maf)
+                                                  run_silently=run_silently, update_study_maf=update_study_maf,
+                                                  obfuscation_code=obfuscation_code)
                         if maf_len != new_maf_len:
                             maf_changed += 1
         else:
@@ -1974,7 +1978,8 @@ class ChEBIPipeLine(Resource):
             else:
                 maf_len, new_maf_len, pubchem_file = \
                     search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
-                                          run_silently=run_silently, update_study_maf=update_study_maf)
+                                          run_silently=run_silently, update_study_maf=update_study_maf,
+                                          obfuscation_code=obfuscation_code)
                 pubchem_file = http_file_location + pubchem_file.split('/' + study_id)[1]
 
             return {"in_rows": maf_len, "out_rows": new_maf_len, "pubchem_file": pubchem_file}

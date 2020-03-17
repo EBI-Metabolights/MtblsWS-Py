@@ -17,6 +17,7 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import logging.config
+import os
 
 from flask import Flask
 from flask_cors import CORS
@@ -61,8 +62,8 @@ MetaboLights Python-based REST Web Service
 """
 
 application = Flask(__name__, instance_relative_config=True)
-
-logging.config.fileConfig('logging.conf')
+hostname = os.uname().nodename
+logging.config.fileConfig('logging_' + hostname + '.conf')
 logger = logging.getLogger('wslog')
 
 

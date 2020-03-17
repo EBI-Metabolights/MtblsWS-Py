@@ -118,7 +118,7 @@ class StudyStatus(Resource):
             abort(403)
 
         if study_status.lower() == db_study_status.lower():
-            abort(406, "Nothing to change")
+            abort(200, "Status is already '" + str(study_status) + "' so there is nothing to change")
 
         # Update the last status change date field
         status_date_logged = update_study_status_change_date(study_id)
@@ -143,7 +143,7 @@ class StudyStatus(Resource):
             self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
         elif write_access:
             if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':
-                abort(403, "You can not change to this status")
+                abort(403, "You can not change the study to this status")
 
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
                 self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
@@ -166,10 +166,11 @@ class StudyStatus(Resource):
 
     @staticmethod
     def update_status(study_id, study_status, is_curator=False, obfuscation_code=None):
+        study_status = study_status.lower()
         # Update database
         update_study_status(study_id, study_status, is_curator=is_curator)
         # Move the private fto folder if the new status is Public
-        if study_status.lower() == 'public':
+        if study_status == 'public':
             #  ./mtblight/prod/<mtbls>-<obfuscation_code> to ./mtblight/prod/old/<mtbls>-<obfuscation_code>
             private_ftp_root = app.config.get("MTBLS_PRIVATE_FTP_ROOT")
             study_folder = study_id.lower() + '-' + obfuscation_code
