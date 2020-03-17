@@ -720,7 +720,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                         db_acc = 'ChemSpiderID:' + csid + ';'
                     if cactus_synonyms:
                         db_acc = db_acc + cactus_synonyms + ';'
-                    if pc_synonyms:
+                    if pc_synonyms and pc_synonyms != cactus_synonyms:
                         db_acc = db_acc + pc_synonyms
                     if db_acc:
                         pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(';')  # Cactus and PubChem synonyms for SDF export
