@@ -162,6 +162,10 @@ class IsaInvestigation(Resource):
         response['mtblsStudy']['read_access'] = read_access
         response['mtblsStudy']['write_access'] = write_access
         response['mtblsStudy']['is_curator'] = is_curator
+        # ToDo: Make sure this date is formatted YYYY-MM-DD and update the isa_inv, isa_study before returning
+        # response['mtblsStudy']['release_date'] = release_date
+        # isa_inv.public_release_date = release_date
+        # isa_study.public_release_date = release_date
         if study_status == "In Review":
             response['mtblsStudy']['reviewer_link'] = 'reviewer' + obfuscation_code
         response['isaInvestigation'] = IsaInvestigationSchema().dump(isa_inv).data
