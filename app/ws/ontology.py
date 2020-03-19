@@ -290,8 +290,10 @@ class Ontology(Resource):
 
             if branch == 'taxonomy':
                 priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'CHEBI': 5, 'CHMO': 6,
-                            'NCIT': 6,
-                            'PO': 8}
+                            'NCIT': 7, 'PO': 8}
+
+            if branch == 'unit':
+                priority = {'UO': 0, 'MTBLS': 1}
 
             if branch == 'factor':
                 priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}

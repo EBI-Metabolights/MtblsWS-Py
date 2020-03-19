@@ -523,1078 +523,12 @@
     
 
 
-    <!-- http://purl.obolibrary.org/obo/UO_0000001 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000001">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000045"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A base unit which is a standard measure of the distance between two points.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A length unit is a base unit which is a standard measure of the distance between two points.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the distance between two points.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">length unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000002 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000002">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000045"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A base unit which is a standard measure of the amount of matter/energy of a physical object.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit is a base unit which is a standard measure of the amount of matter/energy of a physical object.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the amount of matter/energy of a physical object.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">mass unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000003 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000003">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000045"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A base unit which is a standard measure of the dimension in which events occur in sequence.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A time unit is a base unit which is a standard measure of the dimension in which events occur in sequence.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the dimension in which events occur in sequence.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">time unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000004 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000004">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000045"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A base unit which is a standard measure of the flow of electric charge.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the flow of electric charge.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An electric current unit is a base unit which is a standard measure of the flow of electric charge.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">electric current unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000005 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000005">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000045"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A base unit which is a standard measure of the average kinetic energy of the particles in a sample of matter.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A temperature unit is a base unit which is a standard measure of the average kinetic energy of the particles in a sample of matter.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the average kinetic energy of the particles in a sample of matter.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">temperature unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000006 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000006">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000045"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A base unit which is a standardized quantity of an element or compound with uniform composition.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A substance unit is a base unit which is a standardised quantity of an element or compound with uniform composition.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standardised quantity of an element or compound with uniform composition.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">substance unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000007 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000007">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000045"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A base unit which is a standard measure of the wavelength-weighted power emitted by a light source in a particular direction.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A luminous intensity unit is a base unit which is a standard measure of the wavelength-weighted power emitted by a light source in a particular direction.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the wavelength-weighted power emitted by a light source in a particular direction.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">luminous intensity unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000008 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000008">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000001"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A length unit which is equal to the length of the path traveled by light in vacuum during a time interval of 1/299 792 458 of a second.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A meter is a length unit which is equal to the length of the path traveled by light in vacuum during a time interval of 1/299 792 458 of a second.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">meter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000009 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000009">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000002"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A kilogram is a mass unit which is equal to the mass of the International Prototype Kilogram kept by the BIPM at Svres, France.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit which is equal to the mass of the International Prototype Kilogram kept by the BIPM at Svres, France.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">kilogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000010 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000010">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000003"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A second is a time unit which is equal to the duration of 9 192 631 770 periods of the radiation corresponding to the transition between the two hyperfine levels of the ground state of the caesium 133 atom.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A time unit which is equal to the duration of 9 192 631 770 periods of the radiation corresponding to the transition between the two hyperfine levels of the ground state of the caesium 133 atom.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">second</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000011 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000011">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000004"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An ampere is an electric current unit which is equal to the constant current which, if maintained in two straight parallel conductors of infinite length, of negligible circular cross-section, and placed 1 m apart in vacuum, would produce between these conductors a force equal to 2 x 10^[-7] newton per meter of length.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An electric current unit which is equal to the constant current which, if maintained in two straight parallel conductors of infinite length, of negligible circular cross-section, and placed 1 m apart in vacuum, would produce between these conductors a force equal to 2 x 10^[-7] newton per meter of length.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ampere</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000012 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000012">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000005"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A kelvin is a thermodynamic temperature unit which is equal to the fraction 1/273.16 of the thermodynamic temperature of the triple point of water.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A thermodynamic temperature unit which is equal to the fraction 1/273.16 of the thermodynamic temperature of the triple point of water.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">kelvin</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000013 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000013">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000006"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mole is a substance unit which is equal to the amount of substance of a molecular system which contains as many elementary entities as there are atoms in 0.012 kilogram of carbon 12.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A substance unit which is equal to the amount of substance of a molecular system which contains as many elementary entities as there are atoms in 0.012 kilogram of carbon 12.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">mole</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000014 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000014">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000007"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A candela is a luminous intensity unit which equal to the luminous intensity, in a given direction, of a source that emits monochromatic radiation of frequency 540 x 1012 hertz and that has a radiant intensity in that direction of 1/683 watt per steradian.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A luminous intensity unit which equal to the luminous intensity, in a given direction, of a source that emits monochromatic radiation of frequency 540 x 1012 hertz and that has a radiant intensity in that direction of 1/683 watt per steradian.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">candela</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000015 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000015">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000001"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A centimeter is a length unit which is equal to one hundredth of a meter or 10^-2 m.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A length unit which is equal to one hundredth of a meter or 10^[-2] m.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">centimeter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000016 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000016">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000001"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A length unit which is equal to one thousandth of a meter or 10^[-3] m.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A millimeter is a length unit which is equal to one thousandth of a meter or 10^-3 m.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">millimeter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000017 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000017">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000001"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A length unit which is equal to one millionth of a meter or 10^[-6] m.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A micrometer is a length unit which is equal to 1m x 10^-6.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">micrometer</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000018 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000018">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000001"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A length unit which is equal to one thousandth of one millionth of a meter or 10^[-9] m.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A nanometer is a length unit which is equal to 1m x 10^-9.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">nanometer</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000020 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000020">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000001"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A length unit which is equal to 10^[-12] m.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A picometer is a length unit which is equal to 1m x 10^-12.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">picometer</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000021 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000021">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000002"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A gram is a mass unit which is equal to one-thousanth of a kilogram.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit which is equal to one thousandth of a kilogram or 10^[-3] kg.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">gram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000022 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000022">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000002"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit which is equal to one thousandth of a gram or 10^[-3] g.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A milligram is a mass unit which is equal to one-millionth of a kilogram.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milligram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000023 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000023">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000002"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit which is equal to one millionth of a gram or 10^[-6] g.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A microgram is a mass unit which is equal to 1 gram x 10^-6</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microgram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000024 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000024">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000002"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit which is equal to one thousandth of one millionth of a gram or 10^[-9] g.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A microgram is a mass unit which is equal to 1 gram x 10^-9</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">nanogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000025 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000025">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000002"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit which is equal to one millionth of one millionth of a gram.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A picogram is a mass unit which is equal to 1 gram x 10^-12</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">picogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000026 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000026">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000002"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit which is equal to 10^[-15] g.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A microgram is a mass unit which is equal to 1 gram x 10^-15</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">femtogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000027 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000027">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000126"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A temperature derived unit which is equal to one Kelvin degree. However, they have their zeros at different points. The Centigrade scale has its zero at 273.15 K.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A temperature unit which is equal to one Kelvin degree. However, they have their zeros at different points. The Centigrade scale has its zero at 273.15 K.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Degree celsius is a temperature derived unit which is equal to one Kelvin degree. However, they have their zeros at different points. The Centigrade scale has its zero at 273.15 K.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">degree celsius</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000029 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000029">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000003"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A microsecond is a time unit which is equal to one millionth of a second or 10^-6 s.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A time unit which is equal to one millionth of a second or 10^[-6] s.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microsecond</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000031 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000031">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000149"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A minute is a derived time unit which is equal to 60 seconds.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A time unit which is equal to 60 seconds.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">minute</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000032 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000032">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000149"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A time unit which is equal to 3600 seconds or 60 minutes.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An hour is a derived time unit which is equal to 3600 seconds or 60 minutes.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">hour</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000033 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000033">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000149"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A day is a derived time unit which is equal to 24 hours.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A time unit which is equal to 24 hours.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">day</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000034 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000034">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000149"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A time unit which is equal to 7 days.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A week is a derived time unit which is equal to 7 days.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">week</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000035 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000035">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000149"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A month is a derived time unit which is approximately equal to the length of time of one of cycle of the moon&apos;s phases which in science is taken to be equal to 30 days. [ http://en.wikipedia.org/wiki/Wikipedia ]</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">month</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000036 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000036">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000149"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A time unit which is equal to 12 months which is science is taken to be equal to 365.25 days.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A year is a derived time unit which is equal to 365.25 days.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">year</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000039 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000039">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000006"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A substance unit equal to a millionth of a mol or 10^[-6] mol.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">micromole</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000040 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000040">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000006"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A millimole is a substance unit equal to a thousandth of a mol or 10^[-3] mol.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A substance unit equal to a thousandth of a mol or 10^[-3] mol.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">millimole</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000041 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000041">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000006"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A nanomole is a substance unit equal to one thousandth of one millionth of a mole or 10^-9 mol.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A substance unit equal to one thousandth of one millionth of a mole or 10^[-9] mol.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">nanomole</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000042 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000042">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000006"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A picomole is a substance unit equal to 10^-12 mol.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A substance unit equal to 10^[-12] mol.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">picomole</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000043 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000043">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000006"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A femtomole is a substance unit equal to 10^-15 mol.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A substance unit equal to 10^[-15] mol.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">femtomole</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000044 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000044">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000006"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A substance unit equal to 10^[-18] mol.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An attomole is a substance unit equal to 10^-18 mol.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">attomole</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000045 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000045">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000000"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A base unit is a unit which is used to measure a paticular type which is independent from all other base units and from which all measures of that type can be derived, for example, a length base unit of the meter. This is akin to the SI base unit system.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is one of a particular measure to which all measures of that type can be related.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">base unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000046 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000046">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000000"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit is a unit which is derived from base units.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is derived from base units.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">derived unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000047 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000047">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which is a standard measure of the amount of a 2-dimensional flat surface.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the amount of a 2-dimensional flat surface.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An area unit is a derived unit which is a standard measure of the amount of a 2-dimensional flat surface.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">area unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000051 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000051">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A concentration unit is a dervied unit which represents a standard measurement of how much of a given substance there is mixed with another substance.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which represents a standard measurement of how much of a given substance there is mixed with another substance.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which represents a standard measurement of how much of a given substance there is mixed with another substance.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">concentration unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000055 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000055">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which is a standard measure of the mass of a homogeneous substance containing 6.02 x 1023 atoms or molecules.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the mass of a homogeneous substance containing 6.02 x 1023 atoms or molecules.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">molar mass unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000061 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000061">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A concentration unit which is a standard measure of the number of moles of a given substance per liter of solution.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived concentration unit which is a standard measure of the number of moles of a given substance per liter of solution.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of molarity is a derived concentration unit which is a standard measure of the number of moles of a given substance per liter of solution.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">unit of molarity</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000062 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000062">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000061"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A molar is a unit of molarity which expresses a concentration of 1 mole of solute per liter of solution (mol/L).</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of concentration which expresses a concentration of 1 mole of solute per liter of solution (mol/L).</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">molar</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000063 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000063">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000061"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A millimolar is a unit of molarity which is equal to one thousandth of a molar or 10^-3 M.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of molarity which is equal to one thousandth of a molar or 10^[-3] M.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">millimolar</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000064 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000064">
-        <owl:equivalentClass rdf:resource="http://www.ebi.ac.uk/efo/EFO_0002901"/>
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000061"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of molarity which is equal to one millionth of a molar or 10^[-6] M.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">micromolar</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000065 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000065">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000061"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of molarity which is equal to one thousandth of one millionth of a molar or 10^[-9] M.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">nanomolar</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000066 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000066">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000061"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of molarity which is equal to 10^[-12] M.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">picomolar</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000073 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000073">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000061"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of molarity which is equal to 10^[-15] M.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">femtomolar</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000080 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000080">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000047"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A square meter is an area unit which is equal to an area enclosed by a square with sides each 1 meter long.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An area unit which is equal to an area enclosed by a square with sides each 1 meter long.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">square meter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000095 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000095">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which is a standard measure of the amount of space occupied by any substance, whether solid, liquid, or gas.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the amount of space occupied by any substance, whether solid, liquid, or gas.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume unit is a derived unit which is a standard measure of the amount of space occupied by any substance, whether solid, liquid, or gas.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">volume unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000097 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000097">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000095"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A cubic centimeter is a volume unit which is equal to one millionth of a cubic meter or 10^[-9] m^[3], or to 1 ml.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume unit which is equal to one millionth of a cubic meter or 10^[-9] m^[3], or to 1 ml.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">cubic centimeter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000098 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000098">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000095"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A milliliter is a volume unit which is equal to one thousandth of a liter or 10^-3 L, or to 1 cubic centimeter.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume unit which is equal to one thousandth of a liter or 10^[-3] L, or to 1 cubic centimeter.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000099 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000099">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000095"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A liter is a volume unit which is equal to one thousandth of a cubic meter or 10^-3 m^3, or to 1 decimeter.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume unit which is equal to one thousandth of a cubic meter or 10^[-3] m^[3], or to 1 decimeter.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">liter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000101 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000101">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000095"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A microliter is a volume unit which is equal to one millionth of a liter or 10^-6 L.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume unit which is equal to one millionth of a liter or 10^[-6] L.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000102 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000102">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000095"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A nanoliter is a volume unit which is equal to one thousandth of one millionth of a liter or 10^-9 L.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume unit which is equal to one thousandth of one millionth of a liter or 10^[-9] L.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">nanoliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000103 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000103">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000095"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A picoliter is a volume unit which is equal to 10^-12 L.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume unit which is equal to 10^[-12] L.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">picoliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000104 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000104">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000095"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A femtoliter is a volume unit which is equal to 10^-15 L.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume unit which is equal to 10^[-12] L.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">femtoliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000109 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000109">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy>A unit which is a standard measure of the force applied to a given area.</rdfs:isDefinedBy>
-        <rdfs:label>pressure unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000115 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000115">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy>A unit which is a standard measure of the luminous flux incident on a unit area.</rdfs:isDefinedBy>
-        <rdfs:label>illuminance unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000116 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000116">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000115"/>
-        <rdfs:isDefinedBy>An illuminance unit which is equal to the illuminance produced by 1 lumen evenly spread over an area 1 meter squared.</rdfs:isDefinedBy>
-        <rdfs:label>lux</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000121 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000121">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000000"/>
-        <rdfs:isDefinedBy>A unit which is a standard measure of the figure or space formed by the junction of two lines or planes.</rdfs:isDefinedBy>
-        <rdfs:label>angle unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000126 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000126">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which represents a standard measurement of temperature in a particular temperature scale.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dervied temperature unit is a derived unit which represents a standard measurement of temperature in a particular temperature scale.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the average kinetic energy of the particles in a sample of matter.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">derived temperature unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000127 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000127">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which is a standard measure of the amount of radiation emitted by a given radiation source as well as the amount of radiation absorbed or deposited in a specific material by a radiation source.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the amount of radiation emitted by a given radiation source as well as the amount of radiation absorbed or deposited in a specific material by a radiation source.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">radiation unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000129 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000129">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000127"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which is a standard measure of the energy imparted by ionizing radiation to unit mass of matter such as tissue.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the energy imparted by ionizing radiation to unit mass of matter such as tissue.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">absorbed dose unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000134 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000134">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000129"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An absorbed dose unit which is equal to the absorption of one joule of radiation energy by one kilogram of matter.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Gray</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000135 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000135">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000127"/>
-        <rdfs:isDefinedBy>An absorbed dose unit which is equal to 0.01 gray (Gy).</rdfs:isDefinedBy>
-        <rdfs:label>rad</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000149 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000149">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which is a standard measure of the dimension in which events occur in sequence.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dervied time unit is a derived unit which is a standard measure of the dimension in which events occur in sequence.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the dimension in which events occur in sequence.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">derived time unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000160 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000160">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000127"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microeinstein per square meter per second</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000163 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000163">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000187"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dimensionless concentration unit which denotes the mass of a substance in a mixture as a percentage of the mass of the entire mixture.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">mass percent</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000165 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000165">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000187"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dimensionless concentration unit which denotes the volume of the solute in mL per 100 mL of the resulting solution.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">volume percent</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000169 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000169">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000186"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dimensionless concentration notation which denotes the amount of a given substance in a total amount of 1,000,000 regardless of the units of measure used as long as they are the same or 1 part in 10^[6].</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">part per million</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000170 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000170">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000186"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dimensionless concentration notation which denotes the amount of a given substance in a total amount of 1,000,000,000 regardless of the units of measure as long as they are the same or 1 part in 10^[9].</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">part per billion</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000175 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000175">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000182"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A gram per liter is a density unit which is equal to mass of an object in grams divided by the volume in liters.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit density which is equal to mass of an object in grams divided by the volume in liters.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">gram per liter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000176 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000176">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000182"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A mass unit density which is equal to mass of an object in milligrams divided by the volume in milliliters.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A milligram per milliliter is a density unit which is equal to mass of an object in milligrams divided by the volume in milliliters.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milligram per milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000178 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000178">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000186"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">unit per milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000182 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000182">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A density unit is a derived unit which is a standard measure of the influence exerted by some mass.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which is a standard measure of the influence exerted by some mass.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of the influence exerted by some mass.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">density unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000185 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000185">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000121"/>
-        <rdfs:isDefinedBy>A decimal degree (in full, a degree of arc, arc degree, or arcdegree), usually denoted by ° (the degree symbol), is a measurement of planeangle is a plane angle unit which is equal to 1/360 of a full rotation or 1.7453310^[-2] rad.</rdfs:isDefinedBy>
-        <rdfs:label xml:lang="en">degree</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000186 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000186">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A derived unit which is a standard measure of physical quantity consisting of only a numerical number without any units.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit which is a standard measure of physical quantity consisting of only a numerical number without any units.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">dimensionless unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000187 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000187">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000186"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dimensionless ratio unit which denotes numbers as fractions of 100.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">percent</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000189 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000189">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000000"/>
-        <rdfs:isDefinedBy>A dimensionless unit which denotes a simple count of things.</rdfs:isDefinedBy>
-        <rdfs:label xml:lang="en">count unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000191 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000191">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000186"/>
-        <rdfs:isDefinedBy>Definition: A dimensionless ratio unit which relates the part (the numerator) to the whole (the denominator). [Wikipedia]</rdfs:isDefinedBy>
-        <rdfs:label>fraction</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000195 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000195">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000126"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A temperature derived unit which is equal to 5/9ths of a kelvin. Negative 40 degrees Fahrenheit is equal to negative 40 degrees Celsius.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A temperature unit which is equal to 5/9ths of a kelvin. Negative 40 degrees Fahrenheit is equal to negative 40 degrees Celsius.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">degree fahrenheit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000198 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000198">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milliliter per kilogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000200 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000200">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy>A concentration unit which denotes the average cell number in a given volume.</rdfs:isDefinedBy>
-        <rdfs:label>cell concentration unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000201 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000201">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000200"/>
-        <rdfs:isDefinedBy>A unit of cell concentration which is equal to one cell in a volume of 1 milliliter.</rdfs:isDefinedBy>
-        <rdfs:label>cells per milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000207 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000207">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A milliliter per liter is a unit of concentrationdefined as a volume per unit volume unit which is equal to one millionth of a liter of solute in one liter of solution.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume per unit volume unit which is equal to one millionth of a liter of solute in one liter of solution.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milliliter per liter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000209 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000209">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000095"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A deciliter is a volume unit which is equal to one tenth of a liter or 10^-1 L.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A volume unit which is equal to one tenth of a liter or 10^[-1] L.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">deciliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000210 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000210">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000189"/>
-        <rdfs:label xml:lang="en">colony forming unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000213 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000213">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000189"/>
-        <rdfs:isDefinedBy>A colony forming unit which a measure of viable bacterial numbers in one milliliter.</rdfs:isDefinedBy>
-        <rdfs:label xml:lang="en">colony forming unit per milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000221 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000221">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000002"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dalton is a mass unit is an independent unit to the base SI units and is equal to one twelfth of the mass of an unbound atom of the carbon-12 nuclide, at rest and in its ground state.</rdfs:isDefinedBy>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An independently to the base SI units defined mass unit which is equal to one twelfth of the mass of an unbound atom of the carbon-12 nuclide, at rest and in its ground state.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">dalton</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000273 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000273">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milligram per liter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000274 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000274">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000182"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microgram per milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000275 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000275">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000182"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">nanogram per milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://purl.obolibrary.org/obo/UO_0000301 -->
-
-    <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000301">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000182"/>
-        <rdfs:isDefinedBy>A mass unit density which is equal to mass of an object in micrograms divided by the volume in liters.</rdfs:isDefinedBy>
-        <rdfs:label>microgram per liter</rdfs:label>
-    </owl:Class>
-    
-
-
     <!-- http://purl.obolibrary.org/obo/UPHENO_0001001 -->
 
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/UPHENO_0001001">
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000005"/>
         <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A (combination of) quality(ies) of an organism determined by the interaction of its genetic make-up and environment that differentiates specific instances of a species from other instances of the same species</rdfs:isDefinedBy>
         <rdfs:label>Phenotype</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0001703 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0001703">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dervied mass unit is a derived unit which is a measure of the the amount of matter/energy of a physical object, derived from the base unit for mass.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">derived mass unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0001721 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0001721">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000001"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A femtometer is a length unit which is equal to 1m x 10^-15.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">femtometer</rdfs:label>
     </owl:Class>
     
 
@@ -1634,360 +568,6 @@
         <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001742"/>
         <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Publication published in a journal.</rdfs:isDefinedBy>
         <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Published</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002897 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002897">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of a mass fraction expressed as a number of grams of substance per kilogram of mixture. Gram per kilogram is also used as a dose calculation unit to express a quantity of substance in grams per one kilogram of body mass.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">gram per kilogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002898 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002898">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0001703"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">gram per meter squared</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002899 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002899">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of a mass fraction expressed as a number of micrograms of substance per kilogram of mixture. The unit is also used as a dose calculation unit.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microgram per kilogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002900 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002900">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000055"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">micromole per kilogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002901 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002901">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000055"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of concentration (molarity unit) equal to one one-millionth of a mole (10E-6 mole) of solute per one liter of solution.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">micromole per liter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002902 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002902">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000061"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dose unit which is equal to 1 milligram of a toxic or pharmaceutical substance per kilogram body weight of the recipient subject.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milligram per kilogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002904 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002904">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000187"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">weight percent</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002927 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002927">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000000"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">International Unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002928 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002928">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000186"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of arbitrary substance concentration (biologic activity concentration) defined as the concentration of one international unit per one milliliter of system volume.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">International Unit per milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002929 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002929">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000186"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dose calculation unit expressed in microgram(s) per kilogram per period of time equal to twenty-four hours.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microgram per kilogram per day</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002930 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002930">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000186"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dosage unit which is equal to 1 milligram per day of a toxic or pharmaceutical substance per kilogram body weight of the recipient subject.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milligram per kilogram per day</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0002931 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0002931">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000186"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">An arbitrary unit of substance content expressed in units of biological activity per unit of mass equal to one kilogram. Unit per kilogram is also used as a dose calculation unit expressed in arbitrary units per one kilogram of body mass.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">unit per kilogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004368 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004368">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000000"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Number of molecules</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004370 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004370">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A metric unit of areal density equal to approximately 2.94935E-4 ounce per square yard. Also used as a dose calculation unit.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microgram per square centimeter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004371 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004371">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dose administration rate unit equal to the rate at which one gram of a product per kilogram of body mass is delivered or administered over the period of one day.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">gram per kilogram per day</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004373 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004373">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A dose unit which is equal to 1 milligram of a toxic or pharmaceutical substance per square meter of surface area of the recipient subject.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milligram per square meter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004374 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004374">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of mass concentration defined as the concentration of one milligram of a substance in unit volume of the mixture equal to one cubic deciliter or 100 cubic centimeters. It is also a unit of mass density (volumic mass) defined as the density of substance which mass equal to one milligram occupies the volume one cubic deciliter or 100 cubic centimeters.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milligram per deciliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004378 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004378">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of mass flow rate equivalent to the rate at which one millionth of a gram of matter crosses a given surface or is delivered to a given object or space over a period of time equal to twenty four hours. Microgram per 24 hours is also a dose administration rate unit equal to the rate at which one millionth of a gram of a product is administered per unit of time equal to twenty four hours.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microgram per day</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004379 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004379">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000000"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milli-International Unit per milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004381 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004381">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000055"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of concentration (molarity unit) equal to one mole of solute per one liter of solution.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">mole per liter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004382 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004382">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of mass concentration defined as the concentration of one nanogram of a substance per one liter of the mixture, or one picogram of a substance per unit volume of the mixture equal to one milliliter, or one microgram of a substance per one cubic meter of the mixture. The concept also refers to the metric unit of mass density (volumic mass) defined as the density of a substance which mass equal to one nanogram occupies the volume of one liter.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">nanogram per liter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004383 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004383">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">nanogram per microliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004384 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004384">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">weight percent by volume</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004385 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004385">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">picogram per milliliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004386 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004386">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">total particulate matter per liter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004387 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004387">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000001"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A tidal island.</rdfs:isDefinedBy>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">inch</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004388 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004388">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">picomole per 10^6 cells</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004413 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004413">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">microliter per liter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004414 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004414">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000007"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">joule per square meter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004418 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004418">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000046"/>
-        <rdfs:isDefinedBy>A unit which measures substance that passes through or onto a given area per unit of time.</rdfs:isDefinedBy>
-        <rdfs:label>unit of flow rate</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004419 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004419">
-        <rdfs:subClassOf rdf:resource="http://www.ebi.ac.uk/efo/EFO_0004418"/>
-        <rdfs:isDefinedBy>A unit of mass flow rate equivalent to the rate at which one thousandth of a gram of matter crosses a given surface or is delivered to a given object or space over a period of time equal to twenty four hours. Milligram per twenty four hours is also a dose administration rate unit equal to the rate at which one thousandth of a gram of a product is administered per unit of time equal to twenty four hours.</rdfs:isDefinedBy>
-        <rdfs:label>milligram per day</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0004427 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0004427">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000007"/>
-        <rdfs:isDefinedBy rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A unit of radiant exposure equal to radiant energy of one joule arriving upon a surface area of one square centimeter. The unit is also used for measurement of output of the energy-emitting source.</rdfs:isDefinedBy>
-        <rdfs:label>joule per square centimeter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0005212 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0005212">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000109"/>
-        <rdfs:isDefinedBy>The standard atmosphere is an international reference pressure defined as 101325 Pa and formerly used as a unit of pressure.</rdfs:isDefinedBy>
-        <rdfs:label xml:lang="en">atmosphere unit</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0005313 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0005313">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">picomole per microliter</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0005314 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0005314">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">femtomole per nanogram</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0005354 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0005354">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">milligram per kilogram body weight</rdfs:label>
-    </owl:Class>
-    
-
-
-    <!-- http://www.ebi.ac.uk/efo/EFO_0007055 -->
-
-    <owl:Class rdf:about="http://www.ebi.ac.uk/efo/EFO_0007055">
-        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000051"/>
-        <rdfs:label>microgram per gram body weight</rdfs:label>
     </owl:Class>
     
 
@@ -4725,38 +3305,30 @@
         <rdfs:label xml:lang="en">MSI:5</rdfs:label>
     </owl:Class>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
-        <rdfs:label>oboInOwl:cjm</rdfs:label>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_alt_id</oboI:hasURI>
+        <rdfs:label>oboFormat:alt_id</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_narrow_synonym</oboI:hasURI>
-        <rdfs:label>oboFormat:narrow_synonym</rdfs:label>
+        <rdfs:label xml:lang="en">An alias in which the alias is broader than the primary class name. Example: cell division is a broad synonym of cytokinesis</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_replaced_by</oboI:hasURI>
-        <rdfs:label>oboFormat:replaced_by</rdfs:label>
+        <rdfs:label xml:lang="en">A relation between a class and an OBO namespace string. OBO namespaces are to be distinguished from IDspaces; for example, biological_process is a namespace, GO is an idspace.</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">a relation between a class and an instance of a oboInOwl:Definition</rdfs:label>
+        <rdfs:label xml:lang="en"></rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
-        <rdfs:label>oboInOwl:cjm</rdfs:label>
+        <rdfs:label xml:lang="en">pseudo-property. in the oboInOwl translation, all obsolete relations are subProperties of this class</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_namespace</oboI:hasURI>
-        <rdfs:label>oboFormat:namespace</rdfs:label>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_version</oboI:hasURI>
+        <rdfs:label>oboFormat:version</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_broad_synonym</oboI:hasURI>
-        <rdfs:label>oboFormat:broad_synonym</rdfs:label>
+        <rdfs:label xml:lang="en">slim</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
-        <rdfs:label>oboInOwl:cjm</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">Gives a term which may be an appropriate substitute for an obsolete term, but needs to be looked at carefully by a human expert before the replacement is done</rdfs:label>
+        <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
@@ -4767,34 +3339,42 @@
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">view</rdfs:label>
+        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_exact_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:exact_synonym</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_default-namespace</oboI:hasURI>
         <rdfs:label>oboFormat:default-namespace</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+        <rdfs:label xml:lang="en">This annotation property groups all synonym types declared in the ontology</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
-        <rdfs:label>oboInOwl:GOC</rdfs:label>
+        <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">slim</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">relation between an ontology and a oboInOwl:Subset, indicating classes in the ontology belong to the subset</rdfs:label>
+        <rdfs:label xml:lang="en">An alias in which the alias exhibits true synonymy. Example: ornithine cycle is an exact synonym of urea cycle</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">An alias in which the alias exhibits true synonymy. Example: ornithine cycle is an exact synonym of urea cycle</rdfs:label>
+        <rdfs:label xml:lang="en">A relation between a class and an alias term.</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
+        <rdfs:label xml:lang="en">relation between an ontology and a oboInOwl:Subset, indicating classes in the ontology belong to the subset</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.geneontology.org/GO.usage.shtml#type</oboI:hasURI>
+        <rdfs:label>URL:http://www.geneontology.org/GO.usage.shtml#type</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
+        <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
@@ -4804,85 +3384,31 @@
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_date</oboI:hasURI>
-        <rdfs:label>oboFormat:date</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">relation between a class and a oboInOwl:Subset, indicating the class belongs (is a member of) the subset</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">Gives a term which replaces an obsolete term. The value is the id of the replacement term. The value of this tag can safely be used to automatically reassign links to an obsolete term. The replaced_by tag may only be specified for obsolete terms. A single obsolete term may have more than one replaced_by tag. This tag can be used in conjunction with the consider tag.</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_related_synonym</oboI:hasURI>
-        <rdfs:label>oboFormat:related_synonym</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
         <rdfs:label>oboInOwl:GOC</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_alt_id</oboI:hasURI>
-        <rdfs:label>oboFormat:alt_id</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_synonym</oboI:hasURI>
-        <rdfs:label>oboFormat:synonym</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">An alias in which the alias is narrower than the primary class name. Example: pyrimidine-dimer repair by photolyase is a narrow synonym of photoreactive repair</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
-        <rdfs:label>oboInOwl:GOC</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">An alias in which the alias is broader than the primary class name. Example: cell division is a broad synonym of cytokinesis</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_xref</oboI:hasURI>
-        <rdfs:label>oboFormat:xref</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">An alias in which the alias is related the primary class name, but not necessarily broader or narrower. Example: cytochrome bc1 complex is a related synonym of ubiquinol-cytochrome-c reductase activity; virulence is a related synonym of pathogenesis</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">A grouping of terms from an ontology or ontologies. Note that this is not a metaclass - classes are linked to subsets via oboInOwl:inSubset</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subset</oboI:hasURI>
-        <rdfs:label>oboFormat:subset</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
-        <rdfs:label>oboInOwl:cjm</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
-        <rdfs:label>oboInOwl:cjm</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
-        <rdfs:label>oboInOwl:GOC</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">An alternative identifier for this class; should follow ID syntax. These can result from class merges</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_saved_by</oboI:hasURI>
-        <rdfs:label>oboFormat:saved_by</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboI:hasURI>
-        <rdfs:label>oboFormat:subsetdef</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_def</oboI:hasURI>
         <rdfs:label>oboFormat:def</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
+        <rdfs:label>oboInOwl:cjm</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_consider</oboI:hasURI>
+        <rdfs:label>oboFormat:consider</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">a relation between a class and an instance of a oboInOwl:Definition</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
         <rdfs:label>oboInOwl:GOC</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_replaced_by</oboI:hasURI>
+        <rdfs:label>oboFormat:replaced_by</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
@@ -4893,64 +3419,118 @@
         <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+        <rdfs:label xml:lang="en">Gives a term which may be an appropriate substitute for an obsolete term, but needs to be looked at carefully by a human expert before the replacement is done</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
-        <rdfs:label>oboInOwl:GOC</rdfs:label>
+        <rdfs:label xml:lang="en">partition</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_consider</oboI:hasURI>
-        <rdfs:label>oboFormat:consider</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">This annotation property groups all subsets declared in the ontology</rdfs:label>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_broad_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:broad_synonym</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_is_cyclic</oboI:hasURI>
         <rdfs:label>oboFormat:is_cyclic</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">partition</rdfs:label>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_namespace</oboI:hasURI>
+        <rdfs:label>oboFormat:namespace</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_version</oboI:hasURI>
-        <rdfs:label>oboFormat:version</rdfs:label>
+        <rdfs:label xml:lang="en">This annotation property groups all subsets declared in the ontology</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">pseudo-property. in the oboInOwl translation, all obsolete relations are subProperties of this class</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en"></rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">A relation between a class and an OBO namespace string. OBO namespaces are to be distinguished from IDspaces; for example, biological_process is a namespace, GO is an idspace.</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">This annotation property groups all synonym types declared in the ontology</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_exact_synonym</oboI:hasURI>
-        <rdfs:label>oboFormat:exact_synonym</rdfs:label>
+        <rdfs:label xml:lang="en">view</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
+        <rdfs:label>oboInOwl:GOC</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.geneontology.org/GO.usage.shtml#type</oboI:hasURI>
-        <rdfs:label>URL:http://www.geneontology.org/GO.usage.shtml#type</rdfs:label>
+        <rdfs:label xml:lang="en">An alias in which the alias is related the primary class name, but not necessarily broader or narrower. Example: cytochrome bc1 complex is a related synonym of ubiquinol-cytochrome-c reductase activity; virulence is a related synonym of pathogenesis</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <rdfs:label xml:lang="en">A relation between a class and an alias term.</rdfs:label>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_xref</oboI:hasURI>
+        <rdfs:label>oboFormat:xref</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
+        <rdfs:label>oboInOwl:cjm</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
+        <rdfs:label>oboInOwl:cjm</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subset</oboI:hasURI>
+        <rdfs:label>oboFormat:subset</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">A grouping of terms from an ontology or ontologies. Note that this is not a metaclass - classes are linked to subsets via oboInOwl:inSubset</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboI:hasURI>
+        <rdfs:label>oboFormat:subsetdef</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_saved_by</oboI:hasURI>
+        <rdfs:label>oboFormat:saved_by</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">An alternative identifier for this class; should follow ID syntax. These can result from class merges</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
         <rdfs:label>oboInOwl:GOC</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_narrow_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:narrow_synonym</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
+        <rdfs:label>oboInOwl:cjm</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
+        <rdfs:label>oboInOwl:GOC</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_date</oboI:hasURI>
+        <rdfs:label>oboFormat:date</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
+        <rdfs:label>oboInOwl:GOC</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_related_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:related_synonym</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">Gives a term which replaces an obsolete term. The value is the id of the replacement term. The value of this tag can safely be used to automatically reassign links to an obsolete term. The replaced_by tag may only be specified for obsolete terms. A single obsolete term may have more than one replaced_by tag. This tag can be used in conjunction with the consider tag.</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">relation between a class and a oboInOwl:Subset, indicating the class belongs (is a member of) the subset</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
+        <rdfs:label>oboInOwl:GOC</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">An alias in which the alias is narrower than the primary class name. Example: pyrimidine-dimer repair by photolyase is a narrow synonym of photoreactive repair</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:synonym</rdfs:label>
     </rdf:Description>
     
 

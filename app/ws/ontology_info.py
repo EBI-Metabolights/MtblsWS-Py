@@ -218,7 +218,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
             result += cls
 
     else:  # term = None
-        if branch not in [None, '']:  # term = 0, branch = 1, return whole ontology
+        if branch not in [None, '']:  # term = 0, branch = 1, return whole ontology branch
             logger.info("Search Metabolights ontology whole {branch} branch ... ".format(branch=branch))
             print("Search Metabolights ontology whole {branch} branch ... ".format(branch=branch))
 
@@ -286,6 +286,11 @@ def getMetaboTerm(keyword, branch, mapping=''):
             res += OLSbranchSearch('*', 'chromatography', 'chmo')
         else:
             res += OLSbranchSearch(keyword, 'chromatography', 'chmo')
+    elif branch == 'unit':
+        if keyword in [None, '']:
+            res += OLSbranchSearch('*', 'unit', 'uo')
+        else:
+            res += OLSbranchSearch(keyword, 'unit', 'uo')
 
     return res
 
