@@ -38,7 +38,7 @@ query_all_studies = """
     select * from (
         select 
           s.acc, 
-          string_agg(u.firstname || ' ' || u.lastname, ', ') as username, 
+          string_agg(u.firstname || ' ' || u.lastname, ', ' order by lastname) as username, 
           to_char(s.releasedate, 'YYYYMMDD') as release_date,
           to_char(s.updatedate, 'YYYYMMDD') as update_date, 
           case when s.status = 0 then 'Submitted' 

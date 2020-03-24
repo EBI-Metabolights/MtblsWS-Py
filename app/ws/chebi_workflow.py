@@ -47,6 +47,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
+from app.ws.mtblsStudy import write_audit_files
 
 logger = logging.getLogger('wslog_chebi')
 
@@ -383,7 +384,8 @@ def get_sample_details(study_id, user_token, study_location):
 def convert_to_chebi_onto(onto_term):
     # Example: http://purl.bioontology.org/ontology/NCBITAXON/39414
     chebi_onto = onto_term.lower().replace("ncbitaxon/", "ncbitaxon:")
-    chebi_onto = chebi_onto.rsplit('/', 1)[1]  # Only keep the final part of the URL
+    if chebi_onto:
+        chebi_onto = chebi_onto.rsplit('/', 1)[1]  # Only keep the final part of the URL
     chebi_onto = chebi_onto.replace("ncbitaxon:", "ncbi:").replace("_", ":").replace('txid', '').upper()
     chebi_onto = chebi_onto.replace('NCBI:', 'NCBI:txid')
     return chebi_onto
@@ -402,14 +404,16 @@ def populate_sample_rows(pubchem_df, study_id, user_token, study_location):
 
     # For simplicy extend the list to the same length as the dataframe
     all_organisms = duplicate(all_organisms, pubchem_len)
-
+    org_pos = newdf.columns.get_loc('ORGANISM')
+    org_part_pos = newdf.columns.get_loc('ORGANISM_PART')
+    strain_pos = newdf.columns.get_loc('STRAIN')
     for idx, row in newdf.iterrows():   # Loop and add the different unique sample rows
         if row[0] == "":  # Only add if database is not known
             s_row = all_organisms[idx]
             org_parts = s_row.split('|')
-            newdf.iloc[idx, get_idx('ORGANISM')] = org_parts[0]
-            newdf.iloc[idx, get_idx('ORGANISM_PART')] = org_parts[1]
-            newdf.iloc[idx, get_idx('STRAIN')] = org_parts[2]
+            newdf.iloc[idx, [org_pos,org_part_pos,strain_pos]] = org_parts[0], org_parts[1], org_parts[2]
+            # newdf.iloc[idx, org_part_pos] = org_parts[1]
+            # newdf.iloc[idx, strain_pos] = org_parts[2]
 
             combination = org_parts[3]
             if organism_len > 1 and combination:
@@ -1920,6 +1924,9 @@ class ChEBIPipeLine(Resource):
         run_on_cluster = True if run_on_cluster == 'true' else False
         update_study_maf = args['update_study_maf']
         update_study_maf = True if update_study_maf == 'true' else False
+
+        logger.info('Creating a new study audit folder for study %s', study_id)
+        audit_status, dest_path = write_audit_files(study_location)
 
         cmd = ""
         if run_on_cluster:

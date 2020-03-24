@@ -985,10 +985,16 @@ class StudyContacts(Resource):
             return sch.dump(obj_list, many=True)
         else:
             # return a single obj
-            logger.info('Contact full_name' + full_name)
+            if full_name:
+                logger.info('Contact full_name ' + full_name)
+            if email:
+                logger.info('Email ' + email)
             found = False
             for index, obj in enumerate(obj_list):
-                if obj.email == email or obj.first_name + obj.last_name == full_name:
+                if email and obj.email == email:
+                    found = True
+                    break
+                if full_name and obj.first_name + obj.last_name == full_name:
                     found = True
                     break
 

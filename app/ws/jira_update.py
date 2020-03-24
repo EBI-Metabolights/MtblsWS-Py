@@ -102,6 +102,7 @@ def update_or_create_jira_issue(user_token, is_curator):
         params = app.config.get('JIRA_PARAMS')
         user_name = params['username']
         password = params['password']
+        default_curator = 'metabolights-api'
 
         updated_studies = []
         try:
@@ -142,7 +143,7 @@ def update_or_create_jira_issue(user_token, is_curator):
             # date is 'YYYY-MM-DD HH24:MI'
             due_date = status_change[:10]
 
-            logger.info('Updating Jira ticket/Google Calendar for ' + study_id + '. Values: ' +
+            logger.info('Updating Jira ticket for ' + study_id + '. Values: ' +
                         user_name + '|' + release_date + '|' + update_date + '|' + study_status + '|' +
                         curator + '|' + status_change + '|' + due_date)
 
@@ -166,11 +167,16 @@ def update_or_create_jira_issue(user_token, is_curator):
                 continue
 
             summary = issue.fields.summary  # Follow pattern 'MTBLS123 - YYYYMMDD - Status'
+
+            if not summary.startswith('MTBLS'):
+                continue  # Skip all cases that are not related the study accession numbers
+
             try:
                 assignee = issue.fields.assignee.name
             except:
                 assignee = ""
 
+            assignee_changed = False
             valid_curator = False
             jira_curator = ""
             if curator:
@@ -180,13 +186,21 @@ def update_or_create_jira_issue(user_token, is_curator):
                 elif curator.lower() == 'keeva':
                     jira_curator = 'keeva'
                     valid_curator = True
+                elif curator.lower() == 'xuefei' or curator.lower() == 'reza':
+                    jira_curator = default_curator  # We do not have a current curation listed in the log
+                    valid_curator = True
+
+                assignee_changed = True if assignee != jira_curator else False
             else:
                 jira_curator = ""
 
             if not status_change:
                 status_change = "No status changed date reported"
             # Release date or status has changed, or the assignee (curator) has changed
-            if summary.startswith('MTBLS') and (summary != new_summary or assignee != jira_curator):
+
+            summary_changed = True if summary != new_summary else False
+            curator_update = True if assignee != default_curator and jira_curator != default_curator else False
+            if assignee_changed or summary_changed:
 
                 # Add "Curation" Epic
                 issues_to_add = [issue.key]
@@ -196,13 +210,22 @@ def update_or_create_jira_issue(user_token, is_curator):
                 # Add a comment to the issue.
                 comment_text = 'Current status ' + study_status + '. Status last changed date ' + status_change + \
                                '. Curation due date ' + due_date + '. Database update date ' + update_date
+                if jira_curator == default_curator:
+                    comment_text = comment_text + '. Default curator has been changed from "' \
+                                   + curator + '" to "' + default_curator + '"'
+                if assignee_changed:
+                    comment_text = comment_text + '. Curator in Jira changed from "' + assignee + '" to "' + jira_curator + '"'
+
+                if summary_changed:
+                    comment_text = comment_text + '. Summary in Jira changed from "' + summary + '" to "' + new_summary + '"'
+
                 jira.add_comment(issue, comment_text)
 
                 # Change the issue's summary, comments and description.
                 issue.update(summary=new_summary, fields={"labels": labels}, notify=False)
 
-                if valid_curator:  # ToDo, what if the curation log is not up to date?
-                    issue.update(assignee={'name': jira_curator})
+                # if valid_curator:  # ToDo, what if the curation log is not up to date?
+                issue.update(assignee={'name': jira_curator}, notify=False)
 
                 updated_studies.append(study_id)
                 logger.info('Updated Jira case for study ' + study_id)

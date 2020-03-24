@@ -598,6 +598,10 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     warning_found = False
     validation_section = validation_section.lower()
 
+    # Ensuring we have the latest database values
+    is_curator, read_access, write_access, db_obfuscation_code, db_study_location, db_release_date, \
+        db_submission_date, db_study_status = wsc.get_permissions(study_id, user_token)
+
     try:
         validation_schema_file = app.config.get('VALIDATIONS_FILE')
 
@@ -624,7 +628,8 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
 
     # Validate basic ISA-Tab structure
     isa_study, isa_inv, isa_samples, std_path, status, amber_warning, isa_validation, inv_file, s_file, assay_files = \
-        validate_basic_isa_tab(study_id, user_token, study_location, override_list, log_category=log_category)
+        validate_basic_isa_tab(
+            study_id, user_token, study_location, db_release_date, override_list, log_category=log_category)
     all_validations.append(isa_validation)
     if not status:
         error_found = True
@@ -925,7 +930,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             if len(header) == 0:
                 add_msg(validations, val_section,
                         "Assay sheet '" + assay.filename + "' has empty column header(s)",
-                        error, assay.filename, val_sequence=2.1, log_category=log_category)
+                        error, assay.filename, val_sequence=2.11, log_category=log_category)
 
             if 'Term ' not in header and 'Protocol REF' not in header and 'Unit' not in header:
                 assays.append(header)
@@ -950,7 +955,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 else:
                     add_msg(validations, val_section,
                             "Assay sheet '" + assay.filename + "' column '" + template_header + "' is in the correct position for assay type " + assay_type,
-                            success, assay.filename, val_sequence=2.2, log_category=log_category)
+                            success, assay.filename, val_sequence=2.21, log_category=log_category)
 
                 if template_header not in assay_header:
                     msg_type = error
@@ -998,7 +1003,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                 add_msg(validations,
                                         val_section, "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing some values. " +
                                         str(col_rows) + " rows found, but there should be " + str(all_rows),
-                                        val_type, assay.filename, val_sequence=4, log_category=log_category)
+                                        val_type, assay.filename, val_sequence=4.1, log_category=log_category)
                         else:
                             add_msg(validations, val_section,
                                     "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
@@ -1006,8 +1011,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
                 except Exception as e:
                     add_msg(validations, val_section,
-                            "Assay sheet '" + assay.filename + "' is missing rows for column '" + a_header + "'",
-                            error, assay.filename, val_sequence=6, log_category=log_category)
+                            "Assay sheet '" + assay.filename + "' is missing rows for column '" + a_header + "' " +
+                            str(e), error, assay.filename, val_sequence=6, log_category=log_category)
 
             # We validate all file columns separately here
             validations, all_assay_raw_files = check_all_file_rows(assays, assay_df, validations, val_section,
@@ -1016,10 +1021,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             if all_assay_names:
                 if len(all_assay_names) < all_rows:
                     add_msg(validations, val_section, "MS/NMR Assay name column should only contain unique values",
-                            warning, assay.filename, val_sequence=4.1, log_category=log_category)
+                            warning, assay.filename, val_sequence=4.11, log_category=log_category)
                 else:
                     add_msg(validations, val_section, "MS/NMR Assay name column only contains unique values",
-                            success, assay.filename, val_sequence=4.1, log_category=log_category)
+                            success, assay.filename, val_sequence=4.12, log_category=log_category)
 
         # Correct MAF?
         if header.lower() == 'metabolite assignment file':
@@ -1038,13 +1043,13 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     for sample_name in sample_name_list:
         if sample_name not in all_assays:
             add_msg(validations, val_section, "Sample name '" + str(sample_name) + "' is not used in any assay",
-                    info, val_sequence=7, log_category=log_category)
+                    warning, val_sequence=7, log_category=log_category)
 
     sample_len = len(sample_name_list)
     if all_assay_rows < sample_len:
-        add_msg(validations, val_section, "There are more sample rows (" + str(sample_len)
-                + ") than assay rows (" + str(all_assay_rows) + "), must be the same or more",
-                error, val_sequence=7.7, log_category=log_category)
+        add_msg(validations, val_section, "There are more unique sample rows (" + str(sample_len)
+                + ") than unique assay rows (" + str(all_assay_rows) + "), must be the same or more",
+                error, val_sequence=8, log_category=log_category)
 
     for files in unique_file_names:
         file_name = files.split('|')[0]
@@ -1053,7 +1058,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                                          assay_file_list=all_assay_raw_files)
         # if status:
         #     add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
-        #             + column_name + "'", success, descr=file_description, val_sequence=8, log_category=log_category)
+        #             + column_name + "'", success, descr=file_description, val_sequence=8.1, log_category=log_category)
         # else:
         if not status:
             err_msg = "File '" + file_name + "'"
@@ -1194,7 +1199,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                     val_section, value="", val_sequence=7, log_category=log_category)
         else:
             add_msg(validations, val_section, "No raw or derived files found", error, val_section,
-                    value="", val_sequence=7, log_category=log_category)
+                    value="", val_sequence=7.1, log_category=log_category)
     elif not raw_file_found and derived_file_found:
         add_msg(validations, val_section, "No raw files found, but there are derived files", warning, val_section,
                 value="", descr="Ideally you should provide both raw and derived files",
@@ -1311,7 +1316,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                         info, file_name, val_sequence=4, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Sample name column contains unique values",
-                        success, file_name, val_sequence=4, log_category=log_category)
+                        success, file_name, val_sequence=4.1, log_category=log_category)
 
     if human_found:
         add_msg(validations, val_section,
@@ -1377,7 +1382,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                         warning, file_name, val_sequence=1, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name + "' match the protocol type definition",
-                        success, file_name, val_sequence=1, log_category=log_category)
+                        success, file_name, val_sequence=1.1, log_category=log_category)
 
             if prot_val_name != isa_prot_name:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
@@ -1386,7 +1391,7 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
             else:
                 add_msg(validations, val_section, "Protocol '" + isa_prot_name +
                         "' is in the correct position and name has correct case/spelling",
-                        success, file_name, val_sequence=2, log_category=log_category)
+                        success, file_name, val_sequence=2.1, log_category=log_category)
         except IndexError:
             add_msg(validations, val_section, "Could not find all required protocols '" + all_prots + "' for " +
                     term_type, error, file_name, val_sequence=3, log_category=log_category)
@@ -1691,7 +1696,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                     add_msg(validations, val_section, "Found the publication status",
                             success, file_name, val_sequence=19, log_category=log_category)
                 else:
-                    add_msg(validations, val_section, status_val_error, success, file_name,
+                    add_msg(validations, val_section, status_val_error, error, file_name,
                             value=pub_status.title, descr=status_val_description,
                             val_sequence=20, log_category=log_category)
     else:
@@ -1700,7 +1705,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
     return return_validations(val_section, validations, override_list)
 
 
-def validate_basic_isa_tab(study_id, user_token, study_location, override_list, log_category=error):
+def validate_basic_isa_tab(study_id, user_token, study_location, release_date, override_list, log_category=error):
     validates = True
     amber_warning = False
     validations = []
@@ -1728,7 +1733,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
                         inv_file_name, val_sequence=1.1, log_category=log_category)
             except Exception as e:
                 add_msg(validations, val_section, "Could not load the minimum ISA-Tab files " + str(e), error,
-                        inv_file_name, val_sequence=1.2, log_category=log_category)
+                        inv_file_name, val_sequence=1.11, log_category=log_category)
         else:
             add_msg(validations, val_section, "Could not load the minimum ISA-Tab files", error,
                     inv_file_name, val_sequence=1.2, log_category=log_category)
@@ -1825,7 +1830,16 @@ def validate_basic_isa_tab(study_id, user_token, study_location, override_list, 
                         "URL's containing # will not load properly, please change to '%23'",
                         warning, 'i_Investigation.txt', val_sequence=17.1, log_category=log_category)
 
-
+            if isa_study.public_release_date:
+                public_release_date = isa_study.public_release_date
+                if public_release_date != release_date:
+                    add_msg(validations, val_section,
+                            "The public release date in the investigation file " +
+                            public_release_date + " is not the same as the database release date " +
+                            release_date, warning, file_name, val_sequence=19.2, log_category=log_category)
+            else:
+                add_msg(validations, val_section, "Could not find the public release date in the investigation file",
+                        warning, file_name, val_sequence=19.1, log_category=log_category)
     else:
         add_msg(validations, "ISA-Tab", "Could not find or read the investigation file",
                 error, inv_file_name, val_sequence=18, log_category=log_category)
