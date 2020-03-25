@@ -269,13 +269,13 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
 
     if len(file_name) == 0:
         add_msg(validations, val_section, "Please add a Metabolite Annotation File name '" + file_name + "'",
-                error, val_sequence=10, log_category=log_category)
+                error, val_sequence=1, log_category=log_category)
 
     try:
         maf_df = read_tsv(maf_name)
     except:
         add_msg(validations, val_section, "Could not find or read Metabolite Annotation File '" + file_name + "'",
-                error, val_sequence=11, log_category=log_category)
+                error, val_sequence=2, log_category=log_category)
 
     all_rows = maf_df.shape[0]
     if all_rows == 1:
@@ -285,7 +285,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
             if row["database_identifier"] == '0' and not row["chemical_formula"]:
                 add_msg(validations, val_section,
                         "Incomplete Metabolite Annotation File '" + file_name + "'",
-                        error, descr="Please complete the MAF", val_sequence=11.1, log_category=log_category)
+                        error, descr="Please complete the MAF", val_sequence=3, log_category=log_category)
 
     incorrect_pos = False
     incorrect_message = ""
@@ -303,12 +303,12 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 maf_messages(col[idx], idx, incorrect_pos, maf_header, incorrect_message, validations, file_name)
 
         if incorrect_pos:
-            add_msg(validations, val_section, incorrect_message, error, val_sequence=3, log_category=log_category)
+            add_msg(validations, val_section, incorrect_message, error, val_sequence=4, log_category=log_category)
         else:
             add_msg(validations, val_section,
                     "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and "
                     "'metabolite_identification' found in the correct column position in '" + file_name + "'",
-                    success, val_sequence=4.2, log_category=log_category)
+                    success, val_sequence=4.1, log_category=log_category)
 
         try:
             if is_ms and maf_header['mass_to_charge']:
@@ -340,7 +340,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                             warning, val_sequence=8, log_category=log_category)
     else:
         add_msg(validations, val_section, "MAF '" + file_name + "' is empty. Please add metabolite annotation details",
-                error, val_sequence=8, log_category=log_category)
+                error, val_sequence=9, log_category=log_category)
 
 
 def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, log_category=error):
@@ -1043,7 +1043,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     for sample_name in sample_name_list:
         if sample_name not in all_assays:
             add_msg(validations, val_section, "Sample name '" + str(sample_name) + "' is not used in any assay",
-                    warning, val_sequence=7, log_category=log_category)
+                    error, val_sequence=7, log_category=log_category)
 
     sample_len = len(sample_name_list)
     if all_assay_rows < sample_len:
