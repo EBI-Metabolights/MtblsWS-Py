@@ -1797,7 +1797,7 @@ class SplitMaf(Resource):
 class ChEBIPipeLine(Resource):
     @swagger.operation(
         summary="Search external resources using compound names in MAF (curator only)",
-        nickname="Search compound names",
+        nickname="ChEBI automated pipeline",
         notes="""Search and populate a given Metabolite Annotation File based on the 'metabolite_identification' column. 
               New MAF files will be created in the 'chebi_pipeline_annotations' folder with extension '_pubchem.tsv'. These form part of 
               the ChEBI submission pipeline. If no annotation_file_name is given, all MAF in the study are processed""",

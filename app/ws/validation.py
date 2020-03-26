@@ -308,7 +308,7 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
             add_msg(validations, val_section,
                     "Columns 'database_identifier', 'chemical_formula', 'smiles', 'inchi' and "
                     "'metabolite_identification' found in the correct column position in '" + file_name + "'",
-                    success, val_sequence=4.1, log_category=log_category)
+                    success, val_sequence=4.2, log_category=log_category)
 
         try:
             if is_ms and maf_header['mass_to_charge']:
@@ -371,7 +371,7 @@ class Validation(Resource):
     @swagger.operation(
         summary="Validate study",
         notes='''Validating the overall study. 
-        This method will validate the study metadata and check some of the files study folder''',
+        This method will validate the study metadata and check the files study folder''',
         parameters=[
             {
                 "name": "study_id",
@@ -624,7 +624,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
             for val in query_list[0].split('|'):
                 override_list.append(val)
     except Exception as e:
-        logger.error('Could not query overridden validations from the database')
+        logger.error('Could not query overridden validations from the database. ' + str(e))
 
     # Validate basic ISA-Tab structure
     isa_study, isa_inv, isa_samples, std_path, status, amber_warning, isa_validation, inv_file, s_file, assay_files = \
@@ -1984,6 +1984,7 @@ class OverrideValidation(Resource):
         if not is_curator:
             abort(403)
 
+        val_feedback = ""
         override_list = []
         # First, get all existing validations from the database
         try:
@@ -2002,11 +2003,13 @@ class OverrideValidation(Resource):
         for val, val_message in validation_data[0].items():
             val_found = False
             for existing_val in override_list:
-                if val in existing_val:
+                if val + ":" in existing_val:  # Do we already have this validation rule in the database
                     val_found = True
+                    val_feedback = val_feedback + "Validation '" + val + "' was already stored in the database. "
 
             if not val_found:
                 override_list.append(val + ':' + val_message)
+                val_feedback = "Validation '" + val + "' stored in the database"
 
         db_update_string = ""
         for existing_val in override_list:
@@ -2018,4 +2021,4 @@ class OverrideValidation(Resource):
         except Exception as e:
             logger.error('Could not store overridden validations on the database')
 
-        return {"success": "Validations stored in the database"}
+        return {"success": val_feedback}

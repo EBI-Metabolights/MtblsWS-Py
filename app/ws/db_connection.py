@@ -549,6 +549,7 @@ def update_validation_status(study_id, validation_status):
     val_acc(study_id)
 
     if study_id and validation_status:
+        logger.info('Updating database validation status to ' + validation_status + ' for study ' + study_id)
         query = "update studies set validation_status = '" + validation_status + "' where acc = '" + study_id + "';"
         try:
             postgresql_pool, conn, cursor = get_connection()

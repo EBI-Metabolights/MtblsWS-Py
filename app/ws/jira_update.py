@@ -143,7 +143,7 @@ def update_or_create_jira_issue(user_token, is_curator):
             # date is 'YYYY-MM-DD HH24:MI'
             due_date = status_change[:10]
 
-            logger.info('Updating Jira ticket for ' + study_id + '. Values: ' +
+            logger.info('Checking Jira ticket for ' + study_id + '. Values: ' +
                         user_name + '|' + release_date + '|' + update_date + '|' + study_status + '|' +
                         curator + '|' + status_change + '|' + due_date)
 
