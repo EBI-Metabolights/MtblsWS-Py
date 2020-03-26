@@ -3,7 +3,7 @@
 #
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
-#  Last modified: 2020-Jan-30
+#  Last modified: 2020-Feb-28
 #  Modified by:   kenneth
 #
 #  Copyright 2020 EMBL - European Bioinformatics Institute
@@ -18,14 +18,14 @@
 
 import configparser
 import csv
+import json
 import sys
 from collections import OrderedDict
 
 import boto3
-from flask import abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from metaspace.sm_annotation_utils import *
+from metaspace.sm_annotation_utils import SMInstance
 
 import config
 from app.ws.metaspace_isa_api_client import MetaSpaceIsaApiClient
@@ -42,7 +42,11 @@ class MetaspacePipeLine(Resource):
         nickname="Import data from METASPACE",
         notes="""Import files files and metadata from METASPACE to a MetaboLights study. 
         </p>Please note that METASPACE API keys will take priority over username/password. 
-        Datasets mush belong to the relevant project if you supply both values.
+        </p>METASPACE Users can generate an API key in the "API access" section of https://metaspace2020.eu/user/me. 
+        </br>
+        If you are the dataset owner in METASPACE, you automatically get a link from METASPACE to your MetaboLights study
+        </p>
+        Data-sets must belong to the relevant project if you supply both values. Only one project if a dataset is linked
             </p><pre><code>{
     "project": {
         "metaspace-api-key": "12489afjhadkjfhajfh",
@@ -116,6 +120,11 @@ class MetaspacePipeLine(Resource):
             abort(403)
 
         investigation = None
+        metaspace_projects = None
+        metaspace_api_key = None
+        metaspace_password = None
+        metaspace_email = None
+        metaspace_datasets = None
 
         # body content validation
         if request.data:
@@ -123,66 +132,86 @@ class MetaspacePipeLine(Resource):
                 data_dict = json.loads(request.data.decode('utf-8'))
                 project = data_dict['project']
                 if project:
-                    metaspace_api_key = project['metaspace-api-key']
-                    metaspace_password = project['metaspace-password']
-                    metaspace_email = project['metaspace-email']
-                    metaspace_datasets = project['metaspace-datasets']
-                    metaspace_projects = project['metaspace-projects']
+                    if "metaspace-api-key" in project:
+                        metaspace_api_key = project['metaspace-api-key']
+                    if "metaspace-password" in project:
+                        metaspace_password = project['metaspace-password']
+                    if "metaspace-email" in project:
+                        metaspace_email = project['metaspace-email']
+                    if "metaspace-datasets" in project:
+                        metaspace_datasets = project['metaspace-datasets']
+                    if "metaspace-projects" in project:
+                        metaspace_projects = project['metaspace-projects']
                     logger.info('Requesting METASPACE datasets ' + metaspace_datasets)
                     # study_location = os.path.join(study_location, 'METASPACE')
 
+                    sm = SMInstance()
+                    logged_id = sm.logged_in
                     if metaspace_api_key:
-                        # Log in with API key
-                        # Users can generate an API key in the "API access" section of https://metaspace2020.eu/user/me
-                        sm = SMInstance(api_keys='metaspace_api_key')
+                        """
+                        Log in with API key
+                        Users can generate an API key in the "API access" section of https://metaspace2020.eu/user/me
+                        If you're connecting to our GraphQL API directly, API key authentication requires an HTTP 
+                        header "Authorization: Api-Key " followed by the key. """
+                        sm.login(email=None, password=None, api_key=metaspace_api_key)
+                    elif metaspace_password and metaspace_email:
+                        sm.login(email=metaspace_email, password=metaspace_password, api_key=None)
                     else:
-                        if metaspace_password and metaspace_email:
-                            sm = SMInstance()
-                            sm.login(metaspace_email, metaspace_password)
+                        abort(406, "No METASPACE API key or username/password provided.")
 
                     if not os.path.isdir(study_location):
                         os.makedirs(study_location, exist_ok=True)
 
+                    user_projects = []  # To store the users projects in METASPACE
                     if not metaspace_projects:
-                        # Get user's projects
-                        metaspace_projects = sm.projects.get_my_projects()
+                        metaspace_projects = []
+
+                    # Get user's projects from the METASPACE database
+                    user_projs = sm.projects.get_my_projects()
 
                     # Get all datasets in project (including other users)
                     # NOTE: "status='FINISHED'" filters out failed datasets - normally users don't see failed datasets
                     # through the UI, so this should help prevent confusion.
-                    project_id = metaspace_projects[0]['id']
-                    datasets = sm.datasets(project=project_id, status='FINISHED')
+                    for project in user_projs:
+                        project_id = project['id']
+                        user_projects.append(project_id)
+                    else:
+                        metaspace_projects = metaspace_projects.split(',')  # User provided string
 
-                    # Get current user's datasets in project
-                    project_id = metaspace_projects[0]['id']
-                    user_id = sm.current_user_id()
-                    datasets = sm.datasets(project=project_id, submitter=user_id, status='FINISHED')
+                    for project_id in metaspace_projects:
+                        if project_id in user_projects:
+                            # Add a link from a project back to MetaboLights
+                            # Note that the user must be a project manager in the project to do this
+                            sm.projects.add_project_external_link(project_id, 'MetaboLights',
+                                                                  'https://www.ebi.ac.uk/metabolights/' + study_id)
 
-                    if not metaspace_datasets:
-                        # Get all current user's datasets
-                        user_id = sm.current_user_id()
-                        metaspace_datasets = sm.datasets(submitter=user_id, status='FINISHED')
+                            # Get current user's datasets in project
+                            # project_id = metaspace_projects[0]['id']
+                            # user_id = sm.current_user_id()
+                            # datasets = sm.datasets(project=project_id, submitter=user_id, status='FINISHED')
 
-                    # Add a link from a project back to MetaboLights
-                    # Note that the user must be a project manager in the project to do this
-                    sm.projects.add_project_external_link(project_id, 'MetaboLights',
-                                                          'https://www.ebi.ac.uk/metabolights/' + study_id)
+                            datasets = sm.datasets(project=project_id, status='FINISHED')
+                            if not metaspace_datasets:
+                                # Get all current user's datasets
+                                user_id = sm.current_user_id()
+                                metaspace_datasets = sm.datasets(submitter=user_id, status='FINISHED')
 
-                    # Add a link from a dataset back to MetaboLights
-                    # Note that the user must be the submitter of the dataset to do this
-                    ds_id = '2018-11-07_14h15m28s'
-                    sm.add_dataset_external_link(ds_id, 'MetaboLights', 'https://www.ebi.ac.uk/metabolights/MTBLS313')
+                                # Add a link from a dataset back to MetaboLights
+                                # Note that the user must be the submitter of the dataset to do this
+                                for ds_id in metaspace_datasets:
+                                    sm.add_dataset_external_link(ds_id, 'MetaboLights', 'https://www.ebi.ac.uk/metabolights/' + study_id)
 
-                    investigation = import_metaspace(study_id, project=metaspace_projects,
+                    investigation = import_metaspace(study_id, project_ids=metaspace_projects,
                                                      study_location=study_location,
-                                                     metaspace_api_key=metaspace_api_key,
                                                      user_token=user_token,
                                                      obfuscation_code=obfuscation_code,
                                                      sm_instance=sm)
             except KeyError:
-                abort(419, "No 'project' parameter was provided.")
+                abort(406, "No 'project' parameter was provided.")
             except AttributeError as e:
-                abort(500, str(e))
+                abort(417, "Missing attribute/element in JSON string" + str(e))
+            except Exception as e:
+                abort(417, str(e))
 
         if investigation:
             return {"Success": "METASPACE data imported successfully"}
@@ -317,13 +346,9 @@ def save_file(content, path, filename, data_type='text'):
         data_file.write(content)
 
 
-def aws_get_annotations(mtspc_obj, output_dir, database=config.METASPACE_DATABASE, fdr=config.METASPACE_FDR,
-                        metaspace_api_key=None, sm_instance=None):
+def aws_get_annotations(mtspc_obj, output_dir, database=config.METASPACE_DATABASE, fdr=config.METASPACE_FDR, sm_instance=None):
 
     filename = 'annotations'
-    # CONNECT TO METASPACE SERVICES
-    db = get_database(database=database, metaspace_api_key=metaspace_api_key, sm_instance=sm_instance)
-    # db = sm._moldb_client.getDatabase(database)  # connect to the molecular database service
 
     for sample in mtspc_obj:
         metaspace_options = sample['metaspace_options']
@@ -388,13 +413,12 @@ def aws_get_annotations(mtspc_obj, output_dir, database=config.METASPACE_DATABAS
             return
 
 
-def get_metadata(dataset_ids, output_dir, database=None, metaspace_api_key=None, sm_instance=None):
+def get_metadata(dataset_ids, output_dir, sm_instance=None):
     annotation_json = None
     info_json = None
 
-    if dataset_ids:
-        db = get_database(database=database, metaspace_api_key=metaspace_api_key, sm_instance=sm_instance)
-
+    if dataset_ids and sm_instance:
+        db = sm_instance
         annos = []
         infos = []
         metas = []
@@ -466,22 +490,7 @@ def aws_get_images(mtspc_obj, output_dir, use_path=False, sm_instance=None):
                           filename=img_name + '.jpg', data_type='binary')
 
 
-def get_database(database=None, metaspace_api_key=None, sm_instance=None):
-    # CONNECT TO METASPACE SERVICES
-    # sm = SMInstance()  # connect to the main metaspace service
-
-    if database:
-        db = sm_instance._moldb_client.getDatabase(database)  # connect to the molecular database service
-    else:
-        db = sm_instance
-        logger.info('NB! Only public datasets can be retrieved')
-
-    # return db #  ToDo, check why we cannot connect
-    return sm_instance
-
-
 def get_study_json(ds_ids, output_dir, std_title, sm_instance=None):
-    #  db = sm._moldb_client.getDatabase(config.METASPACE_DATABASE)
     std_json = []
     for ii, ds_id in enumerate(ds_ids):
         logger.info("Getting JSON information for %s", ds_id)
@@ -543,7 +552,7 @@ def get_all_files(ds_ids, file_types, output_dir, use_path=False, sm_instance=No
                             save_file(file, out_path, file_name, data_type='binary')
 
 
-def import_metaspace(study_id, project=None, study_location=None, metaspace_api_key=None, user_token=None,
+def import_metaspace(study_id, project_ids=None, study_location=None, user_token=None,
                      obfuscation_code=None, sm_instance=None):
     mtspc_obj = None
     input_folder = study_location
@@ -551,11 +560,10 @@ def import_metaspace(study_id, project=None, study_location=None, metaspace_api_
     std_title = "Please update title of study " + study_id
     std_description = "Please update abstract of study " + study_id
     use_path = False
-    study_ids = project.split(',')
-    get_study_json(study_ids, output_dir, study_id, sm_instance=sm_instance)
+    # study_ids = project_ids.split(',')
+    get_study_json(project_ids, output_dir, study_id, sm_instance=sm_instance)
     input_file = os.path.join(input_folder, study_id + ".json")
-    get_metadata(study_ids, output_dir, database=config.METASPACE_DATABASE,
-                 metaspace_api_key=metaspace_api_key, sm_instance=sm_instance)
+    get_metadata(project_ids, output_dir, sm_instance=sm_instance)
 
     if os.path.isfile(input_file):
         mtspc_obj = parse(input_file)
@@ -563,12 +571,12 @@ def import_metaspace(study_id, project=None, study_location=None, metaspace_api_
     if mtspc_obj:
         aws_download_files(mtspc_obj, output_dir, 'imzML', data_type='utf-8', use_path=use_path)
         aws_download_files(mtspc_obj, output_dir, 'ibd', data_type='binary', use_path=use_path)
-        aws_get_annotations(mtspc_obj, output_dir, metaspace_api_key=metaspace_api_key, sm_instance=sm_instance)
+        aws_get_annotations(mtspc_obj, output_dir, sm_instance=sm_instance)
         aws_get_images(mtspc_obj, output_dir, use_path=use_path, sm_instance=sm_instance)
 
-    get_all_files(study_ids, ['.imzML', '.ibd', '.jpg', '.jpeg', '.png'], output_dir,
+    get_all_files(project_ids, ['.imzML', '.ibd', '.jpg', '.jpeg', '.png'], output_dir,
                   use_path=use_path, sm_instance=sm_instance)
-    #get_all_files(study_ids, ['.jpg', '.jpeg', '.png'], output_dir, use_path=use_path)
+    # get_all_files(study_ids, ['.jpg', '.jpeg', '.png'], output_dir, use_path=use_path)
 
     iac = MetaSpaceIsaApiClient()
     inv = iac.new_study(std_title, std_description, mtspc_obj, output_dir,
