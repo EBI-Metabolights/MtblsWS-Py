@@ -16,16 +16,17 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from zipfile import ZipFile
-from flask_restful import Resource, reqparse
-from flask_restful_swagger import swagger
-from flask import request, send_file, safe_join, abort, make_response
-from app.ws.mtblsWSclient import WsClient
-from app.ws.db_connection import get_obfuscation_code
 import logging
 import os
-import shutil
-from os import scandir
+from zipfile import ZipFile
+
+from flask import request, send_file, safe_join, abort, make_response
+from flask_restful import Resource, reqparse
+from flask_restful_swagger import swagger
+
+from app.ws.db_connection import get_obfuscation_code
+from app.ws.mtblsWSclient import WsClient
+from app.ws.study_files import get_basic_files
 
 logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client
@@ -36,8 +37,9 @@ class SendFiles(Resource):
     @swagger.operation(
         summary="Stream file(s) to the browser",
         notes="Download/Stream files from the study folder</p>"
-              "The 'obfuscation_code' path parameter is mandatory, but for any <b>PUBLIC</b> studies you can use the "
-              "keyword 'public' instead of the real obfuscation code",
+              "To download all the ISA-Tab metadata in one zip file, use the word <b>'metadata'</b> in the file_name."
+              "</p>The 'obfuscation_code' path parameter is mandatory, but for any <b>PUBLIC</b> studies you can use the "
+              "keyword <b>'public'</b> instead of the real obfuscation code",
         parameters=[
             {
                 "name": "study_id",
@@ -49,7 +51,7 @@ class SendFiles(Resource):
             },
             {
                 "name": "file",
-                "description": "File(s) or folder name (comma separated, relative to study folder)",
+                "description": "File(s) or folder name (comma separated, relative to study folder). Keyword 'metadata' can also be used.",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -111,6 +113,7 @@ class SendFiles(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('file', help='The file or sub-directory to download')
         file_name = None
+        metadata_only = False
 
         if request.args:
             args = parser.parse_args(req=request)
@@ -123,6 +126,16 @@ class SendFiles(Resource):
         # check for access rights
         is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
+
+        files = ""
+        if file_name == 'metadata':
+            file_list = get_basic_files(study_location, include_sub_dir=False, assay_file_list=None, metadata_only=True)
+            for _file in file_list:
+                f_type = _file['type']
+                f_name = _file['file']
+                if "metadata_" in f_type:
+                    files = files + f_name + ','
+            file_name = files.rstrip(",")
 
         if not read_access:
             if obfuscation_code:

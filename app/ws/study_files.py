@@ -856,7 +856,7 @@ def get_file_times(directory, file_name, assay_file_list=None, validation_only=F
     return file_time, raw_time, file_type, status, folder
 
 
-def get_basic_files(study_location, include_sub_dir, assay_file_list=None):
+def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metadata_only=False):
     file_list = []
     start_time = time.time()
 
@@ -865,9 +865,16 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None):
     else:
         for entry in scandir(study_location):
             if not entry.name.startswith("."):
-                file_type, status, folder = map_file_type(entry.name, study_location,
-                                                          assay_file_list=assay_file_list)
+                file_name = entry.name
+                fname, ext = os.path.splitext(file_name)
+                if metadata_only and fname.startswith(('i_', 'a_', 's_', 'm_')) and (ext == '.txt' or ext == '.tsv'):
+                    file_type, status, folder = map_file_type(file_name, study_location,
+                                                              assay_file_list=assay_file_list)
+                else:
+                    file_type, status, folder = map_file_type(file_name, study_location,
+                                                              assay_file_list=assay_file_list)
                 name = entry.path.replace(study_location + os.sep, '')
+
                 file_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
                                   "status": status, "directory": folder})
 
