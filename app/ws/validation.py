@@ -1004,10 +1004,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                         val_section, "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing some values. " +
                                         str(col_rows) + " rows found, but there should be " + str(all_rows),
                                         val_type, assay.filename, val_sequence=4.1, log_category=log_category)
-                        else:
-                            add_msg(validations, val_section,
-                                    "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
-                                    success, assay.filename, val_sequence=5, log_category=log_category)
+                        # else:
+                        #     add_msg(validations, val_section,
+                        #             "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
+                        #             success, assay.filename, val_sequence=5, log_category=log_category)
 
                 except Exception as e:
                     add_msg(validations, val_section,
