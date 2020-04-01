@@ -39,6 +39,7 @@ iac = IsaApiClient()
 
 def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None, include_raw_data=None,
                                   assay_file_list=None, validation_only=False, include_upload_folder=True):
+
     upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
     logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                 study_location, upload_location)
@@ -809,14 +810,11 @@ def get_file_information(study_location=None, path=None, directory=None, include
 
         tree_file_list = []
         try:
-            # ToDo, this method is slower, but it already have file_time etc
-            # t = time.process_time()
-            # file_list = list_directories(study_location, file_list, base_study_location=study_location)
-            # elapsed_time = time.process_time() - t
-            # print(elapsed_time)
 
-            tree_file_list, folder_list = traverse_subfolders(
-                study_location=study_location, file_location=path, file_list=tree_file_list, all_folders=[], full_path=True)
+            tree_file_list = list_directories(study_location, dir_list=[], base_study_location=study_location,
+                                              short_format=True)
+            # tree_file_list, folder_list = traverse_subfolders(
+            #     study_location=study_location, file_location=path, file_list=tree_file_list, all_folders=[], full_path=True)
 
         except Exception as e:
             logger.error('Could not read all the files and folders. Error: ' + str(e))
@@ -897,24 +895,25 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
     return file_list
 
 
-def list_directories(file_location, dir_list, base_study_location, assay_file_list=None):
+def list_directories(file_location, dir_list, base_study_location, assay_file_list=None, short_format=False):
 
     for entry in scandir(file_location):  # for entry in scandir(file_location):
         if not entry.name.startswith('.'):
             name = entry.path.replace(base_study_location + os.sep, '')
 
-            file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
-            dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
-                             "status": status, "directory": folder})
+            if short_format:
+                if name not in folder_exclusion_list:
+                    dir_list.append(name)
+            else:
+                file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
+                dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
+                                 "status": status, "directory": folder})
             if entry.is_dir():
-                # f_type = "directory"
-                # if os.sep + 'audit' + os.sep in file_location:
-                #     f_type = "audit"
-                dir_list.extend(list_directories(entry.path, [], base_study_location))
-            # else:
-            #     file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
-            #     dir_list.append({"file": name,  "createdAt": "", "timestamp": "", "type": file_type,
-            #                      "status": status, "directory": folder})
+                if short_format and name in folder_exclusion_list:
+                    continue
+                else:
+                    dir_list.extend(list_directories(entry.path, [], base_study_location,
+                                                     assay_file_list=assay_file_list, short_format=short_format))
     return dir_list
 
 

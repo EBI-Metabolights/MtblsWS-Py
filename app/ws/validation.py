@@ -267,6 +267,12 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
 def validate_maf(validations, file_name, all_assay_names, study_location, study_id,
                  sample_name_list, is_ms=False, log_category=error):
     val_section = "maf"
+
+    if not file_name.startswith('m_') and not file_name.endswith('_v2_maf.tsv'):
+        add_msg(validations, val_section,
+                "The Metabolite Annotation File name must start with 'm_' and end in '_v2_maf.tsv'",
+                error, val_sequence=12, log_category=log_category)
+
     maf_name = os.path.join(study_location, file_name)
     maf_df = pd.DataFrame()
 
