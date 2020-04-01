@@ -51,7 +51,8 @@ info = "info"
 
 unknown_file = ' - unknown - '
 
-empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF', 'prosol_History', 'title']
+empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF', 'prosol_History', 'title',
+                      '_FUNC001.IDX', '_FUNC002.IDX']
 
 
 def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0, log_category=error):
@@ -1123,7 +1124,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
     study_files, upload_files, upload_diff, upload_location = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
-                                      include_upload_folder=False, assay_file_list=assay_file_list)
+                                      include_upload_folder=False, assay_file_list=assay_file_list,
+                                      short_format=True)
     # if folder_list:
     #     for folder in folder_list:
     #         study_files_sub, upload_files, upload_diff, upload_location = \
