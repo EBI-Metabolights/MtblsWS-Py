@@ -29,6 +29,7 @@ import shutil
 import string
 import time
 import uuid
+from os.path import normpath, basename
 
 import numpy as np
 import pandas as pd
@@ -51,6 +52,9 @@ logger = logging.getLogger('wslog')
 date_format = "%Y%m%d%H%M%S"  # 20180724092134
 file_date_format = "%B %d %Y %H:%M:%S"  # 20180724092134
 isa_date_format = "%Y-%m-%d"
+
+folder_exclusion_list = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
+                         '/audit', '/metaspace', '/chebi', '/old', '/backup', '/chebi_pipeline_annotations']
 
 
 def check_user_token(user_token):
@@ -397,17 +401,20 @@ def log_request(request_obj):
 def read_tsv(file_name):
     table_df = pd.DataFrame()  # Empty file
     try:
-        if os.path.getsize(file_name) == 0:  # Empty file
-            logger.error("Could not read file " + file_name)
-        else:
-            # Enforce str datatype for all columns we read from ISA-Tab tables
-            col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
-            types_dict = {col: str for col in col_names}
-            table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8', dtype=types_dict)
-    except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
-        if os.path.getsize(file_name) > 0:
-            table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1')  # Excel format
-            logger.info("Tried to open as Excel tsv file 'ISO-8859-1' file " + file_name + ". " + str(e))
+        try:
+            if os.path.getsize(file_name) == 0:  # Empty file
+                logger.error("Could not read file " + file_name)
+            else:
+                # Enforce str datatype for all columns we read from ISA-Tab tables
+                col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
+                types_dict = {col: str for col in col_names}
+                table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8', dtype=types_dict)
+        except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
+            if os.path.getsize(file_name) > 0:
+                table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1')  # Excel format
+                logger.info("Tried to open as Excel tsv file 'ISO-8859-1' file " + file_name + ". " + str(e))
+    except Exception as e:
+        logger.error("Could not read file " + file_name + ". " + str(e))
 
     table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
     return table_df
@@ -824,7 +831,9 @@ def map_file_type(file_name, directory, assay_file_list=None):
     active_status = 'active'
     none_active_status = 'unreferenced'
     folder = False
-    fname, ext = os.path.splitext(file_name)  # ToDo, will this work with folders?
+    final_filename = os.path.basename(file_name)
+    # fname, ext = os.path.splitext(file_name)
+    fname, ext = os.path.splitext(final_filename)
     fname = fname.lower()
     ext = ext.lower()
     # Metadata first, current is if the files are present in the investigation and assay files
@@ -882,9 +891,9 @@ def map_file_type(file_name, directory, assay_file_list=None):
             return 'compressed', active_status, folder
         else:
             return 'compressed', none_active_status, folder
-    elif fname == 'metexplore_mapping.json' \
+    elif fname == 'metexplore_mapping' \
             or fname == 'chebi_pipeline_annotations' \
-            or fname == 'validation_report.json':
+            or fname == 'validation_report':
         return 'internal_mapping', active_status, folder
     elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
         return 'chebi_pipeline_file', active_status, folder
@@ -902,9 +911,56 @@ def map_file_type(file_name, directory, assay_file_list=None):
                     return 'raw', none_active_status, folder
 
             if os.path.isdir(os.path.join(directory, file_name)):
-                return 'unknown', none_active_status, True
+                return 'directory', none_active_status, True
 
         return 'unknown', none_active_status, folder
+
+
+def traverse_subfolders(study_location=None, file_location=None, file_list=None, all_folders=None, full_path=None):
+    if not file_list:
+        file_list = []
+    if not all_folders:
+        all_folders = []
+
+    # Check that we have both referenced folders
+    if not os.path.isdir(study_location) or not os.path.isdir(file_location):
+        return file_list, all_folders
+
+    if file_location not in all_folders:
+        for params in os.walk(file_location):
+            root = None
+            sub_directories = None
+            files = None
+
+            if params:
+                if params[0]:
+                    root = params[0]
+                if params[1]:
+                    sub_directories = params[1]
+                if params[2]:
+                    files = params[2]
+
+            if root and basename(normpath(root)) not in folder_exclusion_list:
+                if root not in all_folders:
+                    all_folders.append(root)
+                if files:
+                    for file in files:
+                        if file:
+                            file_name = file
+                            if full_path:
+                                file_name = os.path.join(root.replace(study_location, ""), file_name)
+                            if file_name not in file_list:
+                                file_list.append(file_name)
+
+                if sub_directories:
+                    for directory in sub_directories:
+                        if directory and directory not in folder_exclusion_list:
+                            next_folder = os.path.join(root, directory)
+                            if next_folder not in all_folders:
+                                file_list, all_folders = traverse_subfolders(
+                                    study_location=study_location, file_location=next_folder, file_list=file_list, all_folders=all_folders, full_path=full_path)
+
+    return file_list, all_folders
 
 
 def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_list=None):

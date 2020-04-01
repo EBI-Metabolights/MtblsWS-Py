@@ -20,7 +20,6 @@ import json
 import threading
 import traceback
 
-from flask import abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
@@ -51,6 +50,8 @@ success = "success"
 info = "info"
 
 unknown_file = ' - unknown - '
+
+empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF', 'prosol_History']
 
 
 def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0, log_category=error):
@@ -202,7 +203,8 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
     full_file = os.path.join(study_location, file_name)
-    fname, ext = os.path.splitext(file_name)
+    short_name, ext = os.path.splitext(file_name)
+    final_filename = os.path.basename(file_name)
     ext = ext.lower()
 
     fid_file = 'Free Induction Decay Data File'
@@ -212,10 +214,11 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     if os.path.isdir(full_file) and ext not in ('.raw', '.d'):
         return False, 'folder', file_name + " is a sub-folder, please reference a file"
 
-    if "fid" not in file_name and file_name.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
-        return False, unknown_file, "File " + file_name + " does not exist"
-
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
+
+    # if not folder and "fid" not in file_name and final_filename.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
+    if file_name not in file_name_list and "/" + file_name not in file_name_list:  # was final_filename
+        return False, unknown_file, "File " + file_name + " does not exist"
 
     if is_empty_file(full_file, study_location=study_location):
         return False, file_type, "File '" + file_name + "' is empty or incorrect"
@@ -264,6 +267,12 @@ def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, vali
 def validate_maf(validations, file_name, all_assay_names, study_location, study_id,
                  sample_name_list, is_ms=False, log_category=error):
     val_section = "maf"
+
+    if not file_name.startswith('m_') and not file_name.endswith('_v2_maf.tsv'):
+        add_msg(validations, val_section,
+                "The Metabolite Annotation File name must start with 'm_' and end in '_v2_maf.tsv'",
+                error, val_sequence=12, log_category=log_category)
+
     maf_name = os.path.join(study_location, file_name)
     maf_df = pd.DataFrame()
 
@@ -786,7 +795,8 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
                         all_assay_names, sample_name_list, log_category=error):
     # Correct sample names?
     if a_header.lower() == 'sample name':
-        all_samples.append(row)
+        if row not in all_samples:
+            all_samples.append(row)
         # if row in sample_name_list:
             # add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
             #         success, assay.filename, val_sequence=7, log_category=log_category)
@@ -891,7 +901,7 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
 def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
                     file_name_list, val_section="assays", log_category=error):
     validations = []
-    all_assays = []
+    all_assay_samples = []
     unique_file_names = []
 
     study_id = isa_study.identifier
@@ -981,9 +991,14 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                 col_rows += 1
 
                             all_sample_names, all_assay_names, validations, unique_file_names = \
-                                check_assay_columns(a_header, all_assays, row, validations, val_section,
+                                check_assay_columns(a_header, all_assay_samples, row, validations, val_section,
                                                     assay, unique_file_names, all_assay_names,
                                                     sample_name_list, log_category=log_category)
+
+                        if col_rows > len(all_assay_samples):
+                            add_msg(validations, val_section,
+                                    "Sample names should ideally be unique for assay sheet '" + assay.filename + "'",
+                                    warning, assay.filename, val_sequence=10, log_category=log_category)
 
                         if col_rows < all_rows:
 
@@ -1004,10 +1019,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                         val_section, "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing some values. " +
                                         str(col_rows) + " rows found, but there should be " + str(all_rows),
                                         val_type, assay.filename, val_sequence=4.1, log_category=log_category)
-                        else:
-                            add_msg(validations, val_section,
-                                    "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
-                                    success, assay.filename, val_sequence=5, log_category=log_category)
+                        # else:
+                        #     add_msg(validations, val_section,
+                        #             "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
+                        #             success, assay.filename, val_sequence=5, log_category=log_category)
 
                 except Exception as e:
                     add_msg(validations, val_section,
@@ -1040,8 +1055,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 add_msg(validations, val_section, "No MAF file referenced for assay sheet " + assay.filename, warning,
                         val_sequence=7.4, log_category=log_category)
 
-    for sample_name in sample_name_list:
-        if sample_name not in all_assays:
+    for sample_name in sample_name_list:  # Loop all unique sample names from sample sheet
+        if sample_name not in all_assay_samples:
             add_msg(validations, val_section, "Sample name '" + str(sample_name) + "' is not used in any assay",
                     error, val_sequence=7, log_category=log_category)
 
@@ -1074,9 +1089,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
 def get_files_in_sub_folders(study_location):
     folder_list = []
-    file_folder_list = []
-    folder_exclusion_list = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations']
+    file_list = []
+
     for file_name in os.listdir(study_location):
+    # for file_name in file_list:
         if os.path.isdir(os.path.join(study_location, file_name)):
             fname, ext = os.path.splitext(file_name)
             ext = ext.lower()
@@ -1088,6 +1104,7 @@ def get_files_in_sub_folders(study_location):
                 if file_name.lower() not in folder_exclusion_list and file_name.lower() not in folder_list:
                     folder_list.append(file_name)
 
+    # file_folder_list = []
     # for folder in folder_list:
     #     full_folder = os.path.join(study_location, folder)
     #     for file_name in os.listdir(full_folder):
@@ -1100,23 +1117,22 @@ def get_files_in_sub_folders(study_location):
 
 def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list,
                    val_section="files", log_category=error):
-    empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF', 'prosol_History']
     validations = []
     assay_file_list = get_assay_file_list(study_location)
-    folder_list = get_files_in_sub_folders(study_location)
+    # folder_list = get_files_in_sub_folders(study_location)
     study_files, upload_files, upload_diff, upload_location = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
                                       include_upload_folder=False, assay_file_list=assay_file_list)
-    if folder_list:
-        for folder in folder_list:
-            study_files_sub, upload_files, upload_diff, upload_location = \
-                get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
-                                              directory=folder, include_raw_data=True, validation_only=True,
-                                              include_upload_folder=False, assay_file_list=assay_file_list)
-
-            if study_files_sub:  # Adding files found in the first subfolder to the files in the (root) study folder
-                study_files.extend(study_files_sub)
+    # if folder_list:
+    #     for folder in folder_list:
+    #         study_files_sub, upload_files, upload_diff, upload_location = \
+    #             get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
+    #                                           directory=folder, include_raw_data=True, validation_only=True,
+    #                                           include_upload_folder=False, assay_file_list=assay_file_list)
+    #
+    #         if study_files_sub:  # Adding files found in the first subfolder to the files in the (root) study folder
+    #             study_files.extend(study_files_sub)
 
     sample_cnt = 0
     raw_file_found = False
@@ -1135,7 +1151,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
         if file_name != 'audit' and not file_name.startswith('chebi_pipeline_annotations'):
             if os.path.isdir(os.path.join(full_file_name)):
                 for sub_file_name in os.listdir(full_file_name):
-                    if is_empty_file(os.path.join(full_file_name, sub_file_name)):
+                    if is_empty_file(os.path.join(full_file_name, sub_file_name), study_location=study_location):
                         add_msg(validations, val_section, "Empty file found in a sub-directory", info, val_section,
                                 value=os.path.join(file_name, sub_file_name), val_sequence=1, log_category=log_category)
 
@@ -1170,7 +1186,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                 add_msg(validations, val_section, "Old ISA-Tab metadata file should be removed ("
                         + file_name + ")", error, val_section, value=file_name, val_sequence=5, log_category=log_category)
 
-        if is_empty_file(full_file_name) and file_name not in empty_exclude_list:
+        if is_empty_file(full_file_name, study_location=study_location) and file_name not in empty_exclude_list:
             if '/' in file_name and file_name.split("/")[1] not in empty_exclude_list:  # In case the file is in a folder
                 add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
                         error, val_section,
@@ -1722,17 +1738,18 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
     try:
 
         if os.path.isfile(os.path.join(study_location, inv_file_name)):
-            isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                             skip_load_tables=True,
-                                                             study_location=study_location)
             try:
+                isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                                 skip_load_tables=True,
+                                                                 study_location=study_location)
+
                 file_name = isa_study.filename
                 isa_sample_df = read_tsv(os.path.join(study_location, file_name))
             except FileNotFoundError:
                 add_msg(validations, val_section, "The file " + file_name + " was not found", error,
                         inv_file_name, val_sequence=1.1, log_category=log_category)
             except Exception as e:
-                add_msg(validations, val_section, "Could not load the minimum ISA-Tab files " + str(e), error,
+                add_msg(validations, val_section, "Could not load the minimum ISA-Tab files. " + str(e), error,
                         inv_file_name, val_sequence=1.11, log_category=log_category)
         else:
             add_msg(validations, val_section, "Could not load the minimum ISA-Tab files", error,
