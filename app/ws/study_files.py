@@ -22,7 +22,6 @@ from copy import deepcopy
 from operator import itemgetter
 from os import scandir
 
-from flask import abort
 from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -46,15 +45,14 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     start_time = time.time()
     s_start_time = time.time()
-    study_files = get_all_files(study_location, directory=directory,
-                                include_raw_data=include_raw_data, study_id=study_id,
+    study_files = get_all_files(study_location, directory=directory, include_raw_data=include_raw_data,
                                 assay_file_list=assay_file_list, validation_only=validation_only)
     logger.info("Listing study files for " + study_id + " took %s seconds" % round(time.time() - s_start_time, 2))
     upload_files = []
     if include_upload_folder:
         u_start_time = time.time()
         upload_files = get_all_files(upload_location, directory=directory, include_raw_data=include_raw_data,
-                                     study_id=study_id, validation_only=validation_only)
+                                     validation_only=validation_only)
         logger.info("Listing upload files for " + study_id + " took %s seconds" % round(time.time() - u_start_time, 2))
 
     # Sort the two lists
@@ -788,18 +786,19 @@ def get_files(file_list):
     return all_files
 
 
-def get_all_files(path, directory=None, include_raw_data=False, study_id=None,
-                  assay_file_list=None, validation_only=False):
+def get_all_files(path, directory=None, include_raw_data=False, assay_file_list=None, validation_only=False):
     try:
-        files = get_file_information(path, directory=directory, include_raw_data=include_raw_data,
+        files = get_file_information(study_location=path, path=path, directory=directory, include_raw_data=include_raw_data,
                                      assay_file_list=assay_file_list, validation_only=validation_only)
-    except:
-        logger.warning('Could not find folder ' + path)
+    except Exception as e:
+        logger.warning('Could not find folder ' + path + '. Error: ' + str(e))
         files = []  # The upload folder for this study does not exist, this is normal
+
     return files
 
 
-def get_file_information(path, directory=None, include_raw_data=False, assay_file_list=None, validation_only=False):
+def get_file_information(study_location=None, path=None, directory=None, include_raw_data=False,
+                         assay_file_list=None, validation_only=False):
     file_list = []
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
@@ -808,7 +807,22 @@ def get_file_information(path, directory=None, include_raw_data=False, assay_fil
         if directory:
             path = os.path.join(path, directory)
 
-        for file_name in os.listdir(path):
+        tree_file_list = []
+        try:
+            # ToDo, this method is slower, but it already have file_time etc
+            # t = time.process_time()
+            # file_list = list_directories(study_location, file_list, base_study_location=study_location)
+            # elapsed_time = time.process_time() - t
+            # print(elapsed_time)
+
+            tree_file_list, folder_list = traverse_subfolders(
+                study_location=study_location, file_location=path, file_list=tree_file_list, all_folders=[], full_path=True)
+
+        except Exception as e:
+            logger.error('Could not read all the files and folders. Error: ' + str(e))
+            file_list = os.listdir(path)
+
+        for file_name in tree_file_list:
             file_time = None
             raw_time = None
             file_type = None
@@ -884,7 +898,8 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
 
 
 def list_directories(file_location, dir_list, base_study_location, assay_file_list=None):
-    for entry in scandir(file_location):
+
+    for entry in scandir(file_location):  # for entry in scandir(file_location):
         if not entry.name.startswith('.'):
             name = entry.path.replace(base_study_location + os.sep, '')
 
