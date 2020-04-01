@@ -29,6 +29,7 @@ import shutil
 import string
 import time
 import uuid
+from os.path import normpath, basename
 
 import numpy as np
 import pandas as pd
@@ -52,7 +53,8 @@ date_format = "%Y%m%d%H%M%S"  # 20180724092134
 file_date_format = "%B %d %Y %H:%M:%S"  # 20180724092134
 isa_date_format = "%Y-%m-%d"
 
-folder_exclusion_list = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations']
+folder_exclusion_list = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
+                         '/audit', '/metaspace', '/chebi', '/old', '/backup', '/chebi_pipeline_annotations']
 
 
 def check_user_token(user_token):
@@ -938,25 +940,25 @@ def traverse_subfolders(study_location=None, file_location=None, file_list=None,
                 if params[2]:
                     files = params[2]
 
-        # for root, sub_directories, files in os.walk(file_location):
-            if root and root not in all_folders:
-                all_folders.append(root)
-            if files:
-                for file in files:
-                    if file:
-                        file_name = file
-                        if full_path:
-                            file_name = os.path.join(root.replace(study_location, ""), file_name)
-                        if file_name not in file_list:
-                            file_list.append(file_name)
+            if root and basename(normpath(root)) not in folder_exclusion_list:
+                if root not in all_folders:
+                    all_folders.append(root)
+                if files:
+                    for file in files:
+                        if file:
+                            file_name = file
+                            if full_path:
+                                file_name = os.path.join(root.replace(study_location, ""), file_name)
+                            if file_name not in file_list:
+                                file_list.append(file_name)
 
-            if sub_directories:
-                for directory in sub_directories:
-                    if directory:
-                        next_folder = os.path.join(root, directory)
-                        if directory != folder_exclusion_list and next_folder not in all_folders:
-                            file_list, all_folders = traverse_subfolders(
-                                study_location=study_location, file_location=next_folder, file_list=file_list, all_folders=all_folders, full_path=full_path)
+                if sub_directories:
+                    for directory in sub_directories:
+                        if directory and directory not in folder_exclusion_list:
+                            next_folder = os.path.join(root, directory)
+                            if next_folder not in all_folders:
+                                file_list, all_folders = traverse_subfolders(
+                                    study_location=study_location, file_location=next_folder, file_list=file_list, all_folders=all_folders, full_path=full_path)
 
     return file_list, all_folders
 
