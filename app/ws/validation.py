@@ -1726,17 +1726,18 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
     try:
 
         if os.path.isfile(os.path.join(study_location, inv_file_name)):
-            isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
-                                                             skip_load_tables=True,
-                                                             study_location=study_location)
             try:
+                isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
+                                                                 skip_load_tables=True,
+                                                                 study_location=study_location)
+
                 file_name = isa_study.filename
                 isa_sample_df = read_tsv(os.path.join(study_location, file_name))
             except FileNotFoundError:
                 add_msg(validations, val_section, "The file " + file_name + " was not found", error,
                         inv_file_name, val_sequence=1.1, log_category=log_category)
             except Exception as e:
-                add_msg(validations, val_section, "Could not load the minimum ISA-Tab files " + str(e), error,
+                add_msg(validations, val_section, "Could not load the minimum ISA-Tab files. " + str(e), error,
                         inv_file_name, val_sequence=1.11, log_category=log_category)
         else:
             add_msg(validations, val_section, "Could not load the minimum ISA-Tab files", error,
