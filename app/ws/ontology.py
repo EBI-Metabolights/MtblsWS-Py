@@ -289,8 +289,7 @@ class Ontology(Resource):
             #                          "column type", "instruments", "confidence", "sample type"
 
             if branch == 'taxonomy':
-                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'CHEBI': 5, 'CHMO': 6,
-                            'NCIT': 7, 'PO': 8}
+                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'NCIT': 5, 'CHEBI': 6, 'CHMO': 7, 'PO': 8}
 
             if branch == 'unit':
                 priority = {'UO': 0, 'MTBLS': 1}
