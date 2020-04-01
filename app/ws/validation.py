@@ -51,7 +51,7 @@ info = "info"
 
 unknown_file = ' - unknown - '
 
-empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF', 'prosol_History']
+empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF', 'prosol_History', 'title']
 
 
 def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0, log_category=error):
@@ -217,7 +217,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
 
     # if not folder and "fid" not in file_name and final_filename.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
-    if file_name not in file_name_list and "/" + file_name not in file_name_list:  # was final_filename
+    if file_name not in file_name_list and file_name.lstrip('/') not in file_name_list:  # was final_filename
         return False, unknown_file, "File " + file_name + " does not exist"
 
     if is_empty_file(full_file, study_location=study_location):
@@ -1186,7 +1186,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                 add_msg(validations, val_section, "Old ISA-Tab metadata file should be removed ("
                         + file_name + ")", error, val_section, value=file_name, val_sequence=5, log_category=log_category)
 
-        if is_empty_file(full_file_name, study_location=study_location) and file_name not in empty_exclude_list:
+        if is_empty_file(full_file_name, study_location=study_location) \
+                and os.path.basename(full_file_name) not in empty_exclude_list:
             if '/' in file_name and file_name.split("/")[1] not in empty_exclude_list:  # In case the file is in a folder
                 add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
                         error, val_section,
