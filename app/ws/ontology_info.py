@@ -21,6 +21,7 @@ import logging
 import ssl
 import types
 from urllib.parse import quote_plus
+import urllib
 
 import pandas as pd
 from flask import current_app as app
@@ -30,8 +31,7 @@ logger = logging.getLogger('wslog')
 
 
 class entity():
-    def __init__(self, name, iri='', ontoName='', provenance_name='', provenance_uri='',
-                 Zooma_confidence='', definition=''):
+    def __init__(self, name, iri='', ontoName='', provenance_name='', Zooma_confidence='', definition='', properties ={}):
 
         self.name = name
         self.iri = iri
@@ -39,6 +39,7 @@ class entity():
         self.provenance_name = provenance_name
         self.Zooma_confidence = Zooma_confidence
         self.definition = definition
+        self.properties = properties
 
     def getOntoInfo(self, iri):
         try:
@@ -70,64 +71,14 @@ class Descriptor():
         self.design_type = design_type
         self.iri = iri
 
-
-def addEntity(ontoPath, new_term, supclass, definition=None):
-    '''
-        add new term to the ontology and save it
-
-        :param ontoPath: Ontology Path
-        :param new_term: new entity to be added
-        :param supclass:  superclass/branch name or iri of new term
-        :param definition (optional): definition of the new term
-        '''
-
-    def getid(onto):
-        '''
-        this method usd for get the last un-take continuously term ID
-        :param onto: ontology
-        :return: the last id for the new term
-        '''
-
-        temp = []
-        for c in onto.classes():
-            print(str(c))
-            if str(c).lower().startswith('metabolights'):
-                temp.append(str(c))
-
-        last = max(temp)
-        temp = str(int(last[-6:]) + 1).zfill(6)
-        id = 'MTBLS_' + temp
-
-        return id
-
-    try:
-        onto = get_ontology(ontoPath).load()
-        id = getid(onto)
-        namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
-
-        with namespace:
-            try:
-                cls = onto.search_one(label=supclass)
-            except:
-                try:
-                    cls = onto.search_one(iri=supclass)
-                except Exception as e:
-                    print(e)
-
-            newEntity = types.new_class(id, (cls,))
-            newEntity.label = new_term
-            if definition != None:
-                newEntity.isDefinedBy = definition
-            else:
-                pass
-
-        onto.save(file=ontoPath, format='rdfxml')
-
-    except Exception as e:
-        print(e)
-
-
 def OLSbranchSearch(keyword, branchName, ontoName):
+    '''
+    This method to search the keyword in specific branch of specific ontology
+    :param keyword: query
+    :param branchName: specific brnachName
+    :param ontoName: specific ontology
+    :return: list of entities
+    '''
     res = []
     if keyword in [None, '']:
         return res
@@ -138,12 +89,12 @@ def OLSbranchSearch(keyword, branchName, ontoName):
         content = fp.read().decode('utf-8')
         json_str = json.loads(content)
         res = json_str['response']['docs'][0]['iri']
+        urllib.parse.quote_plus(res)
         return urllib.parse.quote_plus(res)
 
     branchIRI = getStartIRI(branchName, ontoName)
     keyword = keyword.replace(' ', '%20')
     url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
-    # print(url)
     fp = urllib.request.urlopen(url)
     content = fp.read().decode('utf-8')
     json_str = json.loads(content)
