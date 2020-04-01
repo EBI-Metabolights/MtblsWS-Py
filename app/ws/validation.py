@@ -217,7 +217,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
 
     # if not folder and "fid" not in file_name and final_filename.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
-    if file_name not in file_name_list:  # was final_filename
+    if file_name not in file_name_list and "/" + file_name not in file_name_list:  # was final_filename
         return False, unknown_file, "File " + file_name + " does not exist"
 
     if is_empty_file(full_file, study_location=study_location):
@@ -789,7 +789,8 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
                         all_assay_names, sample_name_list, log_category=error):
     # Correct sample names?
     if a_header.lower() == 'sample name':
-        all_samples.append(row)
+        if row not in all_samples:
+            all_samples.append(row)
         # if row in sample_name_list:
             # add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
             #         success, assay.filename, val_sequence=7, log_category=log_category)
@@ -894,7 +895,7 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
 def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
                     file_name_list, val_section="assays", log_category=error):
     validations = []
-    all_assays = []
+    all_assay_samples = []
     unique_file_names = []
 
     study_id = isa_study.identifier
@@ -984,9 +985,14 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                 col_rows += 1
 
                             all_sample_names, all_assay_names, validations, unique_file_names = \
-                                check_assay_columns(a_header, all_assays, row, validations, val_section,
+                                check_assay_columns(a_header, all_assay_samples, row, validations, val_section,
                                                     assay, unique_file_names, all_assay_names,
                                                     sample_name_list, log_category=log_category)
+
+                        if col_rows > len(all_assay_samples):
+                            add_msg(validations, val_section,
+                                    "Sample names should ideally be unique for assay sheet '" + assay.filename + "'",
+                                    warning, assay.filename, val_sequence=10, log_category=log_category)
 
                         if col_rows < all_rows:
 
@@ -1043,8 +1049,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 add_msg(validations, val_section, "No MAF file referenced for assay sheet " + assay.filename, warning,
                         val_sequence=7.4, log_category=log_category)
 
-    for sample_name in sample_name_list:
-        if sample_name not in all_assays:
+    for sample_name in sample_name_list:  # Loop all unique sample names from sample sheet
+        if sample_name not in all_assay_samples:
             add_msg(validations, val_section, "Sample name '" + str(sample_name) + "' is not used in any assay",
                     error, val_sequence=7, log_category=log_category)
 
