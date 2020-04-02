@@ -51,9 +51,6 @@ info = "info"
 
 unknown_file = ' - unknown - '
 
-empty_exclude_list = ['TEMPBASE', 'metexplore_mapping.json', 'SyncHelper', '_CHROMS.INF', 'prosol_History', 'title',
-                      '_FUNC001.IDX', '_FUNC002.IDX']
-
 
 def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0, log_category=error):
     if log_category == status or log_category == 'all':
@@ -1189,8 +1186,11 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                         + file_name + ")", error, val_section, value=file_name, val_sequence=5, log_category=log_category)
 
         if is_empty_file(full_file_name, study_location=study_location) \
-                and os.path.basename(full_file_name) not in empty_exclude_list:
-            if '/' in file_name and file_name.split("/")[1] not in empty_exclude_list:  # In case the file is in a folder
+                and os.path.basename(full_file_name).lower() not in empty_exclude_list:
+            if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclude_list:  # In case the file is in a folder
+                for ignore in ignore_file_list:  # Now there are a bunch of files we want to ignore
+                    if ignore in os.path.basename(full_file_name).lower():
+                        continue
                 add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
                         error, val_section,
                         value=file_name, val_sequence=6, log_category=log_category)
@@ -1749,14 +1749,14 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
                 file_name = isa_study.filename
                 isa_sample_df = read_tsv(os.path.join(study_location, file_name))
             except FileNotFoundError:
-                add_msg(validations, val_section, "The file " + file_name + " was not found", error,
+                add_msg(validations, val_section, "The file '" + file_name + "' was not found", error,
                         inv_file_name, val_sequence=1.1, log_category=log_category)
             except Exception as e:
-                add_msg(validations, val_section, "Could not load the minimum ISA-Tab files. " + str(e), error,
-                        inv_file_name, val_sequence=1.11, log_category=log_category)
+                add_msg(validations, val_section, "Could not load the minimum ISA-Tab files (generic reading error).",
+                        error, inv_file_name, val_sequence=1.11, log_category=log_category)
         else:
-            add_msg(validations, val_section, "Could not load the minimum ISA-Tab files", error,
-                    inv_file_name, val_sequence=1.2, log_category=log_category)
+            add_msg(validations, val_section, "Could not load the minimum ISA-Tab files. Investigation file missing?",
+                    error, inv_file_name, val_sequence=1.2, log_category=log_category)
 
     except ValueError:
         err = traceback.format_exc()

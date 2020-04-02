@@ -56,6 +56,13 @@ isa_date_format = "%Y-%m-%d"
 folder_exclusion_list = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
                          '/audit', '/metaspace', '/chebi', '/old', '/backup', '/chebi_pipeline_annotations']
 
+empty_exclude_list = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chroms.inf', 'prosol_history', 'title',
+                      'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin']
+
+ignore_file_list = ['msprofile', '_func', '_chroms', 'defaultmasscal', 'checksum.xml', 'info.xml',
+                    'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
+                    'devices.xml', '_inlet', '_extern', 'synchelper']
+
 
 def check_user_token(user_token):
     if not user_token or user_token is None or len(user_token) < 5:
@@ -880,12 +887,12 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'audit', none_active_status, True
     elif file_name == '.DS_Store':
         return 'macos_special_file', none_active_status, False
-    elif ext in ('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata'):
+    elif ext in ('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cdf'):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'derived', active_status, folder
         else:
             return 'derived', none_active_status, folder
-    elif ext in ('.zip', 'zipx', '.gz', '.cdf', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', 'rar',
+    elif ext in ('.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', 'rar',
                  '.bz2', '.arj', '.z', '.war'):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'compressed', active_status, folder
@@ -897,7 +904,12 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'internal_mapping', active_status, folder
     elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
         return 'chebi_pipeline_file', active_status, folder
+    elif fname in empty_exclude_list:
+        return 'ignored empty file', none_active_status, folder
     else:
+        for ignore in ignore_file_list:
+            if ignore in fname:
+                return 'ignored raw data internal file', none_active_status, folder
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             if os.path.isdir(os.path.join(directory, file_name)):
                 return 'raw', active_status, True
