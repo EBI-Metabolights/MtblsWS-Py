@@ -968,33 +968,44 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
     each Assay file. Do not state a MAF as not in use if it's used in the 'other' assay """
     found = False
     start_time = time.time()
-    if os.sep + 'audit' + os.sep in directory:
-        return False
 
-    if assay_file_list and isa_tab_file_to_check.startswith('a_'):
-        if file_name in assay_file_list:
-            return True
-        else:
+    try:  # Submitters using standard ISAcreator (not ours) with a non UFT-8 character set will cause issues
+        file_name = file_name.encode('ascii', 'ignore').decode('ascii')
+    except Exception as e:
+        logger.error(str(e))
+
+    try:
+        if os.sep + 'audit' + os.sep in directory:
             return False
 
-    if file_name.startswith(('i_', 'a_', 's_', 'm_')) and os.sep + 'ftp' in directory:  # FTP metadata
+        if assay_file_list and isa_tab_file_to_check.startswith('a_'):
+            if file_name in assay_file_list:
+                return True
+            else:
+                return False
+
+        if file_name.startswith(('i_', 'a_', 's_', 'm_')) and os.sep + 'ftp' in directory:  # FTP metadata
+            return False
+
+        isa_tab_file_to_check = isa_tab_file_to_check + '*.txt'
+        isa_tab_file = os.path.join(directory, isa_tab_file_to_check)
+        for ref_file_name in glob.glob(isa_tab_file):
+            """ The filename we pass in is found referenced in the metadata (ref_file_name)
+            One possible problem here is of the maf is found in an old assay file, then we will report it as 
+            current """
+            try:
+                logger.info("Checking if file " + file_name + " is referenced in " + ref_file_name)
+                if file_name in io.open(ref_file_name, 'r', encoding='utf8', errors="ignore").read():
+                    found = True
+            except Exception as e:
+                logger.error('File Format error? Cannot read or open file ' + file_name)
+                logger.error(str(e))
+
+        logger.info("Looking for file name '" + file_name + "' in ISA-Tab files took %s seconds" % round(time.time() - start_time, 2))
+    except Exception as e:
+        logger.error('File Format error? Cannot access file :' + str(file_name))
+        logger.error(str(e))
         return False
-
-    isa_tab_file_to_check = isa_tab_file_to_check + '*.txt'
-    isa_tab_file = os.path.join(directory, isa_tab_file_to_check)
-    for ref_file_name in glob.glob(isa_tab_file):
-        """ The filename we pass in is found referenced in the metadata (ref_file_name)
-        One possible problem here is of the maf is found in an old assay file, then we will report it as 
-        current """
-        try:
-            logger.info("Checking if file " + file_name + " is referenced in " + ref_file_name)
-            if file_name in io.open(ref_file_name, 'r', encoding='utf8', errors="ignore").read():
-                found = True
-        except Exception as e:
-            logger.error('File Format error? Cannot read or open file ' + file_name)
-            logger.error(str(e))
-
-    logger.info("Looking for file name " + file_name + " in ISA-Tab files took %s seconds" % round(time.time() - start_time, 2))
     return found
 
 

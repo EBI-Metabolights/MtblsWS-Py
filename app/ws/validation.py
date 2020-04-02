@@ -1125,7 +1125,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
                                       include_upload_folder=False, assay_file_list=assay_file_list,
-                                      short_format=True)
+                                      short_format=True, include_sub_dir=True)
     # if folder_list:
     #     for folder in folder_list:
     #         study_files_sub, upload_files, upload_diff, upload_location = \
