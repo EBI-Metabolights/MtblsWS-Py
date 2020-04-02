@@ -557,10 +557,15 @@ class ColumnsRows(Resource):
             try:
                 # for row_val in range(table_df.shape[0]):
                 table_df.iloc[int(row_index), int(column_index)] = cell_value
-            except ValueError:
-                logger.error("Unable to find the required 'value', 'row' and 'column' values. Value: "
-                             + cell_value + ", row: " + row_index + ", column: " + column)
-                abort(417, "Unable to find the required 'value', 'row' and 'column' values. Value: "
+            except ValueError as e:
+                logger.error("(ValueError) Unable to find the required 'value', 'row' and 'column' values. Value: "
+                             + cell_value + ", row: " + row_index + ", column: " + column + ". " + str(e))
+                abort(417, "(ValueError) Unable to find the required 'value', 'row' and 'column' values. Value: "
+                      + cell_value + ", row: " + row_index + ", column: " + column)
+            except IndexError:
+                logger.error("(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
+                             + cell_value + ", row: " + row_index + ", column: " + column + ". " + str(e))
+                abort(417, "(IndexError) Unable to find the required 'value', 'row' and 'column' values. Value: "
                       + cell_value + ", row: " + row_index + ", column: " + column)
 
         # Write the new row back in the file

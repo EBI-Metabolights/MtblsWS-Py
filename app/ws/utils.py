@@ -59,9 +59,9 @@ folder_exclusion_list = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'ba
 empty_exclude_list = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chroms.inf', 'prosol_history', 'title',
                       'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin']
 
-ignore_file_list = ['msprofile', '_func', '_chroms', 'defaultmasscal', 'checksum.xml', 'info.xml',
+ignore_file_list = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal', 'checksum.xml', 'info.xml',
                     'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
-                    'devices.xml', '_inlet', '_extern', 'synchelper']
+                    'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml']
 
 
 def check_user_token(user_token):
@@ -876,6 +876,9 @@ def map_file_type(file_name, directory, assay_file_list=None):
                  '.baf_idx', '.baf_xtr', '.xmc') or fname == 'synchelper':
         return 'part_of_raw', active_status, folder
     elif ext in ('.txt', '.text', '.tab', '.html', '.ini'):
+        for ignore in ignore_file_list:  # some internal RAW datafiles have these extensions, so ignore
+            if ignore in fname:
+                return 'part_of_raw', none_active_status, folder
         return 'text', active_status, folder
     elif fname.startswith('~') or ext.endswith('~') or ext in('.temp', '.tmp'):
         return 'temp', none_active_status, folder
@@ -905,11 +908,11 @@ def map_file_type(file_name, directory, assay_file_list=None):
     elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
         return 'chebi_pipeline_file', active_status, folder
     elif fname in empty_exclude_list:
-        return 'ignored empty file', none_active_status, folder
+        return 'ignored', none_active_status, folder
     else:
         for ignore in ignore_file_list:
             if ignore in fname:
-                return 'ignored raw data internal file', none_active_status, folder
+                return 'part_of_raw', none_active_status, folder
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             if os.path.isdir(os.path.join(directory, file_name)):
                 return 'raw', active_status, True
