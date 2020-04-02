@@ -39,7 +39,7 @@ iac = IsaApiClient()
 
 def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None,
                                   include_raw_data=None, assay_file_list=None, validation_only=False,
-                                  include_upload_folder=True, short_format=None):
+                                  include_upload_folder=True, short_format=None, include_sub_dir=None):
 
     upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
     logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
@@ -49,7 +49,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
     s_start_time = time.time()
     study_files = get_all_files(study_location, directory=directory, include_raw_data=include_raw_data,
                                 assay_file_list=assay_file_list, validation_only=validation_only,
-                                short_format=short_format)
+                                short_format=short_format, include_sub_dir=include_sub_dir)
     logger.info("Listing study files for " + study_id + " took %s seconds" % round(time.time() - s_start_time, 2))
     upload_files = []
     if include_upload_folder:
@@ -790,11 +790,12 @@ def get_files(file_list):
 
 
 def get_all_files(path, directory=None, include_raw_data=False, assay_file_list=None,
-                  validation_only=False, short_format=None):
+                  validation_only=False, short_format=None, include_sub_dir=None):
     try:
         files = get_file_information(study_location=path, path=path, directory=directory,
                                      include_raw_data=include_raw_data, assay_file_list=assay_file_list,
-                                     validation_only=validation_only, short_format=short_format)
+                                     validation_only=validation_only, short_format=short_format,
+                                     include_sub_dir=include_sub_dir)
     except Exception as e:
         logger.warning('Could not find folder ' + path + '. Error: ' + str(e))
         files = []  # The upload folder for this study does not exist, this is normal
@@ -803,7 +804,7 @@ def get_all_files(path, directory=None, include_raw_data=False, assay_file_list=
 
 
 def get_file_information(study_location=None, path=None, directory=None, include_raw_data=False,
-                         assay_file_list=None, validation_only=False, short_format=None):
+                         assay_file_list=None, validation_only=False, short_format=None, include_sub_dir=None):
     file_list = []
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
@@ -816,7 +817,8 @@ def get_file_information(study_location=None, path=None, directory=None, include
         try:
 
             tree_file_list = list_directories(study_location, dir_list=[], base_study_location=study_location,
-                                              short_format=short_format)
+                                              short_format=short_format, validation_only=validation_only,
+                                              include_sub_dir=include_sub_dir)
             # tree_file_list, folder_list = traverse_subfolders(
             #     study_location=study_location, file_location=path, file_list=tree_file_list, all_folders=[], full_path=True)
 
@@ -887,7 +889,8 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
     start_time = time.time()
 
     if include_sub_dir:
-        file_list = list_directories(study_location, file_list, base_study_location=study_location)
+        file_list = list_directories_full(study_location, file_list, base_study_location=study_location)
+        #file_list = list_directories(study_location, file_list, base_study_location=study_location, include_sub_dir=include_sub_dir)
     else:
         for entry in scandir(study_location):
             if not entry.name.startswith("."):
@@ -909,7 +912,20 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
     return file_list
 
 
-def list_directories(file_location, dir_list, base_study_location, assay_file_list=None, short_format=False):
+def list_directories_full(file_location, dir_list, base_study_location, assay_file_list=None):
+    for entry in scandir(file_location):
+        if not entry.name.startswith('.'):
+            name = entry.path.replace(base_study_location + os.sep, '')
+            file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
+            dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
+                             "status": status, "directory": folder})
+            if entry.is_dir():
+                dir_list.extend(list_directories(entry.path, [], base_study_location))
+    return dir_list
+
+
+def list_directories(file_location, dir_list, base_study_location, assay_file_list=None,
+                     short_format=None, include_sub_dir=None, validation_only=None):
 
     for entry in scandir(file_location):  # for entry in scandir(file_location):
         file_type = None
@@ -924,12 +940,22 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
             else:
                 dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
                                  "status": status, "directory": folder})
-            if entry.is_dir() and file_type not in ['raw', 'derived']:
-                if short_format and name in folder_exclusion_list:
-                    continue
+            if entry.is_dir():
+                if not include_sub_dir:
+                    # if short_format and name in folder_exclusion_list:
+                    if validation_only and name in folder_exclusion_list:
+                        continue
                 else:
-                    dir_list.extend(list_directories(entry.path, [], base_study_location,
-                                                     assay_file_list=assay_file_list, short_format=short_format))
+                    if file_type == 'audit':
+                        continue
+
+                    if file_type in ['raw', 'derived'] and not validation_only:
+                        continue
+                    else:
+                        dir_list.extend(list_directories(entry.path, [], base_study_location,
+                                                         assay_file_list=assay_file_list,
+                                                         short_format=short_format,
+                                                         include_sub_dir=include_sub_dir))
     return dir_list
 
 
