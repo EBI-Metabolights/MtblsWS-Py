@@ -173,19 +173,22 @@ def is_empty_file(full_file_name, study_location=None):
     # This will return False if a filename is not correct, ie. has a space etc.
     empty_file = True
 
+    short_file_name = os.path.basename(full_file_name).lower()
+    for ignore in ignore_file_list:  # Now there are a bunch of files we want to ignore regardless if they are empty
+        if ignore in short_file_name:
+            return False
+
     # The file in the assay may be locally referenced, so check full path. Only for files, not folders
     if not os.path.isfile(full_file_name) and not os.path.isdir(full_file_name):
         f_file = os.path.join(study_location, full_file_name.lstrip('/'))
         if os.path.isfile(f_file):
             full_file_name = f_file
-
     try:
         file_stats = os.stat(full_file_name)
         file_size = file_stats.st_size
         empty_file = file_size == 0
     except Exception as e:
-        message = "File '" + full_file_name + "' can not be checked/found. " + str(e)
-        logger.error(message)
+        logger.error("File '" + full_file_name + "' can not be checked/found. " + str(e))
         return empty_file
     return empty_file
 
@@ -1185,15 +1188,11 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                 add_msg(validations, val_section, "Old ISA-Tab metadata file should be removed ("
                         + file_name + ")", error, val_section, value=file_name, val_sequence=5, log_category=log_category)
 
-        if is_empty_file(full_file_name, study_location=study_location) \
-                and os.path.basename(full_file_name).lower() not in empty_exclude_list:
-            if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclude_list:  # In case the file is in a folder
-                for ignore in ignore_file_list:  # Now there are a bunch of files we want to ignore
-                    if ignore in os.path.basename(full_file_name).lower():
-                        continue
-                add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
-                        error, val_section,
-                        value=file_name, val_sequence=6, log_category=log_category)
+        if is_empty_file(full_file_name, study_location=study_location):
+            # if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclude_list:  # In case the file is in a folder
+            add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
+                    error, val_section,
+                    value=file_name, val_sequence=6, log_category=log_category)
 
         if file_type == 'aspera-control':
             add_msg(validations, val_section,
