@@ -20,7 +20,7 @@ from setuptools import setup
 
 setup(
     name='app',
-    version='1.5.8',
+    version='1.5.9',
     packages=['app', 'app.ws', 'tests'],
     url='https://github.com/EBI-Metabolights/MtblsWS-Py',
     license='http://www.apache.org/licenses/LICENSE-2.0',

@@ -61,7 +61,8 @@ empty_exclude_list = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chr
 
 ignore_file_list = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal', 'checksum.xml', 'info.xml',
                     'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
-                    'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml']
+                    'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml', 'metexplore_mapping',
+                    'tempbase', 'prosol_history', 'validation_files', 'pulseprogram']
 
 
 def check_user_token(user_token):
@@ -854,6 +855,8 @@ def map_file_type(file_name, directory, assay_file_list=None):
         elif fname.startswith('m_'):
             if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
                 return 'metadata_maf', active_status, folder
+            else:
+                return 'metadata_maf', none_active_status, folder
         elif fname.startswith('i_'):
             investigation = os.path.join(directory, 'i_')
             if os.sep + 'audit' + os.sep in directory:
@@ -864,7 +867,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'metadata', none_active_status, folder
     elif file_name == 'fid':  # NMR data
         return 'fid', active_status, folder
-    elif file_name == 'acqus':  # NMR data
+    elif fname == 'acqus':  # NMR data
         return 'acqus', active_status, folder
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
@@ -873,7 +876,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
     elif ext in ('.png', '.tiff', '.tif', '.jpeg', '.mpg', '.jpg'):
         return 'image', active_status, folder
     elif ext in ('.result_c', '.mcf', '.mcf_idx', '.hdx', '.u2', '.method', '.unt', '.hss', '.ami', '.baf', '.content',
-                 '.baf_idx', '.baf_xtr', '.xmc') or fname == 'synchelper':
+                 '.baf_idx', '.baf_xtr', '.xmc') or fname == 'synchelper' or fname == 'pulseprogram':
         return 'part_of_raw', active_status, folder
     elif ext in ('.txt', '.text', '.tab', '.html', '.ini'):
         for ignore in ignore_file_list:  # some internal RAW datafiles have these extensions, so ignore
@@ -890,7 +893,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'audit', none_active_status, True
     elif file_name == '.DS_Store':
         return 'macos_special_file', none_active_status, False
-    elif ext in ('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cdf'):
+    elif ext in ('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata'):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'derived', active_status, folder
         else:
@@ -919,7 +922,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             else:
                 return 'raw', active_status, folder
         else:
-            if ext in ('.d', '.raw', '.idb', 'cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf', '.cdf.cmp'):
+            if ext in ('.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp'):
                 if os.path.isdir(os.path.join(directory, file_name)):
                     return 'raw', none_active_status, True
                 else:

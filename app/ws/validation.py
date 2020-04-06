@@ -27,7 +27,7 @@ from app.ws.cluster_jobs import lsf_job
 from app.ws.db_connection import override_validations, update_validation_status
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study_files import get_all_files_from_filesystem
+from app.ws.study_files import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import *
 
 logger = logging.getLogger('wslog')
@@ -51,6 +51,10 @@ info = "info"
 
 unknown_file = ' - unknown - '
 
+fid_file = 'Free Induction Decay Data File'
+acq_file = 'Acquisition Parameter Data File'
+raw_file = 'Raw Spectral Data File'
+derived_file = 'Derived Spectral Data File'
 
 def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0, log_category=error):
     if log_category == status or log_category == 'all':
@@ -208,10 +212,6 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     final_filename = os.path.basename(file_name)
     ext = ext.lower()
 
-    fid_file = 'Free Induction Decay Data File'
-    raw_file = 'Raw Spectral Data File'
-    derived_file = 'Derived Spectral Data File'
-
     if os.path.isdir(full_file) and ext not in ('.raw', '.d'):
         return False, 'folder', file_name + " is a sub-folder, please reference a file"
 
@@ -243,7 +243,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'folder' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif file_type == 'compressed' and column_name == 'Acquisition Parameter Data File':
+    elif file_type == 'compressed' and column_name == acq_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'fid' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
@@ -287,7 +287,9 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
         add_msg(validations, val_section, "Could not find or read Metabolite Annotation File '" + file_name + "'",
                 error, val_sequence=2, log_category=log_category)
 
-    all_rows = maf_df.shape[0]
+    maf_shape = maf_df.shape
+    all_rows = maf_shape[0]
+    all_columns = maf_shape[1]
     if all_rows == 1:
         for index, row in maf_df.iterrows():
             db_id_value = row["database_identifier"]
@@ -296,6 +298,20 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                 add_msg(validations, val_section,
                         "Incomplete Metabolite Annotation File '" + file_name + "'",
                         error, descr="Please complete the MAF", val_sequence=3, log_category=log_category)
+
+    empty_maf_rows = False
+    # replace field that's entirely space (or empty) with NaN for isnull() function
+    temp_df = maf_df.replace(r'^\s*$', np.nan, regex=True)
+    for i in range(len(temp_df.index)):
+        empty_cells_per_row = temp_df.iloc[i].isnull().sum()
+        if all_columns == empty_cells_per_row:
+            empty_maf_rows = True
+            break
+    temp_df = None  # No need to keep this copy in memory any more
+
+    if empty_maf_rows:
+        add_msg(validations, val_section, "MAF '" + file_name + "' contains empty rows",
+                error, val_sequence=13, log_category=log_category)
 
     incorrect_pos = False
     incorrect_message = ""
@@ -323,6 +339,9 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
         try:
             if is_ms and maf_header['mass_to_charge']:
                 check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms=is_ms, log_category=log_category)
+            elif not is_ms and maf_header['chemical_shift']:
+                check_maf_rows(validations, val_section, maf_df, 'chemical_shift', is_ms=is_ms,
+                               log_category=log_category)
         except:
             logger.info("No mass_to_charge column found in the MS MAF")
 
@@ -413,7 +432,7 @@ class Validation(Resource):
             },
             {
                 "name": "static_validation_file",
-                "description": "Read validation from pre-generated file for 'In Review' and 'Public' status",
+                "description": "Read validation and file list from pre-generated files ('In Review' and 'Public' status)",
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
@@ -498,10 +517,13 @@ class Validation(Resource):
                 except Exception as e:
                     logger.error(str(e))
                     validation_schema = \
-                        validate_study(study_id, study_location, user_token, obfuscation_code, section, log_category)
+                        validate_study(study_id, study_location, user_token, obfuscation_code,
+                                       validation_section=section,
+                                       log_category=log_category, static_validation_file=False)
             else:
                 validation_schema = \
-                    validate_study(study_id, study_location, user_token, obfuscation_code, section, log_category)
+                    validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
+                                   log_category=log_category, static_validation_file=static_validation_file)
 
             try:
                 cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
@@ -517,7 +539,8 @@ class Validation(Resource):
                 logger.error(str(e))
         else:
             validation_schema = \
-                validate_study(study_id, study_location, user_token, obfuscation_code, section, log_category)
+                validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
+                               log_category=log_category, static_validation_file=static_validation_file)
 
         return validation_schema
 
@@ -585,23 +608,33 @@ class UpdateValidationFile(Resource):
         validation_file = os.path.join(study_location, 'validation_report.json')
         """ Background thread to update the validations file """
         threading.Thread(
-            target=update_val_schema_file(validation_file, study_id, study_location, user_token, obfuscation_code),
+            target=update_val_schema_files(validation_file, study_id, study_location, user_token, obfuscation_code),
             daemon=True).start()
 
         return {"success": "Validation schema file updated"}
 
 
-def update_val_schema_file(validation_file, study_id, study_location, user_token, obfuscation_code):
+def update_val_schema_files(validation_file, study_id, study_location, user_token, obfuscation_code):
+
+    file_list = []
+    file_list = list_directories_full(study_location, file_list, base_study_location=study_location)
+    try:
+        with open(os.path.join(study_location, 'validation_files.json'), 'w', encoding='utf-8') as f1:
+            json.dump(file_list, f1, ensure_ascii=False)
+    except Exception as e1:
+        logger.error('Error Writing validation file list: ' + str(e1))
+
     validation_schema = validate_study(study_id, study_location, user_token, obfuscation_code)
     try:
         with open(validation_file, 'w', encoding='utf-8') as f:
             # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
             json.dump(validation_schema, f, ensure_ascii=False)
     except Exception as e:
-        logger.error(str(e))
+        logger.error('Error writing validation schema file: ' + str(e))
 
 
-def validate_study(study_id, study_location, user_token, obfuscation_code, validation_section='all', log_category='all'):
+def validate_study(study_id, study_location, user_token, obfuscation_code,
+                   validation_section='all', log_category='all', static_validation_file=None):
     all_validations = []
     validation_schema = None
     error_found = False
@@ -716,7 +749,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code, valid
     if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, files_validation = validate_files(
             study_id, study_location, obfuscation_code, override_list,
-            file_name_list, val_section, log_category=log_category)
+            file_name_list, val_section, log_category=log_category, static_validation_file=static_validation_file)
         all_validations.append(files_validation)
 
     if not status:
@@ -838,13 +871,13 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
             if empty_rows == all_rows:
                 missing_all_rows.append(assay_header)
 
-    if 'Raw Spectral Data File' in missing_all_rows:
-        if 'Derived Spectral Data File' in missing_all_rows:
+    if raw_file in missing_all_rows:
+        if derived_file in missing_all_rows:
             # OK, all raw/derived files are missing, no point in looking at these anymore
-            all_file_columns.remove('Raw Spectral Data File')
-            all_file_columns.remove('Derived Spectral Data File')
-            missing_all_rows.remove('Raw Spectral Data File')
-            missing_all_rows.remove('Derived Spectral Data File')
+            all_file_columns.remove(raw_file)
+            all_file_columns.remove(derived_file)
+            missing_all_rows.remove(raw_file)
+            missing_all_rows.remove(derived_file)
             add_msg(validations, val_section,
                     "All Raw and Derived Spectral Data Files are missing from assay",
                     error, filename, val_sequence=7.6, log_category=log_category)
@@ -859,12 +892,12 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
             derived_tested = False
 
             for header, value in row.iteritems():
-                if header == 'Raw Spectral Data File':
+                if header == raw_file:
                     raw_tested = True
                     if value:
                         all_assay_raw_files.append(value)
                         raw_found = True
-                elif header == 'Derived Spectral Data File':
+                elif header == derived_file:
                     derived_tested = True
                     if value:
                         all_assay_raw_files.append(value)
@@ -876,7 +909,7 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                     # else:
                     if not value:
                         val_type = error
-                        if 'Acquisition Parameter Data File' in header or 'Free Induction Decay Data File' in header:
+                        if acq_file in header or fid_file in header:
                             val_type = warning
 
                         add_msg(validations, val_section, header + " was not referenced in assay row " + row_idx,
@@ -1117,7 +1150,7 @@ def get_files_in_sub_folders(study_location):
 
 
 def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list,
-                   val_section="files", log_category=error):
+                   val_section="files", log_category=error, static_validation_file=None):
     validations = []
     assay_file_list = get_assay_file_list(study_location)
     # folder_list = get_files_in_sub_folders(study_location)
@@ -1125,7 +1158,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
                                       include_upload_folder=False, assay_file_list=assay_file_list,
-                                      short_format=True, include_sub_dir=True)
+                                      short_format=True, include_sub_dir=True,
+                                      static_validation_file=static_validation_file)
     # if folder_list:
     #     for folder in folder_list:
     #         study_files_sub, upload_files, upload_diff, upload_location = \
