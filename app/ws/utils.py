@@ -62,7 +62,7 @@ empty_exclude_list = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chr
 ignore_file_list = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal', 'checksum.xml', 'info.xml',
                     'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
                     'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml', 'metexplore_mapping',
-                    'tempbase', 'prosol_history', 'validation_files', 'pulseprogram']
+                    'tempbase', 'prosol_history', 'validation_files', 'pulseprogram', '_history']
 
 
 def check_user_token(user_token):

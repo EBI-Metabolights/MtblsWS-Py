@@ -973,7 +973,10 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                         if file_type == 'audit':
                             continue
 
-                        if file_type in ['raw', 'derived'] and not validation_only:
+                        if validation_only and name in folder_exclusion_list:
+                            continue
+
+                        if file_type in ['raw', 'derived'] and validation_only:  # or validation only?
                             continue
                         else:
                             dir_list.extend(list_directories(entry.path, [], base_study_location,
@@ -981,6 +984,9 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                                                              short_format=short_format,
                                                              include_sub_dir=include_sub_dir,
                                                              static_validation_file=static_validation_file))
+
+        if not dir_list:
+            print('No list')
     return dir_list, static_file_found
 
 
