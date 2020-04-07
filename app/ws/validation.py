@@ -508,7 +508,9 @@ class Validation(Resource):
         if section is None or section not in val_sections:
             section = 'all'
 
-        if static_validation_file and study_status.lower() == 'in review' or study_status.lower() == 'public':
+        study_status = study_status.lower()
+
+        if static_validation_file and study_status == 'in review' or study_status == 'public':
             validation_file = os.path.join(study_location, 'validation_report.json')
             if os.path.isfile(validation_file):
                 try:
@@ -516,27 +518,32 @@ class Validation(Resource):
                         validation_schema = json.load(f)
                 except Exception as e:
                     logger.error(str(e))
-                    validation_schema = \
-                        validate_study(study_id, study_location, user_token, obfuscation_code,
-                                       validation_section=section,
-                                       log_category=log_category, static_validation_file=False)
+                    validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
+                                                                obfuscation_code, return_schema=True)
+                    # validation_schema = \
+                    #     validate_study(study_id, study_location, user_token, obfuscation_code,
+                    #                    validation_section=section,
+                    #                    log_category=log_category, static_validation_file=False)
             else:
-                validation_schema = \
-                    validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
-                                   log_category=log_category, static_validation_file=static_validation_file)
+                validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
+                                                            obfuscation_code, return_schema=True)
+                # validation_schema = \
+                #     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
+                #                    log_category=log_category, static_validation_file=static_validation_file)
 
-            try:
-                cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-                cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
-                logger.info("Starting cluster job for Validation schema update: " + cmd)
-                status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=False)
-                lsf_msg = message + '. ' + job_out + '. ' + job_err
-                if not status:
-                    logger.error("LSF job error: " + lsf_msg)
-                else:
-                    logger.info("LSF job submitted: " + lsf_msg)
-            except Exception as e:
-                logger.error(str(e))
+            # if study_status == 'in review':
+            #     try:
+            #         cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
+            #         cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
+            #         logger.info("Starting cluster job for Validation schema update: " + cmd)
+            #         status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=False)
+            #         lsf_msg = message + '. ' + job_out + '. ' + job_err
+            #         if not status:
+            #             logger.error("LSF job error: " + lsf_msg)
+            #         else:
+            #             logger.info("LSF job submitted: " + lsf_msg)
+            #     except Exception as e:
+            #         logger.error(str(e))
         else:
             validation_schema = \
                 validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
@@ -614,8 +621,17 @@ class UpdateValidationFile(Resource):
         return {"success": "Validation schema file updated"}
 
 
-def update_val_schema_files(validation_file, study_id, study_location, user_token, obfuscation_code):
+def update_val_schema_files(validation_file, study_id, study_location, user_token, obfuscation_code,
+                            return_schema=False):
 
+    # Tidy up old files first
+    if os.path.isfile(os.path.join(study_location, 'validation_files.json')):
+        os.remove(os.path.join(study_location, 'validation_files.json'))
+
+    if os.path.isfile(validation_file):
+        os.remove(validation_file)
+
+    f_start_time = time.time()
     file_list = []
     file_list = list_directories_full(study_location, file_list, base_study_location=study_location)
     try:
@@ -624,17 +640,26 @@ def update_val_schema_files(validation_file, study_id, study_location, user_toke
     except Exception as e1:
         logger.error('Error Writing validation file list: ' + str(e1))
 
-    validation_schema = validate_study(study_id, study_location, user_token, obfuscation_code)
+    logger.info(study_id + " - Generating validations file list took %s seconds" % round(time.time() - f_start_time, 2))
+
+    v_start_time = time.time()
+    validation_schema = validate_study(study_id, study_location, user_token, obfuscation_code,
+                                       static_validation_file=True)
     try:
         with open(validation_file, 'w', encoding='utf-8') as f:
             # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
             json.dump(validation_schema, f, ensure_ascii=False)
     except Exception as e:
         logger.error('Error writing validation schema file: ' + str(e))
+    logger.info(study_id + " - Generating validations list took %s seconds" % round(time.time() - v_start_time, 2))
+
+    if return_schema:
+        return validation_schema
 
 
 def validate_study(study_id, study_location, user_token, obfuscation_code,
                    validation_section='all', log_category='all', static_validation_file=None):
+    start_time = time.time()
     all_validations = []
     validation_schema = None
     error_found = False
@@ -772,14 +797,17 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
 
     if error_found:
         update_validation_status(study_id=study_id, validation_status=error)
-        return {"validation": {"status": error, "validations": all_validations}}
+        end_time = round(time.time() - start_time, 2)
+        return {"validation": {"status": error, "timing": end_time, "validations": all_validations}}
 
     if warning_found:
         update_validation_status(study_id=study_id, validation_status=warning)
-        return {"validation": {"status": warning, "validations": all_validations}}
+        end_time = round(time.time() - start_time, 2)
+        return {"validation": {"status": warning, "timing": end_time, "validations": all_validations}}
 
     update_validation_status(study_id=study_id, validation_status=success)
-    return {"validation": {"status": success, "validations": all_validations}}
+    end_time = round(time.time() - start_time, 2)
+    return {"validation": {"status": success, "timing": end_time, "validations": all_validations}}
 
 
 def get_assay_column_validations(validation_schema, a_header):

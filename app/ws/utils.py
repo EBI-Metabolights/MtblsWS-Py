@@ -898,15 +898,13 @@ def map_file_type(file_name, directory, assay_file_list=None):
             return 'derived', active_status, folder
         else:
             return 'derived', none_active_status, folder
-    elif ext in ('.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', 'rar',
-                 '.bz2', '.arj', '.z', '.war'):
+    elif ext in ('.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z',
+                 '.g7z', '.arj', 'rar', '.bz2', '.arj', '.z', '.war'):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'compressed', active_status, folder
         else:
             return 'compressed', none_active_status, folder
-    elif fname == 'metexplore_mapping' \
-            or fname == 'chebi_pipeline_annotations' \
-            or fname == 'validation_report':
+    elif fname in ('metexplore_mapping', 'chebi_pipeline_annotations', 'validation_report', 'validation_files'):
         return 'internal_mapping', active_status, folder
     elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
         return 'chebi_pipeline_file', active_status, folder
