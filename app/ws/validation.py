@@ -511,7 +511,14 @@ class Validation(Resource):
         study_status = study_status.lower()
 
         if static_validation_file and study_status == 'in review' or study_status == 'public':
+
             validation_file = os.path.join(study_location, 'validation_report.json')
+
+            # Some file in the filesystem is newer than the validation reports, so we need to re-generate
+            if is_newer_files(study_location):
+                return update_val_schema_files(validation_file, study_id, study_location, user_token,
+                                               obfuscation_code, return_schema=True)
+
             if os.path.isfile(validation_file):
                 try:
                     with open(validation_file, 'r', encoding='utf-8') as f:
@@ -655,6 +662,15 @@ def update_val_schema_files(validation_file, study_id, study_location, user_toke
 
     if return_schema:
         return validation_schema
+
+
+def is_newer_files(study_location):
+    need_validation_update = True
+    list_of_files = glob.glob(os.path.join(study_location, '*'))
+    latest_file = max(list_of_files, key=os.path.getctime)
+    if 'validation_' in latest_file:
+        need_validation_update = False  # No files modified since the validation schema files
+    return need_validation_update
 
 
 def validate_study(study_id, study_location, user_token, obfuscation_code,

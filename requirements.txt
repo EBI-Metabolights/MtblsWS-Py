@@ -20,11 +20,11 @@ zeep==3.4.0
 pronto==0.12.2
 ctfile==0.1.8
 pyopenms==2.4.0
-gspread==3.4.1
+gspread==3.4.2
 oauth2client==4.1.3
 gspread_dataframe==3.0.3
-plotly==4.5.4
-boto3==1.12.36
+plotly==4.6.0
+boto3==1.12.37
 pillow==7.1.1
 requests==2.23.0
 metaspace2020==1.7.2
