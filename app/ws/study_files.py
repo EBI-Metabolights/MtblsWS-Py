@@ -811,6 +811,7 @@ def get_file_information(study_location=None, path=None, directory=None, include
                          assay_file_list=None, validation_only=False, short_format=None,
                          include_sub_dir=None, static_validation_file=None):
     file_list = []
+    file_name = ""
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
         end_time = time.time() + timeout_secs
@@ -985,8 +986,6 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                                                              include_sub_dir=include_sub_dir,
                                                              static_validation_file=static_validation_file))
 
-        if not dir_list:
-            print('No list')
     return dir_list, static_file_found
 
 

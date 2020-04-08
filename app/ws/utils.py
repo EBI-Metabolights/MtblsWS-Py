@@ -57,12 +57,13 @@ folder_exclusion_list = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'ba
                          '/audit', '/metaspace', '/chebi', '/old', '/backup', '/chebi_pipeline_annotations']
 
 empty_exclude_list = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chroms.inf', 'prosol_history', 'title',
-                      'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin']
+                      'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin', 'tcc_1.xml']
 
 ignore_file_list = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal', 'checksum.xml', 'info.xml',
                     'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
                     'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml', 'metexplore_mapping',
-                    'tempbase', 'prosol_history', 'validation_files', 'pulseprogram', '_history']
+                    'tempbase', 'prosol_history', 'validation_files', 'pulseprogram', '_history', 'tcc_1',
+                    'msactualdefs', 'msmasscal']
 
 
 def check_user_token(user_token):

@@ -232,8 +232,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
 
     if (file_type == 'raw' or file_type == 'compressed') and column_name == raw_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif (file_type == 'derived' or file_type == 'raw' or file_type == 'compressed') \
-            and (column_name == derived_file or column_name == raw_file):
+    elif file_type in ('derived', 'raw', 'compressed') and (column_name == derived_file or column_name == raw_file):
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'spreadsheet' and column_name == derived_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
@@ -243,7 +242,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'folder' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif file_type == 'compressed' and column_name == acq_file:
+    elif file_type in ('compressed', 'acqus') and column_name == acq_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'fid' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
@@ -508,16 +507,20 @@ class Validation(Resource):
         if section is None or section not in val_sections:
             section = 'all'
 
+        # We can only use the static validation file when all values are used. MOE uses 'all' as default
+        if section != 'all' or log_category != 'all':
+            static_validation_file = False
+
         study_status = study_status.lower()
 
-        if static_validation_file and study_status == 'in review' or study_status == 'public':
+        if static_validation_file and study_status in ('in review', 'public'):
 
             validation_file = os.path.join(study_location, 'validation_report.json')
 
             # Some file in the filesystem is newer than the validation reports, so we need to re-generate
             if is_newer_files(study_location):
                 return update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                               obfuscation_code, return_schema=True)
+                                               obfuscation_code, log_category=log_category, return_schema=True)
 
             if os.path.isfile(validation_file):
                 try:
@@ -526,14 +529,16 @@ class Validation(Resource):
                 except Exception as e:
                     logger.error(str(e))
                     validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                                                obfuscation_code, return_schema=True)
+                                                                obfuscation_code, log_category=log_category,
+                                                                return_schema=True)
                     # validation_schema = \
                     #     validate_study(study_id, study_location, user_token, obfuscation_code,
                     #                    validation_section=section,
                     #                    log_category=log_category, static_validation_file=False)
             else:
                 validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                                            obfuscation_code, return_schema=True)
+                                                            obfuscation_code, log_category=log_category,
+                                                            return_schema=True)
                 # validation_schema = \
                 #     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
                 #                    log_category=log_category, static_validation_file=static_validation_file)
@@ -629,7 +634,7 @@ class UpdateValidationFile(Resource):
 
 
 def update_val_schema_files(validation_file, study_id, study_location, user_token, obfuscation_code,
-                            return_schema=False):
+                            log_category='all', return_schema=False):
 
     # Tidy up old files first
     if os.path.isfile(os.path.join(study_location, 'validation_files.json')):
@@ -651,14 +656,15 @@ def update_val_schema_files(validation_file, study_id, study_location, user_toke
 
     v_start_time = time.time()
     validation_schema = validate_study(study_id, study_location, user_token, obfuscation_code,
-                                       static_validation_file=True)
-    try:
-        with open(validation_file, 'w', encoding='utf-8') as f:
-            # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
-            json.dump(validation_schema, f, ensure_ascii=False)
-    except Exception as e:
-        logger.error('Error writing validation schema file: ' + str(e))
-    logger.info(study_id + " - Generating validations list took %s seconds" % round(time.time() - v_start_time, 2))
+                                       log_category=log_category, static_validation_file=True)
+    if log_category == 'all':  # Only write the complete file, not when we have a sub-section only query
+        try:
+            with open(validation_file, 'w', encoding='utf-8') as f:
+                # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
+                json.dump(validation_schema, f, ensure_ascii=False)
+        except Exception as e:
+            logger.error('Error writing validation schema file: ' + str(e))
+        logger.info(study_id + " - Generating validations list took %s seconds" % round(time.time() - v_start_time, 2))
 
     if return_schema:
         return validation_schema
@@ -893,7 +899,8 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
         file_and_column = row + '|' + a_header
         if file_and_column not in unique_file_names:
             if row != "":  # Do not add a section if a column does not list files
-                unique_file_names.append(file_and_column)
+                if file_and_column not in unique_file_names:
+                    unique_file_names.append(file_and_column)
     elif a_header.endswith(' Assay Name'):  # MS or NMR assay names are used in the assay
         row = str(row)
         if row not in all_assay_names:
@@ -998,7 +1005,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         assays = []
         all_assay_names = []
         all_assay_raw_files = []
-        unique_file_names = []
+        # unique_file_names = []
         assay_file_name = os.path.join(study_location, assay.filename)
         assay_df = None
         try:
@@ -1228,7 +1235,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
         full_file_name = os.path.join(study_location, file_name)
 
         # Don't check our internal folders
-        if file_name != 'audit' and not file_name.startswith('chebi_pipeline_annotations'):
+        if 'audit' not in file_name and not file_name.startswith('chebi_pipeline_annotations'):
             if os.path.isdir(os.path.join(full_file_name)):
                 for sub_file_name in os.listdir(full_file_name):
                     if is_empty_file(os.path.join(full_file_name, sub_file_name), study_location=study_location):
