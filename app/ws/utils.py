@@ -80,13 +80,16 @@ def get_timestamp():
     return time.strftime(date_format)
 
 
-def get_year_plus_one(isa_format=False):
+def get_year_plus_one(todays_date=False, isa_format=False):
     """
     Get a string with the current date 20170302
     :return: %Y%m%d - full year, two digit month, day
     """
     today = datetime.date.today()
-    now = datetime.date(today.year + 1, today.month, today.day)
+    if todays_date:
+        now = datetime.date(today.year, today.month, today.day)
+    else:
+        now = datetime.date(today.year + 1, today.month, today.day)
     if isa_format:
         return now.strftime(isa_date_format)
 
@@ -583,17 +586,20 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
     xsd_name = items[0]
     script_loc = items[1]
 
+    xmlschema_doc = etree.parse(os.path.join(script_loc, xsd_name))
+    xmlschema = etree.XMLSchema(xmlschema_doc)
+
     for file_loc in [study_location, upload_location]:  # Check both study and upload location. Study first!!!!
         if os.path.isdir(file_loc):  # Only check if the folder exists
             files = glob.iglob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
             if files.gi_yieldfrom is None:  # No files, check sub-folders
                 logger.info('Could not find any mzML files, checking any sub-folders')
                 files = glob.iglob(os.path.join(file_loc, '**/*.mzML'), recursive=True)
-            # TODO validate the XSD here, only needed once
+
             for file in files:
                 try:
                     logger.info('Validating mzML file ' + file)
-                    status, result = validate_xml(os.path.join(script_loc, xsd_name), file)
+                    status, result = validate_xml(xml=file, xmlschema=xmlschema)
                     if not status:
                         return status, result
                     # Ok, the file validated, so we now copy it file to the study folder
@@ -612,10 +618,7 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
     return status, result
 
 
-def validate_xml(xsd, xml):
-
-    xmlschema_doc = etree.parse(xsd)
-    xmlschema = etree.XMLSchema(xmlschema_doc)
+def validate_xml(xml=None, xmlschema=None):
 
     # parse xml
     try:
@@ -645,8 +648,8 @@ def to_isa_tab(study_id, input_folder, output_folder):
 
 
 def convert_to_isa(study_location, study_id):
-    input_folder = study_location
-    output_folder = study_location
+    input_folder = study_location + "/"
+    output_folder = study_location + "/"
     status, message = to_isa_tab(study_id, input_folder, output_folder)
     return status, message
 
@@ -894,7 +897,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'audit', none_active_status, True
     elif file_name == '.DS_Store':
         return 'macos_special_file', none_active_status, False
-    elif ext in ('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata'):
+    elif ext in ('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef'):
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'derived', active_status, folder
         else:
@@ -921,7 +924,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             else:
                 return 'raw', active_status, folder
         else:
-            if ext in ('.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp'):
+            if ext in ('.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp', '.lcd', '.abf'):
                 if os.path.isdir(os.path.join(directory, file_name)):
                     return 'raw', none_active_status, True
                 else:

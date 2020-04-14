@@ -219,7 +219,10 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
 
     # if not folder and "fid" not in file_name and final_filename.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
     if file_name not in file_name_list and file_name.lstrip('/') not in file_name_list:  # was final_filename
-        return False, unknown_file, "File " + file_name + " does not exist"
+        msg = "File '" + file_name + "' does not exist"
+        if file_name != file_name.rstrip(' '):
+            msg = msg + ". Trailing space in file name?"
+        return False, unknown_file, msg
 
     if is_empty_file(full_file, study_location=study_location):
         return False, file_type, "File '" + file_name + "' is empty or incorrect"
@@ -1249,41 +1252,41 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                                 warning, val_section, value=file_name, val_sequence=2, log_category=log_category)
                         isa_tab_warning = True
 
-        if file_name.startswith('Icon') or file_name.lower() == 'desktop.ini' or file_name.lower() == '.ds_store' \
-                or '~' in file_name or file_name.startswith('.'):  # "or '+' in file_name" taken out
-            add_msg(validations, val_section, "Special files should be removed from the study folder",
-                    warning, val_section, value=file_name, val_sequence=3, log_category=log_category)
-            continue
+            if is_empty_file(full_file_name, study_location=study_location):
+                # if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclude_list:  # In case the file is in a folder
+                add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
+                        error, val_section,
+                        value=file_name, val_sequence=6, log_category=log_category)
 
-        if file_name.startswith(('i_', 'a_', 's_', 'm_')):
-            if file_status != 'active':
-                add_msg(validations, val_section, "Inactive ISA-Tab metadata file should be removed ("
-                        + file_name + ")", error, val_section, value=file_name,
-                        val_sequence=5.1, log_category=log_category)
+            if file_name.startswith('Icon') or file_name.lower() == 'desktop.ini' or file_name.lower() == '.ds_store' \
+                    or '~' in file_name or file_name.startswith('.'):  # "or '+' in file_name" taken out
+                add_msg(validations, val_section, "Special files should be removed from the study folder",
+                        warning, val_section, value=file_name, val_sequence=3, log_category=log_category)
+                continue
 
-            if file_name.startswith('s_') and file_status == 'active':
-                sample_cnt += 1
+            if file_name.startswith(('i_', 'a_', 's_', 'm_')):
+                if file_status != 'active':
+                    add_msg(validations, val_section, "Inactive ISA-Tab metadata file should be removed ("
+                            + file_name + ")", error, val_section, value=file_name,
+                            val_sequence=5.1, log_category=log_category)
 
-            if sample_cnt > 1:
-                add_msg(validations, val_section, "Only one active sample sheet per study is allowed", error,
-                        val_section, value='Number of active sample sheets ' + str(sample_cnt),
-                        val_sequence=4, log_category=log_category)
+                if file_name.startswith('s_') and file_status == 'active':
+                    sample_cnt += 1
 
-            if file_status == 'old':
-                add_msg(validations, val_section, "Old ISA-Tab metadata file should be removed ("
-                        + file_name + ")", error, val_section, value=file_name, val_sequence=5, log_category=log_category)
+                if sample_cnt > 1:
+                    add_msg(validations, val_section, "Only one active sample sheet per study is allowed", error,
+                            val_section, value='Number of active sample sheets ' + str(sample_cnt),
+                            val_sequence=4, log_category=log_category)
 
-        if is_empty_file(full_file_name, study_location=study_location):
-            # if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclude_list:  # In case the file is in a folder
-            add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
-                    error, val_section,
-                    value=file_name, val_sequence=6, log_category=log_category)
+                if file_status == 'old':
+                    add_msg(validations, val_section, "Old ISA-Tab metadata file should be removed ("
+                            + file_name + ")", error, val_section, value=file_name, val_sequence=5, log_category=log_category)
 
-        if file_type == 'aspera-control':
-            add_msg(validations, val_section,
-                    "Incomplete Aspera transfer? '.partial', '.aspera-ckpt' or '.aspx' Aspera control files "
-                    "are present in the study folder: '" + file_name + "'",
-                    error, val_section, value=file_name, val_sequence=6.1, log_category=log_category)
+            if file_type == 'aspera-control':
+                add_msg(validations, val_section,
+                        "Incomplete Aspera transfer? '.partial', '.aspera-ckpt' or '.aspx' Aspera control files "
+                        "are present in the study folder: '" + file_name + "'",
+                        error, val_section, value=file_name, val_sequence=6.1, log_category=log_category)
 
         if file_type == 'raw':
             raw_file_found = True
@@ -1400,7 +1403,8 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
             if col_rows < all_rows:
                 val_stat = error
 
-                if s_header == 'Characteristics[Variant]':  # This is a new column we like to see, but not mandatory
+                # These are new columns we like to see, but not mandatory yet
+                if s_header in ('Characteristics[Variant]', 'Characteristics[Sample type]'):
                     val_stat = info
 
                 if 'factor value' in s_header.lower():  # User defined factors may not all have data in all rows

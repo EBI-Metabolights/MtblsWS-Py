@@ -833,14 +833,14 @@ def get_file_information(study_location=None, path=None, directory=None, include
             logger.error('Could not read all the files and folders. Error: ' + str(e))
             file_list = os.listdir(path)
 
-        for entry in tree_file_list:
+        for entry in flatten_list(tree_file_list):
             # {'file': '20160728_033.raw', 'createdAt': '', 'timestamp': '', 'type': 'raw', 'status': 'active', 'directory': True}
             file_type = None
             file_time = None
             raw_time = None
             status = None
             folder = None
-            if short_format and not static_file_found: # The static file contains more info and is fast to read
+            if short_format and not static_file_found:  # The static file contains more info and is fast to read
                 file_name = entry
             else:
                 file_name = entry['file']
@@ -876,6 +876,19 @@ def get_file_information(study_location=None, path=None, directory=None, include
         logger.error(str(e))
 
     return file_list
+
+
+def flatten_list(list_name):
+    # Now, with sub-folders we may have lists of lists, so flatten the structure
+    flat_list = []
+    for entry in list_name:
+        if isinstance(entry, list):
+            for sub_entry in entry:
+                flat_list.append(str(sub_entry))
+        else:
+            if type(entry) != bool:
+                flat_list.append(str(entry))
+    return flat_list
 
 
 def get_file_times(directory, file_name, assay_file_list=None, validation_only=False):
