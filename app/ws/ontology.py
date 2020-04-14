@@ -18,6 +18,7 @@
 
 import datetime
 import re
+import types
 from urllib.request import urlopen
 
 import gspread
@@ -289,15 +290,16 @@ class Ontology(Resource):
             #                          "column type", "instruments", "confidence", "sample type"
 
             if branch == 'taxonomy':
-                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'NCIT': 5, 'CHEBI': 6, 'CHMO': 7, 'PO': 8}
+                priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'NCIT': 5, 'CHEBI': 6,
+                            'CHMO': 7, 'PO': 8}
 
-            if branch == 'unit':
+            elif branch == 'unit':
                 priority = {'UO': 0, 'MTBLS': 1}
 
-            if branch == 'factor':
+            elif branch == 'factor':
                 priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
 
-            if branch == 'design descriptor':
+            elif branch == 'design descriptor':
                 priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
 
             else:
@@ -1031,7 +1033,7 @@ class Placeholder(Resource):
                 elif operation.lower() == 'zooma':
                     for change in list_changes:
                         try:
-                            property_type = change['characteristicsName'].replace(' ',"_")
+                            property_type = change['characteristicsName'].replace(' ', "_")
                             addZoomaTerm(studyID, property_type, change['new_term'], change['term_url'])
                             result = 'Done'
                         except Exception as e:

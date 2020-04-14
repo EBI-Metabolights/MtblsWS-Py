@@ -19,7 +19,7 @@
 import json
 import logging
 import ssl
-import types
+import urllib
 from urllib.parse import quote_plus
 
 import pandas as pd
@@ -69,91 +69,6 @@ class Descriptor():
         self.studyID = studyID
         self.design_type = design_type
         self.iri = iri
-
-
-def addEntity(ontoPath, new_term, supclass, definition=None):
-    '''
-        add new term to the ontology and save it
-
-        :param ontoPath: Ontology Path
-        :param new_term: new entity to be added
-        :param supclass:  superclass/branch name or iri of new term
-        :param definition (optional): definition of the new term
-        '''
-
-    def getid(onto):
-        '''
-        this method usd for get the last un-take continuously term ID
-        :param onto: ontology
-        :return: the last id for the new term
-        '''
-
-        temp = []
-        for c in onto.classes():
-            print(str(c))
-            if str(c).lower().startswith('metabolights'):
-                temp.append(str(c))
-
-        last = max(temp)
-        temp = str(int(last[-6:]) + 1).zfill(6)
-        id = 'MTBLS_' + temp
-
-        return id
-
-    try:
-        onto = get_ontology(ontoPath).load()
-        id = getid(onto)
-        namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
-
-        with namespace:
-            try:
-                cls = onto.search_one(label=supclass)
-            except:
-                try:
-                    cls = onto.search_one(iri=supclass)
-                except Exception as e:
-                    print(e)
-
-            newEntity = types.new_class(id, (cls,))
-            newEntity.label = new_term
-            if definition != None:
-                newEntity.isDefinedBy = definition
-            else:
-                pass
-
-        onto.save(file=ontoPath, format='rdfxml')
-
-    except Exception as e:
-        print(e)
-
-
-def OLSbranchSearch(keyword, branchName, ontoName):
-    res = []
-    if keyword in [None, '']:
-        return res
-
-    def getStartIRI(start, ontoName):
-        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + start + '&ontology=' + ontoName + '&queryFields=label'
-        fp = urllib.request.urlopen(url)
-        content = fp.read().decode('utf-8')
-        json_str = json.loads(content)
-        res = json_str['response']['docs'][0]['iri']
-        return urllib.parse.quote_plus(res)
-
-    branchIRI = getStartIRI(branchName, ontoName)
-    keyword = keyword.replace(' ', '%20')
-    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
-    # print(url)
-    fp = urllib.request.urlopen(url)
-    content = fp.read().decode('utf-8')
-    json_str = json.loads(content)
-
-    for ele in json_str['response']['docs']:
-        enti = entity(name=ele['label'],
-                      iri=ele['iri'], ontoName=ontoName, provenance_name=ontoName)
-
-        res.append(enti)
-    return res
 
 
 def getMetaboTerm(keyword, branch, mapping=''):
@@ -295,6 +210,89 @@ def getMetaboTerm(keyword, branch, mapping=''):
     return res
 
 
+def getOLSTerm(keyword, map, ontology=''):
+    logger.info('Requesting OLS...')
+    print('Requesting OLS...')
+    res = []
+
+    if keyword in [None, '']:
+        return res
+
+    try:
+        # https://www.ebi.ac.uk/ols/api/search?q=lung&groupField=true&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
+        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
+              '&groupField=true' \
+              '&queryFields=label,synonym' \
+              '&type=class' \
+              '&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
+              '&rows=30'  # &exact=true
+        if map == 'exact':
+            url += '&exact=true'
+
+        if ontology not in [None, '']:
+            onto_list = ','.join(ontology)
+            url += '&ontology=' + onto_list
+
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+        responses = j_content["response"]['docs']
+
+        for term in responses:
+            # name = ' '.join([w.capitalize() if w.islower() else w for w in term['label'].split()])
+
+            name = term['label'].capitalize()
+            try:
+                definition = term['description'][0]
+            except:
+                definition = ''
+
+            try:
+                ontoName, provenance_name = getOnto_Name(term['iri'])
+            except:
+                ontoName = ''
+                provenance_name = ''
+
+            enti = entity(name=name, iri=term['iri'], definition=definition, ontoName=ontoName,
+                          provenance_name=provenance_name)
+
+            res.append(enti)
+            if len(res) >= 20:
+                break
+
+    except Exception as e:
+        print(e.args)
+        logger.error('getOLS' + str(e))
+    return res
+
+
+def OLSbranchSearch(keyword, branchName, ontoName):
+    res = []
+    if keyword in [None, '']:
+        return res
+
+    def getStartIRI(start, ontoName):
+        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + start + '&ontology=' + ontoName + '&queryFields=label'
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        json_str = json.loads(content)
+        res = json_str['response']['docs'][0]['iri']
+        return urllib.parse.quote_plus(res)
+
+    branchIRI = getStartIRI(branchName, ontoName)
+    keyword = keyword.replace(' ', '%20')
+    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
+    # print(url)
+    fp = urllib.request.urlopen(url)
+    content = fp.read().decode('utf-8')
+    json_str = json.loads(content)
+
+    for ele in json_str['response']['docs']:
+        enti = entity(name=ele['label'], iri=ele['iri'], ontoName=ontoName, provenance_name=ontoName)
+        res.append(enti)
+    return res
+
+
 def getMetaboZoomaTerm(keyword, mapping):
     logger.info('Searching Metabolights-zooma.tsv')
     print('Searching Metabolights-zooma.tsv')
@@ -393,63 +391,6 @@ def getZoomaTerm(keyword, mapping=''):
                 break
     except Exception as e:
         logger.error('getZooma' + str(e))
-    return res
-
-
-def getOLSTerm(keyword, map, ontology=''):
-    logger.info('Requesting OLS...')
-    print('Requesting OLS...')
-    res = []
-
-    if keyword in [None, '']:
-        return res
-
-    try:
-        # https://www.ebi.ac.uk/ols/api/search?q=lung&groupField=true&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
-        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
-              '&groupField=true' \
-              '&queryFields=label,synonym' \
-              '&type=class' \
-              '&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
-              '&rows=30'  # &exact=true
-        if map == 'exact':
-            url += '&exact=true'
-
-        if ontology not in [None, '']:
-            onto_list = ','.join(ontology)
-            url += '&ontology=' + onto_list
-
-        fp = urllib.request.urlopen(url)
-        content = fp.read().decode('utf-8')
-        j_content = json.loads(content)
-        responses = j_content["response"]['docs']
-
-        for term in responses:
-            # name = ' '.join([w.capitalize() if w.islower() else w for w in term['label'].split()])
-
-            name = term['label'].capitalize()
-
-            try:
-                definition = term['description'][0]
-            except:
-                definition = ''
-
-            try:
-                ontoName, provenance_name = getOnto_Name(term['iri'])
-            except:
-                ontoName = ''
-                provenance_name = ''
-
-            enti = entity(name=name, iri=term['iri'], definition=definition, ontoName=ontoName,
-                          provenance_name=provenance_name)
-
-            res.append(enti)
-            if len(res) >= 20:
-                break
-
-    except Exception as e:
-        print(e.args)
-        logger.error('getOLS' + str(e))
     return res
 
 
