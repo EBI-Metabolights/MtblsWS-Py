@@ -956,6 +956,8 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                      static_validation_file=None):
     static_file_found = False
     validation_files_list = os.path.join(file_location, 'validation_files.json')
+    folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
+
     if os.path.isfile(validation_files_list) and static_validation_file:
         try:
             with open(validation_files_list, 'r', encoding='utf-8') as f:

@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.5.15"
+WS_APP_VERSION = "1.6.0"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.11.0"
 METASPACE_API_VERSION = "1.7.2"
@@ -95,7 +95,32 @@ CONN_POOL_MAX = 20
 # Timeout in secounds when listing a large folder for files
 FILE_LIST_TIMEOUT = 90
 
+# Validations
 VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
+
+FOLDER_EXCLUSION_LIST = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
+                         '/audit', '/metaspace', '/chebi', '/old', '/backup', '/chebi_pipeline_annotations']
+
+EMPTY_EXCLUSION_LIST = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chroms.inf', 'prosol_history', 'title',
+                        'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin', 'tcc_1.xml']
+
+IGNORE_FILE_LIST = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal', 'checksum.xml', 'info.xml',
+                    'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
+                    'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml', 'metexplore_mapping',
+                    'tempbase', 'prosol_history', 'validation_files', 'pulseprogram', '_history', 'tcc_1',
+                    'msactualdefs', 'msmasscal']
+
+RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp',
+                  '.lcd', '.abf', '.jpf', '.xps']
+
+DERIVED_FILES_LIST = ['.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef', '.cnx', '.peakml', '.xy']
+
+COMPRESSED_FILES_LIST = ['.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', '.rar',
+                         '.bz2', '.arj', '.z', '.war', '.raw.rar']
+
+INTERNAL_MAPPING_LIST = ['metexplore_mapping', 'chebi_pipeline_annotations', 'validation_report', 'validation_files']
+
+# Other files
 OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
 CHEBI_URL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
 CHEBI_URL_WAIT = 300

@@ -177,6 +177,7 @@ def is_empty_file(full_file_name, study_location=None):
     # This will return False if a filename is not correct, ie. has a space etc.
     empty_file = True
 
+    ignore_file_list = app.config.get('IGNORE_FILE_LIST')
     short_file_name = os.path.basename(full_file_name).lower()
     for ignore in ignore_file_list:  # Now there are a bunch of files we want to ignore regardless if they are empty
         if ignore in short_file_name:
@@ -1178,6 +1179,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 def get_files_in_sub_folders(study_location):
     folder_list = []
     file_list = []
+    folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
 
     for file_name in os.listdir(study_location):
     # for file_name in file_list:
@@ -1253,7 +1255,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                         isa_tab_warning = True
 
             if is_empty_file(full_file_name, study_location=study_location):
-                # if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclude_list:  # In case the file is in a folder
+                # if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclusion_list:  # In case the file is in a folder
                 add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
                         error, val_section,
                         value=file_name, val_sequence=6, log_category=log_category)

@@ -53,18 +53,6 @@ date_format = "%Y%m%d%H%M%S"  # 20180724092134
 file_date_format = "%B %d %Y %H:%M:%S"  # 20180724092134
 isa_date_format = "%Y-%m-%d"
 
-folder_exclusion_list = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
-                         '/audit', '/metaspace', '/chebi', '/old', '/backup', '/chebi_pipeline_annotations']
-
-empty_exclude_list = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chroms.inf', 'prosol_history', 'title',
-                      'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin', 'tcc_1.xml']
-
-ignore_file_list = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal', 'checksum.xml', 'info.xml',
-                    'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
-                    'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml', 'metexplore_mapping',
-                    'tempbase', 'prosol_history', 'validation_files', 'pulseprogram', '_history', 'tcc_1',
-                    'msactualdefs', 'msmasscal']
-
 
 def check_user_token(user_token):
     if not user_token or user_token is None or len(user_token) < 5:
@@ -848,6 +836,13 @@ def map_file_type(file_name, directory, assay_file_list=None):
     fname, ext = os.path.splitext(final_filename)
     fname = fname.lower()
     ext = ext.lower()
+    empty_exclusion_list = app.config.get('EMPTY_EXCLUSION_LIST')
+    ignore_file_list = app.config.get('IGNORE_FILE_LIST')
+    raw_files_list = app.config.get('RAW_FILES_LIST')
+    derived_files_list = app.config.get('DERIVED_FILES_LIST')
+    compressed_files_list = app.config.get('COMPRESSED_FILES_LIST')
+    internal_mapping_list = app.config.get('INTERNAL_MAPPING_LIST')
+
     # Metadata first, current is if the files are present in the investigation and assay files
     if fname.startswith(('i_', 'a_', 's_', 'm_')) and (ext == '.txt' or ext == '.tsv'):
         if fname.startswith('a_'):
@@ -897,22 +892,21 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'audit', none_active_status, True
     elif file_name == '.DS_Store':
         return 'macos_special_file', none_active_status, False
-    elif ext in ('.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef'):
+    elif ext in derived_files_list:
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'derived', active_status, folder
         else:
             return 'derived', none_active_status, folder
-    elif ext in ('.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z',
-                 '.g7z', '.arj', 'rar', '.bz2', '.arj', '.z', '.war'):
+    elif ext in compressed_files_list:
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
             return 'compressed', active_status, folder
         else:
             return 'compressed', none_active_status, folder
-    elif fname in ('metexplore_mapping', 'chebi_pipeline_annotations', 'validation_report', 'validation_files'):
+    elif fname in internal_mapping_list:
         return 'internal_mapping', active_status, folder
     elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
         return 'chebi_pipeline_file', active_status, folder
-    elif fname in empty_exclude_list:
+    elif fname in empty_exclusion_list:
         return 'ignored', none_active_status, folder
     else:
         for ignore in ignore_file_list:
@@ -924,7 +918,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
             else:
                 return 'raw', active_status, folder
         else:
-            if ext in ('.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp', '.lcd', '.abf'):
+            if ext in raw_files_list:
                 if os.path.isdir(os.path.join(directory, file_name)):
                     return 'raw', none_active_status, True
                 else:
@@ -945,6 +939,8 @@ def traverse_subfolders(study_location=None, file_location=None, file_list=None,
     # Check that we have both referenced folders
     if not os.path.isdir(study_location) or not os.path.isdir(file_location):
         return file_list, all_folders
+
+    folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
 
     if file_location not in all_folders:
         for params in os.walk(file_location):

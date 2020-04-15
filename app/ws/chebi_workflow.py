@@ -356,6 +356,8 @@ def get_sample_details(study_id, user_token, study_location):
         try:
             org_part_term = sample[organism_part_pos + 2]
             org_part = sample['Characteristics[Organism part]'] + ' [' + convert_to_chebi_onto(org_part_term) + ']'
+            if 'blank' in org_part.lower():  # ToDo: Do not need black or other controls
+                org_part = ""
         except Exception as e:
             logging.exception(e)
             org_part = ""
@@ -411,7 +413,7 @@ def populate_sample_rows(pubchem_df, study_id, user_token, study_location):
         if row[0] == "":  # Only add if database is not known
             s_row = all_organisms[idx]
             org_parts = s_row.split('|')
-            newdf.iloc[idx, [org_pos,org_part_pos,strain_pos]] = org_parts[0], org_parts[1], org_parts[2]
+            newdf.iloc[idx, [org_pos, org_part_pos, strain_pos]] = org_parts[0], org_parts[1], org_parts[2]
             # newdf.iloc[idx, org_part_pos] = org_parts[1]
             # newdf.iloc[idx, strain_pos] = org_parts[2]
 
