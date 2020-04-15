@@ -884,10 +884,10 @@ def flatten_list(list_name):
     for entry in list_name:
         if isinstance(entry, list):
             for sub_entry in entry:
-                flat_list.append(str(sub_entry))
+                flat_list.append(sub_entry)
         else:
             if type(entry) != bool:
-                flat_list.append(str(entry))
+                flat_list.append(entry)
     return flat_list
 
 
