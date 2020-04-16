@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.6.1"
+WS_APP_VERSION = "1.6.2"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.11.0"
 METASPACE_API_VERSION = "1.7.2"
@@ -113,7 +113,7 @@ IGNORE_FILE_LIST = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal'
 RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp',
                   '.lcd', '.abf', '.jpf', '.xps']
 
-DERIVED_FILES_LIST = ['.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef', '.cnx', '.peakml', '.xy']
+DERIVED_FILES_LIST = ['.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef', '.cnx', '.peakml', '.xy', '.smp']
 
 COMPRESSED_FILES_LIST = ['.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', '.rar',
                          '.bz2', '.arj', '.z', '.war', '.raw.rar']

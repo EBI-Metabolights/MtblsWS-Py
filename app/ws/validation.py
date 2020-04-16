@@ -241,7 +241,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     elif file_type == 'spreadsheet' and column_name == derived_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'derived' and column_name == derived_file:
-        return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
+        return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name
     elif file_type == 'compressed' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'folder' and column_name == fid_file:
@@ -251,7 +251,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     elif file_type == 'fid' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'raw' and column_name == raw_file:
-        return False, file_type, 'Incorrect file ' + file_name + ' or file type for column ' + column_name
+        return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name
 
     return status, file_type, 'n/a'
 
@@ -880,7 +880,7 @@ def get_assay_column_validations(validation_schema, a_header):
 
 
 def check_assay_columns(a_header, all_samples, row, validations, val_section, assay, unique_file_names,
-                        all_assay_names, sample_name_list, log_category=error):
+                        all_assay_names, sample_name_list, log_category=error, assay_file_name=None):
     # Correct sample names?
     if a_header.lower() == 'sample name':
         if row not in all_samples:
@@ -901,6 +901,8 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
                         val_sequence=9, log_category=log_category)
     elif a_header.endswith(' File'):  # files exist?
         file_and_column = row + '|' + a_header
+        if assay_file_name:
+            file_and_column = file_and_column + '|' + assay_file_name
         if file_and_column not in unique_file_names:
             if row != "":  # Do not add a section if a column does not list files
                 if file_and_column not in unique_file_names:
@@ -1082,7 +1084,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             all_sample_names, all_assay_names, validations, unique_file_names = \
                                 check_assay_columns(a_header, all_assay_samples, row, validations, val_section,
                                                     assay, unique_file_names, all_assay_names,
-                                                    sample_name_list, log_category=log_category)
+                                                    sample_name_list, log_category=log_category,
+                                                    assay_file_name=assay_file_name.replace(study_location + '/', ''))
 
                         if col_rows > len(all_assay_samples):
                             add_msg(validations, val_section,
@@ -1158,6 +1161,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     for files in unique_file_names:
         file_name = files.split('|')[0]
         column_name = files.split('|')[1]
+        try:
+            a_file_name = files.split('|')[2]
+        except:
+            a_file_name = None
         status, file_type, file_description = check_file(files, study_location, file_name_list,
                                                          assay_file_list=all_assay_raw_files)
         # if status:
@@ -1166,10 +1173,12 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         # else:
         if not status:
             err_msg = "File '" + file_name + "'"
-            if file_type == unknown_file:
+            if file_type != unknown_file:
                 err_msg = err_msg + " of type '" + file_type + "'"
 
             err_msg = err_msg + " is missing or not correct for column '" + column_name + "'"
+            if a_file_name:
+                err_msg = err_msg + " (" + a_file_name + ")"
             add_msg(validations, val_section, err_msg, error, descr=file_description,
                     val_sequence=9, log_category=log_category)
 
