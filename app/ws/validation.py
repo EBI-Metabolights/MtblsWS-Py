@@ -205,7 +205,7 @@ def get_sample_names(isa_samples):
     return all_samples
 
 
-def check_file(file_name_and_column, study_location, file_name_list, assay_file_list=None):
+def check_file(file_name_and_column, study_location, file_name_list, assay_file_list=None, assay_file_name=None):
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
     full_file = os.path.join(study_location, file_name)
@@ -213,26 +213,32 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     final_filename = os.path.basename(file_name)
     ext = ext.lower()
 
+    if assay_file_name:
+        assay_file_name = ' (' + assay_file_name + ')'
+    else:
+        assay_file_name = ''
+
     if os.path.isdir(full_file) and ext not in ('.raw', '.d'):
-        return False, 'folder', file_name + " is a sub-folder, please reference a file"
+        return False, 'folder', file_name + " is a sub-folder, please reference a file" + assay_file_name
 
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
 
     # if not folder and "fid" not in file_name and final_filename.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
     if file_name not in file_name_list and file_name.lstrip('/') not in file_name_list:  # was final_filename
-        msg = "File '" + file_name + "' does not exist"
+        msg = "File '" + file_name + "' does not exist" + assay_file_name
         if file_name != file_name.rstrip(' '):
             msg = msg + ". Trailing space in file name?"
         return False, unknown_file, msg
 
     if is_empty_file(full_file, study_location=study_location):
-        return False, file_type, "File '" + file_name + "' is empty or incorrect"
+        return False, file_type, "File '" + file_name + "' is empty or incorrect" + assay_file_name
 
     if file_type == 'metadata_maf' and column_name == 'Metabolite Assignment File':
         if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
             return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
         else:
-            return False, file_type,  "The " + column_name + " must start with 'm_' and end in '_v2_maf.tsv'"
+            return False, file_type,  "The " + column_name + \
+                   " must start with 'm_' and end in '_v2_maf.tsv'" + assay_file_name
 
     if (file_type == 'raw' or file_type == 'compressed') and column_name == raw_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
@@ -241,7 +247,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     elif file_type == 'spreadsheet' and column_name == derived_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'derived' and column_name == derived_file:
-        return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name
+        return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name + assay_file_name
     elif file_type == 'compressed' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'folder' and column_name == fid_file:
@@ -251,7 +257,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     elif file_type == 'fid' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type != 'raw' and column_name == raw_file:
-        return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name
+        return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name + assay_file_name
 
     return status, file_type, 'n/a'
 
@@ -1166,7 +1172,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         except:
             a_file_name = None
         status, file_type, file_description = check_file(files, study_location, file_name_list,
-                                                         assay_file_list=all_assay_raw_files)
+                                                         assay_file_list=all_assay_raw_files,
+                                                         assay_file_name=a_file_name)
         # if status:
         #     add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
         #             + column_name + "'", success, descr=file_description, val_sequence=8.1, log_category=log_category)
