@@ -882,9 +882,9 @@ def map_file_type(file_name, directory, assay_file_list=None):
             if ignore in fname:
                 return 'part_of_raw', none_active_status, folder
         return 'text', active_status, folder
-    elif fname.startswith('~') or ext.endswith('~') or ext in('.temp', '.tmp'):
+    elif fname.startswith('~') or ext.endswith('~') or ext in ('.temp', '.tmp'):
         return 'temp', none_active_status, folder
-    elif ext in ('.r', '.java', '.py', '.rdata', '.xsd', '.scan'):
+    elif ext in ('.r', '.java', '.py', '.rdata', '.xsd', '.scan') and '.wiff' not in fname:
         return 'programmatic', none_active_status, folder
     elif ext in ('.partial', '.aspera-ckpt', '.aspx'):
         return 'aspera-control', none_active_status, folder
