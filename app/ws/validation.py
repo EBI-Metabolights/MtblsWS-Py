@@ -23,7 +23,6 @@ import traceback
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.cluster_jobs import lsf_job
 from app.ws.db_connection import override_validations, update_validation_status
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -55,6 +54,7 @@ fid_file = 'Free Induction Decay Data File'
 acq_file = 'Acquisition Parameter Data File'
 raw_file = 'Raw Spectral Data File'
 derived_file = 'Derived Spectral Data File'
+
 
 def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0, log_category=error):
     if log_category == status or log_category == 'all':
@@ -1122,6 +1122,22 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                         #             "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
                         #             success, assay.filename, val_sequence=5, log_category=log_category)
 
+                        # Correct MAF?
+                        if a_header.lower() == 'metabolite assignment file':
+                            maf_file_name = None
+                            for row in assay_df[a_header].unique():
+                                maf_file_name = row
+                                break  # We only need one row
+
+                            if maf_file_name:
+                                validate_maf(validations, maf_file_name, all_assay_names, study_location,
+                                             isa_study.identifier,
+                                             sample_name_list, is_ms=is_ms, log_category=log_category)
+                            else:
+                                add_msg(validations, val_section,
+                                        "No MAF file referenced for assay sheet " + assay.filename, warning,
+                                        val_sequence=7.4, log_category=log_category)
+
                 except Exception as e:
                     add_msg(validations, val_section,
                             "Assay sheet '" + assay.filename + "' is missing rows for column '" + a_header + "' " +
@@ -1139,19 +1155,6 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                     add_msg(validations, val_section, "MS/NMR Assay name column only contains unique values",
                             success, assay.filename, val_sequence=4.12, log_category=log_category)
 
-        # Correct MAF?
-        if header.lower() == 'metabolite assignment file':
-            file_name = None
-            for row in assay_df[header].unique():
-                file_name = row
-                break  # We only need one row
-
-            if file_name:
-                validate_maf(validations, file_name, all_assay_names, study_location, isa_study.identifier,
-                             sample_name_list, is_ms=is_ms, log_category=log_category)
-            else:
-                add_msg(validations, val_section, "No MAF file referenced for assay sheet " + assay.filename, warning,
-                        val_sequence=7.4, log_category=log_category)
 
     for sample_name in sample_name_list:  # Loop all unique sample names from sample sheet
         if sample_name not in all_assay_samples:
@@ -1287,6 +1290,11 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                     add_msg(validations, val_section, "Inactive ISA-Tab metadata file should be removed ("
                             + file_name + ")", error, val_section, value=file_name,
                             val_sequence=5.1, log_category=log_category)
+
+                if file_name.startswith(('i_', 'a_', 's_')) and not file_name.endswith('.txt'):
+                    add_msg(validations, val_section, "ISA-Tab metadata file should have .txt extension ("
+                            + file_name + ")", error, val_section, value=file_name,
+                            val_sequence=11, log_category=log_category)
 
                 if file_name.startswith('s_') and file_status == 'active':
                     sample_cnt += 1
