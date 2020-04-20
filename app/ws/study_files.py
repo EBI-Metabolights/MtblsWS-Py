@@ -833,6 +833,11 @@ def get_file_information(study_location=None, path=None, directory=None, include
             logger.error('Could not read all the files and folders. Error: ' + str(e))
             file_list = os.listdir(path)
 
+        if validation_only and short_format and not static_file_found:
+            for file_name in assay_file_list:
+                if os.path.isfile(os.path.join(study_location, file_name)) and file_name not in tree_file_list:
+                    tree_file_list.append(file_name)
+
         for entry in flatten_list(tree_file_list):
             # {'file': '20160728_033.raw', 'createdAt': '', 'timestamp': '', 'type': 'raw', 'status': 'active', 'directory': True}
             file_type = None
@@ -967,7 +972,7 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
             logger.error(str(e))
         dir_list = validation_files
     else:
-        for entry in scandir(file_location):  # for entry in scandir(file_location):
+        for entry in scandir(file_location):
             file_type = None
             if not entry.name.startswith('.'):
                 name = entry.path.replace(base_study_location + os.sep, '')
