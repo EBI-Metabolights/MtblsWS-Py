@@ -183,7 +183,7 @@ class StudyFiles(Resource):
             get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                           directory=directory, include_raw_data=include_raw_data,
                                           assay_file_list=get_assay_file_list(study_location),
-                                          static_validation_file=True)
+                                          static_validation_file=False)
 
         return jsonify({'study': study_files,
                         'latest': upload_diff,
