@@ -56,6 +56,13 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
     upload_files = []
     if include_upload_folder:
         u_start_time = time.time()
+
+        # Does the private FTP folder exist?
+        try:
+            os.stat(upload_location)
+        except:
+            os.mkdir(upload_location)
+
         upload_files = get_all_files(upload_location, directory=directory, include_raw_data=include_raw_data,
                                      validation_only=validation_only, short_format=short_format,
                                      static_validation_file=static_validation_file)
@@ -825,7 +832,8 @@ def get_file_information(study_location=None, path=None, directory=None, include
             tree_file_list, static_file_found = \
                 list_directories(study_location, dir_list=[], base_study_location=study_location,
                                  short_format=short_format, validation_only=validation_only,
-                                 include_sub_dir=include_sub_dir, static_validation_file=static_validation_file)
+                                 include_sub_dir=include_sub_dir, static_validation_file=static_validation_file,
+                                 include_raw_data=include_raw_data)
             # tree_file_list, folder_list = traverse_subfolders(
             #     study_location=study_location, file_location=path, file_list=tree_file_list, all_folders=[], full_path=True)
 
@@ -922,7 +930,6 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
 
     if include_sub_dir:
         file_list = list_directories_full(study_location, file_list, base_study_location=study_location)
-
         #file_list = list_directories(study_location, file_list, base_study_location=study_location, include_sub_dir=include_sub_dir)
     else:
         for entry in scandir(study_location):
@@ -958,7 +965,7 @@ def list_directories_full(file_location, dir_list, base_study_location, assay_fi
 
 def list_directories(file_location, dir_list, base_study_location, assay_file_list=None,
                      short_format=None, include_sub_dir=None, validation_only=None,
-                     static_validation_file=None):
+                     static_validation_file=None, include_raw_data=None):
     static_file_found = False
     validation_files_list = os.path.join(file_location, 'validation_files.json')
     folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
@@ -976,6 +983,10 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
             file_type = None
             if not entry.name.startswith('.'):
                 name = entry.path.replace(base_study_location + os.sep, '')
+
+                # Only map/check metadata files if include_raw_data is False
+                if not include_raw_data and not name.startswith(('i_', 'a_', 's_', 'm_')):
+                    continue
 
                 file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
 
@@ -1004,8 +1015,8 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                                                              assay_file_list=assay_file_list,
                                                              short_format=short_format,
                                                              include_sub_dir=include_sub_dir,
-                                                             static_validation_file=static_validation_file))
-
+                                                             static_validation_file=static_validation_file,
+                                                             include_raw_data=include_raw_data))
     return dir_list, static_file_found
 
 
