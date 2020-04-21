@@ -182,7 +182,8 @@ class StudyFiles(Resource):
         study_files, upload_files, upload_diff, upload_location = \
             get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                           directory=directory, include_raw_data=include_raw_data,
-                                          assay_file_list=get_assay_file_list(study_location))
+                                          assay_file_list=get_assay_file_list(study_location),
+                                          static_validation_file=True)
 
         return jsonify({'study': study_files,
                         'latest': upload_diff,
@@ -828,7 +829,6 @@ def get_file_information(study_location=None, path=None, directory=None, include
 
         tree_file_list = []
         try:
-
             tree_file_list, static_file_found = \
                 list_directories(study_location, dir_list=[], base_study_location=study_location,
                                  short_format=short_format, validation_only=validation_only,
