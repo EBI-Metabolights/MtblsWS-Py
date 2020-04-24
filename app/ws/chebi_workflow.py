@@ -44,10 +44,10 @@ from zeep import Client
 
 from app.ws.cluster_jobs import lsf_job
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.mtblsStudy import write_audit_files
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
-from app.ws.mtblsStudy import write_audit_files
 
 logger = logging.getLogger('wslog_chebi')
 
@@ -161,7 +161,8 @@ def split_rows(maf_df, annotation_file=None):
                     f.close()
                     break
     except UnicodeDecodeError:
-        print_log('    -- ERROR: Checking for pipelines failed. Trying to read using "ISO-8859-1" encoding')
+        print_log('Warning: Checking for pipelines in the MAF failed. Trying to read using Excel "ISO-8859-1" encoding',
+                  mode='warning')
         with open(annotation_file, 'r', encoding="ISO-8859-1") as f:
             for line in f:
                 if '|' in line:
@@ -174,9 +175,10 @@ def split_rows(maf_df, annotation_file=None):
         try:
             new_maf = split_maf_df(annotation_file)
         except Exception as e:
-            print_log("MAF splitter failed!")
-            logger.error(str(e))
+            print_log("    -- ERROR: MAF splitter failed!. Error: " + str(e), mode='error')
             return maf_df
+    else:
+        print_log("Did not find any pipe-lines '|' in the MAF.")
 
     return new_maf
 
@@ -208,10 +210,15 @@ def jar_wrapper(*args):
     return stdout, stderr
 
 
-def print_log(message, silent=False):
+def print_log(message, silent=False, mode='info'):
     if not silent:
         print(str(message))
-        logger.info(str(message))
+        if mode == 'info':
+            logger.info(str(message))
+        elif mode == 'error':
+            logger.error(str(message))
+        else:
+            logger.warning(str(message))
 
 
 def check_maf_for_pipes(study_location, annotation_file_name):
@@ -249,10 +256,13 @@ def check_if_unknown(comp_name):
             return False
     try:
         if int(comp_name) > 0:
-            print_log("Compound name is only a number? Ignoring '" + comp_name + "'")
+            print_log("    -- Compound name is only a number? Ignoring '" + comp_name + "'")
             return False  # Name is just a number?
+    except ValueError:
+        return True
     except Exception as e:
-        logging.exception(e)
+        print_log("    -- ERROR: Testing if compound name is only a number failed '" + comp_name + "'. Error: " +
+                  str(e), mode='error')
         return True
 
     return True
@@ -280,12 +290,13 @@ def get_pubchem_substance(comp_name, res_type):
     if resp.status_code == 404:
         print_log("    -- No PubChem Substance found for '" + comp_name + "'")
 
-    for result in results['InformationList']['Information'] if results else []:
-        print_log("    -- Found PubChem Substance for '" + comp_name + "'")
+    for idx, result in enumerate(results['InformationList']['Information']) if results else []:
+        print_log("    -- Found PubChem Substance(s) for '" + comp_name + "' (" + res_type + "), search record #" + str(idx+1))
         if res_type == 'cid':
-            result = result['CID'][0]  # Only return the top hit
+            return result['CID'][0]  # Only return the top hit
         else:
-            result = result['SID']
+            return result['SID']
+
     return result
 
 
@@ -319,10 +330,10 @@ def get_sample_details(study_id, user_token, study_location):
             sample_file = isa_study.filename
             sample_df = read_tsv(os.path.join(study_location, sample_file))
     except FileNotFoundError:
-        print_log("Error: Could not find ISA-Tab metadata files")
+        print_log("Error: Could not find ISA-Tab metadata files", mode='error')
         abort(500, 'Error: Could not find ISA-Tab metadata files')
     except Exception as e:
-        print_log("Error: Parsing ISA-Tab metadata files " + str(e))
+        print_log("Error: Parsing ISA-Tab metadata files " + str(e), mode='error')
         abort(500, "Error: Parsing ISA-Tab metadata files" + str(e))
 
     print_log("Reading ISA-Tab sample file took %s seconds" % round(time.time() - start_time, 2))
@@ -618,7 +629,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                         if database_identifier:
                             if database_identifier.startswith('CHEBI:'):
                                 chebi_found = True
-                                print_log("    -- Found ChEBI id " + database_identifier + " in the MetaboLights search")
+                                print_log("    -- Found ChEBI id " + database_identifier + " using MetaboLights search")
                         #   elif get_relevant_synonym(comp_name):  # Do we know the source, ie. KEGG, HMDB?
                         #         chebi_id, inchi, inchikey, name, smiles, chemical_formula, search_type = direct_chebi_search(
                         #            final_inchi_key, comp_name, search_type="external_db")
@@ -786,21 +797,21 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         if changed and row_idx > 0 and row_idx % 20 == 0:  # Save every 20 rows
             pubchem_file = short_file_name + pubchem_end
             write_tsv(pubchem_df, pubchem_file)
-            update_original_maf(maf_df=maf_df, pubchem_df=pubchem_df,
-                                original_maf_name=original_maf_name,
-                                study_location=study_location,
-                                update_study_maf=update_study_maf)
-            print_log('  -- Updating PubChem and annotated file. Record ' + str(idx + 1) + ' of ' + str(new_maf_len))
-
+            print_log('------------------------------------')
+            print_log('Updating PubChem and annotated file. Record ' + str(idx + 1) + ' of ' + str(new_maf_len))
+            print_log('------------------------------------')
         row_idx += 1
+
+    if update_study_maf:
+        pubchem_df = re_sort_pubchem_file(pubchem_df)
+        update_original_maf(maf_df=maf_df, pubchem_df=pubchem_df,
+                            original_maf_name=original_maf_name, study_location=study_location,
+                            update_study_maf=update_study_maf)
+
     if not exiting_pubchem_file:
         pubchem_df = reindex_row_id(pubchem_df, pubchem_df_headers)
         # Add sample into to all rows, also duplicate rows for all samples
         pubchem_df = populate_sample_rows(pubchem_df, study_id, user_token, study_location)
-
-    update_original_maf(maf_df=maf_df, pubchem_df=pubchem_df,
-                        original_maf_name=original_maf_name, study_location=study_location,
-                        update_study_maf=update_study_maf)
 
     pubchem_file = short_file_name + pubchem_end
     write_tsv(pubchem_df, pubchem_file)
@@ -811,20 +822,25 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                          study_id, pubchem_file, pubchem_df_headers)
     concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end, run_silently)
     change_access_rights(study_location)
+    pubchem_df_len = str(len(pubchem_df))
+
     print_log("ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
-    return maf_len, str(len(pubchem_df)), pubchem_file
+    return maf_len, pubchem_df_len, pubchem_file
 
 
 def update_original_maf(maf_df=None, pubchem_df=None, original_maf_name=None, study_location=None, update_study_maf=None):
     # pass in the "annotation_file_name" to update a copy of the original maf
-    if original_maf_name and study_location:
+    if update_study_maf and original_maf_name and study_location:
+        # Drop all duplicates in the new DF, added for unique organism/part
+        # pubchem_df.drop_duplicates(keep='first', inplace=True)
+        # ToDo. Rather than removing duplicates, only add rows with "combination" counter = (NaN, null, 0) or 1
         for column_name in [database_identifier_column, 'chemical_formula', 'smiles', 'inchi', maf_compound_name_column]:
             maf_df[column_name] = pubchem_df[column_name]
 
         chebi_folder = os.path.join(study_location, anno_sub_folder)
         write_tsv(maf_df, os.path.join(chebi_folder, original_maf_name))
-        if update_study_maf:  # Update the original MAF in the study folder
-            write_tsv(maf_df, os.path.join(study_location, original_maf_name))
+        # Update the original MAF in the study folder
+        write_tsv(maf_df, os.path.join(study_location, original_maf_name))
 
 
 def change_access_rights(study_location):
@@ -961,7 +977,8 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                     try:
                         pcp.download('SDF', full_file, cid, overwrite=True)  # try to pull down the sdf from PubChem
                     except Exception as e:
-                        print_log("       -- Error: could not download SDF file for CID " + cid + ". " + str(e))
+                        print_log("       -- Error: could not download SDF file for CID " + cid + ". " + str(e),
+                                  mode='error')
     if file_changed:
         write_tsv(pubchem_df, pubchem_file_name)
         
@@ -990,7 +1007,7 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
                     except Exception as e:
                         print_log("       -- Warning, can not read SDF file (" + mtbls_sdf_file_name + ") " + str(e))
                 else:
-                    print_log("       -- Error: could not find SDF file: " + mtbls_sdf_file_name)
+                    print_log("       -- Error: could not find SDF file: " + mtbls_sdf_file_name, mode='error')
         outfile.close()
 
 
@@ -1043,10 +1060,10 @@ $$$$
                         outfile.write(line)
                 outfile.close()
         else:
-            print_log("Error, can not read PubChem SDF file " + pubchem_sdf_file_name)
+            print_log("Error, can not read PubChem SDF file " + pubchem_sdf_file_name, mode='error')
 
     except Exception as e:
-        print_log("    -- Could not read from PubChem SDF file: " + sdf_file_name + ". Error: " + str(e))
+        print_log("    -- Could not read from PubChem SDF file: " + sdf_file_name + ". Error: " + str(e), mode='error')
 
     return mtbls_sdf_file_name
 
@@ -1156,12 +1173,11 @@ def remove_sdf_files(sdf_file_name, study_location, sdf_file_list):
                 sdf_path = Path(os.path.join(study_location, fname[0]))
                 sdf_path.unlink()
             except Exception as e:
-                logger.error('Could not remove file' + sdf_path)
-                logger.exception(str(e))
+                print_log(" -- Error: Could not remove file: " + sdf_path + ". Error " + str(e), mode='error')
 
 
 def classyfire(inchi):
-    print_log("    -- Querying ClassyFire")
+    print_log("    -- Starting querying ClassyFire")
     url = app.config.get('CLASSYFIRE_ULR')
     label = 'MetaboLights WS'
     query_id = None
@@ -1172,7 +1188,7 @@ def classyfire(inchi):
         r.raise_for_status()
         query_id = r.json()['id']
     except Exception as e:
-        print_log("    -- Error querying ClassyFire: " + str(e))
+        print_log("    -- Error querying ClassyFire: " + str(e), mode='error')
     print_log("    -- Got ClassyFire query id: " + str(query_id))
     return query_id
 
@@ -1212,7 +1228,7 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
                 all_ancestors = get_ancestors(classyfire_file_name, classyfire_df)
 
         except Exception as e:
-            print_log("    -- ERROR: Could not get classyFire SDF for " + query_id + ". Error:" + str(e))
+            print_log("    -- ERROR: Could not get classyFire SDF for " + query_id + ". Error:" + str(e), mode='error')
 
     return all_ancestors
 
@@ -1318,18 +1334,18 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
     client = get_chebi_client()
     if not client:
         print_log("    -- Could not set up any ChEBI webservice calls. ")
-        abort(500, 'ERROR: Could not set up any direct ChEBI webservice calls, ChEBI WS may be down')
+        abort(500, 'ERROR: Could not set up any direct ChEBI webservice calls, ChEBI WS may be down?')
         return chebi_id, inchi, inchikey, name, smiles, formula, search_type
 
     try:
         if search_type == "inchi" and final_inchi_key:
-            print_log("    -- Querying ChEBI web services for " + comp_name + " based on final InChIKey " + final_inchi_key)
+            print_log("    -- Querying ChEBI web services for '" + comp_name + "' based on final InChIKey " + final_inchi_key)
             lite_entity = client.service.getLiteEntity(final_inchi_key, 'INCHI_INCHI_KEY', '10', 'ALL')
         elif search_type == "external_db" and comp_name:
-            print_log("    -- Querying ChEBI web services for " + comp_name + " using external database id search")
+            print_log("    -- Querying ChEBI web services for '" + comp_name + "' using external database id search")
             lite_entity = client.service.getLiteEntity(comp_name, 'DATABASE_LINK_REGISTRY_NUMBER_CITATION', '10', 'ALL')
         elif search_type == "synonym" and comp_name:
-            print_log("    -- Querying ChEBI web services for " + comp_name + " using synonym search")
+            print_log("    -- Querying ChEBI web services for '" + comp_name + "' using synonym search")
             lite_entity = client.service.getLiteEntity(comp_name, 'ALL_NAMES', '10', 'ALL')
         elif search_type == "get_conjugate_acid" and acid_chebi_id:
             lite_entity = client.service.getAllOntologyChildrenInPath(acid_chebi_id, 'is conjugate acid of', False)
@@ -1359,8 +1375,7 @@ def direct_chebi_search(final_inchi_key, comp_name, acid_chebi_id=None, search_t
                 formula = complete_entity.Formulae[0].data
 
     except Exception as e:
-        logger.error("ChEBI Search error: " + str(e))
-        print_log('    -- Error querying ChEBI')
+        print_log('    -- Error querying ChEBI. Error ' + str(e), mode='error')
 
     # if formula and formula.endswith('-') and not acid_chebi_id:
     if formula and charge and '-' in charge and not loop_counter:
@@ -1391,7 +1406,7 @@ def get_csid(inchikey):
                     print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
                     return csid
                 except IndexError:
-                    print_log("    -- Could not find CSID in string: '" + csid + "' using ChemSpider, inchikey: " + inchikey)
+                    print_log("    -- Could not find CSID in ChemSpider, inchikey: " + inchikey)
                     return ""
     return csid
 
@@ -1413,14 +1428,29 @@ def get_csid(inchikey):
 #     return csid
 
 
-def get_pubchem_cid_on_inchikey(inchikey1, inchikey2):
+def get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey):
     pc_cid = ''
-    for inchikey in [inchikey1, inchikey2]:
-        if inchikey:
-            pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, from_where, first_synonym = \
-                pubchem_search(inchikey, search_type='inchikey')
-            if pc_cid:
-                return pc_cid
+    inchis = []
+
+    if cactus_stdinchikey or opsin_stdinchikey:
+        msg = "    -- Searching PubChem using "
+        if cactus_stdinchikey:
+            inchis = [cactus_stdinchikey]
+            msg = msg + "Cactus '" + cactus_stdinchikey
+        if opsin_stdinchikey and cactus_stdinchikey != opsin_stdinchikey:
+            inchis = [cactus_stdinchikey, opsin_stdinchikey]
+            msg = msg + "' and/or Opsin '" + opsin_stdinchikey
+
+        msg = msg + "' InChIKey"
+
+        if inchis:
+            print_log(msg)
+            for inchikey in inchis:
+                if inchikey:
+                    pc_name, pc_inchi, pc_inchi_key, pc_smiles, pc_cid, pc_formula, pc_synonyms, from_where, first_synonym = \
+                        pubchem_search(inchikey, search_type='inchikey')
+                    if pc_cid:
+                        return pc_cid
     return pc_cid
 
 
@@ -1470,7 +1500,7 @@ def cactus_search(comp_name, search_type):
         result = cirpy.resolve(comp_name, search_type)
         synonyms = ""
     except Exception as e:
-        print_log("    -- ERROR: Cactus search failed! " + str(e))
+        print_log("    -- ERROR: Cactus search failed! " + str(e), mode='error')
         return result
 
     if result:
@@ -1567,7 +1597,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
         # or comment out the line below:
         # ssl._create_default_https_context = ssl._create_unverified_context  # If no root certificates installed
         try:
-            print_log("    -- Searching PubChem for " + search_category + " '" + comp_name + "'")
+            print_log("    -- Searching PubChem " + search_category + " for '" + comp_name + "' using " + search_type)
             pubchem_compound = get_compounds(comp_name, namespace=search_type)
             where_found = 'pubchem_compound'
             if pubchem_compound and search_category == 'cid':
@@ -1579,11 +1609,12 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
                 if _cid:
                     pubchem_compound = get_compounds(_cid, namespace='cid')
                     where_found = 'pubchem_substance'
-                    print_log("    -- Found PubChem substance '" + compound.iupac_name + "'")
+                    compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
+                    # if compound and compound.iupac_name:
+                    #     print_log("    -- Found PubChem substance '" + compound.iupac_name + "'")
 
-            compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
-
-            print_log("    -- Found PubChem " + search_category + " '" + compound.iupac_name + "'")
+            if compound and compound.iupac_name:
+                print_log("    -- Found PubChem " + search_category + " '" + compound.iupac_name + "'")
         except IndexError:
             print_log("    -- Could not find PubChem " + search_category + " for '" + comp_name + "'")   # Nothing was found
         except Exception as e:
@@ -1621,8 +1652,8 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
             print_log("    -- Searching PubChem for '" + comp_name + "', got cid '" + str(cid) +
                       "' and iupac name '" + iupac + "'")
     except Exception as error:
-        logger.error("Unable to search PubChem for " + search_category + " " + comp_name)
-        logger.error(error)
+        print_log("    -- Unable to search PubChem for '" + search_category + "' '" + comp_name +
+                  "'. Error: " + str(error), mode='error')
 
     return iupac, inchi, inchi_key, smiles, cid, formula, synonyms, where_found, first_synonym
 
@@ -1641,7 +1672,7 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
                 print_log("    -- Found manually created MOL structure " + str(cid))
                 file_name = mol_file_name
             else:
-                print_log("    -- ERROR: Could not find manually created MOl structure " + mol_file_name)
+                print_log("    -- ERROR: Could not find manually created MOl structure " + mol_file_name, mode='error')
         else:
             print_log("    -- Checking if we have SDF for CID " + str(cid))
             file_name = cid + pubchem_sdf_extension
@@ -1655,10 +1686,10 @@ def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_s
                     pcp.download('SDF', full_file, cid, overwrite=True)
 
     if classyfire_search and final_inchi:
-        print_log("    -- Getting SDF from ClassyFire for  " + str(final_inchi))
+        print_log("    -- Getting SDF from ClassyFire for " + str(final_inchi))
         classyfire_id = classyfire(final_inchi)
     else:
-        print_log("    -- Final InChI missing, do not download ClassyFire SDF")
+        print_log("    -- Final InChI missing, can not query ClassyFire")
 
     sdf_file_list.append([file_name, classyfire_id])
 
@@ -1671,7 +1702,7 @@ def read_glytoucan_file():
         glytoucan_file_df = read_tsv(os.path.join(resource_folder, 'glytoucan.tsv'))
         glytoucan_file_df = glytoucan_file_df.drop_duplicates(subset='cid', keep="last")
     except Exception as e:
-        print_log("ERROR: Could not read " + resource_folder + "/glytoucan.tsv file. " + str(e))
+        print_log("ERROR: Could not read " + resource_folder + "/glytoucan.tsv file. " + str(e), mode='error')
     return glytoucan_file_df
 
 
@@ -1927,7 +1958,7 @@ class ChEBIPipeLine(Resource):
         update_study_maf = args['update_study_maf']
         update_study_maf = True if update_study_maf == 'true' else False
 
-        logger.info('Creating a new study audit folder for study %s', study_id)
+        print_log("Creating a new study audit folder for study %s", study_id)
         audit_status, dest_path = write_audit_files(study_location)
 
         cmd = ""
@@ -1959,7 +1990,7 @@ class ChEBIPipeLine(Resource):
                         if old_file_name:  # Replace the last file name ref, additional runs only
                             cmd = cmd.replace(old_file_name, file_name)
                         old_file_name = file_name
-                        logger.info("Starting cluster job for ChEBI pipeline: " + cmd)
+                        print_log("Starting cluster job for ChEBI pipeline: " + cmd)
                         status, message, job_out, job_err = lsf_job('bsub', job_param=cmd)
 
                         if status:
@@ -1977,7 +2008,7 @@ class ChEBIPipeLine(Resource):
             annotation_file_name = annotation_file_name.strip()
             cmd = cmd.replace("#FILE_NAME#", annotation_file_name)  # Replace the dummy file name reference in URL
             if run_on_cluster:
-                logger.info("Starting cluster job for ChEBI pipeline: " + cmd)
+                print_log("Starting cluster job for ChEBI pipeline: " + cmd)
                 status, message, job_out, job_err = lsf_job('bsub', job_param=cmd)
 
                 if status:

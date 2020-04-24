@@ -163,7 +163,7 @@ def update_or_create_jira_issue(user_token, is_curator):
                                                   description='Created by API', issuetype={'name': 'Story'})
                     else:
                         continue  # Only create new cases if the study is in status Submitted/In Curation
-            except Exception:  # We could not find or create a Jira issue
+            except:  # We could not find or create a Jira issue.
                 continue
 
             summary = issue.fields.summary  # Follow pattern 'MTBLS123 - YYYYMMDD - Status'
