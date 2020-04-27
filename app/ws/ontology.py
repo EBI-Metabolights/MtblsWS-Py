@@ -495,7 +495,7 @@ class Placeholder(Resource):
             if query:
                 query = query.strip().lower()
 
-        url = app.config.get('GOOGLE_SHEET_URL')
+        url = app.config.get('GOOLGE_ZOOMA_SHEET')
         sheet_name = ''
         col = []
 
@@ -601,7 +601,7 @@ class Placeholder(Resource):
             if query:
                 query = query.strip().lower()
 
-        google_url = app.config.get('GOOGLE_SHEET_URL')
+        google_url = app.config.get('GOOGLE_ZOOMA_SHEET')
         sheet_name = ''
         col = []
 
@@ -1260,7 +1260,7 @@ def insertGoogleSheet(data, url, worksheetName):
     :return: Nan
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
     gc = gspread.authorize(credentials)
     try:
         wks = gc.open_by_url(url).worksheet(worksheetName)
@@ -1279,7 +1279,7 @@ def setGoogleSheet(df, url, worksheetName):
     :return: Nan
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
     gc = gspread.authorize(credentials)
     try:
         wks = gc.open_by_url(url).worksheet(worksheetName)
@@ -1300,7 +1300,7 @@ def getGoogleSheet(url, worksheetName):
     '''
     try:
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
         gc = gspread.authorize(credentials)
         wks = gc.open_by_url(url).worksheet(worksheetName)
         content = wks.get_all_records()
@@ -1320,7 +1320,7 @@ def replaceGoogleSheet(df, url, worksheetName):
     '''
     try:
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
         gc = gspread.authorize(credentials)
         wks = gc.open_by_url(url).worksheet(worksheetName)
         wks.clear()
