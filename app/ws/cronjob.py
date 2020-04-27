@@ -166,7 +166,7 @@ def curation_log_database_update():
             print(e.pgerror)
             logger.info(e.pgcode)
 
-    google_df = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG_TEST'), 'Database update',
+    google_df = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Database update',
                                app.config.get('GOOGLE_SHEET_TOKEN'))
 
     sql = ''.join(google_df['--Updates. Run this in the database on a regular basis'].tolist())
