@@ -16,36 +16,30 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import logging
-
-import psycopg2
-
-from app.ws.mtblsWSclient import WsClient
-
-logger = logging.getLogger('wslog')
-wsc = WsClient()
+import re
+import traceback
 
 import gspread
 import numpy as np
+import psycopg2
+import requests
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
 
-from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
 from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
-iac = IsaApiClient()
 wsc = WsClient()
 
 
 class cronjob(Resource):
     @swagger.operation(
-        summary="Create (or update) Google Calendar entries for MetaboLights study curation (curator only)",
+        summary="Update Google sheets for MetaboLights study curation and statistics",
         parameters=[
             {
                 "name": "user_token",
@@ -64,7 +58,7 @@ class cronjob(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["curation log-Database Query", "curation log-Database update"]
+                "enum": ["curation log-Database Query", "curation log-Database update", "MTBLS statistics"]
             }
 
         ],
@@ -72,6 +66,10 @@ class cronjob(Resource):
             {
                 "code": 200,
                 "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
             },
             {
                 "code": 401,
@@ -125,6 +123,14 @@ class cronjob(Resource):
             except Exception as e:
                 logger.info(e)
                 print(e)
+        elif source == 'MTBLS statistics':
+            try:
+                MTBLS_statistics_update()
+            except Exception as e:
+                logger.info(e)
+                print(e)
+        else:
+            abort(400)
 
 
 def curation_log_database_query():
@@ -172,6 +178,187 @@ def curation_log_database_update():
     sql = ''.join(google_df['--Updates. Run this in the database on a regular basis'].tolist())
     execute_query(sql)
     print('Done')
+
+
+def MTBLS_statistics_update():
+    ## update untarget NMR
+    untarget_NMR = extractUntargetStudy(['NMR'])
+    res = untarget_NMR[['studyID']]
+    replaceGoogleSheet(df=res, url=app.config.get('MTBLS_STATISITC'), worksheetName='untarget NMR',
+                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+
+    ## update untarget LC-MS
+    untarget_LCMS = extractUntargetStudy(['LC'])
+    res = untarget_LCMS[['studyID']]
+    replaceGoogleSheet(df=res, url=app.config.get('MTBLS_STATISITC'), worksheetName='untarget LC-MS',
+                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+
+    ## update NMR and LC-MS
+    studyID, studyType = getStudytype(['LC', 'NMR'], publicStudy=False)
+    df = pd.DataFrame(columns=['studyID', 'dataType'])
+    df.studyID, df.dataType = studyID, studyType
+    replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='both NMR and LCMS',
+                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+
+
+def extractUntargetStudy(studyType, public=True):
+    def extractNum(s):
+        num = re.findall("\d+", s)[0]
+        return int(num)
+
+    def getDescriptor(publicStudy=True, sIDs=None):
+        res = []
+        if sIDs == None:
+            studyIDs = getStudyIDs(publicStudy=publicStudy)
+        else:
+            studyIDs = sIDs
+
+        for studyID in studyIDs:
+            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+            try:
+                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                data = resp.json()
+                for descriptor in data['studyDesignDescriptors']:
+                    temp_dict = {'studyID': studyID,
+                                 'term': descriptor['annotationValue'],
+                                 'matched_iri': descriptor['termAccession']}
+                    res.append(temp_dict)
+            except Exception as e:
+                print(studyID, end='\t')
+                print(e.args)
+
+        df = pd.DataFrame(res)
+        # df.to_csv('../tests/descriptor.tsv', sep='\t', index=False)
+        return df
+
+    studyIDs, _ = getStudytype(studyType, publicStudy=public)
+    descripter = getDescriptor(sIDs=studyIDs)
+    untarget = descripter.loc[descripter['term'].str.startswith(('untargeted', 'Untargeted', 'non-targeted'))]
+    untarget_df = untarget.copy()
+    untarget_df['num'] = untarget_df['studyID'].apply(extractNum)
+    untarget_df = untarget_df.sort_values(by=['num'])
+    untarget_df = untarget_df.drop('num', axis=1)
+
+    return untarget_df
+
+
+def getStudyIDs(publicStudy=False):
+    def atoi(text):
+        return int(text) if text.isdigit() else text
+
+    def natural_keys(text):
+        return [atoi(c) for c in re.split('(\d+)', text)]
+
+    url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
+    request = urllib.request.Request(url)
+    request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+    response = urllib.request.urlopen(request)
+    content = response.read().decode('utf-8')
+    j_content = json.loads(content)
+
+    studyIDs = j_content['content']
+    studyIDs.sort(key=natural_keys)
+
+    if publicStudy:
+        studyStatus = getStudyStatus()
+        s = studyStatus['MTBLS230']
+        studyIDs = [studyID for studyID in studyIDs if studyStatus[studyID] in ['Public', 'In Review']]
+    else:
+        studyStatus = getStudyStatus()
+        studyIDs = [studyID for studyID in studyIDs if
+                    studyStatus[studyID] in ['Public', 'In Review', 'Submitted', 'In Curation']]
+    return studyIDs
+
+
+def getStudyStatus():
+    query_user_access_rights = """
+             select case 
+             when (status = 0 and placeholder = '1') then 'Placeholder' 
+             when (status = 0 and placeholder='') then 'Submitted' 
+             when status = 1 then 'In Curation' 
+             when status = 2 then 'In Review' 
+             when status = 3 then 'Public' 
+             else 'Dormant' end as status, 
+                acc from studies;
+            """
+    token = app.config.get('METABOLIGHTS_TOKEN')
+
+    def execute_query(query, user_token, study_id=None):
+        try:
+            params = app.config.get('DB_PARAMS')
+            conn = psycopg2.connect(**params)
+            cursor = conn.cursor()
+            query = query.replace('\\', '')
+            if study_id is None:
+                cursor.execute(query, [user_token])
+            else:
+                query2 = query_user_access_rights.replace("#user_token#", user_token)
+                query2 = query2.replace("#study_id#", study_id)
+                cursor.execute(query2)
+            data = cursor.fetchall()
+            conn.close()
+
+            return data
+
+        except psycopg2.Error as e:
+            print("Unable to connect to the database")
+            print(e.pgcode)
+            print(e.pgerror)
+            print(traceback.format_exc())
+
+    study_list = execute_query(query_user_access_rights, token)
+    study_status = {}
+    for study in study_list:
+        study_status[study[1]] = study[0]
+
+    return study_status
+
+
+def getStudytype(sType, publicStudy=True):
+    def get_connection():
+        postgresql_pool = None
+        conn = None
+        cursor = None
+        try:
+            params = app.config.get('DB_PARAMS')
+            conn_pool_min = app.config.get('CONN_POOL_MIN')
+            conn_pool_max = app.config.get('CONN_POOL_MAX')
+            postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
+            conn = postgresql_pool.getconn()
+            cursor = conn.cursor()
+        except Exception as e:
+            print("Could not query the database " + str(e))
+            if postgresql_pool:
+                postgresql_pool.closeall
+        return postgresql_pool, conn, cursor
+
+    q2 = ' '
+    if publicStudy:
+        q2 = ' status in (2, 3) and '
+
+    if type(sType) == str:
+        q3 = "studytype = '{sType}'".format(sType=sType)
+
+    # fuzzy search
+    elif type(sType) == list:
+        DB_query = []
+        for q in sType:
+            query = "studytype like '%{q}%'".format(q=q)
+            DB_query.append(query)
+        q3 = ' and '.join(DB_query)
+
+    else:
+        return None
+
+    query = "SELECT acc,studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
+    # query = q1 + q2 + q3 + ';'
+    print(query)
+    postgresql_pool, conn, cursor = get_connection()
+    cursor.execute(query)
+    res = cursor.fetchall()
+    studyID = [r[0] for r in res]
+    studytype = [r[1] for r in res]
+    return studyID, studytype
 
 
 def setGoogleSheet(df, url, worksheetName, token_path):
