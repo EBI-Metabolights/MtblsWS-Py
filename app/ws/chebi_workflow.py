@@ -1527,8 +1527,6 @@ def get_relevant_synonym(synonym):
     elif synonym.startswith('LM'):  # LipidMaps
         synonym = synonym[4:]
         """
-        MTBLS1267
-        
         https://www.lipidmaps.org/data/classification/LM_classification_exp.php
         Fatty Acyls [FA]
         Glycerolipids [GL]
@@ -1539,8 +1537,6 @@ def get_relevant_synonym(synonym):
         Saccharolipids [SL]
         Polyketides [PK]
         """
-
-
         return is_correct_int(synonym, 8)
 
     elif synonym.startswith('YMDB'):
