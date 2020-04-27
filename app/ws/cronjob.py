@@ -110,7 +110,7 @@ class cronjob(Resource):
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
-        if not write_access:
+        if not is_curator:
             abort(403)
 
         if source == 'curation log-Database Query':
