@@ -93,7 +93,8 @@ def getMetaboTerm(keyword, branch, mapping=''):
         if mapping != 'exact':
             # fuzzy match
             try:
-                cls += onto.search(label=keyword + '*', _case_sensitive=False)
+                # cls += onto.search(label=keyword + '*', _case_sensitive=False)
+                cls += onto.search(label='*' + keyword + '*', _case_sensitive=False)
             except:
                 logger.info("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
                 print("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
