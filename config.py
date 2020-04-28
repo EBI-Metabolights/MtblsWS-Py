@@ -56,7 +56,12 @@ MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
 
 MTBLS_PRIVATE_FTP_ROOT = ""
 
-GOOGLE_ZOOMA_SHEET= "<Google sheet url>"
+#GOOGLE SHEETS
+GOOLGE_ZOOMA_SHEET = "<Google sheet url>"
+MTBLS_STATISITC = "<Google sheet url>"
+MTBLS_CURATION_LOG ="<Google sheet url>"
+MTBLS_CURATION_LOG_TEST = "<Google sheet url>"
+
 GOOGLE_SHEET_TOKEN = "./instance/google_sheet_api_credentials.json"
 GOOGLE_CALENDAR_TOKEN = "./instance/google_calendar_api_credentials.json"
 GOOGLE_CALENDAR_ID = ""
