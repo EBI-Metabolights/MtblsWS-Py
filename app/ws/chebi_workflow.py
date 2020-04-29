@@ -683,10 +683,11 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
                     pubchem_df.iloc[row_idx, get_idx('pubchem_cid_ik', pubchem_df_headers)] = pc_cid    # PubChem CID
                     pubchem_df.iloc[row_idx, get_idx('csid_ik', pubchem_df_headers)] = csid      # ChemSpider ID (CSID) from INCHI
-                    pubchem_df.iloc[row_idx, get_idx('final_smiles', pubchem_df_headers)] = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # final smiles
-                    final_inchi = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # final inchi
+                    final_smiles, source_found = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # final smiles
+                    pubchem_df.iloc[row_idx, get_idx('final_smiles', pubchem_df_headers)] = final_smiles
+                    final_inchi, source_found = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # final inchi
                     pubchem_df.iloc[row_idx, get_idx('final_inchi', pubchem_df_headers)] = final_inchi
-                    final_inchi_key = get_ranked_values(pc_inchi_key, cactus_stdinchikey, opsin_stdinchikey, None)  # final inchikey
+                    final_inchi_key, source_found = get_ranked_values(pc_inchi_key, cactus_stdinchikey, opsin_stdinchikey, None)  # final inchikey
                     pubchem_df.iloc[row_idx, get_idx('final_inchi_key', pubchem_df_headers)] = final_inchi_key
 
                     if not pc_inchi:
@@ -1456,15 +1457,15 @@ def get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey):
 
 def get_ranked_values(pubchem, cactus, opsin, chemspider):
     if pubchem:
-        return pubchem
+        return pubchem, 'pubchem'
     elif cactus:
-        return cactus
+        return cactus, 'cactus'
     elif opsin:
-        return opsin
+        return opsin, 'opsin'
     elif chemspider:
-        return chemspider
+        return chemspider, 'chemspider'
     else:
-        return ""
+        return '', ''
 
 
 def create_pubchem_df(maf_df):
@@ -1595,7 +1596,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
         try:
             print_log("    -- Searching PubChem " + search_category + " for '" + comp_name + "' using " + search_type)
             pubchem_compound = get_compounds(comp_name, namespace=search_type)
-            where_found = 'pubchem_compound'
+            where_found = 'pubchem_compound_on_name'
             if pubchem_compound and search_category == 'cid':
                 where_found = 'pubchem_compound_on_final_cid'
 
@@ -1604,7 +1605,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
                 _cid = get_pubchem_substance(comp_name, 'cid')
                 if _cid:
                     pubchem_compound = get_compounds(_cid, namespace='cid')
-                    where_found = 'pubchem_substance'
+                    where_found = 'pubchem_substance_on_cid'
                     compound = pubchem_compound[0]  # Only read the first record from PubChem = preferred entry
                     # if compound and compound.iupac_name:
                     #     print_log("    -- Found PubChem substance '" + compound.iupac_name + "'")

@@ -891,15 +891,19 @@ def get_file_information(study_location=None, path=None, directory=None, include
     return file_list
 
 
-def flatten_list(list_name):
+def flatten_list(list_name, flat_list=None):
     # Now, with sub-folders we may have lists of lists, so flatten the structure
-    flat_list = []
+    if not flat_list:
+        flat_list = []
     for entry in list_name:
         if isinstance(entry, list):
             for sub_entry in entry:
-                flat_list.append(sub_entry)
+                if isinstance(sub_entry, list):
+                    flatten_list(sub_entry, flat_list)
+                elif sub_entry not in flat_list and type(sub_entry) != bool:
+                    flat_list.append(sub_entry)
         else:
-            if type(entry) != bool:
+            if type(entry) != bool and entry not in flat_list:
                 flat_list.append(entry)
     return flat_list
 
