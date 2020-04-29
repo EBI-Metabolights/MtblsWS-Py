@@ -951,7 +951,7 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                 all_file_columns.remove(fid_file)
                 missing_all_rows.remove(fid_file)
                 add_msg(validations, val_section,
-                        "All " + derived_file + "s and " + fid_file
+                        "All " + derived_file + "s, " + fid_file
                         + "s and " + acq_file + "s are missing from assay",
                         error, filename, val_sequence=7.7, log_category=log_category)
 

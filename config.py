@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.6.17"
+WS_APP_VERSION = "1.6.18"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.11.0"
 METASPACE_API_VERSION = "1.7.2"
@@ -114,7 +114,7 @@ IGNORE_FILE_LIST = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal'
                     'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml', 'metexplore_mapping',
                     'tempbase', 'prosol_history', 'validation_files', 'pulseprogram', '_history', 'tcc_1',
                     'msactualdefs', 'msmasscal', 'fq1list', 'pdata', 'uxnmr', 'shimvalues', 'specpar', 'output',
-                    'format.temp']
+                    'format.temp', 'scon2', 'precom.output', 'stanprogram', 'procs', 'settings', 'outd']
 
 
 RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp',
