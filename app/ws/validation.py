@@ -934,16 +934,26 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
             if empty_rows == all_rows:
                 missing_all_rows.append(assay_header)
 
-    if raw_file in missing_all_rows:
-        if derived_file in missing_all_rows:
+    if derived_file in missing_all_rows:
+        if raw_file in missing_all_rows:
             # OK, all raw/derived files are missing, no point in looking at these anymore
-            all_file_columns.remove(raw_file)
             all_file_columns.remove(derived_file)
-            missing_all_rows.remove(raw_file)
             missing_all_rows.remove(derived_file)
+            all_file_columns.remove(raw_file)
+            missing_all_rows.remove(raw_file)
             add_msg(validations, val_section,
                     "All Raw and Derived Spectral Data Files are missing from assay",
                     error, filename, val_sequence=7.6, log_category=log_category)
+        if fid_file in missing_all_rows:
+            if acq_file in missing_all_rows:
+                all_file_columns.remove(acq_file)
+                missing_all_rows.remove(acq_file)
+                all_file_columns.remove(fid_file)
+                missing_all_rows.remove(fid_file)
+                add_msg(validations, val_section,
+                        "All " + derived_file + "s and " + fid_file
+                        + "s and " + acq_file + "s are missing from assay",
+                        error, filename, val_sequence=7.7, log_category=log_category)
 
     if all_file_columns:
         short_df = assay_df[assay_df.columns.intersection(all_file_columns)]
@@ -954,7 +964,7 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
             derived_found = False
             derived_tested = False
 
-            for header, value in row.iteritems():
+            for header, value in row.iteritems():  # Check cells
                 if header == raw_file:
                     raw_tested = True
                     if value:

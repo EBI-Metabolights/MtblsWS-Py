@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.6.16"
+WS_APP_VERSION = "1.6.17"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.11.0"
 METASPACE_API_VERSION = "1.7.2"
@@ -107,13 +107,14 @@ FOLDER_EXCLUSION_LIST = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'ba
                          '/audit', '/metaspace', '/chebi', '/old', '/backup', '/chebi_pipeline_annotations']
 
 EMPTY_EXCLUSION_LIST = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chroms.inf', 'prosol_history', 'title',
-                        'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin', 'tcc_1.xml']
+                        'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin', 'tcc_1.xml', 'format.temp']
 
 IGNORE_FILE_LIST = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal', 'checksum.xml', 'info.xml',
                     'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
                     'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml', 'metexplore_mapping',
                     'tempbase', 'prosol_history', 'validation_files', 'pulseprogram', '_history', 'tcc_1',
-                    'msactualdefs', 'msmasscal', 'fq1list', 'pdata', 'uxnmr', 'shimvalues', 'specpar', 'output']
+                    'msactualdefs', 'msmasscal', 'fq1list', 'pdata', 'uxnmr', 'shimvalues', 'specpar', 'output',
+                    'format.temp']
 
 
 RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp',
