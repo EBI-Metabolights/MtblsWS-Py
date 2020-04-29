@@ -820,6 +820,8 @@ def get_file_information(study_location=None, path=None, directory=None, include
                          include_sub_dir=None, static_validation_file=None):
     file_list = []
     file_name = ""
+    ignore_file_list = app.config.get('IGNORE_FILE_LIST')
+
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
         end_time = time.time() + timeout_secs
@@ -833,7 +835,7 @@ def get_file_information(study_location=None, path=None, directory=None, include
                 list_directories(study_location, dir_list=[], base_study_location=study_location,
                                  short_format=short_format, validation_only=validation_only,
                                  include_sub_dir=include_sub_dir, static_validation_file=static_validation_file,
-                                 include_raw_data=include_raw_data)
+                                 include_raw_data=include_raw_data, ignore_file_list=ignore_file_list)
             # tree_file_list, folder_list = traverse_subfolders(
             #     study_location=study_location, file_location=path, file_list=tree_file_list, all_folders=[], full_path=True)
 
@@ -895,11 +897,12 @@ def flatten_list(list_name, flat_list=None):
     # Now, with sub-folders we may have lists of lists, so flatten the structure
     if not flat_list:
         flat_list = []
+
     for entry in list_name:
         if isinstance(entry, list):
             for sub_entry in entry:
                 if isinstance(sub_entry, list):
-                    flatten_list(sub_entry, flat_list)
+                    flatten_list(sub_entry, flat_list=flat_list)
                 elif sub_entry not in flat_list and type(sub_entry) != bool:
                     flat_list.append(sub_entry)
         else:
@@ -969,7 +972,7 @@ def list_directories_full(file_location, dir_list, base_study_location, assay_fi
 
 def list_directories(file_location, dir_list, base_study_location, assay_file_list=None,
                      short_format=None, include_sub_dir=None, validation_only=None,
-                     static_validation_file=None, include_raw_data=None):
+                     static_validation_file=None, include_raw_data=None, ignore_file_list=None):
     static_file_found = False
     validation_files_list = os.path.join(file_location, 'validation_files.json')
     folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
@@ -985,6 +988,18 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
     else:
         for entry in scandir(file_location):
             file_type = None
+            ignored_file = False
+
+            if validation_only and not entry.is_dir():
+                final_filename = os.path.basename(entry.name).lower()
+                for ignore in ignore_file_list:
+                    if ignore in final_filename:
+                        ignored_file = True
+                        break
+
+            if ignored_file:
+                continue
+
             if not entry.name.startswith('.'):
                 name = entry.path.replace(base_study_location + os.sep, '')
 
@@ -1000,6 +1015,7 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                 else:
                     dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
                                      "status": status, "directory": folder})
+
                 if entry.is_dir():
                     if not include_sub_dir:
                         # if short_format and name in folder_exclusion_list:
@@ -1020,7 +1036,8 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                                                              short_format=short_format,
                                                              include_sub_dir=include_sub_dir,
                                                              static_validation_file=static_validation_file,
-                                                             include_raw_data=include_raw_data))
+                                                             include_raw_data=include_raw_data,
+                                                             ignore_file_list=ignore_file_list))
     return dir_list, static_file_found
 
 
