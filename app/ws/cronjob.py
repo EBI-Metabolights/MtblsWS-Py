@@ -23,6 +23,7 @@ import gspread
 import numpy as np
 import psycopg2
 import requests
+from flask import jsonify
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -113,19 +114,25 @@ class cronjob(Resource):
 
         if source == 'curation log-Database Query':
             try:
+                logger.info('Updating curation log-Database Query')
                 curation_log_database_query()
+                return jsonify({'success': True})
             except Exception as e:
                 logger.info(e)
                 print(e)
         elif source == 'curation log-Database update':
             try:
+                logger.info('Updating curation log-Database update')
                 curation_log_database_update()
+                return jsonify({'success': True})
             except Exception as e:
                 logger.info(e)
                 print(e)
         elif source == 'MTBLS statistics':
             try:
+                logger.info('Updating MTBLS statistics')
                 MTBLS_statistics_update()
+                return jsonify({'success': True})
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -134,24 +141,29 @@ class cronjob(Resource):
 
 
 def curation_log_database_query():
-    params = app.config.get('DB_PARAMS')
+    try:
+        params = app.config.get('DB_PARAMS')
 
-    with psycopg2.connect(**params) as conn:
-        sql = open('./instance/updateDB.sql', 'r').read()
-        data = pd.read_sql_query(sql, conn)
+        with psycopg2.connect(**params) as conn:
+            sql = open('./instance/updateDB.sql', 'r').read()
+            data = pd.read_sql_query(sql, conn)
 
-    data['percentage known'] = round(
-        data['maf_known'].astype('float').div(data['maf_rows'].replace(0, np.nan)).fillna(0) * 100, 2)
+        data['percentage known'] = round(
+            data['maf_known'].astype('float').div(data['maf_rows'].replace(0, np.nan)).fillna(0) * 100, 2)
 
-    token = app.config.get('GOOGLE_SHEET_TOKEN')
+        token = app.config.get('GOOGLE_SHEET_TOKEN')
 
-    google_df = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Database Query',
-                               app.config.get('GOOGLE_SHEET_TOKEN'))
+        google_df = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Database Query',
+                                   app.config.get('GOOGLE_SHEET_TOKEN'))
 
-    data.columns = google_df.columns
+        data.columns = google_df.columns
 
-    replaceGoogleSheet(data, app.config.get('MTBLS_CURATION_LOG'), 'Database Query',
-                       app.config.get('GOOGLE_SHEET_TOKEN'))
+        replaceGoogleSheet(data, app.config.get('MTBLS_CURATION_LOG'), 'Database Query',
+                           app.config.get('GOOGLE_SHEET_TOKEN'))
+
+    except Exception as e:
+        print(e)
+        logger.info(e)
 
 
 def curation_log_database_update():
