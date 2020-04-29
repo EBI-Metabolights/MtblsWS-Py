@@ -1001,7 +1001,8 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
         logger.error(str(e))
 
     try:
-        if os.sep + 'audit' + os.sep in directory or os.sep + 'audit' + os.sep in file_name:
+
+        if 'audit' in directory or 'audit' + os.sep in file_name:
             return False
 
         if assay_file_list and isa_tab_file_to_check.startswith('a_'):
