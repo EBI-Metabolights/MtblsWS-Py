@@ -117,6 +117,11 @@ def update_maf_stats(user_token):
             continue  # Cannot find the required metadata files, skip to the next study
 
         try:
+            number_of_files = sum([len(files) for r, d, files in os.walk(study_location)])
+        except:
+            number_of_files = 0
+
+        try:
             smaple_file_name = isa_study.filename
             sample_df = read_tsv(os.path.join(study_location, smaple_file_name))
             sample_len = sample_df.shape[0]
@@ -175,7 +180,8 @@ def update_maf_stats(user_token):
             status, msg = update_database_stats(complete_maf)  # Update once per MAF
 
         study_sql = "UPDATE STUDIES SET sample_rows = " + str(sample_len) + ", assay_rows = " + str(assay_len) + \
-                    ", maf_rows = " + str(maf_len) + " WHERE ACC = '" + str(study_id) + "';"
+                    ", maf_rows = " + str(maf_len) + ", number_of_files = " + str(number_of_files) + \
+                    " WHERE ACC = '" + str(study_id) + "';"
 
         status, msg = insert_update_data(study_sql)
         print("Database updated: " + study_sql)
