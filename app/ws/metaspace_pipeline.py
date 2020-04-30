@@ -447,13 +447,18 @@ def aws_get_images(mtspc_obj, output_dir, use_path=False, sm_instance=None):
         metaspace_options = sample['metaspace_options']
         ds_name = metaspace_options['Dataset_Name']
         ds = sm_instance.dataset(name=ds_name)
-        opt_im = ds._gqclient.getRawOpticalImage(ds.id)['rawOpticalImage']
+        ds_img = ds._gqclient.getRawOpticalImage(ds.id)
+        opt_im = ds_img['rawOpticalImage']
 
-        path = opt_im['url']
-        img_url = ds._baseurl + path
-        img_folder = os.path.dirname(path)
-        img_name = os.path.basename(path)
-        if img_name and not img_name == 'null':
+        img_name = None
+        img_url = None
+
+        if opt_im:
+            path = opt_im['url']
+            img_url = ds._baseurl + path
+            img_folder = os.path.dirname(path)
+            img_name = os.path.basename(path)
+        if img_name and img_url and not img_name == 'null':
             logger.info("Getting file %s", img_url)
             img_data = requests.get(img_url).content
             if img_data:

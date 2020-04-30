@@ -441,7 +441,9 @@ class Validation(Resource):
             },
             {
                 "name": "static_validation_file",
-                "description": "Read validation and file list from pre-generated files ('In Review' and 'Public' status)",
+                "description":
+                    "Read validation and file list from pre-generated files ('In Review' and 'Public' status)."
+                    "<b> NOTE that studies with a large number of files will force a static file listing</b>",
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,

@@ -381,7 +381,7 @@ def get_sample_details(study_id, user_token, study_location):
             variant_onto = ' [' + convert_to_chebi_onto(variant_part_term) + ']'
             variant = variant + variant_onto
         except Exception as e:
-            logging.exception(e)
+            # print_log("    -- WARNING: 'Characteristics[Variant]' not found in the sample sheet")
             variant = variant + variant_onto
 
         complete_org = org + "|" + org_part + "|" + variant
@@ -1596,6 +1596,8 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
         try:
             print_log("    -- Searching PubChem " + search_category + " for '" + comp_name + "' using " + search_type)
             pubchem_compound = get_compounds(comp_name, namespace=search_type)
+            if isinstance(pubchem_compound, list):
+                compound = pubchem_compound[0]  # Pick the top one
             where_found = 'pubchem_compound_on_name'
             if pubchem_compound and search_category == 'cid':
                 where_found = 'pubchem_compound_on_final_cid'
