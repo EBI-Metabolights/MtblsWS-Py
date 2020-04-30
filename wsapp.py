@@ -187,7 +187,7 @@ def initialize_app(flask_app):
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
-    api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats", res_path + "/ebi-internal/maf-stats")
+    api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats")
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")

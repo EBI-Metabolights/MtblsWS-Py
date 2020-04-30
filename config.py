@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.6.22"
+WS_APP_VERSION = "1.6.23"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.11.0"
 METASPACE_API_VERSION = "1.7.2"
@@ -101,6 +101,7 @@ CONN_POOL_MAX = 20
 FILE_LIST_TIMEOUT = 90
 
 # Validations
+VALIDATION_FILES_LIMIT = 10000
 VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
 
 FOLDER_EXCLUSION_LIST = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',

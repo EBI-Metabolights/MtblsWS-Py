@@ -145,7 +145,7 @@ def curation_log_database_query():
         params = app.config.get('DB_PARAMS')
 
         with psycopg2.connect(**params) as conn:
-            sql = open('./instance/updateDB.sql', 'r').read()
+            sql = open('./resources/updateDB.sql', 'r').read()
             data = pd.read_sql_query(sql, conn)
 
         data['percentage known'] = round(

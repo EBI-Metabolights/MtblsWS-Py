@@ -517,13 +517,25 @@ class Validation(Resource):
         if section is None or section not in val_sections:
             section = 'all'
 
+        try:
+            number_of_files = sum([len(files) for r, d, files in os.walk(study_location)])
+        except:
+            number_of_files = 0
+
+        validation_files_limit = app.config.get('VALIDATION_FILES_LIMIT')
+        force_static_validation = False
+
         # We can only use the static validation file when all values are used. MOE uses 'all' as default
         if section != 'all' or log_category != 'all':
             static_validation_file = False
 
+        if section == 'all' and log_category == 'all' and number_of_files >= validation_files_limit:
+            force_static_validation = True  # ToDo, We need to use static files until pagenation is implemented
+            static_validation_file = force_static_validation
+
         study_status = study_status.lower()
 
-        if static_validation_file and study_status in ('in review', 'public'):
+        if (static_validation_file and study_status in ('in review', 'public')) or force_static_validation:
 
             validation_file = os.path.join(study_location, 'validation_report.json')
 
