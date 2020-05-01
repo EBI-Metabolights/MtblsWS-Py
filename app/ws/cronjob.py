@@ -148,8 +148,10 @@ def curation_log_database_query():
             sql = open('./resources/updateDB.sql', 'r').read()
             data = pd.read_sql_query(sql, conn)
 
-        data['percentage known'] = round(
+        percentage_known = round(
             data['maf_known'].astype('float').div(data['maf_rows'].replace(0, np.nan)).fillna(0) * 100, 2)
+
+        data.insert(data.shape[1] - 1, column="percentage known", value=percentage_known)
 
         token = app.config.get('GOOGLE_SHEET_TOKEN')
 
