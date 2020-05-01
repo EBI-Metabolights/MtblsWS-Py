@@ -876,7 +876,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
         return 'metadata', none_active_status, folder
     elif final_filename in ('fid', 'fid.txt'):  # NMR data
         return 'fid', active_status, folder
-    elif final_filename in ('acqus', 'acqus.txt'):  # NMR data
+    elif final_filename in ('acqus', 'acqus.txt', 'acqu', 'acqu.txt'):  # NMR data
         return 'acqus', active_status, folder
     elif ext in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
         return 'spreadsheet', active_status, folder
