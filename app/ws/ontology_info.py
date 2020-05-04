@@ -32,28 +32,12 @@ logger = logging.getLogger('wslog')
 class entity():
     def __init__(self, name, iri='', ontoName='', provenance_name='', provenance_uri='',
                  Zooma_confidence='', definition=''):
-
         self.name = name
         self.iri = iri
         self.ontoName = ontoName
         self.provenance_name = provenance_name
         self.Zooma_confidence = Zooma_confidence
         self.definition = definition
-
-    def getOntoInfo(self, iri):
-        try:
-            url = 'https://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology?iri=' + iri
-            fp = urllib.request.urlopen(url)
-            content = fp.read().decode('utf-8')
-            j_content = json.loads(content)
-
-            ontoName = j_content['_embedded']['terms'][0]['ontology_prefix']
-            ontoURL = j_content['_embedded']['terms'][0]['ontology_iri']
-            definition = j_content['_embedded']['terms'][0]["description"]
-
-            return ontoName, ontoURL, definition
-        except:
-            return '', '', ''
 
 
 class factor():
@@ -217,6 +201,13 @@ def getOLSTerm(keyword, map, ontology=''):
     res = []
 
     if keyword in [None, '']:
+        return res
+
+    elif 'http:' in keyword:
+        label, definition, ontoName = getOLSTermInfo(keyword)
+        enti = entity(name=label, iri=keyword, definition=definition, ontoName=ontoName,
+                      provenance_name=ontoName)
+        res.append(enti)
         return res
 
     try:
@@ -404,7 +395,10 @@ def getBioportalTerm(keyword):
         return res
 
     try:
-        url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")  # + '&require_exact_match=true'
+        if 'http:' in keyword:
+            url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+") + '&require_exact_match=true'
+        else:
+            url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")
         request = urllib.request.Request(url)
         request.add_header('Authorization', 'apikey token=' + app.config.get('BIOPORTAL_TOKEN'))
         response = urllib.request.urlopen(request)
@@ -486,6 +480,24 @@ def getWoRMsID(term):
         return ''
     except:
         return ''
+
+
+def getOLSTermInfo(iri):
+    # enti = entity(name=name, iri=term['iri'], definition=definition, ontoName=ontoName, provenance_name=provenance_name)
+
+    try:
+        url = 'https://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology?iri=' + iri
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+
+        label = j_content['_embedded']['terms'][0]['label']
+        definition = j_content['_embedded']['terms'][0]["description"]
+        ontoName = j_content['_embedded']['terms'][0]['ontology_prefix']
+
+        return label, definition, ontoName
+    except:
+        return '', '', ''
 
 
 def getOnto_info(pre_fix):
