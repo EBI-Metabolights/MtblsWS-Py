@@ -803,7 +803,15 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             print_log('------------------------------------')
         row_idx += 1
 
-    if update_study_maf:
+    pubchem_df = re_sort_pubchem_file(pubchem_df)
+
+    # Update the submitted MAF in the chebi sub-folder, before adding species
+    chebi_folder = os.path.join(study_location, anno_sub_folder)
+    update_original_maf(maf_df=maf_df, pubchem_df=pubchem_df,
+                        original_maf_name=original_maf_name, study_location=chebi_folder,
+                        update_study_maf=update_study_maf)
+
+    if update_study_maf:  # Also update MAF in study folder
         pubchem_df = re_sort_pubchem_file(pubchem_df)
         update_original_maf(maf_df=maf_df, pubchem_df=pubchem_df,
                             original_maf_name=original_maf_name, study_location=study_location,
@@ -831,15 +839,13 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
 def update_original_maf(maf_df=None, pubchem_df=None, original_maf_name=None, study_location=None, update_study_maf=None):
     # pass in the "annotation_file_name" to update a copy of the original maf
-    if update_study_maf and original_maf_name and study_location:
+    if original_maf_name and study_location:
         # Drop all duplicates in the new DF, added for unique organism/part
         # pubchem_df.drop_duplicates(keep='first', inplace=True)
         # ToDo. Rather than removing duplicates, only add rows with "combination" counter = (NaN, null, 0) or 1
         for column_name in [database_identifier_column, 'chemical_formula', 'smiles', 'inchi', maf_compound_name_column]:
             maf_df[column_name] = pubchem_df[column_name]
 
-        chebi_folder = os.path.join(study_location, anno_sub_folder)
-        write_tsv(maf_df, os.path.join(chebi_folder, original_maf_name))
         # Update the original MAF in the study folder
         write_tsv(maf_df, os.path.join(study_location, original_maf_name))
 
