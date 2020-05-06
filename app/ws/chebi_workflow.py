@@ -851,7 +851,7 @@ def update_original_maf(maf_df=None, pubchem_df=None, original_maf_name=None, st
 
 
 def change_access_rights(study_location):
-    chmode = 0o766
+    chmode = 0o777
     chebi_folder = os.path.join(study_location, anno_sub_folder)
     print_log("Changing access right")
     os.chmod(study_location, chmode)
