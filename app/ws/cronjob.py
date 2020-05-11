@@ -189,7 +189,11 @@ def curation_log_database_update():
     google_df = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Database update',
                                app.config.get('GOOGLE_SHEET_TOKEN'))
 
-    sql = ''.join(google_df['--Updates. Run this in the database on a regular basis'].tolist())
+    command_list = google_df['--Updates. Run this in the database on a regular basis'].tolist()
+    empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
+    command_list = [x for x in command_list if empty_study not in x]
+
+    sql = ''.join(command_list)
     execute_query(sql)
     print('Done')
 
