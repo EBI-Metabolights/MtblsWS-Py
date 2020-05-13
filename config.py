@@ -29,7 +29,7 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.6.33"
+WS_APP_VERSION = "1.6.34"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.11.0"
 METASPACE_API_VERSION = "1.7.2"
@@ -48,6 +48,7 @@ UPDATE_PATH_SUFFIX = "audit"
 MTBLS_FILE_BASE = "<some local filesystem>/"
 MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
+FILE_SYSTEM_PATH = '<some local filesystem>/'
 MTBLS_ZOOMA_FILE = "<local file>"
 MTBLS_ONTOLOGY_FILE = "<local file>"
 BIOPORTAL_TOKEN = '<your bioportal token>'
@@ -86,6 +87,12 @@ DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"
 
 DB_PARAMS = {
     'database': 'db-name', 'user': 'user-name', 'password': 'user-password', 'host': 'hostname', 'port': 1234
+}
+
+SSH_PARAMS = {
+    'host': 'ebi-cli',
+    'user': 'user_name',
+    'password': 'user_password'
 }
 
 JIRA_PARAMS = {
