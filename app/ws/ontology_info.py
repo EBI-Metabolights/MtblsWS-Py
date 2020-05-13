@@ -233,7 +233,7 @@ def getOLSTerm(keyword, map, ontology=''):
         for term in responses:
             # name = ' '.join([w.capitalize() if w.islower() else w for w in term['label'].split()])
 
-            name = term['label'].capitalize()
+            name = term['label']
             try:
                 definition = term['description'][0]
             except:
@@ -314,7 +314,7 @@ def getMetaboZoomaTerm(keyword, mapping):
             # name = ' '.join(
             #     [w.capitalize() if w.islower() else w for w in temp.iloc[i]['PROPERTY_VALUE'].split()])
 
-            name = temp.iloc[i]['PROPERTY_VALUE'].capitalize()
+            name = temp.iloc[i]['PROPERTY_VALUE']
             obo_ID = iri.rsplit('/', 1)[-1]
 
             enti = entity(name=name,
@@ -357,7 +357,7 @@ def getZoomaTerm(keyword, mapping=''):
             # name = ' '.join(
             #     [w.capitalize() if w.islower() else w for w in term["annotatedProperty"]['propertyValue'].split()])
 
-            name = term["annotatedProperty"]['propertyValue'].capitalize()
+            name = term["annotatedProperty"]['propertyValue']
 
             if mapping == 'exact' and name != keyword:
                 continue

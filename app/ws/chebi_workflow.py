@@ -360,6 +360,8 @@ def get_sample_details(study_id, user_token, study_location):
         try:
             org_term = sample[organism_pos + 2]
             org = sample['Characteristics[Organism]'] + ' [' + convert_to_chebi_onto(org_term) + ']'
+            if 'blank' in org.lower():
+                org = ""
         except Exception as e:
             logging.exception(e)
             org = ""
@@ -367,7 +369,7 @@ def get_sample_details(study_id, user_token, study_location):
         try:
             org_part_term = sample[organism_part_pos + 2]
             org_part = sample['Characteristics[Organism part]'] + ' [' + convert_to_chebi_onto(org_part_term) + ']'
-            if 'blank' in org_part.lower():  # ToDo: Do not need black or other controls
+            if 'blank' in org_part.lower():  # ToDo: Do not need blank or other controls
                 org_part = ""
         except Exception as e:
             logging.exception(e)
