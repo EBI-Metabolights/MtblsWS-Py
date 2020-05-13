@@ -854,14 +854,17 @@ def change_access_rights(study_location):
     chmode = 0o777
     chebi_folder = os.path.join(study_location, anno_sub_folder)
     print_log("Changing access right")
-    os.chmod(study_location, chmode)
-    for m_name in glob.glob(os.path.join(study_location, "m_*.tsv")):
-        os.chmod(os.path.join(chebi_folder, m_name), chmode)
+    try:
+        os.chmod(study_location, chmode)
+        for m_name in glob.glob(os.path.join(study_location, "m_*.tsv")):
+            os.chmod(os.path.join(chebi_folder, m_name), chmode)
 
-    os.chmod(chebi_folder, chmode)
-    for f_name in glob.glob(os.path.join(chebi_folder, "*")):
-        os.chmod(os.path.join(chebi_folder, f_name), chmode)
+        os.chmod(chebi_folder, chmode)
+        for f_name in glob.glob(os.path.join(chebi_folder, "*")):
+            os.chmod(os.path.join(chebi_folder, f_name), chmode)
 
+    except Exception as e:
+        print_log("Error : Changing access right not  for " + m_name)
 
 def re_sort_pubchem_file(pubchem_df):
     pubchem_df.row_id = pd.to_numeric(pubchem_df.row_id, errors='coerce')
