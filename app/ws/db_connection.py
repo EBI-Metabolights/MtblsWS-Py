@@ -183,6 +183,53 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
         return False, str(e)
 
 
+def get_all_private_studies_for_user(user_token):
+    val_query_params(user_token)
+
+    study_list = execute_query(query=query_studies_user, user_token=user_token)
+    study_location = app.config.get('STUDY_PATH')
+    file_name = 'i_Investigation.txt'
+    isa_title = 'Study Title'
+    isa_descr = 'Study Description'
+
+    complete_list = []
+    for i, row in enumerate(study_list):
+        title = 'N/A'
+        description = 'N/A'
+
+        study_id = row[0]
+        release_date = row[1]
+        submission_date = row[2]
+        status = row[3]
+
+        if status.strip() == "Submitted":
+            complete_study_location = os.path.join(study_location, study_id)
+            complete_file_name = os.path.join(complete_study_location, file_name)
+
+            logger.info('Trying to load the investigation file (%s) for Study %s', file_name, study_id)
+            # Get the Assay table or create a new one if it does not already exist
+            try:
+                with open(complete_file_name, encoding='utf-8') as f:
+                    for line in f:
+                        line = re.sub('\s+', ' ', line)
+                        if line.startswith(isa_title):
+                            title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
+                        if line.startswith(isa_descr):
+                            description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
+            except FileNotFoundError:
+                logger.error("The file %s was not found", complete_file_name)
+
+            complete_list.append({'accession': study_id,
+                                  'updated': get_single_file_information(complete_file_name),
+                                  'releaseDate': release_date,
+                                  'createdDate': submission_date,
+                                  'status': status.strip(),
+                                  'title': title.strip(),
+                                  'description': description.strip()})
+
+    return complete_list
+
+
 def get_all_studies_for_user(user_token):
     val_query_params(user_token)
 

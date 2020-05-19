@@ -218,6 +218,18 @@ def MTBLS_statistics_update():
     replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='both NMR and LCMS',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
 
+    ## update NMR sample / assay sheet
+    df = getNMRinfo()
+    replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='NMR',
+                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+
+    ## update MS sample / assay sheet
+
+    ## update LC-MS sample / assay sheet
+    df = getLCMSinfo()
+    replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='LC-MS',
+                       token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+
 
 def extractUntargetStudy(studyType, public=True):
     def extractNum(s):
@@ -258,6 +270,134 @@ def extractUntargetStudy(studyType, public=True):
     untarget_df = untarget_df.drop('num', axis=1)
 
     return untarget_df
+
+
+def getNMRinfo():
+    NMR_studies, _ = getStudytype(['NMR'], publicStudy=True)
+    NMR_studies.sort(key=natural_keys)
+
+    sample_df = pd.DataFrame(
+        columns=["Study", "Characteristics.Organism.", "Characteristics.Organism.part.", "Protocol.REF", "Sample.Name"])
+
+    assay_df = pd.DataFrame(columns=['Study', 'Sample.Name', 'Protocol.REF.0', 'Protocol.REF.1',
+                                     'Parameter.Value.NMR.tube.type.', 'Parameter.Value.Solvent.',
+                                     'Parameter.Value.Sample.pH.', 'Parameter.Value.Temperature.', 'Unit',
+                                     'Label', 'Protocol.REF.2', 'Parameter.Value.Instrument.',
+                                     'Parameter.Value.NMR.Probe.', 'Parameter.Value.Number.of.transients.',
+                                     'Parameter.Value.Pulse.sequence.name.',
+                                     'Acquisition.Parameter.Data.File', 'Protocol.REF.3', 'NMR.Assay.Name',
+                                     'Free.Induction.Decay.Data.File', 'Protocol.REF.4',
+                                     'Derived.Spectral.Data.File', 'Protocol.REF.5',
+                                     'Data.Transformation.Name', 'Metabolite.Assignment.File'])
+
+    for studyID in NMR_studies:
+        print('-' * 20 + studyID + '-' * 20)
+        try:
+            assay_file, investigation_file, sample_file, maf_file = getFileList(studyID)
+        except:
+            try:
+                # t = fileReader.investigation_reader(studyID, ['Study Assay File Name', 'Study File Name'])
+                assay_file, sample_file = assay_sample_list(studyID)
+                investigation_file = 'i_Investigation.txt'
+            except:
+                print('Fail to load study ', studyID)
+                continue
+        # ------------------------ SAMPLE FILE ----------------------------------------
+        #
+        sample_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + sample_file)
+        sample_temp.insert(0, 'Study', studyID)
+        sample_temp = sample_cleanup(sample_temp)
+
+        sample_df = sample_df.append(sample_temp, ignore_index=True)
+        print('get sample file from', studyID, end='\t')
+        print(sample_temp.shape)
+
+        # ------------------------ ASSAY FILE -----------------------------------------
+        for assay in assay_file:
+            assay_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + assay)
+            if 'Acquisition Parameter Data File' not in list(assay_temp.columns):
+                continue
+            else:
+                assay_temp.insert(0, 'Study', studyID)
+                assay_temp = NMR_assay_cleanup(assay_temp)
+                assay_df = assay_df.append(assay_temp, ignore_index=True)
+
+            print('get assay file from', studyID, end='\t')
+            print(assay_temp.shape)
+
+    merge_frame = pd.merge(sample_df, assay_df, on=['Study', 'Sample.Name'])
+    return merge_frame
+
+
+# TODO
+def getMSinfo():
+    pass
+
+
+def getLCMSinfo():
+    failed_studies= []
+    LCMS_studies, _ = getStudytype(['LC'], publicStudy=True)
+    LCMS_studies.sort(key=natural_keys)
+
+    sample_df = pd.DataFrame(
+        columns=["Study", "Characteristics.Organism.", "Characteristics.Organism.part.", "Protocol.REF", "Sample.Name"])
+
+    assay_df = pd.DataFrame(columns=['Study', 'Sample.Name', 'Protocol.REF.0', 'Parameter.Value.Post.Extraction.',
+                                     'Parameter.Value.Derivatization.', 'Extract.Name', 'Protocol.REF.1',
+                                     'Parameter.Value.Chromatography.Instrument.', 'Parameter.Value.Column.model.',
+                                     'Parameter.Value.Column.type.', 'Labeled.Extract.Name', 'Label', 'Protocol.REF.2',
+                                     'Parameter.Value.Scan.polarity.', 'Parameter.Value.Scan.m/z.range.',
+                                     'Parameter.Value.Instrument.', 'Parameter.Value.Ion.source.',
+                                     'Parameter.Value.Mass.analyzer.', 'MS.Assay.Name', 'Raw.Spectral.Data.File',
+                                     'Protocol.REF.3', 'Normalization.Name', 'Derived.Spectral.Data.File',
+                                     'Protocol.REF.4',
+                                     'Data.Transformation.Name', 'Metabolite.Assignment.File'])
+
+    for studyID in LCMS_studies:
+        print('-' * 20 + studyID + '-' * 20)
+        try:
+            assay_file, investigation_file, sample_file, maf_file = getFileList(studyID)
+        except:
+            try:
+                # t = fileReader.investigation_reader(studyID, ['Study Assay File Name', 'Study File Name'])
+                assay_file, sample_file = assay_sample_list(studyID)
+                investigation_file = 'i_Investigation.txt'
+            except:
+                print('Fail to load study ', studyID)
+                continue
+        try:
+            # ------------------------ ASSAY FILE -----------------------------------------
+            for assay in assay_file:
+                assay_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + assay)
+                if 'Parameter Value[Scan polarity]' not in list(assay_temp.columns):
+                    continue
+                else:
+                    assay_temp.insert(0, 'Study', studyID)
+                    assay_temp = LCMS_assay_cleanup(assay_temp)
+                    assay_df = assay_df.append(assay_temp, ignore_index=True)
+
+                    print('get assay file from', studyID, end='\t')
+                    print(assay_temp.shape)
+
+            # ------------------------ SAMPLE FILE ----------------------------------------
+            sample_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + sample_file)
+            sample_temp.insert(0, 'Study', studyID)
+            sample_temp = sample_cleanup(sample_temp)
+
+            sample_df = sample_df.append(sample_temp, ignore_index=True)
+            print('get sample file from', studyID, end='\t')
+            print(sample_temp.shape)
+        except Exception as e:
+            failed_studies.append(studyID)
+            print(e)
+            pass
+
+    sample_df = sample_df.drop_duplicates()
+    assay_df = assay_df.drop_duplicates()
+
+    merge_frame = pd.merge(sample_df, assay_df, on=['Study', 'Sample.Name'])
+    return merge_frame
+
 
 
 def getStudyIDs(publicStudy=False):
@@ -377,6 +517,188 @@ def getStudytype(sType, publicStudy=True):
     studyID = [r[0] for r in res]
     studytype = [r[1] for r in res]
     return studyID, studytype
+
+
+def getFileList(studyID):
+    url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
+        study_id=studyID)
+    request = urllib.request.Request(url)
+    request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+    response = urllib.request.urlopen(request)
+    content = response.read().decode('utf-8')
+    j_content = json.loads(content)
+
+    assay_file, sample_file, investigation_file, maf_file = [], '', '', []
+    for files in j_content['study']:
+        if files['status'] == 'active' and files['type'] == 'metadata_assay':
+            assay_file.append(files['file'])
+            continue
+        if files['status'] == 'active' and files['type'] == 'metadata_investigation':
+            investigation_file = files['file']
+            continue
+        if files['status'] == 'active' and files['type'] == 'metadata_sample':
+            sample_file = files['file']
+            continue
+        if files['status'] == 'active' and files['type'] == 'metadata_maf':
+            maf_file.append(files['file'])
+            continue
+
+    if assay_file == []: print('Fail to load assay file from ', studyID)
+    if sample_file == '': print('Fail to load sample file from ', studyID)
+    if investigation_file == '': print('Fail to load investigation file from ', studyID)
+    if maf_file == []: print('Fail to load maf file from ', studyID)
+
+    return assay_file, investigation_file, sample_file, maf_file
+
+
+def assay_sample_list(studyID):
+    '''
+    get list of sample and assay from investigation file
+    :param studyID:
+    :return:
+    '''
+    import paramiko
+    import re
+
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    SSH_PARAMS = app.config.get('SSH_PARAMS')
+    client.connect(**SSH_PARAMS)
+    sftp_client = client.open_sftp()
+    address = '/net/isilonP/public/rw/homes/tc_cm01/metabolights/prod/studies/stage/private/' + studyID + '/i_Investigation.txt'
+    assay_list, sample_file = [], ''
+    try:
+        with sftp_client.open(address) as f:
+            for line in f.readlines():
+                if line.startswith('Study Assay File Name'):
+                    assay_list = list(re.findall(r'"([^"]*)"', line))
+                if line.startswith('Study File Name'):
+                    sample_file = re.findall(r'"([^"]*)"', line)[0]
+                if len(assay_list) != 0 and sample_file != '':
+                    return assay_list, sample_file
+    except:
+        print('Fail to read investigation file from ' + studyID)
+
+
+def readSSHDataFrame(filePath):
+    '''
+    Load file from SSH server
+    :param filePath:
+    :return:
+    '''
+    import paramiko
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    SSH_PARAMS = app.config.get('SSH_PARAMS')
+    client.connect(**SSH_PARAMS)
+    sftp_client = client.open_sftp()
+    try:
+        with sftp_client.open(filePath) as f:
+            df = pd.read_csv(f, sep='\t')
+            return df
+    except:
+        print('Fail to load file from ' + filePath)
+
+
+def NMR_assay_cleanup(df):
+    keep = ['Study', 'Sample Name', 'Protocol REF', 'Protocol REF.1',
+            'Parameter Value[NMR tube type]', 'Parameter Value[Solvent]',
+            'Parameter Value[Sample pH]', 'Parameter Value[Temperature]', 'Unit',
+            'Label', 'Protocol REF.2', 'Parameter Value[Instrument]',
+            'Parameter Value[NMR Probe]', 'Parameter Value[Number of transients]',
+            'Parameter Value[Pulse sequence name]',
+            'Acquisition Parameter Data File', 'Protocol REF.3', 'NMR Assay Name',
+            'Free Induction Decay Data File', 'Protocol REF.4',
+            'Derived Spectral Data File', 'Protocol REF.5',
+            'Data Transformation Name', 'Metabolite Assignment File']
+
+    rename = {'Sample Name': 'Sample.Name', 'Protocol REF': 'Protocol.REF.0', 'Protocol REF.1': 'Protocol.REF.1',
+              'Parameter Value[NMR tube type]': 'Parameter.Value.NMR.tube.type.',
+              'Parameter Value[Solvent]': 'Parameter.Value.Solvent.',
+              'Parameter Value[Sample pH]': 'Parameter.Value.Sample.pH.',
+              'Parameter Value[Temperature]': 'Parameter.Value.Temperature.', 'Unit': 'Unit', 'Label': 'Label',
+              'Protocol REF.2': 'Protocol.REF.2', 'Parameter Value[Instrument]': 'Parameter.Value.Instrument.',
+              'Parameter Value[NMR Probe]': 'Parameter.Value.NMR.Probe.',
+              'Parameter Value[Number of transients]': 'Parameter.Value.Number.of.transients.',
+              'Parameter Value[Pulse sequence name]': 'Parameter.Value.Pulse.sequence.name.',
+              'Acquisition Parameter Data File': 'Acquisition.Parameter.Data.File', 'Protocol REF.3': 'Protocol.REF.3',
+              'NMR Assay Name': 'NMR.Assay.Name', 'Free Induction Decay Data File': 'Free.Induction.Decay.Data.File',
+              'Protocol REF.4': 'Protocol.REF.4', 'Derived Spectral Data File': 'Derived.Spectral.Data.File',
+              'Protocol REF.5': 'Protocol.REF.5', 'Data Transformation Name': 'Data.Transformation.Name',
+              'Metabolite Assignment File': 'Metabolite.Assignment.File'}
+    df = df[keep]
+    df = df.rename(columns=rename)
+    return df
+
+
+def LCMS_assay_cleanup(df):
+    keep = ['Study', 'Sample Name', 'Protocol REF', 'Parameter Value[Post Extraction]',
+            'Parameter Value[Derivatization]', 'Extract Name', 'Protocol REF.1',
+            'Parameter Value[Chromatography Instrument]',
+            'Parameter Value[Column model]', 'Parameter Value[Column type]',
+            'Labeled Extract Name', 'Label', 'Protocol REF.2',
+            'Parameter Value[Scan polarity]', 'Parameter Value[Scan m/z range]',
+            'Parameter Value[Instrument]', 'Parameter Value[Ion source]',
+            'Parameter Value[Mass analyzer]', 'MS Assay Name',
+            'Raw Spectral Data File', 'Protocol REF.3', 'Normalization Name',
+            'Derived Spectral Data File', 'Protocol REF.4',
+            'Data Transformation Name', 'Metabolite Assignment File']
+
+    rename = {'Study': 'Study',
+              'Sample Name': 'Sample.Name',
+              'Protocol REF': 'Protocol.REF.0',
+              'Parameter Value[Post Extraction]': 'Parameter.Value.Post.Extraction.',
+              'Parameter Value[Derivatization]': 'Parameter.Value.Derivatization.',
+              'Extract Name': 'Extract.Name',
+              'Protocol REF.1': 'Protocol.REF.1',
+              'Parameter Value[Chromatography Instrument]': 'Parameter.Value.Chromatography.Instrument.',
+              'Parameter Value[Column model]': 'Parameter.Value.Column.model.',
+              'Parameter Value[Column type]': 'Parameter.Value.Column.type.',
+              'Labeled Extract Name': 'Labeled.Extract.Name',
+              'Label': 'Label',
+              'Protocol REF.2': 'Protocol.REF.2',
+              'Parameter Value[Scan polarity]': 'Parameter.Value.Scan.polarity.',
+              'Parameter Value[Scan m/z range]': 'Parameter.Value.Scan.m/z.range.',
+              'Parameter Value[Instrument]': 'Parameter.Value.Instrument.',
+              'Parameter Value[Ion source]': 'Parameter.Value.Ion.source.',
+              'Parameter Value[Mass analyzer]': 'Parameter.Value.Mass.analyzer.',
+              'MS Assay Name': 'MS.Assay.Name',
+              'Raw Spectral Data File': 'Raw.Spectral.Data.File',
+              'Protocol REF.3': 'Protocol.REF.3',
+              'Normalization Name': 'Normalization.Name',
+              'Derived Spectral Data File': 'Derived.Spectral.Data.File',
+              'Protocol REF.4': 'Protocol.REF.4',
+              'Data Transformation Name': 'Data.Transformation.Name',
+              'Metabolite Assignment File': 'Metabolite.Assignment.File'}
+    k = pd.DataFrame(columns=keep)
+    k = k.append(df)
+    df = k[keep]
+    df = df.rename(columns=rename)
+    return df
+
+
+def sample_cleanup(df):
+    keep = ['Study', 'Characteristics[Organism]', 'Characteristics[Organism part]', 'Protocol REF', 'Sample Name']
+    rename = {'Characteristics[Organism]': 'Characteristics.Organism.',
+              'Characteristics[Organism part]': 'Characteristics.Organism.part.',
+              'Protocol REF': 'Protocol.REF',
+              'Sample Name': 'Sample.Name'}
+
+    k = pd.DataFrame(columns=keep)
+    k = k.append(df)
+    df = k[keep]
+    df = df.rename(columns=rename)
+    return df
+
+
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+
+def natural_keys(text):
+    return [atoi(c) for c in re.split(r'(\d+)', text)]
 
 
 def setGoogleSheet(df, url, worksheetName, token_path):
