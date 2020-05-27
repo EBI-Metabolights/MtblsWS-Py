@@ -147,9 +147,16 @@ class cronjob(Resource):
                 # df.studyID, df.dataType = studyID, studyType
 
                 # a, i, s, m = getFileList2('MTBLS1')
-                a, s = assay_sample_list('MTBLS1')
-                df1 = get_assay_file(studyID='MTBLS1', assay_file_name=a)
-                df2 = get_sample_file(studyID='MTBLS1', sample_file_name=s)
+                # a, s = assay_sample_list('MTBLS1')
+                # df1 = get_assay_file(studyID='MTBLS1', assay_file_name=a)
+                # df2 = get_sample_file(studyID='MTBLS1', sample_file_name=s)
+                # df = getNMRinfo()
+                print('-' * 20 + 'UPDATE LC-MS info' + '-' * 20)
+                logger.info('UPDATE LC-MS info')
+                df = getLCMSinfo()
+                replaceGoogleSheet(df=df, url=app.config.get('LC_MS_STATISITC'),
+                                   worksheetName='LCMS samples and assays',
+                                   token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
                 return jsonify({'test success': True})
             except Exception as e:
                 logger.info(e)
@@ -218,18 +225,24 @@ def curation_log_database_update():
 
 def MTBLS_statistics_update():
     ## update untarget NMR
+    print('-' * 20 + 'UPDATE untarget NMR' + '-' * 20)
+    logger.info('UPDATE untarget NMR')
     untarget_NMR = extractUntargetStudy(['NMR'])
     res = untarget_NMR[['studyID']]
     replaceGoogleSheet(df=res, url=app.config.get('MTBLS_STATISITC'), worksheetName='untarget NMR',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
 
     ## update untarget LC-MS
+    print('-' * 20 + 'UPDATE untarget LC-MS' + '-' * 20)
+    logger.info('UPDATE untarget LC-MS')
     untarget_LCMS = extractUntargetStudy(['LC'])
     res = untarget_LCMS[['studyID']]
     replaceGoogleSheet(df=res, url=app.config.get('MTBLS_STATISITC'), worksheetName='untarget LC-MS',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
 
     ## update NMR and LC-MS
+    print('-' * 20 + 'UPDATE NMR and LC-MS' + '-' * 20)
+    logger.info('UPDATE NMR and LC-MS')
     studyID, studyType = get_study_by_type(['LC', 'NMR'], publicStudy=False)
     df = pd.DataFrame(columns=['studyID', 'dataType'])
     df.studyID, df.dataType = studyID, studyType
@@ -237,6 +250,8 @@ def MTBLS_statistics_update():
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
 
     ## update NMR sample / assay sheet
+    print('-' * 20 + 'UPDATE NMR info' + '-' * 20)
+    logger.info('UPDATE NMR info')
     df = getNMRinfo()
     replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='NMR',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
@@ -244,8 +259,10 @@ def MTBLS_statistics_update():
     ## update MS sample / assay sheet
 
     ## update LC-MS sample / assay sheet
+    print('-' * 20 + 'UPDATE LC-MS info' + '-' * 20)
+    logger.info('UPDATE LC-MS info')
     df = getLCMSinfo()
-    replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='LC-MS',
+    replaceGoogleSheet(df=df, url=app.config.get('LC_MS_STATISITC'), worksheetName='LCMS samples and assays',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
 
 
@@ -297,7 +314,6 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
     return untarget_df
 
 
-# TODO
 def getNMRinfo():
     NMR_studies, _ = get_study_by_type(['NMR'], publicStudy=True)
     NMR_studies.sort(key=natural_keys)
@@ -317,7 +333,8 @@ def getNMRinfo():
                                      'Data.Transformation.Name', 'Metabolite.Assignment.File'])
 
     for studyID in NMR_studies:
-        print('-' * 20 + studyID + '-' * 20)
+        print(studyID)
+        # print('-' * 20 + studyID + '-' * 20)
         try:
             assay_file, investigation_file, sample_file, maf_file = getFileList(studyID)
         except:
@@ -330,13 +347,13 @@ def getNMRinfo():
         # ------------------------ SAMPLE FILE ----------------------------------------
         #
         sample_temp = get_sample_file(studyID, sample_file)
-        # sample_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + sample_file)
+        # sample_temp2 = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + sample_file)
         sample_temp.insert(0, 'Study', studyID)
         sample_temp = sample_cleanup(sample_temp)
 
         sample_df = sample_df.append(sample_temp, ignore_index=True)
-        print('get sample file from', studyID, end='\t')
-        print(sample_temp.shape)
+        # print('get sample file from', studyID, end='\t')
+        # print(sample_temp.shape)
 
         # ------------------------ ASSAY FILE -----------------------------------------
         for assay in assay_file:
@@ -349,8 +366,8 @@ def getNMRinfo():
                 assay_temp = NMR_assay_cleanup(assay_temp)
                 assay_df = assay_df.append(assay_temp, ignore_index=True)
 
-            print('get assay file from', studyID, end='\t')
-            print(assay_temp.shape)
+            # print('get assay file from', studyID, end='\t')
+            # print(assay_temp.shape)
 
     merge_frame = pd.merge(sample_df, assay_df, on=['Study', 'Sample.Name'])
     return merge_frame
@@ -381,6 +398,7 @@ def getLCMSinfo():
                                      'Data.Transformation.Name', 'Metabolite.Assignment.File'])
 
     for studyID in LCMS_studies:
+        print(studyID)
         print('-' * 20 + studyID + '-' * 20)
         try:
             assay_file, investigation_file, sample_file, maf_file = getFileList(studyID)
@@ -402,8 +420,8 @@ def getLCMSinfo():
                     assay_temp = LCMS_assay_cleanup(assay_temp)
                     assay_df = assay_df.append(assay_temp, ignore_index=True)
 
-                    print('get assay file from', studyID, end='\t')
-                    print(assay_temp.shape)
+                    # print('get assay file from', studyID, end='\t')
+                    # print(assay_temp.shape)
 
             # ------------------------ SAMPLE FILE ----------------------------------------
             sample_temp = get_sample_file(studyID, sample_file)
@@ -411,8 +429,8 @@ def getLCMSinfo():
             sample_temp = sample_cleanup(sample_temp)
 
             sample_df = sample_df.append(sample_temp, ignore_index=True)
-            print('get sample file from', studyID, end='\t')
-            print(sample_temp.shape)
+            # print('get sample file from', studyID, end='\t')
+            # print(sample_temp.shape)
         except Exception as e:
             failed_studies.append(studyID)
             print(e)
@@ -463,35 +481,39 @@ def getFileList2(studyID):
 
 
 def getFileList(studyID):
-    url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
-        study_id=studyID)
-    request = urllib.request.Request(url)
-    request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
-    response = urllib.request.urlopen(request)
-    content = response.read().decode('utf-8')
-    j_content = json.loads(content)
+    try:
+        url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
+            study_id=studyID)
+        request = urllib.request.Request(url)
+        request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        response = urllib.request.urlopen(request)
+        content = response.read().decode('utf-8')
+        j_content = json.loads(content)
 
-    assay_file, sample_file, investigation_file, maf_file = [], '', '', []
-    for files in j_content['study']:
-        if files['status'] == 'active' and files['type'] == 'metadata_assay':
-            assay_file.append(files['file'])
-            continue
-        if files['status'] == 'active' and files['type'] == 'metadata_investigation':
-            investigation_file = files['file']
-            continue
-        if files['status'] == 'active' and files['type'] == 'metadata_sample':
-            sample_file = files['file']
-            continue
-        if files['status'] == 'active' and files['type'] == 'metadata_maf':
-            maf_file.append(files['file'])
-            continue
+        assay_file, sample_file, investigation_file, maf_file = [], '', '', []
+        for files in j_content['study']:
+            if files['status'] == 'active' and files['type'] == 'metadata_assay':
+                assay_file.append(files['file'])
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_investigation':
+                investigation_file = files['file']
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_sample':
+                sample_file = files['file']
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_maf':
+                maf_file.append(files['file'])
+                continue
 
-    if assay_file == []: print('Fail to load assay file from ', studyID)
-    if sample_file == '': print('Fail to load sample file from ', studyID)
-    if investigation_file == '': print('Fail to load investigation file from ', studyID)
-    if maf_file == []: print('Fail to load maf file from ', studyID)
+        if assay_file == []: print('Fail to load assay file from ', studyID)
+        if sample_file == '': print('Fail to load sample file from ', studyID)
+        if investigation_file == '': print('Fail to load investigation file from ', studyID)
+        if maf_file == []: print('Fail to load maf file from ', studyID)
 
-    return assay_file, investigation_file, sample_file, maf_file
+        return assay_file, investigation_file, sample_file, maf_file
+    except Exception as e:
+        print(e)
+        logger.info(e)
 
 
 def get_sample_file(studyID, sample_file_name):
@@ -502,6 +524,7 @@ def get_sample_file(studyID, sample_file_name):
     :param sample_file_name: active sample file name
     :return:  DataFrame
     '''
+    import io
     try:
         source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
         ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
@@ -509,7 +532,8 @@ def get_sample_file(studyID, sample_file_name):
         resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                             params={'sample_filename': sample_file_name})
         data = resp.text
-        df = pd.DataFrame([x.split('\t') for x in data.split('\n')])
+        content = io.StringIO(data)
+        df = pd.read_csv(content, sep='\t')
         return df
     except Exception as e:
         logger.info(e)
@@ -524,6 +548,7 @@ def get_assay_file(studyID, assay_file_name):
     :param sample_file_name: active assay file name
     :return:  DataFrame
     '''
+    import io
     try:
         source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
         ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
@@ -531,7 +556,8 @@ def get_assay_file(studyID, assay_file_name):
         resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                             params={'assay_filename': assay_file_name})
         data = resp.text
-        df = pd.DataFrame([x.split('\t') for x in data.split('\n')])
+        content = io.StringIO(data)
+        df = pd.read_csv(content, sep='\t')
         return df
     except Exception as e:
         logger.info(e)
@@ -652,7 +678,7 @@ def LCMS_assay_cleanup(df):
               'Data Transformation Name': 'Data.Transformation.Name',
               'Metabolite Assignment File': 'Metabolite.Assignment.File'}
     k = pd.DataFrame(columns=keep)
-    k = k.append(df)
+    k = k.append(df, sort=False)
     df = k[keep]
     df = df.rename(columns=rename)
     return df
@@ -671,7 +697,7 @@ def sample_cleanup(df):
               'Sample Name': 'Sample.Name'}
 
     k = pd.DataFrame(columns=keep)
-    k = k.append(df)
+    k = k.append(df, sort=False)
     df = k[keep]
     df = df.rename(columns=rename)
     return df
@@ -737,6 +763,7 @@ def replaceGoogleSheet(df, url, worksheetName, token_path):
     wks = gc.open_by_url(url).worksheet(worksheetName)
     wks.clear()
     set_with_dataframe(wks, df)
+
 
 # def getStudyIDs(publicStudy=False):
 #     def atoi(text):
@@ -886,22 +913,22 @@ def replaceGoogleSheet(df, url, worksheetName, token_path):
 #         print('Fail to read investigation file from ' + studyID)
 
 
-# def readSSHDataFrame2(filePath):
-#     '''
-#     Load file from SSH server
-#     :param filePath:
-#     :return:
-#     '''
-#     import paramiko
-#     client = paramiko.SSHClient()
-#     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-#
-#     SSH_PARAMS = app.config.get('SSH_PARAMS')
-#     client.connect(**SSH_PARAMS)
-#     sftp_client = client.open_sftp()
-#     try:
-#         with sftp_client.open(filePath) as f:
-#             df = pd.read_csv(f, sep='\t')
-#             return df
-#     except:
-#         print('Fail to load file from ' + filePath)
+def readSSHDataFrame(filePath):
+    '''
+    Load file from SSH server
+    :param filePath:
+    :return:
+    '''
+    import paramiko
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    SSH_PARAMS = app.config.get('SSH_PARAMS')
+    client.connect(**SSH_PARAMS)
+    sftp_client = client.open_sftp()
+    try:
+        with sftp_client.open(filePath) as f:
+            df = pd.read_csv(f, sep='\t')
+            return df
+    except:
+        print('Fail to load file from ' + filePath)
