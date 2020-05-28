@@ -16,14 +16,16 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import os
-import logging
-import requests
 import json
+import logging
+import os
 from datetime import datetime
-from flask_restful import abort
+
+import requests
 from flask import current_app as app
-from app.ws.db_connection import check_access_rights, get_public_studies
+from flask_restful import abort
+
+from app.ws.db_connection import check_access_rights, get_public_studies, get_study_by_type
 
 """
 MetaboLights WS client
@@ -86,7 +88,7 @@ class WsClient:
         :param user_token:
         :return:
         """
-        logger.info('Getting location for output updates for Study %s on the filesystem',study_id)
+        logger.info('Getting location for output updates for Study %s on the filesystem', study_id)
 
         study = self.get_study(study_id, user_token)
         std_folder = study["content"]["studyLocation"]
@@ -107,7 +109,7 @@ class WsClient:
         std_status = study_json["content"]["studyStatus"]
         release_date = study_json["content"]["studyPublicReleaseDate"]
         # 2012-02-14 00:00:00.0
-        readable = datetime.fromtimestamp(release_date/1000).strftime('%Y-%m-%d %H:%M:%S.%f')
+        readable = datetime.fromtimestamp(release_date / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')
         return [std_status, readable]
 
     def get_study(self, study_id, user_token):
@@ -240,6 +242,13 @@ class WsClient:
         return {"studies": len(studies), "content": studies}
 
     @staticmethod
+    def get_study_by_type(stype, publicS=True):
+        logger.info('Getting all public studies')
+        studyID, studytype = get_study_by_type(stype, publicS)
+        res = json.dumps(dict(zip(studyID, studytype)))
+        return res
+
+    @staticmethod
     def get_all_studies_for_user(user_token):
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken"
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
@@ -299,13 +308,13 @@ class WsClient:
             obfuscation_code = user_token.replace("ocode:", "")
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            updated_date, study_status = check_access_rights(user_token, study_id.upper(),
-                                                             study_obfuscation_code=obfuscation_code)
+        updated_date, study_status = check_access_rights(user_token, study_id.upper(),
+                                                         study_obfuscation_code=obfuscation_code)
 
         logger.info("Read access: " + str(read_access) + ". Write access: " + str(write_access))
 
         return is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
-            submission_date, study_status
+               submission_date, study_status
 
     @staticmethod
     def get_queue_folder():
@@ -329,7 +338,7 @@ class WsClient:
     @staticmethod
     def create_upload_folder(study_id, obfuscation_code, user_token):
         resource = app.config.get('MTBLS_WS_RESOURCES_PATH') \
-                    + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
+                   + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
         url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
 
         ftp_folder = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code

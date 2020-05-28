@@ -102,7 +102,6 @@ query_user_access_rights = """
 
 def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, metaspace_api_key):
-
     val_email(email)
 
     insert_user_query = \
@@ -123,8 +122,6 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
 
     query = insert_user_query
 
-
-
     try:
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
@@ -139,7 +136,6 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
 
 def update_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, existing_user_name, is_curator, metaspace_api_key):
-
     val_email(existing_user_name)
     val_email(email)
 
@@ -301,6 +297,34 @@ def get_public_studies():
     return data
 
 
+def get_study_by_type(sType, publicStudy=True):
+    q2 = ' '
+    if publicStudy:
+        q2 = ' status in (2, 3) and '
+
+    if type(sType) == str:
+        q3 = "studytype = '{sType}'".format(sType=sType)
+
+    # fuzzy search
+    elif type(sType) == list:
+        DB_query = []
+        for q in sType:
+            query = "studytype like '%{q}%'".format(q=q)
+            DB_query.append(query)
+        q3 = ' and '.join(DB_query)
+
+    else:
+        return None
+
+    query = "SELECT acc,studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
+    postgresql_pool, conn, cursor = get_connection()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    studyID = [r[0] for r in data]
+    studytype = [r[1] for r in data]
+    return studyID, studytype
+
+
 def update_release_date(study_id, release_date):
     val_acc(study_id)
     query_update_release_date = "update studies set releasedate = %s where acc = %s;"
@@ -349,7 +373,6 @@ def get_obfuscation_code(study_id):
 
 
 def biostudies_acc_to_mtbls(biostudies_id):
-
     if not biostudies_id:
         return None
 
@@ -372,7 +395,6 @@ def biostudies_acc_to_mtbls(biostudies_id):
 
 
 def biostudies_accession(study_id, biostudies_id, method):
-
     if not study_id:
         return None
 
@@ -412,7 +434,6 @@ def biostudies_accession(study_id, biostudies_id, method):
 
 
 def mtblc_on_chebi_accession(chebi_id):
-
     if not chebi_id:
         return None
 
@@ -499,7 +520,6 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
 
 def study_submitters(study_id, user_email, method):
-
     if not study_id or len(user_email) < 5:
         return None
 
@@ -671,7 +691,6 @@ def update_study_status(study_id, study_status, is_curator=False):
 
 
 def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_code=None, date_from=None):
-
     if not user_token and study_obfuscation_code:
         return None
 
@@ -707,7 +726,7 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
                            "     when status = 1 then 'In Curation' "
                            "     when status = 2 then 'In Review' "
                            "     when status = 3 then 'Public' "
-                           "     else 'Dormant' end as status, " 
+                           "     else 'Dormant' end as status, "
                            "acc from studies "
                            "where obfuscationcode = '" + study_obfuscation_code + "' and acc='" + study_id + "';")
 
@@ -753,7 +772,6 @@ def release_connection(postgresql_pool, ps_connection):
 
 
 def database_maf_info_table_actions(study_id=None):
-
     if study_id:
 
         val_acc(study_id)
@@ -795,4 +813,3 @@ def val_query_params(text_to_val):
         for word in str(text_to_val).split():
             if word.lower() in stop_words:
                 abort(406, "'" + text_to_val + "' not allowed.")
-

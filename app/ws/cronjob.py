@@ -16,22 +16,23 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import re
-import traceback
+import json
+import urllib
 
 import gspread
 import numpy as np
-import psycopg2
+import pandas as pd
 import requests
 from flask import jsonify
-from flask import request, abort
+from flask import request
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
+from owlready2 import urllib
 
+from app.ws.db_connection import *
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import *
 from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
@@ -59,7 +60,8 @@ class cronjob(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["curation log-Database Query", "curation log-Database update", "MTBLS statistics"]
+                "enum": ["curation log-Database Query", "curation log-Database update", "MTBLS statistics",
+                         "test cronjob"]
             }
 
         ],
@@ -136,6 +138,29 @@ class cronjob(Resource):
             except Exception as e:
                 logger.info(e)
                 print(e)
+        elif source == 'test cronjob':
+            try:
+                logger.info('test cronjobs...')
+                # test = extractUntargetStudy(['LC', 'NMR'])
+                # studyID, studyType = get_study_by_type(['LC', 'NMR'], publicStudy=False)
+                # df = pd.DataFrame(columns=['studyID', 'dataType'])
+                # df.studyID, df.dataType = studyID, studyType
+
+                # a, i, s, m = getFileList2('MTBLS1')
+                # a, s = assay_sample_list('MTBLS1')
+                # df1 = get_assay_file(studyID='MTBLS1', assay_file_name=a)
+                # df2 = get_sample_file(studyID='MTBLS1', sample_file_name=s)
+                # df = getNMRinfo()
+                print('-' * 20 + 'UPDATE LC-MS info' + '-' * 20)
+                logger.info('UPDATE LC-MS info')
+                df = getLCMSinfo()
+                replaceGoogleSheet(df=df, url=app.config.get('LC_MS_STATISITC'),
+                                   worksheetName='LCMS samples and assays',
+                                   token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+                return jsonify({'test success': True})
+            except Exception as e:
+                logger.info(e)
+                print(e)
         else:
             abort(400)
 
@@ -200,25 +225,33 @@ def curation_log_database_update():
 
 def MTBLS_statistics_update():
     ## update untarget NMR
+    print('-' * 20 + 'UPDATE untarget NMR' + '-' * 20)
+    logger.info('UPDATE untarget NMR')
     untarget_NMR = extractUntargetStudy(['NMR'])
     res = untarget_NMR[['studyID']]
     replaceGoogleSheet(df=res, url=app.config.get('MTBLS_STATISITC'), worksheetName='untarget NMR',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
 
     ## update untarget LC-MS
+    print('-' * 20 + 'UPDATE untarget LC-MS' + '-' * 20)
+    logger.info('UPDATE untarget LC-MS')
     untarget_LCMS = extractUntargetStudy(['LC'])
     res = untarget_LCMS[['studyID']]
     replaceGoogleSheet(df=res, url=app.config.get('MTBLS_STATISITC'), worksheetName='untarget LC-MS',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
 
     ## update NMR and LC-MS
-    studyID, studyType = getStudytype(['LC', 'NMR'], publicStudy=False)
+    print('-' * 20 + 'UPDATE NMR and LC-MS' + '-' * 20)
+    logger.info('UPDATE NMR and LC-MS')
+    studyID, studyType = get_study_by_type(['LC', 'NMR'], publicStudy=False)
     df = pd.DataFrame(columns=['studyID', 'dataType'])
     df.studyID, df.dataType = studyID, studyType
     replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='both NMR and LCMS',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
 
     ## update NMR sample / assay sheet
+    print('-' * 20 + 'UPDATE NMR info' + '-' * 20)
+    logger.info('UPDATE NMR info')
     df = getNMRinfo()
     replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='NMR',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
@@ -226,27 +259,33 @@ def MTBLS_statistics_update():
     ## update MS sample / assay sheet
 
     ## update LC-MS sample / assay sheet
+    print('-' * 20 + 'UPDATE LC-MS info' + '-' * 20)
+    logger.info('UPDATE LC-MS info')
     df = getLCMSinfo()
-    replaceGoogleSheet(df=df, url=app.config.get('MTBLS_STATISITC'), worksheetName='LC-MS',
+    replaceGoogleSheet(df=df, url=app.config.get('LC_MS_STATISITC'), worksheetName='LCMS samples and assays',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
 
 
-def extractUntargetStudy(studyType, public=True):
+def extractUntargetStudy(studyType=None, publicStudy=True):
     def extractNum(s):
         num = re.findall("\d+", s)[0]
         return int(num)
 
-    def getDescriptor(publicStudy=True, sIDs=None):
+    # get all descriptor from studies
+    def getDescriptor(sIDs=None):
         res = []
+
         if sIDs == None:
-            studyIDs = getStudyIDs(publicStudy=publicStudy)
+            studyIDs = wsc.get_public_studies()
         else:
             studyIDs = sIDs
 
         for studyID in studyIDs:
-            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+            print(studyID)
+            source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+            ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
             try:
-                resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+                resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
                 data = resp.json()
                 for descriptor in data['studyDesignDescriptors']:
                     temp_dict = {'studyID': studyID,
@@ -254,14 +293,17 @@ def extractUntargetStudy(studyType, public=True):
                                  'matched_iri': descriptor['termAccession']}
                     res.append(temp_dict)
             except Exception as e:
-                print(studyID, end='\t')
+                logger.info('Fail to load descriptor from ' + studyID)
+                print('Fail to load descriptor from ' + studyID, end='\t')
                 print(e.args)
-
         df = pd.DataFrame(res)
-        # df.to_csv('../tests/descriptor.tsv', sep='\t', index=False)
         return df
 
-    studyIDs, _ = getStudytype(studyType, publicStudy=public)
+    if studyType == None:
+        studyIDs = get_public_studies()
+    else:
+        studyIDs, _ = get_study_by_type(studyType, publicStudy=publicStudy)
+
     descripter = getDescriptor(sIDs=studyIDs)
     untarget = descripter.loc[descripter['term'].str.startswith(('untargeted', 'Untargeted', 'non-targeted'))]
     untarget_df = untarget.copy()
@@ -273,7 +315,7 @@ def extractUntargetStudy(studyType, public=True):
 
 
 def getNMRinfo():
-    NMR_studies, _ = getStudytype(['NMR'], publicStudy=True)
+    NMR_studies, _ = get_study_by_type(['NMR'], publicStudy=True)
     NMR_studies.sort(key=natural_keys)
 
     sample_df = pd.DataFrame(
@@ -291,12 +333,12 @@ def getNMRinfo():
                                      'Data.Transformation.Name', 'Metabolite.Assignment.File'])
 
     for studyID in NMR_studies:
-        print('-' * 20 + studyID + '-' * 20)
+        print(studyID)
+        # print('-' * 20 + studyID + '-' * 20)
         try:
             assay_file, investigation_file, sample_file, maf_file = getFileList(studyID)
         except:
             try:
-                # t = fileReader.investigation_reader(studyID, ['Study Assay File Name', 'Study File Name'])
                 assay_file, sample_file = assay_sample_list(studyID)
                 investigation_file = 'i_Investigation.txt'
             except:
@@ -304,17 +346,19 @@ def getNMRinfo():
                 continue
         # ------------------------ SAMPLE FILE ----------------------------------------
         #
-        sample_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + sample_file)
+        sample_temp = get_sample_file(studyID, sample_file)
+        # sample_temp2 = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + sample_file)
         sample_temp.insert(0, 'Study', studyID)
         sample_temp = sample_cleanup(sample_temp)
 
         sample_df = sample_df.append(sample_temp, ignore_index=True)
-        print('get sample file from', studyID, end='\t')
-        print(sample_temp.shape)
+        # print('get sample file from', studyID, end='\t')
+        # print(sample_temp.shape)
 
         # ------------------------ ASSAY FILE -----------------------------------------
         for assay in assay_file:
-            assay_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + assay)
+            # assay_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + assay)
+            assay_temp = get_assay_file(studyID, assay)
             if 'Acquisition Parameter Data File' not in list(assay_temp.columns):
                 continue
             else:
@@ -322,8 +366,8 @@ def getNMRinfo():
                 assay_temp = NMR_assay_cleanup(assay_temp)
                 assay_df = assay_df.append(assay_temp, ignore_index=True)
 
-            print('get assay file from', studyID, end='\t')
-            print(assay_temp.shape)
+            # print('get assay file from', studyID, end='\t')
+            # print(assay_temp.shape)
 
     merge_frame = pd.merge(sample_df, assay_df, on=['Study', 'Sample.Name'])
     return merge_frame
@@ -335,8 +379,8 @@ def getMSinfo():
 
 
 def getLCMSinfo():
-    failed_studies= []
-    LCMS_studies, _ = getStudytype(['LC'], publicStudy=True)
+    failed_studies = []
+    LCMS_studies, _ = get_study_by_type(['LC'], publicStudy=True)
     LCMS_studies.sort(key=natural_keys)
 
     sample_df = pd.DataFrame(
@@ -354,12 +398,12 @@ def getLCMSinfo():
                                      'Data.Transformation.Name', 'Metabolite.Assignment.File'])
 
     for studyID in LCMS_studies:
+        print(studyID)
         print('-' * 20 + studyID + '-' * 20)
         try:
             assay_file, investigation_file, sample_file, maf_file = getFileList(studyID)
         except:
             try:
-                # t = fileReader.investigation_reader(studyID, ['Study Assay File Name', 'Study File Name'])
                 assay_file, sample_file = assay_sample_list(studyID)
                 investigation_file = 'i_Investigation.txt'
             except:
@@ -368,7 +412,7 @@ def getLCMSinfo():
         try:
             # ------------------------ ASSAY FILE -----------------------------------------
             for assay in assay_file:
-                assay_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + assay)
+                assay_temp = get_assay_file(studyID, assay)
                 if 'Parameter Value[Scan polarity]' not in list(assay_temp.columns):
                     continue
                 else:
@@ -376,17 +420,17 @@ def getLCMSinfo():
                     assay_temp = LCMS_assay_cleanup(assay_temp)
                     assay_df = assay_df.append(assay_temp, ignore_index=True)
 
-                    print('get assay file from', studyID, end='\t')
-                    print(assay_temp.shape)
+                    # print('get assay file from', studyID, end='\t')
+                    # print(assay_temp.shape)
 
             # ------------------------ SAMPLE FILE ----------------------------------------
-            sample_temp = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + sample_file)
+            sample_temp = get_sample_file(studyID, sample_file)
             sample_temp.insert(0, 'Study', studyID)
             sample_temp = sample_cleanup(sample_temp)
 
             sample_df = sample_df.append(sample_temp, ignore_index=True)
-            print('get sample file from', studyID, end='\t')
-            print(sample_temp.shape)
+            # print('get sample file from', studyID, end='\t')
+            # print(sample_temp.shape)
         except Exception as e:
             failed_studies.append(studyID)
             print(e)
@@ -399,156 +443,125 @@ def getLCMSinfo():
     return merge_frame
 
 
+def getFileList2(studyID):
+    source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+    ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+    try:
+        request = urllib.request.Request(ws_url)
+        request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        response = urllib.request.urlopen(request)
+        content = response.read().decode('utf-8')
+        j_content = json.loads(content)
 
-def getStudyIDs(publicStudy=False):
-    def atoi(text):
-        return int(text) if text.isdigit() else text
+        assay_file, sample_file, investigation_file, maf_file = [], '', '', []
+        for files in j_content['study']:
+            if files['status'] == 'active' and files['type'] == 'metadata_assay':
+                assay_file.append(files['file'])
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_investigation':
+                investigation_file = files['file']
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_sample':
+                sample_file = files['file']
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_maf':
+                maf_file.append(files['file'])
+                continue
 
-    def natural_keys(text):
-        return [atoi(c) for c in re.split('(\d+)', text)]
+        if assay_file == []: print('Fail to load assay file from ', studyID)
+        if sample_file == '': print('Fail to load sample file from ', studyID)
+        if investigation_file == '': print('Fail to load investigation file from ', studyID)
+        if maf_file == []: print('Fail to load maf file from ', studyID)
 
-    url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
-    request = urllib.request.Request(url)
-    request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
-    response = urllib.request.urlopen(request)
-    content = response.read().decode('utf-8')
-    j_content = json.loads(content)
+        return assay_file, investigation_file, sample_file, maf_file
 
-    studyIDs = j_content['content']
-    studyIDs.sort(key=natural_keys)
-
-    if publicStudy:
-        studyStatus = getStudyStatus()
-        s = studyStatus['MTBLS230']
-        studyIDs = [studyID for studyID in studyIDs if studyStatus[studyID] in ['Public', 'In Review']]
-    else:
-        studyStatus = getStudyStatus()
-        studyIDs = [studyID for studyID in studyIDs if
-                    studyStatus[studyID] in ['Public', 'In Review', 'Submitted', 'In Curation']]
-    return studyIDs
-
-
-def getStudyStatus():
-    query_user_access_rights = """
-             select case 
-             when (status = 0 and placeholder = '1') then 'Placeholder' 
-             when (status = 0 and placeholder='') then 'Submitted' 
-             when status = 1 then 'In Curation' 
-             when status = 2 then 'In Review' 
-             when status = 3 then 'Public' 
-             else 'Dormant' end as status, 
-                acc from studies;
-            """
-    token = app.config.get('METABOLIGHTS_TOKEN')
-
-    def execute_query(query, user_token, study_id=None):
-        try:
-            params = app.config.get('DB_PARAMS')
-            conn = psycopg2.connect(**params)
-            cursor = conn.cursor()
-            query = query.replace('\\', '')
-            if study_id is None:
-                cursor.execute(query, [user_token])
-            else:
-                query2 = query_user_access_rights.replace("#user_token#", user_token)
-                query2 = query2.replace("#study_id#", study_id)
-                cursor.execute(query2)
-            data = cursor.fetchall()
-            conn.close()
-
-            return data
-
-        except psycopg2.Error as e:
-            print("Unable to connect to the database")
-            print(e.pgcode)
-            print(e.pgerror)
-            print(traceback.format_exc())
-
-    study_list = execute_query(query_user_access_rights, token)
-    study_status = {}
-    for study in study_list:
-        study_status[study[1]] = study[0]
-
-    return study_status
-
-
-def getStudytype(sType, publicStudy=True):
-    def get_connection():
-        postgresql_pool = None
-        conn = None
-        cursor = None
-        try:
-            params = app.config.get('DB_PARAMS')
-            conn_pool_min = app.config.get('CONN_POOL_MIN')
-            conn_pool_max = app.config.get('CONN_POOL_MAX')
-            postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
-            conn = postgresql_pool.getconn()
-            cursor = conn.cursor()
-        except Exception as e:
-            print("Could not query the database " + str(e))
-            if postgresql_pool:
-                postgresql_pool.closeall
-        return postgresql_pool, conn, cursor
-
-    q2 = ' '
-    if publicStudy:
-        q2 = ' status in (2, 3) and '
-
-    if type(sType) == str:
-        q3 = "studytype = '{sType}'".format(sType=sType)
-
-    # fuzzy search
-    elif type(sType) == list:
-        DB_query = []
-        for q in sType:
-            query = "studytype like '%{q}%'".format(q=q)
-            DB_query.append(query)
-        q3 = ' and '.join(DB_query)
-
-    else:
-        return None
-
-    query = "SELECT acc,studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
-    # query = q1 + q2 + q3 + ';'
-    print(query)
-    postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query)
-    res = cursor.fetchall()
-    studyID = [r[0] for r in res]
-    studytype = [r[1] for r in res]
-    return studyID, studytype
+    except Exception as e:
+        print(e)
+        logger.info(e)
 
 
 def getFileList(studyID):
-    url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
-        study_id=studyID)
-    request = urllib.request.Request(url)
-    request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
-    response = urllib.request.urlopen(request)
-    content = response.read().decode('utf-8')
-    j_content = json.loads(content)
+    try:
+        url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
+            study_id=studyID)
+        request = urllib.request.Request(url)
+        request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        response = urllib.request.urlopen(request)
+        content = response.read().decode('utf-8')
+        j_content = json.loads(content)
 
-    assay_file, sample_file, investigation_file, maf_file = [], '', '', []
-    for files in j_content['study']:
-        if files['status'] == 'active' and files['type'] == 'metadata_assay':
-            assay_file.append(files['file'])
-            continue
-        if files['status'] == 'active' and files['type'] == 'metadata_investigation':
-            investigation_file = files['file']
-            continue
-        if files['status'] == 'active' and files['type'] == 'metadata_sample':
-            sample_file = files['file']
-            continue
-        if files['status'] == 'active' and files['type'] == 'metadata_maf':
-            maf_file.append(files['file'])
-            continue
+        assay_file, sample_file, investigation_file, maf_file = [], '', '', []
+        for files in j_content['study']:
+            if files['status'] == 'active' and files['type'] == 'metadata_assay':
+                assay_file.append(files['file'])
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_investigation':
+                investigation_file = files['file']
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_sample':
+                sample_file = files['file']
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_maf':
+                maf_file.append(files['file'])
+                continue
 
-    if assay_file == []: print('Fail to load assay file from ', studyID)
-    if sample_file == '': print('Fail to load sample file from ', studyID)
-    if investigation_file == '': print('Fail to load investigation file from ', studyID)
-    if maf_file == []: print('Fail to load maf file from ', studyID)
+        if assay_file == []: print('Fail to load assay file from ', studyID)
+        if sample_file == '': print('Fail to load sample file from ', studyID)
+        if investigation_file == '': print('Fail to load investigation file from ', studyID)
+        if maf_file == []: print('Fail to load maf file from ', studyID)
 
-    return assay_file, investigation_file, sample_file, maf_file
+        return assay_file, investigation_file, sample_file, maf_file
+    except Exception as e:
+        print(e)
+        logger.info(e)
+
+
+def get_sample_file(studyID, sample_file_name):
+    '''
+    get sample file
+
+    :param studyID: study ID
+    :param sample_file_name: active sample file name
+    :return:  DataFrame
+    '''
+    import io
+    try:
+        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+
+        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                            params={'sample_filename': sample_file_name})
+        data = resp.text
+        content = io.StringIO(data)
+        df = pd.read_csv(content, sep='\t')
+        return df
+    except Exception as e:
+        logger.info(e)
+        print(e)
+
+
+def get_assay_file(studyID, assay_file_name):
+    '''
+    get assay file
+
+    :param studyID:  study ID
+    :param sample_file_name: active assay file name
+    :return:  DataFrame
+    '''
+    import io
+    try:
+        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+
+        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                            params={'assay_filename': assay_file_name})
+        data = resp.text
+        content = io.StringIO(data)
+        df = pd.read_csv(content, sep='\t')
+        return df
+    except Exception as e:
+        logger.info(e)
+        print(e)
 
 
 def assay_sample_list(studyID):
@@ -557,52 +570,39 @@ def assay_sample_list(studyID):
     :param studyID:
     :return:
     '''
-    import paramiko
-    import re
+    import io
 
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    SSH_PARAMS = app.config.get('SSH_PARAMS')
-    client.connect(**SSH_PARAMS)
-    sftp_client = client.open_sftp()
-    address = '/net/isilonP/public/rw/homes/tc_cm01/metabolights/prod/studies/stage/private/' + studyID + '/i_Investigation.txt'
-    assay_list, sample_file = [], ''
     try:
-        with sftp_client.open(address) as f:
-            for line in f.readlines():
+        source = '/metabolights/ws/studies/{study_id}/investigation'.format(study_id=studyID)
+        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+
+        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+        buf = io.StringIO(resp.text)
+
+        assay_list, sample_file = [], ''
+        try:
+            for line in buf.readlines():
                 if line.startswith('Study Assay File Name'):
                     assay_list = list(re.findall(r'"([^"]*)"', line))
                 if line.startswith('Study File Name'):
                     sample_file = re.findall(r'"([^"]*)"', line)[0]
                 if len(assay_list) != 0 and sample_file != '':
                     return assay_list, sample_file
-    except:
-        print('Fail to read investigation file from ' + studyID)
+        except:
+            print('Fail to read investigation file from ' + studyID)
 
-
-def readSSHDataFrame(filePath):
-    '''
-    Load file from SSH server
-    :param filePath:
-    :return:
-    '''
-    import paramiko
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    SSH_PARAMS = app.config.get('SSH_PARAMS')
-    client.connect(**SSH_PARAMS)
-    sftp_client = client.open_sftp()
-    try:
-        with sftp_client.open(filePath) as f:
-            df = pd.read_csv(f, sep='\t')
-            return df
-    except:
-        print('Fail to load file from ' + filePath)
+    except Exception as e:
+        logger.info(e)
+        print(e)
+        logger.info('Fail to load investigation file from', studyID)
 
 
 def NMR_assay_cleanup(df):
+    '''
+    Change / mapping NMR Study dataframe column name
+    :param df:
+    :return:
+    '''
     keep = ['Study', 'Sample Name', 'Protocol REF', 'Protocol REF.1',
             'Parameter Value[NMR tube type]', 'Parameter Value[Solvent]',
             'Parameter Value[Sample pH]', 'Parameter Value[Temperature]', 'Unit',
@@ -634,6 +634,11 @@ def NMR_assay_cleanup(df):
 
 
 def LCMS_assay_cleanup(df):
+    '''
+    Change / mapping LCMS Study dataframe column name
+    :param df:
+    :return:
+    '''
     keep = ['Study', 'Sample Name', 'Protocol REF', 'Parameter Value[Post Extraction]',
             'Parameter Value[Derivatization]', 'Extract Name', 'Protocol REF.1',
             'Parameter Value[Chromatography Instrument]',
@@ -673,13 +678,18 @@ def LCMS_assay_cleanup(df):
               'Data Transformation Name': 'Data.Transformation.Name',
               'Metabolite Assignment File': 'Metabolite.Assignment.File'}
     k = pd.DataFrame(columns=keep)
-    k = k.append(df)
+    k = k.append(df, sort=False)
     df = k[keep]
     df = df.rename(columns=rename)
     return df
 
 
 def sample_cleanup(df):
+    '''
+    Change / mapping sample file dataframe column name
+    :param df:
+    :return:
+    '''
     keep = ['Study', 'Characteristics[Organism]', 'Characteristics[Organism part]', 'Protocol REF', 'Sample Name']
     rename = {'Characteristics[Organism]': 'Characteristics.Organism.',
               'Characteristics[Organism part]': 'Characteristics.Organism.part.',
@@ -687,7 +697,7 @@ def sample_cleanup(df):
               'Sample Name': 'Sample.Name'}
 
     k = pd.DataFrame(columns=keep)
-    k = k.append(df)
+    k = k.append(df, sort=False)
     df = k[keep]
     df = df.rename(columns=rename)
     return df
@@ -753,3 +763,172 @@ def replaceGoogleSheet(df, url, worksheetName, token_path):
     wks = gc.open_by_url(url).worksheet(worksheetName)
     wks.clear()
     set_with_dataframe(wks, df)
+
+
+# def getStudyIDs(publicStudy=False):
+#     def atoi(text):
+#         return int(text) if text.isdigit() else text
+#
+#     def natural_keys(text):
+#         return [atoi(c) for c in re.split('(\d+)', text)]
+#
+#     url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
+#     request = urllib.request.Request(url)
+#     request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+#     response = urllib.request.urlopen(request)
+#     content = response.read().decode('utf-8')
+#     j_content = json.loads(content)
+#
+#     studyIDs = j_content['content']
+#     studyIDs.sort(key=natural_keys)
+#
+#     if publicStudy:
+#         studyStatus = getStudyStatus()
+#         studyIDs = [studyID for studyID in studyIDs if studyStatus[studyID] in ['Public', 'In Review']]
+#     else:
+#         studyStatus = getStudyStatus()
+#         studyIDs = [studyID for studyID in studyIDs if
+#                     studyStatus[studyID] in ['Public', 'In Review', 'Submitted', 'In Curation']]
+#     return studyIDs
+
+
+# def getStudyStatus():
+#     query_user_access_rights = """
+#              select case
+#              when (status = 0 and placeholder = '1') then 'Placeholder'
+#              when (status = 0 and placeholder='') then 'Submitted'
+#              when status = 1 then 'In Curation'
+#              when status = 2 then 'In Review'
+#              when status = 3 then 'Public'
+#              else 'Dormant' end as status,
+#                 acc from studies;
+#             """
+#     token = app.config.get('METABOLIGHTS_TOKEN')
+#
+#     def execute_query(query, user_token, study_id=None):
+#         try:
+#             params = app.config.get('DB_PARAMS')
+#             conn = psycopg2.connect(**params)
+#             cursor = conn.cursor()
+#             query = query.replace('\\', '')
+#             if study_id is None:
+#                 cursor.execute(query, [user_token])
+#             else:
+#                 query2 = query_user_access_rights.replace("#user_token#", user_token)
+#                 query2 = query2.replace("#study_id#", study_id)
+#                 cursor.execute(query2)
+#             data = cursor.fetchall()
+#             conn.close()
+#
+#             return data
+#
+#         except psycopg2.Error as e:
+#             print("Unable to connect to the database")
+#             print(e.pgcode)
+#             print(e.pgerror)
+#             print(traceback.format_exc())
+#
+#     study_list = execute_query(query_user_access_rights, token)
+#     study_status = {}
+#     for study in study_list:
+#         study_status[study[1]] = study[0]
+#
+#     return study_status
+
+
+# def getStudytype(sType, publicStudy=True):
+#     def get_connection():
+#         postgresql_pool = None
+#         conn = None
+#         cursor = None
+#         try:
+#             params = app.config.get('DB_PARAMS')
+#             conn_pool_min = app.config.get('CONN_POOL_MIN')
+#             conn_pool_max = app.config.get('CONN_POOL_MAX')
+#             postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
+#             conn = postgresql_pool.getconn()
+#             cursor = conn.cursor()
+#         except Exception as e:
+#             print("Could not query the database " + str(e))
+#             if postgresql_pool:
+#                 postgresql_pool.closeall
+#         return postgresql_pool, conn, cursor
+#
+#     q2 = ' '
+#     if publicStudy:
+#         q2 = ' status in (2, 3) and '
+#
+#     if type(sType) == str:
+#         q3 = "studytype = '{sType}'".format(sType=sType)
+#
+#     # fuzzy search
+#     elif type(sType) == list:
+#         DB_query = []
+#         for q in sType:
+#             query = "studytype like '%{q}%'".format(q=q)
+#             DB_query.append(query)
+#         q3 = ' and '.join(DB_query)
+#
+#     else:
+#         return None
+#
+#     query = "SELECT acc,studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
+#     # query = q1 + q2 + q3 + ';'
+#     print(query)
+#     postgresql_pool, conn, cursor = get_connection()
+#     cursor.execute(query)
+#     res = cursor.fetchall()
+#     studyID = [r[0] for r in res]
+#     studytype = [r[1] for r in res]
+#     return studyID, studytype
+
+
+# def assay_sample_list2(studyID):
+#     '''
+#     get list of sample and assay from investigation file
+#     :param studyID:
+#     :return:
+#     '''
+#     import paramiko
+#     import re
+#
+#     client = paramiko.SSHClient()
+#     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+#
+#     SSH_PARAMS = app.config.get('SSH_PARAMS')
+#     client.connect(**SSH_PARAMS)
+#     sftp_client = client.open_sftp()
+#     address = '/net/isilonP/public/rw/homes/tc_cm01/metabolights/prod/studies/stage/private/' + studyID + '/i_Investigation.txt'
+#     assay_list, sample_file = [], ''
+#     try:
+#         with sftp_client.open(address) as f:
+#             for line in f.readlines():
+#                 if line.startswith('Study Assay File Name'):
+#                     assay_list = list(re.findall(r'"([^"]*)"', line))
+#                 if line.startswith('Study File Name'):
+#                     sample_file = re.findall(r'"([^"]*)"', line)[0]
+#                 if len(assay_list) != 0 and sample_file != '':
+#                     return assay_list, sample_file
+#     except:
+#         print('Fail to read investigation file from ' + studyID)
+
+
+def readSSHDataFrame(filePath):
+    '''
+    Load file from SSH server
+    :param filePath:
+    :return:
+    '''
+    import paramiko
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    SSH_PARAMS = app.config.get('SSH_PARAMS')
+    client.connect(**SSH_PARAMS)
+    sftp_client = client.open_sftp()
+    try:
+        with sftp_client.open(filePath) as f:
+            df = pd.read_csv(f, sep='\t')
+            return df
+    except:
+        print('Fail to load file from ' + filePath)

@@ -191,6 +191,8 @@ class StudyFiles(Resource):
                         'uploadPath': upload_location[1],
                         'obfuscationCode': obfuscation_code})
 
+    # 'uploadPath': upload_location[0], for local testing
+
     @swagger.operation(
         summary="Delete files from a given folder",
         nickname="Delete files",
