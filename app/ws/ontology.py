@@ -4,7 +4,7 @@
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
 #  Last modified: 2019-May-08
-#  Modified by:   kenneth
+#  Modified by:   Jiakang
 #
 #  Copyright 2019 EMBL - European Bioinformatics Institute
 #
@@ -215,11 +215,12 @@ class Ontology(Resource):
 
         else:
             if queryFields in [None, '']:  # if found the term, STOP
+                is_url = term.startswith('http')
                 logger.info('Search %s from resources one by one' % term)
                 print('Search %s from resources one by one' % term)
                 result = getMetaboTerm(term, branch, mapping)
 
-                if len(result) == 0:
+                if len(result) == 0 and not is_url:
                     print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                     logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                     try:
@@ -237,7 +238,7 @@ class Ontology(Resource):
                         print(e.args)
                         logger.info(e.args)
 
-                if len(result) == 0:
+                if len(result) == 0 and not is_url:
                     print("Can't find query in OLS, requesting Zooma")
                     logger.info("Can't find query in OLS, requesting Zooma")
                     try:

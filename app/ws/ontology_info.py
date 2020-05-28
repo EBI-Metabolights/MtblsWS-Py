@@ -4,7 +4,7 @@
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
 #  Last modified: 2019-Mar-21
-#  Modified by:   kenneth
+#  Modified by:   Jiakang
 #
 #  Copyright 2019 EMBL - European Bioinformatics Institute
 #
@@ -67,6 +67,14 @@ def getMetaboTerm(keyword, branch, mapping=''):
 
     if keyword not in [None, '']:
         # exact match
+        if keyword.startswith('http'):
+            try:
+                cls += onto.search(iri=keyword)
+            except:
+                logger.info("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
+                print("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
+                pass
+
         try:
             cls += onto.search(label=keyword, _case_sensitive=False)
         except:
@@ -205,9 +213,10 @@ def getOLSTerm(keyword, map, ontology=''):
 
     elif 'http:' in keyword:
         label, definition, ontoName = getOLSTermInfo(keyword)
-        enti = entity(name=label, iri=keyword, definition=definition, ontoName=ontoName,
-                      provenance_name=ontoName)
-        res.append(enti)
+        if len(label) > 1:
+            enti = entity(name=label, iri=keyword, definition=definition, ontoName=ontoName,
+                          provenance_name=ontoName)
+            res.append(enti)
         return res
 
     try:
