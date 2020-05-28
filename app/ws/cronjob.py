@@ -294,6 +294,7 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
                     res.append(temp_dict)
             except Exception as e:
                 logger.info('Fail to load descriptor from ' + studyID)
+                logger.info(e.args)
                 print('Fail to load descriptor from ' + studyID, end='\t')
                 print(e.args)
         df = pd.DataFrame(res)
@@ -341,8 +342,10 @@ def getNMRinfo():
             try:
                 assay_file, sample_file = assay_sample_list(studyID)
                 investigation_file = 'i_Investigation.txt'
-            except:
+            except Exception as e:
                 print('Fail to load study ', studyID)
+                print(e)
+                logger.info(e.args)
                 continue
         # ------------------------ SAMPLE FILE ----------------------------------------
         #
@@ -406,8 +409,9 @@ def getLCMSinfo():
             try:
                 assay_file, sample_file = assay_sample_list(studyID)
                 investigation_file = 'i_Investigation.txt'
-            except:
+            except Exception as e:
                 print('Fail to load study ', studyID)
+                logger.info(e.args)
                 continue
         try:
             # ------------------------ ASSAY FILE -----------------------------------------
