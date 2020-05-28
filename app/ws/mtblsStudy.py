@@ -443,7 +443,7 @@ class IsaTabAssayFile(Resource):
         assay_filename = None
         if request.args:
             args = parser.parse_args(req=request)
-            assay_filename = args['assay_filename'].lower() if args['assay_filename'] else None
+            assay_filename = args['assay_filename'] if args['assay_filename'] else None
         if not assay_filename:
             logger.warning("Missing Assay filename.")
             abort(404, "Missing Assay filename.")
