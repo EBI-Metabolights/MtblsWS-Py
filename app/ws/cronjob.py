@@ -61,7 +61,7 @@ class cronjob(Resource):
                 "paramType": "query",
                 "dataType": "string",
                 "enum": ["curation log-Database Query", "curation log-Database update", "MTBLS statistics",
-                         "test cronjob"]
+                         "empty studies", "test cronjob"]
             }
 
         ],
@@ -135,6 +135,18 @@ class cronjob(Resource):
                 logger.info('Updating MTBLS statistics')
                 MTBLS_statistics_update()
                 return jsonify({'success': True})
+            except Exception as e:
+                logger.info(e)
+                print(e)
+
+        elif source == 'empty studies':
+            try:
+                logger.info('Get list of empty studies')
+                blank_inv, no_inv = get_empty_studies()
+                return jsonify({'Blank investigation': {'counts': len(blank_inv), 'list': blank_inv},
+                                'No investigation': {'counts': len(no_inv), 'list': no_inv}})
+                # res = json.dumps({'Blank investigation': {'counts': len(blank_inv), 'list': blank_inv},
+                #                   'No investigation': {'counts': len(no_inv), 'list': no_inv}})
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -264,6 +276,35 @@ def MTBLS_statistics_update():
     df = getLCMSinfo()
     replaceGoogleSheet(df=df, url=app.config.get('LC_MS_STATISITC'), worksheetName='LCMS samples and assays',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+
+
+def get_empty_studies():
+    blank_inv = []
+    no_inv = []
+
+    studyIDs = get_all_studies(app.config.get('METABOLIGHTS_TOKEN'))
+    for studyID in studyIDs:
+        # print(studyID[0])
+        source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyID[0])
+        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+
+        try:
+            resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+            data = resp.json()
+            if len(data["isaInvestigation"]['ontologySourceReferences']) == 0:
+                blank_inv.append(studyID[0])
+                logger.info('Empty i_Investigation.txt in {studyID}'.format(studyID=studyID[0]))
+                print('Empty i_Investigation.txt in {studyID}'.format(studyID=studyID[0]))
+                continue
+        except Exception as e:
+            no_inv.append(studyID[0])
+            logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyID[0]))
+            print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyID[0]))
+            continue
+
+    blank_inv.sort(key=natural_keys)
+    no_inv.sort(key=natural_keys)
+    return blank_inv, no_inv
 
 
 def extractUntargetStudy(studyType=None, publicStudy=True):
