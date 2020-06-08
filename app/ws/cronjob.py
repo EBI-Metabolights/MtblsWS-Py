@@ -145,8 +145,6 @@ class cronjob(Resource):
                 blank_inv, no_inv = get_empty_studies()
                 return jsonify({'Blank investigation': {'counts': len(blank_inv), 'list': blank_inv},
                                 'No investigation': {'counts': len(no_inv), 'list': no_inv}})
-                # res = json.dumps({'Blank investigation': {'counts': len(blank_inv), 'list': blank_inv},
-                #                   'No investigation': {'counts': len(no_inv), 'list': no_inv}})
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -156,6 +154,7 @@ class cronjob(Resource):
                 # test = extractUntargetStudy(['LC', 'NMR'])
                 # studyID, studyType = get_study_by_type(['LC', 'NMR'], publicStudy=False)
                 # df = pd.DataFrame(columns=['studyID', 'dataType'])
+
                 # df.studyID, df.dataType = studyID, studyType
 
                 # a, i, s, m = getFileList2('MTBLS1')
@@ -170,7 +169,7 @@ class cronjob(Resource):
                 #                    worksheetName='LCMS samples and assays',
                 #                    token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
                 # return jsonify({'test success': True})
-                res = get_empty_studies2()
+                res = get_empty_studies()
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -280,88 +279,73 @@ def MTBLS_statistics_update():
 
 
 def get_empty_studies():
-    blank_inv = []
-    no_inv = []
+    empty_email = []
+    no_email = []
 
-    studyIDs = get_all_studies(app.config.get('METABOLIGHTS_TOKEN'))
-    for studyID in studyIDs:
-        # print(studyID[0])
-        source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyID[0])
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+    g_sheet = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Empty investigation files',
+                             token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+    ignore_studies = g_sheet['studyID'].tolist()
+    ignore_submitter = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar', 'User Cochrane']
 
-        try:
-            resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-            data = resp.json()
-            if len(data["isaInvestigation"]['ontologySourceReferences']) == 0:
-                blank_inv.append(studyID[0])
-                logger.info('Empty i_Investigation.txt in {studyID}'.format(studyID=studyID[0]))
-                print('Empty i_Investigation.txt in {studyID}'.format(studyID=studyID[0]))
-                continue
-        except Exception as e:
-            no_inv.append(studyID[0])
-            logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyID[0]))
-            print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyID[0]))
+    studyInfos = get_study_info(app.config.get('METABOLIGHTS_TOKEN'))
+    keys = ['studyID', 'username', 'status', 'placeholder']
+
+    for studyInfo in studyInfos:
+        print(studyInfo[0])
+        if studyInfo[0] in ignore_studies or \
+                any(ext in studyInfo[1] for ext in ignore_submitter) or \
+                studyInfo[2] == 'Dormant':
             continue
 
-    blank_inv.sort(key=natural_keys)
-    no_inv.sort(key=natural_keys)
-    return blank_inv, no_inv
-
-
-def get_empty_studies2():
-    res = []
-
-    studyIDs = get_study_info(app.config.get('METABOLIGHTS_TOKEN'))
-    keys = ['studyID', 'username', 'status', 'placeholder']
-    for studyInfo in studyIDs:
         source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
         ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
 
         try:
-            print(studyInfo[0])
             resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-            if resp.status_code != 200:
-                f = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar']
-                if any(ext in studyInfo[1] for ext in f) or studyInfo[2] == 'Dormant':
+
+            # empty investigation and studyID > MTBLS1700
+            if resp.status_code == 200:
+                data = resp.json()
+                if len(data["isaInvestigation"]['ontologySourceReferences']) == 0 and empty_study_filter(studyInfo[0]):
+                    # json_response
+                    empty_email.append(studyInfo[0])
+
+                    # Google update
+                    # temp_dict = dict(zip(keys, studyInfo))
+                    # temp_dict['investigation'] = 'Empty'
+                    # google_res.append(temp_dict)
+
+                    # logger
+                    logger.info('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
+                    print('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
                     continue
-                temp_dict = dict(zip(keys, studyInfo))
-                temp_dict['investigation'] = 'None'
-                res.append(temp_dict)
+
+            # non - investigation - All studies
+            else:
+                # json_response
+                no_email.append(studyInfo[0])
+
+                # Google update
+                # temp_dict = dict(zip(keys, studyInfo))
+                # temp_dict['investigation'] = 'Missing'
+                # google_res.append(temp_dict)
+
+                # logger
                 logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
                 print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
                 continue
-            # resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-            data = resp.json()
-            # if len(data["isaInvestigation"]['ontologySourceReferences']) == 0:
-            #     temp_dict = dict(zip(keys, studyInfo))
-            #     temp_dict['investigation'] = 'empty'
-            #     res.append(temp_dict)
-            #     logger.info('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
-            #     print('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
-            #     continue
-            # elif studyInfo[3] == 'Yes':
-            #     temp_dict = dict(zip(keys, studyInfo))
-            #     temp_dict['investigation'] = ' '
-            #     res.append(temp_dict)
-            #     logger.info('placeholder flag in {studyID}'.format(studyID=studyInfo[0]))
-            #     print('placeholder flag in {studyID}'.format(studyID=studyInfo[0]))
 
         except Exception as e:
-            logger.info(e.args)
             print(e.args)
-            # print(studyInfo[0])
-            # f = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar']
-            # if any(ext in studyInfo[1] for ext in f) or studyInfo[2] == 'Dormant':
-            #     continue
-            # temp_dict = dict(zip(keys, studyInfo))
-            # temp_dict['investigation'] = 'None'
-            # res.append(temp_dict)
-            # logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
-            # print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
-            # continue
-    df = pd.DataFrame(res)
-    df.to_csv('empty studies updatea.tsv', sep='\t', index=False)
-    return res
+            logger.info(e.args)
+
+    # df = pd.DataFrame(google_res)
+    # df.to_csv('empty studies.tsv', sep='\t', index=False)
+
+    # ws response & email
+    empty_email.sort(key=natural_keys)
+    no_email.sort(key=natural_keys)
+    return empty_email, no_email
 
 
 def extractUntargetStudy(studyType=None, publicStudy=True):
@@ -813,6 +797,11 @@ def natural_keys(text):
     return [atoi(c) for c in re.split(r'(\d+)', text)]
 
 
+def empty_study_filter(studyID):
+    num = int(studyID.lower().split('mtbls')[1])
+    return num > 1700
+
+
 def setGoogleSheet(df, url, worksheetName, token_path):
     '''
     set whole dataframe to google sheet, if sheet existed create a new one
@@ -865,7 +854,6 @@ def replaceGoogleSheet(df, url, worksheetName, token_path):
     wks = gc.open_by_url(url).worksheet(worksheetName)
     wks.clear()
     set_with_dataframe(wks, df)
-
 
 # def getStudyIDs(publicStudy=False):
 #     def atoi(text):
@@ -1015,22 +1003,77 @@ def replaceGoogleSheet(df, url, worksheetName, token_path):
 #         print('Fail to read investigation file from ' + studyID)
 
 
-def readSSHDataFrame(filePath):
-    '''
-    Load file from SSH server
-    :param filePath:
-    :return:
-    '''
-    import paramiko
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+# def readSSHDataFrame(filePath):
+#     '''
+#     Load file from SSH server
+#     :param filePath:
+#     :return:
+#     '''
+#     import paramiko
+#     client = paramiko.SSHClient()
+#     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+#
+#     SSH_PARAMS = app.config.get('SSH_PARAMS')
+#     client.connect(**SSH_PARAMS)
+#     sftp_client = client.open_sftp()
+#     try:
+#         with sftp_client.open(filePath) as f:
+#             df = pd.read_csv(f, sep='\t')
+#             return df
+#     except:
+#         print('Fail to load file from ' + filePath)
 
-    SSH_PARAMS = app.config.get('SSH_PARAMS')
-    client.connect(**SSH_PARAMS)
-    sftp_client = client.open_sftp()
-    try:
-        with sftp_client.open(filePath) as f:
-            df = pd.read_csv(f, sep='\t')
-            return df
-    except:
-        print('Fail to load file from ' + filePath)
+# def get_empty_studies2():
+#     res = []
+#
+#     studyIDs = get_study_info(app.config.get('METABOLIGHTS_TOKEN'))
+#     keys = ['studyID', 'username', 'status', 'placeholder']
+#     for studyInfo in studyIDs:
+#         source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
+#         ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+#
+#         try:
+#             print(studyInfo[0])
+#             resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+#             if resp.status_code != 200:
+#                 f = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar', 'User Cochrane']
+#                 if any(ext in studyInfo[1] for ext in f) or studyInfo[2] == 'Dormant':
+#                     continue
+#                 temp_dict = dict(zip(keys, studyInfo))
+#                 temp_dict['investigation'] = 'None'
+#                 res.append(temp_dict)
+#                 logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
+#                 print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
+#                 continue
+#             # resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+#             data = resp.json()
+#             # if len(data["isaInvestigation"]['ontologySourceReferences']) == 0:
+#             #     temp_dict = dict(zip(keys, studyInfo))
+#             #     temp_dict['investigation'] = 'empty'
+#             #     res.append(temp_dict)
+#             #     logger.info('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
+#             #     print('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
+#             #     continue
+#             # elif studyInfo[3] == 'Yes':
+#             #     temp_dict = dict(zip(keys, studyInfo))
+#             #     temp_dict['investigation'] = ' '
+#             #     res.append(temp_dict)
+#             #     logger.info('placeholder flag in {studyID}'.format(studyID=studyInfo[0]))
+#             #     print('placeholder flag in {studyID}'.format(studyID=studyInfo[0]))
+#
+#         except Exception as e:
+#             logger.info(e.args)
+#             print(e.args)
+#             # print(studyInfo[0])
+#             # f = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar']
+#             # if any(ext in studyInfo[1] for ext in f) or studyInfo[2] == 'Dormant':
+#             #     continue
+#             # temp_dict = dict(zip(keys, studyInfo))
+#             # temp_dict['investigation'] = 'None'
+#             # res.append(temp_dict)
+#             # logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
+#             # print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
+#             # continue
+#     df = pd.DataFrame(res)
+#     df.to_csv('empty studies updatea.tsv', sep='\t', index=False)
+#     return res
