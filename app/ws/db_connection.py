@@ -60,6 +60,31 @@ query_all_studies = """
     group by 1,3,4,5,6,7,8) status
     where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
+query_study_info = """
+        select * from (
+             select s.acc                                                                as studyid,
+                    string_agg(u.firstname || ' ' || u.lastname, ', ' order by lastname) as username,
+                    case
+                        when s.status = 0 then 'Submitted'
+                        when s.status = 1 then 'In Curation'
+                        when s.status = 2 then 'In Review'
+                        when s.status = 3 then 'Public'
+                        else 'Dormant' end                                               as status,
+                    case
+                        when s.placeholder = '1' then 'Yes'
+                        else ''
+                        end                                                              as placeholder
+    
+    
+             from studies s,
+                  study_user su,
+                  users u
+             where s.id = su.studyid
+               and su.userid = u.id
+        group by 1, 3, 4) status
+        where exists(select 1 from users where apitoken = (%s) and role = 1);
+"""
+
 query_studies_user = """
     SELECT distinct s.acc, 
     to_char(s.releasedate,'YYYY-MM-DD'), 
@@ -274,6 +299,11 @@ def get_all_studies_for_user(user_token):
 
 def get_all_studies(user_token, date_from=None):
     data = execute_query(query=query_all_studies, user_token=user_token, date_from=date_from)
+    return data
+
+
+def get_study_info(user_token):
+    data = execute_query(query=query_study_info, user_token=user_token)
     return data
 
 
