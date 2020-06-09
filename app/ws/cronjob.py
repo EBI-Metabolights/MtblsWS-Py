@@ -143,6 +143,7 @@ class cronjob(Resource):
             try:
                 logger.info('Get list of empty studies')
                 blank_inv, no_inv = get_empty_studies()
+                
                 return jsonify({'Empty investigation': {'counts': len(blank_inv), 'list': blank_inv},
                                 'Missing investigation': {'counts': len(no_inv), 'list': no_inv}})
             except Exception as e:
@@ -306,7 +307,7 @@ def get_empty_studies():
             # empty investigation and studyID > MTBLS1700
             if resp.status_code == 200:
                 data = resp.json()
-                if len(data["isaInvestigation"]['ontologySourceReferences']) == 0 and empty_study_filter(studyInfo[0]):
+                if data["isaInvestigation"]['studies'][0]['title'] == 'Please update the study title' and empty_study_filter(studyInfo[0]):
                     # json_response
                     empty_email.append(studyInfo[0])
 
