@@ -143,8 +143,8 @@ class cronjob(Resource):
             try:
                 logger.info('Get list of empty studies')
                 blank_inv, no_inv = get_empty_studies()
-                return jsonify({'Blank investigation': {'counts': len(blank_inv), 'list': blank_inv},
-                                'No investigation': {'counts': len(no_inv), 'list': no_inv}})
+                return jsonify({'Empty investigation': {'counts': len(blank_inv), 'list': blank_inv},
+                                'Missing investigation': {'counts': len(no_inv), 'list': no_inv}})
             except Exception as e:
                 logger.info(e)
                 print(e)
