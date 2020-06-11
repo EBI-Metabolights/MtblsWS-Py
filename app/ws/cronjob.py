@@ -229,7 +229,7 @@ def curation_log_database_update():
 
     command_list = google_df['--Updates. Run this in the database on a regular basis'].tolist()
     empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
-    command_list = [x for x in command_list if empty_study not in x]
+    command_list = [x for x in command_list if empty_study not in x] + ['commit;']
 
     sql = ''.join(command_list)
     execute_query(sql)
