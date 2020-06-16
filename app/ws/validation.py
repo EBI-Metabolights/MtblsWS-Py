@@ -224,7 +224,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
 
     # if not folder and "fid" not in file_name and final_filename.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
-    if file_name not in file_name_list and file_name.lstrip('/') not in file_name_list:  # was final_filename
+    if not folder and file_name not in file_name_list and file_name.lstrip('/') not in file_name_list:  # was final_filename
         msg = "File '" + file_name + "' does not exist" + assay_file_name
         if file_name != file_name.rstrip(' '):
             msg = msg + ". Trailing space in file name?"
