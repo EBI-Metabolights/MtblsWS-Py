@@ -118,7 +118,7 @@ class cronjob(Resource):
             try:
                 logger.info('Updating curation log-Database Query')
                 curation_log_database_query()
-                return jsonify({'success': True})
+                return jsonify({'curation log update': True})
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -126,7 +126,7 @@ class cronjob(Resource):
             try:
                 logger.info('Updating curation log-Database update')
                 curation_log_database_update()
-                return jsonify({'success': True})
+                return jsonify({'Database update': True})
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -144,36 +144,17 @@ class cronjob(Resource):
                 logger.info('Get list of empty studies')
                 blank_inv, no_inv = get_empty_studies()
                 
-                return jsonify({'Empty investigation': {'counts': len(blank_inv), 'list': blank_inv},
-                                'Missing investigation': {'counts': len(no_inv), 'list': no_inv}})
+                return jsonify({'Investigation files check':
+                                 {
+                                'Empty investigation': {'counts': len(blank_inv), 'list': blank_inv},
+                                'Missing investigation': {'counts': len(no_inv), 'list': no_inv}
+                                 }
+                              })
             except Exception as e:
                 logger.info(e)
                 print(e)
         elif source == 'test cronjob':
-            try:
-                logger.info('test cronjobs...')
-                # test = extractUntargetStudy(['LC', 'NMR'])
-                # studyID, studyType = get_study_by_type(['LC', 'NMR'], publicStudy=False)
-                # df = pd.DataFrame(columns=['studyID', 'dataType'])
-
-                # df.studyID, df.dataType = studyID, studyType
-
-                # a, i, s, m = getFileList2('MTBLS1')
-                # a, s = assay_sample_list('MTBLS1')
-                # df1 = get_assay_file(studyID='MTBLS1', assay_file_name=a)
-                # df2 = get_sample_file(studyID='MTBLS1', sample_file_name=s)
-                # df = getNMRinfo()
-                # print('-' * 20 + 'UPDATE LC-MS info' + '-' * 20)
-                # logger.info('UPDATE LC-MS info')
-                # df = getLCMSinfo()
-                # replaceGoogleSheet(df=df, url=app.config.get('LC_MS_STATISITC'),
-                #                    worksheetName='LCMS samples and assays',
-                #                    token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
-                # return jsonify({'test success': True})
-                res = get_empty_studies()
-            except Exception as e:
-                logger.info(e)
-                print(e)
+            pass
         else:
             abort(400)
 
