@@ -1384,6 +1384,16 @@ def addEntity(new_term, supclass, definition=None):
         abort(400)
         return []
 
+    all_class = []
+    for cls in onto.classes():
+        all_class += cls.label
+
+    if new_term.lower() in [x.lower() for x in all_class]:
+        logger.info('Operation rejected, term exciting')
+        print('Operation rejected, term exciting')
+        abort(400)
+        return []
+
     id = getid(onto)
     namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
 
