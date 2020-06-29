@@ -688,7 +688,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     final_smiles, source_found = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # final smiles
                     pubchem_df.iloc[row_idx, get_idx('final_smiles', pubchem_df_headers)] = final_smiles
                     final_inchi, source_found = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # final inchi
+                    print_log("final inchi - get_ranked_values" + str(final_inchi))
                     pubchem_df.iloc[row_idx, get_idx('final_inchi', pubchem_df_headers)] = final_inchi
+                    print_log("final inchi - get_ranked_values" + str(final_inchi))
                     final_inchi_key, source_found = get_ranked_values(pc_inchi_key, cactus_stdinchikey, opsin_stdinchikey, None)  # final inchikey
                     pubchem_df.iloc[row_idx, get_idx('final_inchi_key', pubchem_df_headers)] = final_inchi_key
 
@@ -758,7 +760,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     else:
                         chebi_id, inchi, inchikey, name, smiles, formula, search_type = direct_chebi_search(
                             final_inchi_key, comp_name, search_type="synonym")
-
+                    print_log("final inchi - before chebi_id" + str(final_inchi))
                     if chebi_id:
                         database_identifier = chebi_id
                         chemical_formula = formula
@@ -775,6 +777,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     else:
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
+                        print_log("final inchi - get sdf" + str(final_inchi))
                         sdf_file_list, classyfire_id = get_sdf(study_location, str(final_cid), pc_name,
                                                                sdf_file_list, final_inchi, classyfire_search)
                         pubchem_df.iloc[row_idx, get_idx('classyfire_search_id', pubchem_df_headers)] = str(classyfire_id)
