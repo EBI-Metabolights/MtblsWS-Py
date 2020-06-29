@@ -452,6 +452,10 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     sdf_file_list = []
     exiting_pubchem_file = False
     first_start_time = time.time()
+    print_log("    -- Getting  classyfire from get_sdf method inchi - " + str(classyfire_search))
+    print_log("    -- Getting  run silently  from get_sdf method inchi - " + str(run_silently))
+
+
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!
     original_maf_name = annotation_file_name.replace("_pubchem.tsv", ".tsv")
     short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
@@ -688,7 +692,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     final_smiles, source_found = get_ranked_values(pc_smiles, cactus_smiles, opsin_smiles, None)  # final smiles
                     pubchem_df.iloc[row_idx, get_idx('final_smiles', pubchem_df_headers)] = final_smiles
                     final_inchi, source_found = get_ranked_values(pc_inchi, cactus_inchi, opsin_inchi, None)  # final inchi
+                    print_log("final inchi - get_ranked_values" + str(final_inchi))
                     pubchem_df.iloc[row_idx, get_idx('final_inchi', pubchem_df_headers)] = final_inchi
+                    print_log("final inchi - get_ranked_values" + str(final_inchi))
                     final_inchi_key, source_found = get_ranked_values(pc_inchi_key, cactus_stdinchikey, opsin_stdinchikey, None)  # final inchikey
                     pubchem_df.iloc[row_idx, get_idx('final_inchi_key', pubchem_df_headers)] = final_inchi_key
 
@@ -758,7 +764,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     else:
                         chebi_id, inchi, inchikey, name, smiles, formula, search_type = direct_chebi_search(
                             final_inchi_key, comp_name, search_type="synonym")
-
+                    print_log("final inchi - before chebi_id" + str(final_inchi))
                     if chebi_id:
                         database_identifier = chebi_id
                         chemical_formula = formula
@@ -775,6 +781,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     else:
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
+                        print_log("final inchi - get sdf" + str(final_inchi))
+                        print_log("final inchi - get sdf" + str(classyfire_search))
                         sdf_file_list, classyfire_id = get_sdf(study_location, str(final_cid), pc_name,
                                                                sdf_file_list, final_inchi, classyfire_search)
                         pubchem_df.iloc[row_idx, get_idx('classyfire_search_id', pubchem_df_headers)] = str(classyfire_id)
@@ -1671,6 +1679,8 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
 def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
     classyfire_id = ""
     file_name = ""
+    print_log("    -- Getting  classyfire from get_sdf method inchi - " + str(final_inchi))
+    print_log("    -- Getting  classyfire from get_sdf method inchi - " + str(classyfire_search))
     if study_location and cid:
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
@@ -1957,17 +1967,22 @@ class ChEBIPipeLine(Resource):
         parser.add_argument('run_silently', help="Run without process logging", location="args")
         parser.add_argument('run_on_cluster', help="Run on EBI LSF cluster", location="args")
         parser.add_argument('update_study_maf', help="Update study MAF directly", location="args")
-        args = parser.parse_args()
-        annotation_file_name = args['annotation_file_name']
-        classyfire_search = args['classyfire_search']
-        classyfire_search = True if classyfire_search == 'true' else False
-        run_silently = args['run_silently']
-        run_silently = True if run_silently == 'true' else False
-        run_on_cluster = args['run_on_cluster']
-        run_on_cluster = True if run_on_cluster == 'true' else False
-        update_study_maf = args['update_study_maf']
-        update_study_maf = True if update_study_maf == 'true' else False
 
+        args = parser.parse_args()
+        print_log(args)
+        annotation_file_name = args['annotation_file_name']
+        print_log(annotation_file_name)
+        classyfire_search_str = args['classyfire_search']
+        print_log(classyfire_search_str)
+        classyfire_search = True if classyfire_search_str == 'true' else False
+        run_silently_str = args['run_silently']
+        run_silently = True if run_silently_str == 'true' else False
+        run_on_cluster_str = args['run_on_cluster']
+        run_on_cluster = True if run_on_cluster_str == 'true' else False
+        update_study_maf_str = args['update_study_maf']
+        update_study_maf = True if update_study_maf_str == 'true' else False
+
+        print_log("    -- Getting  classyfire from post method call- " + str(classyfire_search))
         print_log("Creating a new study audit folder for study %s", study_id)
         audit_status, dest_path = write_audit_files(study_location)
 
@@ -1975,8 +1990,9 @@ class ChEBIPipeLine(Resource):
         if run_on_cluster:
             cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
             cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + \
-                  "/chebi-pipeline?annotation_file_name=#FILE_NAME#&classyfire_search=" + str(classyfire_search) + \
-                  "&run_silently=" + str(run_silently) + "&update_study_maf=" + str(update_study_maf) + "&run_on_cluster=true'"
+                  "/chebi-pipeline?annotation_file_name=#FILE_NAME#&classyfire_search=" + classyfire_search_str + \
+                  "&run_silently=" + run_silently_str + "&update_study_maf=" + update_study_maf_str + "&run_on_cluster=true'"
+            print_log("cluster job -  %s", cmd)
 
         maf_len = 0
         new_maf_len = 0
@@ -2026,6 +2042,7 @@ class ChEBIPipeLine(Resource):
                 else:
                     return {"error": message, "message": job_out, "errors": job_err}
             else:
+                print_log("    -- Getting  classyfire from else part  - " + str(classyfire_search))
                 maf_len, new_maf_len, pubchem_file = \
                     search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
                                           run_silently=run_silently, update_study_maf=update_study_maf,
