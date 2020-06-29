@@ -778,6 +778,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                         # Now, if we still don't have a ChEBI accession, download the structure (SDF) from PubChem
                         # and the classyFire SDF
                         print_log("final inchi - get sdf" + str(final_inchi))
+                        print_log("final inchi - get sdf" + str(classyfire_search))
                         sdf_file_list, classyfire_id = get_sdf(study_location, str(final_cid), pc_name,
                                                                sdf_file_list, final_inchi, classyfire_search)
                         pubchem_df.iloc[row_idx, get_idx('classyfire_search_id', pubchem_df_headers)] = str(classyfire_id)
@@ -1674,6 +1675,8 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
 def get_sdf(study_location, cid, iupac, sdf_file_list, final_inchi, classyfire_search):
     classyfire_id = ""
     file_name = ""
+    print_log("    -- Getting  classyfire from get_sdf method inchi - " + str(final_inchi))
+    print_log("    -- Getting  classyfire from get_sdf method inchi - " + str(classyfire_search))
     if study_location and cid:
         if not iupac or len(iupac) < 1:
             iupac = 'no name given'
@@ -1980,6 +1983,7 @@ class ChEBIPipeLine(Resource):
             cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + \
                   "/chebi-pipeline?annotation_file_name=#FILE_NAME#&classyfire_search=" + str(classyfire_search) + \
                   "&run_silently=" + str(run_silently) + "&update_study_maf=" + str(update_study_maf) + "&run_on_cluster=true'"
+            print_log("cluster job -  %s", cmd)
 
         maf_len = 0
         new_maf_len = 0
