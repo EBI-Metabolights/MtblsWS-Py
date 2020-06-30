@@ -1965,14 +1965,14 @@ class ChEBIPipeLine(Resource):
         parser.add_argument('update_study_maf', help="Update study MAF directly", location="args")
         args = parser.parse_args()
         annotation_file_name = args['annotation_file_name']
-        classyfire_search = args['classyfire_search']
-        classyfire_search = True if classyfire_search == 'true' else False
-        run_silently = args['run_silently']
-        run_silently = True if run_silently == 'true' else False
-        run_on_cluster = args['run_on_cluster']
-        run_on_cluster = True if run_on_cluster == 'true' else False
-        update_study_maf = args['update_study_maf']
-        update_study_maf = True if update_study_maf == 'true' else False
+        classyfire_search_str = args['classyfire_search']
+        classyfire_search = True if classyfire_search_str == 'true' else False
+        run_silently_str = args['run_silently']
+        run_silently = True if run_silently_str == 'true' else False
+        run_on_cluster_str = args['run_on_cluster']
+        run_on_cluster = True if run_on_cluster_str == 'true' else False
+        update_study_maf_str = args['update_study_maf']
+        update_study_maf = True if update_study_maf_str == 'true' else False
 
         print_log("Creating a new study audit folder for study %s", study_id)
         audit_status, dest_path = write_audit_files(study_location)
@@ -1981,8 +1981,8 @@ class ChEBIPipeLine(Resource):
         if run_on_cluster:
             cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
             cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + \
-                  "/chebi-pipeline?annotation_file_name=#FILE_NAME#&classyfire_search=" + str(classyfire_search) + \
-                  "&run_silently=" + str(run_silently) + "&update_study_maf=" + str(update_study_maf) + "&run_on_cluster=true'"
+                  "/chebi-pipeline?annotation_file_name=#FILE_NAME#&classyfire_search=" + classyfire_search_str + \
+                  "&run_silently=" + run_silently_str + "&update_study_maf=" + update_study_maf_str + "&run_on_cluster=true'"
             print_log("cluster job -  %s", cmd)
 
         maf_len = 0
