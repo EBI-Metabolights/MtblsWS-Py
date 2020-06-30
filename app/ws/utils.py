@@ -126,6 +126,10 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
             source = os.path.join(src, item)
             destination = os.path.join(dst, item)
 
+            if item.endswith('.partial') or item.endswith('.aspera-ckpt') or item.endswith('.aspx'):
+                logger.info('Do NOT copy any aspera files')
+                continue
+
             if not include_investigation_file and item.startswith('i_'):
                 logger.info('Do NOT copy any i_Investigation files from the upload folder')
                 continue
