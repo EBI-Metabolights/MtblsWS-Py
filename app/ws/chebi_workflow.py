@@ -1967,9 +1967,13 @@ class ChEBIPipeLine(Resource):
         parser.add_argument('run_silently', help="Run without process logging", location="args")
         parser.add_argument('run_on_cluster', help="Run on EBI LSF cluster", location="args")
         parser.add_argument('update_study_maf', help="Update study MAF directly", location="args")
+
         args = parser.parse_args()
+        print_log(args)
         annotation_file_name = args['annotation_file_name']
+        print_log(annotation_file_name)
         classyfire_search_str = args['classyfire_search']
+        print_log(classyfire_search_str)
         classyfire_search = True if classyfire_search_str == 'true' else False
         run_silently_str = args['run_silently']
         run_silently = True if run_silently_str == 'true' else False
@@ -1977,7 +1981,7 @@ class ChEBIPipeLine(Resource):
         run_on_cluster = True if run_on_cluster_str == 'true' else False
         update_study_maf_str = args['update_study_maf']
         update_study_maf = True if update_study_maf_str == 'true' else False
-        print_log(classyfire_search_str)
+
         print_log("    -- Getting  classyfire from post method call- " + str(classyfire_search))
         print_log("Creating a new study audit folder for study %s", study_id)
         audit_status, dest_path = write_audit_files(study_location)
