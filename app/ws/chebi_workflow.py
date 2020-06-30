@@ -1977,7 +1977,8 @@ class ChEBIPipeLine(Resource):
         run_on_cluster = True if run_on_cluster_str == 'true' else False
         update_study_maf_str = args['update_study_maf']
         update_study_maf = True if update_study_maf_str == 'true' else False
-        print_log("    -- Getting  classyfire from classyfire- " + str(classyfire_search))
+        print_log("    -- Getting  classyfire_search_str from post method call-  %s", classyfire_search_str)
+        print_log("    -- Getting  classyfire from post method call- " + str(classyfire_search))
         print_log("Creating a new study audit folder for study %s", study_id)
         audit_status, dest_path = write_audit_files(study_location)
 
