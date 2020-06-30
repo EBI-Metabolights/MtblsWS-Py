@@ -453,6 +453,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     exiting_pubchem_file = False
     first_start_time = time.time()
     print_log("    -- Getting  classyfire from get_sdf method inchi - " + str(classyfire_search))
+    print_log("    -- Getting  run silently  from get_sdf method inchi - " + str(run_silently))
+
+
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!
     original_maf_name = annotation_file_name.replace("_pubchem.tsv", ".tsv")
     short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
@@ -2034,6 +2037,7 @@ class ChEBIPipeLine(Resource):
                 else:
                     return {"error": message, "message": job_out, "errors": job_err}
             else:
+                print_log("    -- Getting  classyfire from else part  - " + str(classyfire_search))
                 maf_len, new_maf_len, pubchem_file = \
                     search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
                                           run_silently=run_silently, update_study_maf=update_study_maf,
