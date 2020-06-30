@@ -452,6 +452,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     sdf_file_list = []
     exiting_pubchem_file = False
     first_start_time = time.time()
+    print_log("    -- Getting  classyfire from get_sdf method inchi - " + str(classyfire_search))
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!
     original_maf_name = annotation_file_name.replace("_pubchem.tsv", ".tsv")
     short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
@@ -1973,7 +1974,7 @@ class ChEBIPipeLine(Resource):
         run_on_cluster = True if run_on_cluster_str == 'true' else False
         update_study_maf_str = args['update_study_maf']
         update_study_maf = True if update_study_maf_str == 'true' else False
-
+        print_log("    -- Getting  classyfire from classyfire- " + str(classyfire_search))
         print_log("Creating a new study audit folder for study %s", study_id)
         audit_status, dest_path = write_audit_files(study_location)
 
