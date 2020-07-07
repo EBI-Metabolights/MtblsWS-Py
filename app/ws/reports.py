@@ -224,3 +224,35 @@ class reports(Resource):
             res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'data': data}
             # j = json.dumps(res)
             return jsonify(res)
+
+
+        if query == 'user_stats':
+            # try:
+            sql = open('./instance/user_report.sql', 'r').read()
+            postgresql_pool, conn, cursor = get_connection()
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            data = {}
+            user_count = 0
+            active_user = 0
+            for dt in result:
+                dict_temp = {dt[0] :
+                                 {'user_email': dt[1],
+                                  'country_code' : dt[2],
+                                  'total': dt[5],
+                                  'submitted': dt[6],
+                                  'review': dt[8],
+                                  'curation': dt[7],
+                                  'public': dt[9],
+                                  'dormant': dt[10],
+                                  'affiliation': dt[3],
+                                  'user_status': dt[4],
+                                  }
+                             }
+                data = {**data, **dict_temp}
+                user_count += 1
+                if dt[4] == 2 :
+                    active_user += 1
+            res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'user_count' : user_count, 'active_user': active_user, 'data': data}
+            # j = json.dumps(res)
+            return jsonify(res)
