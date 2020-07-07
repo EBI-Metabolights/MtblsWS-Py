@@ -22,6 +22,27 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
+import datetime
+import re
+import types
+from urllib.request import urlopen
+
+import gspread
+import numpy as np
+import requests
+from bs4 import BeautifulSoup
+from flask import jsonify
+from flask import request, abort
+from flask_restful import Resource, reqparse
+from flask_restful_swagger import swagger
+from gspread_dataframe import set_with_dataframe
+from oauth2client.service_account import ServiceAccountCredentials
+
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.mtblsWSclient import WsClient
+from app.ws.ontology_info import *
+from app.ws.utils import log_request
+import psycopg2
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -73,6 +94,14 @@ class reports(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
             }
 
         ],
@@ -100,7 +129,21 @@ class reports(Resource):
         ]
     )
     def get(self):
-        print('Hello world')
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+        if not write_access:
+            abort(403)
 
     # =========================== put =============================================
 
@@ -148,6 +191,14 @@ class reports(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
             }
         ],
         responseMessages=[
@@ -174,4 +225,30 @@ class reports(Resource):
         ]
     )
     def post(self):
-        print('Hi world')
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+        if not write_access:
+            abort(403)
+
+        try:
+            params = app.config.get('DB_PARAMS')
+
+            with psycopg2.connect(**params) as conn:
+                sql = open('./resources/updateDB.sql', 'r').read()
+                data = pd.read_sql_query(sql, conn)
+        except Exception as e:
+            print(e)
+            logger.info(e)
+
+
