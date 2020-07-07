@@ -16,33 +16,18 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask_restful import Resource
-from flask_restful_swagger import swagger
+from datetime import datetime
 
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import *
-import datetime
-import re
-import types
-from urllib.request import urlopen
-
-import gspread
-import numpy as np
-import requests
-from bs4 import BeautifulSoup
 from flask import jsonify
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from gspread_dataframe import set_with_dataframe
-from oauth2client.service_account import ServiceAccountCredentials
 
+from app.ws.db_connection import get_connection
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
 from app.ws.utils import log_request
-import psycopg2
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -163,36 +148,6 @@ class reports(Resource):
             },
 
             {
-                "name": "start",
-                "description": "Period start date",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
-
-            {
-                "name": "end",
-                "description": "Period end date",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-
-            {
-                "name": "queryFields",
-                "description": "Specifcy the fields to return, the default is all options: "
-                               "{'studies_created','public','private','review','curation','user'}",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
@@ -228,6 +183,14 @@ class reports(Resource):
         log_request(request)
         parser = reqparse.RequestParser()
 
+        parser.add_argument('query', help='Report query')
+        query = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            query = args['query']
+            if query:
+                query = query.strip()
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -241,14 +204,23 @@ class reports(Resource):
         if not write_access:
             abort(403)
 
-        try:
-            params = app.config.get('DB_PARAMS')
-
-            with psycopg2.connect(**params) as conn:
-                sql = open('./resources/updateDB.sql', 'r').read()
-                data = pd.read_sql_query(sql, conn)
-        except Exception as e:
-            print(e)
-            logger.info(e)
-
-
+        if query == 'daily_stats':
+            # try:
+            sql = open('./instance/study_report.sql', 'r').read()
+            postgresql_pool, conn, cursor = get_connection()
+            cursor.execute(sql)
+            dates = cursor.fetchall()
+            data = {}
+            for dt in dates:
+                dict_temp = {dt[0].strftime('%Y-%m-%d'):
+                                 {'studies_created': dt[1],
+                                  'public': dt[2],
+                                  'review': dt[3],
+                                  'curation': dt[4],
+                                  'user': dt[5]
+                                  }
+                             }
+                data = {**data, **dict_temp}
+            res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'data': data}
+            # j = json.dumps(res)
+            return jsonify(res)
