@@ -259,8 +259,8 @@ class reports(Resource):
             res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'),
                    'user_count': user_count, 'active_user': active_user, 'data': data}
 
-            reporting_path = 'user_report.json'
+            file_name = 'user_report.json'
 
-        with open('reporting_path' + reporting_path, 'w') as outfile:
+        with open(reporting_path + file_name, 'w') as outfile:
             json.dump(res, outfile)
         return jsonify(res)
