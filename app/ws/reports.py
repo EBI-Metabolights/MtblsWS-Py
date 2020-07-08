@@ -204,6 +204,10 @@ class reports(Resource):
         if not write_access:
             abort(403)
 
+        reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
+        file_name = ''
+        res = ''
+
         if query == 'daily_stats':
             # try:
             sql = open('./instance/study_report.sql', 'r').read()
@@ -223,8 +227,7 @@ class reports(Resource):
                 data = {**data, **dict_temp}
             res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'data': data}
             # j = json.dumps(res)
-            return jsonify(res)
-
+            file_name = 'daily_report.json'
 
         if query == 'user_stats':
             # try:
@@ -236,9 +239,9 @@ class reports(Resource):
             user_count = 0
             active_user = 0
             for dt in result:
-                dict_temp = {dt[0] :
+                dict_temp = {dt[0]:
                                  {'user_email': dt[1],
-                                  'country_code' : dt[2],
+                                  'country_code': dt[2],
                                   'total': dt[5],
                                   'submitted': dt[6],
                                   'review': dt[8],
@@ -251,8 +254,13 @@ class reports(Resource):
                              }
                 data = {**data, **dict_temp}
                 user_count += 1
-                if dt[4] == 2 :
+                if dt[4] == 2:
                     active_user += 1
-            res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'user_count' : user_count, 'active_user': active_user, 'data': data}
-            # j = json.dumps(res)
-            return jsonify(res)
+            res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'),
+                   'user_count': user_count, 'active_user': active_user, 'data': data}
+
+            reporting_path = 'user_report.json'
+
+        with open('reporting_path' + reporting_path, 'w') as outfile:
+            json.dump(res, outfile)
+        return jsonify(res)
