@@ -27,7 +27,7 @@ from app.ws.db_connection import get_connection
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
-from app.ws.utils import log_request
+from app.ws.utils import log_request,writeDataToFile
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -261,6 +261,5 @@ class reports(Resource):
 
             file_name = 'user_report.json'
 
-        with open(reporting_path + file_name, 'w') as outfile:
-            json.dump(res, outfile)
+        writeDataToFile(reporting_path + file_name, res, True)
         return jsonify(res)
