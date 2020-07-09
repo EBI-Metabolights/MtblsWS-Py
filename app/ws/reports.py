@@ -27,7 +27,7 @@ from app.ws.db_connection import get_connection
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
-from app.ws.utils import log_request,writeDataToFile
+from app.ws.utils import log_request, writeDataToFile, readDatafromFile
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -116,6 +116,13 @@ class reports(Resource):
     def get(self):
         log_request(request)
         parser = reqparse.RequestParser()
+        parser.add_argument('query', help='Report query')
+        query = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            query = args['query']
+            if query:
+                query = query.strip()
 
         # User authentication
         user_token = None
@@ -124,11 +131,21 @@ class reports(Resource):
         else:
             abort(401)
 
-        # check for access rights
+         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions('MTBLS1', user_token)
+        wsc.get_permissions('MTBLS1', user_token)
         if not write_access:
             abort(403)
+
+        reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
+
+        if query == 'daily_stats':
+            file_name = 'daily_report.json'
+
+        if query == 'user_stats':
+            file_name = 'user_report.json'
+
+        return readDatafromFile(reporting_path + file_name)
 
     # =========================== put =============================================
 
@@ -239,17 +256,17 @@ class reports(Resource):
             user_count = 0
             active_user = 0
             for dt in result:
-                dict_temp = {dt[0]:
-                                 {'user_email': dt[1],
-                                  'country_code': dt[2],
-                                  'total': dt[5],
-                                  'submitted': dt[6],
-                                  'review': dt[8],
-                                  'curation': dt[7],
-                                  'public': dt[9],
-                                  'dormant': dt[10],
-                                  'affiliation': dt[3],
-                                  'user_status': dt[4],
+                dict_temp = {str(dt[0]):
+                                 {"user_email": str(dt[1]),
+                                  "country_code": dt[2],
+                                  "total": str(dt[5]),
+                                  "submitted": str(dt[6]),
+                                  "review": str(dt[8]),
+                                  "curation": str(dt[7]),
+                                  "public": str(dt[9]),
+                                  "dormant": str(dt[10]),
+                                  "affiliation": dt[3],
+                                  "user_status": str(dt[4]),
                                   }
                              }
                 data = {**data, **dict_temp}
@@ -257,7 +274,7 @@ class reports(Resource):
                 if dt[4] == 2:
                     active_user += 1
             res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'),
-                   'user_count': user_count, 'active_user': active_user, 'data': data}
+                   "user_count": str(user_count), "active_user": str(active_user), "data": data}
 
             file_name = 'user_report.json'
 

@@ -38,6 +38,7 @@ from flask import current_app as app, request, abort
 from isatools.model import Protocol, ProtocolParameter, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
+import ast
 
 from app.ws.mm_models import OntologyAnnotation
 
@@ -164,7 +165,8 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                             try:
                                 shutil.copytree(source, destination, symlinks=symlinks, ignore=ignore)
                             except OSError as e:
-                                logger.error('Does the folder already exists? Can not copy %s to %s', source, destination, str(e))
+                                logger.error('Does the folder already exists? Can not copy %s to %s', source,
+                                             destination, str(e))
                             except FileExistsError as e:
                                 logger.error('Folder already exists! Can not copy %s to %s', source, destination,
                                              str(e))
@@ -177,7 +179,8 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                 shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
                                 logger.info('Copied file %s to %s', source, destination)
                             except OSError as e:
-                                logger.error('Does the file already exists? Can not copy %s to %s', source, destination, str(e))
+                                logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
+                                             str(e))
                             except FileExistsError as e:
                                 logger.error('File already exists! Can not copy %s to %s', source, destination, str(e))
                             except Exception as e:
@@ -218,7 +221,6 @@ def copy_files_and_folders(source, destination, include_raw_data=True, include_i
 
 
 def remove_samples_from_isatab(std_path):
-
     # dest folder name is a timestamp
     update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
     update_path = os.path.join(std_path, update_path_suffix)
@@ -276,7 +278,7 @@ def get_assay_headers_and_protcols(assay_type):
 
     resource_folder = os.path.join(".", "resources")
     logger.info(' - get_assay_headers_and_protcols for assay type ' + assay_type)
-    assay_master_template = os.path.join(resource_folder,'MetaboLightsAssayMaster.tsv')
+    assay_master_template = os.path.join(resource_folder, 'MetaboLightsAssayMaster.tsv')
     master_df = read_tsv(assay_master_template)
 
     header_row = master_df.loc[master_df['name'] == assay_type + '-header']
@@ -316,7 +318,7 @@ def get_table_header(table_df, study_id=None, file_name=None):
 
     if assay_type is not None and assay_type != "a":
         tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
-            assay_data_mandatory = get_assay_headers_and_protcols(assay_type)
+        assay_data_mandatory = get_assay_headers_and_protcols(assay_type)
         df_header['type'] = assay_data_type
         df_header['file-type'] = assay_file_type
         df_header['mandatory'] = assay_data_mandatory
@@ -435,7 +437,7 @@ def tidy_template_row(df):
     new_row = []
     cell_count = 0
     for cell in row:
-        if cell_count > 0:   # Skip first cell, this is only for our labeling
+        if cell_count > 0:  # Skip first cell, this is only for our labeling
             if cell != 'row-end':
                 new_row.append(cell)
             if cell == 'row-end':
@@ -603,7 +605,7 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
                     # Ok, the file validated, so we now copy it file to the study folder
                     if file_loc == upload_location:
                         shutil.copy(file, study_location)
-                        #copy_file(file, study_location)
+                        # copy_file(file, study_location)
                         try:
                             logger.info('Moving mzML file "' + file + '" into study location ' + study_location)
                             # Rename the file so that we don't have to validate/copy it again
@@ -617,7 +619,6 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
 
 
 def validate_xml(xml=None, xmlschema=None):
-
     # parse xml
     try:
         doc = etree.parse(xml)
@@ -709,7 +710,7 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
                         logger.info(ontology_type + " " + new_value + " has been renamed in " + file)
                 except Exception as e:
                     logger.warning(ontology_type + " " + new_value +
-                                   " was not used in the sheet or we failed updating " + file + ". Error: " +str(e))
+                                   " was not used in the sheet or we failed updating " + file + ". Error: " + str(e))
 
     except Exception as e:
         logger.error("Could not update the ontology value " + old_value + " in all sheets")
@@ -984,7 +985,8 @@ def traverse_subfolders(study_location=None, file_location=None, file_list=None,
                             next_folder = os.path.join(root, directory)
                             if next_folder not in all_folders:
                                 file_list, all_folders = traverse_subfolders(
-                                    study_location=study_location, file_location=next_folder, file_list=file_list, all_folders=all_folders, full_path=full_path)
+                                    study_location=study_location, file_location=next_folder, file_list=file_list,
+                                    all_folders=all_folders, full_path=full_path)
 
     return file_list, all_folders
 
@@ -1028,7 +1030,8 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
                 logger.error('File Format error? Cannot read or open file ' + file_name)
                 logger.error(str(e))
 
-        logger.info("Looking for file name '" + file_name + "' in ISA-Tab files took %s seconds" % round(time.time() - start_time, 2))
+        logger.info("Looking for file name '" + file_name + "' in ISA-Tab files took %s seconds" % round(
+            time.time() - start_time, 2))
     except Exception as e:
         logger.error('File Format error? Cannot access file :' + str(file_name))
         logger.error(str(e))
@@ -1130,10 +1133,16 @@ def get_new_password_and_api_token():
 
 
 def writeDataToFile(filename, data, pretty=False):
-    with open(filename, 'w',encoding='utf-8') as fp:
+    with open(filename, 'w', encoding='utf-8') as fp:
         if pretty:
             from pprint import PrettyPrinter
             pp = PrettyPrinter(indent=4)
             fp.write(pp.pformat(data))
         else:
             json.dump(data, fp)
+
+
+def readDatafromFile(fileName):
+    with open(fileName, "r", encoding='utf-8' ) as read_file:
+        data = json.load(read_file)
+    return data
