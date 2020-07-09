@@ -1135,9 +1135,10 @@ def get_new_password_and_api_token():
 def writeDataToFile(filename, data, pretty=False):
     with open(filename, 'w', encoding='utf-8') as fp:
         if pretty:
-            from pprint import PrettyPrinter
-            pp = PrettyPrinter(indent=4)
-            fp.write(pp.pformat(data))
+            # from pprint import PrettyPrinter
+            #             # pp = PrettyPrinter(indent=4)
+            j_data = json.dumps(data,indent=4)
+            fp.write(j_data)
         else:
             json.dump(data, fp)
 

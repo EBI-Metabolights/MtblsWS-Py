@@ -52,7 +52,7 @@ class reports(Resource):
 
             {
                 "name": "start",
-                "description": "Period start date",
+                "description": "Period start date,YYYYMMDD",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -62,7 +62,7 @@ class reports(Resource):
 
             {
                 "name": "end",
-                "description": "Period end date",
+                "description": "Period end date,YYYYMMDD",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -73,7 +73,7 @@ class reports(Resource):
             {
                 "name": "queryFields",
                 "description": "Specify the fields to return, the default is all options: "
-                               "{'studies_created','public','private','review','curation','user'}",
+                               "'studies_created','public','private','review','curation','user'",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -114,8 +114,11 @@ class reports(Resource):
         ]
     )
     def get(self):
+        global start_date, query_field
+        global end_date
         log_request(request)
         parser = reqparse.RequestParser()
+
         parser.add_argument('query', help='Report query')
         query = None
         if request.args:
@@ -123,6 +126,33 @@ class reports(Resource):
             query = args['query']
             if query:
                 query = query.strip()
+
+        parser.add_argument('start', help='start date')
+        if request.args:
+            args = parser.parse_args(req=request)
+            start = args['start']
+            if start:
+                start_date = datetime.strptime(start, '%Y%m%d')
+            else:
+                start_date = datetime.strptime('20110809', '%Y%m%d')
+
+        parser.add_argument('end', help='end date')
+        if request.args:
+            args = parser.parse_args(req=request)
+            end = args['end']
+            if end:
+                end_date = datetime.strptime(end, '%Y%m%d')
+            else:
+                end_date = datetime.today().strftime('%Y%m%d')
+
+        parser.add_argument('queryFields', help='queryFields')
+        if request.args:
+            args = parser.parse_args(req=request)
+            queryFields = args['queryFields']
+            if queryFields:
+                query_field = tuple([x.strip() for x in queryFields.split(',')])
+            else:
+                query_field = None
 
         # User authentication
         user_token = None
@@ -141,6 +171,18 @@ class reports(Resource):
 
         if query == 'daily_stats':
             file_name = 'daily_report.json'
+            j_file = readDatafromFile(reporting_path + file_name)
+
+            data_res = {}
+            for date, report in j_file['data'].items():
+                d = datetime.strptime(date, '%Y-%m-%d')
+                if d >= start_date and d <= end_date:
+                    slim_report = {k: report[k] for k in query_field}
+                    data_res.update({date: slim_report})
+                else:
+                    continue
+            j_file['data'] = data_res
+            return jsonify(j_file)
 
         elif query == 'user_stats':
             file_name = 'user_report.json'
@@ -148,7 +190,7 @@ class reports(Resource):
             file_name = ''
             abort(404)
 
-        return readDatafromFile(reporting_path + file_name)
+
 
     # =========================== POST =============================================
 
@@ -251,7 +293,7 @@ class reports(Resource):
                 logger.info(e)
                 print(e)
 
-        if query == 'user_stats':
+        elif query == 'user_stats':
             # try:
             sql = open('./instance/user_report.sql', 'r').read()
             postgresql_pool, conn, cursor = get_connection()
@@ -283,6 +325,6 @@ class reports(Resource):
 
             file_name = 'user_report.json'
 
-        j_res = json.dumps(res)
-        writeDataToFile(reporting_path + file_name, j_res, True)
+        # j_res = json.dumps(res,indent=4)
+        writeDataToFile(reporting_path + file_name, res, True)
         return jsonify(res)
