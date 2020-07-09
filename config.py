@@ -47,6 +47,7 @@ UPDATE_PATH_SUFFIX = "audit"
 
 MTBLS_FILE_BASE = "<some local filesystem>/"
 MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
+REPORTING_PATH= "<report folder name>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
 FILE_SYSTEM_PATH = '<some local filesystem>/'
 MTBLS_ZOOMA_FILE = "<local file>"

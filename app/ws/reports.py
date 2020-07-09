@@ -72,7 +72,7 @@ class reports(Resource):
 
             {
                 "name": "queryFields",
-                "description": "Specifcy the fields to return, the default is all options: "
+                "description": "Specify the fields to return, the default is all options: "
                                "{'studies_created','public','private','review','curation','user'}",
                 "required": False,
                 "allowEmptyValue": True,
@@ -131,9 +131,9 @@ class reports(Resource):
         else:
             abort(401)
 
-         # check for access rights
+        # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-        wsc.get_permissions('MTBLS1', user_token)
+            wsc.get_permissions('MTBLS1', user_token)
         if not write_access:
             abort(403)
 
@@ -142,12 +142,15 @@ class reports(Resource):
         if query == 'daily_stats':
             file_name = 'daily_report.json'
 
-        if query == 'user_stats':
+        elif query == 'user_stats':
             file_name = 'user_report.json'
+        else:
+            file_name = ''
+            abort(404)
 
         return readDatafromFile(reporting_path + file_name)
 
-    # =========================== put =============================================
+    # =========================== POST =============================================
 
     @swagger.operation(
         summary="POST Metabolights periodic report",
@@ -226,25 +229,27 @@ class reports(Resource):
         res = ''
 
         if query == 'daily_stats':
-            # try:
-            sql = open('./instance/study_report.sql', 'r').read()
-            postgresql_pool, conn, cursor = get_connection()
-            cursor.execute(sql)
-            dates = cursor.fetchall()
-            data = {}
-            for dt in dates:
-                dict_temp = {dt[0].strftime('%Y-%m-%d'):
-                                 {'studies_created': dt[1],
-                                  'public': dt[2],
-                                  'review': dt[3],
-                                  'curation': dt[4],
-                                  'user': dt[5]
-                                  }
-                             }
-                data = {**data, **dict_temp}
-            res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'data': data}
-            # j = json.dumps(res)
-            file_name = 'daily_report.json'
+            try:
+                sql = open('./instance/study_report.sql', 'r').read()
+                postgresql_pool, conn, cursor = get_connection()
+                cursor.execute(sql)
+                dates = cursor.fetchall()
+                data = {}
+                for dt in dates:
+                    dict_temp = {dt[0].strftime('%Y-%m-%d'):
+                                     {'studies_created': dt[1],
+                                      'public': dt[2],
+                                      'review': dt[3],
+                                      'curation': dt[4],
+                                      'user': dt[5]
+                                      }
+                                 }
+                    data = {**data, **dict_temp}
+                res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'data': data}
+                file_name = 'daily_report.json'
+            except Exception as e:
+                logger.info(e)
+                print(e)
 
         if query == 'user_stats':
             # try:
@@ -278,5 +283,6 @@ class reports(Resource):
 
             file_name = 'user_report.json'
 
-        writeDataToFile(reporting_path + file_name, res, True)
+        j_res = json.dumps(res)
+        writeDataToFile(reporting_path + file_name, j_res, True)
         return jsonify(res)
