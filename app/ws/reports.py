@@ -28,6 +28,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile
+from app.ws.study_files import get_all_files
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -186,6 +187,8 @@ class reports(Resource):
 
         elif query == 'user_stats':
             file_name = 'user_report.json'
+            j_file = readDatafromFile(reporting_path + file_name)
+            return jsonify(j_file)
         else:
             file_name = ''
             abort(404)
@@ -206,7 +209,7 @@ class reports(Resource):
                 "allowEmptyValue": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["daily_stats", "user_stats"]
+                "enum": ["daily_stats", "user_stats", "study_stats"]
             },
 
             {
@@ -293,8 +296,10 @@ class reports(Resource):
                 logger.info(e)
                 print(e)
 
-        elif query == 'user_stats':
+        if query == 'user_stats':
             # try:
+            file_name = 'study_report.json'
+            study_data = readDatafromFile(reporting_path + file_name)
             sql = open('./instance/user_report.sql', 'r').read()
             postgresql_pool, conn, cursor = get_connection()
             cursor.execute(sql)
@@ -303,17 +308,23 @@ class reports(Resource):
             user_count = 0
             active_user = 0
             for dt in result:
+                study_list = dt[6].split(",")
+                studies = {}
+                for x in study_list:
+                    temp = study_data[x.strip()]
+                    studies[x.strip()] = temp
                 dict_temp = {str(dt[0]):
                                  {"user_email": str(dt[1]),
                                   "country_code": dt[2],
                                   "total": str(dt[5]),
-                                  "submitted": str(dt[6]),
-                                  "review": str(dt[8]),
-                                  "curation": str(dt[7]),
-                                  "public": str(dt[9]),
-                                  "dormant": str(dt[10]),
+                                  "submitted": str(dt[7]),
+                                  "review": str(dt[9]),
+                                  "curation": str(dt[8]),
+                                  "public": str(dt[10]),
+                                  "dormant": str(dt[11]),
                                   "affiliation": dt[3],
                                   "user_status": str(dt[4]),
+                                  "studies": studies,
                                   }
                              }
                 data = {**data, **dict_temp}
@@ -324,6 +335,24 @@ class reports(Resource):
                    "user_count": str(user_count), "active_user": str(active_user), "data": data}
 
             file_name = 'user_report.json'
+
+        if query == 'study_stats':
+            postgresql_pool, conn, cursor = get_connection()
+            cursor.execute(
+                "select acc from studies")
+            studies = cursor.fetchall()
+            data = {}
+            for st in studies:
+                study_files, latest_update_time = get_all_files(
+                    app.config.get('MTBLS_FTP_ROOT') + str(st[0]))
+                dict_temp = {str(st[0]):
+                                 {'latest_update_time': latest_update_time,
+                                  'study_files': study_files
+                                  }
+                             }
+                data = {**data, **dict_temp}
+            file_name = 'study_report.json'
+            res = data
 
         # j_res = json.dumps(res,indent=4)
         writeDataToFile(reporting_path + file_name, res, True)
