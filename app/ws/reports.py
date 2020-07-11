@@ -344,7 +344,7 @@ class reports(Resource):
             data = {}
             for st in studies:
                 study_files, latest_update_time = get_all_files(
-                    app.config.get('MTBLS_FTP_ROOT') + str(st[0]))
+                    app.config.get('STUDY_PATH') + str(st[0]))
                 dict_temp = {str(st[0]):
                                  {'latest_update_time': latest_update_time,
                                   'study_files': study_files
