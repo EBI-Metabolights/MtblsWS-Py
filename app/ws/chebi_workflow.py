@@ -660,6 +660,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     opsin_smiles = opsin_search(comp_name, 'smiles')
                     cactus_inchi = cactus_search(comp_name, 'stdinchi')
                     opsin_inchi = opsin_search(comp_name, 'stdinchi')
+                    print_log("    -- ChEBI id not found  -- search for cactus_synonyms " + comp_name)
                     cactus_synonyms = cactus_search(comp_name, 'names')  # Synonyms
 
                     ik = cactus_stdinchikey
@@ -1518,6 +1519,7 @@ def cactus_search(comp_name, search_type):
 
     try:
         result = cirpy.resolve(comp_name, search_type)
+        print_log(result + " input type " + search_type)
         synonyms = ""
     except Exception as e:
         print_log("    -- ERROR: Cactus search failed! " + str(e), mode='error')
