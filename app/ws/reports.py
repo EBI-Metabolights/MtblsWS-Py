@@ -27,8 +27,8 @@ from app.ws.db_connection import get_connection
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
-from app.ws.utils import log_request, writeDataToFile, readDatafromFile
 from app.ws.study_files import get_all_files
+from app.ws.utils import log_request, writeDataToFile, readDatafromFile
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -144,7 +144,7 @@ class reports(Resource):
             if end:
                 end_date = datetime.strptime(end, '%Y%m%d')
             else:
-                end_date = datetime.today().strftime('%Y%m%d')
+                end_date = datetime.today()
 
         parser.add_argument('queryFields', help='queryFields')
         if request.args:
@@ -178,8 +178,11 @@ class reports(Resource):
             for date, report in j_file['data'].items():
                 d = datetime.strptime(date, '%Y-%m-%d')
                 if d >= start_date and d <= end_date:
-                    slim_report = {k: report[k] for k in query_field}
-                    data_res.update({date: slim_report})
+                    if query_field != None:
+                        slim_report = {k: report[k] for k in query_field}
+                        data_res.update({date: slim_report})
+                    else:
+                        data_res.update({date: report})
                 else:
                     continue
             j_file['data'] = data_res
@@ -192,8 +195,6 @@ class reports(Resource):
         else:
             file_name = ''
             abort(404)
-
-
 
     # =========================== POST =============================================
 
