@@ -1715,6 +1715,7 @@ def pubchem_search(comp_name, search_type='name', search_category='compound'):
                     # Pick the 2nd synonym if the first one is the same as the compounds we searched for
                     first_synonym = synonym
                 if get_relevant_synonym(synonym):
+                    synonym = add_database_name_synonym(synonym)
                     synonyms = synonyms + ';' + synonym.strip().rstrip('\n')
 
                 if first_synonym:
