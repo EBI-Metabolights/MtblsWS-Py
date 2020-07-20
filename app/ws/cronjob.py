@@ -18,6 +18,7 @@
 
 import json
 import urllib
+from datetime import datetime
 
 import gspread
 import numpy as np
@@ -33,7 +34,7 @@ from owlready2 import urllib
 
 from app.ws.db_connection import *
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import log_request
+from app.ws.utils import log_request, writeDataToFile
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -61,7 +62,7 @@ class cronjob(Resource):
                 "paramType": "query",
                 "dataType": "string",
                 "enum": ["curation log-Database Query", "curation log-Database update", "MTBLS statistics",
-                         "empty studies", "test cronjob"]
+                         "empty studies", "MARIANA study_classify", "test cronjob"]
             }
 
         ],
@@ -143,16 +144,24 @@ class cronjob(Resource):
             try:
                 logger.info('Get list of empty studies')
                 blank_inv, no_inv = get_empty_studies()
-                
+
                 return jsonify({'Investigation files check':
-                                 {
-                                'Empty investigation': {'counts': len(blank_inv), 'list': blank_inv},
-                                'Missing investigation': {'counts': len(no_inv), 'list': no_inv}
-                                 }
-                              })
+                    {
+                        'Empty investigation': {'counts': len(blank_inv), 'list': blank_inv},
+                        'Missing investigation': {'counts': len(no_inv), 'list': no_inv}
+                    }
+                })
             except Exception as e:
                 logger.info(e)
                 print(e)
+        elif source == 'MARIANA study_classify':
+            data = {'data': {**untarget_NMR(), **untarget_LCMS(), **NMR_and_LCMS()}}
+            time_stamp = {"created_at": "2020-07-20", "updated_at": datetime.today().strftime('%Y-%m-%d')}
+            res = {**time_stamp, **data}
+            file_name = 'study_classify.json'
+            file_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('MARIANA_PATH')
+            writeDataToFile(file_path + file_name, res, True)
+            return jsonify(res)
         elif source == 'test cronjob':
             pass
         else:
@@ -217,6 +226,96 @@ def curation_log_database_update():
     print('Done')
 
 
+def get_empty_studies():
+    empty_email = []
+    no_email = []
+
+    g_sheet = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Empty investigation files',
+                             token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
+    ignore_studies = g_sheet['studyID'].tolist()
+    ignore_submitter = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar', 'User Cochrane']
+
+    studyInfos = get_study_info(app.config.get('METABOLIGHTS_TOKEN'))
+    keys = ['studyID', 'username', 'status', 'placeholder']
+
+    for studyInfo in studyInfos:
+        print(studyInfo[0])
+        if studyInfo[0] in ignore_studies or \
+                any(ext in studyInfo[1] for ext in ignore_submitter) or \
+                studyInfo[2] == 'Dormant':
+            continue
+
+        source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
+        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+
+        try:
+            resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+
+            # empty investigation and studyID > MTBLS1700
+            if resp.status_code == 200:
+                data = resp.json()
+                if data["isaInvestigation"]['studies'][0][
+                    'title'] == 'Please update the study title' and empty_study_filter(studyInfo[0]):
+                    # json_response
+                    empty_email.append(studyInfo[0])
+
+                    # logger
+                    logger.info('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
+                    print('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
+                    continue
+
+            # non - investigation - All studies
+            else:
+                # json_response
+                no_email.append(studyInfo[0])
+
+                # logger
+                logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
+                print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
+                continue
+
+        except Exception as e:
+            print(e.args)
+            logger.info(e.args)
+
+    # ws response & email
+    empty_email.sort(key=natural_keys)
+    no_email.sort(key=natural_keys)
+    return empty_email, no_email
+
+
+def untarget_NMR():
+    untarget_NMR = extractUntargetStudy(['NMR'])
+    res = untarget_NMR['studyID'].tolist()
+    return {'untarget_NMR': res}
+
+
+def untarget_LCMS():
+    untarget_LCMS = extractUntargetStudy(['LC'])
+    res = untarget_LCMS['studyID'].tolist()
+    return {'untarget_LCMS': res}
+
+
+def NMR_and_LCMS():
+    studyID, studyType = get_study_by_type(['LC', 'NMR'], publicStudy=False)
+    df = pd.DataFrame(columns=['studyID', 'dataType'])
+    df.studyID, df.dataType = studyID, studyType
+    res = df.to_dict('records')
+    return {"NMR_LCMS_studys": res}
+
+
+def NMR_studies():
+    pass
+
+
+def GC_MS_studies():
+    pass
+
+
+def LC_MS_studies():
+    pass
+
+
 def MTBLS_statistics_update():
     ## update untarget NMR
     print('-' * 20 + 'UPDATE untarget NMR' + '-' * 20)
@@ -258,76 +357,6 @@ def MTBLS_statistics_update():
     df = getLCMSinfo()
     replaceGoogleSheet(df=df, url=app.config.get('LC_MS_STATISITC'), worksheetName='LCMS samples and assays',
                        token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
-
-
-def get_empty_studies():
-    empty_email = []
-    no_email = []
-
-    g_sheet = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Empty investigation files',
-                             token_path=app.config.get('GOOGLE_SHEET_TOKEN'))
-    ignore_studies = g_sheet['studyID'].tolist()
-    ignore_submitter = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar', 'User Cochrane']
-
-    studyInfos = get_study_info(app.config.get('METABOLIGHTS_TOKEN'))
-    keys = ['studyID', 'username', 'status', 'placeholder']
-
-    for studyInfo in studyInfos:
-        print(studyInfo[0])
-        if studyInfo[0] in ignore_studies or \
-                any(ext in studyInfo[1] for ext in ignore_submitter) or \
-                studyInfo[2] == 'Dormant':
-            continue
-
-        source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
-
-        try:
-            resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-
-            # empty investigation and studyID > MTBLS1700
-            if resp.status_code == 200:
-                data = resp.json()
-                if data["isaInvestigation"]['studies'][0]['title'] == 'Please update the study title' and empty_study_filter(studyInfo[0]):
-                    # json_response
-                    empty_email.append(studyInfo[0])
-
-                    # Google update
-                    # temp_dict = dict(zip(keys, studyInfo))
-                    # temp_dict['investigation'] = 'Empty'
-                    # google_res.append(temp_dict)
-
-                    # logger
-                    logger.info('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
-                    print('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
-                    continue
-
-            # non - investigation - All studies
-            else:
-                # json_response
-                no_email.append(studyInfo[0])
-
-                # Google update
-                # temp_dict = dict(zip(keys, studyInfo))
-                # temp_dict['investigation'] = 'Missing'
-                # google_res.append(temp_dict)
-
-                # logger
-                logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
-                print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
-                continue
-
-        except Exception as e:
-            print(e.args)
-            logger.info(e.args)
-
-    # df = pd.DataFrame(google_res)
-    # df.to_csv('empty studies.tsv', sep='\t', index=False)
-
-    # ws response & email
-    empty_email.sort(key=natural_keys)
-    no_email.sort(key=natural_keys)
-    return empty_email, no_email
 
 
 def extractUntargetStudy(studyType=None, publicStudy=True):
