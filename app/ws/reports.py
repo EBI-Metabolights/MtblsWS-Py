@@ -332,8 +332,10 @@ class reports(Resource):
                 user_count += 1
                 if dt[4] == 2:
                     active_user += 1
+                data['user_count'] = str(user_count)
+                data['active_user'] = str(active_user)
             res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'),
-                   "user_count": str(user_count), "active_user": str(active_user), "data": data}
+                   "data": data}
 
             file_name = 'user_report.json'
 

@@ -766,10 +766,15 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     db_acc = ""
                     if csid:
                         db_acc = 'ChemSpider:' + csid + ';'
+                    if pc_synonyms:
+                        db_acc = db_acc + pc_synonyms + ';'
                     if cactus_synonyms:
-                        db_acc = db_acc + cactus_synonyms + ';'
-                    if pc_synonyms and pc_synonyms != cactus_synonyms:
-                        db_acc = db_acc + pc_synonyms
+                        if pc_synonyms is None:
+                            db_acc = db_acc + cactus_synonyms
+                        else:
+                            cactus_synonyms = get_valid_synonyms(cactus_synonyms, pc_synonyms)
+                            if cactus_synonyms:
+                                db_acc = db_acc + cactus_synonyms
                     if db_acc:
                         pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                             ';')  # Cactus and PubChem synonyms for SDF export
@@ -1589,6 +1594,17 @@ def add_database_name_synonym(synonym):
 
     else:
         return synonym
+
+def get_valid_synonyms(cactus_synonym, pc_synonyms):
+    result = ""
+    for i in cactus_synonym.split(";"):
+        m = re.search(r"\d", i)
+        if i[0:m.start()] not in pc_synonyms:
+            result = result + i + ";"
+    if result != "":
+        return result[:-1]
+    else:
+        return None
 
 
 def get_relevant_synonym(synonym):
