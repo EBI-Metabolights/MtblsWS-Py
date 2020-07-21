@@ -960,6 +960,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         chemspider = row['csid_ik']
         cactus_synonyms = row['cactus_synonyms']
         database_accession = row['DATABASE_ACCESSION']
+        definition = row['DEFINITION']
 
         if cid and not db_id.startswith('CHEBI:'):
             cluster_ids.append(row_id)  # Keep count of the number of ORGANISM sections to add to ChEBI SDF file
@@ -1007,7 +1008,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                     pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = name
 
                 pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(row_id)
-                add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,
+                add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,definition =definition,
                                         name=name, iupack_name=iupac_name)
                 print_log("       -- adding ancestors to SDF file " + fname)
 
@@ -1023,7 +1024,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                 if cactus_synonyms and cactus_synonyms.strip(';') not in database_accession:
                     database_accession = database_accession + cactus_synonyms
 
-            add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism,
+            add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism, definition =definition,
                                     strain=strain, organism_part=organism_part, name=name, iupack_name=iupac_name,
                                     relationships=direct_parent, database_accession=database_accession,
                                     cluster_itr=cluster_itr, temp_id=row_id, comment=comment, reference=reference,
