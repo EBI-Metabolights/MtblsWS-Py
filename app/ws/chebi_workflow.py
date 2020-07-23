@@ -952,7 +952,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         iupac_name = row['IUPAC_NAME']
         strain = row['STRAIN']
         reference = row['REFERENCE']
-        direct_parent = None
+        direct_parent = row['RELATIONSHIP']
         comment = row['COMMENT']
         pmid = row['SOURCE_PMID']
         doi = row['SOURCE_DOI']
