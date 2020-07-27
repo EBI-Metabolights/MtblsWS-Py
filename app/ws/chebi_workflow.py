@@ -1068,6 +1068,14 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
                 else:
                     print_log("       -- Error: could not find SDF file: " + mtbls_sdf_file_name, mode='error')
         outfile.close()
+        print_log("removing hydrogen")
+        data = open(sdf_file_name, 'rb').read()
+        res = requests.post('https://www.ebi.ac.uk/chembl/api/utils/removeHs', data=data)
+        sdf_file = sdf_file_name[:-4] + "_removed_hs.sdf"
+        with open(sdf_file, 'w') as output:
+            output.write(res.text)
+
+
 
 
 def remove_pubchem_sdf_parameters(study_location, sdf_file_name):
