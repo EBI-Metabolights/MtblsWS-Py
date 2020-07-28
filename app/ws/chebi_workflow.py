@@ -1014,7 +1014,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
 
             if chemspider:
                 chemspider = 'ChemSpider:' + chemspider + ';'
-                comment = chemspider + comment
+                comment = comment
 
             # add ChemSpider (csid_ik) + any other approved synonyms (two columns) in the database acc for ChEBI SDF
             if database_accession:
