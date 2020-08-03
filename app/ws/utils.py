@@ -20,25 +20,32 @@ import base64
 import datetime
 import glob
 import io
+import json
 import logging
 import os
+import os.path
 import os.path
 import random
 import re
 import shutil
 import string
 import time
+import urllib
 import uuid
 from os.path import normpath, basename
-import json
+
 import numpy as np
 import pandas as pd
+import psycopg2
 import requests
-from flask import current_app as app, request, abort
+from flask import current_app as app
+from flask import request, abort
+from flask_restful import abort
 from isatools.model import Protocol, ProtocolParameter, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
-import ast
+from pandas import Series
+from psycopg2 import pool
 
 from app.ws.mm_models import OntologyAnnotation
 
@@ -1141,13 +1148,331 @@ def writeDataToFile(filename, data, pretty=False):
         if pretty:
             # from pprint import PrettyPrinter
             #             # pp = PrettyPrinter(indent=4)
-            j_data = json.dumps(data,indent=4)
+            j_data = json.dumps(data, indent=4)
             fp.write(j_data)
         else:
             json.dump(data, fp)
 
 
 def readDatafromFile(fileName):
-    with open(fileName, "r", encoding='utf-8' ) as read_file:
+    with open(fileName, "r", encoding='utf-8') as read_file:
         data = json.load(read_file)
     return data
+
+
+def clean_json(json_data, studyID):
+    '''
+    remove corresponding study statics from json file
+    :param json_data: json data, type = dict
+    :param studyID: studyID
+    :return: removed json file
+    '''
+
+    json_data['updated_at'] = datetime.datetime.today().strftime('%Y-%m-%json_data')
+
+    # techniques
+    tech = json_data['data']['techniques'].copy()
+    for key, value in tech.items():
+        if studyID in value:
+            value.remove(studyID)
+            if len(value) > 0:
+                json_data['data']['techniques'][key] = value
+            else:
+                json_data['data']['techniques'].pop(key, None)
+
+    # study_type
+    study_type = json_data['data']['study_type'].copy()
+    for key, value in study_type.items():
+        if studyID in value:
+            value.remove(studyID)
+            if len(value) > 0:
+                json_data['data']['study_type'][key] = value
+            else:
+                json_data['data']['study_type'].pop(key, None)
+
+    # instruments
+    ins = json_data['data']['instruments'].copy()
+
+    for key, value in ins.items():
+        if studyID in value:
+            value.pop(studyID, None)
+            if len(value) > 0:
+                json_data['data']['instruments'][key] = value
+            else:
+                json_data['data']['instruments'].pop(key, None)
+
+    # organisms
+    organisms = json_data['data']['organisms'].copy()
+    for key, value in organisms.items():
+        orga = organisms[key].copy()
+        for k, v in orga.items():
+            if studyID in v:
+                v.remove(studyID)
+                if len(v) > 0:
+                    json_data['data']['organisms'][key][k] = v
+                else:
+                    json_data['data']['organisms'][key].pop(k, None)
+        if len(value) == 0:
+            json_data['data']['organisms'].pop(key, None)
+
+    return json_data
+
+
+def get_techniques(studyID=None):
+    params = app.config.get('DB_PARAMS')
+
+    if studyID != None:
+        sql = "select acc,studytype from studies where status= 3 and acc= '{studyid}'".format(studyid=studyID)
+    else:
+        sql = 'select acc,studytype from studies where status= 3'
+
+    with psycopg2.connect(**params) as conn:
+        data = pd.read_sql_query(sql, conn)
+
+    data = data[~data['studytype'].isin(['Insufficient data supplied', 'None'])]
+    data.fillna(value=np.nan, inplace=True)
+    data = data.replace(r'^\s*$', np.nan, regex=True)
+    data = data[data['studytype'].notna()]
+
+    data = pd.concat([Series(row['acc'], row['studytype'].split(';')) for _, row in data.iterrows()]).reset_index()
+
+    data.columns = ['study type', 'study ID']
+    data = data[['study ID', 'study type']]
+
+    df = data.groupby('study type')['study ID'].apply(list).reset_index(name='studyIDs')
+    techniques = {row[0]: row[1] for row in df.values}
+
+    return {'techniques': techniques}
+
+
+def get_instrument(studyID, assay_name):
+    instrument_name = []
+    # res.loc[len(res)] = [sheet_name, key, term]
+    try:
+        source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
+        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                            params={'assay_filename': assay_name})
+        data = resp.text
+        content = io.StringIO(data)
+        df = pd.read_csv(content, sep='\t')
+        ins_df = df.loc[:, df.columns.str.contains('Instrument')]
+        for col in ins_df.columns:
+            l = list(df[col].unique())
+            instrument_name += l
+
+        if len(instrument_name) > 0:
+            return {'studyID': studyID, 'assay_name': assay_name, 'instruments': instrument_name}
+        else:
+            return None
+    except Exception as e:
+        print(e)
+
+
+def get_orgaisms(studyID, sample_file_name):
+    try:
+        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+                            params={'sample_filename': sample_file_name})
+        data = resp.text
+        content = io.StringIO(data)
+        df = pd.read_csv(content, sep='\t')
+        organism_df = df.loc[:, df.columns.str.contains('Organism')]
+
+        res_df = pd.DataFrame(columns=['studyID', 'organism', 'organism_part'])
+
+        for index, row in organism_df.iterrows():
+            organism = row['Characteristics[Organism]']
+            organism_part = row['Characteristics[Organism part]']
+            if '/' in organism or '/' in organism_part:
+                z = list(zip(organism.split('/'), organism_part.split('/')))
+                for pair in z:
+                    res_df.loc[len(res_df)] = [studyID, pair[0].split(':')[-1], pair[1].split(':')[-1]]
+            else:
+                res_df.loc[len(res_df)] = [studyID, organism.split(':')[-1], organism_part.split(':')[-1]]
+
+        res_df.drop_duplicates(inplace=True)
+        return res_df
+    except Exception as e:
+        print(e)
+
+
+def get_studytype(studyID=None):
+    study_type = {"targeted": [],
+                  "untargeted": [],
+                  "targeted_untargeted": []}
+
+    if studyID == None:
+        studyIDs = get_public_review_studies()
+    else:
+        studyIDs = [studyID]
+
+    for studyID in studyIDs:
+        untarget = False
+        target = False
+
+        source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        try:
+            resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+            data = resp.json()
+            for descriptor in data['studyDesignDescriptors']:
+                term = str(descriptor['annotationValue'])
+                if term.startswith(('untargeted', 'Untargeted', 'non-targeted')):
+                    untarget = True
+                elif term.startswith(('targeted')):
+                    target = True
+
+            if target and untarget:
+                # print(studyID + ' is targeted and untargeted')
+                study_type['targeted_untargeted'].append(studyID)
+                continue
+            elif target and not untarget:
+                # print(studyID + ' is targeted')
+                study_type['targeted'].append(studyID)
+                continue
+            elif not target and untarget:
+                # print(studyID + ' is untargeted')
+                study_type['untargeted'].append(studyID)
+                continue
+        except Exception as e:
+            print(e)
+
+    return {'study_type': study_type}
+
+
+def get_instruments_organism(studyID=None):
+    if studyID != None:
+        studyIDs = [studyID]
+    else:
+        studyIDs = get_public_review_studies()
+    # ========================== INSTRUMENTS ===============================
+    instruments_df = pd.DataFrame(columns=['studyID', 'assay_name', 'instrument'])
+    organism_df = pd.DataFrame(columns=['studyID', 'organism', 'organism_part'])
+    for studyID in studyIDs:
+        print(studyID)
+        assay_file, investigation_file, sample_file, maf_file = getFileList(studyID)
+
+        for assay in assay_file:
+            ins = get_instrument(studyID, assay)
+            if ins != None:
+                for i in ins['instruments']:
+                    instruments_df.loc[len(instruments_df)] = [ins['studyID'], ins['assay_name'], i]
+
+        organism_df = organism_df.append(get_orgaisms(studyID, sample_file))
+
+    instruments = {}
+    for index, row in instruments_df.iterrows():
+        term = row['instrument']
+        assay_name = row['assay_name']
+        studyID = row['studyID']
+
+        if term in instruments:
+            if studyID in instruments[term]:
+                instruments[term][studyID].append(assay_name)
+            else:
+                instruments[term].update({studyID: [assay_name]})
+        else:
+            instruments[term] = {studyID: [assay_name]}
+
+    organisms = {}
+    organism_df = organism_df[
+        ~ ((organism_df['organism'].str.lower() == 'blank') | (organism_df['organism_part'].str.lower() == 'blank'))]
+    for index, row in organism_df.iterrows():
+        organism = row['organism']
+        organism_part = row['organism_part']
+        studyID = row['studyID']
+
+        if organism not in organisms:
+            organisms[organism] = {organism_part: [studyID]}
+        else:
+            if organism_part not in organisms[organism]:
+                organisms[organism].update({organism_part: [studyID]})
+            else:
+                organisms[organism][organism_part].append(studyID)
+
+    return {'instruments': instruments}, {'organisms': organisms}
+
+
+def get_connection():
+    postgresql_pool = None
+    conn = None
+    cursor = None
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn_pool_min = app.config.get('CONN_POOL_MIN')
+        conn_pool_max = app.config.get('CONN_POOL_MAX')
+        postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
+        conn = postgresql_pool.getconn()
+        cursor = conn.cursor()
+    except Exception as e:
+        print("Could not query the database " + str(e))
+        if postgresql_pool:
+            postgresql_pool.closeall
+    return postgresql_pool, conn, cursor
+
+
+def release_connection(postgresql_pool, ps_connection):
+    try:
+        postgresql_pool.putconn(ps_connection)
+    except (Exception, psycopg2.DatabaseError) as error:
+        print("Error while connecting to PostgreSQL", error)
+        logger.error("Error while releasing PostgreSQL connection. " + str(error))
+
+
+def get_public_review_studies():
+    def atoi(text):
+        return int(text) if text.isdigit() else text
+
+    def natural_keys(text):
+        return [atoi(c) for c in re.split('(\d+)', text)]
+
+    query = "select acc from studies where status= 3 or status = 2"
+    query = query.replace('\\', '')
+    postgresql_pool, conn, cursor = get_connection()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    release_connection(postgresql_pool, conn)
+
+    res = []
+    for id in data:
+        res.append(id[0])
+    res.sort(key=natural_keys)
+    return res
+
+
+def getFileList(studyID):
+    try:
+        source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+        url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        request = urllib.request.Request(url)
+        request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        response = urllib.request.urlopen(request)
+        content = response.read().decode('utf-8')
+        j_content = json.loads(content)
+
+        assay_file, sample_file, investigation_file, maf_file = [], '', '', []
+        for files in j_content['study']:
+            if files['status'] == 'active' and files['type'] == 'metadata_assay':
+                assay_file.append(files['file'])
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_investigation':
+                investigation_file = files['file']
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_sample':
+                sample_file = files['file']
+                continue
+            if files['status'] == 'active' and files['type'] == 'metadata_maf':
+                maf_file.append(files['file'])
+                continue
+
+        if assay_file == []: print('Fail to load assay file from ', studyID)
+        if sample_file == '': print('Fail to load sample file from ', studyID)
+        if investigation_file == '': print('Fail to load investigation file from ', studyID)
+        if maf_file == []: print('Fail to load maf file from ', studyID)
+
+        return assay_file, investigation_file, sample_file, maf_file
+    except Exception as e:
+        print(e)
+        logger.info(e)

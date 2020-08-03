@@ -579,8 +579,8 @@ def getFileList2(studyID):
 
 def getFileList(studyID):
     try:
-        url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
-            study_id=studyID)
+        source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
+        url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
         request = urllib.request.Request(url)
         request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
         response = urllib.request.urlopen(request)
