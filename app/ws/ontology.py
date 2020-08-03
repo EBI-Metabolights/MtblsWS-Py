@@ -223,7 +223,7 @@ class Ontology(Resource):
 
                 is_url = term is not None and regex.search(term) is not None
 
-                if is_url and not term.startswith('//'):
+                if is_url and not term.startswith('//') and not term.startswith('http'):
                     term = '//' + term
 
                 if is_url and not term.startswith('http:'):
