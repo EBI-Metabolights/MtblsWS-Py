@@ -218,7 +218,8 @@ class Ontology(Resource):
 
                 # is_url = term.startswith('http')
                 regex = re.compile(
-                    r'[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)', re.IGNORECASE)
+                    r'[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)',
+                    re.IGNORECASE)
 
                 is_url = term is not None and regex.search(term) is not None
 
