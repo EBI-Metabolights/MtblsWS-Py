@@ -26,7 +26,7 @@ import time
 import urllib.parse
 from pathlib import Path
 from subprocess import *
-
+import json
 import cirpy
 import ctfile
 import numpy as np
@@ -40,7 +40,6 @@ from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
 from zeep import Client
-
 from app.ws.cluster_jobs import lsf_job
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsStudy import write_audit_files
@@ -1076,8 +1075,6 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
             output.write(res.text)
 
 
-
-
 def remove_pubchem_sdf_parameters(study_location, sdf_file_name):
     lines = []
     mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + sdf_file_name)
@@ -2028,7 +2025,6 @@ class ChEBIPipeLine(Resource):
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
         study_id = study_id.upper()
-
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -2040,34 +2036,45 @@ class ChEBIPipeLine(Resource):
         if not is_curator:
             abort(403)
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('annotation_file_name', help="Metabolite Annotation File", location="args")
-        parser.add_argument('classyfire_search', help="Search ClaayFire?", location="args")
-        parser.add_argument('run_silently', help="Run without process logging", location="args")
-        parser.add_argument('run_on_cluster', help="Run on EBI LSF cluster", location="args")
-        parser.add_argument('update_study_maf', help="Update study MAF directly", location="args")
-        args = parser.parse_args()
-        annotation_file_name = args['annotation_file_name']
-        classyfire_search = args['classyfire_search']
+        cluster_job = None
+        try:
+            cluster_job = request.args['source']
+        except:
+            pass
+
+        run_silently = None
+        run_on_cluster = None
+        if cluster_job:
+            if bool(request.data):
+                x = re.split('=|&|,|\;', str(request.data)[2:-1])
+                data = {x[i]: x[i + 1] for i in range(0, len(x), 2)}
+                annotation_file_name = data['annotation_file_name']
+                classyfire_search = data['classyfire_search']
+                update_study_maf = data['update_study_maf']
+        else:
+            annotation_file_name = request.args['annotation_file_name']
+            classyfire_search = request.args['classyfire_search']
+            update_study_maf = request.args['update_study_maf']
+            run_silently = request.args['run_silently']
+            run_on_cluster = request.args['run_on_cluster']
+
         classyfire_search = True if classyfire_search == 'true' else False
-        run_silently = args['run_silently']
         run_silently = True if run_silently == 'true' else False
-        run_on_cluster = args['run_on_cluster']
         run_on_cluster = True if run_on_cluster == 'true' else False
-        update_study_maf = args['update_study_maf']
         update_study_maf = True if update_study_maf == 'true' else False
 
         print_log("Creating a new study audit folder for study %s", study_id)
         audit_status, dest_path = write_audit_files(study_location)
-
         cmd = ""
         if run_on_cluster:
-            cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
+            cmd = "curl --silent --request POST"
+            param = " -d 'classyfire_search=" + str(
+                classyfire_search).lower() + "' -d 'annotation_file_name=#FILE_NAME#' -d 'update_study_maf=" + str(
+                update_study_maf).lower() + "' "
+            cmd = cmd + param + " -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
             cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + \
-                  "/chebi-pipeline?annotation_file_name=#FILE_NAME#&classyfire_search=" + str(classyfire_search) + \
-                  "&run_silently=" + str(run_silently) + "&update_study_maf=" + str(
-                update_study_maf) + "&run_on_cluster=true'"
+                  "/chebi-pipeline?source=cluster ' "
+            print_log("cluster job -  %s", cmd)
 
         maf_len = 0
         new_maf_len = 0
@@ -2109,9 +2116,10 @@ class ChEBIPipeLine(Resource):
             annotation_file_name = annotation_file_name.strip()
             cmd = cmd.replace("#FILE_NAME#", annotation_file_name)  # Replace the dummy file name reference in URL
             if run_on_cluster:
+                # create param file
                 print_log("Starting cluster job for ChEBI pipeline: " + cmd)
                 status, message, job_out, job_err = lsf_job('bsub', job_param=cmd)
-
+                print_log("job submitted")
                 if status:
                     return {"success": message, "message": job_out, "errors": job_err}
                 else:
@@ -2122,6 +2130,8 @@ class ChEBIPipeLine(Resource):
                                           run_silently=run_silently, update_study_maf=update_study_maf,
                                           obfuscation_code=obfuscation_code)
                 pubchem_file = http_file_location + pubchem_file.split('/' + study_id)[1]
+
+            # if file still present rmeove it
 
             return {"in_rows": maf_len, "out_rows": new_maf_len, "pubchem_file": pubchem_file}
 
