@@ -38,7 +38,7 @@ from flask import current_app as app, request, abort
 from isatools.model import Protocol, ProtocolParameter, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
-
+from dirsync import sync
 from app.ws.mm_models import OntologyAnnotation
 
 """
@@ -117,6 +117,7 @@ def copy_file(source, destination):
 
 def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, include_investigation_file=True):
     try:
+        print('a')
         if not os.path.exists(dst):
             logger.info('Creating a new folder for the study, %s', dst)
             os.makedirs(dst, exist_ok=True)
@@ -150,25 +151,17 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                     copy_file(source, destination)
             else:
                 if include_raw_data:
-                    try:
-                        time_diff = os.stat(source).st_ctime - os.stat(destination).st_ctime
-                    except FileNotFoundError as e:
-                        time_diff = 1  # Destination folder does not exist
-                        logger.error('Error copying file %s to %s. Error %s', source, destination, str(e))
-
-                    # if os.path.isdir(destination):
-                    #     pass  # We already have this folder
-
-                    if int(time_diff) >= 1:
-                        # ToDo, rsync all (non-metadata) files
-                        file_list = {source, destination}
-
                         if os.path.isdir(source):
                             logger.info(source + ' is a directory')
                             try:
-                                shutil.copytree(source, destination, symlinks=symlinks, ignore=ignore)
+                                if os.path.isdir(destination):
+                                    sync(source, destination, 'sync', purge=False,logger=logger)
+                                else:
+                                    shutil.copytree(source, destination, symlinks=symlinks, ignore=ignore)
+                                logger.info('Copied file %s to %s', source, destination)
                             except OSError as e:
-                                logger.error('Does the folder already exists? Can not copy %s to %s', source, destination, str(e))
+                                logger.error('Does the folder already exists? Can not copy %s to %s', source,
+                                             destination, str(e))
                             except FileExistsError as e:
                                 logger.error('Folder already exists! Can not copy %s to %s', source, destination,
                                              str(e))
@@ -178,16 +171,18 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                         else:  # elif not os.path.exists(destination):
                             logger.info(source + ' is not a directory')
                             try:
-                                shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
+                                if os.path.isfile(destination):
+                                    sync(source, destination, 'sync', purge=False,logger=logger)
+                                else:
+                                    shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
                                 logger.info('Copied file %s to %s', source, destination)
                             except OSError as e:
-                                logger.error('Does the file already exists? Can not copy %s to %s', source, destination, str(e))
+                                logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
+                                             str(e))
                             except FileExistsError as e:
                                 logger.error('File already exists! Can not copy %s to %s', source, destination, str(e))
                             except Exception as e:
                                 logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
-                    else:
-                        logger.info("Newer file already exists. Will not copy '%s' to '%s'", source, destination)
     except Exception as e:
         logger.error(str(e))
         raise
@@ -1131,3 +1126,19 @@ def get_new_password_and_api_token():
     password_encoded = base64.b64encode(password.encode("utf-8"))
     password_encoded = str(password_encoded, 'utf-8')
     return password, password_encoded, api_token
+
+def writeDataToFile(filename, data, pretty=False):
+    with open(filename, 'w', encoding='utf-8') as fp:
+        if pretty:
+            # from pprint import PrettyPrinter
+            #             # pp = PrettyPrinter(indent=4)
+            j_data = json.dumps(data,indent=4)
+            fp.write(j_data)
+        else:
+            json.dump(data, fp)
+
+
+def readDatafromFile(fileName):
+    with open(fileName, "r", encoding='utf-8' ) as read_file:
+        data = json.load(read_file)
+    return data
