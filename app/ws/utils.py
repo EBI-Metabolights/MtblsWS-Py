@@ -30,7 +30,7 @@ import string
 import time
 import uuid
 from os.path import normpath, basename
-
+import json
 import numpy as np
 import pandas as pd
 import requests
@@ -117,7 +117,6 @@ def copy_file(source, destination):
 
 def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, include_investigation_file=True):
     try:
-        print('a')
         if not os.path.exists(dst):
             logger.info('Creating a new folder for the study, %s', dst)
             os.makedirs(dst, exist_ok=True)
