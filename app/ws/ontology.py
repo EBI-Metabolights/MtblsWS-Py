@@ -215,7 +215,20 @@ class Ontology(Resource):
 
         else:
             if queryFields in [None, '']:  # if found the term, STOP
-                is_url = term.startswith('http')
+
+                # is_url = term.startswith('http')
+                regex = re.compile(
+                    r'[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)',
+                    re.IGNORECASE)
+
+                is_url = term is not None and regex.search(term) is not None
+
+                if is_url and not term.startswith('//') and not term.startswith('http'):
+                    term = '//' + term
+
+                if is_url and not term.startswith('http:'):
+                    term = 'http:' + term
+
                 logger.info('Search %s from resources one by one' % term)
                 print('Search %s from resources one by one' % term)
                 result = getMetaboTerm(term, branch, mapping)
