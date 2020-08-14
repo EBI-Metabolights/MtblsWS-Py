@@ -213,6 +213,10 @@ def getOLSTerm(keyword, map, ontology=''):
 
     elif 'http:' in keyword:
         label, definition, ontoName = getOLSTermInfo(keyword)
+        if len(definition) >0:
+            definition = definition[0]
+        else:
+            definition = ''
         if len(label) > 1:
             enti = entity(name=label, iri=keyword, definition=definition, ontoName=ontoName,
                           provenance_name=ontoName)
