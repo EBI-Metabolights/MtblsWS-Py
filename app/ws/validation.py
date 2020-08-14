@@ -1253,7 +1253,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
     validations = []
     assay_file_list = get_assay_file_list(study_location)
     # folder_list = get_files_in_sub_folders(study_location)
-    study_files, upload_files, upload_diff, upload_location = \
+    study_files, upload_files, upload_diff, upload_location,latest_update_time = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
                                       include_upload_folder=False, assay_file_list=assay_file_list,
