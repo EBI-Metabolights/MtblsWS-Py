@@ -31,7 +31,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsStudy import write_audit_files
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
-
+from datetime import datetime
 logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
@@ -891,8 +891,8 @@ def get_file_information(study_location=None, path=None, directory=None, include
                     if latest_update_time == "":
                         latest_update_time = file_time
                     else:
-                        latest_update_time = latest_update_time if parse(latest_update_time) > parse(
-                            file_time) else file_time
+                        latest_update_time = latest_update_time if datetime.strptime(latest_update_time, "%B %d %Y %H:%M:%S")> datetime.strptime(file_time, "%B %d %Y %H:%M:%S") \
+                            else file_time
     except Exception as e:
         logger.error('Error in listing files under ' + path + '. Last file was ' + file_name)
         logger.error(str(e))
