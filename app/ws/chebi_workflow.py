@@ -68,7 +68,7 @@ maf_compound_name_column = "metabolite_identification"
 alt_name_column = "alt_name"
 database_identifier_column = "database_identifier"
 final_inchi_column = "final_inchi"
-
+csid_ik_column = "csid_ik"
 spreadsheet_fields = [database_identifier_column,
                       "chemical_formula",
                       "smiles",
@@ -506,7 +506,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     row_idx = 0
     if exiting_pubchem_file:
         short_df = maf_df[[database_identifier_column, maf_compound_name_column, alt_name_column, search_flag,
-                           final_cid_column_name, "row_id", final_inchi_column]]
+                           final_cid_column_name, "row_id", final_inchi_column,csid_ik_column]]
         # Make sure we re-read the original MAF so that we don't add the extra PubChem columns
         maf_df = read_tsv(os.path.join(study_location, original_maf_name))
     else:
@@ -524,7 +524,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         existing_row = None
         final_inchi_key = None
         final_inchi = None
-
+        csid_ik = None
         final_cid = None
         if exiting_pubchem_file:
             if str(row[3]).rstrip('.0') == '1':  # This is the already searched flag in the spreadsheet
@@ -536,9 +536,14 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             if len(alt_name) > 0:
                 comp_name = alt_name
             final_inchi = row[6]
+            csid_ik = row[7] if row[7] != '' else None
+            pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(org_row_id)
+            pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = safe_str(row[1])
 
         if not exiting_pubchem_file:
             pubchem_df.iloc[row_idx, get_idx('row_id', pubchem_df_headers)] = row_idx + 1  # Row id
+            pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(row_idx + 1)
+            pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = original_comp_name
             # if not database_id:
             #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
 
@@ -765,6 +770,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     db_acc = ""
                     if csid:
                         db_acc = 'ChemSpider:' + csid + ';'
+                    elif csid_ik:
+                        db_acc = 'ChemSpider:' + csid_ik + ';'
                     if pc_synonyms:
                         db_acc = db_acc + pc_synonyms + ';'
                     if cactus_synonyms:
