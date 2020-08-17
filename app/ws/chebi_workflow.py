@@ -527,6 +527,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         final_inchi = None
         csid_ik = None
         final_cid = None
+        db_acc = ""
         if exiting_pubchem_file:
             if str(row[3]).rstrip('.0') == '1':  # This is the already searched flag in the spreadsheet
                 search = False
@@ -542,6 +543,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             csid_ik = row[7] if row[7] != '' else None
             pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(org_row_id)
             pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = safe_str(row[1])
+            if csid_ik:
+                db_acc = 'ChemSpider:' + csid_ik + ';'
 
         if not exiting_pubchem_file:
             pubchem_df.iloc[row_idx, get_idx('row_id', pubchem_df_headers)] = row_idx + 1  # Row id
@@ -770,14 +773,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                             # GlyToucan id for ChEBI/UniProt colab
 
                     pubchem_df.iloc[row_idx, get_idx(final_cid_column_name, pubchem_df_headers)] = final_cid
-                    db_acc = ""
-                    print_log(csid)
-                    print_log(csid_ik)
-                    print_log(' reading db file ')
                     if csid:
                         db_acc = 'ChemSpider:' + csid + ';'
-                    elif csid_ik:
-                        db_acc = 'ChemSpider:' + csid_ik + ';'
                     if pc_synonyms:
                         db_acc = db_acc + pc_synonyms + ';'
                     if cactus_synonyms:
@@ -787,9 +784,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                             cactus_synonyms = get_valid_synonyms(cactus_synonyms, pc_synonyms)
                             if cactus_synonyms:
                                 db_acc = db_acc + cactus_synonyms
-                    if db_acc:
-                        pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
-                            ';')  # Cactus and PubChem synonyms for SDF export
+                      # Cactus and PubChem synonyms for SDF export
                     pubchem_df.iloc[
                         row_idx, get_idx('direct_parent', pubchem_df_headers)] = ''  # direct_parent from ClassyFire
                     pubchem_df.iloc[
@@ -849,6 +844,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         if not org_row_id:
             pubchem_df.iloc[row_idx, get_idx('row_id',
                                              pubchem_df_headers)] = row_idx + 1  # Row id added if copy and no search results
+        if db_acc:
+            pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
+                ';')
 
         if changed and row_idx > 0 and row_idx % 20 == 0:  # Save every 20 rows
             pubchem_file = short_file_name + pubchem_end
