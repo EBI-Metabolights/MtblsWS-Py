@@ -82,7 +82,7 @@ spreadsheet_fields = [database_identifier_column,
                       final_cid_column_name,
                       "pubchem_cid",
                       "pubchem_cid_ik",
-                      "csid_ik",
+                      csid_ik_column,
                       "final_smiles",
                       final_inchi_column,
                       "final_inchi_key",
@@ -505,8 +505,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
     row_idx = 0
     if exiting_pubchem_file:
+        print_log (' reading pubchem file ')
         short_df = maf_df[[database_identifier_column, maf_compound_name_column, alt_name_column, search_flag,
-                           final_cid_column_name, "row_id", final_inchi_column,csid_ik_column]]
+                           final_cid_column_name, "row_id", final_inchi_column, csid_ik_column]]
         # Make sure we re-read the original MAF so that we don't add the extra PubChem columns
         maf_df = read_tsv(os.path.join(study_location, original_maf_name))
     else:
@@ -536,6 +537,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             if len(alt_name) > 0:
                 comp_name = alt_name
             final_inchi = row[6]
+
+            print_log(' reading csid_ik file ')
             csid_ik = row[7] if row[7] != '' else None
             pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(org_row_id)
             pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = safe_str(row[1])
@@ -768,6 +771,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
                     pubchem_df.iloc[row_idx, get_idx(final_cid_column_name, pubchem_df_headers)] = final_cid
                     db_acc = ""
+                    print_log(csid)
+                    print_log(csid_ik)
+                    print_log(' reading db file ')
                     if csid:
                         db_acc = 'ChemSpider:' + csid + ';'
                     elif csid_ik:
