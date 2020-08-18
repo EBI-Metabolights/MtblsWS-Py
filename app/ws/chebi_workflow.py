@@ -1082,6 +1082,8 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
         data = open(sdf_file_name, 'rb').read()
         res = requests.post('https://www.ebi.ac.uk/chembl/api/utils/removeHs', data=data)
         sdf_file = sdf_file_name[:-4] + "_removed_hs.sdf"
+        res = res.text.replace("$$$$", '\n' + '$$$$')
+        res = res.replace('\n\n\n', '\n\n')
         with open(sdf_file, 'w') as output:
             output.write(res.text)
 
