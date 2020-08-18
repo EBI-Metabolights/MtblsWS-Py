@@ -1983,8 +1983,8 @@ class ChEBIPipeLine(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "run_silently",
-                "description": "Do not generate console or log info when skipping rows",
+                "name": "run_on_cluster",
+                "description": "Run in the background on the EBI LSF cluster",
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
@@ -2002,17 +2002,6 @@ class ChEBIPipeLine(Resource):
                 "required": False,
                 "allowMultiple": False
             },
-            {
-                "name": "run_on_cluster",
-                "description": "Run in the background on the EBI LSF cluster",
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "format": "application/json",
-                "required": False,
-                "allowMultiple": False
-            },
-
             {
                 "name": "user_token",
                 "description": "User API token",
