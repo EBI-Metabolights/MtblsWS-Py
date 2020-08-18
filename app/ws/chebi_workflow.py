@@ -1983,8 +1983,8 @@ class ChEBIPipeLine(Resource):
                 "allowMultiple": False
             },
             {
-                "name": "run_on_cluster",
-                "description": "Run in the background on the EBI LSF cluster",
+                "name": "run_silently",
+                "description": "Do not generate console or log info when skipping rows",
                 "paramType": "query",
                 "type": "Boolean",
                 "defaultValue": True,
@@ -2002,6 +2002,17 @@ class ChEBIPipeLine(Resource):
                 "required": False,
                 "allowMultiple": False
             },
+            {
+                "name": "run_on_cluster",
+                "description": "Run in the background on the EBI LSF cluster",
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": False,
+                "allowMultiple": False
+            },
+
             {
                 "name": "user_token",
                 "description": "User API token",
@@ -2067,7 +2078,7 @@ class ChEBIPipeLine(Resource):
         else:
             annotation_file_name = request.args['annotation_file_name']
             classyfire_search = request.args['classyfire_search']
-            update_study_maf = request.args['update_study_maf']
+            update_study_maf = request.args.get('update_study_maf')
             run_silently = request.args['run_silently']
             run_on_cluster = request.args['run_on_cluster']
 
