@@ -505,7 +505,6 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
     row_idx = 0
     if exiting_pubchem_file:
-        print_log (' reading pubchem file ')
         short_df = maf_df[[database_identifier_column, maf_compound_name_column, alt_name_column, search_flag,
                            final_cid_column_name, "row_id", final_inchi_column, csid_ik_column]]
         # Make sure we re-read the original MAF so that we don't add the extra PubChem columns
@@ -971,6 +970,11 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         cactus_synonyms = row['cactus_synonyms']
         database_accession = row['DATABASE_ACCESSION']
         definition = row['DEFINITION']
+
+        if row_id:
+            pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(row_id)
+        if name:
+            pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = name
 
         if cid and not db_id.startswith('CHEBI:'):
             cluster_ids.append(row_id)  # Keep count of the number of ORGANISM sections to add to ChEBI SDF file
