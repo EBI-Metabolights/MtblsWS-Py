@@ -68,7 +68,7 @@ maf_compound_name_column = "metabolite_identification"
 alt_name_column = "alt_name"
 database_identifier_column = "database_identifier"
 final_inchi_column = "final_inchi"
-
+csid_ik_column = "csid_ik"
 spreadsheet_fields = [database_identifier_column,
                       "chemical_formula",
                       "smiles",
@@ -82,7 +82,7 @@ spreadsheet_fields = [database_identifier_column,
                       final_cid_column_name,
                       "pubchem_cid",
                       "pubchem_cid_ik",
-                      "csid_ik",
+                      csid_ik_column,
                       "final_smiles",
                       final_inchi_column,
                       "final_inchi_key",
@@ -506,7 +506,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     row_idx = 0
     if exiting_pubchem_file:
         short_df = maf_df[[database_identifier_column, maf_compound_name_column, alt_name_column, search_flag,
-                           final_cid_column_name, "row_id", final_inchi_column]]
+                           final_cid_column_name, "row_id", final_inchi_column, csid_ik_column]]
         # Make sure we re-read the original MAF so that we don't add the extra PubChem columns
         maf_df = read_tsv(os.path.join(study_location, original_maf_name))
     else:
@@ -524,8 +524,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         existing_row = None
         final_inchi_key = None
         final_inchi = None
-
+        csid_ik = None
         final_cid = None
+        db_acc = ""
         if exiting_pubchem_file:
             if str(row[3]).rstrip('.0') == '1':  # This is the already searched flag in the spreadsheet
                 search = False
@@ -537,8 +538,17 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                 comp_name = alt_name
             final_inchi = row[6]
 
+            print_log(' reading csid_ik file ')
+            csid_ik = row[7] if row[7] != '' else None
+            pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(org_row_id)
+            pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = safe_str(row[1])
+            if csid_ik:
+                db_acc = 'ChemSpider:' + csid_ik + ';'
+
         if not exiting_pubchem_file:
             pubchem_df.iloc[row_idx, get_idx('row_id', pubchem_df_headers)] = row_idx + 1  # Row id
+            pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(row_idx + 1)
+            pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = original_comp_name
             # if not database_id:
             #     pubchem_df.iloc[row_idx, get_idx('combination')] = row_idx + 1  # Cluster sort field
 
@@ -762,7 +772,6 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                             # GlyToucan id for ChEBI/UniProt colab
 
                     pubchem_df.iloc[row_idx, get_idx(final_cid_column_name, pubchem_df_headers)] = final_cid
-                    db_acc = ""
                     if csid:
                         db_acc = 'ChemSpider:' + csid + ';'
                     if pc_synonyms:
@@ -774,9 +783,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                             cactus_synonyms = get_valid_synonyms(cactus_synonyms, pc_synonyms)
                             if cactus_synonyms:
                                 db_acc = db_acc + cactus_synonyms
-                    if db_acc:
-                        pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
-                            ';')  # Cactus and PubChem synonyms for SDF export
+                      # Cactus and PubChem synonyms for SDF export
                     pubchem_df.iloc[
                         row_idx, get_idx('direct_parent', pubchem_df_headers)] = ''  # direct_parent from ClassyFire
                     pubchem_df.iloc[
@@ -836,6 +843,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         if not org_row_id:
             pubchem_df.iloc[row_idx, get_idx('row_id',
                                              pubchem_df_headers)] = row_idx + 1  # Row id added if copy and no search results
+        if db_acc:
+            pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
+                ';')
 
         if changed and row_idx > 0 and row_idx % 20 == 0:  # Save every 20 rows
             pubchem_file = short_file_name + pubchem_end
@@ -961,6 +971,11 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         database_accession = row['DATABASE_ACCESSION']
         definition = row['DEFINITION']
 
+        if row_id:
+            pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(row_id)
+        if name:
+            pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = name
+
         if cid and not db_id.startswith('CHEBI:'):
             cluster_ids.append(row_id)  # Keep count of the number of ORGANISM sections to add to ChEBI SDF file
             if cid.endswith('.mol'):
@@ -1071,8 +1086,10 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
         data = open(sdf_file_name, 'rb').read()
         res = requests.post('https://www.ebi.ac.uk/chembl/api/utils/removeHs', data=data)
         sdf_file = sdf_file_name[:-4] + "_removed_hs.sdf"
+        res = res.text.replace("$$$$", '\n' + '$$$$')
+        res = res.replace('\n\n\n', '\n\n')
         with open(sdf_file, 'w') as output:
-            output.write(res.text)
+            output.write(res)
 
 
 def remove_pubchem_sdf_parameters(study_location, sdf_file_name):
@@ -2054,7 +2071,7 @@ class ChEBIPipeLine(Resource):
         else:
             annotation_file_name = request.args['annotation_file_name']
             classyfire_search = request.args['classyfire_search']
-            update_study_maf = request.args['update_study_maf']
+            update_study_maf = request.args.get('update_study_maf')
             run_silently = request.args['run_silently']
             run_on_cluster = request.args['run_on_cluster']
 
