@@ -1085,7 +1085,7 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
         res = res.text.replace("$$$$", '\n' + '$$$$')
         res = res.replace('\n\n\n', '\n\n')
         with open(sdf_file, 'w') as output:
-            output.write(res.text)
+            output.write(res)
 
 
 def remove_pubchem_sdf_parameters(study_location, sdf_file_name):
