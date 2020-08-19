@@ -400,7 +400,7 @@ def convert_to_chebi_onto(onto_term):
     if chebi_onto:
         chebi_onto = chebi_onto.rsplit('/', 1)[1]  # Only keep the final part of the URL
     chebi_onto = chebi_onto.replace("ncbitaxon:", "ncbi:").replace("_", ":").replace('txid', '').upper()
-    chebi_onto = chebi_onto.replace('NCBI:', 'NCBI:txid')
+    chebi_onto = chebi_onto.replace('NCBITAXON:', 'NCBI:txid')
     return chebi_onto
 
 
