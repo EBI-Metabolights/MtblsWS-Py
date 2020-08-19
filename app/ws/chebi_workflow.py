@@ -1603,18 +1603,20 @@ def add_database_name_synonym(synonym):
     if synonym.startswith('LM'):  # LipidMaps
         return "LIPID MAPS:"+synonym
 
-    elif synonym.startswith('C'):  # KEGG Compound
+    elif synonym.startswith('C') and is_correct_int(synonym[1:], 5):  # KEGG Compound
         return "KEGG COMPOUND:"+synonym
 
-    elif synonym.startswith('D'):  # KEGG Drug
+    elif synonym.startswith('D') and is_correct_int(synonym[1:], 5):  # KEGG Drug
         return "KEGG DRUG:" + synonym
 
-    elif synonym.startswith('G'):  # KEGG Glycan
+    elif synonym.startswith('G') and is_correct_int(synonym[1:], 5):  # KEGG Glycan
         return "KEGG GLYCAN:" + synonym
 
-    elif synonym.startswith('R'):  # KEGG Reaction
+    elif synonym.startswith('R') and is_correct_int(synonym[1:], 5):  # KEGG Reaction
         return "KEGG REACTION:" + synonym
 
+    elif synonym.startswith('C') and is_correct_int(synonym[1:], 8):
+        return "KNApSAcK:" + synonym
     else:
         return synonym
 
