@@ -537,8 +537,6 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             if len(alt_name) > 0:
                 comp_name = alt_name
             final_inchi = row[6]
-
-            print_log(' reading csid_ik file ')
             csid_ik = row[7] if row[7] != '' else None
             pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(org_row_id)
             pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = safe_str(row[1])
@@ -683,6 +681,10 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     csid = get_csid(ik)
 
                     pubchem_df.iloc[row_idx, get_idx('iupac_name', pubchem_df_headers)] = pc_name  # PubChem name
+
+                    if final_cid and pc_cid != final_cid:
+                        pc_cid = final_cid
+
 
                     if not final_cid:
                         final_cid = pc_cid
@@ -971,10 +973,6 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         database_accession = row['DATABASE_ACCESSION']
         definition = row['DEFINITION']
 
-        if row_id:
-            pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(row_id)
-        if name:
-            pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = name
 
         if cid and not db_id.startswith('CHEBI:'):
             cluster_ids.append(row_id)  # Keep count of the number of ORGANISM sections to add to ChEBI SDF file
@@ -1018,10 +1016,6 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                 if is_a:
                     pubchem_df.iloc[idx, get_idx('RELATIONSHIP', pubchem_df_headers)] = is_a
 
-                if name:
-                    pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = name
-
-                pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(row_id)
                 add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,definition =definition,
                                         name=name, iupack_name=iupac_name)
                 print_log("       -- adding ancestors to SDF file " + fname)
