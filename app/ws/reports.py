@@ -28,7 +28,8 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
 from app.ws.study_files import get_all_files
-from app.ws.utils import log_request, writeDataToFile, readDatafromFile
+from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
+    get_instruments_organism
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -48,7 +49,7 @@ class reports(Resource):
                 "allowEmptyValue": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["daily_stats", "user_stats"]
+                "enum": ["daily_stats", "user_stats","global"]
             },
 
             {
@@ -192,6 +193,10 @@ class reports(Resource):
             file_name = 'user_report.json'
             j_file = readDatafromFile(reporting_path + file_name)
             return jsonify(j_file)
+        elif query == 'global':
+            file_name = 'global.json'
+            j_file = readDatafromFile(reporting_path + file_name)
+            return jsonify(j_file)
         else:
             file_name = ''
             abort(404)
@@ -210,7 +215,15 @@ class reports(Resource):
                 "allowEmptyValue": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["daily_stats", "user_stats", "study_stats"]
+                "enum": ["daily_stats", "user_stats", "study_stats", "global"]
+            },
+            {
+                "name": "studyid",
+                "description": "None to update all studies",
+                "required": False,
+                "allowEmptyValue": True,
+                "paramType": "query",
+                "dataType": "string"
             },
 
             {
@@ -249,6 +262,7 @@ class reports(Resource):
         log_request(request)
         parser = reqparse.RequestParser()
 
+        # query field
         parser.add_argument('query', help='Report query')
         query = None
         if request.args:
@@ -256,6 +270,15 @@ class reports(Resource):
             query = args['query']
             if query:
                 query = query.strip()
+
+        # study ID
+        parser.add_argument('studyid', help='Study ID')
+        studyid = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            studyid = args['studyid']
+            if studyid:
+                studyid = studyid.strip().upper()
 
         # User authentication
         user_token = None
@@ -357,6 +380,71 @@ class reports(Resource):
             file_name = 'study_report.json'
             res = data
 
+        if query == 'global':
+            file_name = 'global.json'
+            j_data = readDatafromFile(reporting_path + file_name)
+
+            # load global.json and update
+            if studyid:
+                studyid = studyid.upper()
+                # load global.json and clean the date set
+                j_data = clean_json(j_data, studyid)
+
+                # techniques
+                res1 = get_techniques(studyID=studyid)
+                for tech, value in res1['techniques'].items():
+                    if tech in j_data['data']['techniques']:
+                        print(tech)
+                        j_data['data']['techniques'][tech] += value  # res['techniques'][tech]
+                    else:
+                        j_data['data']['techniques'].update({tech: value})
+
+                # study_type
+                res2 = get_studytype(studyID=studyid)
+                j_data['data']['study_type']['targeted'] += res2['study_type']['targeted']
+                j_data['data']['study_type']['untargeted'] += res2['study_type']['untargeted']
+                j_data['data']['study_type']['targeted_untargeted'] += res2['study_type']['targeted_untargeted']
+
+                # instruments & organisms
+                ins, org = get_instruments_organism(studyID=studyid)
+                for i, value in ins['instruments'].items():
+                    if i not in j_data['data']['instruments']:
+                        j_data['data']['instruments'].update({i: value})
+                    else:
+                        for studies, v in ins['instruments'][i].items():
+                            j_data['data']['instruments'][i].update({studies: v})
+
+                # organisms
+                for o, org_part in org['organisms'].items():
+                    if o not in j_data['data']['organisms']:
+                        j_data['data']['organisms'].update({o: org_part})
+                    else:
+                        for org_p, studies in org_part.items():
+                            if org_p not in j_data['data']['organisms'][o]:
+                                j_data['data']['organisms'][o].update({org_p: studies})
+                            else:
+                                j_data['data']['organisms'][o][org_p] += studies
+
+            # generate new global file
+            else:
+                # techniques
+                techs = get_techniques()
+                j_data['data']['techniques'] = techs['techniques']
+
+                # study_type
+                types = get_studytype()
+                j_data['data']['study_type'] = types['study_type']
+
+                # instruments & organisms
+                i, s = get_instruments_organism()
+                j_data['data']['instruments'] = i['instruments']
+                j_data['data']['organisms'] = s['organisms']
+
+                j_data["updated_at"] = datetime.today().strftime('%Y-%m-%d')
+
+            res = j_data
+
         # j_res = json.dumps(res,indent=4)
         writeDataToFile(reporting_path + file_name, res, True)
-        return jsonify(res)
+
+        return jsonify({"POST " + file_name : True})

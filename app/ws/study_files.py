@@ -31,7 +31,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsStudy import write_audit_files
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
-
+from datetime import datetime
 logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
@@ -48,7 +48,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     start_time = time.time()
     s_start_time = time.time()
-    study_files = get_all_files(study_location, directory=directory, include_raw_data=include_raw_data,
+    study_files,latest_update_time = get_all_files(study_location, directory=directory, include_raw_data=include_raw_data,
                                 assay_file_list=assay_file_list, validation_only=validation_only,
                                 short_format=short_format, include_sub_dir=include_sub_dir,
                                 static_validation_file=static_validation_file)
@@ -63,7 +63,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
         except:
             os.mkdir(upload_location)
 
-        upload_files = get_all_files(upload_location, directory=directory, include_raw_data=include_raw_data,
+        upload_files,latest_update_time = get_all_files(upload_location, directory=directory, include_raw_data=include_raw_data,
                                      validation_only=validation_only, short_format=short_format,
                                      static_validation_file=static_validation_file)
         logger.info("Listing upload files for " + study_id + " took %s seconds" % round(time.time() - u_start_time, 2))
@@ -89,7 +89,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     logger.info("Listing all files for " + study_id + " took %s seconds" % round(time.time() - start_time, 2))
 
-    return study_files, upload_files, upload_diff, upload_location
+    return study_files, upload_files, upload_diff, upload_location, latest_update_time
 
 
 class StudyFiles(Resource):
@@ -179,7 +179,7 @@ class StudyFiles(Resource):
         if not read_access:
             abort(403)
 
-        study_files, upload_files, upload_diff, upload_location = \
+        study_files, upload_files, upload_diff, upload_location, latest_update_time = \
             get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                           directory=directory, include_raw_data=include_raw_data,
                                           assay_file_list=get_assay_file_list(study_location),
@@ -806,7 +806,7 @@ def get_all_files(path, directory=None, include_raw_data=False, assay_file_list=
                   validation_only=False, short_format=None, include_sub_dir=None,
                   static_validation_file=None):
     try:
-        files = get_file_information(study_location=path, path=path, directory=directory,
+        files,latest_update_time = get_file_information(study_location=path, path=path, directory=directory,
                                      include_raw_data=include_raw_data, assay_file_list=assay_file_list,
                                      validation_only=validation_only, short_format=short_format,
                                      include_sub_dir=include_sub_dir, static_validation_file=static_validation_file)
@@ -814,7 +814,7 @@ def get_all_files(path, directory=None, include_raw_data=False, assay_file_list=
         logger.warning('Could not find folder ' + path + '. Error: ' + str(e))
         files = []  # The upload folder for this study does not exist, this is normal
 
-    return files
+    return files,latest_update_time
 
 
 def get_file_information(study_location=None, path=None, directory=None, include_raw_data=False,
@@ -823,7 +823,7 @@ def get_file_information(study_location=None, path=None, directory=None, include
     file_list = []
     file_name = ""
     ignore_file_list = app.config.get('IGNORE_FILE_LIST')
-
+    latest_update_time = ""
     try:
         timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
         end_time = time.time() + timeout_secs
@@ -888,11 +888,16 @@ def get_file_information(study_location=None, path=None, directory=None, include
                 if file_type:
                     file_list.append({"file": file_name, "createdAt": file_time, "timestamp": raw_time,
                                       "type": file_type, "status": status, "directory": folder})
+                    if latest_update_time == "":
+                        latest_update_time = file_time
+                    else:
+                        latest_update_time = latest_update_time if datetime.strptime(latest_update_time, "%B %d %Y %H:%M:%S")> datetime.strptime(file_time, "%B %d %Y %H:%M:%S") \
+                            else file_time
     except Exception as e:
         logger.error('Error in listing files under ' + path + '. Last file was ' + file_name)
         logger.error(str(e))
 
-    return file_list
+    return file_list,latest_update_time
 
 
 def flatten_list(list_name, flat_list=None):
