@@ -36,7 +36,7 @@ alter table curation_log_temp alter column number_of_files type bigint;
 DO
 $$
     BEGIN
-        FOR i_acc in 1..2000
+        FOR i_acc in 1..5000
             LOOP
                 insert into curation_log_temp(acc, acc_short)
                 values ('MTBLS' || i_acc, i_acc);
