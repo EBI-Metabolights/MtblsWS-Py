@@ -720,7 +720,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     pubchem_df.iloc[row_idx, get_idx('final_inchi_key', pubchem_df_headers)] = final_inchi_key
                     print_log('checking for csid')
                     print_log(csid)
-                    if final_inchi_key and csid is None:
+                    if final_inchi_key and csid =="":
                         print_log("    -- Searching ChemSpider using final_inchi_key")
                         csid = get_csid(final_inchi_key)
                         pubchem_df.iloc[
