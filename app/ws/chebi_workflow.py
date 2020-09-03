@@ -960,7 +960,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
     classyfire_file_name = classyfire_file_name + '.' + return_format
     classyfire_df = get_classyfire_lookup_mapping()
     file_changed = False
-
+    rowIdx = 0
     cluster_ids = []
     for idx, row in pubchem_df.iterrows():
         cid = row[final_cid_column_name]
@@ -1013,17 +1013,17 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                                                            classyfire_search, classyfire_df)
 
             # merge data from Classyfire SDF into new PubChem SDF
-            if classyfire_sdf_values:
+            if classyfire_sdf_values and not row['direct_parent']:
                 is_a = classyfire_sdf_values['is_a']
                 direct_parent = classyfire_sdf_values['direct_parent']
                 file_changed = True
                 # direct_parent into "direct_parent". IS_A into "relationship"
                 if direct_parent:
-                    pubchem_df.iloc[idx, get_idx('direct_parent',
+                    pubchem_df.iloc[rowIdx, get_idx('direct_parent',
                                                  pubchem_df_headers)] = direct_parent  # direct_parent from ClassyFire
 
                 if is_a:
-                    pubchem_df.iloc[idx, get_idx('RELATIONSHIP', pubchem_df_headers)] = is_a
+                    pubchem_df.iloc[rowIdx, get_idx('RELATIONSHIP', pubchem_df_headers)] = is_a
 
                 add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,definition =definition,
                                         name=name, iupack_name=iupac_name)
@@ -1055,6 +1055,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                     except Exception as e:
                         print_log("       -- Error: could not download SDF file for CID " + cid + ". " + str(e),
                                   mode='error')
+        rowIdx = rowIdx + 1
     #if file_changed:
         #write_tsv(pubchem_df, pubchem_file_name)
 
