@@ -400,6 +400,7 @@ def convert_to_chebi_onto(onto_term):
     if chebi_onto:
         chebi_onto = chebi_onto.rsplit('/', 1)[1]  # Only keep the final part of the URL
     chebi_onto = chebi_onto.replace("ncbitaxon:", "ncbi:").replace("_", ":").replace('txid', '').upper()
+    chebi_onto = chebi_onto.replace('NCBI:', 'NCBI:txid')
     chebi_onto = chebi_onto.replace('NCBITAXON:', 'NCBI:txid')
     return chebi_onto
 
@@ -717,6 +718,13 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     final_inchi_key, source_found = get_ranked_values(pc_inchi_key, cactus_stdinchikey,
                                                                       opsin_stdinchikey, None)  # final inchikey
                     pubchem_df.iloc[row_idx, get_idx('final_inchi_key', pubchem_df_headers)] = final_inchi_key
+                    print_log('checking for csid')
+                    print_log(csid)
+                    if final_inchi_key and csid =="":
+                        print_log("    -- Searching ChemSpider using final_inchi_key")
+                        csid = get_csid(final_inchi_key)
+                        pubchem_df.iloc[
+                            row_idx, get_idx('csid_ik', pubchem_df_headers)] = csid
 
                     if not pc_inchi:
                         # We don't have a PubChem compound, but we may find a uncurated substance record
@@ -877,12 +885,13 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         pubchem_df = populate_sample_rows(pubchem_df, study_id, user_token, study_location)
 
     pubchem_file = short_file_name + pubchem_end
-    write_tsv(pubchem_df, pubchem_file)
-    pubchem_df = re_sort_pubchem_file(pubchem_df)
+    #write_tsv(pubchem_df, pubchem_file)
+    #pubchem_df = re_sort_pubchem_file(pubchem_df)
 
     annotated_study_location = study_location + os.sep + anno_sub_folder + os.sep
     update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search,
                          study_id, pubchem_file, pubchem_df_headers)
+    write_tsv(pubchem_df, pubchem_file)
     concatenate_sdf_files(pubchem_df, annotated_study_location, short_file_name + complete_end, run_silently)
     change_access_rights(study_location)
     pubchem_df_len = str(len(pubchem_df))
@@ -951,7 +960,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
     classyfire_file_name = classyfire_file_name + '.' + return_format
     classyfire_df = get_classyfire_lookup_mapping()
     file_changed = False
-
+    rowIdx = 0
     cluster_ids = []
     for idx, row in pubchem_df.iterrows():
         cid = row[final_cid_column_name]
@@ -1004,17 +1013,17 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                                                            classyfire_search, classyfire_df)
 
             # merge data from Classyfire SDF into new PubChem SDF
-            if classyfire_sdf_values:
+            if classyfire_sdf_values and not row['direct_parent']:
                 is_a = classyfire_sdf_values['is_a']
                 direct_parent = classyfire_sdf_values['direct_parent']
                 file_changed = True
                 # direct_parent into "direct_parent". IS_A into "relationship"
                 if direct_parent:
-                    pubchem_df.iloc[idx, get_idx('direct_parent',
+                    pubchem_df.iloc[rowIdx, get_idx('direct_parent',
                                                  pubchem_df_headers)] = direct_parent  # direct_parent from ClassyFire
 
                 if is_a:
-                    pubchem_df.iloc[idx, get_idx('RELATIONSHIP', pubchem_df_headers)] = is_a
+                    pubchem_df.iloc[rowIdx, get_idx('RELATIONSHIP', pubchem_df_headers)] = is_a
 
                 add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,definition =definition,
                                         name=name, iupack_name=iupac_name)
@@ -1046,8 +1055,9 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                     except Exception as e:
                         print_log("       -- Error: could not download SDF file for CID " + cid + ". " + str(e),
                                   mode='error')
-    if file_changed:
-        write_tsv(pubchem_df, pubchem_file_name)
+        rowIdx = rowIdx + 1
+    #if file_changed:
+        #write_tsv(pubchem_df, pubchem_file_name)
 
 
 def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silently):

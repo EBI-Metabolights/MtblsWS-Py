@@ -296,7 +296,7 @@ class Organism(Resource):
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
-        if not write_access:
+        if not read_access:
             abort(403)
 
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
