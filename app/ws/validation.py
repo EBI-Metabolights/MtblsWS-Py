@@ -19,7 +19,8 @@
 import json
 import threading
 import traceback
-
+from flask import Response
+import flask
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
@@ -28,6 +29,9 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import *
+from threading import Thread
+from flask import Flask
+from flaskthreads import AppContextThread
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -405,6 +409,7 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
                     info, val_sequence=11, log_category=log_category)
 
 
+
 class Validation(Resource):
     @swagger.operation(
         summary="Validate study",
@@ -525,6 +530,7 @@ class Validation(Resource):
             number_of_files = 0
 
         validation_files_limit = app.config.get('VALIDATION_FILES_LIMIT')
+        validation_run_msg = app.config.get('VALIDATION_RUN_MSG')
         force_static_validation = False
 
         # We can only use the static validation file when all values are used. MOE uses 'all' as default
@@ -543,47 +549,61 @@ class Validation(Resource):
 
             # Some file in the filesystem is newer than the validation reports, so we need to re-generate
             if is_newer_files(study_location):
-                return update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                               obfuscation_code, log_category=log_category, return_schema=True)
-
+                if number_of_files >= validation_files_limit:
+                    with app.app_context():
+                        t = AppContextThread(target=update_val_schema_files, args=(validation_file, study_id, study_location, user_token,
+                                                                obfuscation_code, log_category,
+                                                               True))
+                        t.start()
+                    return validation_run_msg, 202
+                else:
+                    validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
+                                                                obfuscation_code, log_category=log_category,
+                                                                return_schema=True)
             if os.path.isfile(validation_file):
                 try:
                     with open(validation_file, 'r', encoding='utf-8') as f:
                         validation_schema = json.load(f)
                 except Exception as e:
                     logger.error(str(e))
+                    # return processing
+                    if number_of_files >= validation_files_limit:
+                        with app.app_context():
+                            t = AppContextThread(target=update_val_schema_files,
+                                                 args=(validation_file, study_id, study_location, user_token,
+                                                       obfuscation_code, log_category,
+                                                       True))
+                            t.start()
+                        return validation_run_msg, 202
+                    else:
+                        validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
+                                                                obfuscation_code, log_category=log_category,
+                                                                return_schema=True)
+            else:
+                if number_of_files >= validation_files_limit:
+                    with app.app_context():
+                        t = AppContextThread(target=update_val_schema_files,
+                                             args=(validation_file, study_id, study_location, user_token,
+                                                   obfuscation_code, log_category,
+                                                   True))
+                        t.start()
+                    return validation_run_msg, 202
+                else:
                     validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
                                                                 obfuscation_code, log_category=log_category,
                                                                 return_schema=True)
-                    # validation_schema = \
-                    #     validate_study(study_id, study_location, user_token, obfuscation_code,
-                    #                    validation_section=section,
-                    #                    log_category=log_category, static_validation_file=False)
-            else:
-                validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                                            obfuscation_code, log_category=log_category,
-                                                            return_schema=True)
-                # validation_schema = \
-                #     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
-                #                    log_category=log_category, static_validation_file=static_validation_file)
-
-            # if study_status == 'in review':
-            #     try:
-            #         cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-            #         cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
-            #         logger.info("Starting cluster job for Validation schema update: " + cmd)
-            #         status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=False)
-            #         lsf_msg = message + '. ' + job_out + '. ' + job_err
-            #         if not status:
-            #             logger.error("LSF job error: " + lsf_msg)
-            #         else:
-            #             logger.info("LSF job submitted: " + lsf_msg)
-            #     except Exception as e:
-            #         logger.error(str(e))
         else:
-            validation_schema = \
-                validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
-                               log_category=log_category, static_validation_file=static_validation_file)
+            if number_of_files >= validation_files_limit:
+                with app.app_context():
+                    t = AppContextThread(target=validate_study,
+                                         args=(study_id, study_location, user_token, obfuscation_code, section,
+                                log_category,static_validation_file))
+                    t.start()
+                return validation_run_msg, 202
+            else:
+                validation_schema = \
+                    validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
+                                log_category=log_category, static_validation_file=static_validation_file)
 
         return validation_schema
 
