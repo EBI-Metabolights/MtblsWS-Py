@@ -526,6 +526,7 @@ class Validation(Resource):
 
         try:
             number_of_files = sum([len(files) for r, d, files in os.walk(study_location)])
+
         except:
             number_of_files = 0
 
@@ -555,7 +556,7 @@ class Validation(Resource):
                                                                 obfuscation_code, log_category,
                                                                True))
                         t.start()
-                    return validation_run_msg, 202
+                    return {"message": validation_run_msg }, 202
                 else:
                     validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
                                                                 obfuscation_code, log_category=log_category,
@@ -574,7 +575,7 @@ class Validation(Resource):
                                                        obfuscation_code, log_category,
                                                        True))
                             t.start()
-                        return validation_run_msg, 202
+                        return {"message": validation_run_msg }, 202
                     else:
                         validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
                                                                 obfuscation_code, log_category=log_category,
@@ -587,7 +588,7 @@ class Validation(Resource):
                                                    obfuscation_code, log_category,
                                                    True))
                         t.start()
-                    return validation_run_msg, 202
+                    return {"message": validation_run_msg }, 202
                 else:
                     validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
                                                                 obfuscation_code, log_category=log_category,
@@ -599,7 +600,7 @@ class Validation(Resource):
                                          args=(study_id, study_location, user_token, obfuscation_code, section,
                                 log_category,static_validation_file))
                     t.start()
-                return validation_run_msg, 202
+                return {"message": validation_run_msg }, 202
             else:
                 validation_schema = \
                     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
