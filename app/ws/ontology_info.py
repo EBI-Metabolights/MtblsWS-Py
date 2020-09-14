@@ -21,7 +21,6 @@ import logging
 import ssl
 import urllib
 from urllib.parse import quote_plus
-import urllib
 
 import pandas as pd
 from flask import current_app as app
@@ -31,20 +30,14 @@ logger = logging.getLogger('wslog')
 
 
 class entity():
-<<<<<<< HEAD
-    def __init__(self, name, iri='', ontoName='', provenance_name='', Zooma_confidence='', definition='', properties ={}):
-
-=======
     def __init__(self, name, iri='', ontoName='', provenance_name='', provenance_uri='',
                  Zooma_confidence='', definition=''):
->>>>>>> origin/master
         self.name = name
         self.iri = iri
         self.ontoName = ontoName
         self.provenance_name = provenance_name
         self.Zooma_confidence = Zooma_confidence
         self.definition = definition
-        self.properties = properties
 
 
 class factor():
@@ -61,44 +54,6 @@ class Descriptor():
         self.design_type = design_type
         self.iri = iri
 
-<<<<<<< HEAD
-def OLSbranchSearch(keyword, branchName, ontoName):
-    '''
-    This method to search the keyword in specific branch of specific ontology
-    :param keyword: query
-    :param branchName: specific brnachName
-    :param ontoName: specific ontology
-    :return: list of entities
-    '''
-    res = []
-    if keyword in [None, '']:
-        return res
-
-    def getStartIRI(start, ontoName):
-        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + start + '&ontology=' + ontoName + '&queryFields=label'
-        fp = urllib.request.urlopen(url)
-        content = fp.read().decode('utf-8')
-        json_str = json.loads(content)
-        res = json_str['response']['docs'][0]['iri']
-        urllib.parse.quote_plus(res)
-        return urllib.parse.quote_plus(res)
-
-    branchIRI = getStartIRI(branchName, ontoName)
-    keyword = keyword.replace(' ', '%20')
-    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
-    fp = urllib.request.urlopen(url)
-    content = fp.read().decode('utf-8')
-    json_str = json.loads(content)
-
-    for ele in json_str['response']['docs']:
-        enti = entity(name=ele['label'],
-                      iri=ele['iri'], ontoName=ontoName, provenance_name=ontoName)
-
-        res.append(enti)
-    return res
-
-=======
->>>>>>> origin/master
 
 def getMetaboTerm(keyword, branch, mapping=''):
     try:
@@ -470,15 +425,9 @@ def getBioportalTerm(keyword):
             if iri in iri_record:
                 continue
 
-            if 'mesh' in iri.lower():
-                ontoName = 'MESH'
-            elif 'nci' in iri.lower():
-                ontoName = 'NCIT'
-            elif 'bao' in iri.lower():
-                ontoName = 'BAO'
-            elif 'meddra' in iri.lower():
-                ontoName = 'MEDDRA'
-            else:
+            try:
+                ontoName = term['links']['ontology'].split('/')[-1]
+            except:
                 ontoName = getOnto_Name(iri)[0]
 
             enti = entity(name=term['prefLabel'],
@@ -486,7 +435,7 @@ def getBioportalTerm(keyword):
                           ontoName=ontoName, provenance_name=ontoName)
             res.append(enti)
             iri_record.append(iri)
-            if len(res) >= 5:
+            if len(res) >= 10:
                 break
     except Exception as e:
         logger.error('getBioportal' + str(e))
