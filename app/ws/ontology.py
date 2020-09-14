@@ -42,29 +42,29 @@ iac = IsaApiClient()
 wsc = WsClient()
 
 
-# # Allow for a more detailed logging when on DEBUG mode
-# def log_request(request_obj):
-#     if app.config.get('DEBUG'):
-#         if app.config.get('DEBUG_LOG_HEADERS'):
-#             logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
-#         if app.config.get('DEBUG_LOG_BODY'):
-#             logger.debug('REQUEST BODY    -> %s', request_obj.data)
-#         if app.config.get('DEBUG_LOG_JSON'):
-#             try:
-#                 logger.debug('REQUEST JSON    -> %s', request_obj.json)
-#             except:
-#                 logger.debug('REQUEST JSON    -> EMPTY')
+# Allow for a more detailed logging when on DEBUG mode
+def log_request(request_obj):
+    if app.config.get('DEBUG'):
+        if app.config.get('DEBUG_LOG_HEADERS'):
+            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
+        if app.config.get('DEBUG_LOG_BODY'):
+            logger.debug('REQUEST BODY    -> %s', request_obj.data)
+        if app.config.get('DEBUG_LOG_JSON'):
+            try:
+                logger.debug('REQUEST JSON    -> %s', request_obj.json)
+            except:
+                logger.debug('REQUEST JSON    -> EMPTY')
 
 
 class Ontology(Resource):
 
     @swagger.operation(
-        summary="Get ontology onto_information",
+        summary="Get ontology onto_information.",
         notes="Get ontology onto_information.",
         parameters=[
             {
                 "name": "term",
-                "description": "Ontology term",
+                "description": "Ontology query term",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -80,8 +80,8 @@ class Ontology(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["factor", "role", "taxonomy", "characteristic", "publication", "design descriptor", "unit",
-                         "column type", "instruments", "confidence", "sample type"]
+                "enum": ["factor", "role", "taxonomy", "organism part", "characteristic", "publication",
+                         "design descriptor", "unit", "column type", "instruments", "confidence", "sample type"]
             },
 
             {
@@ -97,8 +97,8 @@ class Ontology(Resource):
 
             {
                 "name": "queryFields",
-                "description": "Specifcy the fields to return, the default is all options: {MTBLS,MTBLS_Zooma,Zooma,"
-                               "OLS, Bioportal}",
+                "description": "Specify the fields to search: {MTBLS, OLS, MTBLS_Zooma, Zooma, Bioportal}, "
+                               "if None (default), search will go one after another until get the result",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
@@ -129,10 +129,6 @@ class Ontology(Resource):
             {
                 "code": 401,
                 "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
             },
             {
                 "code": 404,
@@ -315,6 +311,9 @@ class Ontology(Resource):
 
             elif branch == 'design descriptor':
                 priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
+
+            if branch == 'organism part':
+                priority = {'MTBLS': 0, 'BTO': 1, 'EFO': 2, 'PO': 3, 'CHEBI': 4, 'BAO': 5}
 
             else:
                 priority = {'MTBLS': 0, 'EFO': 1, 'NCBITAXON': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
@@ -1420,6 +1419,14 @@ def addEntity(new_term, supclass, definition=None):
                 print(f"Can't find superclass named {supclass}")
                 abort(400)
                 return []
+
+            # check duplicate
+            subs = cls.descendants()
+            for sub in subs:
+                if sub.label[0].lower() == new_term.lower():
+                    print('adding rejected, duplicated term: ' + new_term)
+                    logger.info('adding rejected, duplicated term: ' + new_term)
+                    return []
 
             newEntity = types.new_class(id, (cls,))
             newEntity.label = new_term

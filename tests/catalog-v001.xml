@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <group id="Folder Repository, directory=, recursive=true, Auto-Update=true, version=2" prefer="public" xml:base="">
+<<<<<<< HEAD
+        <uri id="Automatically generated entry, Timestamp=1585436456197" name="http://purl.obolibrary.org/obo/ncit.owl" uri="ncit.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1585436456197" name="http://www.ebi.ac.uk/metabolights/ontology/" uri="Metabolights.owl"/>
+=======
         <uri id="Automatically generated entry, Timestamp=1592763406423" name="http://purl.obolibrary.org/obo/ncit.owl" uri="ncit.owl"/>
         <uri id="Automatically generated entry, Timestamp=1592763406423" name="http://www.ebi.ac.uk/metabolights/ontology" uri="Metabolights.owl"/>
         <uri id="Automatically generated entry, Timestamp=1592763406423" name="http://www.ebi.ac.uk/metabolights/ontology/" uri="Metabolights_old.owl"/>
+>>>>>>> origin/master
     </group>
 </catalog>

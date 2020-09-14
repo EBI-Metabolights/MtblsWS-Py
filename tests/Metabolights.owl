@@ -1293,7 +1293,19 @@
     
 
 
+<<<<<<< HEAD
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000062 -->
+
+    <owl:Class rdf:about="http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000062">
+        <rdfs:label xml:lang="en">organism part</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.ebi.ac.uk/metabolights/ontology/MTBLS_000063 -->
+=======
     <!-- http://purl.obolibrary.org/obo/UO_0000129 -->
+>>>>>>> origin/master
 
     <owl:Class rdf:about="http://purl.obolibrary.org/obo/UO_0000129">
         <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/UO_0000127"/>
@@ -13803,6 +13815,20 @@
         <rdfs:label xml:lang="en">Hybrid Qh-FTMS</rdfs:label>
     </owl:Class>
     <rdf:Description>
+<<<<<<< HEAD
+        <rdfs:label xml:lang="en">An alias in which the alias is broader than the primary class name. Example: cell division is a broad synonym of cytokinesis</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_alt_id</oboI:hasURI>
+        <rdfs:label>oboFormat:alt_id</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_version</oboI:hasURI>
+        <rdfs:label>oboFormat:version</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">pseudo-property. in the oboInOwl translation, all obsolete relations are subProperties of this class</rdfs:label>
+=======
         <rdfs:label xml:lang="en"></rdfs:label>
     </rdf:Description>
     <rdf:Description>
@@ -13811,11 +13837,30 @@
     </rdf:Description>
     <rdf:Description>
         <rdfs:label xml:lang="en">An alias in which the alias is related the primary class name, but not necessarily broader or narrower. Example: cytochrome bc1 complex is a related synonym of ubiquinol-cytochrome-c reductase activity; virulence is a related synonym of pathogenesis</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <rdfs:label xml:lang="en">This annotation property groups all synonym types declared in the ontology</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <rdfs:label xml:lang="en">A relation between a class and an OBO namespace string. OBO namespaces are to be distinguished from IDspaces; for example, biological_process is a namespace, GO is an idspace.</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">This annotation property groups all subsets declared in the ontology</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_namespace</oboI:hasURI>
+        <rdfs:label>oboFormat:namespace</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_is_cyclic</oboI:hasURI>
+        <rdfs:label>oboFormat:is_cyclic</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.obofoundry.org/wiki/index.php/Definitions</oboI:hasURI>
+        <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
+=======
         <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
     </rdf:Description>
     <rdf:Description>
@@ -13832,12 +13877,24 @@
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_date</oboI:hasURI>
         <rdfs:label>oboFormat:date</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_replaced_by</oboI:hasURI>
+        <rdfs:label>oboFormat:replaced_by</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_broad_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:broad_synonym</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">partition</rdfs:label>
+=======
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_consider</oboI:hasURI>
         <rdfs:label>oboFormat:consider</rdfs:label>
     </rdf:Description>
@@ -13848,12 +13905,24 @@
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
         <rdfs:label>oboInOwl:GOC</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <rdfs:label xml:lang="en">Gives a term which may be an appropriate substitute for an obsolete term, but needs to be looked at carefully by a human expert before the replacement is done</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_default-namespace</oboI:hasURI>
+        <rdfs:label>oboFormat:default-namespace</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_exact_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:exact_synonym</rdfs:label>
+=======
         <rdfs:label xml:lang="en">relation between an ontology and a oboInOwl:Subset, indicating classes in the ontology belong to the subset</rdfs:label>
     </rdf:Description>
     <rdf:Description>
@@ -13861,24 +13930,42 @@
     </rdf:Description>
     <rdf:Description>
         <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
+        <rdfs:label xml:lang="en">GO-slim</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+<<<<<<< HEAD
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
+=======
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
         <rdfs:label>oboInOwl:GOC</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.geneontology.org/GO.usage.shtml#type</oboI:hasURI>
         <rdfs:label>URL:http://www.geneontology.org/GO.usage.shtml#type</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
-        <rdfs:label>oboInOwl:GOC</rdfs:label>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_saved_by</oboI:hasURI>
+        <rdfs:label>oboFormat:saved_by</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <rdfs:label xml:lang="en">An alias in which the alias exhibits true synonymy. Example: ornithine cycle is an exact synonym of urea cycle</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">This annotation property groups all synonym types declared in the ontology</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subsetdef</oboI:hasURI>
+        <rdfs:label>oboFormat:subsetdef</rdfs:label>
+=======
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_alt_id</oboI:hasURI>
         <rdfs:label>oboFormat:alt_id</rdfs:label>
     </rdf:Description>
@@ -13891,30 +13978,40 @@
     </rdf:Description>
     <rdf:Description>
         <rdfs:label xml:lang="en">An instance of synonym usage. synonym instances are linked to classes via oboInOwl:has*Synonym properties</rdfs:label>
+>>>>>>> origin/master
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">A grouping of terms from an ontology or ontologies. Note that this is not a metaclass - classes are linked to subsets via oboInOwl:inSubset</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">An alias in which the alias is related the primary class name, but not necessarily broader or narrower. Example: cytochrome bc1 complex is a related synonym of ubiquinol-cytochrome-c reductase activity; virulence is a related synonym of pathogenesis</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
         <rdfs:label>oboInOwl:GOC</rdfs:label>
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_replaced_by</oboI:hasURI>
-        <rdfs:label>oboFormat:replaced_by</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
+<<<<<<< HEAD
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
         <rdfs:label>oboInOwl:GOC</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+        <rdfs:label xml:lang="en">The textual definition of the current term. There must be zero or one instances of this tag per term description</rdfs:label>
+=======
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <rdfs:label xml:lang="en">An alias in which the alias is broader than the primary class name. Example: cell division is a broad synonym of cytokinesis</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <rdfs:label xml:lang="en">partition</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <rdfs:label xml:lang="en">slim</rdfs:label>
+=======
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_exact_synonym</oboI:hasURI>
         <rdfs:label>oboFormat:exact_synonym</rdfs:label>
     </rdf:Description>
@@ -13924,45 +14021,83 @@
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_namespace</oboI:hasURI>
-        <rdfs:label>oboFormat:namespace</rdfs:label>
+        <rdfs:label xml:lang="en">view</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subset</oboI:hasURI>
+        <rdfs:label>oboFormat:subset</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
+        <rdfs:label>oboInOwl:cjm</rdfs:label>
+=======
         <rdfs:label xml:lang="en">A relation between a class and an OBO namespace string. OBO namespaces are to be distinguished from IDspaces; for example, biological_process is a namespace, GO is an idspace.</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <rdfs:label xml:lang="en">slim</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_xref</oboI:hasURI>
+        <rdfs:label>oboFormat:xref</rdfs:label>
+=======
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_subset</oboI:hasURI>
         <rdfs:label>oboFormat:subset</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_narrow_synonym</oboI:hasURI>
         <rdfs:label>oboFormat:narrow_synonym</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
         <rdfs:label>oboInOwl:GOC</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <rdfs:label xml:lang="en">relation between a class and a oboInOwl:Subset, indicating the class belongs (is a member of) the subset</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">Gives a term which replaces an obsolete term. The value is the id of the replacement term. The value of this tag can safely be used to automatically reassign links to an obsolete term. The replaced_by tag may only be specified for obsolete terms. A single obsolete term may have more than one replaced_by tag. This tag can be used in conjunction with the consider tag.</rdfs:label>
+=======
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_version</oboI:hasURI>
         <rdfs:label>oboFormat:version</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <rdfs:label xml:lang="en">A grouping of terms from an ontology or ontologies. Note that this is not a metaclass - classes are linked to subsets via oboInOwl:inSubset</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_synonym</oboI:hasURI>
         <rdfs:label>oboFormat:synonym</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_narrow_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:narrow_synonym</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">relation between an ontology and a oboInOwl:Subset, indicating classes in the ontology belong to the subset</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
+        <rdfs:label>oboInOwl:GOC</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">A relation between a class and an alias term.</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">An alternative identifier for this class; should follow ID syntax. These can result from class merges</rdfs:label>
+=======
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_xref</oboI:hasURI>
         <rdfs:label>oboFormat:xref</rdfs:label>
     </rdf:Description>
@@ -13978,13 +14113,7 @@
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.obofoundry.org/wiki/index.php/Definitions</oboI:hasURI>
         <rdfs:label>URL:http://www.obofoundry.org/wiki/index.php/Definitions</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <rdfs:label xml:lang="en">An alternative identifier for this class; should follow ID syntax. These can result from class merges</rdfs:label>
-    </rdf:Description>
-    <rdf:Description>
-        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
-        <rdfs:label>oboInOwl:cjm</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_related_synonym</oboI:hasURI>
@@ -13995,6 +14124,19 @@
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_date</oboI:hasURI>
+        <rdfs:label>oboFormat:date</rdfs:label>
+=======
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_related_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:related_synonym</rdfs:label>
+>>>>>>> origin/master
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_GOC</oboI:hasURI>
+        <rdfs:label>oboInOwl:GOC</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
         <rdfs:label xml:lang="en">relation between a class and a oboInOwl:Subset, indicating the class belongs (is a member of) the subset</rdfs:label>
     </rdf:Description>
     <rdf:Description>
@@ -14002,6 +14144,36 @@
         <rdfs:label>oboInOwl:GOC</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <rdfs:label xml:lang="en">a relation between a class and an instance of a oboInOwl:Definition</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_consider</oboI:hasURI>
+        <rdfs:label>oboFormat:consider</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
+        <rdfs:label>oboInOwl:cjm</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
+        <rdfs:label>oboInOwl:cjm</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://www.geneontology.org/GO.usage.shtml#type</oboI:hasURI>
+        <rdfs:label>URL:http://www.geneontology.org/GO.usage.shtml#type</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_synonym</oboI:hasURI>
+        <rdfs:label>oboFormat:synonym</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">An alias in which the alias is narrower than the primary class name. Example: pyrimidine-dimer repair by photolyase is a narrow synonym of photoreactive repair</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_def</oboI:hasURI>
+        <rdfs:label>oboFormat:def</rdfs:label>
+=======
         <rdfs:label xml:lang="en">An alias in which the alias exhibits true synonymy. Example: ornithine cycle is an exact synonym of urea cycle</rdfs:label>
     </rdf:Description>
     <rdf:Description>
@@ -14017,18 +14189,27 @@
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
     </rdf:Description>
     <rdf:Description>
+<<<<<<< HEAD
+        <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
+        <rdfs:label>oboInOwl:cjm</rdfs:label>
+    </rdf:Description>
+    <rdf:Description>
+        <rdfs:label xml:lang="en">pseudo-class. in the oboInOwl translation, all obsolete classes are subclasses of this class. Note that this is not a metaclass</rdfs:label>
+=======
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboFormat#oboFormat_def</oboI:hasURI>
         <rdfs:label>oboFormat:def</rdfs:label>
     </rdf:Description>
     <rdf:Description>
         <oboI:hasURI rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://purl.org/obo/owl/oboInOwl#oboInOwl_cjm</oboI:hasURI>
         <rdfs:label>oboInOwl:cjm</rdfs:label>
+>>>>>>> origin/master
     </rdf:Description>
     
 
