@@ -29,10 +29,11 @@ TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 #   MAJOR version when backwards incompatible changes are introduced
 #   MINOR version when new functionality is added in a backwards-compatible manner
 #   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.5.3"
+WS_APP_VERSION = "1.7.4"
 API_VERSION = WS_APP_VERSION
 ISA_API_VERSION = "0.11.0"
 METASPACE_API_VERSION = "1.7.2"
+MZML2ISA_VERSION = "1.0.3"
 
 GA_TRACKING_ID = ""
 
@@ -46,7 +47,9 @@ UPDATE_PATH_SUFFIX = "audit"
 
 MTBLS_FILE_BASE = "<some local filesystem>/"
 MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
+REPORTING_PATH= "<report folder name>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
+FILE_SYSTEM_PATH = '<some local filesystem>/'
 MTBLS_ZOOMA_FILE = "<local file>"
 MTBLS_ONTOLOGY_FILE = "<local file>"
 BIOPORTAL_TOKEN = '<your bioportal token>'
@@ -55,8 +58,13 @@ MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
 
 MTBLS_PRIVATE_FTP_ROOT = ""
 
-GOOGLE_SHEET_URL = "<Google sheet url>"
-GOOGLE_TOKEN = "./instance/metabolights-d3c2b1b419d0.json"
+#GOOGLE SHEETS
+GOOLGE_ZOOMA_SHEET = "<Google sheet url>"
+MTBLS_STATISITC = "<Google sheet url>"
+MTBLS_CURATION_LOG ="<Google sheet url>"
+MTBLS_CURATION_LOG_TEST = "<Google sheet url>"
+
+GOOGLE_SHEET_TOKEN = "./instance/google_sheet_api_credentials.json"
 GOOGLE_CALENDAR_TOKEN = "./instance/google_calendar_api_credentials.json"
 GOOGLE_CALENDAR_ID = ""
 
@@ -82,6 +90,12 @@ DB_PARAMS = {
     'database': 'db-name', 'user': 'user-name', 'password': 'user-password', 'host': 'hostname', 'port': 1234
 }
 
+SSH_PARAMS = {
+    'host': 'ebi-cli',
+    'user': 'user_name',
+    'password': 'user_password'
+}
+
 JIRA_PARAMS = {
     'username': 'jira_username',
     'password': 'jira_password'
@@ -94,7 +108,37 @@ CONN_POOL_MAX = 20
 # Timeout in secounds when listing a large folder for files
 FILE_LIST_TIMEOUT = 90
 
+# Validations
+VALIDATION_FILES_LIMIT = 10000
 VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
+
+FOLDER_EXCLUSION_LIST = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
+                         '/audit', '/metaspace', '/chebi', '/old', '/backup', '/chebi_pipeline_annotations']
+
+EMPTY_EXCLUSION_LIST = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chroms.inf', 'prosol_history', 'title',
+                        'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin', 'tcc_1.xml', 'format.temp']
+
+IGNORE_FILE_LIST = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal', 'checksum.xml', 'info.xml',
+                    'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
+                    'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml', 'metexplore_mapping',
+                    'tempbase', 'prosol_history', 'validation_files', 'pulseprogram', '_history', 'tcc_1',
+                    'msactualdefs', 'msmasscal', 'fq1list', 'pdata', 'uxnmr', 'shimvalues', 'specpar', 'output',
+                    'format.temp', 'scon2', 'stanprogram', 'precom', 'settings', 'outd', 'gpnam', 'base_info',
+                    'clevels']
+
+
+RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp',
+                  '.lcd', '.abf', '.jpf', '.xps', '.mgf']
+
+DERIVED_FILES_LIST = ['.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef', '.cnx', '.peakml', '.xy', '.smp',
+                      '.scan']
+
+COMPRESSED_FILES_LIST = ['.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', '.rar',
+                         '.bz2', '.arj', '.z', '.war', '.raw.rar']
+
+INTERNAL_MAPPING_LIST = ['metexplore_mapping', 'chebi_pipeline_annotations', 'validation_report', 'validation_files']
+
+# Other files
 OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
 CHEBI_URL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
 CHEBI_URL_WAIT = 300

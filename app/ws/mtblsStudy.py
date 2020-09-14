@@ -26,7 +26,7 @@ from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
 from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
-    query_study_submitters, get_public_studies_with_methods
+    query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -126,10 +126,8 @@ class MyMtblsStudies(Resource):
         if 'user_token' in request.headers:
             user_token = request.headers['user_token']
 
-        pub_list = wsc.get_all_studies_for_user(user_token)  # TODO, change to a lite-study representation
-        existing_studies_list = pub_list.replace('[', '').replace(']', '').replace('"', '').split(',')
-        return jsonify({'data': existing_studies_list})
-
+        user_studies = get_all_private_studies_for_user(user_token)
+        return jsonify({"data": user_studies})
 
 class MyMtblsStudiesDetailed(Resource):
     @swagger.operation(
@@ -445,7 +443,7 @@ class IsaTabAssayFile(Resource):
         assay_filename = None
         if request.args:
             args = parser.parse_args(req=request)
-            assay_filename = args['assay_filename'].lower() if args['assay_filename'] else None
+            assay_filename = args['assay_filename'] if args['assay_filename'] else None
         if not assay_filename:
             logger.warning("Missing Assay filename.")
             abort(404, "Missing Assay filename.")

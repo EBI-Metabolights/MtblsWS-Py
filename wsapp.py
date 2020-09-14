@@ -17,7 +17,6 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import logging.config
-import os
 
 from flask import Flask
 from flask_cors import CORS
@@ -32,6 +31,7 @@ from app.ws.biostudies import *
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
 from app.ws.cluster_jobs import LsfUtils
 from app.ws.compare_files import CompareTsvFiles
+from app.ws.cronjob import *
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.isaAssay import *
@@ -45,6 +45,7 @@ from app.ws.mzML2ISA import *
 from app.ws.ontology import *
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
+from app.ws.reports import reports
 from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
 from app.ws.spectra import ExtractMSSpectra
@@ -186,8 +187,13 @@ def initialize_app(flask_app):
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
-    api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats", res_path + "/ebi-internal/maf-stats")
+    api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats")
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
+
+    api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
+
+    # https://www.ebi.ac.uk:443/metabolights/ws/v2
+    api.add_resource(reports, res_path + "/v2/reports")
 
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
 

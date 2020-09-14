@@ -129,11 +129,11 @@ class SendFiles(Resource):
 
         files = ""
         if file_name == 'metadata':
-            file_list = get_basic_files(study_location, include_sub_dir=False, assay_file_list=None, metadata_only=True)
+            file_list = get_basic_files(study_location, include_sub_dir=False, assay_file_list=None)
             for _file in file_list:
                 f_type = _file['type']
                 f_name = _file['file']
-                if "metadata_" in f_type:
+                if "metadata" in f_type:
                     files = files + f_name + ','
             file_name = files.rstrip(",")
 

@@ -174,32 +174,46 @@ def copy_metabolon_template(study_id, user_token, study_location):
         return False, "Could not copy Metabolon template into study " + study_id
 
     try:
+
+        api_version = 'MOE API ' + str(app.config.get('API_VERSION'))
+        mzml2isa_version = 'mzml2isa ' + str(app.config.get('MZML2ISA_VERSION'))
         # Updating the ISA-Tab investigation file with the correct study id
         isa_study, isa_inv, std_path = iac.get_isa_study(
             study_id=study_id, api_key=user_token, skip_load_tables=True, study_location=study_location)
 
-        isa_study.identifier = study_id  # Adding the study identifier
+        # Adding the study identifier
+        isa_study.identifier = study_id
+        isa_inv.identifier = study_id
 
         # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
         isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_id)
 
         # Set publication date to one year in the future
-        study_date = get_year_plus_one(isa_format=True)
-        isa_study.public_release_date = study_date
+        plus_one_year = get_year_plus_one(isa_format=True)
+        date_now = get_year_plus_one(todays_date=True, isa_format=True)
+
+        isa_inv.public_release_date = plus_one_year
+        isa_inv.submission_date = date_now
+        isa_study.public_release_date = plus_one_year
+        isa_study.submission_date = date_now
 
         # Updated the files with the study accession
-        iac.write_isa_study(
-            inv_obj=isa_inv, api_key=user_token, std_path=study_location,
-            save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
-        )
+        try:
+            iac.write_isa_study(
+                inv_obj=isa_inv, api_key=user_token, std_path=study_location,
+                save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
+            )
+        except Exception as e:
+            logger.info("Could not write the study: " + study_id + ". Error: " + str(e))
 
         try:
-            update_release_date(study_id, study_date)
+            update_release_date(study_id, plus_one_year)
             wsc.reindex_study(study_id, user_token)
-        except:
-            logger.info("Could not updated database and re-index study " + study_id)
-    except:
-        return False, "Could not update Metabolon template for study " + study_id
+            message = message + '. ' + api_version + '. ' + mzml2isa_version
+        except Exception as e:
+            logger.info("Could not updated database and re-index study: " + study_id + ". Error: " + str(e))
+    except Exception as e:
+        return False, "Could not update Metabolon template for study " + study_id + ". Error: " + str(e)
 
     return status, message
 

@@ -41,7 +41,8 @@ api_fields = {
     'ApiDocumentation': fields.String,
     'ApiSpecification': fields.String,
     'IsatoolsApi': fields.String,
-    'METASPACE-Api': fields.String
+    'METASPACE-Api': fields.String,
+    'mzml2isa': fields.String
 }
 
 about_fields = {
@@ -74,7 +75,8 @@ class About(Resource):
                "ApiDocumentation": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".html",
                "ApiSpecification": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".json",
                "IsatoolsApi": app.config.get('ISA_API_VERSION'),
-               "METASPACE-Api": app.config.get('METASPACE_API_VERSION')
+               "METASPACE-Api": app.config.get('METASPACE_API_VERSION'),
+               "mzml2isa": app.config.get('MZML2ISA_VERSION')
                }
         appl = {"WsName": app.config.get('WS_APP_NAME'),
                 "WsVersion": app.config.get('WS_APP_VERSION'),

@@ -4,7 +4,7 @@
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
 #  Last modified: 2019-Mar-21
-#  Modified by:   kenneth
+#  Modified by:   Jiakang
 #
 #  Copyright 2019 EMBL - European Bioinformatics Institute
 #
@@ -19,7 +19,7 @@
 import json
 import logging
 import ssl
-import types
+import urllib
 from urllib.parse import quote_plus
 import urllib
 
@@ -31,8 +31,13 @@ logger = logging.getLogger('wslog')
 
 
 class entity():
+<<<<<<< HEAD
     def __init__(self, name, iri='', ontoName='', provenance_name='', Zooma_confidence='', definition='', properties ={}):
 
+=======
+    def __init__(self, name, iri='', ontoName='', provenance_name='', provenance_uri='',
+                 Zooma_confidence='', definition=''):
+>>>>>>> origin/master
         self.name = name
         self.iri = iri
         self.ontoName = ontoName
@@ -40,21 +45,6 @@ class entity():
         self.Zooma_confidence = Zooma_confidence
         self.definition = definition
         self.properties = properties
-
-    def getOntoInfo(self, iri):
-        try:
-            url = 'https://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology?iri=' + iri
-            fp = urllib.request.urlopen(url)
-            content = fp.read().decode('utf-8')
-            j_content = json.loads(content)
-
-            ontoName = j_content['_embedded']['terms'][0]['ontology_prefix']
-            ontoURL = j_content['_embedded']['terms'][0]['ontology_iri']
-            definition = j_content['_embedded']['terms'][0]["description"]
-
-            return ontoName, ontoURL, definition
-        except:
-            return '', '', ''
 
 
 class factor():
@@ -71,6 +61,7 @@ class Descriptor():
         self.design_type = design_type
         self.iri = iri
 
+<<<<<<< HEAD
 def OLSbranchSearch(keyword, branchName, ontoName):
     '''
     This method to search the keyword in specific branch of specific ontology
@@ -106,6 +97,8 @@ def OLSbranchSearch(keyword, branchName, ontoName):
         res.append(enti)
     return res
 
+=======
+>>>>>>> origin/master
 
 def getMetaboTerm(keyword, branch, mapping=''):
     try:
@@ -119,6 +112,14 @@ def getMetaboTerm(keyword, branch, mapping=''):
 
     if keyword not in [None, '']:
         # exact match
+        if keyword.startswith('http'):
+            try:
+                cls += onto.search(iri=keyword)
+            except:
+                logger.info("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
+                print("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
+                pass
+
         try:
             cls += onto.search(label=keyword, _case_sensitive=False)
         except:
@@ -129,7 +130,8 @@ def getMetaboTerm(keyword, branch, mapping=''):
         if mapping != 'exact':
             # fuzzy match
             try:
-                cls += onto.search(label=keyword + '*', _case_sensitive=False)
+                # cls += onto.search(label=keyword + '*', _case_sensitive=False)
+                cls += onto.search(label='*' + keyword + '*', _case_sensitive=False)
             except:
                 logger.info("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
                 print("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
@@ -246,6 +248,101 @@ def getMetaboTerm(keyword, branch, mapping=''):
     return res
 
 
+def getOLSTerm(keyword, map, ontology=''):
+    logger.info('Requesting OLS...')
+    print('Requesting OLS...')
+    res = []
+
+    if keyword in [None, '']:
+        return res
+
+    elif 'http:' in keyword:
+        label, definition, ontoName = getOLSTermInfo(keyword)
+        if len(definition) >0:
+            definition = definition[0]
+        else:
+            definition = ''
+        if len(label) > 1:
+            enti = entity(name=label, iri=keyword, definition=definition, ontoName=ontoName,
+                          provenance_name=ontoName)
+            res.append(enti)
+        return res
+
+    try:
+        # https://www.ebi.ac.uk/ols/api/search?q=lung&groupField=true&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
+        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
+              '&groupField=true' \
+              '&queryFields=label,synonym' \
+              '&type=class' \
+              '&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
+              '&rows=30'  # &exact=true
+        if map == 'exact':
+            url += '&exact=true'
+
+        if ontology not in [None, '']:
+            onto_list = ','.join(ontology)
+            url += '&ontology=' + onto_list
+
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+        responses = j_content["response"]['docs']
+
+        for term in responses:
+            # name = ' '.join([w.capitalize() if w.islower() else w for w in term['label'].split()])
+
+            name = term['label']
+            try:
+                definition = term['description'][0]
+            except:
+                definition = ''
+
+            try:
+                ontoName, provenance_name = getOnto_Name(term['iri'])
+            except:
+                ontoName = ''
+                provenance_name = ''
+
+            enti = entity(name=name, iri=term['iri'], definition=definition, ontoName=ontoName,
+                          provenance_name=provenance_name)
+
+            res.append(enti)
+            if len(res) >= 20:
+                break
+
+    except Exception as e:
+        print(e.args)
+        logger.error('getOLS' + str(e))
+    return res
+
+
+def OLSbranchSearch(keyword, branchName, ontoName):
+    res = []
+    if keyword in [None, '']:
+        return res
+
+    def getStartIRI(start, ontoName):
+        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + start + '&ontology=' + ontoName + '&queryFields=label'
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        json_str = json.loads(content)
+        res = json_str['response']['docs'][0]['iri']
+        return urllib.parse.quote_plus(res)
+
+    branchIRI = getStartIRI(branchName, ontoName)
+    keyword = keyword.replace(' ', '%20')
+    url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword + '&rows=10&ontology=' + ontoName + '&allChildrenOf=' + branchIRI
+    # print(url)
+    fp = urllib.request.urlopen(url)
+    content = fp.read().decode('utf-8')
+    json_str = json.loads(content)
+
+    for ele in json_str['response']['docs']:
+        enti = entity(name=ele['label'], iri=ele['iri'], ontoName=ontoName, provenance_name=ontoName)
+        res.append(enti)
+    return res
+
+
 def getMetaboZoomaTerm(keyword, mapping):
     logger.info('Searching Metabolights-zooma.tsv')
     print('Searching Metabolights-zooma.tsv')
@@ -275,7 +372,7 @@ def getMetaboZoomaTerm(keyword, mapping):
             # name = ' '.join(
             #     [w.capitalize() if w.islower() else w for w in temp.iloc[i]['PROPERTY_VALUE'].split()])
 
-            name = temp.iloc[i]['PROPERTY_VALUE'].capitalize()
+            name = temp.iloc[i]['PROPERTY_VALUE']
             obo_ID = iri.rsplit('/', 1)[-1]
 
             enti = entity(name=name,
@@ -318,7 +415,7 @@ def getZoomaTerm(keyword, mapping=''):
             # name = ' '.join(
             #     [w.capitalize() if w.islower() else w for w in term["annotatedProperty"]['propertyValue'].split()])
 
-            name = term["annotatedProperty"]['propertyValue'].capitalize()
+            name = term["annotatedProperty"]['propertyValue']
 
             if mapping == 'exact' and name != keyword:
                 continue
@@ -347,63 +444,6 @@ def getZoomaTerm(keyword, mapping=''):
     return res
 
 
-def getOLSTerm(keyword, map, ontology=''):
-    logger.info('Requesting OLS...')
-    print('Requesting OLS...')
-    res = []
-
-    if keyword in [None, '']:
-        return res
-
-    try:
-        # https://www.ebi.ac.uk/ols/api/search?q=lung&groupField=true&queryFields=label,synonym&fieldList=iri,label,short_form,obo_id,ontology_name,ontology_prefix
-        url = 'https://www.ebi.ac.uk/ols/api/search?q=' + keyword.replace(' ', "+") + \
-              '&groupField=true' \
-              '&queryFields=label,synonym' \
-              '&type=class' \
-              '&fieldList=iri,label,short_form,ontology_name,description,ontology_prefix' \
-              '&rows=30'  # &exact=true
-        if map == 'exact':
-            url += '&exact=true'
-
-        if ontology not in [None, '']:
-            onto_list = ','.join(ontology)
-            url += '&ontology=' + onto_list
-
-        fp = urllib.request.urlopen(url)
-        content = fp.read().decode('utf-8')
-        j_content = json.loads(content)
-        responses = j_content["response"]['docs']
-
-        for term in responses:
-            # name = ' '.join([w.capitalize() if w.islower() else w for w in term['label'].split()])
-
-            name = term['label'].capitalize()
-
-            try:
-                definition = term['description'][0]
-            except:
-                definition = ''
-
-            try:
-                ontoName, provenance_name = getOnto_Name(term['iri'])
-            except:
-                ontoName = ''
-                provenance_name = ''
-
-            enti = entity(name=name, iri=term['iri'], definition=definition, ontoName=ontoName,
-                          provenance_name=provenance_name)
-
-            res.append(enti)
-            if len(res) >= 20:
-                break
-
-    except Exception as e:
-        print(e.args)
-        logger.error('getOLS' + str(e))
-    return res
-
-
 def getBioportalTerm(keyword):
     logger.info('Requesting Bioportal...')
     print('Requesting Bioportal...')
@@ -413,7 +453,10 @@ def getBioportalTerm(keyword):
         return res
 
     try:
-        url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")  # + '&require_exact_match=true'
+        if 'http:' in keyword:
+            url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+") + '&require_exact_match=true'
+        else:
+            url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")
         request = urllib.request.Request(url)
         request.add_header('Authorization', 'apikey token=' + app.config.get('BIOPORTAL_TOKEN'))
         response = urllib.request.urlopen(request)
@@ -495,6 +538,24 @@ def getWoRMsID(term):
         return ''
     except:
         return ''
+
+
+def getOLSTermInfo(iri):
+    # enti = entity(name=name, iri=term['iri'], definition=definition, ontoName=ontoName, provenance_name=provenance_name)
+
+    try:
+        url = 'https://www.ebi.ac.uk/ols/api/terms/findByIdAndIsDefiningOntology?iri=' + iri
+        fp = urllib.request.urlopen(url)
+        content = fp.read().decode('utf-8')
+        j_content = json.loads(content)
+
+        label = j_content['_embedded']['terms'][0]['label']
+        definition = j_content['_embedded']['terms'][0]["description"]
+        ontoName = j_content['_embedded']['terms'][0]['ontology_prefix']
+
+        return label, definition, ontoName
+    except:
+        return '', '', ''
 
 
 def getOnto_info(pre_fix):

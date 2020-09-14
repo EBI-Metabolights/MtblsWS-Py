@@ -4,7 +4,7 @@
 #  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
 #
 #  Last modified: 2019-May-08
-#  Modified by:   kenneth
+#  Modified by:   Jiakang
 #
 #  Copyright 2019 EMBL - European Bioinformatics Institute
 #
@@ -18,6 +18,7 @@
 
 import datetime
 import re
+import types
 from urllib.request import urlopen
 
 import gspread
@@ -210,11 +211,25 @@ class Ontology(Resource):
 
         else:
             if queryFields in [None, '']:  # if found the term, STOP
+
+                # is_url = term.startswith('http')
+                regex = re.compile(
+                    r'[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)',
+                    re.IGNORECASE)
+
+                is_url = term is not None and regex.search(term) is not None
+
+                if is_url and not term.startswith('//') and not term.startswith('http'):
+                    term = '//' + term
+
+                if is_url and not term.startswith('http:'):
+                    term = 'http:' + term
+
                 logger.info('Search %s from resources one by one' % term)
                 print('Search %s from resources one by one' % term)
                 result = getMetaboTerm(term, branch, mapping)
 
-                if len(result) == 0:
+                if len(result) == 0 and not is_url:
                     print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                     logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                     try:
@@ -232,7 +247,7 @@ class Ontology(Resource):
                         print(e.args)
                         logger.info(e.args)
 
-                if len(result) == 0:
+                if len(result) == 0 and not is_url:
                     print("Can't find query in OLS, requesting Zooma")
                     logger.info("Can't find query in OLS, requesting Zooma")
                     try:
@@ -288,13 +303,13 @@ class Ontology(Resource):
                 priority = {'MTBLS': 0, 'NCBITAXON': 1, 'WoRMs': 2, 'EFO': 3, 'BTO': 4, 'NCIT': 5, 'CHEBI': 6,
                             'CHMO': 7, 'PO': 8}
 
-            if branch == 'unit':
+            elif branch == 'unit':
                 priority = {'UO': 0, 'MTBLS': 1}
 
-            if branch == 'factor':
+            elif branch == 'factor':
                 priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
 
-            if branch == 'design descriptor':
+            elif branch == 'design descriptor':
                 priority = {'MTBLS': 0, 'EFO': 1, 'MESH': 2, 'BTO': 3, 'CHEBI': 4, 'CHMO': 5, 'NCIT': 6, 'PO': 7}
 
             if branch == 'organism part':
@@ -493,7 +508,7 @@ class Placeholder(Resource):
             if query:
                 query = query.strip().lower()
 
-        url = app.config.get('GOOGLE_SHEET_URL')
+        url = app.config.get('GOOLGE_ZOOMA_SHEET')
         sheet_name = ''
         col = []
 
@@ -599,7 +614,7 @@ class Placeholder(Resource):
             if query:
                 query = query.strip().lower()
 
-        google_url = app.config.get('GOOGLE_SHEET_URL')
+        google_url = app.config.get('GOOGLE_ZOOMA_SHEET')
         sheet_name = ''
         col = []
 
@@ -1258,7 +1273,7 @@ def insertGoogleSheet(data, url, worksheetName):
     :return: Nan
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
     gc = gspread.authorize(credentials)
     try:
         wks = gc.open_by_url(url).worksheet(worksheetName)
@@ -1277,7 +1292,7 @@ def setGoogleSheet(df, url, worksheetName):
     :return: Nan
     '''
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
     gc = gspread.authorize(credentials)
     try:
         wks = gc.open_by_url(url).worksheet(worksheetName)
@@ -1298,7 +1313,7 @@ def getGoogleSheet(url, worksheetName):
     '''
     try:
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
         gc = gspread.authorize(credentials)
         wks = gc.open_by_url(url).worksheet(worksheetName)
         content = wks.get_all_records()
@@ -1318,7 +1333,7 @@ def replaceGoogleSheet(df, url, worksheetName):
     '''
     try:
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_TOKEN'), scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(app.config.get('GOOGLE_SHEET_TOKEN'), scope)
         gc = gspread.authorize(credentials)
         wks = gc.open_by_url(url).worksheet(worksheetName)
         wks.clear()
@@ -1378,6 +1393,16 @@ def addEntity(new_term, supclass, definition=None):
     except Exception as e:
         print('fail to load MTBLS ontoloty from ' + app.config.get('MTBLS_ONTOLOGY_FILE'))
         logger.info(e.args)
+        abort(400)
+        return []
+
+    all_class = []
+    for cls in onto.classes():
+        all_class += cls.label
+
+    if new_term.lower() in [x.lower() for x in all_class]:
+        logger.info('Operation rejected, term exciting')
+        print('Operation rejected, term exciting')
         abort(400)
         return []
 

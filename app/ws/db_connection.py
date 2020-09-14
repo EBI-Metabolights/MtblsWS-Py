@@ -60,6 +60,31 @@ query_all_studies = """
     group by 1,3,4,5,6,7,8) status
     where exists (select 1 from users where apitoken = (%s) and role = 1);"""
 
+query_study_info = """
+        select * from (
+             select s.acc                                                                as studyid,
+                    string_agg(u.firstname || ' ' || u.lastname, ', ' order by lastname) as username,
+                    case
+                        when s.status = 0 then 'Submitted'
+                        when s.status = 1 then 'In Curation'
+                        when s.status = 2 then 'In Review'
+                        when s.status = 3 then 'Public'
+                        else 'Dormant' end                                               as status,
+                    case
+                        when s.placeholder = '1' then 'Yes'
+                        else ''
+                        end                                                              as placeholder
+    
+    
+             from studies s,
+                  study_user su,
+                  users u
+             where s.id = su.studyid
+               and su.userid = u.id
+        group by 1, 3, 4) status
+        where exists(select 1 from users where apitoken = (%s) and role = 1);
+"""
+
 query_studies_user = """
     SELECT distinct s.acc, 
     to_char(s.releasedate,'YYYY-MM-DD'), 
@@ -102,7 +127,6 @@ query_user_access_rights = """
 
 def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, metaspace_api_key):
-
     val_email(email)
 
     insert_user_query = \
@@ -123,8 +147,6 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
 
     query = insert_user_query
 
-
-
     try:
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
@@ -139,7 +161,6 @@ def create_user(first_name, last_name, email, affiliation, affiliation_url, addr
 
 def update_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, existing_user_name, is_curator, metaspace_api_key):
-
     val_email(existing_user_name)
     val_email(email)
 
@@ -181,6 +202,53 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
 
     except Exception as e:
         return False, str(e)
+
+
+def get_all_private_studies_for_user(user_token):
+    val_query_params(user_token)
+
+    study_list = execute_query(query=query_studies_user, user_token=user_token)
+    study_location = app.config.get('STUDY_PATH')
+    file_name = 'i_Investigation.txt'
+    isa_title = 'Study Title'
+    isa_descr = 'Study Description'
+
+    complete_list = []
+    for i, row in enumerate(study_list):
+        title = 'N/A'
+        description = 'N/A'
+
+        study_id = row[0]
+        release_date = row[1]
+        submission_date = row[2]
+        status = row[3]
+
+        if status.strip() == "Submitted":
+            complete_study_location = os.path.join(study_location, study_id)
+            complete_file_name = os.path.join(complete_study_location, file_name)
+
+            logger.info('Trying to load the investigation file (%s) for Study %s', file_name, study_id)
+            # Get the Assay table or create a new one if it does not already exist
+            try:
+                with open(complete_file_name, encoding='utf-8') as f:
+                    for line in f:
+                        line = re.sub('\s+', ' ', line)
+                        if line.startswith(isa_title):
+                            title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
+                        if line.startswith(isa_descr):
+                            description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
+            except FileNotFoundError:
+                logger.error("The file %s was not found", complete_file_name)
+
+            complete_list.append({'accession': study_id,
+                                  'updated': get_single_file_information(complete_file_name),
+                                  'releaseDate': release_date,
+                                  'createdDate': submission_date,
+                                  'status': status.strip(),
+                                  'title': title.strip(),
+                                  'description': description.strip()})
+
+    return complete_list
 
 
 def get_all_studies_for_user(user_token):
@@ -234,6 +302,11 @@ def get_all_studies(user_token, date_from=None):
     return data
 
 
+def get_study_info(user_token):
+    data = execute_query(query=query_study_info, user_token=user_token)
+    return data
+
+
 def get_public_studies_with_methods():
     query = "select acc, studytype from studies where status = 3;"
     query = query.replace('\\', '')
@@ -252,6 +325,34 @@ def get_public_studies():
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data
+
+
+def get_study_by_type(sType, publicStudy=True):
+    q2 = ' '
+    if publicStudy:
+        q2 = ' status in (2, 3) and '
+
+    if type(sType) == str:
+        q3 = "studytype = '{sType}'".format(sType=sType)
+
+    # fuzzy search
+    elif type(sType) == list:
+        DB_query = []
+        for q in sType:
+            query = "studytype like '%{q}%'".format(q=q)
+            DB_query.append(query)
+        q3 = ' and '.join(DB_query)
+
+    else:
+        return None
+
+    query = "SELECT acc,studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
+    postgresql_pool, conn, cursor = get_connection()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    studyID = [r[0] for r in data]
+    studytype = [r[1] for r in data]
+    return studyID, studytype
 
 
 def update_release_date(study_id, release_date):
@@ -302,7 +403,6 @@ def get_obfuscation_code(study_id):
 
 
 def biostudies_acc_to_mtbls(biostudies_id):
-
     if not biostudies_id:
         return None
 
@@ -325,7 +425,6 @@ def biostudies_acc_to_mtbls(biostudies_id):
 
 
 def biostudies_accession(study_id, biostudies_id, method):
-
     if not study_id:
         return None
 
@@ -365,7 +464,6 @@ def biostudies_accession(study_id, biostudies_id, method):
 
 
 def mtblc_on_chebi_accession(chebi_id):
-
     if not chebi_id:
         return None
 
@@ -452,7 +550,6 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
 
 def study_submitters(study_id, user_email, method):
-
     if not study_id or len(user_email) < 5:
         return None
 
@@ -624,7 +721,6 @@ def update_study_status(study_id, study_status, is_curator=False):
 
 
 def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_code=None, date_from=None):
-
     if not user_token and study_obfuscation_code:
         return None
 
@@ -660,7 +756,7 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
                            "     when status = 1 then 'In Curation' "
                            "     when status = 2 then 'In Review' "
                            "     when status = 3 then 'Public' "
-                           "     else 'Dormant' end as status, " 
+                           "     else 'Dormant' end as status, "
                            "acc from studies "
                            "where obfuscationcode = '" + study_obfuscation_code + "' and acc='" + study_id + "';")
 
@@ -706,7 +802,6 @@ def release_connection(postgresql_pool, ps_connection):
 
 
 def database_maf_info_table_actions(study_id=None):
-
     if study_id:
 
         val_acc(study_id)
@@ -748,4 +843,3 @@ def val_query_params(text_to_val):
         for word in str(text_to_val).split():
             if word.lower() in stop_words:
                 abort(406, "'" + text_to_val + "' not allowed.")
-
