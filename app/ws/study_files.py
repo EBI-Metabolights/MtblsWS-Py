@@ -813,6 +813,7 @@ def get_all_files(path, directory=None, include_raw_data=False, assay_file_list=
     except Exception as e:
         logger.warning('Could not find folder ' + path + '. Error: ' + str(e))
         files = []  # The upload folder for this study does not exist, this is normal
+        latest_update_time = ''
 
     return files,latest_update_time
 
