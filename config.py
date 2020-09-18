@@ -108,6 +108,10 @@ CONN_POOL_MAX = 20
 # Timeout in secounds when listing a large folder for files
 FILE_LIST_TIMEOUT = 90
 
+
+#chebi
+REMOVED_HS_MOL_COUNT = 500
+
 # Validations
 VALIDATION_FILES_LIMIT = 10000
 VALIDATION_RUN_MSG = 'Validation is running, Please check after some time.'
