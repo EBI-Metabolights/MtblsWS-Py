@@ -54,7 +54,7 @@ from app.ws.study_actions import StudyStatus
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
-from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
+from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile,NewValidation
 
 """
 MTBLS WS-Py
@@ -162,7 +162,7 @@ def initialize_app(flask_app):
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
-
+    api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
