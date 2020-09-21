@@ -425,15 +425,9 @@ def getBioportalTerm(keyword):
             if iri in iri_record:
                 continue
 
-            if 'mesh' in iri.lower():
-                ontoName = 'MESH'
-            elif 'nci' in iri.lower():
-                ontoName = 'NCIT'
-            elif 'bao' in iri.lower():
-                ontoName = 'BAO'
-            elif 'meddra' in iri.lower():
-                ontoName = 'MEDDRA'
-            else:
+            try:
+                ontoName = term['links']['ontology'].split('/')[-1]
+            except:
                 ontoName = getOnto_Name(iri)[0]
 
             enti = entity(name=term['prefLabel'],
@@ -441,7 +435,7 @@ def getBioportalTerm(keyword):
                           ontoName=ontoName, provenance_name=ontoName)
             res.append(enti)
             iri_record.append(iri)
-            if len(res) >= 5:
+            if len(res) >= 10:
                 break
     except Exception as e:
         logger.error('getBioportal' + str(e))

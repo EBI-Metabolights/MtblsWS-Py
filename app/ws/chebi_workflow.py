@@ -446,6 +446,12 @@ def duplicate(my_list, n):
     return new_list
 
 
+def unique_list(l):
+    ulist = []
+    [ulist.append(x) for x in l if x not in ulist]
+    return ulist
+
+
 def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
                           run_silently=None, update_study_maf=None, obfuscation_code=None):
     sdf_file_list = []
@@ -507,7 +513,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     row_idx = 0
     if exiting_pubchem_file:
         short_df = maf_df[[database_identifier_column, maf_compound_name_column, alt_name_column, search_flag,
-                           final_cid_column_name, "row_id", final_inchi_column, csid_ik_column]]
+                           final_cid_column_name, "row_id", final_inchi_column, csid_ik_column ]]
         # Make sure we re-read the original MAF so that we don't add the extra PubChem columns
         maf_df = read_tsv(os.path.join(study_location, original_maf_name))
     else:
@@ -527,7 +533,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         final_inchi = None
         csid_ik = None
         final_cid = None
-        db_acc = ""
+        db_acc = pubchem_df.iloc[idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)]
         if exiting_pubchem_file:
             if str(row[3]).rstrip('.0') == '1':  # This is the already searched flag in the spreadsheet
                 search = False
@@ -542,7 +548,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(org_row_id)
             pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = safe_str(row[1])
             if csid_ik:
-                db_acc = 'ChemSpider:' + csid_ik + ';'
+                db_acc = db_acc + ';ChemSpider:' + csid_ik + ';'
+                db_acc = ';'.join(unique_list(db_acc.split(';')))
 
         if not exiting_pubchem_file:
             pubchem_df.iloc[row_idx, get_idx('row_id', pubchem_df_headers)] = row_idx + 1  # Row id
@@ -686,7 +693,6 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     if final_cid and pc_cid != final_cid:
                         pc_cid = final_cid
 
-
                     if not final_cid:
                         final_cid = pc_cid
                     pubchem_df.iloc[row_idx, get_idx(final_cid_column_name,
@@ -720,7 +726,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     pubchem_df.iloc[row_idx, get_idx('final_inchi_key', pubchem_df_headers)] = final_inchi_key
                     print_log('checking for csid')
                     print_log(csid)
-                    if final_inchi_key and csid =="":
+                    if final_inchi_key and csid == "":
                         print_log("    -- Searching ChemSpider using final_inchi_key")
                         csid = get_csid(final_inchi_key)
                         pubchem_df.iloc[
@@ -773,7 +779,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                         cactus_synonyms = alt_name
 
                     pubchem_df.iloc[row_idx, get_idx('cactus_synonyms',
-                                                     pubchem_df_headers)] = cactus_synonyms  #add cactus_synonyms
+                                                     pubchem_df_headers)] = cactus_synonyms  # add cactus_synonyms
 
                     if final_cid:
                         glytoucan_id = get_glytoucan_id(final_cid, glytoucan_file_df)
@@ -793,7 +799,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                             cactus_synonyms = get_valid_synonyms(cactus_synonyms, pc_synonyms)
                             if cactus_synonyms:
                                 db_acc = db_acc + cactus_synonyms
-                      # Cactus and PubChem synonyms for SDF export
+                    # Cactus and PubChem synonyms for SDF export
                     pubchem_df.iloc[
                         row_idx, get_idx('direct_parent', pubchem_df_headers)] = ''  # direct_parent from ClassyFire
                     pubchem_df.iloc[
@@ -885,8 +891,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         pubchem_df = populate_sample_rows(pubchem_df, study_id, user_token, study_location)
 
     pubchem_file = short_file_name + pubchem_end
-    #write_tsv(pubchem_df, pubchem_file)
-    #pubchem_df = re_sort_pubchem_file(pubchem_df)
+    # write_tsv(pubchem_df, pubchem_file)
+    # pubchem_df = re_sort_pubchem_file(pubchem_df)
 
     annotated_study_location = study_location + os.sep + anno_sub_folder + os.sep
     update_sdf_file_info(pubchem_df, annotated_study_location, short_file_name + classyfire_end, classyfire_search,
@@ -982,7 +988,6 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         database_accession = row['DATABASE_ACCESSION']
         definition = row['DEFINITION']
 
-
         if cid and not db_id.startswith('CHEBI:'):
             cluster_ids.append(row_id)  # Keep count of the number of ORGANISM sections to add to ChEBI SDF file
             if cid.endswith('.mol'):
@@ -1020,12 +1025,12 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                 # direct_parent into "direct_parent". IS_A into "relationship"
                 if direct_parent:
                     pubchem_df.iloc[rowIdx, get_idx('direct_parent',
-                                                 pubchem_df_headers)] = direct_parent  # direct_parent from ClassyFire
+                                                    pubchem_df_headers)] = direct_parent  # direct_parent from ClassyFire
 
                 if is_a:
                     pubchem_df.iloc[rowIdx, get_idx('RELATIONSHIP', pubchem_df_headers)] = is_a
 
-                add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a,definition =definition,
+                add_classyfire_sdf_info(mtbls_sdf_file_name, relationships=is_a, definition=definition,
                                         name=name, iupack_name=iupac_name)
                 print_log("       -- adding ancestors to SDF file " + fname)
 
@@ -1041,7 +1046,8 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                 if cactus_synonyms and cactus_synonyms.strip(';') not in database_accession:
                     database_accession = database_accession + cactus_synonyms
 
-            add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism, definition =definition,
+            add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism,
+                                    definition=definition,
                                     strain=strain, organism_part=organism_part, name=name, iupack_name=iupac_name,
                                     relationships=direct_parent, database_accession=database_accession,
                                     cluster_itr=cluster_itr, temp_id=row_id, comment=comment, reference=reference,
@@ -1056,8 +1062,8 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                         print_log("       -- Error: could not download SDF file for CID " + cid + ". " + str(e),
                                   mode='error')
         rowIdx = rowIdx + 1
-    #if file_changed:
-        #write_tsv(pubchem_df, pubchem_file_name)
+    # if file_changed:
+    # write_tsv(pubchem_df, pubchem_file_name)
 
 
 def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silently):
@@ -1087,6 +1093,12 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
                     print_log("       -- Error: could not find SDF file: " + mtbls_sdf_file_name, mode='error')
         outfile.close()
         print_log("removing hydrogen")
+        removeHydrogen(sdf_file_name)
+
+
+def removeHydrogen(sdf_file_name):
+    fileSize = os.path.getsize(sdf_file_name)
+    if fileSize <= 2000000:
         data = open(sdf_file_name, 'rb').read()
         res = requests.post('https://www.ebi.ac.uk/chembl/api/utils/removeHs', data=data)
         sdf_file = sdf_file_name[:-4] + "_removed_hs.sdf"
@@ -1094,6 +1106,41 @@ def concatenate_sdf_files(pubchem_df, study_location, sdf_file_name, run_silentl
         res = res.replace('\n\n\n', '\n\n')
         with open(sdf_file, 'w') as output:
             output.write(res)
+    else:
+        file_data = open(sdf_file_name, 'rb').read()
+        fileText = ''
+        count = 0;
+        final_file = ''
+        molecule = str(file_data, 'utf-8').split('$$$$')
+        mol_count = app.config.get('REMOVED_HS_MOL_COUNT')
+        for mol in molecule:
+            if count <= mol_count:
+                fileText = fileText + mol + '$$$$'
+                count += 1
+            else:
+                if fileText[:1] == '\n':
+                    fileText = fileText[1:]
+                res = requests.post('https://www.ebi.ac.uk/chembl/api/utils/removeHs', data=fileText.encode('utf-8'))
+                if res.status_code != 200:
+                    print_log("removeHydrogen -- Error: could not remove Hydrogens" + str(res.status_code),
+                              mode='error')
+                    break
+                final_file = final_file + res.text
+                count = 0
+                fileText = ''
+
+        if fileText is not None:
+            if fileText[:1] == '\n':
+                fileText = fileText[1:]
+            res = requests.post('https://www.ebi.ac.uk/chembl/api/utils/removeHs', data=fileText.encode('utf-8'))
+            if res.status_code != 200:
+                print_log("removeHydrogen -- Error: could not remove Hydrogens" + str(res.status_code), mode='error')
+            final_file = final_file + res.text
+
+        sdf_file = sdf_file_name[:-4] + "_removed_hs.sdf"
+        final_file = final_file.replace("$$$$", '\n' + '$$$$')
+        with open(sdf_file, 'w') as output:
+            output.write(final_file)
 
 
 def remove_pubchem_sdf_parameters(study_location, sdf_file_name):
@@ -1603,12 +1650,11 @@ def cactus_search(comp_name, search_type):
 
 
 def add_database_name_synonym(synonym):
-
     if synonym.startswith('LM'):  # LipidMaps
-        return "LIPID MAPS:"+synonym
+        return "LIPID MAPS:" + synonym
 
     elif synonym.startswith('C') and is_correct_int(synonym[1:], 5):  # KEGG Compound
-        return "KEGG COMPOUND:"+synonym
+        return "KEGG COMPOUND:" + synonym
 
     elif synonym.startswith('D') and is_correct_int(synonym[1:], 5):  # KEGG Drug
         return "KEGG DRUG:" + synonym
@@ -1623,6 +1669,7 @@ def add_database_name_synonym(synonym):
         return "KNApSAcK:" + synonym
     else:
         return synonym
+
 
 def get_valid_synonyms(cactus_synonym, pc_synonyms):
     result = ""
@@ -2058,7 +2105,6 @@ class ChEBIPipeLine(Resource):
         study_status = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403)
-
         cluster_job = None
         try:
             cluster_job = request.args['source']
