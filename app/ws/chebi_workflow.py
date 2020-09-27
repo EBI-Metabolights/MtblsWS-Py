@@ -2156,10 +2156,6 @@ class ChEBIPipeLine(Resource):
         http_file_location = http_base_location + os.sep + study_id + os.sep + 'files'
         # param validation
 
-        #unichem_id = processUniChemResponse('AAOVKJBEBIDNHE-UHFFFAOYSA-N')
-        #cas_id = get_cas_id('AAOVKJBEBIDNHE-UHFFFAOYSA-N')
-
-
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
         study_id = study_id.upper()
@@ -2171,8 +2167,8 @@ class ChEBIPipeLine(Resource):
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
         study_status = wsc.get_permissions(study_id, user_token)
-        #if not is_curator:
-            #abort(403)
+        if not is_curator:
+            abort(403)
         cluster_job = None
         try:
             cluster_job = request.args['source']
