@@ -153,6 +153,8 @@ OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"
 CHEMSPIDER_URL = "http://parts.chemspider.com/JSON.ashx?op="
 CHEBI_UPLOAD_SCRIPT = ""
 MTBLS_SUBMITTER_EMAIL = ""
+CHEM_PLUS_URL = "https://chem.nlm.nih.gov/api/data/inchikey/equals/INCHI_KEY?data=summary"
+UNICHEM_URL = "https://www.ebi.ac.uk/unichem/rest/inchikey/INCHI_KEY"
 
 # METASPACE
 METASPACE_DATABASE = "HMDB-v4"
