@@ -95,6 +95,7 @@ spreadsheet_fields = [database_identifier_column,
                       "IUPAC_NAME",
                       "SYNONYM",
                       "DATABASE_ACCESSION",
+                      "CAS",
                       "REFERENCE",
                       "RELATIONSHIP",
                       "ORGANISM",
@@ -117,7 +118,9 @@ spreadsheet_fields = [database_identifier_column,
                       "pubchem_formula",
                       "pubchem_synonyms",
                       "cactus_synonyms",
-                      "glytoucan_id"]
+                      "glytoucan_id",
+                      "unichem_id",
+                      "cas_id"]
 
 
 def get_idx(col_name, pubchem_df_headers=None):
@@ -863,6 +866,24 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                 ';')
 
+        if final_inchi_key and len(final_inchi_key) > 0:
+            unichem_id = pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)]
+            if not unichem_id:
+                unichem_id = processUniChemResponse(final_inchi_key)
+                pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)] = unichem_id.rstrip(
+                ';')
+            cas_id = pubchem_df.iloc[row_idx, get_idx('cas_id', pubchem_df_headers)]
+            if not cas_id:
+                cas_id = get_cas_id(final_inchi_key)
+                pubchem_df.iloc[row_idx, get_idx('cas_id', pubchem_df_headers)] = cas_id
+            db_acc = db_acc + unichem_id
+            db_acc = ';'.join(unique_list(db_acc.split(';')))
+            pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
+                ';')
+            pubchem_df.iloc[row_idx, get_idx('CAS', pubchem_df_headers)] = cas_id.rstrip(
+                ';')
+
+
         if changed and row_idx > 0 and row_idx % 20 == 0:  # Save every 20 rows
             pubchem_file = short_file_name + pubchem_end
             write_tsv(pubchem_df, pubchem_file)
@@ -987,6 +1008,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
         cactus_synonyms = row['cactus_synonyms']
         database_accession = row['DATABASE_ACCESSION']
         definition = row['DEFINITION']
+        cas_id = row['cas_id']
 
         if cid and not db_id.startswith('CHEBI:'):
             cluster_ids.append(row_id)  # Keep count of the number of ORGANISM sections to add to ChEBI SDF file
@@ -1051,7 +1073,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                                     strain=strain, organism_part=organism_part, name=name, iupack_name=iupac_name,
                                     relationships=direct_parent, database_accession=database_accession,
                                     cluster_itr=cluster_itr, temp_id=row_id, comment=comment, reference=reference,
-                                    pmid=pmid, doi=doi)
+                                    pmid=pmid, doi=doi, cas_id=cas_id)
 
             if not os.path.isfile(full_file):
                 if "MTBLS" not in cid:
@@ -1163,6 +1185,9 @@ TEMP_#template_temp_id#
 > <DATABASE_ACCESSION>
 #template_database_accessions#
 
+> <CAS>
+#template_cas#
+
 > <REFERENCE>
 #template_reference#
 
@@ -1231,7 +1256,7 @@ $$$$'''
 def add_classyfire_sdf_info(mtbls_pubchem_sdf_file, mtbls_accession=None, relationships=None, name=None,
                             definition=None, iupack_name=None, database_accession=None, organism=None,
                             organism_part=None, strain=None, cluster_itr=None, temp_id=None, comment=None,
-                            pmid=None, article=None, reference=None, doi=None):
+                            pmid=None, article=None, reference=None, doi=None, cas_id=None):
     body_text = None
     if cluster_itr:
         body_text = get_template_sample_body(cluster_itr)
@@ -1258,6 +1283,9 @@ def add_classyfire_sdf_info(mtbls_pubchem_sdf_file, mtbls_accession=None, relati
 
             if database_accession:
                 filedata = filedata.replace('#template_database_accessions#', database_accession.rstrip(';'))
+
+            if cas_id:
+                filedata = filedata.replace('#template_cas#', cas_id.rstrip(';'))
 
             if relationships:
                 filedata = filedata.replace('#template_relationships#', relationships.rstrip(';'))
@@ -1994,6 +2022,41 @@ class SplitMaf(Resource):
                            str(maf_changed) + " files needed updating."}
 
 
+
+def processUniChemResponse(inchi_key):
+    unichem_url = app.config.get('UNICHEM_URL')
+    unichem_url = unichem_url.replace("INCHI_KEY", inchi_key)
+    resp = requests.get(unichem_url)
+    unichem_id = ''
+    if resp.status_code == 200:
+        json_resp = resp.json()
+        response_dict = {item['src_id']: item for item in json_resp}
+        if '2' in response_dict:
+            unichem_id = 'DrugBank:' + response_dict['2']['src_compound_id'] + ";"
+        if '3' in response_dict:
+            unichem_id = unichem_id + 'PDBeChem:' + response_dict['3']['src_compound_id'] + ";"
+        if '6' in response_dict:
+            unichem_id = unichem_id + 'KEGG Ligand:' + response_dict['6']['src_compound_id'] + ";"
+        if '18' in response_dict:
+            unichem_id = unichem_id + 'HMDB:' + response_dict['18']['src_compound_id'] + ";"
+        if '25' in response_dict:
+            unichem_id = unichem_id + 'LINCS:' + response_dict['25']['src_compound_id'] + ";"
+        if '34' in response_dict:
+            unichem_id = unichem_id + 'DrugCentral:' + response_dict['34']['src_compound_id'] + ";"
+        unichem_id = unichem_id.rstrip(';')
+
+    return unichem_id
+
+def get_cas_id(inchi_key):
+    chem_plus_url = app.config.get('CHEM_PLUS_URL')
+    chem_plus_url = chem_plus_url.replace("INCHI_KEY", inchi_key)
+    cas_id = ''
+    resp = requests.get(chem_plus_url)
+    if resp.status_code == 200:
+        json_resp = resp.json()
+        cas_id = json_resp['results'][0]['summary']['rn']
+    return cas_id
+
 class ChEBIPipeLine(Resource):
     @swagger.operation(
         summary="Search external resources using compound names in MAF (curator only)",
@@ -2092,6 +2155,7 @@ class ChEBIPipeLine(Resource):
         http_base_location = app.config.get('WS_APP_BASE_LINK')
         http_file_location = http_base_location + os.sep + study_id + os.sep + 'files'
         # param validation
+
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
         study_id = study_id.upper()
