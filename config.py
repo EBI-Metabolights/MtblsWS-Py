@@ -114,6 +114,10 @@ REMOVED_HS_MOL_COUNT = 500
 
 # Validations
 VALIDATION_FILES_LIMIT = 10000
+VALIDATION_RUN_MSG = 'Validation is running, Please check after some time.'
+
+ASSAY_VALIDATION_FILE = '/validation_assay.json'
+FILES_VALIDATION_FILE = '/validation_files.json'
 VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
 
 FOLDER_EXCLUSION_LIST = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
@@ -153,7 +157,9 @@ OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"
 CHEMSPIDER_URL = "http://parts.chemspider.com/JSON.ashx?op="
 CHEBI_UPLOAD_SCRIPT = ""
 MTBLS_SUBMITTER_EMAIL = ""
-
+CHEM_PLUS_URL = "https://chem.nlm.nih.gov/api/data/inchikey/equals/INCHI_KEY?data=summary"
+UNICHEM_URL = "https://www.ebi.ac.uk/unichem/rest/inchikey/INCHI_KEY"
+DIME_URL = "https://dimedb.ibers.aber.ac.uk/api/metabolites?where={%22_id%22%20:%20%22INCHI_KEY%22}&projection={%22External%20Sources%22%20:%201}"
 # METASPACE
 METASPACE_DATABASE = "HMDB-v4"
 METASPACE_FDR = 0.1
