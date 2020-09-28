@@ -95,7 +95,7 @@ spreadsheet_fields = [database_identifier_column,
                       "IUPAC_NAME",
                       "SYNONYM",
                       "DATABASE_ACCESSION",
-                      "CAS",
+                      "CAS_NO",
                       "REFERENCE",
                       "RELATIONSHIP",
                       "ORGANISM",
@@ -120,7 +120,8 @@ spreadsheet_fields = [database_identifier_column,
                       "cactus_synonyms",
                       "glytoucan_id",
                       "unichem_id",
-                      "cas_id"]
+                      "cas_id",
+                      "dime_id"]
 
 
 def get_idx(col_name, pubchem_df_headers=None):
@@ -516,7 +517,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     row_idx = 0
     if exiting_pubchem_file:
         short_df = maf_df[[database_identifier_column, maf_compound_name_column, alt_name_column, search_flag,
-                           final_cid_column_name, "row_id", final_inchi_column, csid_ik_column ]]
+                           final_cid_column_name, "row_id", final_inchi_column, csid_ik_column]]
         # Make sure we re-read the original MAF so that we don't add the extra PubChem columns
         maf_df = read_tsv(os.path.join(study_location, original_maf_name))
     else:
@@ -871,18 +872,24 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             if not unichem_id:
                 unichem_id = processUniChemResponse(final_inchi_key)
                 pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)] = unichem_id.rstrip(
-                ';')
+                    ';')
+
             cas_id = pubchem_df.iloc[row_idx, get_idx('cas_id', pubchem_df_headers)]
             if not cas_id:
                 cas_id = get_cas_id(final_inchi_key)
                 pubchem_df.iloc[row_idx, get_idx('cas_id', pubchem_df_headers)] = cas_id
-            db_acc = db_acc + unichem_id
+
+            dime_id = pubchem_df.iloc[row_idx, get_idx('dime_id', pubchem_df_headers)]
+            if not dime_id:
+                dime_id = get_dime_db(final_inchi_key)
+                pubchem_df.iloc[row_idx, get_idx('dime_id', pubchem_df_headers)] = dime_id
+
+            db_acc = db_acc + unichem_id + dime_id
             db_acc = ';'.join(unique_list(db_acc.split(';')))
             pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                 ';')
-            pubchem_df.iloc[row_idx, get_idx('CAS', pubchem_df_headers)] = cas_id.rstrip(
+            pubchem_df.iloc[row_idx, get_idx('CAS_NO', pubchem_df_headers)] = cas_id.rstrip(
                 ';')
-
 
         if changed and row_idx > 0 and row_idx % 20 == 0:  # Save every 20 rows
             pubchem_file = short_file_name + pubchem_end
@@ -1185,7 +1192,7 @@ TEMP_#template_temp_id#
 > <DATABASE_ACCESSION>
 #template_database_accessions#
 
-> <CAS>
+> <CAS_NO>
 #template_cas#
 
 > <REFERENCE>
@@ -2022,8 +2029,8 @@ class SplitMaf(Resource):
                            str(maf_changed) + " files needed updating."}
 
 
-
 def processUniChemResponse(inchi_key):
+    print_log(' calling UNICHEM_URL for inchi key - ' + inchi_key)
     unichem_url = app.config.get('UNICHEM_URL')
     unichem_url = unichem_url.replace("INCHI_KEY", inchi_key)
     resp = requests.get(unichem_url)
@@ -2036,7 +2043,9 @@ def processUniChemResponse(inchi_key):
         if '3' in response_dict:
             unichem_id = unichem_id + 'PDBeChem:' + response_dict['3']['src_compound_id'] + ";"
         if '6' in response_dict:
-            unichem_id = unichem_id + 'KEGG Ligand:' + response_dict['6']['src_compound_id'] + ";"
+            kegg_id = response_dict['6']['src_compound_id']
+            kegg_id = add_database_name_synonym(kegg_id)
+            unichem_id = unichem_id + kegg_id + ";"
         if '18' in response_dict:
             unichem_id = unichem_id + 'HMDB:' + response_dict['18']['src_compound_id'] + ";"
         if '25' in response_dict:
@@ -2047,7 +2056,9 @@ def processUniChemResponse(inchi_key):
 
     return unichem_id
 
+
 def get_cas_id(inchi_key):
+    print_log(' calling Chem plus for inchi key - ' + inchi_key)
     chem_plus_url = app.config.get('CHEM_PLUS_URL')
     chem_plus_url = chem_plus_url.replace("INCHI_KEY", inchi_key)
     cas_id = ''
@@ -2056,6 +2067,45 @@ def get_cas_id(inchi_key):
         json_resp = resp.json()
         cas_id = json_resp['results'][0]['summary']['rn']
     return cas_id
+
+
+def get_dime_db(inchi_key):
+    print_log(' calling DIME DB for inchi key - ' + inchi_key)
+    dime_url = app.config.get('DIME_URL')
+    dime_url = dime_url.replace("INCHI_KEY", inchi_key)
+    dime_db_ids = ''
+    resp = requests.get(dime_url)
+    if resp.status_code == 200:
+        json_resp = resp.json()
+        try:
+            response_dict = json_resp['_items'][0]['External Sources']
+
+            if 'BioCyc' in response_dict and response_dict['BioCyc']:
+                dime_db_ids = 'MetaCyc:' + response_dict['BioCyc'] + ";"
+            if 'PubChem' in response_dict and response_dict['PubChem']:
+                dime_db_ids = dime_db_ids + 'PubChem:' + response_dict['PubChem'] + ";"
+            if 'KEGG Compound' in response_dict and response_dict['KEGG Compound']:
+                dime_db_ids = dime_db_ids + 'KEGG COMPOUND:' + response_dict['KEGG Compound'] + ";"
+            # Discussed with Chebi Team - No need to add this but add Wikipedia
+            #if 'Wikidata' in response_dict and response_dict['Wikidata']:
+                #dime_db_ids = dime_db_ids + 'Wikidata:' + response_dict['Wikidata'] + ";"
+            if 'Wikipedia' in response_dict and response_dict['Wikipedia']:
+                dime_db_ids = dime_db_ids + 'Wikipedia:' + response_dict['Wikipedia'] + ";"
+            if 'Chemspider' in response_dict and response_dict['Chemspider']:
+                dime_db_ids = dime_db_ids + 'Chemspider:' + response_dict['Chemspider'] + ";"
+            if 'ChEBI' in response_dict and response_dict['ChEBI']:
+                dime_db_ids = dime_db_ids + 'ChEBI:' + response_dict['ChEBI'] + ";"
+            if 'HMDB Accession' in response_dict and response_dict['HMDB Accession']:
+                hmdb = response_dict['HMDB Accession']
+                if len(hmdb) != 11:
+                    hmdb = hmdb[0:4] + '00' + hmdb[4:]
+                dime_db_ids = dime_db_ids + 'HMDB:' + hmdb + ";"
+
+            dime_db_ids = dime_db_ids.rstrip(';')
+        except:
+            pass
+    return dime_db_ids
+
 
 class ChEBIPipeLine(Resource):
     @swagger.operation(
@@ -2155,7 +2205,6 @@ class ChEBIPipeLine(Resource):
         http_base_location = app.config.get('WS_APP_BASE_LINK')
         http_file_location = http_base_location + os.sep + study_id + os.sep + 'files'
         # param validation
-
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
         study_id = study_id.upper()
