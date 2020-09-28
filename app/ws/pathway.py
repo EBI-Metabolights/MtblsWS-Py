@@ -86,8 +86,8 @@ class keggid(Resource):
                 "description": 'list of matching chebi / kegg ids',
                 "paramType": "body",
                 "type": "string",
-                "format": "application/json",
-                "required": True,
+                # "format": "application/json",
+                "required": False,
                 "allowMultiple": False
             }
 
@@ -111,7 +111,7 @@ class keggid(Resource):
             }
         ]
     )
-    def put(self):
+    def post(self):
         log_request(request)
         parser = reqparse.RequestParser()
 
@@ -133,18 +133,19 @@ class keggid(Resource):
             elif kegg_only.lower() in ['false', '0']:
                 kegg_only = False
 
-        chebiID = []
-        keggID = []
-        result = {}
+        if len(request.data.decode('utf-8')) > 0:
+            chebiID = []
+            keggID = []
+            result = {}
 
-        try:
-            data_dict = json.loads(request.data.decode('utf-8'))['ids']
-            chebiID = data_dict['CHEBIID']
-            keggID = data_dict['KEGGID']
-        except Exception as e:
-            logger.info(e)
-            print(e)
-            abort(400)
+            try:
+                data_dict = json.loads(request.data.decode('utf-8'))['ids']
+                chebiID = data_dict['CHEBIID']
+                keggID = data_dict['KEGGID']
+            except Exception as e:
+                logger.info(e)
+                print(e)
+                abort(400)
 
         if studyID:
             query = '''SELECT DISTINCT DATABASE_IDENTIFIER FROM MAF_INFO WHERE ACC = '{studyID}' AND (DATABASE_IDENTIFIER <> '') IS NOT FALSE'''.format(
