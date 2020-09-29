@@ -867,6 +867,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                 ';')
 
+
+        final_inchi_key = pubchem_df.iloc[idx, get_idx('final_inchi_key', pubchem_df_headers)]
         if final_inchi_key and len(final_inchi_key) > 0:
             unichem_id = pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)]
             if not unichem_id:
@@ -2076,7 +2078,8 @@ def get_cas_id(inchi_key):
     resp = requests.get(chem_plus_url)
     if resp.status_code == 200:
         json_resp = resp.json()
-        cas_id = json_resp['results'][0]['summary']['rn']
+        if 'rn' in json_resp['results'][0]['summary']:
+            cas_id = json_resp['results'][0]['summary']['rn']
     return cas_id
 
 
