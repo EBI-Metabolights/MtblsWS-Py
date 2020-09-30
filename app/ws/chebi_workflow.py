@@ -1185,6 +1185,7 @@ def removeHydrogen(sdf_file_name):
             output.write(final_file)
 
 
+
 def remove_pubchem_sdf_parameters(study_location, sdf_file_name):
     lines = []
     mtbls_sdf_file_name = os.path.join(study_location, 'mtbls_' + sdf_file_name)
