@@ -56,10 +56,8 @@ class keggid(Resource):
               <br>
               <pre><code>
 {
-  "ids": {
     "CHEBIID": ["CHEBI:123","CHEBI:2234"],
     "KEGGID": ["KEGG:123","KEGG:2234"]
-  }
 }</code></pre>''',
         parameters=[
             {
@@ -124,13 +122,15 @@ class keggid(Resource):
                 studyID = studyID.strip().upper()
 
         parser.add_argument('kegg_only', help="only return kegg IDs")
-        kegg_only = False
+
         if request.args:
             args = parser.parse_args(req=request)
-            kegg_only = args['kegg_only']
-            if kegg_only.lower() in ['true', '1']:
+            kegg = args['kegg_only']
+            if not kegg:
+                kegg_only = False
+            elif kegg and kegg.lower() in ['true', '1']:
                 kegg_only = True
-            elif kegg_only.lower() in ['false', '0']:
+            elif kegg and kegg.lower() in ['false', '0']:
                 kegg_only = False
 
         if len(request.data.decode('utf-8')) > 0:
@@ -139,7 +139,7 @@ class keggid(Resource):
             result = {}
 
             try:
-                data_dict = json.loads(request.data.decode('utf-8'))['ids']
+                data_dict = json.loads(request.data.decode('utf-8'))
                 chebiID = data_dict['CHEBIID']
                 keggID = data_dict['KEGGID']
             except Exception as e:
@@ -159,7 +159,6 @@ class keggid(Resource):
             result = match_chebi_kegg(chebiID, [])
 
         elif len(chebiID) > 0 or len(keggID) > 0:
-
             result = match_chebi_kegg(chebiID, keggID)
 
         if kegg_only:
