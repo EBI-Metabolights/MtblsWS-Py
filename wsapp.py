@@ -55,6 +55,7 @@ from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, Unz
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
+from app.ws.pathway import keggid
 
 """
 MTBLS WS-Py
@@ -191,6 +192,7 @@ def initialize_app(flask_app):
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
+    api.add_resource(keggid,res_path+"/ebi-internal/keggid")
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
