@@ -16,14 +16,12 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import json
-
-import pandas as pd
 from flask import jsonify
 from flask import request
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
+from app.ws.cluster_jobs import lsf_job
 from app.ws.db_connection import *
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -168,6 +166,94 @@ class keggid(Resource):
             return jsonify(result)
 
 
+class fellaPathway(Resource):
+    @swagger.operation(
+        summary="generate study pathway",
+        notes="Generate study pathway by fella",
+        parameters=[
+            {
+                "name": "studyID",
+                "description": "Metabolights studyID",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+
+            {
+                "name": "organism",
+                "description": "study organism",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            }
+
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self):
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        parser.add_argument('studyID', help='Metabolights studyID')
+        studyID = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            studyID = args['studyID']
+            if studyID:
+                studyID = studyID.strip().upper()
+            else:
+                abort(400)
+
+        parser.add_argument('organism', help="study organism")
+
+        org = 'hsa'
+        if request.args:
+            args = parser.parse_args(req=request)
+            organism = args['organism']
+            if organism:
+                try:
+                    org = get_kegg_organism_abbr(organism)
+                except Exception as e:
+                    logger.info("Can't find organism {organism} in KEGG".format(organism=organism))
+                    return "Can't find organism {organism} in KEGG".format(organism=organism)
+            else:
+                abort(400)
+        module = "module load r-3.6.3-gcc-9.3.0-yb5n44y; module load pandoc-2.7.3-gcc-9.3.0-gctut72;"
+        script = app.config.get('FELLA_PATHWAY_SCRPT')
+        para = '-s {studyID} -o {organism}'.format(studyID=studyID, organism=org)
+
+        command = module + script + ' ' + para
+
+        logger.info("Starting cluster job for ChEBI pipeline: " + command)
+        status, message, job_out, job_err = lsf_job('bsub', job_param=command, send_email=True)
+
+        if status:
+            return {"success": message, "message": job_out, "errors": job_err}
+        else:
+            return {"error": message, "message": job_out, "errors": job_err}
+
+
 def match_chebi_kegg(chebiID, KeggID):
     df = pd.read_csv('./resources/chebi_kegg.tsv', sep='\t')
     df['CHEBIID_c'] = df['CHEBIID'].map(lambda x: x.lstrip('chebi:'))
@@ -178,3 +264,9 @@ def match_chebi_kegg(chebiID, KeggID):
 
     res = df[df['CHEBIID_c'].isin(chebiID) | df['KEGGID_c'].isin(KeggID)]
     return dict(zip(res.CHEBIID, res.KEGGID))
+
+
+def get_kegg_organism_abbr(organism):
+    df = pd.read_csv('./resources/KEGG organism list.tsv', sep='\t')
+    res = df[df['Organisms.1'].str.lower().str.contains(organism.lower())]['Organisms'].iloc[0]
+    return res

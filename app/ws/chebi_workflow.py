@@ -867,6 +867,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                 ';')
 
+
+        final_inchi_key = pubchem_df.iloc[idx, get_idx('final_inchi_key', pubchem_df_headers)]
         if final_inchi_key and len(final_inchi_key) > 0:
             unichem_id = pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)]
             if not unichem_id:
@@ -884,7 +886,18 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                 dime_id = get_dime_db(final_inchi_key)
                 pubchem_df.iloc[row_idx, get_idx('dime_id', pubchem_df_headers)] = dime_id
 
-            db_acc = db_acc + unichem_id + dime_id
+            update_db_acc = db_acc.strip(';')
+            if update_db_acc:
+                update_db_acc = update_db_acc.rstrip(';') + ';' + unichem_id.rstrip(';')
+            else:
+                update_db_acc = unichem_id.rstrip(';')
+
+            if update_db_acc.rstrip(';'):
+                update_db_acc = update_db_acc.rstrip(';') + ';' + dime_id.rstrip(';')
+            else:
+                update_db_acc = dime_id.rstrip(';')
+
+            db_acc = update_db_acc.strip(';')
             db_acc = ';'.join(unique_list(db_acc.split(';')))
             pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                 ';')
@@ -2047,7 +2060,7 @@ def processUniChemResponse(inchi_key):
             kegg_id = add_database_name_synonym(kegg_id)
             unichem_id = unichem_id + kegg_id + ";"
         if '18' in response_dict:
-            unichem_id = unichem_id + 'HMDB:' + response_dict['18']['src_compound_id'] + ";"
+            unichem_id = unichem_id + 'HMDB:' + response_dict['18']['src_compound_id'][4:] + ";"
         if '25' in response_dict:
             unichem_id = unichem_id + 'LINCS:' + response_dict['25']['src_compound_id'] + ";"
         if '34' in response_dict:
@@ -2065,7 +2078,8 @@ def get_cas_id(inchi_key):
     resp = requests.get(chem_plus_url)
     if resp.status_code == 200:
         json_resp = resp.json()
-        cas_id = json_resp['results'][0]['summary']['rn']
+        if 'rn' in json_resp['results'][0]['summary']:
+            cas_id = json_resp['results'][0]['summary']['rn']
     return cas_id
 
 
@@ -2092,13 +2106,13 @@ def get_dime_db(inchi_key):
             if 'Wikipedia' in response_dict and response_dict['Wikipedia']:
                 dime_db_ids = dime_db_ids + 'Wikipedia:' + response_dict['Wikipedia'] + ";"
             if 'Chemspider' in response_dict and response_dict['Chemspider']:
-                dime_db_ids = dime_db_ids + 'Chemspider:' + response_dict['Chemspider'] + ";"
+                dime_db_ids = dime_db_ids + 'ChemSpider:' + response_dict['Chemspider'] + ";"
             if 'ChEBI' in response_dict and response_dict['ChEBI']:
                 dime_db_ids = dime_db_ids + 'ChEBI:' + response_dict['ChEBI'] + ";"
             if 'HMDB Accession' in response_dict and response_dict['HMDB Accession']:
                 hmdb = response_dict['HMDB Accession']
                 if len(hmdb) != 11:
-                    hmdb = hmdb[0:4] + '00' + hmdb[4:]
+                    hmdb = '00' + hmdb[4:]
                 dime_db_ids = dime_db_ids + 'HMDB:' + hmdb + ";"
 
             dime_db_ids = dime_db_ids.rstrip(';')
