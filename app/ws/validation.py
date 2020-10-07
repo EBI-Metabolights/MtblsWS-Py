@@ -1376,11 +1376,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                         "are present in the study folder: '" + file_name + "'",
                         error, val_section, value=file_name, val_sequence=6.1, log_category=log_category)
 
-<<<<<<< HEAD
         if file_type in app.config.get('RAW_FILES_LIST'):  # Raw for MS and fid/acqus for NMR
-=======
-        if file_type in ('raw', 'fid', 'acqus', 'd'):  # Raw for MS and fid/acqus for NMR
->>>>>>> fa0b1f4b33a7230fab76ababf8f51963debf027d
             raw_file_found = True
 
         if file_type == 'derived':
