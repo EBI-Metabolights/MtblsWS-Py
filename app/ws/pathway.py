@@ -243,9 +243,9 @@ class fellaPathway(Resource):
         script = app.config.get('FELLA_PATHWAY_SCRPT')
         para = '-s {studyID} -o {organism}'.format(studyID=studyID, organism=org)
 
-        command = module + script + ' ' + para
+        command = script + ' ' + para
 
-        logger.info("Starting cluster job for ChEBI pipeline: " + command)
+        logger.info("Starting cluster job for FELLA pathway: " + command)
         status, message, job_out, job_err = lsf_job('bsub', job_param=command, send_email=True)
 
         if status:
