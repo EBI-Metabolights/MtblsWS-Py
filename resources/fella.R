@@ -8,18 +8,14 @@ mtbls_id
 org
 output_folder
 
-#mtbls_id <- 'MTBLS2'
-#org <- "hsa"
-#output_folder <- '/Users/jkchang/Downloads/'
+#list.of.packages <- c("httr", "jsonlite","igraph", "visNetwork","magrittr")
+#new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+#if(length(new.packages)) install.packages(new.packages)
 
-list.of.packages <- c("httr", "jsonlite","igraph", "visNetwork","magrittr")
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)) install.packages(new.packages)
-
-if (!require('FELLA'))
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-    BiocManager::install("FELLA")
+#if (!require('FELLA'))
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+#    BiocManager::install("FELLA")
 
 library(httr)
 library(jsonlite)
@@ -29,7 +25,7 @@ library(visNetwork)
 library(magrittr)
 
 # path.hsa <- "./instance/Datasets/FELLAdatabases/hsa"
-path.hsa <- paste('./instance/Datasets/FELLAdatabases/',org,sep='')
+path.hsa <- paste('/net/isilonP/public/rw/homes/tc_cm01/metabolights/software/ws-py/dev/MtblsWS-Py/instance/Datasets/FELLAdatabases/',org,sep='')
 path.hsa
 
 if (!dir.exists(path.hsa)) {
