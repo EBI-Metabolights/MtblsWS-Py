@@ -193,7 +193,11 @@ class keggid(Resource):
 
         if kegg_only:
             res = {k: [x.lstrip('cpd:').upper() for x in list(v.values())] for k, v in result.items()}
-            return jsonify(res)
+            result = {}
+            for k in res.keys():
+                new_key = get_kegg_organism_abbr(k)
+                result[new_key] = res[k]
+            return jsonify(result)
         else:
             return jsonify(result)
 
@@ -271,7 +275,7 @@ class fellaPathway(Resource):
                     return "Can't find organism {organism} in KEGG".format(organism=organism)
             else:
                 abort(400)
-        module = "module load r-3.6.3-gcc-9.3.0-yb5n44y; module load pandoc-2.7.3-gcc-9.3.0-gctut72;"
+        # module = "module load r-3.6.3-gcc-9.3.0-yb5n44y; module load pandoc-2.7.3-gcc-9.3.0-gctut72;"
         script = app.config.get('FELLA_PATHWAY_SCRPT')
         para = '-s {studyID} -o {organism}'.format(studyID=studyID, organism=org)
 
