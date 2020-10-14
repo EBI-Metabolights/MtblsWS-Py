@@ -55,7 +55,7 @@ from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, Unz
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
-from app.ws.pathway import keggid
+from app.ws.pathway import keggid,fellaPathway
 
 """
 MTBLS WS-Py
@@ -163,7 +163,7 @@ def initialize_app(flask_app):
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
-
+    # api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
@@ -193,6 +193,7 @@ def initialize_app(flask_app):
 
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
     api.add_resource(keggid,res_path+"/ebi-internal/keggid")
+    api.add_resource(fellaPathway,res_path+"/ebi-internal/fella-pathway")
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")

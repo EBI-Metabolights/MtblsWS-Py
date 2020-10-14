@@ -114,6 +114,10 @@ REMOVED_HS_MOL_COUNT = 500
 
 # Validations
 VALIDATION_FILES_LIMIT = 10000
+VALIDATION_RUN_MSG = 'Validation is running, Please check after some time.'
+
+ASSAY_VALIDATION_FILE = '/validation_assay.json'
+FILES_VALIDATION_FILE = '/validation_files.json'
 VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
 
 FOLDER_EXCLUSION_LIST = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
