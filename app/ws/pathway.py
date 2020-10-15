@@ -313,7 +313,7 @@ def maf_reader(studyID, maf_file_name, sample_df):
     :return:  dict{chebiID:[sampleNames]
     '''
 
-    url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{studyID}/{maf_file_name}'.format(studyID=studyID,
+    url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{studyID}/{maf_file_name}'.format(studyID=studyID,
                                                                                            maf_file_name=maf_file_name)
     response = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
     jsonResponse = response.json()
@@ -354,8 +354,8 @@ def get_sample_file(studyID, sample_file_name):
     '''
     import io
     try:
-        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        # ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
         resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                             params={'sample_filename': sample_file_name})
@@ -369,7 +369,7 @@ def get_sample_file(studyID, sample_file_name):
 
 
 def getFileList(studyID):
-    url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
+    url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
         study_id=studyID)
     request = urllib.request.Request(url)
     request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
@@ -407,7 +407,7 @@ def uniqueOrganism(studyID):
     :return: list of organisms
     '''
     try:
-        url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+        url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
         resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
         data = resp.json()
         org = []
