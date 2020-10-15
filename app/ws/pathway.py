@@ -52,13 +52,13 @@ def log_request(request_obj):
 class keggid(Resource):
     @swagger.operation(
         summary="Mapping CHEBI IDs with KEGG IDs",
-        notes='''Get matched CHEBI IDs / KEGG IDs.
-              <br>
-              <pre><code>
-{
-    "CHEBIID": ["CHEBI:123","CHEBI:2234"],
-    "KEGGID": ["KEGG:123","KEGG:2234"]
-}</code></pre>''',
+        notes='''Get matched CHEBI IDs / KEGG IDs.''',
+#               <br>
+#               <pre><code>
+# {
+#     "CHEBIID": ["CHEBI:123","CHEBI:2234"],
+#     "KEGGID": ["KEGG:123","KEGG:2234"]
+# }</code></pre>''',
         parameters=[
             {
                 "name": "studyID",
@@ -78,16 +78,17 @@ class keggid(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "data",
-                "description": 'list of matching chebi / kegg ids',
-                "paramType": "body",
-                "type": "string",
-                # "format": "application/json",
-                "required": False,
-                "allowMultiple": False
             }
+            # ,
+            # {
+            #     "name": "data",
+            #     "description": 'list of matching chebi / kegg ids',
+            #     "paramType": "body",
+            #     "type": "string",
+            #     # "format": "application/json",
+            #     "required": False,
+            #     "allowMultiple": False
+            # }
 
         ],
         responseMessages=[
@@ -109,7 +110,7 @@ class keggid(Resource):
             }
         ]
     )
-    def post(self):
+    def get(self):
         log_request(request)
         parser = reqparse.RequestParser()
 
@@ -133,18 +134,18 @@ class keggid(Resource):
             elif kegg and kegg.lower() in ['false', '0']:
                 kegg_only = False
 
-        chebiID = []
-        keggID = []
+        # chebiID = []
+        # keggID = []
         result = {}
-        if len(request.data.decode('utf-8')) > 0:
-            try:
-                data_dict = json.loads(request.data.decode('utf-8'))
-                chebiID = data_dict['CHEBIID']
-                keggID = data_dict['KEGGID']
-            except Exception as e:
-                logger.info(e)
-                print(e)
-                abort(400)
+        # if len(request.data.decode('utf-8')) > 0:
+        #     try:
+        #         data_dict = json.loads(request.data.decode('utf-8'))
+        #         chebiID = data_dict['CHEBIID']
+        #         keggID = data_dict['KEGGID']
+        #     except Exception as e:
+        #         logger.info(e)
+        #         print(e)
+        #         abort(400)
 
         if studyID:
             uni_organism = uniqueOrganism(studyID)
@@ -188,8 +189,8 @@ class keggid(Resource):
                 pair = match_chebi_kegg(ids, [])
                 result[org] = pair
 
-        elif len(chebiID) > 0 or len(keggID) > 0:
-            result['input_ids'] = match_chebi_kegg(chebiID, keggID)
+        # elif len(chebiID) > 0 or len(keggID) > 0:
+        #     result['input_ids'] = match_chebi_kegg(chebiID, keggID)
 
         if kegg_only:
             res = {k: [x.lstrip('cpd:').upper() for x in list(v.values())] for k, v in result.items()}
