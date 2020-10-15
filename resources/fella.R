@@ -41,7 +41,7 @@ extract_KEGG_id <- function(mtbls_id,org) {
       'http://wp-np3-15.ebi.ac.uk:5000/metabolights/ws/ebi-internal/keggid?studyID=',
       mtbls_id,
       '&kegg_only=true')
-  dy <- POST(url)
+  dy <- GET(url)
   data = fromJSON(rawToChar(dy$content))
   kegg.ids <-unique(data[org][[1]])
   return (kegg.ids)
