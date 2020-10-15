@@ -17,7 +17,6 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import requests
-
 from flask import jsonify
 from flask import request
 from flask_restful import Resource, reqparse
@@ -53,12 +52,12 @@ class keggid(Resource):
     @swagger.operation(
         summary="Mapping CHEBI IDs with KEGG IDs",
         notes='''Get matched CHEBI IDs / KEGG IDs.''',
-#               <br>
-#               <pre><code>
-# {
-#     "CHEBIID": ["CHEBI:123","CHEBI:2234"],
-#     "KEGGID": ["KEGG:123","KEGG:2234"]
-# }</code></pre>''',
+        #               <br>
+        #               <pre><code>
+        # {
+        #     "CHEBIID": ["CHEBI:123","CHEBI:2234"],
+        #     "KEGGID": ["KEGG:123","KEGG:2234"]
+        # }</code></pre>''',
         parameters=[
             {
                 "name": "studyID",
@@ -195,7 +194,7 @@ class keggid(Resource):
 
         if kegg_only:
             try:
-                res = {k: [x.lstrip('cpd:').upper() for x in list(v.values())] for k, v in result.items() if len(v) >0}
+                res = {k: [x.lstrip('cpd:').upper() for x in list(v.values())] for k, v in result.items() if len(v) > 0}
                 result = {}
                 for k in res.keys():
                     new_key = get_kegg_organism_abbr(k)
@@ -307,7 +306,6 @@ def match_chebi_kegg(chebiID, KeggID):
     return dict(zip(res.CHEBIID, res.KEGGID))
 
 
-
 def maf_reader(studyID, maf_file_name, sample_df):
     '''
     get maf file
@@ -318,7 +316,7 @@ def maf_reader(studyID, maf_file_name, sample_df):
     '''
 
     url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{studyID}/{maf_file_name}'.format(studyID=studyID,
-                                                                                           maf_file_name=maf_file_name)
+                                                                                                     maf_file_name=maf_file_name)
     response = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
     jsonResponse = response.json()
 
@@ -421,7 +419,11 @@ def uniqueOrganism(studyID):
     except:
         print('Fail to load organism from {study_id}'.format(study_id=studyID))
 
+
 def get_kegg_organism_abbr(organism):
     df = pd.read_csv('./resources/KEGG organism list.tsv', sep='\t')
-    res = df[df['Organisms.1'].str.lower().str.contains(organism.lower())]['Organisms'].iloc[0]
-    return res
+    try:
+        res = df[df['Organisms.1'].str.lower().str.contains(organism.lower())]['Organisms'].iloc[0]
+        return res
+    except:
+        return organism
