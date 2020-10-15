@@ -123,7 +123,6 @@ class keggid(Resource):
                 studyID = studyID.strip().upper()
 
         parser.add_argument('kegg_only', help="only return kegg IDs")
-        kegg_only = False
         if request.args:
             args = parser.parse_args(req=request)
             kegg = args['kegg_only']
@@ -133,6 +132,8 @@ class keggid(Resource):
                 kegg_only = True
             elif kegg and kegg.lower() in ['false', '0']:
                 kegg_only = False
+            else:
+                abort(400)
 
         # chebiID = []
         # keggID = []
@@ -193,12 +194,15 @@ class keggid(Resource):
         #     result['input_ids'] = match_chebi_kegg(chebiID, keggID)
 
         if kegg_only:
-            res = {k: [x.lstrip('cpd:').upper() for x in list(v.values())] for k, v in result.items()}
-            result = {}
-            for k in res.keys():
-                new_key = get_kegg_organism_abbr(k)
-                result[new_key] = res[k]
-            return jsonify(result)
+            try:
+                res = {k: [x.lstrip('cpd:').upper() for x in list(v.values())] for k, v in result.items() if len(v) >0}
+                result = {}
+                for k in res.keys():
+                    new_key = get_kegg_organism_abbr(k)
+                    result[new_key] = res[k]
+                return jsonify(result)
+            except:
+                return []
         else:
             return jsonify(result)
 
@@ -413,7 +417,6 @@ def uniqueOrganism(studyID):
         org = []
         for organism in data['organisms']:
             org.append(organism['Characteristics[Organism]'])
-
         return list(set(org))
     except:
         print('Fail to load organism from {study_id}'.format(study_id=studyID))
