@@ -531,6 +531,13 @@ class Validation(Resource):
         if section != 'all' or log_category != 'all':
             static_validation_file = False
 
+        if section == 'all' or log_category == 'all':
+            validation_file = os.path.join(study_location, 'validation_report.json')
+            if os.path.isfile(validation_file):
+                with open(validation_file, 'r', encoding='utf-8') as f:
+                    validation_schema = json.load(f)
+                    return validation_schema
+
         if section == 'all' and log_category == 'all' and number_of_files >= validation_files_limit:
             force_static_validation = True  # ToDo, We need to use static files until pagenation is implemented
             static_validation_file = force_static_validation
