@@ -180,14 +180,16 @@ class keggid(Resource):
                 postgresql_pool, conn, cursor = get_connection()
                 cursor.execute(query)
                 # d= cursor.fetchall()
-                chebiID = [r[0] for r in cursor.fetchall()]
-                result = {uni_organism[0]: chebiID}
+                ID = [r[0] for r in cursor.fetchall()]
+                result = {uni_organism[0]: ID}
             else:
                 abort(400)
 
             for org, ids in result.items():
-                pair = match_chebi_kegg(ids, [])
-                result[org] = pair
+                pair1 = match_chebi_kegg([x for x in ids if 'chebi' in x.lower()], [])
+                pair2 = match_hmdb_kegg([x for x in ids if 'hmdb' in x.lower()], [])
+
+                result[org] = {**pair1, **pair2}
 
         # elif len(chebiID) > 0 or len(keggID) > 0:
         #     result['input_ids'] = match_chebi_kegg(chebiID, keggID)
@@ -304,6 +306,18 @@ def match_chebi_kegg(chebiID, KeggID):
 
     res = df[df['CHEBIID_c'].isin(chebiID) | df['KEGGID_c'].isin(KeggID)]
     return dict(zip(res.CHEBIID, res.KEGGID))
+
+
+def match_hmdb_kegg(hmdbID, KeggID):
+    df = pd.read_csv('./resources/hmdb_kegg.tsv', sep='\t')
+    df['HMDBID_c'] = df['HMDBID'].map(lambda x: x.lstrip('hmdb:'))
+    df['KEGGID_c'] = df['KEGGID'].map(lambda x: x.lstrip('cpd:'))
+
+    # chebiID = [x.lower().lstrip('chebi:') for x in chebiID]
+    KeggID = [x.lower().lstrip('kegg:').upper() for x in KeggID]
+
+    res = df[df['HMDBID_c'].isin(hmdbID) | df['KEGGID_c'].isin(KeggID)]
+    return dict(zip(res.HMDBID, res.KEGGID))
 
 
 def maf_reader(studyID, maf_file_name, sample_df):
