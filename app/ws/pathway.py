@@ -332,7 +332,7 @@ def maf_reader(studyID, maf_file_name, sample_df):
 
     for row in jsonResponse['data']['rows']:
         db_id = row['database_identifier']
-        organism_temp = []
+
         for s in maf_samples:
             if row[s] != '':
                 org = sample_organism[s]
