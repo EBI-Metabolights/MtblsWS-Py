@@ -17,7 +17,6 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import requests
-
 from flask import jsonify
 from flask import request
 from flask_restful import Resource, reqparse
@@ -52,13 +51,13 @@ def log_request(request_obj):
 class keggid(Resource):
     @swagger.operation(
         summary="Mapping CHEBI IDs with KEGG IDs",
-        notes='''Get matched CHEBI IDs / KEGG IDs.
-              <br>
-              <pre><code>
-{
-    "CHEBIID": ["CHEBI:123","CHEBI:2234"],
-    "KEGGID": ["KEGG:123","KEGG:2234"]
-}</code></pre>''',
+        notes='''Get matched CHEBI IDs / KEGG IDs.''',
+        #               <br>
+        #               <pre><code>
+        # {
+        #     "CHEBIID": ["CHEBI:123","CHEBI:2234"],
+        #     "KEGGID": ["KEGG:123","KEGG:2234"]
+        # }</code></pre>''',
         parameters=[
             {
                 "name": "studyID",
@@ -78,16 +77,17 @@ class keggid(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string"
-            },
-            {
-                "name": "data",
-                "description": 'list of matching chebi / kegg ids',
-                "paramType": "body",
-                "type": "string",
-                # "format": "application/json",
-                "required": False,
-                "allowMultiple": False
             }
+            # ,
+            # {
+            #     "name": "data",
+            #     "description": 'list of matching chebi / kegg ids',
+            #     "paramType": "body",
+            #     "type": "string",
+            #     # "format": "application/json",
+            #     "required": False,
+            #     "allowMultiple": False
+            # }
 
         ],
         responseMessages=[
@@ -109,7 +109,7 @@ class keggid(Resource):
             }
         ]
     )
-    def post(self):
+    def get(self):
         log_request(request)
         parser = reqparse.RequestParser()
 
@@ -122,7 +122,6 @@ class keggid(Resource):
                 studyID = studyID.strip().upper()
 
         parser.add_argument('kegg_only', help="only return kegg IDs")
-        kegg_only = False
         if request.args:
             args = parser.parse_args(req=request)
             kegg = args['kegg_only']
@@ -132,19 +131,21 @@ class keggid(Resource):
                 kegg_only = True
             elif kegg and kegg.lower() in ['false', '0']:
                 kegg_only = False
-
-        chebiID = []
-        keggID = []
-        result = {}
-        if len(request.data.decode('utf-8')) > 0:
-            try:
-                data_dict = json.loads(request.data.decode('utf-8'))
-                chebiID = data_dict['CHEBIID']
-                keggID = data_dict['KEGGID']
-            except Exception as e:
-                logger.info(e)
-                print(e)
+            else:
                 abort(400)
+
+        # chebiID = []
+        # keggID = []
+        result = {}
+        # if len(request.data.decode('utf-8')) > 0:
+        #     try:
+        #         data_dict = json.loads(request.data.decode('utf-8'))
+        #         chebiID = data_dict['CHEBIID']
+        #         keggID = data_dict['KEGGID']
+        #     except Exception as e:
+        #         logger.info(e)
+        #         print(e)
+        #         abort(400)
 
         if studyID:
             uni_organism = uniqueOrganism(studyID)
@@ -188,16 +189,19 @@ class keggid(Resource):
                 pair = match_chebi_kegg(ids, [])
                 result[org] = pair
 
-        elif len(chebiID) > 0 or len(keggID) > 0:
-            result['input_ids'] = match_chebi_kegg(chebiID, keggID)
+        # elif len(chebiID) > 0 or len(keggID) > 0:
+        #     result['input_ids'] = match_chebi_kegg(chebiID, keggID)
 
         if kegg_only:
-            res = {k: [x.lstrip('cpd:').upper() for x in list(v.values())] for k, v in result.items()}
-            result = {}
-            for k in res.keys():
-                new_key = get_kegg_organism_abbr(k)
-                result[new_key] = res[k]
-            return jsonify(result)
+            try:
+                res = {k: [x.lstrip('cpd:').upper() for x in list(v.values())] for k, v in result.items() if len(v) > 0}
+                result = {}
+                for k in res.keys():
+                    new_key = get_kegg_organism_abbr(k)
+                    result[new_key] = res[k]
+                return jsonify(result)
+            except:
+                return []
         else:
             return jsonify(result)
 
@@ -302,7 +306,6 @@ def match_chebi_kegg(chebiID, KeggID):
     return dict(zip(res.CHEBIID, res.KEGGID))
 
 
-
 def maf_reader(studyID, maf_file_name, sample_df):
     '''
     get maf file
@@ -312,8 +315,8 @@ def maf_reader(studyID, maf_file_name, sample_df):
     :return:  dict{chebiID:[sampleNames]
     '''
 
-    url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{studyID}/{maf_file_name}'.format(studyID=studyID,
-                                                                                           maf_file_name=maf_file_name)
+    url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{studyID}/{maf_file_name}'.format(studyID=studyID,
+                                                                                                     maf_file_name=maf_file_name)
     response = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
     jsonResponse = response.json()
 
@@ -329,7 +332,7 @@ def maf_reader(studyID, maf_file_name, sample_df):
 
     for row in jsonResponse['data']['rows']:
         db_id = row['database_identifier']
-        organism_temp = []
+
         for s in maf_samples:
             if row[s] != '':
                 org = sample_organism[s]
@@ -353,8 +356,8 @@ def get_sample_file(studyID, sample_file_name):
     '''
     import io
     try:
-        source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
-        ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
+        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
+        # ws_url = app.config.get('MTBLS_WS_HOST') + ':' + str(app.config.get('PORT')) + source
 
         resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                             params={'sample_filename': sample_file_name})
@@ -368,7 +371,7 @@ def get_sample_file(studyID, sample_file_name):
 
 
 def getFileList(studyID):
-    url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
+    url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
         study_id=studyID)
     request = urllib.request.Request(url)
     request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
@@ -406,18 +409,21 @@ def uniqueOrganism(studyID):
     :return: list of organisms
     '''
     try:
-        url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+        url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
         resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
         data = resp.json()
         org = []
         for organism in data['organisms']:
             org.append(organism['Characteristics[Organism]'])
-
         return list(set(org))
     except:
         print('Fail to load organism from {study_id}'.format(study_id=studyID))
 
+
 def get_kegg_organism_abbr(organism):
     df = pd.read_csv('./resources/KEGG organism list.tsv', sep='\t')
-    res = df[df['Organisms.1'].str.lower().str.contains(organism.lower())]['Organisms'].iloc[0]
-    return res
+    try:
+        res = df[df['Organisms.1'].str.lower().str.contains(organism.lower())]['Organisms'].iloc[0]
+        return res
+    except:
+        return organism
