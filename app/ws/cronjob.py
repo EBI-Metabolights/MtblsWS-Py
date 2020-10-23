@@ -219,9 +219,14 @@ def curation_log_database_update():
 
     command_list = google_df['--Updates. Run this in the database on a regular basis'].tolist()
     empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
-    command_list = [x for x in command_list if empty_study not in x] + ['commit;']
+    command_list = [x for x in command_list if empty_study not in x]
 
-    sql = ''.join(command_list)
+    res = []
+    for line in command_list:
+        res.append(update_species(line))
+
+    res += ['commit;']
+    sql = ''.join(res)
     execute_query(sql)
     print('Done')
 
@@ -811,6 +816,39 @@ def natural_keys(text):
 def empty_study_filter(studyID):
     num = int(studyID.lower().split('mtbls')[1])
     return num > 1700
+
+
+def uniqueOrganism(studyID):
+    '''
+    get list of unique organism from study
+    :param studyID: studyID
+    :return: list of organisms
+    '''
+    try:
+        url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+        resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+        data = resp.json()
+        org = []
+        for organism in data['organisms']:
+            org.append(organism['Characteristics[Organism]'])
+        org = [x for x in org if len(x) > 0]
+        return list(set(org))
+    except Exception as e:
+        print('Fail to load organism from {study_id}'.format(study_id=studyID))
+        logger.info('Fail to load organism from {study_id}'.format(study_id=studyID))
+        return ''
+
+
+def update_species(command_string):
+    import re
+    studyID = re.search("acc = '(.*?)'", command_string)[1]
+    org_list = uniqueOrganism(studyID)
+    if len(org_list) > 0:
+        org = ';'.join(org_list)
+        new_s = re.sub("species ='(.*?)'", "species ='{organism}'".format(organism=org), command_string)
+        return new_s
+    else:
+        return command_string
 
 
 def setGoogleSheet(df, url, worksheetName, token_path):
