@@ -2274,7 +2274,10 @@ def run_validation_in_File(validations_file, study_id, study_location, user_toke
 
 
 def job_status( job_id):
-    result = subprocess.run("bjobs " + job_id, stdout=subprocess.PIPE, shell=True, check=True)
+    cmd = "/usr/bin/ssh ebi-cli bjobs " + str(job_id).strip()
+    logger.info(cmd)
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
+    logger.info(result)
     result = result.stdout.decode("utf-8")
     index = result.find("tc_cm01")
     result = result[index + 8:].lstrip().split(' ')
@@ -2291,6 +2294,7 @@ def submitJobToCluser(command, section, study_location):
         cron_job_file = study_location + "/validation_" + section + "_" + cron_job_id + '.json'
         with open(cron_job_file, 'w') as fp:
             pass
+        os.chmod(cron_job_file, 0o777)
         return {"success": message, "job_id": cron_job_id, "message": job_out, "errors": job_err}
     else:
         return {"error": message, "message": job_out, "errors": job_err}
@@ -2322,6 +2326,16 @@ class NewValidation(Resource):
                 "enum": ["all", "assays", "files"]
             },
             {
+                "name": "force_run",
+                "description": "Run the validation again",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["True", "False"]
+            },
+            {
                 "name": "level",
                 "description": "Specify which success-errors levels to report, default is all: "
                                "error, warning, info, success",
@@ -2331,6 +2345,7 @@ class NewValidation(Resource):
                 "paramType": "query",
                 "dataType": "string",
             },
+
             {
                 "name": "user_token",
                 "description": "User API token",
@@ -2388,7 +2403,8 @@ class NewValidation(Resource):
         force_run = args['force_run']
         if section is None or section == "":
             section = 'meta'
-
+        if force_run is None:
+            force_run = False
         if section:
             query = section.strip()
         log_category = args['level']
@@ -2403,7 +2419,7 @@ class NewValidation(Resource):
         para = ' -l {level} -i {study_id} -u {token} -s {section}'.format(level=log_category, study_id=study_id,
                                                                           token=user_token, section=section)
         file_name = None
-
+        logger.info("Validation params are - " + str(log_category) + " " + str(section))
         pattern = re.compile("validation_" + section + "\S+.json")
 
         for filepath in os.listdir(study_location):
@@ -2415,9 +2431,9 @@ class NewValidation(Resource):
             result = file_name[:-5].split('_')
             sub_job_id = result[2]
             #bacct -l 3861194
-            # job is completed
-            status = job_status(sub_job_id)
-            print ("job status " +sub_job_id + " "+ status)
+            # check job status
+            status = "DONE" #job_status(sub_job_id)
+            logger.info("job status " + sub_job_id + " " + status)
             if status == "PEND" or status == "RUN":
                 return {"message": "Validation is already in progress. Job " + sub_job_id + " is in running or pending state"}
 
@@ -2433,6 +2449,7 @@ class NewValidation(Resource):
                         return {"message": "Error in reading the Validation"}
                 else:
                     if is_newer_timestamp(study_location, file_name):
+                        os.remove(file_name)
                         command = script + ' ' + para
                         return submitJobToCluser(command, section, study_location)
                     else:
@@ -2444,6 +2461,6 @@ class NewValidation(Resource):
                             logger.error(str(e))
                             return {"message": "Error in reading the Validation file"}
         else:
-            # submit a new job return job id
+            #submit a new job return job id
             command = script + ' ' + para
             return submitJobToCluser(command, section, study_location)
