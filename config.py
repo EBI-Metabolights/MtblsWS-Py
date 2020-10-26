@@ -109,10 +109,13 @@ CONN_POOL_MAX = 20
 FILE_LIST_TIMEOUT = 90
 
 # Validations
+VALIDATION_SCRIPT="/nfs/www-prod/web_hx2/cm/metabolights/scripts/cluster_scripts/val/validation.sh"
 VALIDATION_FILES_LIMIT = 10000
 VALIDATION_RUN_MSG = 'Validation is running, Please check after some time.'
 ASSAY_VALIDATION_FILE = '/validation_assay.json'
 FILES_VALIDATION_FILE = '/validation_files.json'
+METADATA_VALIDATION_FILE = '/validation_meta.json'
+COMPLETE_VALIDATION_FILE = '/validation_complete.json'
 VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
 
 FOLDER_EXCLUSION_LIST = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
@@ -142,6 +145,7 @@ COMPRESSED_FILES_LIST = ['.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', 
 INTERNAL_MAPPING_LIST = ['metexplore_mapping', 'chebi_pipeline_annotations', 'validation_report', 'validation_files']
 
 # Other files
+CHEBI_SCRIPT = "/nfs/www-prod/web_hx2/cm/metabolights/scripts/cluster_scripts/val/chebi_pipeline.sh"
 OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
 CHEBI_URL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
 CHEBI_URL_WAIT = 300
