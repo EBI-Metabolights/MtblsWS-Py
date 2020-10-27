@@ -3762,10 +3762,10 @@ Pleiocarpaman alkaloids	ISA38958
 Schizozygine alkaloids	ISA38958
 Correantan alkaloids	ISA22315
 Kopsane alkaloids	ISA38958
-Pyrichalasins	ISA23528: HR76946
-Chaetoglobosins	ISA23528: HR76946
-Aspochalasins	ISA23528: HR76946
-Alachalasins	ISA23528: HR76946
+Pyrichalasins	ISA23528; HR76946
+Chaetoglobosins	ISA23528; HR76946
+Aspochalasins	ISA23528; HR76946
+Alachalasins	ISA23528; HR76946
 "Pyrrolo[3,4-d]pyridazines"	ISA27171; ISA38101
 "Imidazo[5,1-d]-1,2,3,5-tetrazines"	ISA72565
 4a-homomorphinans	ISA24921
@@ -3784,8 +3784,8 @@ Napelline-type diterpenoid alkaloids	ISA53666
 "4,6-disubstituted quinolizidines"	ISA26516
 "1,4-disubstituted quinolizidines"	ISA26516
 Quinolidines	ISA27171; ISA38101
-Aconitane-type diterpenoid alkaloids	ISA23847: HFP35911
-Lappaconitine-type diterpenoid alkaloids	ISA23847: HFP35911
+Aconitane-type diterpenoid alkaloids	ISA23847; HFP35911
+Lappaconitine-type diterpenoid alkaloids	ISA23847; HFP35911
 Ranaconitine-type diterpenoid alkaloids	ISA23847
 Strictosidine alkaloids	ISA38958
 (3'->5')-cyclic dinucleotides and analogues	ISA23447
@@ -3865,7 +3865,7 @@ Nitrophenols	ISA25562
 Acylaminobenzoic acid and derivatives	ISA48470
 Pyrimidine nucleosides	ISA26440
 Diphenylethers	ISA35618
-Acrylic acids and derivatives	ISA78840: HFP18308
+Acrylic acids and derivatives	ISA78840; HFP18308
 Phenolic glycosides	ISA24400
 Tetraalkylammonium salts	ISA35273
 Pentaorganoarsanes	ISA33406
@@ -3890,7 +3890,7 @@ m-Xylenes	ISA38975
 Glutamic acid and derivatives	ISA24315
 o-Xylenes	ISA38975
 Organoheterosilanes	ISA25713
-Pyridoxamine 5'-phosphates	ISA36970: HFP16410
+Pyridoxamine 5'-phosphates	ISA36970; HFP16410
 Proline and derivatives	ISA26273
 5'-deoxyribonucleosides	ISA36988
 Trialkyl amine oxides	ISA35580
