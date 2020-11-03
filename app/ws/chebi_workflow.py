@@ -1178,6 +1178,7 @@ def removeHydrogen(sdf_file_name):
                 fileText = fileText + mol + '$$$$'
                 count += 1
             else:
+                fileText = fileText + mol + '$$$$'
                 if fileText[:1] == '\n':
                     fileText = fileText[1:]
                 res = requests.post('https://www.ebi.ac.uk/chembl/api/utils/removeHs', data=fileText.encode('utf-8'))
