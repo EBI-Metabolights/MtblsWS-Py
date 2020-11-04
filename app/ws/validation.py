@@ -2272,8 +2272,7 @@ def run_validation_in_File(validations_file, study_id, study_location, user_toke
     return validation_schema
 
 
-
-def job_status( job_id):
+def job_status(job_id):
     cmd = "/usr/bin/ssh ebi-cli bjobs " + str(job_id).strip()
     logger.info(cmd)
     result = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
@@ -2282,6 +2281,7 @@ def job_status( job_id):
     index = result.find("tc_cm01")
     result = result[index + 8:].lstrip().split(' ')
     return result[0]
+
 
 def submitJobToCluser(command, section, study_location):
     logger.info("Starting cluster job for Validation : " + command)
@@ -2420,7 +2420,7 @@ class NewValidation(Resource):
                                                                           token=user_token, section=section)
         file_name = None
         logger.info("Validation params are - " + str(log_category) + " " + str(section))
-        pattern = re.compile("validation_" + section + "\S+.json")
+        pattern = re.compile(".validation_" + section + "\S+.json")
 
         for filepath in os.listdir(study_location):
             if pattern.match(filepath):
@@ -2430,12 +2430,13 @@ class NewValidation(Resource):
         if file_name:
             result = file_name[:-5].split('_')
             sub_job_id = result[2]
-            #bacct -l 3861194
+            # bacct -l 3861194
             # check job status
-            status = "DONE" #job_status(sub_job_id)
+            status = job_status(sub_job_id)
             logger.info("job status " + sub_job_id + " " + status)
             if status == "PEND" or status == "RUN":
-                return {"message": "Validation is already in progress. Job " + sub_job_id + " is in running or pending state"}
+                return {
+                    "message": "Validation is already in progress. Job " + sub_job_id + " is in running or pending state"}
 
             file_name = study_location + "/" + file_name
             if os.path.isfile(file_name) and status == "DONE":
@@ -2460,7 +2461,28 @@ class NewValidation(Resource):
                         except Exception as e:
                             logger.error(str(e))
                             return {"message": "Error in reading the Validation file"}
-        else:
-            #submit a new job return job id
-            command = script + ' ' + para
-            return submitJobToCluser(command, section, study_location)
+
+            elif os.path.isfile(file_name) and os.path.getsize(file_name) > 0:
+                if is_newer_timestamp(study_location, file_name):
+                    logger.info( " job status is not present, creating new job")
+                    os.remove(file_name)
+                    command = script + ' ' + para
+                    return submitJobToCluser(command, section, study_location)
+                else:
+                    try:
+                        logger.info(" job status is not present and no update, returning validation")
+                        with open(file_name, 'r', encoding='utf-8') as f:
+                            validation_schema = json.load(f)
+                            return validation_schema
+                    except Exception as e:
+                        logger.error(str(e))
+                        return {"message": "Error in reading the Validation"}
+            else:
+                try:
+                    os.remove(file_name)
+                except Exception as e:
+                    pass
+                # submit a new job return job id
+                logger.info(" no file present , creating new job")
+                command = script + ' ' + para
+                return submitJobToCluser(command, section, study_location)
