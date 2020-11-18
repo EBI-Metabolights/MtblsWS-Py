@@ -452,7 +452,7 @@ def duplicate(my_list, n):
 
 def unique_list(l):
     ulist = []
-    [ulist.append(x) for x in l if x not in ulist]
+    [ulist.append(x) for x in l if x not in ulist and x is not '']
     return ulist
 
 
@@ -919,8 +919,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             db_acc = ';'.join(unique_list(db_acc.split(';')))
             pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                 ';')
-            pubchem_df.iloc[row_idx, get_idx('CAS_NO', pubchem_df_headers)] = cas_id.rstrip(
-                ';')
+            pubchem_df.iloc[row_idx, get_idx('CAS_NO', pubchem_df_headers)] = cas_id
 
         if changed and row_idx > 0 and row_idx % 20 == 0:  # Save every 20 rows
             pubchem_file = short_file_name + pubchem_end
@@ -2079,7 +2078,7 @@ def processUniChemResponse(inchi_key):
             kegg_id = add_database_name_synonym(kegg_id)
             unichem_id = unichem_id + kegg_id + ";"
         if '18' in response_dict:
-            unichem_id = unichem_id + 'HMDB:' + response_dict['18']['src_compound_id'][4:] + ";"
+            unichem_id = unichem_id + 'HMDB:HMDB' + response_dict['18']['src_compound_id'][4:] + ";"
         if '25' in response_dict:
             unichem_id = unichem_id + 'LINCS:' + response_dict['25']['src_compound_id'] + ";"
         if '34' in response_dict:
@@ -2132,7 +2131,7 @@ def get_dime_db(inchi_key):
                 hmdb = response_dict['HMDB Accession']
                 if len(hmdb) != 11:
                     hmdb = '00' + hmdb[4:]
-                dime_db_ids = dime_db_ids + 'HMDB:' + hmdb + ";"
+                dime_db_ids = dime_db_ids + 'HMDB:HMDB' + hmdb + ";"
 
             dime_db_ids = dime_db_ids.rstrip(';')
         except:
