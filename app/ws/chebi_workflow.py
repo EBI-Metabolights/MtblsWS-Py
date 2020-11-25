@@ -2258,19 +2258,13 @@ class ChEBIPipeLine(Resource):
 
         run_silently = None
         run_on_cluster = None
-        if cluster_job:
-            if bool(request.data):
-                x = re.split('=|&|,|\;', str(request.data)[2:-1])
-                data = {x[i]: x[i + 1] for i in range(0, len(x), 2)}
-                annotation_file_name = data['annotation_file_name']
-                classyfire_search = data['classyfire_search']
-                update_study_maf = data['update_study_maf']
-        else:
-            annotation_file_name = request.args['annotation_file_name']
-            classyfire_search = request.args['classyfire_search']
-            update_study_maf = request.args.get('update_study_maf')
-            run_silently = request.args['run_silently']
-            run_on_cluster = request.args['run_on_cluster']
+
+        annotation_file_name = request.args['annotation_file_name']
+        classyfire_search = request.args['classyfire_search']
+        update_study_maf = request.args.get('update_study_maf')
+        run_silently = request.args['run_silently']
+        run_on_cluster = request.args['run_on_cluster']
+
 
         classyfire_search = True if classyfire_search == 'true' else False
         run_silently = True if run_silently == 'true' else False
@@ -2281,13 +2275,7 @@ class ChEBIPipeLine(Resource):
         audit_status, dest_path = write_audit_files(study_location)
         cmd = ""
         if run_on_cluster:
-            cmd = "curl --silent --request POST"
-            param = " -d 'classyfire_search=" + str(
-                classyfire_search).lower() + "' -d 'annotation_file_name=#FILE_NAME#' -d 'update_study_maf=" + str(
-                update_study_maf).lower() + "' "
-            cmd = cmd + param + " -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-            cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + \
-                  "/chebi-pipeline?source=cluster ' "
+            script = app.config.get('CHEBI_CLUSTER_SCRIPT')
             print_log("cluster job -  %s", cmd)
 
         maf_len = 0
@@ -2308,10 +2296,11 @@ class ChEBIPipeLine(Resource):
                     maf_count += 1
 
                     if run_on_cluster:
-                        cmd = cmd.replace("#FILE_NAME#", file_name)  # Replace the dummy file name ref, first run only
-                        if old_file_name:  # Replace the last file name ref, additional runs only
-                            cmd = cmd.replace(old_file_name, file_name)
-                        old_file_name = file_name
+                        para = ' -f {file} -s {study_id} -u {token}  -c {classyfire} -i {update_maf} -r {run_silent}'.format(
+                            file=file_name, study_id=study_id,
+                            token=user_token, classyfire=classyfire_search, update_maf=update_study_maf, run_silent=run_silently)
+
+                        cmd = script + ' ' + para  # Replace the dummy file name ref, first run only
                         print_log("Starting cluster job for ChEBI pipeline: " + cmd)
                         status, message, job_out, job_err = lsf_job('bsub', job_param=cmd)
 
@@ -2328,8 +2317,14 @@ class ChEBIPipeLine(Resource):
                             maf_changed += 1
         else:
             annotation_file_name = annotation_file_name.strip()
-            cmd = cmd.replace("#FILE_NAME#", annotation_file_name)  # Replace the dummy file name reference in URL
+            #cmd = cmd.replace("#FILE_NAME#", annotation_file_name)  # Replace the dummy file name reference in URL
             if run_on_cluster:
+                para = ' -f {file} -s {study_id} -u {token}  -c {classyfire} -i {update_maf} -r {run_silent}'.format(
+                    file=annotation_file_name, study_id=study_id,
+                    token=user_token, classyfire=classyfire_search, update_maf=update_study_maf,
+                    run_silent=run_silently)
+
+                cmd = script + ' ' + para  # Replace the dummy file name ref, first run only
                 # create param file
                 print_log("Starting cluster job for ChEBI pipeline: " + cmd)
                 status, message, job_out, job_err = lsf_job('bsub', job_param=cmd)
