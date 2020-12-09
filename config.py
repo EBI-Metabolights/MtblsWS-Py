@@ -132,7 +132,7 @@ IGNORE_FILE_LIST = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal'
 
 
 RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp',
-                  '.lcd', '.abf', '.jpf', '.xps', '.mgf']
+                  '.lcd', '.abf', '.jpf', '.xps', '.mgf', '.qgd', '.hr']
 
 DERIVED_FILES_LIST = ['.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef', '.cnx', '.peakml', '.xy', '.smp',
                       '.scan']
