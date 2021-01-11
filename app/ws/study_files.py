@@ -26,12 +26,13 @@ from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from marshmallow import ValidationError
-
+from dirsync import sync
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsStudy import write_audit_files
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from datetime import datetime
+
 logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
@@ -41,17 +42,17 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
                                   include_raw_data=None, assay_file_list=None, validation_only=False,
                                   include_upload_folder=True, short_format=None, include_sub_dir=None,
                                   static_validation_file=None):
-
     upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
     logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
                 study_location, upload_location)
 
     start_time = time.time()
     s_start_time = time.time()
-    study_files,latest_update_time = get_all_files(study_location, directory=directory, include_raw_data=include_raw_data,
-                                assay_file_list=assay_file_list, validation_only=validation_only,
-                                short_format=short_format, include_sub_dir=include_sub_dir,
-                                static_validation_file=static_validation_file)
+    study_files, latest_update_time = get_all_files(study_location, directory=directory,
+                                                    include_raw_data=include_raw_data,
+                                                    assay_file_list=assay_file_list, validation_only=validation_only,
+                                                    short_format=short_format, include_sub_dir=include_sub_dir,
+                                                    static_validation_file=static_validation_file)
     logger.info("Listing study files for " + study_id + " took %s seconds" % round(time.time() - s_start_time, 2))
     upload_files = []
     if include_upload_folder:
@@ -63,9 +64,10 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
         except:
             os.mkdir(upload_location)
 
-        upload_files,latest_update_time = get_all_files(upload_location, directory=directory, include_raw_data=include_raw_data,
-                                     validation_only=validation_only, short_format=short_format,
-                                     static_validation_file=static_validation_file)
+        upload_files, latest_update_time = get_all_files(upload_location, directory=directory,
+                                                         include_raw_data=include_raw_data,
+                                                         validation_only=validation_only, short_format=short_format,
+                                                         static_validation_file=static_validation_file)
         logger.info("Listing upload files for " + study_id + " took %s seconds" % round(time.time() - u_start_time, 2))
 
     # Sort the two lists
@@ -312,7 +314,7 @@ without setting the "force" parameter to True''',
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -473,7 +475,7 @@ class CopyFilesFolders(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -501,7 +503,9 @@ class CopyFilesFolders(Resource):
 
                     if from_file != to_file:
                         if os.path.isfile(source_file):
-                            logger.info("The filename/folder you are copying to (%s) already exists in the upload folder, deleting first", to_file)
+                            logger.info(
+                                "The filename/folder you are copying to (%s) already exists in the upload folder, deleting first",
+                                to_file)
                             os.remove(source_file, source_file)
                         else:
                             logger.info("Renaming file %s to %s", from_file, to_file)
@@ -541,6 +545,101 @@ class CopyFilesFolders(Resource):
             return {'Success': 'Copied files from ' + upload_location}
         else:
             return {'Warning': message}
+
+class SyncFolder(Resource):
+    @swagger.operation(
+        summary="Copy files from study folder to private FTP  folder",
+        nickname="Copy from stduy folder",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "directory_name",
+                "description": "Only copy directory",
+                "paramType": "query",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. Files/Folders were copied across."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404, 'Please provide valid parameter for study identifier')
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('directory_name', help='Alternative file location')
+
+        # If false, only sync ISA-Tab metadata files
+        if request.args:
+            args = parser.parse_args(req=request)
+            directory_name = args['directory_name']
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        destination = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code + "/" + directory_name
+        source = study_location + "/" + directory_name
+        logger.info("syncing files from " + source + " to " + destination)
+        try:
+            if not os.path.exists(destination):
+                os.makedirs(destination)
+                os.chmod(destination, 0o777)
+            sync(source, destination, 'sync', purge=False, logger=logger)
+            logger.info('Copied file %s to %s', source, destination)
+            return {'Success': 'Copied files from ' + source + "to" + destination}
+        except OSError as e:
+            logger.error('Does the folder already exists? Can not copy %s to %s', source,
+                         destination, str(e))
+        except FileExistsError as e:
+            logger.error('Folder already exists! Can not copy %s to %s', source, destination,
+                         str(e))
+        except Exception as e:
+            logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
 
 
 class SampleStudyFiles(Resource):
@@ -591,7 +690,7 @@ class SampleStudyFiles(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
@@ -741,7 +840,7 @@ class UnzipFiles(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -806,16 +905,18 @@ def get_all_files(path, directory=None, include_raw_data=False, assay_file_list=
                   validation_only=False, short_format=None, include_sub_dir=None,
                   static_validation_file=None):
     try:
-        files,latest_update_time = get_file_information(study_location=path, path=path, directory=directory,
-                                     include_raw_data=include_raw_data, assay_file_list=assay_file_list,
-                                     validation_only=validation_only, short_format=short_format,
-                                     include_sub_dir=include_sub_dir, static_validation_file=static_validation_file)
+        files, latest_update_time = get_file_information(study_location=path, path=path, directory=directory,
+                                                         include_raw_data=include_raw_data,
+                                                         assay_file_list=assay_file_list,
+                                                         validation_only=validation_only, short_format=short_format,
+                                                         include_sub_dir=include_sub_dir,
+                                                         static_validation_file=static_validation_file)
     except Exception as e:
         logger.warning('Could not find folder ' + path + '. Error: ' + str(e))
         files = []  # The upload folder for this study does not exist, this is normal
         latest_update_time = ''
 
-    return files,latest_update_time
+    return files, latest_update_time
 
 
 def get_file_information(study_location=None, path=None, directory=None, include_raw_data=False,
@@ -892,13 +993,15 @@ def get_file_information(study_location=None, path=None, directory=None, include
                     if latest_update_time == "":
                         latest_update_time = file_time
                     else:
-                        latest_update_time = latest_update_time if datetime.strptime(latest_update_time, "%B %d %Y %H:%M:%S")> datetime.strptime(file_time, "%B %d %Y %H:%M:%S") \
+                        latest_update_time = latest_update_time if datetime.strptime(latest_update_time,
+                                                                                     "%B %d %Y %H:%M:%S") > datetime.strptime(
+                            file_time, "%B %d %Y %H:%M:%S") \
                             else file_time
     except Exception as e:
         logger.error('Error in listing files under ' + path + '. Last file was ' + file_name)
         logger.error(str(e))
 
-    return file_list,latest_update_time
+    return file_list, latest_update_time
 
 
 def flatten_list(list_name, flat_list=None):
@@ -945,7 +1048,7 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
 
     if include_sub_dir:
         file_list = list_directories_full(study_location, file_list, base_study_location=study_location)
-        #file_list = list_directories(study_location, file_list, base_study_location=study_location, include_sub_dir=include_sub_dir)
+        # file_list = list_directories(study_location, file_list, base_study_location=study_location, include_sub_dir=include_sub_dir)
     else:
         for entry in scandir(study_location):
             if not entry.name.startswith("."):
