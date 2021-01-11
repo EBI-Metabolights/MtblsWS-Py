@@ -29,7 +29,7 @@ from app.ws.assay_protocol import *
 from app.ws.assay_table import *
 from app.ws.biostudies import *
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
-from app.ws.cluster_jobs import LsfUtils
+from app.ws.cluster_jobs import LsfUtils,LsfUtilsStatus
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import *
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
@@ -62,12 +62,10 @@ MTBLS WS-Py
 
 MetaboLights Python-based REST Web Service
 """
-
 application = Flask(__name__, instance_relative_config=True)
 hostname = os.uname().nodename
 logging.config.fileConfig('logging_' + hostname + '.conf')
 logger = logging.getLogger('wslog')
-
 
 def configure_app(flask_app):
     flask_app.config.from_object(config)
@@ -189,6 +187,7 @@ def initialize_app(flask_app):
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
+    api.add_resource(LsfUtilsStatus, res_path + "/ebi-internal/cluster-jobs-status")
     api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats")
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 

@@ -631,7 +631,7 @@ class SyncFolder(Resource):
                 os.chmod(destination, 0o777)
             sync(source, destination, 'sync', purge=False, logger=logger)
             logger.info('Copied file %s to %s', source, destination)
-            return {'Success': 'Copied files from ' + source + "to" + destination}
+            return {'Success': 'Copied files from study folder to  ftp folder'}
         except OSError as e:
             logger.error('Does the folder already exists? Can not copy %s to %s', source,
                          destination, str(e))
