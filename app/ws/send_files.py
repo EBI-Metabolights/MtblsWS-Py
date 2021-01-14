@@ -103,6 +103,9 @@ class SendFiles(Resource):
             abort(404)
         study_id = study_id.upper()
 
+        if study_id == "MTBLS1405":
+            abort(429)
+
         # User authentication
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]

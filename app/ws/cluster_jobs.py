@@ -268,3 +268,75 @@ class LsfUtils(Resource):
             return {"success": message, "message": job_out, "error": job_err}
         else:
             return {"Failure": message, "message": job_out, "error": job_err}
+
+class LsfUtilsStatus(Resource):
+
+
+    @swagger.operation(
+        summary="List all EBI LSF cluster jobs",
+        parameters=[
+            {
+                "name": "job_id",
+                "description": "submitted job id",
+                "paramType": "query",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested job identifier is not valid or no longer exist"
+            }
+        ]
+    )
+    def get(self):
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None:
+            abort(401)
+            # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('job_id', help='cluster job_id')
+        job_id = ""
+        if request.args:
+            args = parser.parse_args(req=request)
+            job_id = args['job_id']
+
+        # param validation
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions('MTBLS2', user_token)
+        if not is_curator:
+            abort(403)
+
+        cmd = "/usr/bin/ssh ebi-cli bjobs " + str(job_id).strip()
+        logger.info(cmd)
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
+        logger.info(result)
+        result = result.stdout.decode("utf-8")
+        return {'Success': result}

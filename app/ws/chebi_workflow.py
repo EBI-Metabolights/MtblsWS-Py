@@ -452,8 +452,17 @@ def duplicate(my_list, n):
 
 def unique_list(l):
     ulist = []
-    [ulist.append(x) for x in l if x not in ulist]
+    [ulist.append(x) for x in l if x not in ulist and x is not '']
     return ulist
+
+
+def get_cas_from_synonyms(synonyms):
+    pattern = re.compile("CAS-\S")
+    result = unique_list(synonyms.split(';'))
+    for i in result:
+        if pattern.match(i):
+            return i[4:]
+
 
 
 def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
@@ -795,14 +804,14 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                     if csid:
                         db_acc = 'ChemSpider:' + csid + ';'
                     if pc_synonyms:
-                        db_acc = db_acc + pc_synonyms + ';'
+                        db_acc = db_acc + ';' + pc_synonyms + ';'
                     if cactus_synonyms:
                         if pc_synonyms is None:
-                            db_acc = db_acc + cactus_synonyms
+                            db_acc = db_acc + ';' +  cactus_synonyms
                         else:
                             cactus_synonyms = get_valid_synonyms(cactus_synonyms, pc_synonyms)
                             if cactus_synonyms:
-                                db_acc = db_acc + cactus_synonyms
+                                db_acc = db_acc + ';'+ cactus_synonyms
                     # Cactus and PubChem synonyms for SDF export
                     pubchem_df.iloc[
                         row_idx, get_idx('direct_parent', pubchem_df_headers)] = ''  # direct_parent from ClassyFire
@@ -864,6 +873,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             pubchem_df.iloc[row_idx, get_idx('row_id',
                                              pubchem_df_headers)] = row_idx + 1  # Row id added if copy and no search results
         if db_acc:
+            db_acc = ';'.join(unique_list(db_acc.split(';')))
             pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                 ';')
 
@@ -879,6 +889,14 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             cas_id = pubchem_df.iloc[row_idx, get_idx('cas_id', pubchem_df_headers)]
             if not cas_id:
                 cas_id = get_cas_id(final_inchi_key)
+                if not cas_id :
+                    pubchem_synonyms = pubchem_df.iloc[row_idx, get_idx('pubchem_synonyms', pubchem_df_headers)]
+                    if pubchem_synonyms:
+                        cas_id = get_cas_from_synonyms(pubchem_synonyms)
+                    if not cas_id:
+                        cactus_synonyms = pubchem_df.iloc[row_idx, get_idx('cactus_synonyms', pubchem_df_headers)]
+                        if cactus_synonyms:
+                            cas_id = get_cas_from_synonyms(cactus_synonyms)
                 pubchem_df.iloc[row_idx, get_idx('cas_id', pubchem_df_headers)] = cas_id
 
             dime_id = pubchem_df.iloc[row_idx, get_idx('dime_id', pubchem_df_headers)]
@@ -901,8 +919,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             db_acc = ';'.join(unique_list(db_acc.split(';')))
             pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                 ';')
-            pubchem_df.iloc[row_idx, get_idx('CAS_NO', pubchem_df_headers)] = cas_id.rstrip(
-                ';')
+            pubchem_df.iloc[row_idx, get_idx('CAS_NO', pubchem_df_headers)] = cas_id
 
         if changed and row_idx > 0 and row_idx % 20 == 0:  # Save every 20 rows
             pubchem_file = short_file_name + pubchem_end
@@ -1160,6 +1177,7 @@ def removeHydrogen(sdf_file_name):
                 fileText = fileText + mol + '$$$$'
                 count += 1
             else:
+                fileText = fileText + mol + '$$$$'
                 if fileText[:1] == '\n':
                     fileText = fileText[1:]
                 res = requests.post('https://www.ebi.ac.uk/chembl/api/utils/removeHs', data=fileText.encode('utf-8'))
@@ -1704,7 +1722,7 @@ def add_database_name_synonym(synonym):
     elif synonym.startswith('C') and is_correct_int(synonym[1:], 5):  # KEGG Compound
         return "KEGG COMPOUND:" + synonym
 
-    elif synonym.startswith('D') and is_correct_int(synonym[1:], 5):  # KEGG Drug
+    elif synonym.startswith('D') and synonym[1:2] != '-' and is_correct_int(synonym[1:], 5):  # KEGG Drug
         return "KEGG DRUG:" + synonym
 
     elif synonym.startswith('G') and is_correct_int(synonym[1:], 5):  # KEGG Glycan
@@ -2060,7 +2078,7 @@ def processUniChemResponse(inchi_key):
             kegg_id = add_database_name_synonym(kegg_id)
             unichem_id = unichem_id + kegg_id + ";"
         if '18' in response_dict:
-            unichem_id = unichem_id + 'HMDB:' + response_dict['18']['src_compound_id'][4:] + ";"
+            unichem_id = unichem_id + 'HMDB:HMDB' + response_dict['18']['src_compound_id'][4:] + ";"
         if '25' in response_dict:
             unichem_id = unichem_id + 'LINCS:' + response_dict['25']['src_compound_id'] + ";"
         if '34' in response_dict:
@@ -2113,7 +2131,7 @@ def get_dime_db(inchi_key):
                 hmdb = response_dict['HMDB Accession']
                 if len(hmdb) != 11:
                     hmdb = '00' + hmdb[4:]
-                dime_db_ids = dime_db_ids + 'HMDB:' + hmdb + ";"
+                dime_db_ids = dime_db_ids + 'HMDB:HMDB' + hmdb + ";"
 
             dime_db_ids = dime_db_ids.rstrip(';')
         except:
@@ -2125,8 +2143,8 @@ class ChEBIPipeLine(Resource):
     @swagger.operation(
         summary="Search external resources using compound names in MAF (curator only)",
         nickname="ChEBI automated pipeline",
-        notes="""Search and populate a given Metabolite Annotation File based on the 'metabolite_identification' column. 
-              New MAF files will be created in the 'chebi_pipeline_annotations' folder with extension '_pubchem.tsv'. These form part of 
+        notes="""Search and populate a given Metabolite Annotation File based on the 'metabolite_identification' column.
+              New MAF files will be created in the 'chebi_pipeline_annotations' folder with extension '_pubchem.tsv'. These form part of
               the ChEBI submission pipeline. If no annotation_file_name is given, all MAF in the study are processed""",
         parameters=[
             {

@@ -29,7 +29,7 @@ from app.ws.assay_protocol import *
 from app.ws.assay_table import *
 from app.ws.biostudies import *
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
-from app.ws.cluster_jobs import LsfUtils
+from app.ws.cluster_jobs import LsfUtils,LsfUtilsStatus
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import *
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
@@ -50,8 +50,8 @@ from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
 from app.ws.spectra import ExtractMSSpectra
 from app.ws.stats import StudyStats
-from app.ws.study_actions import StudyStatus
-from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders
+from app.ws.study_actions import StudyStatus,ToggleStatus
+from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders,SyncFolder
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
@@ -62,12 +62,10 @@ MTBLS WS-Py
 
 MetaboLights Python-based REST Web Service
 """
-
 application = Flask(__name__, instance_relative_config=True)
 hostname = os.uname().nodename
 logging.config.fileConfig('logging_' + hostname + '.conf')
 logger = logging.getLogger('wslog')
-
 
 def configure_app(flask_app):
     flask_app.config.from_object(config)
@@ -116,7 +114,9 @@ def initialize_app(flask_app):
     api.add_resource(DeleteStudy, res_path + "/studies/<string:study_id>/delete")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
     api.add_resource(StudyStatus, res_path + "/studies/<string:study_id>/status")
+    api.add_resource(ToggleStatus, res_path + "/studies/<string:study_id>/toggle_status")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")
+    api.add_resource(SyncFolder, res_path + "/studies/<string:study_id>/dir_sync")
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")
 
@@ -188,6 +188,7 @@ def initialize_app(flask_app):
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
+    api.add_resource(LsfUtilsStatus, res_path + "/ebi-internal/cluster-jobs-status")
     api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats")
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 
