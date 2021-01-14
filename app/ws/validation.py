@@ -56,7 +56,8 @@ raw_file = 'Raw Spectral Data File'
 derived_file = 'Derived Spectral Data File'
 
 
-def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0, log_category=error):
+def add_msg(validations, section, message, status, meta_file="", value="", descr="", val_sequence=0,
+            log_category=error):
     if log_category == status or log_category == 'all':
         validations.append({"message": message, "section": section, "val_sequence": str(val_sequence), "status": status,
                             "metadata_file": meta_file, "value": value, "description": descr})
@@ -224,7 +225,8 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
 
     # if not folder and "fid" not in file_name and final_filename.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
-    if not folder and file_name not in file_name_list and file_name.lstrip('/') not in file_name_list:  # was final_filename
+    if not folder and file_name not in file_name_list and file_name.lstrip(
+            '/') not in file_name_list:  # was final_filename
         msg = "File '" + file_name + "' does not exist" + assay_file_name
         if file_name != file_name.rstrip(' '):
             msg = msg + ". Trailing space in file name?"
@@ -237,7 +239,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
         if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
             return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
         else:
-            return False, file_type,  "The " + column_name + \
+            return False, file_type, "The " + column_name + \
                    " must start with 'm_' and end in '_v2_maf.tsv'" + assay_file_name
 
     if (file_type == 'raw' or file_type == 'compressed') and column_name == raw_file:
@@ -347,7 +349,8 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
 
         try:
             if is_ms and maf_header['mass_to_charge']:
-                check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms=is_ms, log_category=log_category)
+                check_maf_rows(validations, val_section, maf_df, 'mass_to_charge', is_ms=is_ms,
+                               log_category=log_category)
             elif not is_ms and maf_header['chemical_shift']:
                 check_maf_rows(validations, val_section, maf_df, 'chemical_shift', is_ms=is_ms,
                                log_category=log_category)
@@ -372,7 +375,8 @@ def validate_maf(validations, file_name, all_assay_names, study_location, study_
                     maf_header[sample_name]
                     # add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' found in the MAF",
                     #         success, val_sequence=7, log_category=log_category)
-                    check_maf_rows(validations, val_section, maf_df, sample_name, is_ms=is_ms, log_category=log_category)
+                    check_maf_rows(validations, val_section, maf_df, sample_name, is_ms=is_ms,
+                                   log_category=log_category)
                 except:
                     add_msg(validations, val_section, "Sample Name '" + str(sample_name) + "' not found in the MAF",
                             warning, val_sequence=8, log_category=log_category)
@@ -390,8 +394,8 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
             col_rows += 1
 
     # if col_rows == all_rows:
-        # add_msg(validations, val_section, "All values for column '" + column_name + "' found in the MAF",
-        #         success, val_sequence=9.1, log_category=log_category)
+    # add_msg(validations, val_section, "All values for column '" + column_name + "' found in the MAF",
+    #         success, val_sequence=9.1, log_category=log_category)
     # else:
     if col_rows != all_rows:
         # For MS we should have m/z values, for NMR the chemical shift is equally important.
@@ -494,7 +498,7 @@ class Validation(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -651,7 +655,7 @@ class UpdateValidationFile(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -666,7 +670,6 @@ class UpdateValidationFile(Resource):
 
 def update_val_schema_files(validation_file, study_id, study_location, user_token, obfuscation_code,
                             log_category='all', return_schema=False):
-
     # Tidy up old files first
     if os.path.isfile(os.path.join(study_location, 'validation_files.json')):
         os.remove(os.path.join(study_location, 'validation_files.json'))
@@ -721,7 +724,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
 
     # Ensuring we have the latest database values
     is_curator, read_access, write_access, db_obfuscation_code, db_study_location, db_release_date, \
-        db_submission_date, db_study_status = wsc.get_permissions(study_id, user_token)
+    db_submission_date, db_study_status = wsc.get_permissions(study_id, user_token)
 
     try:
         validation_schema_file = app.config.get('VALIDATIONS_FILE')
@@ -913,8 +916,8 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
         if row not in all_samples:
             all_samples.append(row)
         # if row in sample_name_list:
-            # add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
-            #         success, assay.filename, val_sequence=7, log_category=log_category)
+        # add_msg(validations, val_section, "Sample name '" + row + "' found in sample sheet",
+        #         success, assay.filename, val_sequence=7, log_category=log_category)
         # else:
         if row not in sample_name_list:
             if len(row) == 0:
@@ -998,8 +1001,8 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                         derived_found = True
                 else:
                     # if value:
-                        # add_msg(validations, val_section, header + " was referenced in assay row " + row_idx,
-                        #         success, filename, val_sequence=7.5, log_category=log_category)
+                    # add_msg(validations, val_section, header + " was referenced in assay row " + row_idx,
+                    #         success, filename, val_sequence=7.5, log_category=log_category)
                     # else:
                     if not value:
                         val_type = error
@@ -1073,11 +1076,15 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             if 'Term ' not in header and 'Protocol REF' not in header and 'Unit' not in header:
                 assays.append(header)
 
+        if len(assay_df) <= 1:
+            add_msg(validations, val_section, "Assay sheet '" + str(assay.filename) + " contains Only 1 sample, please ensure you have included all samples and any control, QC, standards etc. If no further samples were used in the study please contact MetaboLights-help.",
+                    error, val_sequence=1, log_category=log_category)
+
         # Are the template headers present in the assay
         assay_type = get_assay_type_from_file_name(study_id, assay.filename)
         if assay_type != 'a':  # Not created from the online editor, so we have to skip this validation
             tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, \
-                assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
+            assay_mandatory_type = get_assay_headers_and_protcols(assay_type)
             for idx, template_header in enumerate(tidy_header_row):
 
                 assay_header_pos = None
@@ -1145,7 +1152,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                         val_type, assay.filename, val_sequence=4, log_category=log_category)
                             else:
                                 add_msg(validations,
-                                        val_section, "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing some values. " +
+                                        val_section,
+                                        "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing some values. " +
                                         str(col_rows) + " rows found, but there should be " + str(all_rows),
                                         val_type, assay.filename, val_sequence=4.1, log_category=log_category)
                         # else:
@@ -1185,7 +1193,6 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 else:
                     add_msg(validations, val_section, "MS/NMR Assay name column only contains unique values",
                             success, assay.filename, val_sequence=4.12, log_category=log_category)
-
 
     for sample_name in sample_name_list:  # Loop all unique sample names from sample sheet
         if sample_name not in all_assay_samples:
@@ -1232,7 +1239,7 @@ def get_files_in_sub_folders(study_location):
     folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
 
     for file_name in os.listdir(study_location):
-    # for file_name in file_list:
+        # for file_name in file_list:
         if os.path.isdir(os.path.join(study_location, file_name)):
             fname, ext = os.path.splitext(file_name)
             ext = ext.lower()
@@ -1260,7 +1267,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
     validations = []
     assay_file_list = get_assay_file_list(study_location)
     # folder_list = get_files_in_sub_folders(study_location)
-    study_files, upload_files, upload_diff, upload_location,latest_update_time = \
+    study_files, upload_files, upload_diff, upload_location, latest_update_time = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
                                       include_upload_folder=False, assay_file_list=assay_file_list,
@@ -1337,7 +1344,8 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
 
                 if file_status == 'old':
                     add_msg(validations, val_section, "Old ISA-Tab metadata file should be removed ("
-                            + file_name + ")", error, val_section, value=file_name, val_sequence=5, log_category=log_category)
+                            + file_name + ")", error, val_section, value=file_name, val_sequence=5,
+                            log_category=log_category)
 
             if file_type == 'aspera-control':
                 add_msg(validations, val_section,
@@ -1389,6 +1397,13 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
         val = study_val['samples']
         all_val = val['default_order']
 
+    # check isa_sample frame size - if size is 1 return  below error -
+
+    if len(isa_samples) <= 1:
+        add_msg(validations, val_section,
+                "Only 1 sample has been added to your study, please ensure you have included all samples and any control, QC, standards etc. If no further samples were used in the study please contact MetaboLights-help",
+                error,
+                file_name, val_sequence=1, log_category=log_category)
     # Get an indexed header row
     s_file_name = isa_study.filename
     sample_header = get_table_header(isa_samples, isa_study.identifier, s_file_name)
@@ -1454,7 +1469,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
 
             if not sample_coll_found and s_header.lower() == prot_ref:
                 add_msg(validations, val_section, "Sample sheet column '" + s_header + "' is missing required values. "
-                                                  "All rows must contain the text 'Sample collection'",
+                                                                                       "All rows must contain the text 'Sample collection'",
                         error, file_name, val_sequence=7.8, log_category=log_category)
 
             if col_rows < all_rows:
@@ -1616,9 +1631,9 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                 add_msg(validations, val_section, "Protocol description validates", success, file_name,
                         value=prot_desc, val_sequence=9, log_category=log_category)
             else:
-                if prot_desc.lower().rstrip('.') in('no metabolites', 'not applicable',
-                                                    'no metabolites were identified',
-                                                    'no data transformation was required'):
+                if prot_desc.lower().rstrip('.') in ('no metabolites', 'not applicable',
+                                                     'no metabolites were identified',
+                                                     'no data transformation was required'):
                     add_msg(validations, val_section, "Protocol description validates", success, file_name,
                             value=prot_desc, val_sequence=10, log_category=log_category)
                 else:
@@ -1920,14 +1935,16 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
             study_num = len(isa_inv.studies)
             if study_num > 1:
                 add_msg(validations, val_section,
-                        "You can only submit one study per submission, this submission has " + str(study_num) + " studies",
+                        "You can only submit one study per submission, this submission has " + str(
+                            study_num) + " studies",
                         error, 'i_Investigation.txt', val_sequence=2.1, log_category=log_category)
 
         if isa_study and study_num == 1:
             add_msg(validations, val_section, "Successfully read the study section of the investigation file", success,
                     'i_Investigation.txt', val_sequence=3, log_category=log_category)
         else:
-            add_msg(validations, val_section, "Could not correctly read the study section of the investigation file", error,
+            add_msg(validations, val_section, "Could not correctly read the study section of the investigation file",
+                    error,
                     'i_Investigation.txt', val_sequence=4, log_category=log_category)
             validates = False
 
@@ -2145,7 +2162,7 @@ class OverrideValidation(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403)
 
