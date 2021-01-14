@@ -549,7 +549,7 @@ class CopyFilesFolders(Resource):
 class SyncFolder(Resource):
     @swagger.operation(
         summary="Copy files from study folder to private FTP  folder",
-        nickname="Copy from stduy folder",
+        nickname="Copy from study folder",
         parameters=[
             {
                 "name": "study_id",
