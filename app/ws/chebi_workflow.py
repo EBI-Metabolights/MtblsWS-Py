@@ -788,8 +788,8 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
                         row_idx, get_idx('pubchem_synonyms', pubchem_df_headers)] = pc_synonyms  # PubChem synonyms
                     pubchem_df.iloc[row_idx, get_idx('pubchem_first_synonym',
                                                      pubchem_df_headers)] = first_synonym  # PubChem first synonym, ie. the compound name
-                    if not cactus_synonyms:
-                        cactus_synonyms = alt_name
+                    #if not cactus_synonyms:
+                        #cactus_synonyms = alt_name
 
                     pubchem_df.iloc[row_idx, get_idx('cactus_synonyms',
                                                      pubchem_df_headers)] = cactus_synonyms  # add cactus_synonyms

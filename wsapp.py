@@ -50,7 +50,7 @@ from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
 from app.ws.spectra import ExtractMSSpectra
 from app.ws.stats import StudyStats
-from app.ws.study_actions import StudyStatus,ToggleStatus
+from app.ws.study_actions import StudyStatus,ToggleAccess
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders,SyncFolder
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
@@ -114,7 +114,7 @@ def initialize_app(flask_app):
     api.add_resource(DeleteStudy, res_path + "/studies/<string:study_id>/delete")
     api.add_resource(CreateUploadFolder, res_path + "/studies/<string:study_id>/upload")
     api.add_resource(StudyStatus, res_path + "/studies/<string:study_id>/status")
-    api.add_resource(ToggleStatus, res_path + "/studies/<string:study_id>/toggle_status")
+    api.add_resource(ToggleAccess, res_path + "/studies/<string:study_id>/toggle_access")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")
     api.add_resource(SyncFolder, res_path + "/studies/<string:study_id>/dir_sync")
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")
