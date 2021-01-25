@@ -166,10 +166,10 @@ class StudyStatus(Resource):
             'MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
         if db_study_status.lower() == 'submitted' and study_status.lower() == 'In Curation'.lower():
             if os.path.exists(ftp_path):
-                os.chmod(ftp_path, 0o755)
+                os.chmod(ftp_path, 0o750)
         if db_study_status.lower() == 'In Curation' and study_status.lower() == 'submitted':
             if os.path.exists(ftp_path):
-                os.chmod(ftp_path, 0o775)
+                os.chmod(ftp_path, 0o770)
 
         return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
                 "release-date": release_date}
@@ -203,10 +203,10 @@ class StudyStatus(Resource):
         return False
 
 
-class ToggleStatus(Resource):
+class ToggleAccess(Resource):
     @swagger.operation(
-        summary="Change study folder permission",
-        nickname="Change study permission",
+        summary="Change FTP study folder permission",
+        nickname="Change FTP study permission",
         parameters=[
             {
                 "name": "study_id",
@@ -228,7 +228,7 @@ class ToggleStatus(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK. The Metabolite Annotation File (MAF) is returned"
+                "message": "OK. FTP folder permission toggled "
             },
             {
                 "code": 401,
@@ -266,11 +266,85 @@ class ToggleStatus(Resource):
         logger.info("changing ftp folder permission")
         try:
             if os.path.exists(ftp_path):
-                if oct(os.stat(ftp_path).st_mode)[-3:] == '775':
-                    os.chmod(ftp_path, 0o755)
+                if oct(os.stat(ftp_path).st_mode)[-3:] == '775' or oct(os.stat(ftp_path).st_mode)[-3:] == '770':
+                    os.chmod(ftp_path, 0o750)
                 else:
-                    os.chmod(ftp_path, 0o775)
+                    if oct(os.stat(ftp_path).st_mode)[-3:] == '755' or oct(os.stat(ftp_path).st_mode)[-3:] == '750':
+                        os.chmod(ftp_path, 0o770)
             return {'Success': 'Updated the folder permission'}
         except OSError as e:
             logger.error('Error in updating the permission for %s ',
+                         ftp_path, str(e))
+
+    @swagger.operation(
+        summary="Get Study FTP folder permission",
+        nickname="Get FTP study permission",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. FTP folder permission returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404, 'Please provide valid parameter for study identifier')
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        db_study_status = wsc.get_permissions(study_id, user_token)
+        if not is_curator:
+            abort(403)
+
+        ftp_path = app.config.get(
+            'MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
+        logger.info("changing ftp folder permission")
+        access = ""
+        try:
+            if os.path.exists(ftp_path):
+                if oct(os.stat(ftp_path).st_mode)[-3:] == '775' or oct(os.stat(ftp_path).st_mode)[-3:] == '770':
+                    access = "Write"
+                else:
+                    if oct(os.stat(ftp_path).st_mode)[-3:] == '755' or oct(os.stat(ftp_path).st_mode)[-3:] == '750':
+                        access = "Read"
+            return {'Access': access}
+        except OSError as e:
+            logger.error('Error in getting the permission for %s ',
                          ftp_path, str(e))
