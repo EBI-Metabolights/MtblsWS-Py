@@ -1174,7 +1174,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                              sample_name_list, is_ms=is_ms, log_category=log_category)
                             else:
                                 add_msg(validations, val_section,
-                                        "No MAF file referenced for assay sheet " + assay.filename, warning,
+                                        "No MAF file referenced for assay sheet " + assay.filename, error,
                                         val_sequence=7.4, log_category=log_category)
 
                 except Exception as e:
