@@ -1441,7 +1441,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                 if s_header == 'Characteristics[Organism]':
                     if 'human' == row.lower() or 'man' == row.lower():
                         human_found = True
-                    elif len(row) < 5:  # ToDo, read from all_val[idx][ontology-details][rules][0][value]
+                    elif len(row) < 4:  # ToDo, read from all_val[idx][ontology-details][rules][0][value]
                         too_short = True
 
                     if row.lower() in incorrect_species:
