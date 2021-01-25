@@ -1174,7 +1174,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                              sample_name_list, is_ms=is_ms, log_category=log_category)
                             else:
                                 add_msg(validations, val_section,
-                                        "No MAF file referenced for assay sheet " + assay.filename, error,
+                                        "No MAF/feature file referenced for assay sheet " + assay.filename + ". Please add the appropriate file reference (m_xxx.tsv) to the last column of the assay table. If the metabolite file is missing or your study does not include metabolite/feature identification information, please contact metabolights-help@ebi.ac.uk", error,
                                         val_sequence=7.4, log_category=log_category)
 
                 except Exception as e:
