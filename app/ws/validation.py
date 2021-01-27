@@ -1502,7 +1502,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
                 "Organism cannot be 'human' or 'man', please choose the 'Homo sapiens' taxonomy term",
                 error, file_name, val_sequence=8, log_category=log_category)
     if too_short:
-        add_msg(validations, val_section, "Organism name is missing or too short (<5 characters)", error, file_name,
+        add_msg(validations, val_section, "Organism name is missing or too short (<4 characters)", error, file_name,
                 val_sequence=9, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
