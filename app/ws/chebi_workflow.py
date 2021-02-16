@@ -1103,7 +1103,7 @@ def update_sdf_file_info(pubchem_df, study_location, classyfire_file_name, class
                     database_accession = database_accession + chemspider
 
                 if cactus_synonyms and cactus_synonyms.strip(';') not in database_accession:
-                    database_accession = database_accession + cactus_synonyms
+                    database_accession = database_accession + ";" + cactus_synonyms
 
             add_classyfire_sdf_info(mtbls_sdf_file_name, mtbls_accession=study_id, organism=organism,
                                     definition=definition,
@@ -1320,6 +1320,7 @@ def add_classyfire_sdf_info(mtbls_pubchem_sdf_file, mtbls_accession=None, relati
                 filedata = filedata.replace('#template_iupack_name#', iupack_name)
 
             if database_accession:
+                database_accession = ';'.join(unique_list(database_accession.split(';')))
                 filedata = filedata.replace('#template_database_accessions#', database_accession.rstrip(';'))
 
             if cas_id:
