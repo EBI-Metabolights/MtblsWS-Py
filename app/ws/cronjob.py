@@ -62,7 +62,7 @@ class cronjob(Resource):
                 "paramType": "query",
                 "dataType": "string",
                 "enum": ["curation log-Database Query", "curation log-Database update", "MTBLS statistics",
-                         "empty studies", "MARIANA study_classify", "test cronjob"]
+                         "empty studies", "MARIANA study_classify", "ftp file permission", "test cronjob"]
             }
 
         ],
@@ -162,6 +162,15 @@ class cronjob(Resource):
             file_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('MARIANA_PATH')
             writeDataToFile(file_path + file_name, res, True)
             return jsonify(res)
+        elif source == 'ftp file permission':
+            submit, curation, review = file_permission()
+            if len(submit) + len(curation) + len(review) == 0:
+                return jsonify('Nothing to change')
+            else:
+                res = {"Change ftp folder access permission": {'Submission studies (770)': submit,
+                                                               'In curation studies (750)': curation,
+                                                               'In review studies (550)': review}}
+                return jsonify(res)
         elif source == 'test cronjob':
             pass
         else:
@@ -287,6 +296,36 @@ def get_empty_studies():
     empty_email.sort(key=natural_keys)
     no_email.sort(key=natural_keys)
     return empty_email, no_email
+
+
+def file_permission():
+    submit = []
+    curation = []
+    review = []
+    ftp_foldername = next(os.walk(app.config.get('MTBLS_FTP_ROOT')))[1]
+    study_IDs = [x.split('-')[0].upper() for x in ftp_foldername]
+
+    for study_id in study_IDs:
+        print(study_id)
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        db_study_status = wsc.get_permissions(study_id, app.config.get('METABOLIGHTS_TOKEN'))
+
+        ftp_path = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
+        stat = oct(os.stat(ftp_path).st_mode)[-3:]
+
+        if db_study_status == 'In Curation' and stat != '750':
+            os.chmod(ftp_path, 0o750)
+            curation.append(study_id)
+        elif db_study_status == 'Submitted' and stat != '770':
+            os.chmod(ftp_path, 0o770)
+            submit.append(study_id)
+        elif db_study_status == 'In Review' and stat != '550':
+            os.chmod(ftp_path, 0o550)
+            review.append(study_id)
+        else:
+            pass
+
+    return submit, curation, review
 
 
 def untarget_NMR():
