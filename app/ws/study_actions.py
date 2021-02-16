@@ -254,7 +254,7 @@ class ToggleAccess(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
+        access = ""
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
         db_study_status = wsc.get_permissions(study_id, user_token)
@@ -268,14 +268,17 @@ class ToggleAccess(Resource):
             if os.path.exists(ftp_path):
                 if oct(os.stat(ftp_path).st_mode)[-3:] == '775' or oct(os.stat(ftp_path).st_mode)[-3:] == '770':
                     os.chmod(ftp_path, 0o750)
+                    access = "Read"
                 else:
                     if oct(os.stat(ftp_path).st_mode)[-3:] == '755' or oct(os.stat(ftp_path).st_mode)[-3:] == '750':
                         os.chmod(ftp_path, 0o770)
-            return {'Success': 'Updated the folder permission'}
+                        access = "Write"
+            return {'Access': access}
         except OSError as e:
             logger.error('Error in updating the permission for %s ',
                          ftp_path, str(e))
 
+class ToggleAccessGet(Resource):
     @swagger.operation(
         summary="Get Study FTP folder permission",
         nickname="Get FTP study permission",
