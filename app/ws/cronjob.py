@@ -303,27 +303,31 @@ def file_permission():
     curation = []
     review = []
     ftp_foldername = next(os.walk(app.config.get('MTBLS_FTP_ROOT')))[1]
-    study_IDs = [x.split('-')[0].upper() for x in ftp_foldername]
+    study_IDs = [x.split('-')[0].upper() for x in ftp_foldername if x.upper().startswith('MTBLS')]
 
     for study_id in study_IDs:
-        print(study_id)
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        db_study_status = wsc.get_permissions(study_id, app.config.get('METABOLIGHTS_TOKEN'))
+        try:
+            is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            db_study_status = wsc.get_permissions(study_id, app.config.get('METABOLIGHTS_TOKEN'))
 
-        ftp_path = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
-        stat = oct(os.stat(ftp_path).st_mode)[-3:]
+            ftp_path = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
+            stat = oct(os.stat(ftp_path).st_mode)[-3:]
 
-        if db_study_status == 'In Curation' and stat != '750':
-            os.chmod(ftp_path, 0o750)
-            curation.append(study_id)
-        elif db_study_status == 'Submitted' and stat != '770':
-            os.chmod(ftp_path, 0o770)
-            submit.append(study_id)
-        elif db_study_status == 'In Review' and stat != '550':
-            os.chmod(ftp_path, 0o550)
-            review.append(study_id)
-        else:
-            pass
+            if db_study_status == 'In Curation' and stat != '750':
+                os.chmod(ftp_path, 0o750)
+                curation.append(study_id)
+            elif db_study_status == 'Submitted' and stat != '770':
+                os.chmod(ftp_path, 0o770)
+                submit.append(study_id)
+            elif db_study_status == 'In Review' and stat != '550':
+                os.chmod(ftp_path, 0o550)
+                review.append(study_id)
+            else:
+                pass
+        except Exception as e:
+            logger.info(e)
+            print(e)
+            continue
 
     return submit, curation, review
 
