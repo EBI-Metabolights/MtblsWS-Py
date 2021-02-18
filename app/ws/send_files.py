@@ -184,6 +184,9 @@ class SendFiles(Resource):
                     remove_file = True
                     safe_path = zip_name
                     file_name = short_zip
+                else:
+                    head, tail = os.path.split(file_name)
+                    file_name = tail
 
             resp = make_response(send_file(safe_path, as_attachment=True, attachment_filename=file_name, cache_timeout=0))
             # response.headers["Content-Disposition"] = "attachment; filename={}".format(file_name)
