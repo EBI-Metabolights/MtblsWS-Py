@@ -165,7 +165,7 @@ class cronjob(Resource):
         elif source == 'ftp file permission':
             submit, curation, review = file_permission()
             if len(submit) + len(curation) + len(review) == 0:
-                return jsonify('Nothing to change')
+                return jsonify({'result': 'Nothing to change'})
             else:
                 res = {"Change ftp folder access permission": {'Submission studies (770)': submit,
                                                                'In curation studies (750)': curation,
