@@ -29,9 +29,10 @@ from app.ws.assay_protocol import *
 from app.ws.assay_table import *
 from app.ws.biostudies import *
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
-from app.ws.cluster_jobs import LsfUtils,LsfUtilsStatus
+from app.ws.cluster_jobs import LsfUtils, LsfUtilsStatus
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import *
+from app.ws.curation_log import *
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.isaAssay import *
@@ -45,17 +46,17 @@ from app.ws.mzML2ISA import *
 from app.ws.ontology import *
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
+from app.ws.pathway import keggid, fellaPathway
 from app.ws.reports import reports
 from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
 from app.ws.spectra import ExtractMSSpectra
 from app.ws.stats import StudyStats
-from app.ws.study_actions import StudyStatus,ToggleAccess,ToggleAccessGet
-from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders,SyncFolder
+from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
+from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
-from app.ws.pathway import keggid,fellaPathway
 
 """
 MTBLS WS-Py
@@ -66,6 +67,7 @@ application = Flask(__name__, instance_relative_config=True)
 hostname = os.uname().nodename
 logging.config.fileConfig('logging_' + hostname + '.conf')
 logger = logging.getLogger('wslog')
+
 
 def configure_app(flask_app):
     flask_app.config.from_object(config)
@@ -194,11 +196,13 @@ def initialize_app(flask_app):
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
-    api.add_resource(keggid,res_path+"/ebi-internal/keggid")
-    api.add_resource(fellaPathway,res_path+"/ebi-internal/fella-pathway")
+    api.add_resource(keggid, res_path + "/ebi-internal/keggid")
+    api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
+    api.add_resource(keggid, res_path + "/ebi-internal/keggid")
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
+    api.add_resource(curation_log, res_path + "/v2/curation_log")
 
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
 
