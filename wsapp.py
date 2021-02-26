@@ -46,7 +46,7 @@ from app.ws.mzML2ISA import *
 from app.ws.ontology import *
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
-from app.ws.pathway import keggid, fellaPathway
+from app.ws.pathway import keggid
 from app.ws.reports import reports
 from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
@@ -57,6 +57,7 @@ from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, Unz
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
+from app.ws.pathway import keggid,fellaPathway
 
 """
 MTBLS WS-Py
@@ -196,9 +197,8 @@ def initialize_app(flask_app):
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
-    api.add_resource(keggid, res_path + "/ebi-internal/keggid")
-    api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
-    api.add_resource(keggid, res_path + "/ebi-internal/keggid")
+    api.add_resource(keggid,res_path+"/ebi-internal/keggid")
+    api.add_resource(fellaPathway,res_path+"/ebi-internal/fella-pathway")
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
