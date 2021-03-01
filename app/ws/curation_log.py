@@ -16,7 +16,8 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask import jsonify
+import json
+
 from flask import request
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -117,8 +118,8 @@ class curation_log(Resource):
 
         parameters=[
             {
-                "name": "row",
-                "description": "row_number(s)/row name(s). comma separated",
+                "name": "studyID",
+                "description": "MetaboLights study ID,comma separated",
                 "required": False,
                 "allowEmptyValue": True,
                 "paramType": "query",
@@ -131,6 +132,14 @@ class curation_log(Resource):
                 "allowEmptyValue": True,
                 "paramType": "query",
                 "dataType": "string",
+            },
+            {
+                "name": "page",
+                "description": "page numbers, 100 studies each page",
+                "required": False,
+                "allowEmptyValue": True,
+                "paramType": "query",
+                "dataType": "number",
             },
             {
                 "name": "user_token",
@@ -168,14 +177,18 @@ class curation_log(Resource):
         log_request(request)
         parser = reqparse.RequestParser()
 
-        # row
-        parser.add_argument('row', help='row number(s)')
-        row = None
+        # studyID
+        parser.add_argument('studyID', help='studyID')
+        studyID = None
         if request.args:
             args = parser.parse_args(req=request)
-            row = args['row']
-            if row and ',' in row:
-                row = row.split(',')
+            studyID = args['studyID']
+            if studyID:
+                if ',' in studyID:
+                    studyID = studyID.split(',')
+                else:
+                    studyID = [studyID]
+                studyID = [x.upper() for x in studyID]
 
         # column
         parser.add_argument('field', help='column name(s)')
@@ -183,8 +196,20 @@ class curation_log(Resource):
         if request.args:
             args = parser.parse_args(req=request)
             field = args['field']
-            if field and ',' in field:
-                field = field.split(',')
+            if field:
+                if ',' in field:
+                    field = field.split(',')
+                else:
+                    field = [field]
+
+        # page
+        parser.add_argument('page', help='page number')
+        page = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            page = args['page']
+            if page != None:
+                page = int(args['page'])
 
         # User authentication
         user_token = None
@@ -198,16 +223,34 @@ class curation_log(Resource):
             wsc.get_permissions('MTBLS1', user_token)
         if not write_access:
             abort(403)
+
+        # Load google sheet
         try:
             google_df = getGoogleSheet(app.config.get('MTBLS_CURATION_LOG'), 'Studies',
                                        app.config.get('GOOGLE_SHEET_TOKEN'))
+            google_df = google_df.set_index('MTBLS ID')
         except Exception as e:
-            logger.info('Fail to load google sheet')
-            logger.info(e)
+            logger.info('Fail to load google sheet:', e)
             abort(404)
             return []
 
-        if row == None and field == None:
+        if studyID == None or (len(studyID) > 100 and page != None):
+            studyID = list(google_df.index.values)[100 * (page - 1): (100 * (page - 1) + 100)]
+
+        # entire sheet
+        if studyID == None and field == None:
             result = google_df.to_json(orient="index")
-            return jsonify(result)
-        print()
+
+        # entire column
+        elif studyID == None and len(field) > 0:
+            result = google_df[field].to_json(orient="columns")
+
+        # entire row
+        elif len(studyID) > 0 and field == None:
+            result = google_df.loc[studyID, :].to_json(orient="index")
+
+        # combination
+        else:
+            result = google_df.loc[studyID, field].to_json(orient="index")
+
+        return json.loads(result)
