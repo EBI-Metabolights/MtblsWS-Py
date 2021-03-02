@@ -609,6 +609,18 @@ def query_study_submitters(study_id):
         return False
 
 
+def get_username_by_token(token):
+    query = "select concat(firstname,' ',lastname) from users where apitoken = '{token}'".format(token=token)
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query)
+        data = cursor.fetchone()[0]
+        release_connection(postgresql_pool, conn)
+        return data
+    except Exception as e:
+        return False
+
+
 def override_validations(study_id, method, override=""):
     val_acc(study_id)
 
