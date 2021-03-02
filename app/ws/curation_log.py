@@ -22,10 +22,11 @@ from flask import request
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.cronjob import getGoogleSheet
+from app.ws.cronjob import getGoogleSheet, getCellCoordinate, getWorksheet, update_cell
 from app.ws.db_connection import *
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request
+from flask import jsonify
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -34,48 +35,21 @@ wsc = WsClient()
 class curation_log(Resource):
     @swagger.operation(
         summary="Get Metabolights periodic report",
-        notes="Get Metabolights periodic report",
+        notes='''Update curation log.
+              <br>
+              <pre><code>
+{
+  "MTBLS1": {
+    "Study Type": "UPLC-QTOF-MS",
+    "Species": "Arabidopsis thaliana"
+  },
+  "MTBLS2": {
+    "Study Type": "LC-MS",
+    "Species": "Homo Sapiens",
+    "Study Publication Date": "2015-02-14"
+  }
+}</code></pre>''',
         parameters=[
-            {
-                "name": "query",
-                "description": "Report query",
-                "required": True,
-                "allowEmptyValue": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["daily_stats", "user_stats", "global"]
-            },
-
-            {
-                "name": "start",
-                "description": "Period start date,YYYYMMDD",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string"
-            },
-
-            {
-                "name": "end",
-                "description": "Period end date,YYYYMMDD",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
-
-            {
-                "name": "queryFields",
-                "description": "Specify the fields to return, the default is all options: "
-                               "'studies_created','public','private','review','curation','user'",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "dataType": "string",
-            },
             {
                 "name": "user_token",
                 "description": "User API token",
@@ -83,8 +57,16 @@ class curation_log(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "data",
+                "description": "update field in JSON format.",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
             }
-
         ],
         responseMessages=[
             {
@@ -110,7 +92,82 @@ class curation_log(Resource):
         ]
     )
     def put(self):
-        pass
+        log_request(request)
+        parser = reqparse.RequestParser()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+
+        user_name = get_username_by_token(user_token)
+
+        if not write_access:
+            abort(403)
+
+        # loading data
+        data_dict = None
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+        except Exception as e:
+            logger.info(e)
+            abort(400)
+        if not data_dict:
+            abort(403)
+
+        try:
+            wks = getWorksheet(app.config.get('MTBLS_CURATION_LOG_TEST'), 'Studies',
+                               app.config.get('GOOGLE_SHEET_TOKEN'))
+        except Exception as e:
+            logger.info('Fail to load worksheet.', e)
+            print('Fail to load worksheet.', e)
+            abort(400)
+            return []
+
+        output = {'success':[],'un_success':[]}
+
+
+        editable_columns = ['Study Type', 'Species', 'Place Holder', 'Assigned to']
+        for studyID, fields in data_dict.items():
+            try:
+                r, _ = getCellCoordinate(app.config.get('MTBLS_CURATION_LOG_TEST'), 'Studies',
+                                         app.config.get('GOOGLE_SHEET_TOKEN'), studyID)
+            except:
+                logger.info('Can find {studyID} in curation log'.format(studyID=studyID))
+                print('Can find {studyID} in curation log'.format(studyID=studyID))
+                continue
+
+            for field, value in fields.items():
+                if field in editable_columns:
+                    _, c = getCellCoordinate(app.config.get('MTBLS_CURATION_LOG_TEST'), 'Studies',
+                                             app.config.get('GOOGLE_SHEET_TOKEN'), field)
+                    if update_cell(wks, r, c, value):
+                        output['success'].append("{user_name} updated {studyID} - {field} to {value}".format(user_name=user_name,
+                                                                                                  studyID=studyID,
+                                                                                                  field=field,
+                                                                                                  value=value))
+                        logger.info(
+                            "{user_name} updated {studyID} - {field} to {value}".format(user_name=user_name,
+                                                                                        studyID=studyID, field=field,
+                                                                                        value=value))
+                        print(
+                            "{user_name} updated {studyID} - {field} to {value}".format(user_name=user_name,
+                                                                                        studyID=studyID, field=field,
+                                                                                        value=value))
+                else:
+                    logger.info('Permission denied modify {studyID} {field}'.format(studyID=studyID, field=field))
+                    print('Permission denied modify {studyID} {field}'.format(studyID=studyID, field=field))
+                    output['un_success'].append('Permission denied modify {studyID} {field}'.format(studyID=studyID, field=field))
+                    continue
+
+        return jsonify(output)
+
+    # ============================= GET ==========================================
 
     @swagger.operation(
         summary="Get MetaboLights curation log",
