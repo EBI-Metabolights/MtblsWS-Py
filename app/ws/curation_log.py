@@ -121,7 +121,7 @@ class curation_log(Resource):
             abort(403)
 
         try:
-            wks = getWorksheet(app.config.get('MTBLS_CURATION_LOG_TEST'), 'Studies',
+            wks = getWorksheet(app.config.get('MTBLS_CURATION_LOG'), 'Studies',
                                app.config.get('GOOGLE_SHEET_TOKEN'))
         except Exception as e:
             logger.info('Fail to load worksheet.', e)
@@ -135,8 +135,9 @@ class curation_log(Resource):
         editable_columns = ['Study Type', 'Species', 'Place Holder', 'Assigned to']
         for studyID, fields in data_dict.items():
             try:
-                r, _ = getCellCoordinate(app.config.get('MTBLS_CURATION_LOG_TEST'), 'Studies',
-                                         app.config.get('GOOGLE_SHEET_TOKEN'), studyID)
+                r = wks.find(studyID).row
+                # r, _ = getCellCoordinate(app.config.get('MTBLS_CURATION_LOG'), 'Studies',
+                #                          app.config.get('GOOGLE_SHEET_TOKEN'), studyID)
             except:
                 logger.info('Can find {studyID} in curation log'.format(studyID=studyID))
                 print('Can find {studyID} in curation log'.format(studyID=studyID))
@@ -144,8 +145,9 @@ class curation_log(Resource):
 
             for field, value in fields.items():
                 if field in editable_columns:
-                    _, c = getCellCoordinate(app.config.get('MTBLS_CURATION_LOG_TEST'), 'Studies',
-                                             app.config.get('GOOGLE_SHEET_TOKEN'), field)
+                    c = wks.find(field).col
+                    # _, c = getCellCoordinate(app.config.get('MTBLS_CURATION_LOG'), 'Studies',
+                    #                          app.config.get('GOOGLE_SHEET_TOKEN'), field)
                     if update_cell(wks, r, c, value):
                         output['success'].append("{user_name} updated {studyID} - {field} to {value}".format(user_name=user_name,
                                                                                                   studyID=studyID,
