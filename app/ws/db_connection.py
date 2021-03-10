@@ -22,6 +22,7 @@ import re
 import traceback
 
 import psycopg2
+import psycopg2.extras
 from flask import current_app as app, abort
 from psycopg2 import pool
 
@@ -400,6 +401,56 @@ def get_obfuscation_code(study_id):
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data
+
+
+def get_study(study_id):
+    val_acc(study_id)
+    query = '''
+    select 
+       case
+           when s.placeholder = '1' then 'Placeholder'
+           when s.status = 0 then 'Submitted'
+           when s.status = 1 then 'In Curation'
+           when s.status = 2 then 'In Review'
+           when s.status = 3 then 'Public'
+           else 'Dormant' end                  as status,
+       s.studytype,
+       su.uname                                as submitter,
+       su.country                              as country,
+       s.curator,
+       s.species,
+       s.sample_rows,
+       s.assay_rows,
+       s.maf_rows,
+       s.placeholder,
+       s.validation_status,
+       s.number_of_files,
+       round(s.studysize / 1024 / 1024,2) ::text   as studySize,
+       to_char(s.releasedate, 'YYYY-MM-DD')    as releasedate,
+       to_char(s.submissiondate, 'YYYY-MM-DD') as submissiondate,
+       to_char(s.updatedate, 'YYYY-MM-DD')     as updatedate
+
+    from studies s
+             left join (
+        select su.studyid,
+               string_agg(u.firstname || ' ' || u.lastname, ', ') as uname,
+               string_agg(u.address, ', ')                        as country
+        from users u
+                 join study_user su on u.id = su.userid
+        group by su.studyid
+    ) as su on s.id = su.studyid
+    where s.acc = '{studyID}';
+    '''.format(studyID=study_id)
+    query = query.replace('\\', '')
+    postgresql_pool, conn, cursor = get_connection2()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    result = []
+    for row in data:
+        result.append(dict(row))
+
+    release_connection(postgresql_pool, conn)
+    return result[0]
 
 
 def biostudies_acc_to_mtbls(biostudies_id):
@@ -798,6 +849,24 @@ def get_connection():
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
         cursor = conn.cursor()
+    except Exception as e:
+        logger.error("Could not query the database " + str(e))
+        if postgresql_pool:
+            postgresql_pool.closeall
+    return postgresql_pool, conn, cursor
+
+
+def get_connection2():
+    postgresql_pool = None
+    conn = None
+    cursor = None
+    try:
+        params = app.config.get('DB_PARAMS')
+        conn_pool_min = app.config.get('CONN_POOL_MIN')
+        conn_pool_max = app.config.get('CONN_POOL_MAX')
+        postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
+        conn = postgresql_pool.getconn()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     except Exception as e:
         logger.error("Could not query the database " + str(e))
         if postgresql_pool:

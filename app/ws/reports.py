@@ -23,7 +23,7 @@ from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.db_connection import get_connection
+from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
@@ -49,7 +49,7 @@ class reports(Resource):
                 "allowEmptyValue": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["daily_stats", "user_stats","global"]
+                "enum": ["daily_stats", "user_stats", "global"]
             },
 
             {
@@ -369,13 +369,28 @@ class reports(Resource):
             studies = cursor.fetchall()
             data = {}
             for st in studies:
+                print(st[0])
                 study_files, latest_update_time = get_all_files(
                     app.config.get('STUDY_PATH') + str(st[0]))
-                dict_temp = {str(st[0]):
-                                 {'latest_update_time': latest_update_time,
-                                  'study_files': study_files
-                                  }
-                             }
+
+                study_info = get_study(st[0])
+                name = study_info.pop('submitter').split(',')
+                country = study_info.pop('country').split(',')
+
+                name_d = [{'name': x} for x in name]
+                country_d = [{'country': x} for x in country]
+                submitter = []
+                for x in zip(name_d, country_d):
+                    res = {}
+                    for y in x:
+                        res.update(y)
+                    submitter.append(res)
+
+                study_info['submitter'] = submitter
+                study_info['latest_update_time'] = latest_update_time
+                study_info['study_files'] = study_files
+
+                dict_temp = {str(st[0]): study_info}
                 data = {**data, **dict_temp}
             file_name = 'study_report.json'
             res = data
@@ -447,4 +462,4 @@ class reports(Resource):
         # j_res = json.dumps(res,indent=4)
         writeDataToFile(reporting_path + file_name, res, True)
 
-        return jsonify({"POST " + file_name : True})
+        return jsonify({"POST " + file_name: True})
