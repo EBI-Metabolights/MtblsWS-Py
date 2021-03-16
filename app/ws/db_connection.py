@@ -425,7 +425,7 @@ def get_study(study_id):
        s.placeholder,
        s.validation_status,
        s.number_of_files,
-       round(s.studysize / 1024 / 1024,2) ::text   as studySize,
+       s.studysize ::text   as studySize,
        to_char(s.releasedate, 'YYYY-MM-DD')    as releasedate,
        to_char(s.submissiondate, 'YYYY-MM-DD') as submissiondate,
        to_char(s.updatedate, 'YYYY-MM-DD')     as updatedate

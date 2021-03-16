@@ -49,7 +49,7 @@ class reports(Resource):
                 "allowEmptyValue": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["daily_stats", "user_stats", "global"]
+                "enum": ["daily_stats", "user_stats", "global", 'study_status']
             },
 
             {
@@ -74,14 +74,24 @@ class reports(Resource):
 
             {
                 "name": "queryFields",
-                "description": "Specify the fields to return, the default is all options: "
-                               "'studies_created','public','private','review','curation','user'",
+                "description": "Specify the fields to return",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
             },
+
+            {
+                "name": "studyStatus",
+                "description": "Specify the study status, the default is all options: 'Public', 'In Review', 'In Curation', 'Submitted', 'Placeholder', 'Dormant'",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+
             {
                 "name": "user_token",
                 "description": "User API token",
@@ -147,14 +157,21 @@ class reports(Resource):
             else:
                 end_date = datetime.today()
 
+        parser.add_argument('studyStatus', help='studyStatus')
+        studyStatus = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            studyStatus = args['studyStatus']
+            if studyStatus:
+                studyStatus = tuple([x.strip() for x in studyStatus.split(',')])
+
         parser.add_argument('queryFields', help='queryFields')
+        query_field = None
         if request.args:
             args = parser.parse_args(req=request)
             queryFields = args['queryFields']
             if queryFields:
-                query_field = tuple([x.strip() for x in queryFields.split(',')])
-            else:
-                query_field = None
+                query_field = tuple([x.strip().lower() for x in queryFields.split(',')])
 
         # User authentication
         user_token = None
@@ -193,9 +210,33 @@ class reports(Resource):
             file_name = 'user_report.json'
             j_file = readDatafromFile(reporting_path + file_name)
             return jsonify(j_file)
+
         elif query == 'global':
             file_name = 'global.json'
             j_file = readDatafromFile(reporting_path + file_name)
+            return jsonify(j_file)
+
+        elif query == 'study_status':
+            file_name = 'study_report.json'
+            j_file = readDatafromFile(reporting_path + file_name)
+            data_res = {}
+
+            for studyID, study_info in j_file['data'].items():
+                d = datetime.strptime(study_info['submissiondate'], '%Y-%m-%d')
+                status = study_info['status']
+
+                if studyStatus == None:
+                    if d >= start_date and d <= end_date:
+                        data_res.update({studyID: study_info})
+                    else:
+                        continue
+                else:
+                    if d >= start_date and d <= end_date and status.lower() in studyStatus:
+                        data_res.update({studyID: study_info})
+                    else:
+                        continue
+
+            j_file['data'] = data_res
             return jsonify(j_file)
         else:
             file_name = ''
@@ -393,7 +434,9 @@ class reports(Resource):
                 dict_temp = {str(st[0]): study_info}
                 data = {**data, **dict_temp}
             file_name = 'study_report.json'
-            res = data
+
+            res = {'data': data}
+            res["updated_at"] = datetime.today().strftime('%Y-%m-%d')
 
         if query == 'global':
             file_name = 'global.json'
