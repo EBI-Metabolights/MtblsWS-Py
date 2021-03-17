@@ -184,7 +184,10 @@ class reports(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
         if not write_access:
-            abort(403)
+            if query in ['study_status', "global"]:
+                studyStatus = ['public']
+            else:
+                abort(403)
 
         reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
 
@@ -376,11 +379,16 @@ class reports(Resource):
                 study_list = dt[6].split(",")
                 studies = {}
                 for x in study_list:
-                    temp = study_data[x.strip()]
-                    studies[x.strip()] = temp
+                    try:
+                        temp = study_data['data'][x.strip()]
+                        studies[x.strip()] = temp
+                    except:
+                        continue
                 dict_temp = {str(dt[0]):
-                                 {"user_email": str(dt[1]),
+                                 {"name": dt[13],
+                                  "user_email": str(dt[1]),
                                   "country_code": dt[2],
+                                  "joindate": dt[12],
                                   "total": str(dt[5]),
                                   "submitted": str(dt[7]),
                                   "review": str(dt[9]),
@@ -396,9 +404,10 @@ class reports(Resource):
                 user_count += 1
                 if dt[4] == 2:
                     active_user += 1
-                data['user_count'] = str(user_count)
-                data['active_user'] = str(active_user)
+                # data['user_count'] = str(user_count)
+                # data['active_user'] = str(active_user)
             res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'),
+                   "user_count": str(user_count), "active_user": str(active_user),
                    "data": data}
 
             file_name = 'user_report.json'
