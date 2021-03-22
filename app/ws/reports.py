@@ -16,6 +16,8 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import os
+import zipfile
 from datetime import datetime
 
 from flask import jsonify
@@ -259,7 +261,7 @@ class reports(Resource):
                 "allowEmptyValue": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["daily_stats", "user_stats", "study_stats", "global"]
+                "enum": ["daily_stats", "user_stats", "study_stats", "file_extension", "global"]
             },
             {
                 "name": "studyid",
@@ -511,7 +513,72 @@ class reports(Resource):
 
             res = j_data
 
+        if query == 'file_extension':
+            file_name = 'file_extension.json'
+
+            postgresql_pool, conn, cursor = get_connection()
+            cursor.execute(
+                "select acc from studies where status = 3;")
+            studies = cursor.fetchall()
+            file_ext = []
+
+            for studyID in studies:
+                print(studyID[0])
+                logger.info("Extracting study extension details: " + studyID[0])
+                wd = os.path.join(app.config.get('STUDY_PATH'), studyID[0])
+
+                try:
+                    file_ext.append(get_file_extensions(studyID[0], wd))
+                except:
+                    print("Error extracting study extension details: " + studyID[0])
+
+            res = {"created_at": "2020-03-22", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'data': file_ext}
+
         # j_res = json.dumps(res,indent=4)
         writeDataToFile(reporting_path + file_name, res, True)
 
         return jsonify({"POST " + file_name: True})
+
+
+def get_file_extensions(id, path):
+    study_ext = {}
+    study_ext['list'] = []
+    study_ext['ext_count'] = {}
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            try:
+                extension = os.path.splitext(file)[1]
+                if extension:
+                    if extension not in study_ext['list']:
+                        study_ext['list'].append(extension)
+                    if extension == '.zip':
+                        edata = extractZip(path, file, study_ext['list'], study_ext['ext_count'])
+                        study_ext['list'] = edata[0]
+                        study_ext['ext_count'] = edata[1]
+                    if extension in study_ext['ext_count']:
+                        study_ext['ext_count'][extension] = study_ext['ext_count'][extension] + 1
+                    else:
+                        study_ext['ext_count'][extension] = 1
+            except:
+                logger.error("Error file details: " + file)
+
+    extensions = study_ext['list']
+    extensions_count = study_ext['ext_count']
+    study_ext = {'id': id}
+    study_ext['extensions'] = extensions
+    study_ext['extensions_count'] = extensions_count
+    return study_ext
+
+
+def extractZip(filepath, file, list, count):
+    zfile = zipfile.ZipFile(os.path.join(filepath, file))
+    for finfo in zfile.infolist():
+        extension = os.path.splitext(finfo.filename)[1]
+        if extension:
+            if extension not in list:
+                list.append(extension)
+            if extension in count:
+                count[extension] = count[extension] + 1
+            else:
+                count[extension] = 1
+    return [list, count]
