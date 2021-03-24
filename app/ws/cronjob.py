@@ -227,8 +227,8 @@ def curation_log_database_update():
                                app.config.get('GOOGLE_SHEET_TOKEN'))
 
     command_list = google_df['--Updates. Run this in the database on a regular basis'].tolist()
-    empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
-    command_list = [x for x in command_list if empty_study not in x]
+    # empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
+    # command_list = [x for x in command_list if empty_study not in x]
 
     res = []
     for line in command_list:
@@ -260,7 +260,7 @@ def get_empty_studies():
             continue
 
         source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        ws_url = 'http://wp-p3s-19.ebi.ac.uk:5000' + source
 
         try:
             resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
@@ -628,7 +628,7 @@ def getFileList2(studyID):
 def getFileList(studyID):
     try:
         source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        url = 'http://wp-p3s-19.ebi.ac.uk:5000' + source
         request = urllib.request.Request(url)
         request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
         response = urllib.request.urlopen(request)
@@ -868,7 +868,7 @@ def uniqueOrganism(studyID):
     :return: list of organisms
     '''
     try:
-        url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+        url = 'http://wp-p3s-19.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
         resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
         data = resp.json()
         org = []
@@ -946,226 +946,3 @@ def replaceGoogleSheet(df, url, worksheetName, token_path):
     wks = gc.open_by_url(url).worksheet(worksheetName)
     wks.clear()
     set_with_dataframe(wks, df)
-
-# def getStudyIDs(publicStudy=False):
-#     def atoi(text):
-#         return int(text) if text.isdigit() else text
-#
-#     def natural_keys(text):
-#         return [atoi(c) for c in re.split('(\d+)', text)]
-#
-#     url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
-#     request = urllib.request.Request(url)
-#     request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
-#     response = urllib.request.urlopen(request)
-#     content = response.read().decode('utf-8')
-#     j_content = json.loads(content)
-#
-#     studyIDs = j_content['content']
-#     studyIDs.sort(key=natural_keys)
-#
-#     if publicStudy:
-#         studyStatus = getStudyStatus()
-#         studyIDs = [studyID for studyID in studyIDs if studyStatus[studyID] in ['Public', 'In Review']]
-#     else:
-#         studyStatus = getStudyStatus()
-#         studyIDs = [studyID for studyID in studyIDs if
-#                     studyStatus[studyID] in ['Public', 'In Review', 'Submitted', 'In Curation']]
-#     return studyIDs
-
-
-# def getStudyStatus():
-#     query_user_access_rights = """
-#              select case
-#              when (status = 0 and placeholder = '1') then 'Placeholder'
-#              when (status = 0 and placeholder='') then 'Submitted'
-#              when status = 1 then 'In Curation'
-#              when status = 2 then 'In Review'
-#              when status = 3 then 'Public'
-#              else 'Dormant' end as status,
-#                 acc from studies;
-#             """
-#     token = app.config.get('METABOLIGHTS_TOKEN')
-#
-#     def execute_query(query, user_token, study_id=None):
-#         try:
-#             params = app.config.get('DB_PARAMS')
-#             conn = psycopg2.connect(**params)
-#             cursor = conn.cursor()
-#             query = query.replace('\\', '')
-#             if study_id is None:
-#                 cursor.execute(query, [user_token])
-#             else:
-#                 query2 = query_user_access_rights.replace("#user_token#", user_token)
-#                 query2 = query2.replace("#study_id#", study_id)
-#                 cursor.execute(query2)
-#             data = cursor.fetchall()
-#             conn.close()
-#
-#             return data
-#
-#         except psycopg2.Error as e:
-#             print("Unable to connect to the database")
-#             print(e.pgcode)
-#             print(e.pgerror)
-#             print(traceback.format_exc())
-#
-#     study_list = execute_query(query_user_access_rights, token)
-#     study_status = {}
-#     for study in study_list:
-#         study_status[study[1]] = study[0]
-#
-#     return study_status
-
-
-# def getStudytype(sType, publicStudy=True):
-#     def get_connection():
-#         postgresql_pool = None
-#         conn = None
-#         cursor = None
-#         try:
-#             params = app.config.get('DB_PARAMS')
-#             conn_pool_min = app.config.get('CONN_POOL_MIN')
-#             conn_pool_max = app.config.get('CONN_POOL_MAX')
-#             postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
-#             conn = postgresql_pool.getconn()
-#             cursor = conn.cursor()
-#         except Exception as e:
-#             print("Could not query the database " + str(e))
-#             if postgresql_pool:
-#                 postgresql_pool.closeall
-#         return postgresql_pool, conn, cursor
-#
-#     q2 = ' '
-#     if publicStudy:
-#         q2 = ' status in (2, 3) and '
-#
-#     if type(sType) == str:
-#         q3 = "studytype = '{sType}'".format(sType=sType)
-#
-#     # fuzzy search
-#     elif type(sType) == list:
-#         DB_query = []
-#         for q in sType:
-#             query = "studytype like '%{q}%'".format(q=q)
-#             DB_query.append(query)
-#         q3 = ' and '.join(DB_query)
-#
-#     else:
-#         return None
-#
-#     query = "SELECT acc,studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
-#     # query = q1 + q2 + q3 + ';'
-#     print(query)
-#     postgresql_pool, conn, cursor = get_connection()
-#     cursor.execute(query)
-#     res = cursor.fetchall()
-#     studyID = [r[0] for r in res]
-#     studytype = [r[1] for r in res]
-#     return studyID, studytype
-
-
-# def assay_sample_list2(studyID):
-#     '''
-#     get list of sample and assay from investigation file
-#     :param studyID:
-#     :return:
-#     '''
-#     import paramiko
-#     import re
-#
-#     client = paramiko.SSHClient()
-#     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-#
-#     SSH_PARAMS = app.config.get('SSH_PARAMS')
-#     client.connect(**SSH_PARAMS)
-#     sftp_client = client.open_sftp()
-#     address = '/net/isilonP/public/rw/homes/tc_cm01/metabolights/prod/studies/stage/private/' + studyID + '/i_Investigation.txt'
-#     assay_list, sample_file = [], ''
-#     try:
-#         with sftp_client.open(address) as f:
-#             for line in f.readlines():
-#                 if line.startswith('Study Assay File Name'):
-#                     assay_list = list(re.findall(r'"([^"]*)"', line))
-#                 if line.startswith('Study File Name'):
-#                     sample_file = re.findall(r'"([^"]*)"', line)[0]
-#                 if len(assay_list) != 0 and sample_file != '':
-#                     return assay_list, sample_file
-#     except:
-#         print('Fail to read investigation file from ' + studyID)
-
-
-# def readSSHDataFrame(filePath):
-#     '''
-#     Load file from SSH server
-#     :param filePath:
-#     :return:
-#     '''
-#     import paramiko
-#     client = paramiko.SSHClient()
-#     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-#
-#     SSH_PARAMS = app.config.get('SSH_PARAMS')
-#     client.connect(**SSH_PARAMS)
-#     sftp_client = client.open_sftp()
-#     try:
-#         with sftp_client.open(filePath) as f:
-#             df = pd.read_csv(f, sep='\t')
-#             return df
-#     except:
-#         print('Fail to load file from ' + filePath)
-
-# def get_empty_studies2():
-#     res = []
-#
-#     studyIDs = get_study_info(app.config.get('METABOLIGHTS_TOKEN'))
-#     keys = ['studyID', 'username', 'status', 'placeholder']
-#     for studyInfo in studyIDs:
-#         source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
-#         ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
-#
-#         try:
-#             print(studyInfo[0])
-#             resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-#             if resp.status_code != 200:
-#                 f = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar', 'User Cochrane']
-#                 if any(ext in studyInfo[1] for ext in f) or studyInfo[2] == 'Dormant':
-#                     continue
-#                 temp_dict = dict(zip(keys, studyInfo))
-#                 temp_dict['investigation'] = 'None'
-#                 res.append(temp_dict)
-#                 logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
-#                 print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
-#                 continue
-#             # resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-#             data = resp.json()
-#             # if len(data["isaInvestigation"]['ontologySourceReferences']) == 0:
-#             #     temp_dict = dict(zip(keys, studyInfo))
-#             #     temp_dict['investigation'] = 'empty'
-#             #     res.append(temp_dict)
-#             #     logger.info('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
-#             #     print('Empty i_Investigation.txt in {studyID}'.format(studyID=studyInfo[0]))
-#             #     continue
-#             # elif studyInfo[3] == 'Yes':
-#             #     temp_dict = dict(zip(keys, studyInfo))
-#             #     temp_dict['investigation'] = ' '
-#             #     res.append(temp_dict)
-#             #     logger.info('placeholder flag in {studyID}'.format(studyID=studyInfo[0]))
-#             #     print('placeholder flag in {studyID}'.format(studyID=studyInfo[0]))
-#
-#         except Exception as e:
-#             logger.info(e.args)
-#             print(e.args)
-#             # print(studyInfo[0])
-#             # f = ['MetaboLights', 'Metaspace', 'Metabolon', 'Venkata Chandrasekhar']
-#             # if any(ext in studyInfo[1] for ext in f) or studyInfo[2] == 'Dormant':
-#             #     continue
-#             # temp_dict = dict(zip(keys, studyInfo))
-#             # temp_dict['investigation'] = 'None'
-#             # res.append(temp_dict)
-#             # logger.info('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
-#             # print('Fail to load i_Investigation.txt from {studyID}'.format(studyID=studyInfo[0]))
-#             # continue
-#     df = pd.DataFrame(res)
-#     df.to_csv('empty studies updatea.tsv', sep='\t', index=False)
-#     return res
