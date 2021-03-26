@@ -227,8 +227,8 @@ def curation_log_database_update():
                                app.config.get('GOOGLE_SHEET_TOKEN'))
 
     command_list = google_df['--Updates. Run this in the database on a regular basis'].tolist()
-    empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
-    command_list = [x for x in command_list if empty_study not in x]
+    # empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
+    # command_list = [x for x in command_list if empty_study not in x]
 
     res = []
     for line in command_list:
@@ -260,7 +260,7 @@ def get_empty_studies():
             continue
 
         source = '/metabolights/ws/studies/{study_id}?investigation_only=true'.format(study_id=studyInfo[0])
-        ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        ws_url = 'http://wp-p3s-19.ebi.ac.uk:5000' + source
 
         try:
             resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
@@ -628,7 +628,7 @@ def getFileList2(studyID):
 def getFileList(studyID):
     try:
         source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
-        url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
+        url = 'http://wp-p3s-19.ebi.ac.uk:5000' + source
         request = urllib.request.Request(url)
         request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
         response = urllib.request.urlopen(request)
@@ -868,7 +868,7 @@ def uniqueOrganism(studyID):
     :return: list of organisms
     '''
     try:
-        url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+        url = 'http://wp-p3s-19.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
         resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
         data = resp.json()
         org = []

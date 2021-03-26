@@ -266,11 +266,11 @@ class ToggleAccess(Resource):
         logger.info("changing ftp folder permission")
         try:
             if os.path.exists(ftp_path):
-                if oct(os.stat(ftp_path).st_mode)[-3:] == '775' or oct(os.stat(ftp_path).st_mode)[-3:] == '770':
+                if oct(os.stat(ftp_path).st_mode)[-2:-1] == '7':
                     os.chmod(ftp_path, 0o750)
                     access = "Read"
                 else:
-                    if oct(os.stat(ftp_path).st_mode)[-3:] == '755' or oct(os.stat(ftp_path).st_mode)[-3:] == '750':
+                    if oct(os.stat(ftp_path).st_mode)[-2:-1] == '5':
                         os.chmod(ftp_path, 0o770)
                         access = "Write"
             return {'Access': access}
@@ -342,10 +342,10 @@ class ToggleAccessGet(Resource):
         access = ""
         try:
             if os.path.exists(ftp_path):
-                if oct(os.stat(ftp_path).st_mode)[-3:] == '775' or oct(os.stat(ftp_path).st_mode)[-3:] == '770':
+                if oct(os.stat(ftp_path).st_mode)[-2:-1] == '7':
                     access = "Write"
                 else:
-                    if oct(os.stat(ftp_path).st_mode)[-3:] == '755' or oct(os.stat(ftp_path).st_mode)[-3:] == '750':
+                    if oct(os.stat(ftp_path).st_mode)[-2:-1] == '5':
                         access = "Read"
             return {'Access': access}
         except OSError as e:
