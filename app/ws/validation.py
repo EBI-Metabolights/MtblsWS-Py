@@ -28,6 +28,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import *
+from app.ws.cluster_jobs import lsf_job
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -2204,3 +2205,275 @@ class OverrideValidation(Resource):
             logger.error('Could not store overridden validations on the database')
 
         return {"success": val_feedback}
+
+def run_validation_in_File(validations_file, study_id, study_location, user_token, obfuscation_code, section,
+                           log_category, validation_run_msg):
+    validations_assay_running = validations_file[:-5] + "_inProgress.json"
+    if os.path.isfile(validations_assay_running):
+        return {"message": validation_run_msg}, 202
+    # if validation file is already present - check if no update after that
+    elif os.path.isfile(validations_file):
+        if is_newer_timestamp(study_location + '/DERIVED_FILES', validations_file) or is_newer_timestamp(
+                study_location + '/RAW_FILES', validations_file):
+            validation_schema = \
+                validate_study(study_id, study_location, user_token, obfuscation_code,
+                               validation_section=section,
+                               log_category=log_category, basic_validation=False)
+            try:
+                with open(validations_file, 'w', encoding='utf-8') as f:
+                    json.dump(validation_schema, f, ensure_ascii=False)
+            except Exception as e:
+                logger.error('Error writing validation schema file: ' + str(e))
+        else:
+            try:
+                with open(validations_file, 'r', encoding='utf-8') as f:
+                    validation_schema = json.load(f)
+            except Exception as e:
+                logger.error(str(e))
+                return {"message": validation_run_msg}, 202
+    # no job running . create new job and generate validation
+    else:
+        try:
+            open(validations_assay_running, "w+")
+            validation_schema = \
+                validate_study(study_id, study_location, user_token, obfuscation_code,
+                               validation_section=section,
+                               log_category=log_category, basic_validation=False)
+
+            with open(validations_file, 'w', encoding='utf-8') as f:
+                json.dump(validation_schema, f, ensure_ascii=False)
+            os.remove(validations_assay_running)
+        except Exception as e:
+            logger.error('Error writing validation schema file: ' + str(e))
+            try:
+                os.remove(validations_assay_running)
+            except:
+                pass
+    return validation_schema
+
+
+def job_status(job_id):
+    cmd = "/usr/bin/ssh ebi-cli bjobs " + str(job_id).strip()
+    logger.info(cmd)
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
+    logger.info(result)
+    result = result.stdout.decode("utf-8")
+    index = result.find("tc_cm01")
+    result = result[index + 8:].lstrip().split(' ')
+    return result[0]
+
+
+def submitJobToCluser(command, section, study_location):
+    logger.info("Starting cluster job for Validation : " + command)
+    status, message, job_out, job_err = lsf_job('bsub', job_param=command, send_email=True)
+
+    if status:
+        start = 'Job <'
+        end = '> is'
+        cron_job_id = (job_out[job_out.find("Job <") + len(start):job_out.rfind(end)])
+        cron_job_file = study_location + "/validation_" + section + "_" + cron_job_id + '.json'
+        with open(cron_job_file, 'w') as fp:
+            pass
+        os.chmod(cron_job_file, 0o777)
+        return {"success": message, "job_id": cron_job_id, "message": job_out, "errors": job_err}
+    else:
+        return {"error": message, "message": job_out, "errors": job_err}
+
+def is_newer_timestamp(location, fileToCompare):
+    need_validation_update = False
+    try:
+        list_of_files = glob.glob(os.path.join(location, '*'))
+        latest_file = max(list_of_files, key=os.path.getctime)
+    except:
+        return need_validation_update
+    updateTime = os.path.getctime(latest_file)
+    if os.path.getctime(fileToCompare) < updateTime:
+        need_validation_update = True  # No files modified since the validation schema files
+    return need_validation_update
+
+class NewValidation(Resource):
+    @swagger.operation(
+        summary="Validate study",
+        notes='''Validating the study with given section
+        This method will validate the study metadata and check the files study folder''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study to validate",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "section",
+                "description": "Specify which validations to run, default is Metadata: "
+                               "all, assays, files",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["all", "assays", "files"]
+            },
+            {
+                "name": "force_run",
+                "description": "Run the validation again",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["True", "False"]
+            },
+            {
+                "name": "level",
+                "description": "Specify which success-errors levels to report, default is all: "
+                               "error, warning, info, success",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        # param validation
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('section', help="Validation section", location="args")
+        parser.add_argument('level', help="Validation message levels", location="args")
+        parser.add_argument('force_run', help="Validation message levels", location="args")
+        args = parser.parse_args()
+        section = args['section']
+        force_run = args['force_run']
+        if section is None or section == "":
+            section = 'meta'
+        if force_run is None:
+            force_run = False
+        if section:
+            query = section.strip()
+        log_category = args['level']
+
+        log_categories = "error", "warning", "info", "success", "all"
+        if log_category is None or log_category not in log_categories:
+            log_category = 'all'
+
+        val_sections = "all", "isa-tab", "publication", "protocols", "people", "samples", "assays", "maf", "files"
+
+        script = app.config.get('VALIDATION_SCRIPT')
+        para = ' -l {level} -i {study_id} -u {token} -s {section}'.format(level=log_category, study_id=study_id,
+                                                                          token=user_token, section=section)
+        file_name = None
+        logger.info("Validation params are - " + str(log_category) + " " + str(section))
+        pattern = re.compile(".validation_" + section + "\S+.json")
+
+        for filepath in os.listdir(study_location):
+            if pattern.match(filepath):
+                file_name = filepath
+                break
+
+        if file_name:
+            result = file_name[:-5].split('_')
+            sub_job_id = result[2]
+            # bacct -l 3861194
+            # check job status
+            status = job_status(sub_job_id)
+            logger.info("job status " + sub_job_id + " " + status)
+            if status == "PEND" or status == "RUN":
+                return {
+                    "message": "Validation is already in progress. Job " + sub_job_id + " is in running or pending state"}
+
+            file_name = study_location + "/" + file_name
+            if os.path.isfile(file_name) and status == "DONE":
+                if not force_run:
+                    try:
+                        with open(file_name, 'r', encoding='utf-8') as f:
+                            validation_schema = json.load(f)
+                            return validation_schema
+                    except Exception as e:
+                        logger.error(str(e))
+                        return {"message": "Error in reading the Validation"}
+                else:
+                    if is_newer_timestamp(study_location, file_name):
+                        os.remove(file_name)
+                        command = script + ' ' + para
+                        return submitJobToCluser(command, section, study_location)
+                    else:
+                        try:
+                            with open(file_name, 'r', encoding='utf-8') as f:
+                                validation_schema = json.load(f)
+                                return validation_schema
+                        except Exception as e:
+                            logger.error(str(e))
+                            return {"message": "Error in reading the Validation file"}
+
+            elif os.path.isfile(file_name) and os.path.getsize(file_name) > 0:
+                if is_newer_timestamp(study_location, file_name):
+                    logger.info( " job status is not present, creating new job")
+                    os.remove(file_name)
+                    command = script + ' ' + para
+                    return submitJobToCluser(command, section, study_location)
+                else:
+                    try:
+                        logger.info(" job status is not present and no update, returning validation")
+                        with open(file_name, 'r', encoding='utf-8') as f:
+                            validation_schema = json.load(f)
+                            return validation_schema
+                    except Exception as e:
+                        logger.error(str(e))
+                        return {"message": "Error in reading the Validation"}
+        else:
+            try:
+                os.remove(file_name)
+            except Exception as e:
+                pass
+                # submit a new job return job id
+                logger.info(" no file present , creating new job")
+                command = script + ' ' + para
+                return submitJobToCluser(command, section, study_location)
