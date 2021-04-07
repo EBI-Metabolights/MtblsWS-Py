@@ -16,22 +16,18 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import json
 import threading
 import traceback
-from flask import Response
-import flask
+
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
+from app.ws.cluster_jobs import lsf_job
 from app.ws.db_connection import override_validations, update_validation_status
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import *
-from threading import Thread
-from flask import Flask
-from flaskthreads import AppContextThread
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -413,11 +409,10 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
                     info, val_sequence=11, log_category=log_category)
 
 
-
 class Validation(Resource):
     @swagger.operation(
         summary="Validate study",
-        notes='''Validating the overall study.
+        notes='''Validating the overall study. 
         This method will validate the study metadata and check the files study folder''',
         parameters=[
             {
@@ -530,12 +525,10 @@ class Validation(Resource):
 
         try:
             number_of_files = sum([len(files) for r, d, files in os.walk(study_location)])
-
         except:
             number_of_files = 0
 
         validation_files_limit = app.config.get('VALIDATION_FILES_LIMIT')
-        validation_run_msg = app.config.get('VALIDATION_RUN_MSG')
         force_static_validation = False
 
         # We can only use the static validation file when all values are used. MOE uses 'all' as default
@@ -555,73 +548,55 @@ class Validation(Resource):
 
         study_status = study_status.lower()
 
-
-
         if (static_validation_file and study_status in ('in review', 'public')) or force_static_validation:
 
             validation_file = os.path.join(study_location, 'validation_report.json')
 
             # Some file in the filesystem is newer than the validation reports, so we need to re-generate
             if is_newer_files(study_location):
-                if number_of_files >= validation_files_limit:
-                    with app.app_context():
-                        t = AppContextThread(target=update_val_schema_files, args=(validation_file, study_id, study_location, user_token,
-                                                                obfuscation_code, log_category,
-                                                               True))
-                        t.start()
-                    return {"message": validation_run_msg }, 202
-                else:
-                    validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                                                obfuscation_code, log_category=log_category,
-                                                                return_schema=True)
+                return update_val_schema_files(validation_file, study_id, study_location, user_token,
+                                               obfuscation_code, log_category=log_category, return_schema=True)
+
             if os.path.isfile(validation_file):
                 try:
                     with open(validation_file, 'r', encoding='utf-8') as f:
                         validation_schema = json.load(f)
                 except Exception as e:
                     logger.error(str(e))
-                    # return processing
-                    if number_of_files >= validation_files_limit:
-                        with app.app_context():
-                            t = AppContextThread(target=update_val_schema_files,
-                                                 args=(validation_file, study_id, study_location, user_token,
-                                                       obfuscation_code, log_category,
-                                                       True))
-                            t.start()
-                        return {"message": validation_run_msg }, 202
-                    else:
-                        validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
-                                                                obfuscation_code, log_category=log_category,
-                                                                return_schema=True)
-            else:
-                if number_of_files >= validation_files_limit:
-                    with app.app_context():
-                        t = AppContextThread(target=update_val_schema_files,
-                                             args=(validation_file, study_id, study_location, user_token,
-                                                   obfuscation_code, log_category,
-                                                   True))
-                        t.start()
-                    return {"message": validation_run_msg }, 202
-                else:
                     validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
                                                                 obfuscation_code, log_category=log_category,
                                                                 return_schema=True)
-        else:
-            if number_of_files >= validation_files_limit:
-                with app.app_context():
-                    t = AppContextThread(target=validate_study,
-                                         args=(study_id, study_location, user_token, obfuscation_code, section,
-                                log_category,static_validation_file))
-                    t.start()
-                return {"message": validation_run_msg }, 202
+                    # validation_schema = \
+                    #     validate_study(study_id, study_location, user_token, obfuscation_code,
+                    #                    validation_section=section,
+                    #                    log_category=log_category, static_validation_file=False)
             else:
-                validation_schema = \
-                    validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
-                                log_category=log_category, static_validation_file=static_validation_file)
+                validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
+                                                            obfuscation_code, log_category=log_category,
+                                                            return_schema=True)
+                # validation_schema = \
+                #     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
+                #                    log_category=log_category, static_validation_file=static_validation_file)
+
+            # if study_status == 'in review':
+            #     try:
+            #         cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
+            #         cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
+            #         logger.info("Starting cluster job for Validation schema update: " + cmd)
+            #         status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=False)
+            #         lsf_msg = message + '. ' + job_out + '. ' + job_err
+            #         if not status:
+            #             logger.error("LSF job error: " + lsf_msg)
+            #         else:
+            #             logger.info("LSF job submitted: " + lsf_msg)
+            #     except Exception as e:
+            #         logger.error(str(e))
+        else:
+            validation_schema = \
+                validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
+                               log_category=log_category, static_validation_file=static_validation_file)
 
         return validation_schema
-
-
 
 
 class UpdateValidationFile(Resource):
@@ -738,20 +713,8 @@ def is_newer_files(study_location):
     return need_validation_update
 
 
-def is_newer_timestamp(location, fileToCompare):
-    need_validation_update = False
-    try:
-        list_of_files = glob.glob(os.path.join(location, '*'))
-        latest_file = max(list_of_files, key=os.path.getctime)
-    except:
-        return need_validation_update
-    updateTime = os.path.getctime(latest_file)
-    if os.path.getctime(fileToCompare) < updateTime:
-        need_validation_update = True  # No files modified since the validation schema files
-    return need_validation_update
-
 def validate_study(study_id, study_location, user_token, obfuscation_code,
-                   validation_section='all', log_category='all', static_validation_file=None, basic_validation=True):
+                   validation_section='all', log_category='all', static_validation_file=None):
     start_time = time.time()
     all_validations = []
     validation_schema = None
@@ -791,12 +754,11 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     isa_study, isa_inv, isa_samples, std_path, status, amber_warning, isa_validation, inv_file, s_file, assay_files = \
         validate_basic_isa_tab(
             study_id, user_token, study_location, db_release_date, override_list, log_category=log_category)
-    if basic_validation:
-        all_validations.append(isa_validation)
-        if not status:
-            error_found = True
-        if amber_warning:
-            warning_found = True
+    all_validations.append(isa_validation)
+    if not status:
+        error_found = True
+    if amber_warning:
+        warning_found = True
 
     # We can now run the rest of the validation checks
 
@@ -1115,7 +1077,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 assays.append(header)
 
         if len(assay_df) <= 1:
-            add_msg(validations, val_section, "Assay sheet '" + str(assay.filename) + " contains Only 1 sample, please ensure you have included all samples and any control, QC, standards etc. If no further samples were used in the study please contact MetaboLights-help.",
+            add_msg(validations, val_section, "Assay sheet '" + str(
+                assay.filename) + " contains Only 1 sample, please ensure you have included all samples and any control, QC, standards etc. If no further samples were used in the study please contact MetaboLights-help.",
                     error, val_sequence=1, log_category=log_category)
 
         # Are the template headers present in the assay
@@ -1212,7 +1175,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                              sample_name_list, is_ms=is_ms, log_category=log_category)
                             else:
                                 add_msg(validations, val_section,
-                                        "No MAF/feature file referenced for assay sheet " + assay.filename + ". Please add the appropriate file reference (m_xxx.tsv) to the last column of the assay table. If the metabolite file is missing or your study does not include metabolite/feature identification information, please contact metabolights-help@ebi.ac.uk", error,
+                                        "No MAF/feature file referenced for assay sheet " + assay.filename + ". Please add the appropriate file reference (m_xxx.tsv) to the last column of the assay table. If the metabolite file is missing or your study does not include metabolite/feature identification information, please contact metabolights-help@ebi.ac.uk",
+                                        error,
                                         val_sequence=7.4, log_category=log_category)
 
                 except Exception as e:
@@ -1391,7 +1355,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
                         "are present in the study folder: '" + file_name + "'",
                         error, val_section, value=file_name, val_sequence=6.1, log_category=log_category)
 
-        if file_type in app.config.get('RAW_FILES_LIST'):  # Raw for MS and fid/acqus for NMR
+        if file_type in ('raw', 'fid', 'acqus', 'd'):  # Raw for MS and fid/acqus for NMR
             raw_file_found = True
 
         if file_type == 'derived':
@@ -2124,22 +2088,18 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
     return return_validations(val_section, validations, override_list)
 
 
-
-
-
-
 class OverrideValidation(Resource):
     @swagger.operation(
         summary="Approve or reject a specific validation rule (curator only)",
         notes='''For EBI curators to manually approve or fail a validation step.</br> "*" will override *all* errors!
         <pre><code>
-    {
+    { 
       "validations": [
         {
           "publication_3": "The PubChem id is for a different paper",
           "people_3": "The contact has given an incorrect email address",
           "files_1": ""
-        }
+        } 
       ]
     }
     </code></pre>''',
@@ -2248,14 +2208,15 @@ class OverrideValidation(Resource):
         return {"success": val_feedback}
 
 
-def run_validation_in_File(validations_file, study_id, study_location, user_token,obfuscation_code, section,log_category, validation_run_msg ):
-
+def run_validation_in_File(validations_file, study_id, study_location, user_token, obfuscation_code, section,
+                           log_category, validation_run_msg):
     validations_assay_running = validations_file[:-5] + "_inProgress.json"
     if os.path.isfile(validations_assay_running):
         return {"message": validation_run_msg}, 202
     # if validation file is already present - check if no update after that
     elif os.path.isfile(validations_file):
-        if is_newer_timestamp(study_location + '/DERIVED_FILES', validations_file) or is_newer_timestamp(study_location + '/RAW_FILES', validations_file):
+        if is_newer_timestamp(study_location + '/DERIVED_FILES', validations_file) or is_newer_timestamp(
+                study_location + '/RAW_FILES', validations_file):
             validation_schema = \
                 validate_study(study_id, study_location, user_token, obfuscation_code,
                                validation_section=section,
@@ -2279,7 +2240,7 @@ def run_validation_in_File(validations_file, study_id, study_location, user_toke
             validation_schema = \
                 validate_study(study_id, study_location, user_token, obfuscation_code,
                                validation_section=section,
-                               log_category=log_category,basic_validation=False)
+                               log_category=log_category, basic_validation=False)
 
             with open(validations_file, 'w', encoding='utf-8') as f:
                 json.dump(validation_schema, f, ensure_ascii=False)
@@ -2291,6 +2252,48 @@ def run_validation_in_File(validations_file, study_id, study_location, user_toke
             except:
                 pass
     return validation_schema
+
+
+def job_status(job_id):
+    cmd = "/usr/bin/ssh ebi-cli bjobs " + str(job_id).strip()
+    logger.info(cmd)
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
+    logger.info(result)
+    result = result.stdout.decode("utf-8")
+    index = result.find("tc_cm01")
+    result = result[index + 8:].lstrip().split(' ')
+    return result[0]
+
+
+def submitJobToCluser(command, section, study_location):
+    logger.info("Starting cluster job for Validation : " + command)
+    status, message, job_out, job_err = lsf_job('bsub', job_param=command, send_email=True)
+
+    if status:
+        start = 'Job <'
+        end = '> is'
+        cron_job_id = (job_out[job_out.find("Job <") + len(start):job_out.rfind(end)])
+        cron_job_file = study_location + "/validation_" + section + "_" + cron_job_id + '.json'
+        with open(cron_job_file, 'w') as fp:
+            pass
+        os.chmod(cron_job_file, 0o777)
+        return {"success": message, "job_id": cron_job_id, "message": job_out, "errors": job_err}
+    else:
+        return {"error": message, "message": job_out, "errors": job_err}
+
+
+def is_newer_timestamp(location, fileToCompare):
+    need_validation_update = False
+    try:
+        list_of_files = glob.glob(os.path.join(location, '*'))
+        latest_file = max(list_of_files, key=os.path.getctime)
+    except:
+        return need_validation_update
+    updateTime = os.path.getctime(latest_file)
+    if os.path.getctime(fileToCompare) < updateTime:
+        need_validation_update = True  # No files modified since the validation schema files
+    return need_validation_update
+
 
 class NewValidation(Resource):
     @swagger.operation(
@@ -2318,6 +2321,16 @@ class NewValidation(Resource):
                 "enum": ["all", "assays", "files"]
             },
             {
+                "name": "force_run",
+                "description": "Run the validation again",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["True", "False"]
+            },
+            {
                 "name": "level",
                 "description": "Specify which success-errors levels to report, default is all: "
                                "error, warning, info, success",
@@ -2327,6 +2340,7 @@ class NewValidation(Resource):
                 "paramType": "query",
                 "dataType": "string",
             },
+
             {
                 "name": "user_token",
                 "description": "User API token",
@@ -2378,8 +2392,14 @@ class NewValidation(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('section', help="Validation section", location="args")
         parser.add_argument('level', help="Validation message levels", location="args")
+        parser.add_argument('force_run', help="Validation message levels", location="args")
         args = parser.parse_args()
         section = args['section']
+        force_run = args['force_run']
+        if section is None or section == "":
+            section = 'meta'
+        if force_run is None:
+            force_run = False
         if section:
             query = section.strip()
         log_category = args['level']
@@ -2390,26 +2410,74 @@ class NewValidation(Resource):
 
         val_sections = "all", "isa-tab", "publication", "protocols", "people", "samples", "assays", "maf", "files"
 
-        validation_run_msg = app.config.get('VALIDATION_RUN_MSG')
-        if section is None:
-            val_sections = "isa-tab,publication,protocols,people,samples"
-            validation_schema = \
-                validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=val_sections,
-                                   log_category=log_category)
-        if section == 'assays':
-            validations_assay = study_location + app.config.get('ASSAY_VALIDATION_FILE')
-            validation_schema = run_validation_in_File(validations_assay, study_id, study_location, user_token, obfuscation_code, section,
-                                   log_category, validation_run_msg)
+        script = app.config.get('VALIDATION_SCRIPT')
+        para = ' -l {level} -i {study_id} -u {token} -s {section}'.format(level=log_category, study_id=study_id,
+                                                                          token=user_token, section=section)
+        file_name = None
+        logger.info("Validation params are - " + str(log_category) + " " + str(section))
+        pattern = re.compile(".validation_" + section + "\S+.json")
 
-        if section == 'files':
-            validations_files = study_location + app.config.get('FILES_VALIDATION_FILE')
-            validation_schema = run_validation_in_File(validations_files, study_id, study_location, user_token,
-                                                       obfuscation_code, section,
-                                                       log_category, validation_run_msg)
-        if section == 'all':
-            validation_schema = \
-                validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
-                               log_category=log_category)
+        for filepath in os.listdir(study_location):
+            if pattern.match(filepath):
+                file_name = filepath
+                break
 
+        if file_name:
+            result = file_name[:-5].split('_')
+            sub_job_id = result[2]
+            # bacct -l 3861194
+            # check job status
+            status = job_status(sub_job_id)
+            logger.info("job status " + sub_job_id + " " + status)
+            if status == "PEND" or status == "RUN":
+                return {
+                    "message": "Validation is already in progress. Job " + sub_job_id + " is in running or pending state"}
 
-        return validation_schema
+            file_name = study_location + "/" + file_name
+            if os.path.isfile(file_name) and status == "DONE":
+                if not force_run:
+                    try:
+                        with open(file_name, 'r', encoding='utf-8') as f:
+                            validation_schema = json.load(f)
+                            return validation_schema
+                    except Exception as e:
+                        logger.error(str(e))
+                        return {"message": "Error in reading the Validation"}
+                else:
+                    if is_newer_timestamp(study_location, file_name):
+                        os.remove(file_name)
+                        command = script + ' ' + para
+                        return submitJobToCluser(command, section, study_location)
+                    else:
+                        try:
+                            with open(file_name, 'r', encoding='utf-8') as f:
+                                validation_schema = json.load(f)
+                                return validation_schema
+                        except Exception as e:
+                            logger.error(str(e))
+                            return {"message": "Error in reading the Validation file"}
+
+            elif os.path.isfile(file_name) and os.path.getsize(file_name) > 0:
+                if is_newer_timestamp(study_location, file_name):
+                    logger.info(" job status is not present, creating new job")
+                    os.remove(file_name)
+                    command = script + ' ' + para
+                    return submitJobToCluser(command, section, study_location)
+                else:
+                    try:
+                        logger.info(" job status is not present and no update, returning validation")
+                        with open(file_name, 'r', encoding='utf-8') as f:
+                            validation_schema = json.load(f)
+                            return validation_schema
+                    except Exception as e:
+                        logger.error(str(e))
+                        return {"message": "Error in reading the Validation"}
+        else:
+            try:
+                os.remove(file_name)
+            except Exception as e:
+                pass
+                # submit a new job return job id
+                logger.info(" no file present , creating new job")
+                command = script + ' ' + para
+                return submitJobToCluser(command, section, study_location)

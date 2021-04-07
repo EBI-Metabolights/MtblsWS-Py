@@ -46,6 +46,7 @@ from app.ws.mzML2ISA import *
 from app.ws.ontology import *
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
+from app.ws.pathway import fellaPathway
 from app.ws.pathway import keggid
 from app.ws.reports import reports
 from app.ws.sample_table import *
@@ -56,8 +57,7 @@ from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
-from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile
-from app.ws.pathway import keggid,fellaPathway
+from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation
 
 """
 MTBLS WS-Py
@@ -167,7 +167,7 @@ def initialize_app(flask_app):
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
-    # api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
+    api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
@@ -197,8 +197,8 @@ def initialize_app(flask_app):
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
-    api.add_resource(keggid,res_path+"/ebi-internal/keggid")
-    api.add_resource(fellaPathway,res_path+"/ebi-internal/fella-pathway")
+    api.add_resource(keggid, res_path + "/ebi-internal/keggid")
+    api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
