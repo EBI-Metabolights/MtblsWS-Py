@@ -1317,7 +1317,7 @@ def get_studytype(studyID=None):
         source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
         ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
         try:
-            resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+            resp =requests.get(ws_url , headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
             data = resp.json()
             for descriptor in data['studyDesignDescriptors']:
                 term = str(descriptor['annotationValue'])
