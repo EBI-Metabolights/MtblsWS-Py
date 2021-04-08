@@ -1331,13 +1331,14 @@ class FileList(Resource):
             return "Given Path is not present"
         files_list = []
         dir_list = []
-        for root, dirs, files in os.walk("."):
+        for root, dirs, files in os.walk(source):
             for filename in files:
                 file = {'file': filename, 'path': os.path.join(source, filename)}
                 files_list.append(file)
             for dirname in dirs:
-                dir = {'directory': dirname, 'path': os.path.join(source , dirname)}
+                dir = {'directory': dirname, 'path': os.path.join(source, dirname)}
                 dir_list.append(dir)
+            break
 
         return jsonify({'files': files_list,
                         'directories': dir_list})
