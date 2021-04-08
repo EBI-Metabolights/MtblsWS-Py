@@ -1252,3 +1252,92 @@ class StudyFilesTree(Resource):
 
         return jsonify({'study': file_list, 'latest': [], 'private': [],
                         'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
+
+
+
+class FileList(Resource):
+    @swagger.operation(
+        summary="Get a listof all files and directories  for the given location",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "directory_name",
+                "description": "return list of files form this directory",
+                "paramType": "query",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('directory_name', help='Alternative file location')
+        directory_name =""
+        # If false, only sync ISA-Tab metadata files
+        if request.args:
+            args = parser.parse_args(req=request)
+            directory_name = args['directory_name']
+
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not read_access:
+            abort(403)
+
+        source = study_location + "/" + directory_name
+        try:
+            os.chdir(source)
+        except Exception as e:
+            return "Given Path is not present"
+        files_list = []
+        dir_list = []
+        for root, dirs, files in os.walk("."):
+            for filename in files:
+                file = {'file': filename, 'path': os.path.join(source, filename)}
+                files_list.append(file)
+            for dirname in dirs:
+                dir = {'directory': dirname, 'path': os.path.join(source , dirname)}
+                dir_list.append(dir)
+
+        return jsonify({'files': files_list,
+                        'directories': dir_list})
