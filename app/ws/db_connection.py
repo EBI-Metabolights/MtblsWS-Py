@@ -593,7 +593,7 @@ def get_all_study_acc():
     query = query.replace('\\', '')
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query,)
+        cursor.execute(query)
         data = cursor.fetchall()
         release_connection(postgresql_pool, conn)
         return data
