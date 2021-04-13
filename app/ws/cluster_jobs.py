@@ -29,13 +29,13 @@ logger = logging.getLogger('wslog')
 wsc = WsClient()
 
 
-def lsf_job(job_cmd, job_param=None, send_email=True):
+def lsf_job(job_cmd, job_param=None, send_email=True, user_email=""):
     no_jobs = "rm", "mv", "cat", "more", "ln", "ls", "mount", "kill", "who", "hostname", "ifconfig"
     status = True
     job_status = ""
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
-    email = app.config.get('LSF_COMMAND_EMAIL')
+    email = app.config.get('LSF_COMMAND_EMAIL') + " , " + user_email
     message = "Successfully submitted LSF cluster job: '" + job_cmd
     if job_param:
         message = message + " " + job_param

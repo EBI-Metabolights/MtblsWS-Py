@@ -2249,6 +2249,9 @@ class ChEBIPipeLine(Resource):
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
         study_status = wsc.get_permissions(study_id, user_token)
+
+        user_email = wsc.get_user_email(user_token)
+
         if not is_curator:
             abort(403)
         cluster_job = None
@@ -2314,7 +2317,7 @@ class ChEBIPipeLine(Resource):
                             cmd = cmd.replace(old_file_name, file_name)
                         old_file_name = file_name
                         print_log("Starting cluster job for ChEBI pipeline: " + cmd)
-                        status, message, job_out, job_err = lsf_job('bsub', job_param=cmd)
+                        status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=True, user_email = user_email)
 
                         if status:
                             return {"success": message, "message": job_out, "errors": job_err}

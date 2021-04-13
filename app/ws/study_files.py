@@ -1325,10 +1325,6 @@ class FileList(Resource):
             abort(403)
 
         source = study_location + "/" + directory_name
-        try:
-            os.chdir(source)
-        except Exception as e:
-            return "Given Path is not present"
         files_list = []
         dir_list = []
         for root, dirs, files in os.walk(source):

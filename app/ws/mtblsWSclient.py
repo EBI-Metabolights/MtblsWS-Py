@@ -25,7 +25,7 @@ import requests
 from flask import current_app as app
 from flask_restful import abort
 
-from app.ws.db_connection import check_access_rights, get_public_studies, get_study_by_type
+from app.ws.db_connection import check_access_rights, get_public_studies, get_study_by_type,get_email
 
 """
 MetaboLights WS client
@@ -315,6 +315,13 @@ class WsClient:
 
         return is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
                submission_date, study_status
+
+    @staticmethod
+    def get_user_email(user_token):
+
+        user_email= get_email(user_token)
+        logger.info(" User Email: " + str(user_email))
+        return user_email
 
     @staticmethod
     def get_queue_folder():
