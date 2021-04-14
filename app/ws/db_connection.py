@@ -601,22 +601,18 @@ def get_all_study_acc():
         return False
 
 
+
 def get_user_email(user_token):
 
-    query = "select email from users where lower(apitoken)  = '#user_token#';"
-
-    query = query.replace("#user_token#", user_token).replace('\\', '')
-
+    input = "select email from users where apitoken = '{token}'".format(token=user_token)
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
-        data = cursor.fetchall()
+        cursor.execute(input)
+        data = cursor.fetchone()[0]
         release_connection(postgresql_pool, conn)
-        logger.info('inside get_user_email')
-        logger.info(data[0])
-        return data[0]
+        return data
     except Exception as e:
-        return ""
+        return False
 
 def query_study_submitters(study_id):
     val_acc(study_id)

@@ -46,6 +46,7 @@ from app.ws.mtblsStudy import write_audit_files
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
+from app.ws.db_connection import get_user_email
 
 logger = logging.getLogger('wslog_chebi')
 
@@ -2250,7 +2251,7 @@ class ChEBIPipeLine(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
         study_status = wsc.get_permissions(study_id, user_token)
 
-        user_email = wsc.get_user_email(user_token)
+        user_email = get_user_email(user_token)
 
         if not is_curator:
             abort(403)
