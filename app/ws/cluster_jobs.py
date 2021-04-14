@@ -35,7 +35,7 @@ def lsf_job(job_cmd, job_param=None, send_email=True, user_email=""):
     job_status = ""
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
-    email = app.config.get('LSF_COMMAND_EMAIL') + " , " + user_email
+    email = app.config.get('LSF_COMMAND_EMAIL') + "," + user_email
     message = "Successfully submitted LSF cluster job: '" + job_cmd
     if job_param:
         message = message + " " + job_param
