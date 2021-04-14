@@ -2337,7 +2337,7 @@ class ChEBIPipeLine(Resource):
             if run_on_cluster:
                 # create param file
                 print_log("Starting cluster job for ChEBI pipeline: " + cmd)
-                status, message, job_out, job_err = lsf_job('bsub', job_param=cmd)
+                status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=True, user_email = user_email)
                 print_log("job submitted")
                 if status:
                     return {"success": message, "message": job_out, "errors": job_err}
