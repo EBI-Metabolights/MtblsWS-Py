@@ -53,8 +53,9 @@ from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
 from app.ws.spectra import ExtractMSSpectra
 from app.ws.stats import StudyStats
-from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
-from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder
+
+from app.ws.study_actions import StudyStatus,ToggleAccess,ToggleAccessGet
+from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders,SyncFolder,FileList
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation
@@ -101,6 +102,7 @@ def initialize_app(flask_app):
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
     api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
+    api.add_resource(FileList, res_path + "/studies/<string:study_id>/fileslist")
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
     api.add_resource(SendFiles,

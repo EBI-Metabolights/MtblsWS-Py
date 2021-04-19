@@ -600,6 +600,17 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
            submission_date, updated_date, study_status
 
 
+def get_email(user_token):
+
+    val_query_params(user_token)
+    try:
+        user_email = get_user_email(user_token)
+    except Exception as e:
+        logger.error("Could not query the database " + str(e))
+    return user_email
+
+
+
 def study_submitters(study_id, user_email, method):
     if not study_id or len(user_email) < 5:
         return None
@@ -640,6 +651,19 @@ def get_all_study_acc():
     except Exception as e:
         return False
 
+
+
+def get_user_email(user_token):
+
+    input = "select email from users where apitoken = '{token}'".format(token=user_token)
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(input)
+        data = cursor.fetchone()[0]
+        release_connection(postgresql_pool, conn)
+        return data
+    except Exception as e:
+        return False
 
 def query_study_submitters(study_id):
     val_acc(study_id)

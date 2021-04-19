@@ -205,6 +205,8 @@ class Ontology(Resource):
             print('Search %s in' % ','.join(ontology))
             try:
                 result = getOLSTerm(term, mapping, ontology=ontology)
+                result += getBioportalTerm(term, ontology=ontology)
+
             except Exception as e:
                 print(e.args)
                 logger.info(e.args)

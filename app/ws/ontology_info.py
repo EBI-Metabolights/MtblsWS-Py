@@ -213,7 +213,7 @@ def getOLSTerm(keyword, map, ontology=''):
 
     elif 'http:' in keyword:
         label, definition, ontoName = getOLSTermInfo(keyword)
-        if len(definition) >0:
+        if len(definition) > 0:
             definition = definition[0]
         else:
             definition = ''
@@ -399,7 +399,7 @@ def getZoomaTerm(keyword, mapping=''):
     return res
 
 
-def getBioportalTerm(keyword):
+def getBioportalTerm(keyword, ontology=''):
     logger.info('Requesting Bioportal...')
     print('Requesting Bioportal...')
     res = []
@@ -412,6 +412,13 @@ def getBioportalTerm(keyword):
             url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+") + '&require_exact_match=true'
         else:
             url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")
+
+        if ontology not in [None, '']:
+            if ontology != None:
+                ontology = [x.upper() for x in ontology]
+            onto_list = ','.join(ontology)
+            url += '&ontologies=' + onto_list + '&require_exact_match=true'
+
         request = urllib.request.Request(url)
         request.add_header('Authorization', 'apikey token=' + app.config.get('BIOPORTAL_TOKEN'))
         response = urllib.request.urlopen(request)
