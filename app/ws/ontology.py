@@ -616,7 +616,7 @@ class Placeholder(Resource):
             if query:
                 query = query.strip().lower()
 
-        google_url = app.config.get('GOOGLE_ZOOMA_SHEET')
+        google_url = app.config.get('GOOLGE_ZOOMA_SHEET')
         sheet_name = ''
         col = []
 
@@ -633,7 +633,7 @@ class Placeholder(Resource):
 
         elif query == 'organism':
             sheet_name = 'organism'
-            col = ['operation(Update/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_organism',
+            col = ['operation(Update/Add/Delete/Zooma/MTBLS)', 'status (Done/Error)', 'studyID', 'old_organism',
                    'organism', 'organism_ref', 'organism_url', 'old_organismPart', 'organismPart', 'organismPart_ref',
                    'organismPart_url', 'superclass', 'definition']
 
@@ -1177,26 +1177,27 @@ def get_metainfo(query):
     '''
     res = []
 
-    def getStudyIDs():
-        def atoi(text):
-            return int(text) if text.isdigit() else text
-
-        def natural_keys(text):
-            return [atoi(c) for c in re.split('(\d+)', text)]
-
-        url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
-        resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
-        studyIDs = resp.json()['content']
-        studyIDs.sort(key=natural_keys)
-        return studyIDs
-
+    # def getStudyIDs():
+    #     def atoi(text):
+    #         return int(text) if text.isdigit() else text
+    #
+    #     def natural_keys(text):
+    #         return [atoi(c) for c in re.split('(\d+)', text)]
+    #
+    #     url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
+    #     resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+    #     studyIDs = resp.json()['content']
+    #     studyIDs.sort(key=natural_keys)
+    #     return studyIDs
+    # studyIDs = getStudyIDs()
+    studyIDs = wsc.get_public_studies()['content']
     logger.info('Getting {query} terms'.format(query=query))
-    studyIDs = getStudyIDs()
+
 
     for studyID in studyIDs:
         print(f'get {query} from {studyID}.')
         if query.lower() == "factor":
-            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
+            url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
 
             try:
                 resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
@@ -1207,17 +1208,18 @@ def get_metainfo(query):
                                  'old_name': factor['factorName'],
                                  'annotationValue': factor['factorType']['annotationValue'],
                                  'termAccession': factor['factorType']['termAccession']}
-
-                    if ('placeholder' in factor['factorType']['termAccession']) or (
-                            factor['factorName'].lower() != factor['factorType']['annotationValue'].lower()):
-                        res.append(temp_dict)
-                    else:
-                        abort(400)
+                    res.append(temp_dict)
+                    # if ('placeholder' in factor['factorType']['termAccession']) or (
+                    #         len(factor['factorType']['termAccession']) == 0):
+                    #     res.append(temp_dict)
+                    # else:
+                    #     abort(400)
             except:
                 pass
 
         elif query.lower() == "design descriptor":
-            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
+            url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/descriptors'.format(
+                study_id=studyID)
 
             try:
                 resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
@@ -1228,16 +1230,17 @@ def get_metainfo(query):
                     temp_dict = {'studyID': studyID,
                                  'old_name': descriptor['annotationValue'],
                                  'matched_iri': descriptor['termAccession']}
-
-                    if ('placeholder' in temp_dict['matched_iri']) or (len(temp_dict['matched_iri']) == 0):
-                        res.append(temp_dict)
-                    else:
-                        abort(400)
+                    res.append(temp_dict)
+                    # if ('placeholder' in temp_dict['matched_iri']) or (len(temp_dict['matched_iri']) == 0):
+                    #     res.append(temp_dict)
+                    # else:
+                    #     abort(400)
             except:
                 pass
 
         elif query.lower() == "organism":
-            url = 'https://www.ebi.ac.uk/metabolights/ws/studies/{study_id}/organisms'.format(study_id=studyID)
+            url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/organisms'.format(
+                study_id=studyID)
 
             try:
                 resp = requests.get(url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
@@ -1252,14 +1255,14 @@ def get_metainfo(query):
                                  'organismPart_url': organism["Term Accession Number.1"]
                                  }
 
-                    # res.append(temp_dict)
+                    res.append(temp_dict)
 
-                    if ('placeholder' in temp_dict['organism_url']) or ('placeholder' in temp_dict['organismPart_url']) \
-                            or (len(temp_dict['organism_url']) == 0) or (len(temp_dict['organismPart_url']) == 0):
-                        res.append(temp_dict)
-
-                    else:
-                        abort(400)
+                    # if ('placeholder' in temp_dict['organism_url']) or ('placeholder' in temp_dict['organismPart_url']) \
+                    #         or (len(temp_dict['organism_url']) == 0) or (len(temp_dict['organismPart_url']) == 0):
+                    #     res.append(temp_dict)
+                    #
+                    # else:
+                    #     abort(400)
             except:
                 pass
         else:
@@ -1322,6 +1325,7 @@ def getGoogleSheet(url, worksheetName):
         df = pd.DataFrame(content)
         return df
     except Exception as e:
+        print(e.args)
         logger.info(e.args)
 
 
