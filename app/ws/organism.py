@@ -327,7 +327,7 @@ def update_characteristics_in_sample_sheet(onto_name, new_url, header, old_value
 
             try:
 
-                if old_value != new_value:  # Do we need to change the cell values?
+                # if old_value != new_value:  # Do we need to change the cell values?
                     df.loc[df[header] == old_value, header_source_ref] = onto_name  # Term Source REF(.n) changed
                     df.loc[df[header] == old_value, header_acc_number] = new_url  # Term Accession Number(.n) changed
                     df.loc[df[header] == old_value, header] = new_value  # Characteristics name changed
