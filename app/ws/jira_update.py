@@ -184,7 +184,7 @@ def update_or_create_jira_issue(user_token, is_curator):
                     jira_curator = 'mwilliam'
                     valid_curator = True
                 elif curator.lower() == 'pamela':
-                    jira_curator = 'pamela'
+                    jira_curator = 'ppruski'
                     valid_curator = True
                 elif curator.lower() == 'xuefei' or curator.lower() == 'reza' or curator.lower() == 'keeva':
                     jira_curator = default_curator  # We do not have a current curation listed in the log
