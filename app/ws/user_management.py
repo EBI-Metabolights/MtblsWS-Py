@@ -280,3 +280,63 @@ class UserManagement(Resource):
             return {"user_name": email, "api_token": str(api_token), "password": str(password)}
         else:
             return {"Error": message}
+
+    @swagger.operation(
+        summary="Get all the information associated with a single user.",
+        notes="Currently only supports retrieving a user object by username. "
+              "Also only supports retrieving just one user. ",
+        parameters=[
+            {
+                "name": "username",
+                "description": "Username for the user whose details are being retrieved.",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        response_messages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, username):
+        """
+        Return a single user by username. Checks the validity of the param, retrieves the API token from the header and
+        checks its validity and what permissions are available to the bearer of the token.
+        """
+
+        log_request(request)
+
+        if username is None:
+            abort(404)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = wsc.get_permissions('MTBLS1', user_token)
+
+        if not read_access:
+            abort(403)
+
+        pass
