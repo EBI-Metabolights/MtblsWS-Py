@@ -645,7 +645,7 @@ class SyncFolder(Resource):
 class SampleStudyFiles(Resource):
     @swagger.operation(
         summary="Get a list of all sample names, mapped to files in the study and upload folder(s)",
-        notes="A prefect match gives reliability score of '1.0'. Use the highest score possible for matching",
+        notes="A perfect match gives a reliability score of '1.0'. Use the highest score possible for matching",
         parameters=[
             {
                 "name": "study_id",
