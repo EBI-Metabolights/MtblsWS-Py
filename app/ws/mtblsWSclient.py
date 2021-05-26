@@ -25,7 +25,7 @@ import requests
 from flask import current_app as app
 from flask_restful import abort
 
-from app.ws.db_connection import check_access_rights, get_public_studies, get_study_by_type,get_email
+from app.ws.db_connection import check_access_rights, get_public_studies, get_private_studies, get_study_by_type,get_email
 
 """
 MetaboLights WS client
@@ -239,6 +239,17 @@ class WsClient:
             studies.append(acc[0])
 
         logger.info('... found %d public studies', len(studies))
+        return {"studies": len(studies), "content": studies}
+
+    @staticmethod
+    def get_private_studies():
+        logger.info('Getting all private studies')
+        studies = []
+        study_list = get_private_studies()
+        for acc in study_list:
+            studies.append(acc[0])
+
+        logger.info('... found %d private studies', len(studies))
         return {"studies": len(studies), "content": studies}
 
     @staticmethod

@@ -98,6 +98,7 @@ def initialize_app(flask_app):
 
     # MTBLS studies
     api.add_resource(MtblsStudies, res_path + "/studies")
+    api.add_resource(MtblsPrivateStudies, res_path + "/studies/private")
     api.add_resource(MtblsStudiesWithMethods, res_path + "/studies/technology")
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
     api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
