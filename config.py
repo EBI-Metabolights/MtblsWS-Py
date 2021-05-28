@@ -47,7 +47,7 @@ UPDATE_PATH_SUFFIX = "audit"
 
 MTBLS_FILE_BASE = "<some local filesystem>/"
 MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
-REPORTING_PATH= "<report folder name>/"
+REPORTING_PATH = "<report folder name>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
 FILE_SYSTEM_PATH = '<some local filesystem>/'
 MTBLS_ZOOMA_FILE = "<local file>"
@@ -58,10 +58,10 @@ MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
 
 MTBLS_PRIVATE_FTP_ROOT = ""
 
-#GOOGLE SHEETS
+# GOOGLE SHEETS
 GOOLGE_ZOOMA_SHEET = "<Google sheet url>"
 MTBLS_STATISITC = "<Google sheet url>"
-MTBLS_CURATION_LOG ="<Google sheet url>"
+MTBLS_CURATION_LOG = "<Google sheet url>"
 MTBLS_CURATION_LOG_TEST = "<Google sheet url>"
 
 GOOGLE_SHEET_TOKEN = "./instance/google_sheet_api_credentials.json"
@@ -71,12 +71,12 @@ GOOGLE_CALENDAR_ID = ""
 PARTNER_TEMPLATE_METABOLON = 'TEMPLATES/METABOLON'
 DEFAULT_TEMPLATE = 'TEMPLATES/DUMMY'
 
-CORS_HOSTS = "http://localhost:8000",\
-             "http://localhost:4200",\
-             "http://localhost:8080",\
-             "http://localhost.ebi.ac.uk:8080",\
-             "http://wwwdev.ebi.ac.uk",\
-             "http://wp-np3-15:8080",\
+CORS_HOSTS = "http://localhost:8000", \
+             "http://localhost:4200", \
+             "http://localhost:8080", \
+             "http://localhost.ebi.ac.uk:8080", \
+             "http://wwwdev.ebi.ac.uk", \
+             "http://wp-np3-15:8080", \
              "http://wp-np3-15.ebi.ac.uk:8080"
 
 DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"
@@ -108,8 +108,7 @@ CONN_POOL_MAX = 20
 # Timeout in secounds when listing a large folder for files
 FILE_LIST_TIMEOUT = 90
 
-
-#chebi
+# chebi
 REMOVED_HS_MOL_COUNT = 500
 
 # Validations
@@ -140,12 +139,11 @@ IGNORE_FILE_LIST = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal'
                     'format.temp', 'scon2', 'stanprogram', 'precom', 'settings', 'outd', 'gpnam', 'base_info',
                     'clevels']
 
-
 RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp',
                   '.lcd', '.abf', '.jpf', '.xps', '.mgf', '.qgd', '.hr']
 
 DERIVED_FILES_LIST = ['.mzml', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef', '.cnx', '.peakml', '.xy', '.smp',
-                      '.scan']
+                      '.scan', '.dx', '.DX','.msp']
 
 COMPRESSED_FILES_LIST = ['.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', '.rar',
                          '.bz2', '.arj', '.z', '.war', '.raw.rar']

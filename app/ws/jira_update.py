@@ -85,7 +85,7 @@ class Jira(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS3', user_token)
+        study_status = wsc.get_permissions('MTBLS3', user_token)
         if not is_curator:
             abort(403)
 
@@ -183,10 +183,10 @@ def update_or_create_jira_issue(user_token, is_curator):
                 if curator.lower() == 'mark':
                     jira_curator = 'mwilliam'
                     valid_curator = True
-                elif curator.lower() == 'keeva':
-                    jira_curator = 'keeva'
+                elif curator.lower() == 'pamela':
+                    jira_curator = 'ppruski'
                     valid_curator = True
-                elif curator.lower() == 'xuefei' or curator.lower() == 'reza':
+                elif curator.lower() == 'xuefei' or curator.lower() == 'reza' or curator.lower() == 'keeva':
                     jira_curator = default_curator  # We do not have a current curation listed in the log
                     valid_curator = True
 
@@ -346,7 +346,7 @@ class GoogleDocs(Resource):
             abort(401)
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS1', user_token)
+        study_status = wsc.get_permissions('MTBLS1', user_token)
         if not is_curator:
             abort(401)
 
