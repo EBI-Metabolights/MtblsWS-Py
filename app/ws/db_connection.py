@@ -203,6 +203,43 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
     except Exception as e:
         return False, str(e)
 
+def get_user(username):
+    """
+    Get a single user from the database, searching by attribute username.
+    First validate the username and then concatenate it into the query.
+    :return: a user object as a dict.
+    """
+    val_query_params(username)
+    get_user_query = "select firstname, lastname, email, affiliation, affiliationurl, address, orcid, " \
+                     "metaspace_api_key from users where username = '{0}';".format(username)
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(get_user_query)
+        data = cursor.fetchall()
+    except Exception as e:
+        logger.error('An error occurred while retrieving user {0}: {1}'.format(username, e))
+        abort(500)
+
+    release_connection(postgresql_pool, conn)
+    if len(data) > 0:
+        # static referencing is bad but there will only ever be one result for a single username.
+        return {
+            'user': {
+                'firstName': data[0][0],
+                'lastName': data[0][1],
+                'email': data[0][2],
+                'affiliation': data[0][3],
+                'affiliation_url': data[0][4],
+                'address': data[0][5],
+                'orcid': data[0][6],
+                'metaspace_api_key': data[0][7]
+            }
+        }
+    else:
+        # no user found by that username, abort with 404
+        abort(404, 'User with username {0} not found.'.format(username))
+
+
 
 def get_all_private_studies_for_user(user_token):
     val_query_params(user_token)

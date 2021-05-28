@@ -19,13 +19,14 @@
 import json
 import logging
 
-from flask import request, abort
+from flask import request, abort, jsonify
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 from marshmallow import ValidationError
 
-from app.ws.db_connection import create_user, update_user
+from app.ws.db_connection import create_user, update_user, get_user
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.misc_utilities.request_parsers import RequestParsers
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request, val_email, get_new_password_and_api_token
 
@@ -283,15 +284,15 @@ class UserManagement(Resource):
 
     @swagger.operation(
         summary="Get all the information associated with a single user.",
-        notes="Currently only supports retrieving a user object by username. "
-              "Also only supports retrieving just one user. ",
+        notes="Currently only supports retrieving a user by username. "
+              "Also only supports retrieving just one user at a time. ",
         parameters=[
             {
                 "name": "username",
                 "description": "Username for the user whose details are being retrieved.",
                 "required": True,
                 "allowMultiple": False,
-                "paramType": "path",
+                "paramType": "query",
                 "dataType": "string"
             },
             {
@@ -303,18 +304,26 @@ class UserManagement(Resource):
                 "allowMultiple": False
             }
         ],
-        response_messages=[
+        responseMessages=[
             {
                 "code": 200,
                 "message": "OK."
             },
             {
+                "code": 400,
+                "message": "Bad Request. The username was not provided in the param string."
+            },
+            {
                 "code": 404,
                 "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 500,
+                "message": "Internal server error."
             }
         ]
     )
-    def get(self, username):
+    def get(self):
         """
         Return a single user by username. Checks the validity of the param, retrieves the API token from the header and
         checks its validity and what permissions are available to the bearer of the token.
@@ -322,11 +331,9 @@ class UserManagement(Resource):
 
         log_request(request)
 
-        if username is None:
-            abort(404)
-
         # User authentication
         user_token = None
+
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         else:
@@ -334,9 +341,23 @@ class UserManagement(Resource):
             abort(401)
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions('MTBLS1', user_token)
+            study_status = wsc.get_permissions('MTBLS1', user_token)
 
         if not read_access:
             abort(403)
 
-        pass
+        # pull username from query params.
+        username = None
+
+        user_parser = RequestParsers.username_parser()
+        if request.args:
+            args = user_parser.parse_args(req=request)
+            username = args['username']
+
+        # username has not been properly provided, abort with code 400 (bad request).
+        if username is None:
+            abort(400)
+
+        # query the database for the user, and return the result of the query.
+        return jsonify(get_user(username))
+
