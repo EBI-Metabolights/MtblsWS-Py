@@ -67,6 +67,58 @@ class MtblsStudies(Resource):
         pub_list = wsc.get_public_studies()
         return jsonify(pub_list)
 
+class MtblsPrivateStudies(Resource):
+    @swagger.operation(
+        summary="Get all private studies",
+        notes="Get a list of all Private Studies for Curator.",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self):
+        log_request(request)
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+        if not write_access:
+            abort(403)
+
+        priv_list = wsc.get_private_studies()
+        return jsonify(priv_list)
+
 
 class MtblsStudiesWithMethods(Resource):
     @swagger.operation(

@@ -16,6 +16,8 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import os
+import zipfile
 from datetime import datetime
 
 from flask import jsonify
@@ -23,7 +25,7 @@ from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.db_connection import get_connection
+from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
@@ -49,7 +51,7 @@ class reports(Resource):
                 "allowEmptyValue": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["daily_stats", "user_stats","global"]
+                "enum": ["daily_stats", "user_stats", "global", 'study_status', "file_extension"]
             },
 
             {
@@ -74,14 +76,24 @@ class reports(Resource):
 
             {
                 "name": "queryFields",
-                "description": "Specify the fields to return, the default is all options: "
-                               "'studies_created','public','private','review','curation','user'",
+                "description": "Specify the fields to return",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
             },
+
+            {
+                "name": "studyStatus",
+                "description": "Specify the study status, the default is all options: 'Public', 'In Review', 'In Curation', 'Submitted', 'Placeholder', 'Dormant'",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+
             {
                 "name": "user_token",
                 "description": "User API token",
@@ -147,14 +159,21 @@ class reports(Resource):
             else:
                 end_date = datetime.today()
 
+        parser.add_argument('studyStatus', help='studyStatus')
+        studyStatus = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            studyStatus = args['studyStatus']
+            if studyStatus:
+                studyStatus = tuple([x.strip() for x in studyStatus.split(',')])
+
         parser.add_argument('queryFields', help='queryFields')
+        query_field = None
         if request.args:
             args = parser.parse_args(req=request)
             queryFields = args['queryFields']
             if queryFields:
-                query_field = tuple([x.strip() for x in queryFields.split(',')])
-            else:
-                query_field = None
+                query_field = tuple([x.strip().lower() for x in queryFields.split(',')])
 
         # User authentication
         user_token = None
@@ -167,7 +186,10 @@ class reports(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
         if not write_access:
-            abort(403)
+            if query in ['study_status', "global"]:
+                studyStatus = ['public']
+            else:
+                abort(403)
 
         reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
 
@@ -193,9 +215,38 @@ class reports(Resource):
             file_name = 'user_report.json'
             j_file = readDatafromFile(reporting_path + file_name)
             return jsonify(j_file)
+
         elif query == 'global':
             file_name = 'global.json'
             j_file = readDatafromFile(reporting_path + file_name)
+            return jsonify(j_file)
+
+        elif query == 'file_extension':
+            file_name = 'file_extension.json'
+            j_file = readDatafromFile(reporting_path + file_name)
+            return jsonify(j_file)
+
+        elif query == 'study_status':
+            file_name = 'study_report.json'
+            j_file = readDatafromFile(reporting_path + file_name)
+            data_res = {}
+
+            for studyID, study_info in j_file['data'].items():
+                d = datetime.strptime(study_info['submissiondate'], '%Y-%m-%d')
+                status = study_info['status']
+
+                if studyStatus == None:
+                    if d >= start_date and d <= end_date:
+                        data_res.update({studyID: study_info})
+                    else:
+                        continue
+                else:
+                    if d >= start_date and d <= end_date and status.lower() in studyStatus:
+                        data_res.update({studyID: study_info})
+                    else:
+                        continue
+
+            j_file['data'] = data_res
             return jsonify(j_file)
         else:
             file_name = ''
@@ -215,7 +266,7 @@ class reports(Resource):
                 "allowEmptyValue": False,
                 "paramType": "query",
                 "dataType": "string",
-                "enum": ["daily_stats", "user_stats", "study_stats", "global"]
+                "enum": ["daily_stats", "user_stats", "study_stats", "file_extension", "global"]
             },
             {
                 "name": "studyid",
@@ -335,11 +386,16 @@ class reports(Resource):
                 study_list = dt[6].split(",")
                 studies = {}
                 for x in study_list:
-                    temp = study_data[x.strip()]
-                    studies[x.strip()] = temp
+                    try:
+                        temp = study_data['data'][x.strip()]
+                        studies[x.strip()] = temp
+                    except:
+                        continue
                 dict_temp = {str(dt[0]):
-                                 {"user_email": str(dt[1]),
+                                 {"name": dt[13],
+                                  "user_email": str(dt[1]),
                                   "country_code": dt[2],
+                                  "joindate": dt[12],
                                   "total": str(dt[5]),
                                   "submitted": str(dt[7]),
                                   "review": str(dt[9]),
@@ -355,9 +411,10 @@ class reports(Resource):
                 user_count += 1
                 if dt[4] == 2:
                     active_user += 1
-                data['user_count'] = str(user_count)
-                data['active_user'] = str(active_user)
+                # data['user_count'] = str(user_count)
+                # data['active_user'] = str(active_user)
             res = {"created_at": "2020-07-07", "updated_at": datetime.today().strftime('%Y-%m-%d'),
+                   "user_count": str(user_count), "active_user": str(active_user),
                    "data": data}
 
             file_name = 'user_report.json'
@@ -369,16 +426,33 @@ class reports(Resource):
             studies = cursor.fetchall()
             data = {}
             for st in studies:
+                print(st[0])
                 study_files, latest_update_time = get_all_files(
                     app.config.get('STUDY_PATH') + str(st[0]))
-                dict_temp = {str(st[0]):
-                                 {'latest_update_time': latest_update_time,
-                                  'study_files': study_files
-                                  }
-                             }
+
+                study_info = get_study(st[0])
+                name = study_info.pop('submitter').split(',')
+                country = study_info.pop('country').split(',')
+
+                name_d = [{'name': x} for x in name]
+                country_d = [{'country': x} for x in country]
+                submitter = []
+                for x in zip(name_d, country_d):
+                    res = {}
+                    for y in x:
+                        res.update(y)
+                    submitter.append(res)
+
+                study_info['submitter'] = submitter
+                study_info['latest_update_time'] = latest_update_time
+                study_info['study_files'] = study_files
+
+                dict_temp = {str(st[0]): study_info}
                 data = {**data, **dict_temp}
             file_name = 'study_report.json'
-            res = data
+
+            res = {'data': data}
+            res["updated_at"] = datetime.today().strftime('%Y-%m-%d')
 
         if query == 'global':
             file_name = 'global.json'
@@ -444,7 +518,72 @@ class reports(Resource):
 
             res = j_data
 
+        if query == 'file_extension':
+            file_name = 'file_extension.json'
+
+            postgresql_pool, conn, cursor = get_connection()
+            cursor.execute(
+                "select acc from studies where status = 3;")
+            studies = cursor.fetchall()
+            file_ext = []
+
+            for studyID in studies:
+                print(studyID[0])
+                logger.info("Extracting study extension details: " + studyID[0])
+                wd = os.path.join(app.config.get('STUDY_PATH'), studyID[0])
+
+                try:
+                    file_ext.append(get_file_extensions(studyID[0], wd))
+                except:
+                    print("Error extracting study extension details: " + studyID[0])
+
+            res = {"created_at": "2020-03-22", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'data': file_ext}
+
         # j_res = json.dumps(res,indent=4)
         writeDataToFile(reporting_path + file_name, res, True)
 
-        return jsonify({"POST " + file_name : True})
+        return jsonify({"POST " + file_name: True})
+
+
+def get_file_extensions(id, path):
+    study_ext = {}
+    study_ext['list'] = []
+    study_ext['ext_count'] = {}
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            try:
+                extension = os.path.splitext(file)[1]
+                if extension:
+                    if extension not in study_ext['list']:
+                        study_ext['list'].append(extension)
+                    if extension == '.zip':
+                        edata = extractZip(path, file, study_ext['list'], study_ext['ext_count'])
+                        study_ext['list'] = edata[0]
+                        study_ext['ext_count'] = edata[1]
+                    if extension in study_ext['ext_count']:
+                        study_ext['ext_count'][extension] = study_ext['ext_count'][extension] + 1
+                    else:
+                        study_ext['ext_count'][extension] = 1
+            except:
+                logger.error("Error file details: " + file)
+
+    extensions = study_ext['list']
+    extensions_count = study_ext['ext_count']
+    study_ext = {'id': id}
+    study_ext['extensions'] = extensions
+    study_ext['extensions_count'] = extensions_count
+    return study_ext
+
+
+def extractZip(filepath, file, list, count):
+    zfile = zipfile.ZipFile(os.path.join(filepath, file))
+    for finfo in zfile.infolist():
+        extension = os.path.splitext(finfo.filename)[1]
+        if extension:
+            if extension not in list:
+                list.append(extension)
+            if extension in count:
+                count[extension] = count[extension] + 1
+            else:
+                count[extension] = 1
+    return [list, count]

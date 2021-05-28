@@ -16,19 +16,18 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import json
 import threading
 import traceback
 
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
+from app.ws.cluster_jobs import lsf_job
 from app.ws.db_connection import override_validations, update_validation_status
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import *
-from app.ws.cluster_jobs import lsf_job
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -1078,7 +1077,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 assays.append(header)
 
         if len(assay_df) <= 1:
-            add_msg(validations, val_section, "Assay sheet '" + str(assay.filename) + " contains Only 1 sample, please ensure you have included all samples and any control, QC, standards etc. If no further samples were used in the study please contact MetaboLights-help.",
+            add_msg(validations, val_section, "Assay sheet '" + str(
+                assay.filename) + " contains Only 1 sample, please ensure you have included all samples and any control, QC, standards etc. If no further samples were used in the study please contact MetaboLights-help.",
                     error, val_sequence=1, log_category=log_category)
 
         # Are the template headers present in the assay
@@ -1175,7 +1175,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                              sample_name_list, is_ms=is_ms, log_category=log_category)
                             else:
                                 add_msg(validations, val_section,
-                                        "No MAF/feature file referenced for assay sheet " + assay.filename + ". Please add the appropriate file reference (m_xxx.tsv) to the last column of the assay table. If the metabolite file is missing or your study does not include metabolite/feature identification information, please contact metabolights-help@ebi.ac.uk", error,
+                                        "No MAF/feature file referenced for assay sheet " + assay.filename + ". Please add the appropriate file reference (m_xxx.tsv) to the last column of the assay table. If the metabolite file is missing or your study does not include metabolite/feature identification information, please contact metabolights-help@ebi.ac.uk",
+                                        error,
                                         val_sequence=7.4, log_category=log_category)
 
                 except Exception as e:
@@ -2206,6 +2207,7 @@ class OverrideValidation(Resource):
 
         return {"success": val_feedback}
 
+
 def run_validation_in_File(validations_file, study_id, study_location, user_token, obfuscation_code, section,
                            log_category, validation_run_msg):
     validations_assay_running = validations_file[:-5] + "_inProgress.json"
@@ -2279,6 +2281,7 @@ def submitJobToCluser(command, section, study_location):
     else:
         return {"error": message, "message": job_out, "errors": job_err}
 
+
 def is_newer_timestamp(location, fileToCompare):
     need_validation_update = False
     try:
@@ -2290,6 +2293,7 @@ def is_newer_timestamp(location, fileToCompare):
     if os.path.getctime(fileToCompare) < updateTime:
         need_validation_update = True  # No files modified since the validation schema files
     return need_validation_update
+
 
 class NewValidation(Resource):
     @swagger.operation(
@@ -2455,7 +2459,7 @@ class NewValidation(Resource):
 
             elif os.path.isfile(file_name) and os.path.getsize(file_name) > 0:
                 if is_newer_timestamp(study_location, file_name):
-                    logger.info( " job status is not present, creating new job")
+                    logger.info(" job status is not present, creating new job")
                     os.remove(file_name)
                     command = script + ' ' + para
                     return submitJobToCluser(command, section, study_location)

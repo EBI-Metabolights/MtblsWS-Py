@@ -946,3 +946,44 @@ def replaceGoogleSheet(df, url, worksheetName, token_path):
     wks = gc.open_by_url(url).worksheet(worksheetName)
     wks.clear()
     set_with_dataframe(wks, df)
+
+
+def getCellCoordinate(url, worksheetName, token_path, term):
+    '''
+    find cell coordinate
+    :param url: url of google sheet
+    :param worksheetName: work sheet name
+    :param term: searching term
+    :return: cell row and cell column
+    '''
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
+    gc = gspread.authorize(credentials)
+    # wks = gc.open('Zooma terms').worksheet('temp')
+    wks = gc.open_by_url(url).worksheet(worksheetName)
+    cell = wks.find(term)
+    return cell.row, cell.col
+
+
+def update_cell(ws, row, column, value):
+    try:
+        ws.update_cell(row, column, value)
+        return True
+    except Exception:
+        print("Faill to update {value} at ({row}, {column})".format(value=value, row=row, column=column))
+        logger.info("Faill to update {value} at ({row}, {column})".format(value=value, row=row, column=column))
+        pass
+
+
+def getWorksheet(url, worksheetName, token_path):
+    '''
+    get google sheet
+    :param url: url of google sheet
+    :param worksheetName: work sheet name
+    :return: google wks
+    '''
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
+    gc = gspread.authorize(credentials)
+    wks = gc.open_by_url(url).worksheet(worksheetName)
+    return wks
