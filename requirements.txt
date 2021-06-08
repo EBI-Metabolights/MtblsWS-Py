@@ -25,7 +25,7 @@ oauth2client==4.1.3
 gspread_dataframe==3.0.3
 plotly==4.6.0
 boto3==1.12.37
-pillow==7.1.1
+pillow==8.2.0
 requests==2.23.0
 metaspace2020==1.7.2
 recommonmark==0.6.0
