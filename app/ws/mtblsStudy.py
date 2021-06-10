@@ -17,7 +17,7 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import json
-from flask import request, abort, send_file
+from flask import request, abort as flaskabort, send_file
 from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -283,7 +283,7 @@ class IsaTabInvestigationFile(Resource):
             user_token = request.headers['user_token']
 
         if user_token is None:
-            abort(401, "Missing user_token")
+            flaskabort(401, "Missing user_token")
 
         # query validation
         parser = reqparse.RequestParser()
@@ -305,7 +305,7 @@ class IsaTabInvestigationFile(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(403, "Study does not exist or your do not have access to this study")
+            flaskabort(403, "Study does not exist or your do not have access to this study")
 
         logger.info('Getting ISA-Tab Investigation file for %s', study_id)
         location = study_location
@@ -322,9 +322,9 @@ class IsaTabInvestigationFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                abort(503, "Wrong investigation filename or file could not be read.")
+                flaskabort(503, "Wrong investigation filename or file could not be read.")
         else:
-            abort(503, "Wrong investigation filename or file could not be read.")
+            flaskabort(503, "Wrong investigation filename or file could not be read.")
 
 
 class IsaTabSampleFile(Resource):
@@ -401,13 +401,13 @@ class IsaTabSampleFile(Resource):
             # sample_filename = sample_filename.lower() if args['sample_filename'] else None
         if not sample_filename:
             logger.warning("Missing Sample filename.")
-            abort(404, "Missing Sample filename.")
+            flaskabort(404, "Missing Sample filename.")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(401, "Study does not exist or your do not have access to this study.")
+            flaskabort(401, "Study does not exist or your do not have access to this study.")
 
         logger.info('Getting ISA-Tab Sample file %s for %s', sample_filename, study_id)
         location = study_location
@@ -420,9 +420,9 @@ class IsaTabSampleFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                abort(404, "Wrong sample filename or file could not be read.")
+                flaskabort(404, "Wrong sample filename or file could not be read.")
         else:
-            abort(404, "Wrong sample filename or file could not be read.")
+            flaskabort(404, "Wrong sample filename or file could not be read.")
 
 
 class IsaTabAssayFile(Resource):
@@ -498,13 +498,13 @@ class IsaTabAssayFile(Resource):
             assay_filename = args['assay_filename'] if args['assay_filename'] else None
         if not assay_filename:
             logger.warning("Missing Assay filename.")
-            abort(404, "Missing Assay filename.")
+            flaskabort(404, "Missing Assay filename.")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(401, "Study does not exist or your do not have access to this study.")
+            flaskabort(401, "Study does not exist or your do not have access to this study.")
 
         logger.info('Getting ISA-Tab Assay file for %s', study_id)
         location = study_location
@@ -518,9 +518,9 @@ class IsaTabAssayFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                abort(404, "Wrong assay filename or file could not be read.")
+                flaskabort(404, "Wrong assay filename or file could not be read.")
         else:
-            abort(404, "Wrong assay filename or file could not be read.")
+            flaskabort(404, "Wrong assay filename or file could not be read.")
 
 
 class CloneAccession(Resource):
@@ -629,7 +629,7 @@ class CloneAccession(Resource):
 
         if not bypass:
             if not read_access:
-                abort(401, "Study does not exist or your do not have access to this study.")
+                flaskabort(401, "Study does not exist or your do not have access to this study.")
 
         study_id = study_id.upper()
 
@@ -963,7 +963,7 @@ class AuditFiles(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            abort(401, "Unauthorized. Read access to the resource requires user authentication. "
+            flaskabort(401, "Unauthorized. Read access to the resource requires user authentication. "
                        "Please provide a study id and a valid user token")
 
         return jsonify(get_audit_files(study_location))
@@ -1025,7 +1025,7 @@ class CreateAccession(Resource):
         study_message, status_code = wsc.add_empty_study(user_token)
         if status_code != 200:
             logger.error('Failed to create new study. ' + study_message)
-            abort(503, "Could not create a new study.")
+            flaskabort(503, "Could not create a new study.")
 
         time.sleep(5)  # give the Java WebService time to recover! ;-)
 
@@ -1051,8 +1051,7 @@ class CreateAccession(Resource):
             study_status = wsc.get_permissions(study_acc, user_token)
 
         if not write_access:
-            logger.error("Something went wrong with the creation of study " + study_acc)
-            abort(409)
+            flaskabort(409, "Something went wrong with the creation of study " + study_acc)
 
         study_path = app.config.get('STUDY_PATH')
         from_path = study_path + app.config.get('DEFAULT_TEMPLATE')  # 'DUMMY'
@@ -1061,8 +1060,7 @@ class CreateAccession(Resource):
         try:
             copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
         except Exception as e:
-            logger.error('Could not copy files from %s to %s, Error ', from_path, to_path, str(e))
-            abort(409)
+            flaskabort(409, 'Could not copy files from {0} to {1}, Error {2}'.format(from_path, to_path, str(e)))
 
         # Create upload folder
         status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)
@@ -1104,8 +1102,7 @@ class CreateAccession(Resource):
 
             write_tsv(sample_df, file_name)
         else:
-            logger.error("Could not find ISA-Tab investigation template for study " + study_acc)
-            abort(409)
+            flaskabort(409, "Could not find ISA-Tab investigation template for study {0}".format(study_acc))
 
         return {"new_study": study_acc}
 
@@ -1197,7 +1194,7 @@ class DeleteStudy(Resource):
 
         status, message = wsc.reindex_study(study_id, user_token)
         if not status:
-            abort(500, "Could not reindex the study")
+            flaskabort(500, "Could not reindex the study")
 
         return {"Success": "Study " + study_id + " has been removed"}
 
@@ -1305,7 +1302,7 @@ class ReindexStudy(Resource):
         status, message = wsc.reindex_study(study_id, user_token)
 
         if not status:
-            abort(417, message)
+            flaskabort(417, message)
 
         return {"Success": "Study " + study_id + " has been re-indexed",
                 "read_access": read_access, "write_access": write_access}
