@@ -1051,7 +1051,8 @@ class CreateAccession(Resource):
             study_status = wsc.get_permissions(study_acc, user_token)
 
         if not write_access:
-            abort(409, "Something went wrong with the creation of study " + study_acc)
+            logger.error("Something went wrong with the creation of study " + study_acc)
+            abort(409)
 
         study_path = app.config.get('STUDY_PATH')
         from_path = study_path + app.config.get('DEFAULT_TEMPLATE')  # 'DUMMY'
@@ -1061,7 +1062,7 @@ class CreateAccession(Resource):
             copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
         except Exception as e:
             logger.error('Could not copy files from %s to %s, Error ', from_path, to_path, str(e))
-            abort(409, "Something went wrong with copying the ISA-Tab templates to study " + str(study_acc))
+            abort(409)
 
         # Create upload folder
         status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)
@@ -1103,7 +1104,8 @@ class CreateAccession(Resource):
 
             write_tsv(sample_df, file_name)
         else:
-            abort(409, "Could not find ISA-Tab investigation template for study " + study_acc)
+            logger.error("Could not find ISA-Tab investigation template for study " + study_acc)
+            abort(409)
 
         return {"new_study": study_acc}
 
