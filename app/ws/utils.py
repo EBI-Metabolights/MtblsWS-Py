@@ -119,7 +119,7 @@ def copy_file(source, destination):
         logger.info("Copying %s to %s", source, destination)
         shutil.copyfile(source, destination)
     except Exception as e:
-        logger.error('Could not create a new folder for the study ' + str(e))
+        logger.error('Could not copy file for study: ' + str(e))
         raise
 
 
