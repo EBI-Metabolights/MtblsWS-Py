@@ -1201,53 +1201,21 @@ class DeleteStudy(Resource):
 
             if file_name.startswith("i_Investigation"):
                 from_path = app.config.get('STUDY_PATH') + app.config.get('DEFAULT_TEMPLATE') + '/i_Investigation.txt'
+                logger.info('Attempting to copy {0} to {1}'.format(from_path, study_location))
+
                 copy_file(from_path, study_location)
                 logger.info('Restored investigation.txt file for {0} to template state.'.format(study_id))
-                file_info = {}
-                # Considered having the indexes static, retrieved from config.
-                # But if there is any chance the lines are out of expected order it would be a pain.
-                try:
-                    i_file = open(study_location + '/investigation.txt', 'r')
-                    lines = i_file.readlines()
-                    line_changes = {'Study Identifier': {
-                        'index': -1,
-                        'overwriting line': '"Study Identifier\t {0}"'.format(study_id)
-                    }, 'Study File Name': {
-                       'index': -1,
-                       'overwriting line': '"Study File Name\t s_{0}.txt"'.format(study_id)
-                    }}
-                    index = 0
-                    for line in lines:
-                        if line.lstrip().startswith('Study File Name'):
-                            line_changes['Study File Name']['index'] = index
-                        if line.lstrip().startswith('Study Identifier'):
-                            line_changes['Study Identifier']['index'] = index
-                        if line_changes['Study Identifier']['index'] > -1 and line_changes['Study File Name']['index'] > -1:
-                            break
-                        index += 1
 
-                    # update the list of lines
-                    for line, obj in line_changes.items():
-                        lines[obj['index']] = obj['overwriting line']
-
-                    # overwrite the file, and then close it.
-                    i_file.writelines(lines)
-                    i_file.close()
-
-                except OSError as e:
-                    logger.error("Investigation file could not be opened. Check that the investigation file is present"
-                                 " in the study folder: {0}".format(e))
-                except Exception as e:
-                    logger.error("An unexpected error occurred: {0}".format(e))
-
+                StudyUtils.overwrite_investigation_file(study_location=study_location, study_id=study_id)
+                logger.info(
+                    'Updated investigation file with values for Study Identifier and Study File Name for study: {0}'
+                    .format(study_id))
             else:
                 # as theres only two files in the directory this will be the sample file.
                 from_path = app.config.get('STUDY_PATH') + app.config.get('DEFAULT_TEMPLATE') + '/s_{0}.txt'\
                     .format(study_id)
                 copy_file(from_path, study_location)
                 logger.info('Restored sample.txt file for {0} to template state.'.format(study_id))
-
-
 
         status, message = wsc.reindex_study(study_id, user_token)
         if not status:
