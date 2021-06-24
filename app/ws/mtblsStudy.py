@@ -1203,7 +1203,7 @@ class DeleteStudy(Resource):
                 from_path = app.config.get('STUDY_PATH') + app.config.get('DEFAULT_TEMPLATE') + '/i_Investigation.txt'
                 logger.info('Attempting to copy {0} to {1}'.format(from_path, study_location))
 
-                copy_file(from_path, study_location)
+                copy_file(from_path, study_location + '/i_Investigation.txt')
                 logger.info('Restored investigation.txt file for {0} to template state.'.format(study_id))
 
                 StudyUtils.overwrite_investigation_file(study_location=study_location, study_id=study_id)
@@ -1212,9 +1212,9 @@ class DeleteStudy(Resource):
                     .format(study_id))
             else:
                 # as theres only two files in the directory this will be the sample file.
-                from_path = app.config.get('STUDY_PATH') + app.config.get('DEFAULT_TEMPLATE') + '/s_{0}.txt'\
+                from_path = app.config.get('STUDY_PATH') + app.config.get('DEFAULT_TEMPLATE') + '/s_Sample.txt'\
                     .format(study_id)
-                copy_file(from_path, study_location)
+                copy_file(from_path, study_location + '/s_{0}.txt')
                 logger.info('Restored sample.txt file for {0} to template state.'.format(study_id))
 
         status, message = wsc.reindex_study(study_id, user_token)
