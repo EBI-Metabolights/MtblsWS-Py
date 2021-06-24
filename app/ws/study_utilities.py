@@ -61,8 +61,7 @@ class StudyUtils:
             i_file = open(study_location + '/i_Investigation.txt', 'w')
             i_file.writelines(lines)
             i_file.close()
-            logger.info('Updated investigation file with values for Study Identifier and Study File Name for study: {0}'
-                        .format(study_id))
+
 
         except OSError as e:
             logger.error("Investigation file could not be opened. Check that the investigation file is present"
