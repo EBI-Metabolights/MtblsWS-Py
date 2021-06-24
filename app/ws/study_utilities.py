@@ -12,7 +12,7 @@ class StudyUtils:
         Assesses whether a file is a template file to be preserved.
         :return: bool indicating whether it's a template file.
         """
-        return filename.startswith("i_Investigation") or filename.startswith("s_MTBLS")
+        return filename.upper().startswith("I_INVESTIGATION") or filename.upper().startswith("S_MTBLS")
 
     @staticmethod
     def overwrite_investigation_file(study_location: str, study_id: str) :
