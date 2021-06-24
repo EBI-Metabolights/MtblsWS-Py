@@ -1186,7 +1186,7 @@ class DeleteStudy(Resource):
 
         # Remove all files in the study folder except the sample sheet and the investigation sheet.
         files = os.listdir(study_location)
-        files_to_delete = [file for file in files if StudyUtils.is_template_file(file) is False]
+        files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
 
         for file_name in files_to_delete:
             status, message = remove_file(study_location, file_name, True)

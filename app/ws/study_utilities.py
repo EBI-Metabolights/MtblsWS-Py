@@ -7,12 +7,12 @@ class StudyUtils:
     """A collection of utility methods common to the study resource and study service."""
 
     @staticmethod
-    def is_template_file(filename: str) -> bool:
+    def is_template_file(filename: str, id: str) -> bool:
         """
         Assesses whether a file is a template file to be preserved.
         :return: bool indicating whether it's a template file.
         """
-        return filename.upper().startswith("I_INVESTIGATION") or filename.upper().startswith("S_MTBLS")
+        return filename.upper().startswith("I_INVESTIGATION") or filename.upper().startswith("S_{0}".format(id))
 
     @staticmethod
     def overwrite_investigation_file(study_location: str, study_id: str) :
