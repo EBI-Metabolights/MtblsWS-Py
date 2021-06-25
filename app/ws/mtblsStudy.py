@@ -27,6 +27,7 @@ from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
 from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
     query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user
+from app.ws.study_utilities import StudyUtils
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -1183,14 +1184,37 @@ class DeleteStudy(Resource):
         add_placeholder_flag(study_id)
         study_submitters(study_id, mtbls_email, 'add')
 
-        # Remove all files in the study folder
-        for file_name in os.listdir(study_location):
+        # Remove all files in the study folder except the sample sheet and the investigation sheet.
+        files = os.listdir(study_location)
+        files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
+
+        for file_name in files_to_delete:
             status, message = remove_file(study_location, file_name, True)
 
         # Remove all files in the upload folder
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
         for file_name in os.listdir(upload_location):
             status, message = remove_file(upload_location, file_name, True)
+
+        # Here we want to overwrite the 2 basic files,the sample sheet and the investigation sheet
+        for file_name in os.listdir(study_location):
+
+            if file_name.startswith("i_Investigation"):
+                from_path = app.config.get('STUDY_PATH') + app.config.get('DEFAULT_TEMPLATE') + '/i_Investigation.txt'
+                logger.info('Attempting to copy {0} to {1}'.format(from_path, study_location))
+
+                copy_file(from_path, study_location + '/i_Investigation.txt')
+                logger.info('Restored investigation.txt file for {0} to template state.'.format(study_id))
+
+                StudyUtils.overwrite_investigation_file(study_location=study_location, study_id=study_id)
+                logger.info(
+                    'Updated investigation file with values for Study Identifier and Study File Name for study: {0}'
+                    .format(study_id))
+            else:
+                # as theres only two files in the directory this will be the sample file.
+                from_path = app.config.get('STUDY_PATH') + app.config.get('DEFAULT_TEMPLATE') + '/s_Sample.txt'
+                copy_file(from_path, study_location + '/s_{0}.txt'.format(study_id))
+                logger.info('Restored sample.txt file for {0} to template state.'.format(study_id))
 
         status, message = wsc.reindex_study(study_id, user_token)
         if not status:
