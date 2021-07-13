@@ -715,6 +715,22 @@ def is_newer_files(study_location):
 
 def validate_study(study_id, study_location, user_token, obfuscation_code,
                    validation_section='all', log_category='all', static_validation_file=None):
+    """
+    Entry point method for validating an entire study. Each section is validated in turn, unless a validation section is
+    specified in the request parameters.
+
+    :param study_id: ID of the study to be validated. This is the accession number IE MTBLS1234.
+    :param study_location: The location in the filesystem of the study folder.
+    :param user_token: The users API token, used to ascertain whether the user is permitted to take this action.
+    :param obfuscation_code: The obfuscation code, which points to the ftp folder for the study.
+    :param validation_section: The section of the study to validate. The distinct sections are: publication, isatab,
+    person, protocols, samples, files, assays. The default is 'all', which means all sections will be validated.
+    :param log_category: The type of log IE Info, warning or error. Default to 'all'.
+    :param static_validation_file: Flag to indicate whether to read the validation report and file list from
+     pre generated files. This is often set to true for large studies.
+     :return: An object comprised of all validation messages.
+
+    """
     start_time = time.time()
     all_validations = []
     validation_schema = None
@@ -946,16 +962,35 @@ def check_assay_columns(a_header, all_samples, row, validations, val_section, as
     return all_samples, all_assay_names, validations, unique_file_names
 
 
-def check_all_file_rows(assays, assay_df, validations, val_section, filename, all_rows, log_category=error):
+def check_all_file_rows(assays, assay_dataframe, validations, val_section, filename, total_rows, log_category=error):
+    """
+    Check that the values in the Raw Spectral Data File & Derived Spectral Data Column are valid.
+    We want to check the filetypes of each value, as there are restrictions on what kind of file can be present
+    in each column.
+
+    :param assays: a list of assay sheet headers present in the file.
+    :param assay_dataframe: Two dimensional data structure containing the assay sheet data.
+    :param validations: List of pre-existing validation objects and their constituent validation messages.
+    :param val_section: Predefined in parent method as 'assays'
+    :param filename: String representation of the assay sheet's filename.
+    :param total_rows: The total number of rows
+    :param log_category: Predefined as 'error'
+    :return: Tuple of the updated validations object now containing assay validations and list of all raw files
+     referenced in the assay.
+
+    """
+
+    # This is where your new validation rule will surely SURELY live
     all_file_columns = []
     missing_all_rows = []
     all_assay_raw_files = []
+    all_assay_derived_files = []
     for assay_header in assays:
         assay_header = str(assay_header)
         if assay_header.endswith(' Data File'):
             all_file_columns.append(assay_header)
-            empty_rows = (assay_df[assay_header].values == '').sum()
-            if empty_rows == all_rows:
+            empty_rows = (assay_dataframe[assay_header].values == '').sum()
+            if empty_rows == total_rows:
                 missing_all_rows.append(assay_header)
 
     if derived_file in missing_all_rows:
@@ -980,13 +1015,19 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                         error, filename, val_sequence=7.7, log_category=log_category)
 
     if all_file_columns:
-        short_df = assay_df[assay_df.columns.intersection(all_file_columns)]
-        for idx, row in short_df.iterrows():
+        short_dataframe = assay_dataframe[assay_dataframe.columns.intersection(all_file_columns)]
+        for idx, row in short_dataframe.iterrows():
             row_idx = str(idx + 1)
             raw_found = False
             raw_tested = False
+            raw_valid = False
+
             derived_found = False
             derived_tested = False
+            derived_valid = {
+                'valid': False,
+                'is_text_file': False
+            }
 
             for header, value in row.iteritems():  # Check cells
                 if header == raw_file:
@@ -994,16 +1035,16 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                     if value:
                         all_assay_raw_files.append(value)
                         raw_found = True
+                        raw_valid = is_valid_raw_file_column_entry(value)
+
+
                 elif header == derived_file:
                     derived_tested = True
                     if value:
-                        all_assay_raw_files.append(value)
+                        all_assay_derived_files.append(value)
                         derived_found = True
+                        derived_valid = is_valid_derived_column_entry(value)
                 else:
-                    # if value:
-                    # add_msg(validations, val_section, header + " was referenced in assay row " + row_idx,
-                    #         success, filename, val_sequence=7.5, log_category=log_category)
-                    # else:
                     if not value:
                         val_type = error
                         if acq_file in header or fid_file in header:
@@ -1017,16 +1058,88 @@ def check_all_file_rows(assays, assay_df, validations, val_section, filename, al
                     add_msg(validations, val_section,
                             "Both Raw and Derived Spectral Data Files are missing from assay row " + row_idx,
                             error, filename, val_sequence=7.1, log_category=log_category)
-                # elif raw_found:
-                #     add_msg(validations, val_section,
-                #             "Raw Spectral Data File is referenced in assay row " + row_idx,
-                #             success, filename, value=value,  val_sequence=7.2, log_category=log_category)
-                # elif derived_found:
-                #     add_msg(validations, val_section,
-                #             "Derived Spectral Data File is referenced in assay row " + row_idx,
-                #             success, filename, value=value, val_sequence=7.3, log_category=log_category)
+                if not raw_valid and derived_valid['is_text_file'] is True:
+                    add_msg(validations, val_section,
+                            "Valid raw file missing from row {0} where a text file is present in the derived column"
+                            .format(row_idx), error, filename, val_sequence=7.8, log_category=log_category )
+                if raw_valid and not derived_valid['valid'] is True:
+                    add_msg(validations, val_section,
+                            "Derived Spectral Data Column entry missing or invalid for row {0}".format(row_idx),
+                            error, filename, val_sequence=7.9, log_category=log_category)
 
     return validations, all_assay_raw_files
+
+
+def is_valid_raw_file_column_entry(value: str) -> bool:
+    """
+    Checks whether the given value for the raw file is valid. Iterates over the list of valid filetypes, and if the
+    value string contains a valid filetype, the loop breaks and returns true.
+
+    :param value: Raw Data File Column entry as a string
+    :return: bool value indicating whether the entry is valid.
+
+    """
+    valid_filetypes = [
+        '.RAW',
+        '.raw',
+        '.wiff',
+        '.scan',
+        '.wiff.scan',
+        '.d',
+        '.idb',
+        '.cdf',
+        '.dat',
+        '.cmp',
+        '.cdf.cmp',
+        '.lcd',
+        '.abf',
+        '.jbf',
+        '.xps',
+        '.peg'
+    ]
+    for filetype in valid_filetypes:
+        if value.endswith(filetype) and len(value) > len(filetype):
+            return True
+    return False
+
+
+def is_valid_derived_column_entry(value: str) -> dict:
+    """
+    Checks whether the given value for the Derived Spectral Data File column is valid.Iterates over the list of valid
+    filetypes, and if the value string contains a valid filetype, the loop breaks and returns true. It also checks
+    whether the file is a text file, as this is only acceptable in certain conditions.
+
+    :param value: The derived spectral data column value to validate.
+    :return: dict object indicating validity and whether the value is a text file.
+    """
+    result_dict = {
+        'valid': False,
+        'is_text_file': False
+    }
+    valid_filetypes = [
+        '.mzml',
+        '.nmrml',
+        '.mzxml',
+        '.xml',
+        '.mzdata',
+        '.cef',
+        '.cnx',
+        '.peakml',
+        '.xy',
+        '.smp',
+        '.scan',
+        '.mgf',
+        '.cdf',
+        '.txt'
+    ]
+    for filetype in valid_filetypes:
+        if value.endswith(filetype):
+            result_dict['valid'] = True
+            if filetype is '.txt':
+                result_dict['is_text_file'] = True
+            break
+
+    return result_dict
 
 
 def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
@@ -1044,18 +1157,17 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         add_msg(validations, val_section, "Could not find any assays", error, descr="Add assay(s) to the study",
                 val_sequence=2, log_category=log_category)
 
-    all_assay_rows = 0
+    total_assay_rows = 0
 
     for assay in isa_study.assays:
         is_ms = False
         assays = []
         all_assay_names = []
         all_assay_raw_files = []
-        # unique_file_names = []
         assay_file_name = os.path.join(study_location, assay.filename)
-        assay_df = None
+        assay_dataframe = None
         try:
-            assay_df = read_tsv(assay_file_name)
+            assay_dataframe = read_tsv(assay_file_name)
         except FileNotFoundError:
             add_msg(validations, val_section,
                     "The file " + assay_file_name + " was not found",
@@ -1066,7 +1178,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         if assay_type_onto.term == 'mass spectrometry':
             is_ms = True
 
-        assay_header = get_table_header(assay_df, study_id, assay_file_name)
+        assay_header = get_table_header(assay_dataframe, study_id, assay_file_name)
         for header in assay_header:
             if len(header) == 0:
                 add_msg(validations, val_section,
@@ -1076,7 +1188,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             if 'Term ' not in header and 'Protocol REF' not in header and 'Unit' not in header:
                 assays.append(header)
 
-        if len(assay_df) <= 1:
+        if len(assay_dataframe) <= 1:
             add_msg(validations, val_section, "Assay sheet '" + str(
                 assay.filename) + " contains Only 1 sample, please ensure you have included all samples and any control, QC, standards etc. If no further samples were used in the study please contact MetaboLights-help.",
                     error, val_sequence=1, log_category=log_category)
@@ -1113,16 +1225,16 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             msg_type, assay.filename, val_sequence=3, log_category=log_category)
 
         # Are all relevant rows filled in?
-        if not assay_df.empty:
-            all_rows = assay_df.shape[0]
-            all_assay_rows = all_assay_rows + all_rows
+        if not assay_dataframe.empty:
+            all_rows = assay_dataframe.shape[0]
+            total_assay_rows = total_assay_rows + all_rows
             for a_header in assays:
                 a_header = str(a_header)  # Names like '1' and '2', gets interpreted as '1.0' and '2.0'
                 validate_column, required_column, val_descr = get_assay_column_validations(validation_schema, a_header)
                 col_rows = 0  # col_rows = isa_samples[s_header].count()
                 try:
                     if validate_column:
-                        for row in assay_df[a_header]:
+                        for row in assay_dataframe[a_header]:
                             if row:
                                 col_rows += 1
 
@@ -1157,15 +1269,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                         "Assay sheet '" + assay.filename + "' column '" + a_header + "' is missing some values. " +
                                         str(col_rows) + " rows found, but there should be " + str(all_rows),
                                         val_type, assay.filename, val_sequence=4.1, log_category=log_category)
-                        # else:
-                        #     add_msg(validations, val_section,
-                        #             "Assay sheet '" + assay.filename + "' column '" + a_header + "' has correct number of rows",
-                        #             success, assay.filename, val_sequence=5, log_category=log_category)
 
                         # Correct MAF?
                         if a_header.lower() == 'metabolite assignment file':
                             maf_file_name = None
-                            for row in assay_df[a_header].unique():
+                            for row in assay_dataframe[a_header].unique():
                                 maf_file_name = row
                                 break  # We only need one row
 
@@ -1185,7 +1293,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                             str(e), error, assay.filename, val_sequence=6, log_category=log_category)
 
             # We validate all file columns separately here
-            validations, all_assay_raw_files = check_all_file_rows(assays, assay_df, validations, val_section,
+            validations, all_assay_raw_files = check_all_file_rows(assays, assay_dataframe, validations, val_section,
                                                                    assay.filename, all_rows, log_category=log_category)
 
             if all_assay_names:
@@ -1202,9 +1310,9 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                     error, val_sequence=7, log_category=log_category)
 
     sample_len = len(sample_name_list)
-    if all_assay_rows < sample_len:
+    if total_assay_rows < sample_len:
         add_msg(validations, val_section, "There are more unique sample rows (" + str(sample_len)
-                + ") than unique assay rows (" + str(all_assay_rows) + "), must be the same or more",
+                + ") than unique assay rows (" + str(total_assay_rows) + "), must be the same or more",
                 error, val_sequence=8, log_category=log_category)
 
     for files in unique_file_names:
@@ -1217,10 +1325,6 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         status, file_type, file_description = check_file(files, study_location, file_name_list,
                                                          assay_file_list=all_assay_raw_files,
                                                          assay_file_name=a_file_name)
-        # if status:
-        #     add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
-        #             + column_name + "'", success, descr=file_description, val_sequence=8.1, log_category=log_category)
-        # else:
         if not status:
             err_msg = "File '" + file_name + "'"
             if file_type != unknown_file:
