@@ -207,11 +207,26 @@ def get_sample_names(isa_samples):
 
 
 def check_file(file_name_and_column, study_location, file_name_list, assay_file_list=None, assay_file_name=None):
+    """
+    Check an individual file. Performs various checks in sequence:
+    1 Whether the given filename is a directory or a file
+    2 The type of file it is IE derived, raw etc
+    3 Whether the filename given in the assay sheet actually exists in the filesystem. This check will fail in the case
+    of trailing whitespace in the assay sheet filename.
+    4 Whether the type of file is correct for the given column. IE a raw file won't be accepted in the Derived column.
+
+    :param file_name_and_column: The given filename and assay sheet column it originates from.
+    :param study_location: The location in the filesystem of the study folder.
+    :param file_name_list: List of all files in the study
+    :param assay_file_list: A list of raw files referenced in the assay sheet
+    :param assay_file_name: The filename of the parent assay sheet we're checking the file for.
+    :return: Status indicating validity as a boolean, the type of file it is, the description of the given file.
+    """
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
     full_file = os.path.join(study_location, file_name)
     short_name, ext = os.path.splitext(file_name)
-    final_filename = os.path.basename(file_name)
+
     ext = ext.lower()
 
     if assay_file_name:
@@ -248,7 +263,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'spreadsheet' and column_name == derived_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif file_type != 'derived' and column_name == derived_file:
+    elif (file_type != 'derived' or 'text') and column_name == derived_file:
         return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name + assay_file_name
     elif file_type == 'compressed' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
@@ -1316,15 +1331,19 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 error, val_sequence=8, log_category=log_category)
 
     for files in unique_file_names:
+        # Validate each file referenced in the assay sheet individually to make sure it is the correct type /
+        # has the correct content.
         file_name = files.split('|')[0]
         column_name = files.split('|')[1]
         try:
             a_file_name = files.split('|')[2]
-        except:
+        except IndexError as e:
+            logger.warning('Unable to find assay file name in string {0} : {1}'.format(files, e))
             a_file_name = None
         status, file_type, file_description = check_file(files, study_location, file_name_list,
                                                          assay_file_list=all_assay_raw_files,
                                                          assay_file_name=a_file_name)
+        # If the check_file method has returned status=False indicating invalidity
         if not status:
             err_msg = "File '" + file_name + "'"
             if file_type != unknown_file:
