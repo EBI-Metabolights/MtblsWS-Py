@@ -433,17 +433,17 @@ class StudyFilesReuse(Resource):
             return update_files_list_schema(study_id, obfuscation_code, study_location,
                                             files_list_json_file)
         if os.path.isfile(files_list_json_file):
-            logger.info("Files list json found!")
+            logger.info("Files list json found for studyId - %s!", study_id)
             try:
                 with open(files_list_json_file, 'r', encoding='utf-8') as f:
                     files_list_schema = json.load(f)
-                    logger.info("Listing files list from JSON!")
+                    logger.info("Listing files list from files-list json file!")
             except Exception as e:
                 logger.error('Error while reading file list schema file: ' + str(e))
                 files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
                                                              files_list_json_file)
         else:
-            logger.info(" Files list json not found!")
+            logger.info(" Files list json not found! for studyId - %s!", study_id)
             files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
                                                          files_list_json_file)
 
@@ -451,7 +451,6 @@ class StudyFilesReuse(Resource):
 
 
 def update_files_list_schema(study_id, obfuscation_code, study_location, files_list_json_file):
-    logger.info("F: update_files_list_schema")
     study_files, upload_files, upload_diff, upload_location, latest_update_time = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True,
@@ -463,7 +462,7 @@ def update_files_list_schema(study_id, obfuscation_code, study_location, files_l
                                  'uploadPath': upload_location[1],
                                  'obfuscationCode': obfuscation_code}
 
-    logger.info(" Writing Files list schema to a file !")
+    logger.info(" Writing Files list schema to a file for studyid - %s ", study_id)
     try:
         with open(files_list_json_file, 'w', encoding='utf-8') as f:
             json.dump(files_list_schema, f, ensure_ascii=False)
