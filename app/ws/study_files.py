@@ -354,6 +354,124 @@ without setting the "force" parameter to True''',
             return {'Error': message}
 
 
+class StudyFilesReuse(Resource):
+    @swagger.operation(
+        summary="Get a list, with timestamps, of all files in the study and upload folder(s) from file-list result already created",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "force",
+                "description": "Force writing Files list json to file",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": True
+            }
+
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('force', help='Force writing files list schema json')
+        force_write = False
+
+        if request.args:
+            args = parser.parse_args(req=request)
+            force_write = True if args['force'].lower() == 'true' else False
+
+        files_list_json = app.config.get('FILES_LIST_JSON')
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not read_access:
+            abort(403)
+
+        files_list_json_file = os.path.join(study_location, files_list_json)
+
+        if force_write:
+            return update_files_list_schema(study_id, obfuscation_code, study_location,
+                                            files_list_json_file)
+        if os.path.isfile(files_list_json_file):
+            logger.info("Files list json found for studyId - %s!", study_id)
+            try:
+                with open(files_list_json_file, 'r', encoding='utf-8') as f:
+                    files_list_schema = json.load(f)
+                    logger.info("Listing files list from files-list json file!")
+            except Exception as e:
+                logger.error('Error while reading file list schema file: ' + str(e))
+                files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
+                                                             files_list_json_file)
+        else:
+            logger.info(" Files list json not found! for studyId - %s!", study_id)
+            files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
+                                                         files_list_json_file)
+
+        return files_list_schema
+
+
+def update_files_list_schema(study_id, obfuscation_code, study_location, files_list_json_file):
+    study_files, upload_files, upload_diff, upload_location, latest_update_time = \
+        get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
+                                      directory=None, include_raw_data=True,
+                                      assay_file_list=get_assay_file_list(study_location),
+                                      static_validation_file=False)
+    files_list_schema = {'study': study_files,
+                                 'latest': upload_diff,
+                                 'private': upload_files,
+                                 'uploadPath': upload_location[1],
+                                 'obfuscationCode': obfuscation_code}
+
+    logger.info(" Writing Files list schema to a file for studyid - %s ", study_id)
+    try:
+        with open(files_list_json_file, 'w', encoding='utf-8') as f:
+            json.dump(files_list_schema, f, ensure_ascii=False)
+    except Exception as e:
+        logger.error('Error writing Files schema file: ' + str(e))
+
+    return jsonify(files_list_schema)
+
+
 class CopyFilesFolders(Resource):
     @swagger.operation(
         summary="Copy files from upload folder to study folder",
@@ -546,6 +664,7 @@ class CopyFilesFolders(Resource):
         else:
             return {'Warning': message}
 
+
 class SyncFolder(Resource):
     @swagger.operation(
         summary="Copy files from study folder to private FTP  folder",
@@ -622,7 +741,8 @@ class SyncFolder(Resource):
         if not write_access:
             abort(403)
 
-        destination = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code + "/" + directory_name
+        destination = app.config.get(
+            'MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code + "/" + directory_name
         source = study_location + "/" + directory_name
         logger.info("syncing files from " + source + " to " + destination)
         try:
@@ -1254,7 +1374,6 @@ class StudyFilesTree(Resource):
                         'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
 
 
-
 class FileList(Resource):
     @swagger.operation(
         summary="Get a listof all files and directories  for the given location",
@@ -1311,12 +1430,11 @@ class FileList(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('directory_name', help='Alternative file location')
-        directory_name =""
+        directory_name = ""
         # If false, only sync ISA-Tab metadata files
         if request.args:
             args = parser.parse_args(req=request)
             directory_name = args['directory_name']
-
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
