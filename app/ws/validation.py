@@ -261,9 +261,11 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type in ('derived', 'raw', 'compressed') and (column_name == derived_file or column_name == raw_file):
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+    elif file_type == 'derived' and column_name == derived_file:
+        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
     elif file_type == 'spreadsheet' and column_name == derived_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
-    elif (file_type != 'derived' or 'text') and column_name == derived_file:
+    elif file_type != 'derived' and column_name == derived_file:
         return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name + assay_file_name
     elif file_type == 'compressed' and column_name == fid_file:
         return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
