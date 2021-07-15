@@ -227,6 +227,8 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     full_file = os.path.join(study_location, file_name)
     short_name, ext = os.path.splitext(file_name)
 
+
+
     ext = ext.lower()
 
     if assay_file_name:
@@ -238,6 +240,10 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
         return False, 'folder', file_name + " is a sub-folder, please reference a file" + assay_file_name
 
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
+
+    # define some generic return validation messages
+    valid_message = True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+    invalid_message = False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name + assay_file_name
 
     # if not folder and "fid" not in file_name and final_filename.lstrip('/') not in file_name_list:  # Files may be referenced in sub-folders
     if not folder and file_name not in file_name_list and file_name.lstrip(
@@ -258,25 +264,25 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
                    " must start with 'm_' and end in '_v2_maf.tsv'" + assay_file_name
 
     if (file_type == 'raw' or file_type == 'compressed') and column_name == raw_file:
-        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+        return valid_message
     elif file_type in ('derived', 'raw', 'compressed') and (column_name == derived_file or column_name == raw_file):
-        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+        return valid_message
     elif file_type == 'text' and column_name == derived_file:
-        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+        return valid_message
     elif file_type == 'spreadsheet' and column_name == derived_file:
-        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+        return valid_message
     elif file_type != 'derived' and column_name == derived_file:
-        return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name + assay_file_name
+        return invalid_message
     elif file_type == 'compressed' and column_name == fid_file:
-        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+        return valid_message
     elif file_type == 'folder' and column_name == fid_file:
-        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+        return valid_message
     elif file_type in ('compressed', 'acqus') and column_name == acq_file:
-        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+        return valid_message
     elif file_type == 'fid' and column_name == fid_file:
-        return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+        return valid_message
     elif file_type != 'raw' and column_name == raw_file:
-        return False, file_type, 'Incorrect file "' + file_name + '" or file type for column ' + column_name + assay_file_name
+        return invalid_message
 
     return status, file_type, 'n/a'
 
