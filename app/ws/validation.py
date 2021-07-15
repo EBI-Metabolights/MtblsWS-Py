@@ -258,7 +258,7 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
 
     if file_type == 'metadata_maf' and column_name == 'Metabolite Assignment File':
         if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
-            return True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
+            return valid_message
         else:
             return False, file_type, "The " + column_name + \
                    " must start with 'm_' and end in '_v2_maf.tsv'" + assay_file_name
@@ -1003,7 +1003,6 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
 
     """
 
-    # This is where your new validation rule will surely SURELY live
     all_file_columns = []
     missing_all_rows = []
     all_assay_raw_files = []
@@ -1348,11 +1347,10 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         except IndexError as e:
             logger.warning('Unable to find assay file name in string {0} : {1}'.format(files, e))
             a_file_name = None
-        status, file_type, file_description = check_file(files, study_location, file_name_list,
+        valid, file_type, file_description = check_file(files, study_location, file_name_list,
                                                          assay_file_list=all_assay_raw_files,
                                                          assay_file_name=a_file_name)
-        # If the check_file method has returned status=False indicating invalidity
-        if not status:
+        if not valid:
             err_msg = "File '" + file_name + "'"
             if file_type != unknown_file:
                 err_msg = err_msg + " of type '" + file_type + "'"
@@ -1362,6 +1360,9 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 err_msg = err_msg + " (" + a_file_name + ")"
             add_msg(validations, val_section, err_msg, error, descr=file_description,
                     val_sequence=9, log_category=log_category)
+        else:
+            add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
+                + column_name + "'", success, descr=file_description, val_sequence=8.1, log_category=log_category)
 
     return return_validations(val_section, validations, override_list)
 
