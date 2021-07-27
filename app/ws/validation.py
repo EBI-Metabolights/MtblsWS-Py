@@ -1101,24 +1101,7 @@ def is_valid_raw_file_column_entry(value: str) -> bool:
     :return: bool value indicating whether the entry is valid.
 
     """
-    valid_filetypes = [
-        '.RAW',
-        '.raw',
-        '.wiff',
-        '.scan',
-        '.wiff.scan',
-        '.d',
-        '.idb',
-        '.cdf',
-        '.dat',
-        '.cmp',
-        '.cdf.cmp',
-        '.lcd',
-        '.abf',
-        '.jbf',
-        '.xps',
-        '.peg'
-    ]
+    valid_filetypes = app.config.get('RAW_FILES_LIST')
     for filetype in valid_filetypes:
         if value.endswith(filetype) and len(value) > len(filetype):
             return True
@@ -1138,22 +1121,8 @@ def is_valid_derived_column_entry(value: str) -> dict:
         'valid': False,
         'is_text_file': False
     }
-    valid_filetypes = [
-        '.mzml',
-        '.nmrml',
-        '.mzxml',
-        '.xml',
-        '.mzdata',
-        '.cef',
-        '.cnx',
-        '.peakml',
-        '.xy',
-        '.smp',
-        '.scan',
-        '.mgf',
-        '.cdf',
-        '.txt'
-    ]
+    valid_filetypes = app.config.get('DERIVED_FILE_LIST')
+    valid_filetypes.append('.txt')
     for filetype in valid_filetypes:
         if value.endswith(filetype):
             result_dict['valid'] = True
