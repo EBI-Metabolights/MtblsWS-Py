@@ -1121,7 +1121,7 @@ def is_valid_derived_column_entry(value: str) -> dict:
         'valid': False,
         'is_text_file': False
     }
-    valid_filetypes = app.config.get('DERIVED_FILE_LIST')
+    valid_filetypes = app.config.get('DERIVED_FILES_LIST')
     valid_filetypes.append('.txt')
     for filetype in valid_filetypes:
         if value.endswith(filetype):
