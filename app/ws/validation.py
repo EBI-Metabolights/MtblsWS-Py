@@ -1069,7 +1069,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
             derived_found = False
             derived_tested = False
             derived_valid = {
-                value: None,
+                'value': None,
                 'valid': False,
                 'is_text_file': False
             }
