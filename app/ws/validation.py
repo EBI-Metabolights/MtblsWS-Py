@@ -206,7 +206,8 @@ def get_sample_names(isa_samples):
     return all_samples
 
 
-def check_file(file_name_and_column, study_location, file_name_list, assay_file_list=None, assay_file_name=None):
+def check_file(
+        file_name_and_column, study_location, file_name_list, validations, assay_file_list=None, assay_file_name=None):
     """
     Check an individual file. Performs various checks in sequence:
     1 Whether the given filename is a directory or a file
@@ -268,7 +269,10 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
     elif file_type in ('derived', 'raw', 'compressed') and (column_name == derived_file or column_name == raw_file):
         return valid_message
     elif file_type == 'text' and column_name == derived_file:
-        return valid_message
+        if textfile_valid_for_derived_column(validations, file_name):
+            return valid_message
+        else:
+            return invalid_message
     elif file_type == 'spreadsheet' and column_name == derived_file:
         return valid_message
     elif file_type != 'derived' and column_name == derived_file:
@@ -285,6 +289,23 @@ def check_file(file_name_and_column, study_location, file_name_list, assay_file_
         return invalid_message
 
     return status, file_type, 'n/a'
+
+def textfile_valid_for_derived_column(validations, filename) -> bool:
+    """
+    Check whether we want to allow a text file in the derived column for a given instance.
+    We only want to allow this if there is a *valid* raw spectral data file entry in the same row.
+    There is a success validation message that indicates that such a situation has occurred, and to what raw file and
+    derived file pairing. We look for such a message that has our derived filename in it, and if we find it, return true
+    and if we don't, return false.
+    :param validations: List of dicts that represent validation messages.
+    :param filename: Filename to check as a string.
+    :return: bool value indicating validity.
+    """
+    for validation in validations:
+        if validation['val_sequence'] == 7.10 and validation["message"].endswith(filename):
+            return True
+
+    return False
 
 
 def maf_messages(header, pos, incorrect_pos, maf_header, incorrect_message, validations, file_name):
@@ -1043,10 +1064,12 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
             raw_found = False
             raw_tested = False
             raw_valid = False
+            raw_value = None
 
             derived_found = False
             derived_tested = False
             derived_valid = {
+                value: None,
                 'valid': False,
                 'is_text_file': False
             }
@@ -1088,6 +1111,11 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                     add_msg(validations, val_section,
                             "Derived Spectral Data Column entry missing or invalid for row {0}".format(row_idx),
                             error, filename, val_sequence=7.9, log_category=log_category)
+                if raw_value and derived_valid['value'] and derived_valid['is_text_file']:
+                    add_msg(validations, val_section,
+                            "Raw Spectral Data File {0} has a corresponding text file entry in the Derived Spectral Data"
+                            " Column: {1}".format(raw_value, derived_valid['value']), success, filename, val_sequence=7.10,
+                            log_category=log_category)
 
     return validations, all_assay_raw_files
 
@@ -1118,6 +1146,7 @@ def is_valid_derived_column_entry(value: str) -> dict:
     :return: dict object indicating validity and whether the value is a text file.
     """
     result_dict = {
+        'value': value,
         'valid': False,
         'is_text_file': False
     }
@@ -1316,7 +1345,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         except IndexError as e:
             logger.warning('Unable to find assay file name in string {0} : {1}'.format(files, e))
             a_file_name = None
-        valid, file_type, file_description = check_file(files, study_location, file_name_list,
+        valid, file_type, file_description = check_file(files, study_location, file_name_list,validations,
                                                          assay_file_list=all_assay_raw_files,
                                                          assay_file_name=a_file_name)
         if not valid:
