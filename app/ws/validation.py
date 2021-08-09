@@ -302,7 +302,7 @@ def textfile_valid_for_derived_column(validations, filename) -> bool:
     :return: bool value indicating validity.
     """
     for validation in validations:
-        if validation['val_sequence'] == 7.10 and validation["message"].endswith(filename):
+        if validation['val_sequence'] == "7.11" and validation["message"].endswith(filename):
             return True
 
     return False
@@ -1069,7 +1069,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
             derived_found = False
             derived_tested = False
             derived_valid = {
-                value: None,
+                'value': None,
                 'valid': False,
                 'is_text_file': False
             }
@@ -1081,6 +1081,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                         all_assay_raw_files.append(value)
                         raw_found = True
                         raw_valid = is_valid_raw_file_column_entry(value)
+                        raw_value = value
 
 
                 elif header == derived_file:
@@ -1114,7 +1115,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                 if raw_value and derived_valid['value'] and derived_valid['is_text_file']:
                     add_msg(validations, val_section,
                             "Raw Spectral Data File {0} has a corresponding text file entry in the Derived Spectral Data"
-                            " Column: {1}".format(raw_value, derived_valid['value']), success, filename, val_sequence=7.10,
+                            " Column: {1}".format(raw_value, derived_valid['value']), success, filename, val_sequence=7.11,
                             log_category=log_category)
 
     return validations, all_assay_raw_files
@@ -1150,7 +1151,7 @@ def is_valid_derived_column_entry(value: str) -> dict:
         'valid': False,
         'is_text_file': False
     }
-    valid_filetypes = app.config.get('DERIVED_FILE_LIST')
+    valid_filetypes = app.config.get('DERIVED_FILES_LIST')
     valid_filetypes.append('.txt')
     for filetype in valid_filetypes:
         if value.endswith(filetype):
