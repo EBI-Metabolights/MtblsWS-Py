@@ -1108,7 +1108,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                     add_msg(validations, val_section,
                             "Valid raw file missing from row {0} where a text file is present in the derived column"
                             .format(row_idx), error, filename, val_sequence=7.8, log_category=log_category )
-                if raw_valid and not derived_valid['valid'] is True:
+                if raw_valid and derived_found and not derived_valid['valid'] is True:
                     add_msg(validations, val_section,
                             "Derived Spectral Data Column entry missing or invalid for row {0}".format(row_idx),
                             error, filename, val_sequence=7.9, log_category=log_category)
