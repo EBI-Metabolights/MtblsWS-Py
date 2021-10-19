@@ -452,7 +452,11 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
                     str(col_rows) + " rows found, but there should be " + str(all_rows),
                     info, val_sequence=11, log_category=log_category)
 
-
+# TRANSPLANTED TO NEW RESOURCE
+#
+#
+#
+#
 class Validation(Resource):
     @swagger.operation(
         summary="Validate study",
@@ -642,7 +646,12 @@ class Validation(Resource):
 
         return validation_schema
 
-
+#
+# TRANSPLANTED TO NEW RESOURCE
+#
+#
+#
+#
 class UpdateValidationFile(Resource):
     @swagger.operation(
         summary="Update validation file",
