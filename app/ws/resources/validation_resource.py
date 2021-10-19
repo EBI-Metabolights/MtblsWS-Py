@@ -99,6 +99,13 @@ class StudyValidation(Resource):
         ]
     )
     def get(self, study_id):
+        """
+        Return the validations for a given study. Either returns the existing validation report, or if one is not found
+        the study is validated from scratch.
+
+        :param study_id: Study accession number.
+        :return: validation schema json.
+        """
 
         # instantiate permissions object ( which retrieves all permissions on initialisation )
         perms = PermissionsObj(study_id=study_id, req_headers=request.headers)
@@ -120,6 +127,10 @@ class StudyValidation(Resource):
 
 
 class ValidationFile(Resource):
+    """
+    Resource for operations on the validation file.
+    """
+
     @swagger.operation(
         summary="Update validation file",
         notes="Update validation file",
@@ -162,6 +173,13 @@ class ValidationFile(Resource):
         ]
     )
     def post(self, study_id):
+        """
+        Trigger a thread to update the validation file. Done in the background as it can take along time for larger
+        files.
+
+        :param study_id: Study accession number.
+        :return: a message indicating the thread has been initialised.
+        """
 
         # instantiate permissions object ( which retrieves all permissions on initialisation )
         perms = PermissionsObj(study_id=study_id, req_headers=request.headers)
