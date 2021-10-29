@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import threading
@@ -196,3 +197,80 @@ class ValidationFile(Resource):
 
         return {"success": "Validation schema file is updating in the background. Consult logs if the update is not"
                            " viewable."}
+
+
+class OverrideValidation(Resource):
+    @swagger.operation(
+        summary="Approve or reject a specific validation rule (curator only)",
+        notes='''For EBI curators to manually approve or fail a validation step.</br> "*" will override *all* errors!
+        <pre><code>
+    { 
+      "validations": [
+        {
+          "publication_3": "The PubChem id is for a different paper",
+          "people_3": "The contact has given an incorrect email address",
+          "files_1": ""
+        } 
+      ]
+    }
+    </code></pre>''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study to override validations",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "validations",
+                "description": 'which validation rules to override.',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        # instantiate permissions object ( which retrieves all permissions on initialisation )
+        perms = PermissionsObj(study_id=study_id, req_headers=request.headers)
+
+        if not perms.is_curator:
+            abort(403)
+
+        validation_service = ValidationService()
+
+        return validation_service.override(
+            study_id=study_id, validation_data=json.loads(request.data.decode('utf-8'))['validations']
+        )
