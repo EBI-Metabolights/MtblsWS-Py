@@ -1,8 +1,13 @@
+import json
+import logging
 import os
+import re
 
 from flask import current_app as app, abort
 
 from ws.mtblsWSclient import WsClient
+
+logger = logging.getLogger('wslog')
 
 
 class ValidationUtils:
@@ -46,6 +51,46 @@ class ValidationUtils:
         return ValidationParams(
             number_of_files, force_static_validation, validation_files_limit, log_category, section,
             static_validation_file)
+
+    @staticmethod
+    def get_cluster_validation_params(args):
+        section = args['section']
+        force_run = args['force_run']
+        if section is None or section == "":
+            section = 'meta'
+        if force_run is None:
+            force_run = False
+
+        log_category = args['level']
+
+        log_categories = "error", "warning", "info", "success", "all"
+        if log_category is None or log_category not in log_categories:
+            log_category = 'all'
+
+        return ClusterValidationParams(
+             log_category, section, force_run
+        )
+
+    @staticmethod
+    def find_validation_report_filename(val_params, perms):
+        file_name = None
+        pattern = re.compile(".validation_" + val_params.section + "\S+.json")
+
+        for filepath in os.listdir(perms.study_location):
+            if pattern.match(filepath):
+                file_name = filepath
+                break
+        return file_name
+
+    @staticmethod
+    def load_validation_file(file_name):
+        try:
+            with open(file_name, 'r', encoding='utf-8') as f:
+                validation_schema = json.load(f)
+                return validation_schema
+        except Exception as e:
+            logger.error(str(e))
+            return {"message": "Error in reading the Validation file"}
 
 
 class PermissionsObj:
@@ -101,3 +146,11 @@ class ValidationParams:
         self.log_category = log_category
         self.section = section
         self.static_validation_file = static_validation_file
+
+
+class ClusterValidationParams:
+
+    def __init__(self, log_category, section, force_run):
+        self.log_category = log_category
+        self.section = section
+        self.force_run = force_run

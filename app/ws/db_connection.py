@@ -771,7 +771,7 @@ def override_validations(study_id, method, override=""):
             # conn.close()
             release_connection(postgresql_pool, conn)
     except Exception as e:
-        return False
+        return False, e
 
 
 def update_validation_status(study_id, validation_status):

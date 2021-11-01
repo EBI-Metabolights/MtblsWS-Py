@@ -274,3 +274,99 @@ class OverrideValidation(Resource):
         return validation_service.override(
             study_id=study_id, validation_data=json.loads(request.data.decode('utf-8'))['validations']
         )
+
+
+class ClusterValidation(Resource):
+    @swagger.operation(
+        summary="Validate study",
+        notes='''Validating the study with given section
+        This method will validate the study metadata and check the files study folder''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study to validate",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "section",
+                "description": "Specify which validations to run, default is Metadata: "
+                               "all, assays, files",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["all", "assays", "files"]
+            },
+            {
+                "name": "force_run",
+                "description": "Run the validation again",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["True", "False"]
+            },
+            {
+                "name": "level",
+                "description": "Specify which success-errors levels to report, default is all: "
+                               "error, warning, info, success",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+            },
+
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # instantiate permissions object ( which retrieves all permissions on initialisation )
+        perms = PermissionsObj(study_id=study_id, req_headers=request.headers)
+
+        if not perms.write_access:
+            abort(403)
+
+        # query validation
+        parser = RequestParsers.cluster_validation_parser()
+        args = parser.parse_args()
+        val_params = ValidationUtils.get_cluster_validation_params(args)
+
+        validation_service = ValidationService()
+
+        return validation_service.cluster(
+            val_params=val_params, perms=perms, script=app.config.get('VALIDATION_SCRIPT')
+        )
+

@@ -58,7 +58,7 @@ from app.ws.study_actions import StudyStatus,ToggleAccess,ToggleAccessGet
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders,SyncFolder,FileList, StudyFilesReuse
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
-from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation
+from ws.resources.validation_resource import ValidationFile, OverrideValidation, ClusterValidation, StudyValidation
 
 """
 MTBLS WS-Py
@@ -170,8 +170,8 @@ def initialize_app(flask_app):
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
-    api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
-    api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
+    api.add_resource(StudyValidation, res_path + "/studies/<string:study_id>/validate-study")
+    api.add_resource(ClusterValidation, res_path + "/studies/<string:study_id>/validation")
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
@@ -191,7 +191,7 @@ def initialize_app(flask_app):
     # api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
-    api.add_resource(UpdateValidationFile, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
+    api.add_resource(ValidationFile, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
