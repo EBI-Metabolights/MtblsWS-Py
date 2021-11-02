@@ -1,12 +1,11 @@
 import json
 import os
 import logging
-import re
 
-from ws.db_connection import override_validations
-from ws.validation_dir.validations_utils import PermissionsObj, ValidationParams, ClusterValidationParams, \
+from app.ws.db_connection import override_validations
+from app.ws.validation_dir.validations_utils import PermissionsObj, ValidationParams, ClusterValidationParams, \
     ValidationUtils
-from ws.validation import is_newer_files, update_val_schema_files, validate_study, submitJobToCluster, job_status, \
+from app.ws.validation import is_newer_files, update_val_schema_files, validate_study, submitJobToCluster, job_status, \
     is_newer_timestamp
 
 logger = logging.getLogger('wslog')

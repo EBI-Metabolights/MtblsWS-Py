@@ -7,10 +7,10 @@ from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from flask import current_app as app, request, abort
 
-from ws.misc_utilities.request_parsers import RequestParsers
-from ws.services.validation_service import ValidationService
-from ws.validation import update_val_schema_files
-from ws.validation_dir.validations_utils import ValidationUtils, PermissionsObj
+from app.ws.misc_utilities.request_parsers import RequestParsers
+from app.ws.services.validation_service import ValidationService
+from app.ws.validation import update_val_schema_files
+from app.ws.validation_dir.validations_utils import ValidationUtils, PermissionsObj
 
 logger = logging.getLogger('wslog')
 
@@ -276,11 +276,12 @@ class OverrideValidation(Resource):
         )
 
 
-class ClusterValidation(Resource):
+class ClusterStudyValidation(Resource):
     @swagger.operation(
-        summary="Validate study",
+        summary="Validate study via Cluster ",
         notes='''Validating the study with given section
-        This method will validate the study metadata and check the files study folder''',
+        This method will validate the study metadata and check the files study folder. Note that this passes the 
+        validation off to a separate process.''',
         parameters=[
             {
                 "name": "study_id",

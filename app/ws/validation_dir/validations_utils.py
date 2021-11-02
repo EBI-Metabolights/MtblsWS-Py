@@ -5,7 +5,7 @@ import re
 
 from flask import current_app as app, abort
 
-from ws.mtblsWSclient import WsClient
+from app.ws.mtblsWSclient import WsClient
 
 logger = logging.getLogger('wslog')
 

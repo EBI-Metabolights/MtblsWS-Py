@@ -6,7 +6,6 @@ class RequestParsers:
     Collection of request parsers to prevent cluttering in code elsewhere.
     """
 
-
     @staticmethod
     def username_parser():
         parser = reqparse.RequestParser()
