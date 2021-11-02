@@ -107,11 +107,11 @@ class PermissionsObj:
         self.user_token = None
         self.study_id = study_id
 
-        if not self.is_complete():
-            abort(401)
-
         if "user_token" in req_headers:
             self.user_token = req_headers["user_token"]
+
+        if not self.is_complete():
+            abort(401)
 
         webservice_client = WsClient()
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
@@ -127,7 +127,7 @@ class PermissionsObj:
         self.study_status = study_status.lower()
 
     def is_complete(self):
-        return self.user_token is None or self.study_id is None
+        return self.user_token is not None and self.study_id is not None
 
 
 class ValidationParams:
