@@ -10,7 +10,8 @@ from flask import current_app as app, request, abort
 from app.ws.misc_utilities.request_parsers import RequestParsers
 from app.ws.services.validation_service import ValidationService
 from app.ws.validation import update_val_schema_files
-from app.ws.validation_dir.validations_utils import ValidationUtils, PermissionsObj
+from ws.model_classes.permissions import PermissionsObj
+from ws.validation_dir.utils.validations_utils import ValidationUtils
 
 logger = logging.getLogger('wslog')
 

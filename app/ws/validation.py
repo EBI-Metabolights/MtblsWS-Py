@@ -28,6 +28,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import *
+from ws.validation_dir.validators.basic_isatab_validator import BasicIsatabValidator
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -113,57 +114,7 @@ def extract_details(rule):
     return val, val_error, val_condition, val_type
 
 
-def return_validations(section, validations, override_list=[]):
-    # Add the validation sequence
-    for val in validations:
-        # idx += 1  # Set the sequence to 1, as this is the section we will override
-        val_sequence = section + '_' + val['val_sequence']
-        val["val_sequence"] = val_sequence
-        val["val_override"] = 'false'
-        val["val_message"] = ''
-        if len(override_list) > 0:  # These are from the database, ie. already over-ridden
-            try:
-                for db_val in override_list:
-                    val_step = db_val.split(':')[0]
-                    val_msg = db_val.split(':')[1]
-                    if val_sequence == val_step or val_step == '*':  # "*" overrides all errors/warning/info etc
-                        val_status = val['status']
-                        val["val_override"] = 'true'
-                        val["val_message"] = val_msg
-                        if val_status == warning or val_status == error or val_status == info:
-                            val["status"] = success
-                        elif val_status == success and val_step != '*':
-                            val["status"] = error
-            except:
-                logger.error('Could not read the validation override list, is the required ":" there?')
 
-    error_found = False
-    warning_found = False
-    validates = True
-    amber_warning = False
-
-    # What is the overall validation status now?
-    for val in validations:
-        status = val["status"]
-        if status == error:
-            error_found = True
-        elif status == warning:
-            warning_found = True
-
-    if error_found:
-        validates = False
-        ret_list = {"section": section, "details": validations, "message": "Validation failed",
-                    "status": error}
-    elif warning_found:
-        amber_warning = True
-        ret_list = {"section": section, "details": validations,
-                    "message": "Some optional information is missing for your study",
-                    "status": warning}
-    else:
-        ret_list = {"section": section, "details": validations, "message": "Successful validation",
-                    "status": success}
-
-    return validates, amber_warning, ret_list
 
 
 def remove_nonprintable(text):
@@ -1882,7 +1833,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
                 add_msg(validations, val_section, "Could not find any study design descriptors",
                         error, file_name, val_sequence=17, log_category=log_category)
 
-            if find_text_in_isatab_file(study_location, 'Thesaurus.owl#'):
+            if BasicIsatabValidator.find_text_in_isatab_file(study_location, 'Thesaurus.owl#'):
                 # The hash in an ontology URL will cause problems for the ISA-API
                 add_msg(validations, val_section,
                         "URL's containing # will not load properly, please change to '%23'",

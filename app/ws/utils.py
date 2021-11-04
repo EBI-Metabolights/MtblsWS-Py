@@ -1042,19 +1042,6 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
     return found
 
 
-def find_text_in_isatab_file(study_folder, text_to_find):
-    found = False
-    isa_tab_file = os.path.join(study_folder, 'i_*.txt')
-    for ref_file in glob.glob(isa_tab_file):
-        try:
-            logger.info("Checking if text " + text_to_find + " is referenced in " + ref_file)
-            if text_to_find in io.open(ref_file, 'r', encoding='utf8', errors="ignore").read():
-                found = True
-        except Exception as e:
-            logger.error('File Format error? Cannot read or open file ' + ref_file)
-            logger.error(str(e))
-
-    return found
 
 
 def get_assay_file_list(study_location):

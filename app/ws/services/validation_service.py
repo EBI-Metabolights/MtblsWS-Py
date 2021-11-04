@@ -1,23 +1,36 @@
 import json
 import os
 import logging
+import traceback
 
 from app.ws.db_connection import override_validations
-from app.ws.validation_dir.validations_utils import PermissionsObj, ValidationParams, ClusterValidationParams, \
-    ValidationUtils
+from app.ws.validation_dir.utils.validations_utils import ValidationUtils
 from app.ws.validation import is_newer_files, update_val_schema_files, validate_study, submitJobToCluster, job_status, \
     is_newer_timestamp
+from app.ws.model_classes.validation_parameters import ValidationParams, ClusterValidationParams
+from ws.isaApiClient import IsaApiClient
+from ws.model_classes.isa_wrapper import IsaApiWrapper
+from ws.model_classes.permissions import PermissionsObj
+from ws.utils import read_tsv
 
 logger = logging.getLogger('wslog')
 
 
 class ValidationService:
+    """Validation Service - contains general logic for the validation process. The service will ultimately either
+     run the validation as normal, in the background as a thread, or on an LSF cluster (except for when we're just
+     overwriting validations). """
 
-    def __init__(self):
-        pass
+    def __init__(self, isa_api_client: IsaApiClient):
+        self.validation_factory = None
+        self.isa_api_client = isa_api_client
+        self.isa_wrapper =
+
 
     def choose_validation_pathway(self, perms: PermissionsObj, validation_parameters: ValidationParams):
         """
+        Entry method for webservice based validation.
+
         Choose how to handle validation based on query params and the size of the study and whether it's been validated
         before. There are five 'paths' in the logic below. At the conclusion of each, the validation schema is returned.
         1] A validation report already exists for the study. It is returned as part of the response.
@@ -35,8 +48,8 @@ class ValidationService:
             validation_file = os.path.join(perms.study_location, 'validation_report.json')
             if os.path.isfile(validation_file):
                 with open(validation_file, 'r', encoding='utf-8') as f:
-                    validation_schema = json.load(f)
-                    return validation_schema
+                    return json.load(f)
+
 
         if (validation_parameters.static_validation_file and perms.study_status
             in ('in review', 'public')) or validation_parameters.force_static_validation:
@@ -45,7 +58,7 @@ class ValidationService:
 
             # Some file in the filesystem is newer than the validation reports, so we need to re-generate
             if is_newer_files(perms.study_location):
-                return update_val_schema_files(validation_file, perms.study_id, perms.study_location, perms.user_token,
+                return self.update_val_schema_files(validation_file, perms.study_id, perms.study_location, perms.user_token,
                                                perms.obfuscation_code, log_category=validation_parameters.log_category,
                                                return_schema=True)
 
@@ -56,13 +69,13 @@ class ValidationService:
                 except Exception as e:
                     logger.error(str(e))
                     return  \
-                        update_val_schema_files(validation_file, perms.study_id, perms.study_location, perms.user_token,
+                        self.update_val_schema_files(validation_file, perms.study_id, perms.study_location, perms.user_token,
                                                 perms.obfuscation_code, log_category=validation_parameters.log_category,
                                                 return_schema=True)
 
             else:
                 return \
-                    update_val_schema_files(validation_file, perms.study_id, perms.study_location, perms.user_token,
+                    self.update_val_schema_files(validation_file, perms.study_id, perms.study_location, perms.user_token,
                                             perms.obfuscation_code, log_category=validation_parameters.log_category,
                                             return_schema=True)
 
@@ -70,6 +83,79 @@ class ValidationService:
             return \
                 validate_study(perms.study_id, perms.study_location, perms.user_token, perms.obfuscation_code, validation_section=validation_parameters.section,
                                log_category=validation_parameters.log_category, static_validation_file=validation_parameters.static_validation_file)
+
+
+    def validate_study(self):
+
+
+        pass
+
+    def get_isa_api_client_information(self):
+
+        try:
+
+            if os.path.isfile(os.path.join(self._perms.study_location, 'i_Investigation.txt')):
+                try:
+                    isa_study, isa_inv, std_path = self.isa_api_client.get_isa_study(
+                                                                     self._perms.study_id, self._perms.user_token,
+                                                                     skip_load_tables=True,
+                                                                     study_location=self._perms.study_location)
+
+                    file_name = isa_study.filename
+                    isa_sample_df = read_tsv(os.path.join(self._perms.study_location, file_name))
+                    return IsaApiWrapper(isa_study, isa_inv, std_path, file_name, isa_sample_df,
+                                         isa_study.filename, isa_study.assays, [x.filename for x in isa_study.assays])
+                except FileNotFoundError:
+                    logger.error("The isa study file was not found")
+                except Exception as e:
+                    logger.error("Could not load the minimum ISA-Tab files (generic reading error){error}".format(error=e))
+
+            else:
+                logger.error('generic file error in finding investigation file. Check file is present.')
+
+        except ValueError:
+            err = traceback.format_exc()
+            logger.error("Cannot load ISA-Tab with sample and assay tables due to critical error: " + err)
+
+        # return empty wrapper if unsuccessful. This will propagate to a validation error for the user.
+        return IsaApiWrapper(None, None, None, None, None, None, None, None)
+
+    def update_val_schema_files(self, validation_file, study_id, study_location, user_token, obfuscation_code,
+                                log_category='all', return_schema=False):
+        # Tidy up old files first
+        if os.path.isfile(os.path.join(study_location, 'validation_files.json')):
+            os.remove(os.path.join(study_location, 'validation_files.json'))
+
+        if os.path.isfile(validation_file):
+            os.remove(validation_file)
+
+        f_start_time = time.time()
+        file_list = []
+        file_list = list_directories_full(study_location, file_list, base_study_location=study_location)
+        try:
+            with open(os.path.join(study_location, 'validation_files.json'), 'w', encoding='utf-8') as f1:
+                json.dump(file_list, f1, ensure_ascii=False)
+        except Exception as e1:
+            logger.error('Error Writing validation file list: ' + str(e1))
+
+        logger.info(
+            study_id + " - Generating validations file list took %s seconds" % round(time.time() - f_start_time, 2))
+
+        v_start_time = time.time()
+        validation_schema = validate_study(study_id, study_location, user_token, obfuscation_code,
+                                           log_category=log_category, static_validation_file=True)
+        if log_category == 'all':  # Only write the complete file, not when we have a sub-section only query
+            try:
+                with open(validation_file, 'w', encoding='utf-8') as f:
+                    # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
+                    json.dump(validation_schema, f, ensure_ascii=False)
+            except Exception as e:
+                logger.error('Error writing validation schema file: ' + str(e))
+            logger.info(
+                study_id + " - Generating validations list took %s seconds" % round(time.time() - v_start_time, 2))
+
+        if return_schema:
+            return validation_schema
 
 
     def override(self, study_id, validation_data):
@@ -80,7 +166,7 @@ class ValidationService:
 
         :param study_id: The ID of the study we want to override validations for.
         :param validation_data: The list of validations to override.
-        :return: a dict containg a kv pair of result of operation: message providing more context.
+        :return: a dict containing a kv pair of result of operation: message providing more context.
         """
 
         val_feedback = ""
