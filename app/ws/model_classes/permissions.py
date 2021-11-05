@@ -1,6 +1,6 @@
 from flask_restful import abort
 
-from ws.mtblsWSclient import WsClient
+from app.ws.mtblsWSclient import WsClient
 
 
 class PermissionsObj:

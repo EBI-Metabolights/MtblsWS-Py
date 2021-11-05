@@ -29,6 +29,10 @@ class AbstractValidator(ABC):
 
     @abstractmethod
     def validate(self):
+        """
+        This method should be the entrypoint for any validator, and should be home to the central logic / ruleset for
+        that section. This is to make adding new rules in the future easier to do.
+        """
         raise NotImplementedError
 
     def add_msg(self, validations, section, message, status, meta_file="", value="", descr="", val_sequence=0,

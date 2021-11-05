@@ -1,17 +1,20 @@
 import json
 import os
 import logging
+import time
 import traceback
 
 from app.ws.db_connection import override_validations
 from app.ws.validation_dir.utils.validations_utils import ValidationUtils
-from app.ws.validation import is_newer_files, update_val_schema_files, validate_study, submitJobToCluster, job_status, \
+from app.ws.validation import is_newer_files, validate_study, submitJobToCluster, job_status, \
     is_newer_timestamp
 from app.ws.model_classes.validation_parameters import ValidationParams, ClusterValidationParams
-from ws.isaApiClient import IsaApiClient
-from ws.model_classes.isa_wrapper import IsaApiWrapper
-from ws.model_classes.permissions import PermissionsObj
-from ws.utils import read_tsv
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.model_classes.isa_wrapper import IsaApiWrapper
+from app.ws.model_classes.permissions import PermissionsObj
+from app.ws.study_files import list_directories_full
+from app.ws.utils import read_tsv
+from app.ws.validation_dir.validation_factory import ValidationFactory
 
 logger = logging.getLogger('wslog')
 
@@ -21,13 +24,15 @@ class ValidationService:
      run the validation as normal, in the background as a thread, or on an LSF cluster (except for when we're just
      overwriting validations). """
 
-    def __init__(self, isa_api_client: IsaApiClient):
-        self.validation_factory = None
-        self.isa_api_client = isa_api_client
-        self.isa_wrapper =
+    def __init__(self, isa_api_client: IsaApiClient, permissions: PermissionsObj, validation_factory: ValidationFactory):
+        self._validation_factory = None
+        self._isa_api_client = isa_api_client
+        self._perms = permissions
+        self._isa_wrapper = self.get_isa_api_client_information()
+        self._validation_factory = validation_factory
 
 
-    def choose_validation_pathway(self, perms: PermissionsObj, validation_parameters: ValidationParams):
+    def choose_validation_pathway(self, validation_parameters: ValidationParams):
         """
         Entry method for webservice based validation.
 
@@ -45,21 +50,21 @@ class ValidationService:
         """
 
         if validation_parameters.section == 'all' or validation_parameters.log_category == 'all':
-            validation_file = os.path.join(perms.study_location, 'validation_report.json')
+            validation_file = os.path.join(self._perms.study_location, 'validation_report.json')
             if os.path.isfile(validation_file):
                 with open(validation_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
 
 
-        if (validation_parameters.static_validation_file and perms.study_status
+        if (validation_parameters.static_validation_file and self._perms.study_status
             in ('in review', 'public')) or validation_parameters.force_static_validation:
 
-            validation_file = os.path.join(perms.study_location, 'validation_report.json')
+            validation_file = os.path.join(self._perms.study_location, 'validation_report.json')
 
             # Some file in the filesystem is newer than the validation reports, so we need to re-generate
-            if is_newer_files(perms.study_location):
-                return self.update_val_schema_files(validation_file, perms.study_id, perms.study_location, perms.user_token,
-                                               perms.obfuscation_code, log_category=validation_parameters.log_category,
+            if is_newer_files(self._perms.study_location):
+                return self.update_val_schema_files(validation_file, self._perms.study_id, self._perms.study_location, self._perms.user_token,
+                                               self._perms.obfuscation_code, log_category=validation_parameters.log_category,
                                                return_schema=True)
 
             if os.path.isfile(validation_file):
@@ -69,37 +74,46 @@ class ValidationService:
                 except Exception as e:
                     logger.error(str(e))
                     return  \
-                        self.update_val_schema_files(validation_file, perms.study_id, perms.study_location, perms.user_token,
-                                                perms.obfuscation_code, log_category=validation_parameters.log_category,
+                        self.update_val_schema_files(validation_file, self._perms.study_id, self._perms.study_location, self._perms.user_token,
+                                                self._perms.obfuscation_code, log_category=validation_parameters.log_category,
                                                 return_schema=True)
 
             else:
                 return \
-                    self.update_val_schema_files(validation_file, perms.study_id, perms.study_location, perms.user_token,
-                                            perms.obfuscation_code, log_category=validation_parameters.log_category,
+                    self.update_val_schema_files(validation_file, self._perms.study_id, self._perms.study_location, self._perms.user_token,
+                                            self._perms.obfuscation_code, log_category=validation_parameters.log_category,
                                             return_schema=True)
 
         else:
-            return \
-                validate_study(perms.study_id, perms.study_location, perms.user_token, perms.obfuscation_code, validation_section=validation_parameters.section,
-                               log_category=validation_parameters.log_category, static_validation_file=validation_parameters.static_validation_file)
+
+            return self.validate_study(val_params=validation_parameters)
 
 
-    def validate_study(self):
+    def validate_study(self, val_params):
+        # you need to include start time and end time
+        # in the old validation, if we find an error or a warning, that flag is simply set to true. Do we want to make
+        # that more sophisticated? maybe a counter or something
+        # you also need to handle the status stuff that calls out the db_connection method
+        start_time = time.time()
+        all_validations = []
 
+        self._validation_factory.load(perms=self._perms, val_params=val_params, isa_wrapper=self._isa_wrapper)
+        for validator in self._validation_factory.validators:
+            all_validations.append(validator.validate()[2])
 
-        pass
+        end_time = round(time.time() - start_time, 2)
+        logger.info('hit + {validations}'.format(validations=all_validations))
+        return {"validation": {"status": 'success', "timing": end_time, "validations": all_validations}}
 
     def get_isa_api_client_information(self):
-
+        """Query the ISA API to get information about the current study. Details are returned in an IsaApiWrapper
+        instead of a seven strong tuple as it was before. """
         try:
-
             if os.path.isfile(os.path.join(self._perms.study_location, 'i_Investigation.txt')):
                 try:
-                    isa_study, isa_inv, std_path = self.isa_api_client.get_isa_study(
-                                                                     self._perms.study_id, self._perms.user_token,
-                                                                     skip_load_tables=True,
-                                                                     study_location=self._perms.study_location)
+                    isa_study, isa_inv, std_path = \
+                        self._isa_api_client.get_isa_study(self._perms.study_id, self._perms.user_token,
+                                                           skip_load_tables=True, study_location=self._perms.study_location)
 
                     file_name = isa_study.filename
                     isa_sample_df = read_tsv(os.path.join(self._perms.study_location, file_name))

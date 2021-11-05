@@ -28,7 +28,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import *
-from ws.validation_dir.validators.basic_isatab_validator import BasicIsatabValidator
+from app.ws.validation_dir.validators.basic_isatab_validator import BasicIsatabValidator
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
