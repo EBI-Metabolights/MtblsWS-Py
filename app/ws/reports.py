@@ -32,11 +32,71 @@ from app.ws.ontology_info import *
 from app.ws.study_files import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
+from ws.table_for_tim import generate_file
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
 
+class IclReports(Resource):
+
+    @swagger.operation(
+        summary="POST Metabolights periodic report",
+        notes='POST Metabolights periodic report',
+
+        parameters=[
+            {
+                "name": "query",
+                "description": "Report query",
+                "required": True,
+                "allowEmptyValue": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["daily_stats", "user_stats", "study_stats", "file_extension", "global"]
+            },
+            {
+                "name": "studyid",
+                "description": "None to update all studies",
+                "required": False,
+                "allowEmptyValue": True,
+                "paramType": "query",
+                "dataType": "string"
+            },
+
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self):
+        return {'message': generate_file()}
 
 class reports(Resource):
 
@@ -543,6 +603,9 @@ class reports(Resource):
         writeDataToFile(reporting_path + file_name, res, True)
 
         return jsonify({"POST " + file_name: True})
+
+
+
 
 
 def get_file_extensions(id, path):
