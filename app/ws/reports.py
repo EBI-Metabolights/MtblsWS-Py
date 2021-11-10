@@ -32,7 +32,7 @@ from app.ws.ontology_info import *
 from app.ws.study_files import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
-from ws.table_for_tim import generate_file
+from app.ws.table_for_tim import generate_file
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
