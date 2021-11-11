@@ -1,3 +1,4 @@
+import logging
 import os
 import pandas
 import numpy
@@ -5,6 +6,7 @@ import glob
 
 from app.ws.mtblsWSclient import WsClient
 
+logger = logging.getLogger('wslog')
 
 
 def generate_file():
@@ -172,8 +174,9 @@ def generate_file():
         sample_df = sample_df.replace(numpy.nan, '', regex=True)
         # we want only two of the columns
         sample_df = sample_df[sample_df.columns[[1, 3]]]
-        assays_list = glob.glob(study_location + 'a_*')
-        print(assays_list)
+        logger.info(sample_df)
+        assays_list = [file for file in os.listdir(study_location) if file.startswith('a_')]
+        logger.info(assays_list)
         return assays_list
 
 
