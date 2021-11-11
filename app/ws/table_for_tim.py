@@ -171,7 +171,7 @@ def generate_file():
         # Get rid of empty numerical values
         sample_df = sample_df.replace(numpy.nan, '', regex=True)
         # we want only two of the columns
-        sample_df = sample_df[sample_df.columns[1, 3]]
+        sample_df = sample_df[sample_df.columns[[1, 3]]]
         assays_list = glob.glob(study_location + 'a_*')
         print(assays_list)
         return assays_list
