@@ -2,9 +2,9 @@ import logging
 import os
 import pandas
 import numpy
-import glob
 
 from app.ws.mtblsWSclient import WsClient
+from flask import current_app as app
 
 logger = logging.getLogger('wslog')
 
@@ -161,6 +161,7 @@ def generate_file():
     # did some reading and growing a dataframe row by row is apparently a massive nono as it creates a new dataframe in
     # memory each time, without deleting the old one, so is very wasteful. It's recommended to just do it as a list of
     # rows instead, and then make a dataframe out of that list at the end.
+    reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
     wsc = WsClient()
     return_table = []
     # for a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v w, x, y, z, aa
@@ -168,16 +169,33 @@ def generate_file():
         wsc.get_permissions('MTBLS1', '4ae0c06f-a5de-41a0-bcf9-7e573c63f515')
 
     for study in nmr_studies_test:
-        sample_filename = os.path.join(study_location.replace("MTBLS1", study), 's_{0}.txt'.format(study))
+        study_location = study_location.replace("MTBLS1", study)
+        sample_filename = os.path.join(study_location, 's_{0}.txt'.format(study))
         sample_df = pandas.read_csv(sample_filename, sep="\t", header=0, encoding='utf-8')
+
         # Get rid of empty numerical values
         sample_df = sample_df.replace(numpy.nan, '', regex=True)
-        # we want only two of the columns
-        sample_df = sample_df[sample_df.columns[[1, 3]]]
+        # we want two of the columns - organism and organism part which are in columns 1 and 4 respectively (index 0)
+        sample_df = sample_df[sample_df.columns[[1, 4]]]
         logger.info(sample_df)
-        assays_list = [file for file in os.listdir(study_location) if file.startswith('a_')]
+
+        assays_list = [file for file in os.listdir(study_location) if file.startswith('a_') and file.endswith('.txt')]
+
+        # if we have only one assay, we already know this is an NMR study, do the assay must be an nmr one. If we have
+        # more than one assay file, at least one but maybe more of those will be NMR assays, so we need to cull the
+        # other assays as they would pollute the resulting table.
+        if len(assays_list) > 1:
+            assays_list = [file for file in assays_list if 'NMR' in file.upper()]
         logger.info(assays_list)
-        return assays_list
+        for assay in assays_list:
+            logger.info('hit interior loop')
+            assay_df = pandas.read_csv(os.path.join(study_location, assay), sep="\t", header=0, encoding="utf-8")
+            assay_df = assay_df.replace(numpy.nan, '', regex=True)
+            logger.info('read and repalced assay file')
+            temp_df = pandas.concat([sample_df, assay_df])
+            temp_df.insert(0, 'Study', study)
+            logger.info('made new temp_df and inserted study column')
+            logger.info(temp_df)
 
-
-
+        logger.info('got out of loop')
+        return {'message': 'hello'}
