@@ -192,7 +192,7 @@ def generate_file():
             assay_df = pandas.read_csv(os.path.join(study_location, assay), sep="\t", header=0, encoding="utf-8")
             assay_df = assay_df.replace(numpy.nan, '', regex=True)
             logger.info('read and repalced assay file')
-            temp_df = pandas.concat([sample_df, assay_df])
+            temp_df = pandas.concat([sample_df, assay_df], axis=1)
             temp_df.insert(0, 'Study', study)
             logger.info('made new temp_df and inserted study column')
             logger.info(temp_df)
