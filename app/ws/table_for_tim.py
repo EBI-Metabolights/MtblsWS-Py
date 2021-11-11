@@ -191,6 +191,7 @@ def generate_file():
             logger.info('hit interior loop')
             assay_df = pandas.read_csv(os.path.join(study_location, assay), sep="\t", header=0, encoding="utf-8")
             assay_df = assay_df.replace(numpy.nan, '', regex=True)
+            logger.info(assay_df)
             logger.info('read and repalced assay file')
             temp_df = pandas.concat([sample_df, assay_df], axis=1)
             temp_df.insert(0, 'Study', study)
