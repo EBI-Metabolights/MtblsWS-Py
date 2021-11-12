@@ -170,7 +170,7 @@ def generate_file():
         wsc.get_permissions('MTBLS1', '4ae0c06f-a5de-41a0-bcf9-7e573c63f515')
     missing_samplesheets = 0
 
-    letstryithtiswayinstead = DataFrame()
+    original_sin = DataFrame()
     for study in nmr_studies:
         study_location = study_location.replace("MTBLS1", study)
         sample_file_list = [file for file in os.listdir(study_location) if file.startswith('s_') and file.endswith('.txt')]
@@ -202,31 +202,30 @@ def generate_file():
             logger.info('hit interior loop')
             assay_df = pandas.read_csv(os.path.join(study_location, assay), sep="\t", header=0, encoding="utf-8")
             assay_df = assay_df.replace(numpy.nan, '', regex=True)
-            logger.info(assay_df)
-            logger.info('read and repalced assay file')
+
             temp_df = pandas.concat([sample_df, assay_df], axis=1)
             temp_df.insert(0, 'Study', study)
-            logger.info('made new temp_df and inserted study column')
-            logger.info(temp_df)
+
             return_table.append(temp_df)
-            letstryithtiswayinstead = pandas.concat([letstryithtiswayinstead, temp_df])
+            original_sin = pandas.concat([original_sin, temp_df])
 
         logger.info('got out of loop')
 
-    logger.info(letstryithtiswayinstead)
+    logger.info(original_sin)
     unified = None
     message = ''
-    try:
-        unified = pandas.concat(return_table)
-    except TypeError as e:
-        message = "Caught Type Error in unifying all dataframes. Excel file will not be generated.: {0}".format(e)
-        logger.error(message)
-    except Exception as e:
-        message = 'Unexpected error in unifying all study dataframes: {0}'.format(e)
-        logger.error(message)
-    if not unified.empty:
+    # try:
+    #     unified = pandas.concat(return_table)
+    # except TypeError as e:
+    #     message = "Caught Type Error in unifying all dataframes. Excel file will not be generated.: {0}".format(e)
+    #     logger.error(message)
+    # except Exception as e:
+    #     message = 'Unexpected error in unifying all study dataframes: {0}'.format(e)
+    #     logger.error(message)
+    if not original_sin.empty:
         try:
-            unified.to_excel(os.path.join(reporting_path, "stats.xlsx"))
+            # original_sin.to_excel(os.path.join(reporting_path, "stats.xlsx"))
+            original_sin.to_csv(os.path.join(reporting_path, "stats.xlsx"), sep="\t", encoding='utf-8', index=False)
             message = 'Successfully wrote report to excel file at {r_loc}. There were {missing} studies that were' \
                       ' missing sample sheets and so were not included in the report.'.format(
                 r_loc=reporting_path,
