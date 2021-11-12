@@ -170,11 +170,18 @@ def generate_file():
 
     for study in nmr_studies_test:
         study_location = study_location.replace("MTBLS1", study)
-        sample_filename = os.path.join(study_location, 's_{0}.txt'.format(study))
-        sample_df = pandas.read_csv(sample_filename, sep="\t", header=0, encoding='utf-8')
+        sample_file_list = [file for file in os.listdir(study_location) if file.startswith('s_') and file.endswith('.txt')]
+        if len(sample_file_list) is 0:
+            logger.error('Sample sheet not found. Either it is not present or does not follow the proper naming format.')
+            # skip this iteration since we cant find the samplesheet
+            continue
+
+
+        sample_df = pandas.read_csv(sample_file_list[0], sep="\t", header=0, encoding='utf-8')
 
         # Get rid of empty numerical values
         sample_df = sample_df.replace(numpy.nan, '', regex=True)
+
         # we want two of the columns - organism and organism part which are in columns 1 and 4 respectively (index 0)
         sample_df = sample_df[sample_df.columns[[1, 4]]]
         logger.info(sample_df)
