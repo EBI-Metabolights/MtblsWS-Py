@@ -167,12 +167,14 @@ def generate_file():
     # for a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v w, x, y, z, aa
     is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
         wsc.get_permissions('MTBLS1', '4ae0c06f-a5de-41a0-bcf9-7e573c63f515')
+    missing_samplesheets = 0
 
-    for study in nmr_studies_test:
+    for study in nmr_studies:
         study_location = study_location.replace("MTBLS1", study)
         sample_file_list = [file for file in os.listdir(study_location) if file.startswith('s_') and file.endswith('.txt')]
         if len(sample_file_list) is 0:
-            logger.error('Sample sheet not found. Either it is not present or does not follow the proper naming format.')
+            logger.error('Sample sheet not found. Either it is not present or does not follow the proper naming convention.')
+            missing_samplesheets += 1
             # skip this iteration since we cant find the samplesheet
             continue
 
@@ -204,6 +206,17 @@ def generate_file():
             temp_df.insert(0, 'Study', study)
             logger.info('made new temp_df and inserted study column')
             logger.info(temp_df)
+            return_table.append(temp_df)
 
         logger.info('got out of loop')
-        return {'message': 'hello'}
+        unified = pandas.concat(return_table)
+        try:
+            unified.to_excel(os.path.join(reporting_path, "stats.xlsx"))
+            message = 'Successfully wrote report to excel file at {r_loc}. There were {missing} studies that were' \
+                      ' missing sample sheets and so were not included in the report.'.format(
+                                                                                        r_loc=reporting_path,
+                                                                                        missing=missing_samplesheets)
+        except Exception as e:
+            message = 'Problem with writing report to excel file: {0}'.format(e)
+            logger.error(message)
+        return {message}
