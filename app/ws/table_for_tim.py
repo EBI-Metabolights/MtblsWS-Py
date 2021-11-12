@@ -209,14 +209,25 @@ def generate_file():
             return_table.append(temp_df)
 
         logger.info('got out of loop')
+
+    unified = None
+    message = ''
+    try:
         unified = pandas.concat(return_table)
+    except TypeError as e:
+        message = "Caught Type Error in unifying all dataframes. Excel file will not be generated.: {0}".format(e)
+        logger.error(message)
+    except Exception as e:
+        message = 'Unexpected error in unifying all study dataframes: {0}'.format(e)
+        logger.error(message)
+    if not unified.empty:
         try:
             unified.to_excel(os.path.join(reporting_path, "stats.xlsx"))
             message = 'Successfully wrote report to excel file at {r_loc}. There were {missing} studies that were' \
                       ' missing sample sheets and so were not included in the report.'.format(
-                                                                                        r_loc=reporting_path,
-                                                                                        missing=missing_samplesheets)
+                r_loc=reporting_path,
+                missing=missing_samplesheets)
         except Exception as e:
             message = 'Problem with writing report to excel file: {0}'.format(e)
             logger.error(message)
-        return {message}
+    return {message}
