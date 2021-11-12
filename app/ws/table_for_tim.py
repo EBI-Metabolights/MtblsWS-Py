@@ -2,6 +2,7 @@ import logging
 import os
 import pandas
 import numpy
+from pandas import DataFrame
 
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
@@ -169,6 +170,7 @@ def generate_file():
         wsc.get_permissions('MTBLS1', '4ae0c06f-a5de-41a0-bcf9-7e573c63f515')
     missing_samplesheets = 0
 
+    letstryithtiswayinstead = DataFrame()
     for study in nmr_studies:
         study_location = study_location.replace("MTBLS1", study)
         sample_file_list = [file for file in os.listdir(study_location) if file.startswith('s_') and file.endswith('.txt')]
@@ -207,9 +209,11 @@ def generate_file():
             logger.info('made new temp_df and inserted study column')
             logger.info(temp_df)
             return_table.append(temp_df)
+            letstryithtiswayinstead = pandas.concat([letstryithtiswayinstead, temp_df])
 
         logger.info('got out of loop')
 
+    logger.info(letstryithtiswayinstead)
     unified = None
     message = ''
     try:
