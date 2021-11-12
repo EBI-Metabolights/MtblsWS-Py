@@ -12,7 +12,7 @@ logger = logging.getLogger('wslog')
 def generate_file():
     # apologies for this. If we need this as an actual replicable, often used bit of functionality, wholesale changes
     # need to be made.
-    nmr_studies_test = ['MTBLS1']
+    nmr_studies_test = ['MTBLS56']
     nmr_studies = [
         "MTBLS1",
         "MTBLS56",
