@@ -9,3 +9,10 @@ class RequestParsers:
         parser = reqparse.RequestParser()
         parser.add_argument('username', help='The username of the user we\'re retrieving information of.')
         return parser
+
+
+    @staticmethod
+    def study_type_report_parser():
+        parser = reqparse.RequestParser()
+        parser.add_argument('studytype', help='The type of assay of the study IE NMR')
+        return parser

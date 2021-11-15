@@ -32,33 +32,29 @@ from app.ws.ontology_info import *
 from app.ws.study_files import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
-from app.ws.table_for_tim import generate_file
+from app.ws.report_generator import generate_file
+from app.ws.misc_utilities.request_parsers import RequestParsers
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
 
-class IclReports(Resource):
+class StudyAssayTypeReports(Resource):
 
     @swagger.operation(
-        summary="POST Metabolights periodic report",
-        notes='POST Metabolights periodic report',
+        summary="POST Metabolights study assay type report",
+        notes='POST Metabolights report for a specific study type. This requires a globals.json file to have previously'
+              ' been generated. To generate this globals.json file, hit the /v2/reports endpoint with query type global.'
+              ' This resource does not return the report itself. It creates a new file in the reporting directory under the name '
+              'of {study_type}.csv. Any previous reports of the same study type will be overwritten.',
 
         parameters=[
+
             {
-                "name": "query",
-                "description": "Report query",
+                "name": "studytype",
+                "description": "Which type of study IE NMR to generate the report for",
                 "required": True,
                 "allowEmptyValue": False,
-                "paramType": "query",
-                "dataType": "string",
-                "enum": ["daily_stats", "user_stats", "study_stats", "file_extension", "global"]
-            },
-            {
-                "name": "studyid",
-                "description": "None to update all studies",
-                "required": False,
-                "allowEmptyValue": True,
                 "paramType": "query",
                 "dataType": "string"
             },
@@ -96,7 +92,31 @@ class IclReports(Resource):
         ]
     )
     def post(self):
-        return {'message': generate_file()}
+
+        parser = RequestParsers.study_type_report_parser()
+        studytype = None
+
+        args = parser.parse_args(req=request)
+        studytype = args['studytype']
+        if studytype:
+            studytype = studytype.strip()
+        else:
+            abort(400)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        wsc = WsClient()
+
+        # for a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v w, x, y, z, aa
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+
+        return {'message': generate_file(study_location, studytype)}
 
 class reports(Resource):
 
