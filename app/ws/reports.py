@@ -116,7 +116,7 @@ class StudyAssayTypeReports(Resource):
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
 
-        return {'message': generate_file(study_location, studytype)}
+        return jsonify({'message': generate_file(study_location, studytype)})
 
 class reports(Resource):
 

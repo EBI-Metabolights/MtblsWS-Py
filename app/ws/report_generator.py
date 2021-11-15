@@ -68,7 +68,7 @@ def generate_file(study_location: str, studytype: str):
 
         # we want two of the columns - organism and organism part which are in columns 1 and 4 respectively (index 0)
         sample_df = sample_df[sample_df.columns[[1, 4]]]
-        logger.info(sample_df)
+        # logger.info(sample_df)
 
         assays_list = [file for file in os.listdir(study_location) if file.startswith('a_') and file.endswith('.txt')]
 
@@ -83,14 +83,13 @@ def generate_file(study_location: str, studytype: str):
             try:
                 assay_df = pandas.read_csv(os.path.join(study_location, assay), sep="\t", header=0, encoding="utf-8")
                 assay_df = assay_df.replace(numpy.nan, '', regex=True)
+                temp_df = pandas.concat([sample_df, assay_df], axis=1)
+                temp_df.insert(0, 'Study', study)
             except Exception as e:
                 # not sure what exception to try and catch specifically but seems like a potential point of failure
                 logger.error('Error opening assay file {0}: {1}'.format(assay, e))
                 assaysheets_causing_errors.append(assay)
                 continue
-
-            temp_df = pandas.concat([sample_df, assay_df], axis=1)
-            temp_df.insert(0, 'Study', study)
 
             try:
                 #return_table.append(temp_df)
@@ -116,7 +115,7 @@ def generate_file(study_location: str, studytype: str):
     if not original_sin.empty:
         try:
             # original_sin.to_excel(os.path.join(reporting_path, "stats.xlsx"))
-            original_sin.to_csv(os.path.join(reporting_path, "{0}_stats.xlsx".format(studytype)), sep="\t", encoding='utf-8', index=False)
+            original_sin.to_csv(os.path.join(reporting_path, "{0}_stats.csv".format(studytype)), sep="\t", encoding='utf-8', index=False)
             message = 'Successfully wrote report to excel file at {0}. There were {1} studies that were' \
                       ' missing sample sheets and so were not included in the report. There were {2} assay sheets which caused errors when processed'.format(
                             reporting_path,
