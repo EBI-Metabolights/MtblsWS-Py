@@ -112,7 +112,6 @@ class StudyAssayTypeReports(Resource):
 
         wsc = WsClient()
 
-        # for a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v w, x, y, z, aa
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
 

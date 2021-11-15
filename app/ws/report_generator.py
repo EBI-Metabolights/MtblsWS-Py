@@ -11,7 +11,7 @@ from app.ws.utils import readDatafromFile
 logger = logging.getLogger('wslog')
 
 
-def generate_file(study_location: str, studytype: str):
+def generate_file(original_study_location: str, studytype: str):
     """
     Generates a report for a given study assay type IE NMR. It pulls all studies that are recorded as being of that type
     (referring to the globals.json report file), and iterates over the list, creating a dataframe for each study
@@ -35,7 +35,6 @@ def generate_file(study_location: str, studytype: str):
     include in our reporting.
     :param studytype: The kind of study assay to report on IE NMR.
     """
-
     reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
     json_data = readDatafromFile(reporting_path + 'global.json')
     specified_study_data = []
@@ -48,12 +47,12 @@ def generate_file(study_location: str, studytype: str):
 
     assaysheets_causing_errors = []
     missing_samplesheets = 0
-    return_table = []
     original_sin = DataFrame()
     logger.info(specified_study_data)
+
     for study in specified_study_data:
-        logger.info(study)
-        study_location = study_location.replace("MTBLS1", study)
+        study_location = original_study_location.replace("MTBLS1", study)
+        logger.info(study_location)
         sample_file_list = [file for file in os.listdir(study_location) if file.startswith('s_') and file.endswith('.txt')]
         if len(sample_file_list) is 0:
             logger.error('Sample sheet not found. Either it is not present or does not follow the proper naming convention.')
@@ -85,15 +84,9 @@ def generate_file(study_location: str, studytype: str):
                 assay_df = assay_df.replace(numpy.nan, '', regex=True)
                 temp_df = pandas.concat([sample_df, assay_df], axis=1)
                 temp_df.insert(0, 'Study', study)
-            except Exception as e:
-                # not sure what exception to try and catch specifically but seems like a potential point of failure
-                logger.error('Error opening assay file {0}: {1}'.format(assay, e))
-                assaysheets_causing_errors.append(assay)
-                continue
 
-            try:
-                #return_table.append(temp_df)
                 original_sin = pandas.concat([original_sin, temp_df])
+
             except Exception as e:
                 logger.error('Error concatenating assay {0} into larger dataframe: {1}'.format(assay, e))
                 assaysheets_causing_errors.append(assay)
@@ -102,25 +95,19 @@ def generate_file(study_location: str, studytype: str):
         logger.info('got out of loop')
 
     logger.info(original_sin)
-    unified = None
     message = ''
-    # try:
-    #     unified = pandas.concat(return_table)
-    # except TypeError as e:
-    #     message = "Caught Type Error in unifying all dataframes. Excel file will not be generated.: {0}".format(e)
-    #     logger.error(message)
-    # except Exception as e:
-    #     message = 'Unexpected error in unifying all study dataframes: {0}'.format(e)
-    #     logger.error(message)
+
     if not original_sin.empty:
         try:
             # original_sin.to_excel(os.path.join(reporting_path, "stats.xlsx"))
-            original_sin.to_csv(os.path.join(reporting_path, "{0}_stats.csv".format(studytype)), sep="\t", encoding='utf-8', index=False)
-            message = 'Successfully wrote report to excel file at {0}. There were {1} studies that were' \
-                      ' missing sample sheets and so were not included in the report. There were {2} assay sheets which caused errors when processed'.format(
-                            reporting_path,
-                            missing_samplesheets,
-                            str(len(assaysheets_causing_errors)))
+            original_sin.to_csv(os.path.join(reporting_path, "{0}.tsv".format(studytype)), sep="\t", encoding='utf-8', index=False)
+            message = 'Successfully wrote report to excel file at {path}{file}.tsv . There were {bad_samp} studies that ' \
+                      'were missing sample sheets and so were not included in the report. There were {bad_assay} assay'\
+                      ' sheets which caused errors when processed'.format(
+                            path=reporting_path,
+                            file=studytype,
+                            bad_samp=missing_samplesheets,
+                            bad_assay=str(len(assaysheets_causing_errors)))
         except Exception as e:
             message = 'Problem with writing report to csv file: {0}'.format(e)
             logger.error(message)
