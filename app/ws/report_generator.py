@@ -36,15 +36,8 @@ def generate_file(original_study_location: str, studytype: str):
     :param studytype: The kind of study assay to report on IE NMR.
     """
     reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
-    json_data = readDatafromFile(reporting_path + 'global.json')
-    specified_study_data = []
 
-    try:
-        specified_study_data = json_data['data']['techniques'][studytype]
-    except KeyError as e:
-        logger.error('The queried study type {type} is invalid. Check spelling and punctuation including hypens: {e}'.format(type=studytype, e=e))
-        abort(400)
-
+    specified_study_data = get_data(studytype, reporting_path)
     assaysheets_causing_errors = []
     missing_samplesheets = 0
     original_sin = DataFrame()
@@ -77,6 +70,8 @@ def generate_file(original_study_location: str, studytype: str):
         if len(assays_list) > 1:
             assays_list = [file for file in assays_list if studytype in file.upper()]
         logger.info(assays_list)
+
+        assays_list = sort_assays(study_location, studytype)
         for assay in assays_list:
             logger.info('hit interior loop')
             try:
@@ -109,11 +104,67 @@ def generate_file(original_study_location: str, studytype: str):
                             bad_samp=missing_samplesheets,
                             bad_assay=str(len(assaysheets_causing_errors)))
         except Exception as e:
-            message = 'Problem with writing report to csv file: {0}'.format(e)
-            logger.error(message)
+            msg = 'Problem with writing report to csv file: {0}'.format(e)
+            logger.error(msg)
+            abort(500, msg)
     else:
-        logger.error('Unexpected error in concatenating dataframes - end result is empty. Check the globals.json file '
-                     'exists and if so, has been recently generated. Check the spelling of the study type given as a '
-                     'parameter')
-        abort(500)
+        msg = 'Unexpected error in concatenating dataframes - end result is empty. Check the globals.json file ' \
+              'exists and if so, has been recently generated. Check the spelling of the study type given as a '\
+              'parameter'
+        logger.error(msg)
+        abort(500, msg)
     return message
+
+
+def sort_assays(study_location, studytype, include_all=True):
+    """
+    Sort through which assays we want to include in the report. It defaults to all assays in a given study folder,
+    but if include_all is set to false it attempts to try and detect which assays are relevant via the filename.
+
+    :param study_location: path on the server of the study in question.
+    :param studytype: Used to differentiate assays if include_all is false.
+    :param include_all: Flag that decides whether to include all assay files in a study folder, defaults to True.
+    """
+    filtered_assays_list = []
+    assays_list = [file for file in os.listdir(study_location) if file.startswith('a_') and file.endswith('.txt')]
+    if include_all:
+        return assays_list
+    # if we have only one assay, we already know this is an NMR study, do the assay must be an nmr one. If we have
+    # more than one assay file, at least one but maybe more of those will be NMR assays, so we need to cull the
+    # other assays as they would pollute the resulting table.
+    if len(assays_list) > 1:
+        filtered_assays_list = [file for file in assays_list if studytype in file.upper()]
+
+    if len(filtered_assays_list) == 0:
+        # it might be the case that the assay sheet doesnt include the name of the detection method
+        return assays_list
+
+    return filtered_assays_list
+
+
+def get_data(studytype, reporting_path):
+    """
+    Pull out the Study accession numbers from the globals.json file. We have to handle LC-MS data differently as it is
+    not all grouped together like say NMR. We need to check which keys in the techniques section are LCMS relevant, and
+    then use the keys to pull out the accession numbers we want.
+
+    :param studytype: Type of detection method we want accession numbers for.
+    :param reporting_path: Where the global.json report file can be found.
+    :return: List of relevant accession numbers.
+    """
+    logger.info(studytype)
+    json_data = readDatafromFile(reporting_path + 'global.json')
+    specified_study_data = []
+    if str(studytype) == 'LCMS':
+        keys = [key for key in json_data['data']['techniques'].keys() if key.count('LC') > 0]
+        for key in keys:
+            specified_study_data.extend(json_data['data']['techniques'][key])
+    else:
+        try:
+            specified_study_data = json_data['data']['techniques'][studytype]
+
+        except KeyError as e:
+            msg = 'The queried study type {type} is invalid. Check spelling and punctuation including hyphens: {e}'.format(type=studytype, e=e)
+            logger.error(msg)
+            abort(400, msg)
+    return specified_study_data
