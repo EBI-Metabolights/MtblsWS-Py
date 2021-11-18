@@ -53,13 +53,18 @@ def generate_file(original_study_location: str, studytype: str):
             # skip this iteration since we cant find the samplesheet
             continue
 
-        sample_df = pandas.read_csv(os.path.join(study_location, sample_file_list[0]), sep="\t", header=0, encoding='utf-8')
+        try:
+            sample_df = pandas.read_csv(os.path.join(study_location, sample_file_list[0]), sep="\t", header=0, encoding='utf-8')
 
-        # Get rid of empty numerical values
-        sample_df = sample_df.replace(numpy.nan, '', regex=True)
+            # Get rid of empty numerical values
+            sample_df = sample_df.replace(numpy.nan, '', regex=True)
 
-        # we want two of the columns - organism and organism part which are in columns 1 and 4 respectively (index 0)
-        sample_df = sample_df[sample_df.columns[[1, 4]]]
+            # we want two of the columns - organism and organism part which are in columns 1 and 4 respectively (index 0)
+            sample_df = sample_df[sample_df.columns[[1, 4]]]
+        except UnicodeDecodeError as e:
+            logger.error('UnicodeDecodeError when trying to open sample sheet. Study {0} will not be included in report: {1}'.format(study, e))
+            missing_samplesheets += 1
+            continue
 
         assays_list = sort_assays(study_location, studytype)
         for assay in assays_list:
