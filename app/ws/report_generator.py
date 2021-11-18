@@ -54,7 +54,7 @@ def generate_file(original_study_location: str, studytype: str):
             continue
 
         try:
-            sample_df = pandas.read_csv(os.path.join(study_location, sample_file_list[0]), sep="\t", header=0, encoding='utf-8')
+            sample_df = pandas.read_csv(os.path.join(study_location, sample_file_list[0]), sep="\t", header=0, encoding='unicode_escape')
 
             # Get rid of empty numerical values
             sample_df = sample_df.replace(numpy.nan, '', regex=True)
