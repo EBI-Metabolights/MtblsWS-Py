@@ -60,16 +60,6 @@ def generate_file(original_study_location: str, studytype: str):
 
         # we want two of the columns - organism and organism part which are in columns 1 and 4 respectively (index 0)
         sample_df = sample_df[sample_df.columns[[1, 4]]]
-        # logger.info(sample_df)
-
-        assays_list = [file for file in os.listdir(study_location) if file.startswith('a_') and file.endswith('.txt')]
-
-        # if we have only one assay, we already know this is an NMR study, do the assay must be an nmr one. If we have
-        # more than one assay file, at least one but maybe more of those will be NMR assays, so we need to cull the
-        # other assays as they would pollute the resulting table.
-        if len(assays_list) > 1:
-            assays_list = [file for file in assays_list if studytype in file.upper()]
-        logger.info(assays_list)
 
         assays_list = sort_assays(study_location, studytype)
         for assay in assays_list:
