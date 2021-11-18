@@ -115,16 +115,8 @@ class StudyAssayTypeReports(Resource):
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
-        #if is_curator is False:
-        #    abort(401, "only curators are permitted to generate reports.")
-        threading.Thread(
-            target=generate_file,
-            args=(study_location, studytype),
-            daemon=True
-        ).start()
-        return {"success": "A thread has been initialised to generate a report for {0} data. The report can be found "
-                           "in the reporting directory. ".format(studytype)}
-        #return jsonify({'message': generate_file(study_location, studytype)})
+
+        return jsonify({'message': generate_file(study_location, studytype)})
 
 class reports(Resource):
 
