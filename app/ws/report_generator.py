@@ -97,8 +97,8 @@ def build_sheet(original_study_location, studytype, reporting_path):
                                           encoding='unicode_escape')
 
             # Get rid of empty numerical values
-            sample_temp = sample_df.replace(numpy.nan, '', regex=True)
-            #sample_temp.insert(0, 'Study', study)
+            sample_temp = sample_temp.replace(numpy.nan, '', regex=True)
+            sample_temp.insert(0, 'Study', study)
 
             # we want to remove any columns we don't want
             sample_temp = DataFrameUtils.sample_cleanup(sample_temp)
@@ -123,8 +123,13 @@ def build_sheet(original_study_location, studytype, reporting_path):
                 logger.error('Error appending assay {0} into larger dataframe: {1}'.format(assay, e))
                 assaysheets_causing_errors.append(assay)
                 continue
+    try:
+        result = pandas.merge(sample_df, assay_df, on=['Study', 'Sample.Name'])
+        return result, missing_samplesheets, assaysheets_causing_errors
+    except Exception as e:
+        logger.error(e)
+        abort(500, e)
 
-    return pandas.merge(sample_df, assay_df, on=['Study', 'Sample.Name']), missing_samplesheets, assaysheets_causing_errors
 
 def cleanup(studytype, assay_dataframe):
     """
