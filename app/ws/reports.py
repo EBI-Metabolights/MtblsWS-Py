@@ -586,9 +586,6 @@ class CrossReferencePublicationInformation(Resource):
         return 200, msg
 
 
-
-
-
 def get_file_extensions(id, path):
     study_ext = {}
     study_ext['list'] = []
