@@ -32,6 +32,7 @@ from app.ws.ontology_info import *
 from app.ws.study_files import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
+from ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -574,10 +575,18 @@ class CrossReferencePublicationInformation(Resource):
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
-        if not write_access:
+        if not is_curator:
             abort(403)
         priv_list = wsc.get_private_studies()
-        pass
+
+        msg = EuropePmcReportBuilder(priv_list, user_token, wsc, iac).build()
+        if msg.count('Problem') is 1:
+            abort(500, msg)
+
+        return 200, msg
+
+
+
 
 
 def get_file_extensions(id, path):
