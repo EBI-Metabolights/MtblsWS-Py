@@ -148,6 +148,6 @@ class EuropePmcReportBuilder:
     @staticmethod
     def assess_if_trangressed(status, europe_pmc_publication) -> bool:
         """Check whether the journal has been published despite study not being public."""
-        journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%d %b %Y')
+        journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%b-%d')
         now = datetime.now()
         return status.upper() is not 'PUBLIC' and now > journal_publication_date
