@@ -7,8 +7,8 @@ from fuzzywuzzy import fuzz
 from flask import current_app as app
 from typing import List
 
-from ws.isaApiClient import IsaApiClient
-from ws.mtblsWSclient import WsClient
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.mtblsWSclient import WsClient
 
 logger = logging.getLogger('wslog')
 
@@ -20,7 +20,7 @@ class EuropePmcReportBuilder:
 
     def __init__(self, study_list: List[str], user_token: str, wsc: WsClient, iac: IsaApiClient):
         """Init method
-        :param priv_list: A list of studies to iterate over, throwing each at europePMC
+        :param priv_list: A list of studies to iterate over, throwing each at europePMC.
         :param user_token: User token for use with javawebservice, must be curator or will have failed prior.
         :param wsc: WsClient that interfaces with the java webservice.
         :param iac: IsaApiClient, used to get study information.
