@@ -549,9 +549,9 @@ class reports(Resource):
 class CrossReferencePublicationInformation(Resource):
 
     @swagger.operation(
-        summary="GET Metabolights periodic report",
+        summary="GET Metabolights cross referenced with europepmc report",
         notes='GET report that checks the publication information provided to Metabolights by our submitters against '
-              'EuropePMC, highlighting any discrepancies. For instance, we may have a study',
+              'EuropePMC, highlighting any discrepancies. ',
 
         parameters=[
             {
@@ -577,7 +577,7 @@ class CrossReferencePublicationInformation(Resource):
             wsc.get_permissions('MTBLS1', user_token)
         if not is_curator:
             abort(403)
-        priv_list = wsc.get_private_studies()
+        priv_list = wsc.get_private_studies()['content']
 
         msg = EuropePmcReportBuilder(priv_list, user_token, wsc, iac).build()
         if msg.count('Problem') is 1:
