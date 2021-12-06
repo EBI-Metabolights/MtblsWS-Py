@@ -67,7 +67,7 @@ class EuropePmcReportBuilder:
                 # here we just search the article title rather than the specific publication
                 europepmc_study_search_results = session.get(europe_pmc_url, params=params).json()
                 logger.info(europepmc_study_search_results['resultList'])
-                if len(europepmc_study_search_results['resultList']) > 0:
+                if len(europepmc_study_search_results['resultList']['result']) > 0:
                     # fuzzy match the titles as there can be slight differences
                     if fuzz.ratio(title, europepmc_study_search_results['resultList']['result'][0]['title']) > 80:
                         europe_pmc_publication = europepmc_study_search_results['resultList']['result'][0][
@@ -148,6 +148,6 @@ class EuropePmcReportBuilder:
     @staticmethod
     def assess_if_trangressed(status, europe_pmc_publication) -> bool:
         """Check whether the journal has been published despite study not being public."""
-        journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%d %b %Y')
+        journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
         now = datetime.now()
         return status.upper() is not 'PUBLIC' and now > journal_publication_date
