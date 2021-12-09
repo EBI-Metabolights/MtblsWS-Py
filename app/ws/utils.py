@@ -178,10 +178,7 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                         else:  # elif not os.path.exists(destination):
                             logger.info(source + ' is not a directory')
                             try:
-                                if os.path.isfile(destination):
-                                    sync(source, destination, 'sync', purge=False,logger=logger)
-                                else:
-                                    shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
+                                shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
                                 logger.info('Copied file %s to %s', source, destination)
                             except OSError as e:
                                 logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
