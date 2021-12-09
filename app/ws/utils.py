@@ -180,12 +180,12 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                             try:
                                 study_file_time = os.path.getmtime(source)
                                 upload_file_time = os.path.getmtime(destination)
-                                logger.info('study_file_time  :', study_file_time)
-                                logger.info('upload_file_time  :', upload_file_time)
+                                logger.info('study_file_time  :' + study_file_time)
+                                logger.info('upload_file_time  :'+  upload_file_time)
                                 if upload_file_time > study_file_time:
-                                    print('Do sync', '\n')
+                                    logger.info('Do sync')
                                 else:
-                                    print('Do not sync ', '\n')
+                                    logger.info('Do not sync ')
                                 shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
                                 logger.info('Copied file %s to %s', source, destination)
                             except OSError as e:
