@@ -178,16 +178,19 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                         else:  # elif not os.path.exists(destination):
                             logger.info(source + ' is not a directory')
                             try:
-                                study_file_time = os.path.getmtime(source)
-                                upload_file_time = os.path.getmtime(destination)
-                                logger.info('study_file_time  :' + study_file_time)
-                                logger.info('upload_file_time  :'+  upload_file_time)
-                                if upload_file_time > study_file_time:
-                                    logger.info('Do sync')
+                                if os.path.isfile(destination):
+                                    upload_file_time = os.path.getmtime(source)
+                                    study_file_time = os.path.getmtime(destination)
+                                    logger.info(upload_file_time)
+                                    logger.info(study_file_time)
+                                    if upload_file_time > study_file_time:
+                                        logger.info('Do sync')
+                                        shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
+                                        logger.info('Copied file %s to %s', source, destination)
+                                    else:
+                                        logger.info('Do not sync ')
                                 else:
-                                    logger.info('Do not sync ')
-                                shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
-                                logger.info('Copied file %s to %s', source, destination)
+                                    shutil.copy2(source, destination)
                             except OSError as e:
                                 logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
                                              str(e))
