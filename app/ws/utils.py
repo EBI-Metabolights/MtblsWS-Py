@@ -188,7 +188,7 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                         shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
                                         logger.info('Copied file %s to %s', source, destination)
                                     else:
-                                        logger.info('Do not sync ')
+                                        logger.info('Destination file with later timestamp, So not copying')
                                 else:
                                     shutil.copy2(source, destination)
                             except OSError as e:
