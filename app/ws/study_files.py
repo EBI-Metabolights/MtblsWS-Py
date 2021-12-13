@@ -1456,3 +1456,80 @@ class FileList(Resource):
 
         return jsonify({'files': files_list,
                         'directories': dir_list})
+
+
+class DeleteAsperaFiles(Resource):
+    @swagger.operation(
+        summary="Delete aspera incomplete transfer files such as *.aspx , *.aspera-ckpt, *.partial from study location and upload directory.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study ID",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def delete(self, study_id):
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if not user_token:
+            abort(404)
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        # Need to check that the user is actually an active user, ie the user_token exists
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions(study_id, user_token)
+        if not is_curator:
+            abort(401)
+
+        logger.info('Deleting aspera files from study ' + study_id)
+        upload_dir = app.config.get(
+            'MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
+        logger.info("Deleting  files from dirs " + upload_dir + " & " + study_location)
+        try:
+            if os.path.exists(upload_dir):
+                delete_asper_files(upload_dir)
+            delete_asper_files(study_location)
+            logger.info('All aspera files deleted successfully !')
+            return {'Success': 'Deleted files successfully !'}
+
+        except Exception as e:
+            logger.error('Other error! Can not delete files ', str(e))
+            return {'Error': 'Deleting aspera files Failed!'}

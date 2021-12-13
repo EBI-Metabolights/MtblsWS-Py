@@ -200,6 +200,29 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
         logger.error(str(e))
         raise
 
+def scandir_get_aspera(dir):
+    subfolders, files = [], []
+
+    for f in os.scandir(dir):
+        if f.is_dir():
+            subfolders.append(f.path)
+        if f.is_file():
+            if os.path.splitext(f.name)[1].lower() in ('.partial', '.aspera-ckpt', '.aspx'):
+                files.append(f.path)
+
+    for dir in list(subfolders):
+        sf, f = scandir_get_aspera(dir)
+        subfolders.extend(sf)
+        files.extend(f)
+    return subfolders, files
+
+def delete_asper_files(directory):
+    subs, files = scandir_get_aspera(directory)
+    for file_to_delete in files:
+        print("File to delete  : " + file_to_delete)
+        if os.path.exists(file_to_delete):  # First, does the file/folder exist?
+            if os.path.isfile(file_to_delete):  # is it a file?
+                os.remove(file_to_delete)
 
 def copy_files_and_folders(source, destination, include_raw_data=True, include_investigation_file=True):
     """
