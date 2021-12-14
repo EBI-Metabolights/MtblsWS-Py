@@ -3,6 +3,8 @@ from datetime import datetime
 
 import pandas
 import requests
+import xmltodict
+from cascadict import CascaDict
 from fuzzywuzzy import fuzz
 from flask import current_app as app
 from typing import List
@@ -29,6 +31,20 @@ class EuropePmcReportBuilder:
         self.user_token = user_token
         self.wsc = wsc
         self.iac = iac
+        self.session = requests.Session()
+        self.europe_pmc_url = 'https://www.ebi.ac.uk/europepmc/webservices/rest/search'
+        self.headers_register = {
+            'article': {'Accept': 'application/json'},
+            'citation_ref': {'Accept': 'application/xml'}
+        }
+        self.base_params = CascaDict({
+            'resultType': 'core',
+            'format': 'JSON',
+            'cursorMark': '*',
+            'pageSize': '5',
+            'fromSearchPost': False,
+            'query': ''
+        })
 
     def build(self) -> str:
         """
@@ -37,21 +53,10 @@ class EuropePmcReportBuilder:
         study title as the query term. If the result is correct, a new row is created with both metabolights and
         europepmc information. If not, a row with just metabolights information is created.
         """
-        session = requests.Session()
-        europe_pmc_url = 'https://www.ebi.ac.uk/europepmc/webservices/rest/search'
-        headers = {'Accept': 'application/json'}
-        params = {
-            'resultType': 'core',
-            'cursorMark': '*',
-            'pageSize': '5',
-            'fromSearchPost': False,
-            'query': ''
-        }
-        session.headers.update(headers)
 
         list_of_result_dicts = []
         for study_id in self.study_list:
-
+            self.session.headers.update(self.headers_register['article'])
             # kind of unsavoury to do this iteratively but saves me writing another method that does much the same thing
             is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = \
@@ -62,52 +67,58 @@ class EuropePmcReportBuilder:
 
             title = isa_study.title
             publications = isa_study.publications
-            for publication in publications:
-                params['query'] = title
-                # here we just search the article title rather than the specific publication
-                europepmc_study_search_results = session.get(europe_pmc_url, params=params).json()
-                logger.info(europepmc_study_search_results['resultList'])
-                if len(europepmc_study_search_results['resultList']['result']) > 0:
+            fresh_params = self.base_params.cascade({'query': title, 'format': 'JSON'})
+            # params['query'] = title
+            # here we just search the article title rather than the specific publication
+            europepmc_study_search_results = self.session.get(self.europe_pmc_url, params=fresh_params).json()
+            logger.info(europepmc_study_search_results['resultList'])
+            culled_results = [
+                result for result
+                in europepmc_study_search_results['resultList']['result']
+                if fuzz.ratio(result['title'], title) > 80
+            ]
+            # if fuzz.ratio(title, europepmc_study_search_results['resultList']['result'][0]['title']) > 80:
+            if len(culled_results) > 0:
+                for publication in publications:
                     # fuzzy match the titles as there can be slight differences
-                    if fuzz.ratio(title, europepmc_study_search_results['resultList']['result'][0]['title']) > 80:
-                        europe_pmc_publication = europepmc_study_search_results['resultList']['result'][0][
-                            'journalInfo']
+
+                    result = self.has_mapping(publication, culled_results)
+                    if result:
                         temp_dict = {
-                            'Identifier': study_id,
-                            'Title': title,
-                            'Submission Date': submission_date,
-                            'Status': study_status,
-                            'Release Date': release_date,
-                            'Pubmed ID': publication.pubmed_id,
-                            'DOI': publication.doi,
-                            'Author List': publication.author_list,
-                            'Publication Date': europe_pmc_publication['printPublicationDate'],
-                            'Citing Reference': '',
-                            'Publication in MTBLS': publication.title,
-                            'Publication in EuropePMC': europe_pmc_publication['journal']['title'],
-                            'Publication the same?': str(
-                                fuzz.ratio(publication.title, europe_pmc_publication['journal']['title']) > 80),
-                            'Released before curation finished?': self.assess_if_trangressed(study_status,
-                                                                                        europe_pmc_publication)
-                        }
+                                'Identifier': study_id,
+                                'Title': title,
+                                'Submission Date': submission_date,
+                                'Status': study_status,
+                                'Release Date': release_date,
+                                'Pubmed ID': publication.pubmed_id,
+                                'DOI': publication.doi,
+                                'Author List': publication.author_list,
+                                'Publication Date': result['journalInfo']['printPublicationDate'],
+                                'Citation Reference': '',
+                                'Publication in MTBLS': publication.title,
+                                'Publication in EuropePMC': result['journalInfo']['journal']['title'],
+                                'Publication the same?': True,
+                                'Released before curated?': self.assess_if_trangressed(
+                                    study_status, result['journalInfo']['journal'])
+                            }
 
                     else:
                         temp_dict = {
-                            'Identifier': study_id,
-                            'Title': title,
-                            'Submission Date': submission_date,
-                            'Status': study_status,
-                            'Release Date': release_date,
-                            'Pubmed ID': publication.pubmed_id,
-                            'DOI': publication.doi,
-                            'Author List': publication.author_list,
-                            'Publication Date': '',
-                            'Citing Reference': '',
-                            'Publication in MTBLS': publication.title,
-                            'Publication in EuropePMC': '',
-                            'Publication the same?': '',
-                            'Released before curation finished?': ''
-                        }
+                                'Identifier': study_id,
+                                'Title': title,
+                                'Submission Date': submission_date,
+                                'Status': study_status,
+                                'Release Date': release_date,
+                                'Pubmed ID': publication.pubmed_id,
+                                'DOI': publication.doi,
+                                'Author List': publication.author_list,
+                                'Publication Date': '',
+                                'Citing Reference': '',
+                                'Publication in MTBLS': publication.title,
+                                'Publication in EuropePMC': 'N/A',
+                                'Publication the same?': False,
+                                'Released before curation finished?': ''
+                            }
                     list_of_result_dicts.append(temp_dict)
             if len(publications) is 0:
                 temp_dict = {
@@ -146,8 +157,32 @@ class EuropePmcReportBuilder:
         return msg
 
     @staticmethod
+    def has_mapping(publication, resultset):
+        """Check whether a given publication has a match in the europePMC resultset"""
+        for result in resultset:
+            if result['source'] is 'PPR': #preprint so doesnt have an actual title.
+                continue
+            else:
+                if fuzz.ratio(result['journalInfo']['journal']['title'], publication.title) > 90:
+                    return result
+        return None
+
+    @staticmethod
     def assess_if_trangressed(status, europe_pmc_publication) -> bool:
         """Check whether the journal has been published despite study not being public."""
         journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
         now = datetime.now()
         return status.upper() is not 'PUBLIC' and now > journal_publication_date
+
+    def get_citation_reference(self, title) -> str:
+        """Cascade a new param dict to use in the request and update the headers to XML as the search endpoint on the
+        EuropePMC API only returns the bibliographicCitation information if you specify the DC format. Turn the
+        resulting XML string into a dict, and then return the citation from that dict.
+
+        :param title: Article title to get citation for
+        :return: Bibliographic citation as string."""
+        fresh_params = self.base_params.cascade({'format': 'DC', 'query': title})
+        self.session.headers.update(self.headers_register['citation_ref'])
+        response_xml_dict = xmltodict.parse(self.session.get(self.europe_pmc_url, params=fresh_params).text)
+
+        return response_xml_dict['responseWrapper']['rdf:RDF']['rdf:Description']['dcterms:bibliographicCitation'][0]
