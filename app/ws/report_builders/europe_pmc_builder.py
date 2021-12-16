@@ -22,6 +22,9 @@ class EuropePmcReportBuilder:
 
     def __init__(self, study_list: List[str], user_token: str, wsc: WsClient, iac: IsaApiClient):
         """Init method
+        Sets up a headers register (as we are hitting the same endpoint twice, but with different formats) and a set of
+        base parameters for requests to the europePMC API.
+
         :param priv_list: A list of studies to iterate over, throwing each at europePMC.
         :param user_token: User token for use with javawebservice, must be curator or will have failed prior.
         :param wsc: WsClient that interfaces with the java webservice.
