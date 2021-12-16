@@ -48,105 +48,22 @@ class EuropePmcReportBuilder:
 
     def build(self) -> str:
         """
-        Initialise a new session object as we will be pinging the europeepmc API a lot. Iterates over the list of study
-        ID's, gets the study information on our end via the isa api client, and then pings the europepmc api with the
-        study title as the query term. If the result is correct, a new row is created with both metabolights and
-        europepmc information. If not, a row with just metabolights information is created.
+        Get a list of result dicts (each of which represent a row) and try to build a dataframe out of them. If
+        successful, save that dataframe as a csv file to our reporting directory, and return a message indicating
+        success. If not successful, log the error, and return a message indicating failure.
+
+        :return: A message as a string indicating success or failure.
         """
-
-        list_of_result_dicts = []
-        for study_id in self.study_list:
-            self.session.headers.update(self.headers_register['article'])
-            # kind of unsavoury to do this iteratively but saves me writing another method that does much the same thing
-            is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = \
-                self.wsc.get_permissions(study_id, self.user_token)
-            isa_study, isa_inv, std_path = self.iac.get_isa_study(study_id, self.user_token,
-                                                                  skip_load_tables=True,
-                                                                  study_location=study_location)
-
-            title = isa_study.title
-            publications = isa_study.publications
-            fresh_params = self.base_params.cascade({'query': title, 'format': 'JSON'})
-            # params['query'] = title
-            # here we just search the article title rather than the specific publication
-            europepmc_study_search_results = self.session.get(self.europe_pmc_url, params=fresh_params).json()
-            logger.info(europepmc_study_search_results['resultList'])
-            culled_results = [
-                result for result
-                in europepmc_study_search_results['resultList']['result']
-                if fuzz.ratio(result['title'], title) > 80
-            ]
-            # if fuzz.ratio(title, europepmc_study_search_results['resultList']['result'][0]['title']) > 80:
-            if len(culled_results) > 0:
-                for publication in publications:
-                    # fuzzy match the titles as there can be slight differences
-
-                    result = self.has_mapping(publication, culled_results)
-                    if result:
-                        temp_dict = {
-                                'Identifier': study_id,
-                                'Title': title,
-                                'Submission Date': submission_date,
-                                'Status': study_status,
-                                'Release Date': release_date,
-                                'Pubmed ID': publication.pubmed_id,
-                                'DOI': publication.doi,
-                                'Author List': publication.author_list,
-                                'Publication Date': result['journalInfo']['printPublicationDate'],
-                                'Citation Reference': '',
-                                'Publication in MTBLS': publication.title,
-                                'Publication in EuropePMC': result['journalInfo']['journal']['title'],
-                                'Publication the same?': True,
-                                'Released before curated?': self.assess_if_trangressed(
-                                    study_status, result['journalInfo']['journal'])
-                            }
-
-                    else:
-                        temp_dict = {
-                                'Identifier': study_id,
-                                'Title': title,
-                                'Submission Date': submission_date,
-                                'Status': study_status,
-                                'Release Date': release_date,
-                                'Pubmed ID': publication.pubmed_id,
-                                'DOI': publication.doi,
-                                'Author List': publication.author_list,
-                                'Publication Date': '',
-                                'Citing Reference': '',
-                                'Publication in MTBLS': publication.title,
-                                'Publication in EuropePMC': 'N/A',
-                                'Publication the same?': False,
-                                'Released before curation finished?': ''
-                            }
-                    list_of_result_dicts.append(temp_dict)
-            if len(publications) is 0:
-                temp_dict = {
-                    'Identifier': study_id,
-                    'Title': title,
-                    'Submission Date': submission_date,
-                    'Status': study_status,
-                    'Release Date': release_date,
-                    'Pubmed ID': '',
-                    'DOI': '',
-                    'Author List': '',
-                    'Publication Date': '',
-                    'Citing Reference': '',
-                    'Publication in MTBLS': '',
-                    'Publication in EuropePMC': '',
-                    'Publication the same?': '',
-                    'Released before curation finished?': ''
-                }
-                list_of_result_dicts.append(temp_dict)
+        list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
 
         try:
             path = app.config.get('MTBLS_PRIVATE_FTP_ROOT') + app.config.get('REPORTING PATH') + 'global/europepmc.csv'
             report_dataframe = pandas.DataFrame(list_of_result_dicts,
                                                 columns=['Identifier', 'Title', 'Submission Date',
                                                          'Status', 'Release Date', 'PubmedID', 'DOI', 'Author List',
-                                                         'Publication Date', 'Citing Reference', 'Publication in MTBLS',
-                                                         'Publication in EuropePMC',
-                                                         'Released before curation finished?']
+                                                         'Publication Date', 'Citation Reference',
+                                                         'Publication in MTBLS', 'Publication in EuropePMC',
+                                                         'Released before curated?']
                                                 )
             report_dataframe.to_csv(path, sep='\t')
             msg = 'EuropePMC report successfully saved to {0}'.format(path)
@@ -155,6 +72,79 @@ class EuropePmcReportBuilder:
             logger.error(msg)
 
         return msg
+
+    def process(self, study_id):
+        """
+        Process an individual study_id from the study list. First ping our java webservice to get some basic information
+        about the study. Then we ping the IsaApi client so that we can get title and publication information.
+        We then iterate over the publications from the IAC, pinging europePMC for each one, creating a dict for each.
+
+        :param study_id: current study_id to process.
+        :return: List of Dicts that each represent a row in the generated report.
+        """
+        row_dicts = []
+        self.session.headers.update(self.headers_register['article'])
+        # kind of unsavoury to do this iteratively but saves me writing another method that does much the same thing
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = self.wsc.get_permissions(study_id, self.user_token)
+
+        isa_study, isa_inv, std_path = self.iac.get_isa_study(study_id, self.user_token,skip_load_tables=True,
+                                                              study_location=study_location)
+
+        title = isa_study.title
+        publications = isa_study.publications
+        base_return_dict = CascaDict({
+            'Identifier': study_id,
+            'Title': title,
+            'Submission Date': submission_date,
+            'Status': study_status,
+            'Release Date': release_date,
+            'PubmedID': '',
+            'DOI': '',
+            'Author List': '',
+            'Publication Date': '',
+            'Citing Reference': '',
+            'Publication in MTBLS': '',
+            'Publication in EuropePMC': '',
+            'Publication the same?': '',
+            'Released before curation finished?': ''
+        })
+
+        fresh_params = self.base_params.cascade({'query': title, 'format': 'JSON'})
+        # here we just search the article title rather than the specific publication
+        europepmc_study_search_results = self.session.get(self.europe_pmc_url, params=fresh_params).json()
+
+        culled_results = [
+            result for result
+            in europepmc_study_search_results['resultList']['result']
+            if fuzz.ratio(result['title'], title) > 80
+        ]
+        if len(culled_results) > 0:
+            for pub in publications:
+                result = self.has_mapping(pub, culled_results)
+                if result:
+                    temp_dict = base_return_dict.cascade({
+                        'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
+                        'Publication Date': result['journalInfo']['printPublicationDate'],
+                        'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
+                        'Publication in EuropePMC': result['journalInfo']['printPublicationDate'],
+                        'Publication the same?': True, 'Released before curated?': self.assess_if_trangressed(
+                            study_status, result['journalInfo']['journal'])
+                    })
+                else:
+                    temp_dict = base_return_dict.cascade({
+                        'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
+                        'Publication Date': result['journalInfo']['printPublicationDate'],
+                        'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
+                        'Publication in EuropePMC': 'N/A', 'Publication the same?': False,
+                        'Released before curated?': 'N/A'
+                    })
+                row_dicts.append(temp_dict)
+        if len(publications) is 0:
+            row_dicts.append(base_return_dict)
+
+        return row_dicts
+
 
     @staticmethod
     def has_mapping(publication, resultset):
@@ -175,9 +165,9 @@ class EuropePmcReportBuilder:
         return status.upper() is not 'PUBLIC' and now > journal_publication_date
 
     def get_citation_reference(self, title) -> str:
-        """Cascade a new param dict to use in the request and update the headers to XML as the search endpoint on the
-        EuropePMC API only returns the bibliographicCitation information if you specify the DC format. Turn the
-        resulting XML string into a dict, and then return the citation from that dict.
+        """Cascade a new param dict to use in the request and update the session headers to XML as the search endpoint
+        on the EuropePMC API only returns the bibliographicCitation information if you specify the DC format (which is
+        a kind of XML). Turn the resulting XML string into a dict, and then return the citation from that dict.
 
         :param title: Article title to get citation for
         :return: Bibliographic citation as string."""
