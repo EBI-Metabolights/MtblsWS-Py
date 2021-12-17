@@ -6,7 +6,7 @@ import requests
 import xmltodict
 from cascadict import CascaDict
 from fuzzywuzzy import fuzz
-from flask import current_app as app
+from flask import current_app as app, abort
 from typing import List
 
 from app.ws.isaApiClient import IsaApiClient
@@ -58,9 +58,9 @@ class EuropePmcReportBuilder:
         :return: A message as a string indicating success or failure.
         """
         list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
-
+        path = app.config.get('MTBLS_PRIVATE_FTP_ROOT') + app.config.get('REPORTING PATH') + 'global/europepmc.csv'
         try:
-            path = app.config.get('MTBLS_PRIVATE_FTP_ROOT') + app.config.get('REPORTING PATH') + 'global/europepmc.csv'
+
             report_dataframe = pandas.DataFrame(list_of_result_dicts,
                                                 columns=['Identifier', 'Title', 'Submission Date',
                                                          'Status', 'Release Date', 'PubmedID', 'DOI', 'Author List',
@@ -73,10 +73,11 @@ class EuropePmcReportBuilder:
         except Exception as e:
             msg = 'Problem in building and saving europe pmc report: {0}'.format(e)
             logger.error(msg)
+            abort(500, msg)
 
         return msg
 
-    def process(self, study_id):
+    def process(self, study_id) -> List:
         """
         Process an individual study_id from the study list. First ping our java webservice to get some basic information
         about the study. Then we ping the IsaApi client so that we can get title and publication information.
@@ -147,7 +148,6 @@ class EuropePmcReportBuilder:
             row_dicts.append(base_return_dict)
 
         return row_dicts
-
 
     @staticmethod
     def has_mapping(publication, resultset):
