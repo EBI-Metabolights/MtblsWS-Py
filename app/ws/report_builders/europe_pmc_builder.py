@@ -76,7 +76,7 @@ class EuropePmcReportBuilder:
 
         return msg
 
-    def process(self, study_id):
+    def process(self, study_id) -> List:
         """
         Process an individual study_id from the study list. First ping our java webservice to get some basic information
         about the study. Then we ping the IsaApi client so that we can get title and publication information.
@@ -147,7 +147,6 @@ class EuropePmcReportBuilder:
             row_dicts.append(base_return_dict)
 
         return row_dicts
-
 
     @staticmethod
     def has_mapping(publication, resultset):
