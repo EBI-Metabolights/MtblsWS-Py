@@ -33,6 +33,9 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from datetime import datetime
 
+from ws.misc_utilities.file_utilities import FileUtils
+from ws.misc_utilities.request_parsers import RequestParsers
+
 logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
@@ -1285,25 +1288,17 @@ class StudyFilesTree(Resource):
                 "dataType": "string"
             },
             {
-                "name": "include_sub_dir",
-                "description": "Include files in all sub-directories. False = only list files in the study folder",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "default": True
-            },
-            {
-                "name": "directory",
-                "description": "List first level of files in a sub-directory",
-                "required": False,
-                "allowEmptyValue": True,
+                "name": "type",
+                "description": "Which type of directory visualisation - tree or list.",
+                "required": True,
+                "allowEmptyValue": False,
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
+                "defaultValue": True,
+                "default": True
             },
+
             {
                 "name": "user_token",
                 "description": "User API token",
@@ -1339,19 +1334,15 @@ class StudyFilesTree(Resource):
 
         # If false, only sync ISA-Tab metadata files
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('include_sub_dir', help='include files in all sub-directories')
-        parser.add_argument('directory', help='List files in a specific sub-directory')
-        include_sub_dir = False
-        directory = None
+        parser = RequestParsers.study_files_tree_parser()
+        tree = False
 
         if request.args:
             args = parser.parse_args(req=request)
-            include_sub_dir = False if args['include_sub_dir'].lower() != 'true' else True
-            directory = args['directory'] if args['directory'] else None
+            if args['type'].lower() not in ['tree', 'list']:
+                abort(400, 'type must be one of tree or list')
+            tree = False if args['type'].lower() != 'list' else True
 
-        if directory and directory.startswith(os.sep):
-            abort(401, "You can only specify folders in the current study folder")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
@@ -1362,16 +1353,16 @@ class StudyFilesTree(Resource):
         upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
         upload_location = upload_location.split('/mtblight')
 
-        if directory:
-            study_location = os.path.join(study_location, directory)
 
         try:
-            file_list = get_basic_files(study_location, include_sub_dir, get_assay_file_list(study_location))
-        except MemoryError:
+           # it may be that we want to dump the output of this to a file
+           visualisation = FileUtils.tree(study_location) if tree else FileUtils.ls(study_location)
+        except MemoryError as e:
             abort(408)
+        except Exception as e:
+            abort(500)
 
-        return jsonify({'study': file_list, 'latest': [], 'private': [],
-                        'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
+        return jsonify({'study': visualisation, 'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
 
 
 class FileList(Resource):
