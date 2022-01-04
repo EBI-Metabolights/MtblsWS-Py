@@ -21,6 +21,7 @@ import zipfile
 from copy import deepcopy
 from operator import itemgetter
 from os import scandir
+from pathlib import Path
 
 from flask.json import jsonify
 from flask_restful import Resource, reqparse
@@ -1356,11 +1357,11 @@ class StudyFilesTree(Resource):
 
         try:
            # it may be that we want to dump the output of this to a file
-           visualisation = FileUtils.tree(study_location) if tree else FileUtils.ls(study_location)
+           visualisation = FileUtils.tree(Path(study_location)) if tree else FileUtils.ls(study_location)
         except MemoryError as e:
-            abort(408)
+            abort(408, str(e))
         except Exception as e:
-            abort(500)
+            abort(500, str(e))
 
         return jsonify({'study': visualisation, 'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
 
