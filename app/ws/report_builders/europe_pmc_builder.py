@@ -151,6 +151,7 @@ class EuropePmcReportBuilder:
     @staticmethod
     def has_mapping(publication, resultset):
         """Check whether a given publication has a match in the europePMC resultset"""
+        logger.info(resultset)
         for result in resultset:
             if result['source'] is 'PPR': #preprint so doesnt have an actual title.
                 continue
