@@ -137,7 +137,7 @@ class EuropePmcReportBuilder:
                 else:
                     temp_dict = base_return_dict.cascade({
                         'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
-                        'Publication Date': result['journalInfo']['printPublicationDate'],
+                        'Publication Date': 'N/A',
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
                         'Publication in EuropePMC': 'N/A', 'Publication the same?': False,
                         'Released before curated?': 'N/A'
