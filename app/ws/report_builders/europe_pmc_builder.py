@@ -156,9 +156,8 @@ class EuropePmcReportBuilder:
             if result['source'] is 'PPR': #preprint so doesnt have an actual title.
                 continue
             else:
-                if result['journalInfo']:
-                    if fuzz.ratio(result['journalInfo']['journal']['title'], publication.title) > 90:
-                        return result
+                if fuzz.ratio(result['journalInfo']['journal']['title'], publication.title) > 90:
+                    return result
         return None
 
     @staticmethod
