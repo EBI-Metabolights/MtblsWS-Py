@@ -152,8 +152,11 @@ class EuropePmcReportBuilder:
     @staticmethod
     def has_mapping(publication, resultset):
         """Check whether a given publication has a match in the europePMC resultset"""
+        logger.info(resultset)
         for result in resultset:
-            if result['source'] is 'PPR': #preprint so doesnt have an actual title.
+            logger.info(result['source'] + str(len(result['source'])))
+            if result['source'] == 'PPR': #preprint so doesnt have an actual title.
+
                 continue
             else:
                 if fuzz.ratio(result['journalInfo']['journal']['title'], publication.title) > 90:
@@ -178,4 +181,4 @@ class EuropePmcReportBuilder:
         self.session.headers.update(self.headers_register['citation_ref'])
         response_xml_dict = xmltodict.parse(self.session.get(self.europe_pmc_url, params=fresh_params).text)
 
-        return response_xml_dict['responseWrapper']['rdf:RDF']['rdf:Description']['dcterms:bibliographicCitation'][0]
+        return response_xml_dict['responseWrapper']['rdf:RDF']['rdf:Description'][0]['dcterms:bibliographicCitation'][0]
