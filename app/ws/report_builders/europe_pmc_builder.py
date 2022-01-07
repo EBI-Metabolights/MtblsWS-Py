@@ -154,6 +154,7 @@ class EuropePmcReportBuilder:
         logger.info(resultset)
         for result in resultset:
             if result['source'] is 'PPR': #preprint so doesnt have an actual title.
+                logger.info('hit continue clause.')
                 continue
             else:
                 if fuzz.ratio(result['journalInfo']['journal']['title'], publication.title) > 90:
