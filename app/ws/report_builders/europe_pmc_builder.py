@@ -179,4 +179,4 @@ class EuropePmcReportBuilder:
         fresh_params = self.base_params.cascade({'format': 'DC', 'query': title})
         self.session.headers.update(self.headers_register['citation_ref'])
         response_xml_dict = xmltodict.parse(self.session.get(self.europe_pmc_url, params=fresh_params).text)
-        return response_xml_dict['responseWrapper']['rdf:RDF']['rdf:Description']['dcterms:bibliographicCitation']
+        return response_xml_dict['responseWrapper']['rdf:RDF']['rdf:Description'][0]['dcterms:bibliographicCitation'][0]
