@@ -154,7 +154,7 @@ class EuropePmcReportBuilder:
         logger.info(resultset)
         for result in resultset:
             logger.info(result['source'] + str(len(result['source'])))
-            if result['source'] is 'PPR': #preprint so doesnt have an actual title.
+            if result['source'] == 'PPR': #preprint so doesnt have an actual title.
 
                 continue
             else:
