@@ -70,6 +70,7 @@ class EuropePmcReportBuilder:
                                                 )
             report_dataframe.to_csv(path, sep='\t')
             msg = 'EuropePMC report successfully saved to {0}'.format(path)
+            logger.info(msg)
         except Exception as e:
             msg = 'Problem in building and saving europe pmc report: {0}'.format(e)
             logger.error(msg)
@@ -176,8 +177,12 @@ class EuropePmcReportBuilder:
 
         :param title: Article title to get citation for
         :return: Bibliographic citation as string."""
-        logger.info(title)
         fresh_params = self.base_params.cascade({'format': 'DC', 'query': title})
         self.session.headers.update(self.headers_register['citation_ref'])
-        response_xml_dict = xmltodict.parse(self.session.get(self.europe_pmc_url, params=fresh_params).text)
-        return response_xml_dict['responseWrapper']['rdf:RDF']['rdf:Description'][0]['dcterms:bibliographicCitation'][0]
+        response = self.session.get(self.europe_pmc_url, params=fresh_params)
+        response_xmldict = xmltodict.parse(response.text)
+        # type is infuriatingly not consistent in responses from europepmc so we have to handle it ourselves.
+        if type(response_xmldict['responseWrapper']['rdf:RDF']['rdf:Description']) is list:
+            return response_xmldict['responseWrapper']['rdf:RDF']['rdf:Description'][0]['dcterms:bibliographicCitation']
+        else:
+            return response_xmldict['responseWrapper']['rdf:RDF']['rdf:Description']['dcterms:bibliographicCitation']
