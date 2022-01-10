@@ -6,6 +6,8 @@ import requests
 import xmltodict
 from cascadict import CascaDict
 from fuzzywuzzy import fuzz
+from flask import current_app as app
+from typing import List, Union
 from flask import current_app as app, abort
 from typing import List
 
@@ -58,14 +60,14 @@ class EuropePmcReportBuilder:
         :return: A message as a string indicating success or failure.
         """
         list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
-        path = app.config.get('MTBLS_PRIVATE_FTP_ROOT') + app.config.get('REPORTING PATH') + 'global/europepmc.csv'
+        path = app.config.get('MTBLS_PRIVATE_FTP_ROOT') + '/' + app.config.get('REPORTING_PATH') + 'global/europepmc.csv'
         try:
 
             report_dataframe = pandas.DataFrame(list_of_result_dicts,
                                                 columns=['Identifier', 'Title', 'Submission Date',
                                                          'Status', 'Release Date', 'PubmedID', 'DOI', 'Author List',
                                                          'Publication Date', 'Citation Reference',
-                                                         'Publication in MTBLS', 'Publication in EuropePMC',
+                                                         'Publication in MTBLS', 'Journal in EuropePMC',
                                                          'Released before curated?']
                                                 )
             report_dataframe.to_csv(path, sep='\t')
@@ -105,8 +107,7 @@ class EuropePmcReportBuilder:
             'Publication Date': '',
             'Citing Reference': '',
             'Publication in MTBLS': '',
-            'Publication in EuropePMC': '',
-            'Publication the same?': '',
+            'Journal in EuropePMC': '',
             'Released before curation finished?': ''
         })
 
@@ -137,14 +138,16 @@ class EuropePmcReportBuilder:
         ]
         if len(culled_results) > 0:
             for pub in publications:
+                logger.info(pub)
                 result = self.has_mapping(pub, culled_results)
                 if result:
+                    logger.info('hit ' + str(result))
                     temp_dict = base_return_dict.cascade({
-                        'Title': title, 'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
+                        'Title': title, 'PubmedId': result.pmid, 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': result['journalInfo']['printPublicationDate'],
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
-                        'Publication in EuropePMC': result['journalInfo']['printPublicationDate'],
-                        'Publication the same?': True, 'Released before curated?': self.assess_if_trangressed(
+                        'Journal in EuropePMC': result['journalInfo']['journal']['title'],
+                        'Released before curated?': self.assess_if_trangressed(
                             study_status, result['journalInfo']['journal'])
                     })
                 else:
@@ -152,7 +155,7 @@ class EuropePmcReportBuilder:
                         'Title': title, 'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': 'N/A',
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
-                        'Publication in EuropePMC': 'N/A', 'Publication the same?': False,
+                        'Journal in EuropePMC': 'N/A', 'Publication the same?': False,
                         'Released before curated?': 'N/A'
                     })
                 row_dicts.append(temp_dict)
@@ -170,16 +173,23 @@ class EuropePmcReportBuilder:
 
                 continue
             else:
-                if fuzz.ratio(result['journalInfo']['journal']['title'], publication.title) > 90:
+                score = fuzz.ratio(result['title'], publication.title)
+                logger.info('HASMAPPING: ' + str(score) + 'MTB: ' + publication.title + '/PMC: ' +
+                            result['title'])
+                if score > 80:
                     return result
         return None
 
     @staticmethod
-    def assess_if_trangressed(status, europe_pmc_publication) -> bool:
+    def assess_if_trangressed(status, europe_pmc_publication) -> Union[bool, str]:
         """Check whether the journal has been published despite study not being public."""
-        journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
-        now = datetime.now()
-        return status.upper() is not 'PUBLIC' and now > journal_publication_date
+        if 'printPublicationDate' in europe_pmc_publication:
+            journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
+            logger.info(str(journal_publication_date))
+            now = datetime.now()
+            return status.upper() is not 'PUBLIC' and now > journal_publication_date
+        else:
+            return 'No publication date given.'
 
     def get_citation_reference(self, title) -> str:
         """Cascade a new param dict to use in the request and update the session headers to XML as the search endpoint
