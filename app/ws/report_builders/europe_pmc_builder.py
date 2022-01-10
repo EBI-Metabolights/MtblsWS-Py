@@ -7,7 +7,7 @@ import xmltodict
 from cascadict import CascaDict
 from fuzzywuzzy import fuzz
 from flask import current_app as app
-from typing import List
+from typing import List, Union
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -174,11 +174,14 @@ class EuropePmcReportBuilder:
         return None
 
     @staticmethod
-    def assess_if_trangressed(status, europe_pmc_publication) -> bool:
+    def assess_if_trangressed(status, europe_pmc_publication) -> Union[bool, str]:
         """Check whether the journal has been published despite study not being public."""
-        journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
-        now = datetime.now()
-        return status.upper() is not 'PUBLIC' and now > journal_publication_date
+        if 'printPublicationDate' in europe_pmc_publication:
+            journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
+            now = datetime.now()
+            return status.upper() is not 'PUBLIC' and now > journal_publication_date
+        else:
+            return 'No publication date given.'
 
     def get_citation_reference(self, title) -> str:
         """Cascade a new param dict to use in the request and update the session headers to XML as the search endpoint
