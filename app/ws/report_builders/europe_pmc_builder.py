@@ -124,6 +124,10 @@ class EuropePmcReportBuilder:
         fresh_params = self.base_params.cascade({'query': title, 'format': 'JSON'})
         # here we just search the article title rather than the specific publication
         europepmc_study_search_results = self.session.get(self.europe_pmc_url, params=fresh_params).json()
+        # if there is an issue with query then just return the basic details dict.
+        if 'resultList' not in europepmc_study_search_results:
+            row_dicts.append(base_return_dict.cascade({'Title': title}))
+            return row_dicts
 
         culled_results = [
             result for result
