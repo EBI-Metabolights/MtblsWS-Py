@@ -106,7 +106,7 @@ CONN_POOL_MIN = 1
 CONN_POOL_MAX = 20
 
 # Timeout in secounds when listing a large folder for files
-FILE_LIST_TIMEOUT = 90
+FILE_LIST_TIMEOUT = 900
 
 # chebi
 REMOVED_HS_MOL_COUNT = 500
