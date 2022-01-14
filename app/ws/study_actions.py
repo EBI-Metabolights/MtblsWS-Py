@@ -179,17 +179,21 @@ class StudyStatus(Resource):
         study_status = study_status.lower()
         # Update database
         update_study_status(study_id, study_status, is_curator=is_curator)
-        # Move the private fto folder if the new status is Public
+        # Remove the private ftp folder if the status is Public
+        # And Make same folder as an empty under ftp old directory
         if study_status == 'public':
-            #  ./mtblight/prod/<mtbls>-<obfuscation_code> to ./mtblight/prod/old/<mtbls>-<obfuscation_code>
             private_ftp_root = app.config.get("MTBLS_PRIVATE_FTP_ROOT")
             study_folder = study_id.lower() + '-' + obfuscation_code
-            src = os.path.join(private_ftp_root, study_folder)
-            dst = os.path.join(os.path.join(private_ftp_root, 'old'), study_folder)
+            ftp_upload_dir = os.path.join(private_ftp_root, study_folder)
+            ftp_old_dir = os.path.join(os.path.join(private_ftp_root, 'old'), study_folder)
             try:
-                shutil.move(src, dst)
+                shutil.rmtree(ftp_upload_dir)
             except Exception as e:
-                logger.error('Could not move private FTP folder ' + src + '. Error: ' + str(e))
+                logger.error('Could not remove private FTP folder tree ' + ftp_upload_dir + '. Error: ' + str(e))
+
+            #  ./mtblight/prod/<mtbls>-<obfuscation_code> to ./mtblight/prod/old/<mtbls>-<obfuscation_code>
+            if not os.path.exists(ftp_old_dir):
+                os.mkdir(ftp_old_dir)
 
     @staticmethod
     def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
