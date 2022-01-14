@@ -58,7 +58,7 @@ class EuropePmcReportBuilder:
         :return: A message as a string indicating success or failure.
         """
         list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
-        path = app.config.get('MTBLS_PRIVATE_FTP_ROOT') + app.config.get('REPORTING PATH') + 'global/europepmc.csv'
+        path = app.config.get('MTBLS_PRIVATE_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/europepmc.csv'
         try:
 
             report_dataframe = pandas.DataFrame(list_of_result_dicts,
