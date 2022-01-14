@@ -549,9 +549,9 @@ class reports(Resource):
 class CrossReferencePublicationInformation(Resource):
 
     @swagger.operation(
-        summary="GET Metabolights cross referenced with europepmc report",
+        summary="GET Metabolights cross referenced with europepmc report (Curator Only)",
         notes='GET report that checks the publication information provided to Metabolights by our submitters against '
-              'EuropePMC, highlighting any discrepancies. ',
+              'EuropePMC, highlighting any discrepancies. Will fail if user token is not curator level.',
 
         parameters=[
             {
