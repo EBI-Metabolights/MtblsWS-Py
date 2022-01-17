@@ -66,7 +66,7 @@ class EuropePmcReportBuilder:
                                                          'Status', 'Release Date', 'PubmedID', 'DOI', 'Author List',
                                                          'Publication Date', 'Citation Reference',
                                                          'Publication in MTBLS', 'Publication in EuropePMC',
-                                                         'Released before curated?']
+                                                         'Publication the same?', 'Released before curated?']
                                                 )
             report_dataframe.to_csv(path, sep='\t')
             msg = 'EuropePMC report successfully saved to {0}'.format(path)
@@ -137,8 +137,10 @@ class EuropePmcReportBuilder:
         ]
         if len(culled_results) > 0:
             for pub in publications:
+                logger.info(pub)
                 result = self.has_mapping(pub, culled_results)
                 if result:
+                    logger.info('hit ' + result)
                     temp_dict = base_return_dict.cascade({
                         'Title': title, 'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': result['journalInfo']['printPublicationDate'],
