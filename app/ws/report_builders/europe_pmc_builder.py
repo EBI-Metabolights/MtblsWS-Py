@@ -173,7 +173,8 @@ class EuropePmcReportBuilder:
                 continue
             else:
                 score = fuzz.ratio(result['journalInfo']['journal']['title'], publication.title)
-                logger.info(score)
+                logger.info('HASMAPPING: ' + str(score) + 'MTB: ' + publication.title + '/PMC: ' +
+                            result['journalInfo']['journal']['title'])
                 if score > 80:
                     return result
         return None
