@@ -145,7 +145,7 @@ class EuropePmcReportBuilder:
                         'Title': title, 'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': result['journalInfo']['printPublicationDate'],
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
-                        'Publication in EuropePMC': result['journalInfo']['printPublicationDate'],
+                        'Publication in EuropePMC': result['journalInfo']['journal']['title'],
                         'Publication the same?': True, 'Released before curated?': self.assess_if_trangressed(
                             study_status, result['journalInfo']['journal'])
                     })
@@ -181,6 +181,7 @@ class EuropePmcReportBuilder:
         """Check whether the journal has been published despite study not being public."""
         if 'printPublicationDate' in europe_pmc_publication:
             journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
+            logger.info(str(journal_publication_date))
             now = datetime.now()
             return status.upper() is not 'PUBLIC' and now > journal_publication_date
         else:
