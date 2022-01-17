@@ -140,7 +140,7 @@ class EuropePmcReportBuilder:
                 logger.info(pub)
                 result = self.has_mapping(pub, culled_results)
                 if result:
-                    logger.info('hit ' + result)
+                    logger.info('hit ' + str(result))
                     temp_dict = base_return_dict.cascade({
                         'Title': title, 'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': result['journalInfo']['printPublicationDate'],
