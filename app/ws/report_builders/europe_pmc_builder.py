@@ -172,7 +172,9 @@ class EuropePmcReportBuilder:
 
                 continue
             else:
-                if fuzz.ratio(result['journalInfo']['journal']['title'], publication.title) > 90:
+                score = fuzz.ratio(result['journalInfo']['journal']['title'], publication.title)
+                logger.info(score)
+                if score > 80:
                     return result
         return None
 
