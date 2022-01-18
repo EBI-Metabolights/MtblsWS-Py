@@ -99,14 +99,14 @@ class EuropePmcReportBuilder:
             'Submission Date': submission_date,
             'Status': study_status,
             'Release Date': release_date,
-            'PubmedID': '',
-            'DOI': '',
-            'Author List': '',
-            'Publication Date': '',
-            'Citing Reference': '',
-            'Publication in MTBLS': '',
-            'Journal in EuropePMC': '',
-            'Released before curation finished?': ''
+            'PubmedID': 'N/A',
+            'DOI': 'N/A',
+            'Author List': 'N/A',
+            'Publication Date': 'N/A',
+            'Citing Reference': 'N/A',
+            'Publication in MTBLS': 'N/A',
+            'Journal in EuropePMC': 'N/A',
+            'Released before curation finished?': 'N/A'
         })
 
         isa_study, isa_inv, std_path = self.iac.get_isa_study(study_id, self.user_token,skip_load_tables=True,
@@ -183,7 +183,7 @@ class EuropePmcReportBuilder:
         """Check whether the journal has been published despite study not being public."""
         if 'printPublicationDate' in europe_pmc_publication:
             journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
-            logger.info(str(journal_publication_date))
+            logger.info('ASSESSIF' + str(journal_publication_date))
             now = datetime.now()
             return status.upper() is not 'PUBLIC' and now > journal_publication_date
         else:
