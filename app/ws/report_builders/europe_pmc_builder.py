@@ -65,8 +65,8 @@ class EuropePmcReportBuilder:
                                                 columns=['Identifier', 'Title', 'Submission Date',
                                                          'Status', 'Release Date', 'PubmedID', 'DOI', 'Author List',
                                                          'Publication Date', 'Citation Reference',
-                                                         'Publication in MTBLS', 'Publication in EuropePMC',
-                                                         'Publication the same?', 'Released before curated?']
+                                                         'Publication in MTBLS', 'Journal in EuropePMC',
+                                                         'Released before curated?']
                                                 )
             report_dataframe.to_csv(path, sep='\t')
             msg = 'EuropePMC report successfully saved to {0}'.format(path)
@@ -105,8 +105,7 @@ class EuropePmcReportBuilder:
             'Publication Date': '',
             'Citing Reference': '',
             'Publication in MTBLS': '',
-            'Publication in EuropePMC': '',
-            'Publication the same?': '',
+            'Journal in EuropePMC': '',
             'Released before curation finished?': ''
         })
 
@@ -142,11 +141,11 @@ class EuropePmcReportBuilder:
                 if result:
                     logger.info('hit ' + str(result))
                     temp_dict = base_return_dict.cascade({
-                        'Title': title, 'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
+                        'Title': title, 'PubmedId': result.pmid, 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': result['journalInfo']['printPublicationDate'],
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
-                        'Publication in EuropePMC': result['journalInfo']['journal']['title'],
-                        'Publication the same?': True, 'Released before curated?': self.assess_if_trangressed(
+                        'Journal in EuropePMC': result['journalInfo']['journal']['title'],
+                        'Released before curated?': self.assess_if_trangressed(
                             study_status, result['journalInfo']['journal'])
                     })
                 else:
@@ -154,7 +153,7 @@ class EuropePmcReportBuilder:
                         'Title': title, 'PubmedId': pub.pubmed_id, 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': 'N/A',
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
-                        'Publication in EuropePMC': 'N/A', 'Publication the same?': False,
+                        'Journal in EuropePMC': 'N/A', 'Publication the same?': False,
                         'Released before curated?': 'N/A'
                     })
                 row_dicts.append(temp_dict)
@@ -172,9 +171,9 @@ class EuropePmcReportBuilder:
 
                 continue
             else:
-                score = fuzz.ratio(result['journalInfo']['journal']['title'], publication.title)
+                score = fuzz.ratio(result['title'], publication.title)
                 logger.info('HASMAPPING: ' + str(score) + 'MTB: ' + publication.title + '/PMC: ' +
-                            result['journalInfo']['journal']['title'])
+                            result['title'])
                 if score > 80:
                     return result
         return None
