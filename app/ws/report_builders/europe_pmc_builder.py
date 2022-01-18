@@ -146,7 +146,7 @@ class EuropePmcReportBuilder:
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
                         'Journal in EuropePMC': result['journalInfo']['journal']['title'],
                         'Released before curated?': self.assess_if_trangressed(
-                            study_status, result['journalInfo']['journal'])
+                            study_status, result['journalInfo'])
                     })
                 else:
                     temp_dict = base_return_dict.cascade({
