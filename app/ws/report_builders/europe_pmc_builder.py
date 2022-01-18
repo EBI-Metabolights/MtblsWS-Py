@@ -6,10 +6,8 @@ import requests
 import xmltodict
 from cascadict import CascaDict
 from fuzzywuzzy import fuzz
-from flask import current_app as app
-from typing import List, Union
 from flask import current_app as app, abort
-from typing import List
+from typing import List, Union
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -183,6 +181,7 @@ class EuropePmcReportBuilder:
     @staticmethod
     def assess_if_trangressed(status, europe_pmc_publication) -> Union[bool, str]:
         """Check whether the journal has been published despite study not being public."""
+        logger.info('ASSESSIF' + europe_pmc_publication)
         if 'printPublicationDate' in europe_pmc_publication:
             journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
             logger.info('ASSESSIF' + str(journal_publication_date))
