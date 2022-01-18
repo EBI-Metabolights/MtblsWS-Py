@@ -141,7 +141,7 @@ class EuropePmcReportBuilder:
                 if result:
                     logger.info('hit ' + str(result))
                     temp_dict = base_return_dict.cascade({
-                        'Title': title, 'PubmedId': result.pmid, 'DOI': pub.doi, 'Author List': pub.author_list,
+                        'Title': title, 'PubmedId': result['pmid'], 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': result['journalInfo']['printPublicationDate'],
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
                         'Journal in EuropePMC': result['journalInfo']['journal']['title'],
@@ -181,6 +181,7 @@ class EuropePmcReportBuilder:
     @staticmethod
     def assess_if_trangressed(status, europe_pmc_publication) -> Union[bool, str]:
         """Check whether the journal has been published despite study not being public."""
+        logger.info('HERE')
         logger.info('ASSESSIF' + europe_pmc_publication)
         if 'printPublicationDate' in europe_pmc_publication:
             journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
