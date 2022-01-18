@@ -141,7 +141,7 @@ class EuropePmcReportBuilder:
                 if result:
                     logger.info('hit ' + str(result))
                     temp_dict = base_return_dict.cascade({
-                        'Title': title, 'PubmedId': result.pmid, 'DOI': pub.doi, 'Author List': pub.author_list,
+                        'Title': title, 'PubmedId': result['pmid'], 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': result['journalInfo']['printPublicationDate'],
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
                         'Journal in EuropePMC': result['journalInfo']['journal']['title'],
