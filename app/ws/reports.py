@@ -561,6 +561,13 @@ class CrossReferencePublicationInformation(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "google_drive",
+                "description": "Save the report to google drive instead of the virtual machine?",
+                "paramType": "query",
+                "type": "Boolean",
+                "required": False,
             }]
     )
     def get(self):
@@ -571,7 +578,12 @@ class CrossReferencePublicationInformation(Resource):
         else:
             # user token is required
             abort(401)
-
+        parser = RequestParsers.europepmc_report_parser()
+        args = parser.parse_args(request)
+        if 'google_drive' in args:
+            drive = args['google_drive']
+        else:
+            drive = False
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
@@ -579,7 +591,7 @@ class CrossReferencePublicationInformation(Resource):
             abort(403)
         priv_list = wsc.get_private_studies()['content']
 
-        msg = EuropePmcReportBuilder(priv_list, user_token, wsc, iac).build()
+        msg = EuropePmcReportBuilder(priv_list, user_token, wsc, iac).build(drive)
         if msg.count('Problem') is 1:
             abort(500, msg)
 
