@@ -50,12 +50,13 @@ class EuropePmcReportBuilder:
             'query': ''
         })
 
-    def build(self, drive = False) -> str:
+    def build(self, drive) -> str:
         """
         Get a list of result dicts (each of which represent a row) and try to build a dataframe out of them. If
         successful, save that dataframe as a csv file to our reporting directory, and return a message indicating
         success. If not successful, log the error, and return a message indicating failure.
 
+        :param drive: flag to indicate whether to save the report to google drive.
         :return: A message as a string indicating success or failure.
         """
         list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
