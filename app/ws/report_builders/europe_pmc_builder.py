@@ -220,6 +220,7 @@ from fuzzywuzzy import fuzz
 from flask import current_app as app, abort
 from typing import List, Union
 
+from app.ws.cronjob import setGoogleSheet
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 
@@ -260,7 +261,7 @@ class EuropePmcReportBuilder:
             'query': ''
         })
 
-    def build(self) -> str:
+    def build(self, drive = False) -> str:
         """
         Get a list of result dicts (each of which represent a row) and try to build a dataframe out of them. If
         successful, save that dataframe as a csv file to our reporting directory, and return a message indicating
@@ -279,9 +280,17 @@ class EuropePmcReportBuilder:
                                                          'Publication in MTBLS', 'Journal in EuropePMC',
                                                          'Released before curated?']
                                                 )
-            report_dataframe.to_csv(path, sep='\t')
-            msg = 'EuropePMC report successfully saved to {0}'.format(path)
-            logger.info(msg)
+            if not drive:
+                report_dataframe.to_csv(path, sep='\t')
+                msg = 'EuropePMC report successfully saved to {0}'.format(path)
+                logger.info(msg)
+            else:
+                try:
+                    setGoogleSheet(report_dataframe, app.config.get('EUROPE_PMC_REPORT'),
+                                   'europe_pmc_report', app.config.get('GOOGLE_SHEET_TOKEN'))
+                    msg = 'Saved report to google drive.'
+                except Exception as e:
+                    abort(500, str(e))
         except Exception as e:
             msg = 'Problem in building and saving europe pmc report: {0}'.format(e)
             logger.error(msg)
