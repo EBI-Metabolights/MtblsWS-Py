@@ -281,7 +281,7 @@ class EuropePmcReportBuilder:
                                                          'Publication in MTBLS', 'Journal in EuropePMC',
                                                          'Released before curated?']
                                                 )
-            if not drive:
+            if drive is False:
                 report_dataframe.to_csv(path, sep='\t')
                 msg = 'EuropePMC report successfully saved to {0}'.format(path)
                 logger.info(msg)
