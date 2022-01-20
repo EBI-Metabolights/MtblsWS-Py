@@ -27,6 +27,7 @@ from flask_restful_swagger import swagger
 
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.misc_utilities.request_parsers import RequestParsers
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
 from app.ws.study_files import get_all_files
