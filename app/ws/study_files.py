@@ -34,8 +34,8 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from datetime import datetime
 
-from ws.misc_utilities.file_utilities import FileUtils
-from ws.misc_utilities.request_parsers import RequestParsers
+from app.ws.misc_utilities.file_utilities import FileUtils
+from app.ws.misc_utilities.request_parsers import RequestParsers
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
