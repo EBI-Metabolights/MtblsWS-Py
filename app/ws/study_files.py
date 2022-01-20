@@ -1343,7 +1343,7 @@ class StudyFilesTree(Resource):
             if args['type'].lower() not in ['tree', 'list']:
                 abort(400, 'type must be one of tree or list')
             tree = False if args['type'].lower() != 'list' else True
-
+        logger.info('tree: '+ str(tree))
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
@@ -1359,9 +1359,11 @@ class StudyFilesTree(Resource):
            # it may be that we want to dump the output of this to a file
            visualisation = FileUtils.tree(Path(study_location)) if tree else FileUtils.ls(study_location)
         except MemoryError as e:
-            abort(408, str(e))
+            logger.error('MemoryError: ' + str(e))
+            abort(408)
         except Exception as e:
-            abort(500, str(e))
+            logger.error(e)
+            abort(500)
 
         return jsonify({'study': visualisation, 'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
 

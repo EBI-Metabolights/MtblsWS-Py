@@ -68,5 +68,4 @@ class FileUtils:
         return '\n'.join(new_lines)
 
 
-fresh = FileUtils.ls('/Users/cmartin/Documents/Projects/MtblsWS-Py/app')
-print(fresh)
+
