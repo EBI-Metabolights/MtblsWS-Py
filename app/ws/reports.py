@@ -581,10 +581,11 @@ class CrossReferencePublicationInformation(Resource):
             abort(401)
         parser = RequestParsers.europepmc_report_parser()
         args = parser.parse_args(request)
+        logger.info('ARGS ' + str(args))
+        drive = False
         if 'google_drive' in args:
             drive = args['google_drive']
-        else:
-            drive = False
+
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions('MTBLS1', user_token)
