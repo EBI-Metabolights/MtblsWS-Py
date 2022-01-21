@@ -1342,8 +1342,7 @@ class StudyFilesTree(Resource):
             args = parser.parse_args(req=request)
             if args['type'].lower() not in ['tree', 'list']:
                 abort(400, 'type must be one of tree or list')
-            tree = False if args['type'].lower() != 'list' else True
-        logger.info('tree: '+ str(tree))
+            tree = False if args['type'].lower() != 'tree' else True
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
