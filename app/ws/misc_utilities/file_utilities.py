@@ -65,7 +65,5 @@ class FileUtils:
                 new_lines.append(' '.join([token for token in tokens if token not in blacklist]))
             else:
                 new_lines.append(line)
-        return '\n'.join(new_lines)
-
-
-
+        #return '\n'.join(new_lines)
+        return new_lines

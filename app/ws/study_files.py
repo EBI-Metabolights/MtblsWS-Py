@@ -1341,7 +1341,7 @@ class StudyFilesTree(Resource):
         if request.args:
             args = parser.parse_args(req=request)
             if args['type'].lower() not in ['tree', 'list']:
-                abort(400, 'type must be one of tree or list')
+                abort(400)
             tree = False if args['type'].lower() != 'tree' else True
 
         # check for access rights
@@ -1356,7 +1356,13 @@ class StudyFilesTree(Resource):
 
         try:
            # it may be that we want to dump the output of this to a file
-           visualisation = FileUtils.tree(Path(study_location)) if tree else FileUtils.ls(study_location)
+           if tree:
+               visualisation = []
+               visualisation_generator = FileUtils.tree(Path(study_location))
+               for y in visualisation_generator:
+                   visualisation.append(y)
+           else:
+               visualisation = FileUtils.ls(study_location)
         except MemoryError as e:
             logger.error('MemoryError: ' + str(e))
             abort(408)
@@ -1364,7 +1370,7 @@ class StudyFilesTree(Resource):
             logger.error(e)
             abort(500)
 
-        return jsonify({'study': visualisation, 'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
+        return jsonify({'result': visualisation})
 
 
 class FileList(Resource):
