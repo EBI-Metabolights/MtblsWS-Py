@@ -1351,7 +1351,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                                          assay_file_list=all_assay_raw_files,
                                                          assay_file_name=a_file_name)
         if not valid:
-            missing_or_incorrect_files.append(file_name + ' ({0})'.format(column_name))
+            missing_or_incorrect_files.append(file_name + ' ({0}) [{1}]'
+                                              .format(column_name, (a_file_name if a_file_name is not None else '')))
             err_msg = "File '" + file_name + "'"
             if file_type != unknown_file:
                 err_msg = err_msg + " of type '" + file_type + "'"
