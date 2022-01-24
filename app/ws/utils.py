@@ -179,10 +179,16 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                             logger.info(source + ' is not a directory')
                             try:
                                 if os.path.isfile(destination):
-                                    sync(source, destination, 'sync', purge=False,logger=logger)
+                                    upload_file_time = os.path.getmtime(source)
+                                    study_file_time = os.path.getmtime(destination)
+                                    if upload_file_time > study_file_time:
+                                        logger.info('Do sync')
+                                        shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
+                                        logger.info('Copied file %s to %s', source, destination)
+                                    else:
+                                        logger.info('Destination file with later timestamp, So not copying')
                                 else:
-                                    shutil.copy2(source, destination)  # Should retain all file metadata, ie. timestamps
-                                logger.info('Copied file %s to %s', source, destination)
+                                    shutil.copy2(source, destination)
                             except OSError as e:
                                 logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
                                              str(e))
@@ -194,6 +200,29 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
         logger.error(str(e))
         raise
 
+def scandir_get_aspera(dir):
+    subfolders, files = [], []
+
+    for f in os.scandir(dir):
+        if f.is_dir():
+            subfolders.append(f.path)
+        if f.is_file():
+            if os.path.splitext(f.name)[1].lower() in ('.partial', '.aspera-ckpt', '.aspx'):
+                files.append(f.path)
+
+    for dir in list(subfolders):
+        sf, f = scandir_get_aspera(dir)
+        subfolders.extend(sf)
+        files.extend(f)
+    return subfolders, files
+
+def delete_asper_files(directory):
+    subs, files = scandir_get_aspera(directory)
+    for file_to_delete in files:
+        print("File to delete  : " + file_to_delete)
+        if os.path.exists(file_to_delete):  # First, does the file/folder exist?
+            if os.path.isfile(file_to_delete):  # is it a file?
+                os.remove(file_to_delete)
 
 def copy_files_and_folders(source, destination, include_raw_data=True, include_investigation_file=True):
     """
