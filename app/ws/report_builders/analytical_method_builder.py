@@ -178,7 +178,6 @@ def get_data(studytype, reporting_path):
     :param reporting_path: Where the global.json report file can be found.
     :return: List of relevant accession numbers.
     """
-    logger.info(studytype)
     json_data = readDatafromFile(reporting_path + 'global.json')
     specified_study_data = []
     if str(studytype) == 'LCMS':

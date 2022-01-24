@@ -17,7 +17,6 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import os
-import threading
 import zipfile
 from datetime import datetime
 
@@ -33,7 +32,7 @@ from app.ws.ontology_info import *
 from app.ws.study_files import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
-from app.ws.report_generator import generate_file
+from app.ws.report_builders.analytical_method_builder import generate_file
 from app.ws.misc_utilities.request_parsers import RequestParsers
 
 logger = logging.getLogger('wslog')
