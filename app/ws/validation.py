@@ -1366,11 +1366,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 + column_name + "'", success, descr=file_description, val_sequence=8.1, log_category=log_category)
 
     if len(missing_or_incorrect_files) > 0:
-        with open(study_location, 'w') as file:
+        with open(study_location + '/missing_files.txt', 'w') as file:
             file.write("\n".join(missing_or_incorrect_files))
     else:
         missing_or_incorrect_files.append('skippydooppy')
-        with open(study_location, 'w') as file:
+        with open(study_location +'/missing_files.txt', 'w') as file:
             file.write("\n".join(missing_or_incorrect_files))
     return return_validations(val_section, validations, override_list)
 
