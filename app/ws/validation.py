@@ -1351,7 +1351,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                                          assay_file_list=all_assay_raw_files,
                                                          assay_file_name=a_file_name)
         if not valid:
-            missing_or_incorrect_files.append(file_name)
+            missing_or_incorrect_files.append(file_name + ' ({0})'.format(column_name))
             err_msg = "File '" + file_name + "'"
             if file_type != unknown_file:
                 err_msg = err_msg + " of type '" + file_type + "'"
@@ -1367,10 +1367,6 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
 
     if len(missing_or_incorrect_files) > 0:
         with open(study_location + '/missing_files.txt', 'w') as file:
-            file.write("\n".join(missing_or_incorrect_files))
-    else:
-        missing_or_incorrect_files.append('skippydooppy')
-        with open(study_location +'/missing_files.txt', 'w') as file:
             file.write("\n".join(missing_or_incorrect_files))
     return return_validations(val_section, validations, override_list)
 
