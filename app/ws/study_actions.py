@@ -187,7 +187,11 @@ class StudyStatus(Resource):
             ftp_upload_dir = os.path.join(private_ftp_root, study_folder)
             ftp_old_dir = os.path.join(os.path.join(private_ftp_root, 'old'), study_folder)
             try:
-                shutil.rmtree(ftp_upload_dir)
+                # Moving to FTP old directory and delete its content
+                shutil.move(ftp_upload_dir, ftp_old_dir)
+                logger.info("Ftp private upload folder moved to old dir.")
+                shutil.rmtree(ftp_old_dir)
+                logger.info("Ftp private uploaded contents removed!")
             except Exception as e:
                 logger.error('Could not remove private FTP folder tree ' + ftp_upload_dir + '. Error: ' + str(e))
 
