@@ -555,6 +555,8 @@ def getOnto_Name(iri):
             return 'BAO', 'BioAssay Ontology'
         else:
             substring = iri.rsplit('/', 1)[-1]
+            if '_' in substring:
+                substring = substring.rsplit('_')[0]
             return ''.join(x for x in substring if x.isalpha()), ''
 
 
