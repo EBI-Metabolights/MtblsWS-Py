@@ -22,6 +22,7 @@ import logging
 import os
 import re
 import threading
+import traceback
 
 from flask import current_app as app
 from flask import request
@@ -414,6 +415,58 @@ class OverrideValidation(Resource):
 
         return {"success": val_feedback}
 
+class ValidationComment(Resource):
+
+    def post(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        # param validation
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = commons.get_permissions(study_id, user_token)
+        if not is_curator:
+            abort(403)
+
+        feedback = ""
+        comment_list = []
+        # query_comments is a db_connection.py method
+        query_list = query_comments(study_id)
+        if query_list:
+            for val in query_list[0].split('|'):
+                comment_list.append(val)
+
+        # Get the new validations submitted
+        data_dict = json.loads(request.data.decode('utf-8'))
+        new_comments = data_dict['comments']
+
+        for val_sequence, comment in new_comments.items():
+            val_found = False
+            for i, existing_comment in enumerate(comment_list):
+                if val_sequence + ":" in existing_comment:  # Do we already have this comment in the database
+                    comment_list[i] += f' {comment}'
+                    feedback += f"Comment for {val_sequence} has been updated."
+
+            if not val_found:
+                comment_list.append(val_sequence + ':' + comment)
+                feedback += f"Comment for {val_sequence} has been stored in the database."
+
+        db_update_string = f' {"|".join(comment_list)}'
+
+        try:
+            query_list = override_validations(study_id, 'update', override=db_update_string)
+            __ = update_comments(study_id, comment_list)
+        except Exception as e:
+            logger.error(f"Could not store new comments in the database: {str(e)}")
+
+        return {"success": feedback}
 
 class NewValidation(Resource):
     @swagger.operation(
