@@ -2360,6 +2360,57 @@ class OverrideValidation(Resource):
 
 
 class ValidationComment(Resource):
+    @swagger.operation(
+        summary="Add Comment to Validation Detail",
+        notes='''Add a comment to a specific validation to give the user more context, for example to tell a user how 
+        to clear an error''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study to add a validation comment to",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "comments",
+                "description": "Which validation details to add comments for.",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": "True"
+
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
 
     def post(self, study_id):
 
