@@ -58,7 +58,7 @@ from app.ws.study_actions import StudyStatus,ToggleAccess,ToggleAccessGet
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders,SyncFolder,FileList, StudyFilesReuse, DeleteAsperaFiles
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
-from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation
+from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation, ValidationComment
 
 """
 MTBLS WS-Py
@@ -192,6 +192,7 @@ def initialize_app(flask_app):
     # api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
+    api.add_resource(ValidationComment, res_path + "/ebi-internal/<string:study_id>/validate-study/comment")
     api.add_resource(UpdateValidationFile, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")

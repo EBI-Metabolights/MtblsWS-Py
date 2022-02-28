@@ -2358,6 +2358,7 @@ class OverrideValidation(Resource):
 
         return {"success": val_feedback}
 
+
 class ValidationComment(Resource):
 
     def post(self, study_id):
