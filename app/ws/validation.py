@@ -419,8 +419,7 @@ class OverrideValidation(Resource):
 class ValidationComment(Resource):
     @swagger.operation(
         summary="Add Comment to Validation Detail",
-        notes='''Add a comment to a specific validation to give the user more context, for example to tell a user how 
-        to clear an error''',
+        notes='''Add a comment to a specific validation to give the user more context''',
         parameters=[
             {
                 "name": "study_id",
@@ -468,7 +467,6 @@ class ValidationComment(Resource):
             }
         ]
     )
-
     def post(self, study_id):
 
         user_token = None
@@ -513,7 +511,6 @@ class ValidationComment(Resource):
         db_update_string = f' {"|".join(comment_list)}'
 
         try:
-            query_list = override_validations(study_id, 'update', override=db_update_string)
             __ = update_comments(study_id, comment_list)
         except Exception as e:
             logger.error(f"Could not store new comments in the database: {str(e)}")
