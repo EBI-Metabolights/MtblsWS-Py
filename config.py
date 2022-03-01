@@ -106,7 +106,7 @@ CONN_POOL_MIN = 1
 CONN_POOL_MAX = 20
 
 # Timeout in secounds when listing a large folder for files
-FILE_LIST_TIMEOUT = 90
+FILE_LIST_TIMEOUT = 900
 
 # chebi
 REMOVED_HS_MOL_COUNT = 500
@@ -143,7 +143,7 @@ RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp'
                   '.lcd', '.abf', '.jpf', '.xps', '.mgf', '.qgd', '.hr']
 
 DERIVED_FILES_LIST = ['.mzml', '.imzML', '.wiff', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef', '.cnx', '.peakml', '.xy', '.smp',
-                      '.scan', '.dx', '.DX','.msp', '.mzML', '.xlsx', '.CDF', '.imzml', 'mzXML']
+                      '.scan', '.dx', '.DX','.msp', '.mzML', '.xlsx', '.CDF', '.imzml', 'mzXML', '.mgf']
 
 COMPRESSED_FILES_LIST = ['.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', '.rar',
                          '.bz2', '.arj', '.z', '.war', '.raw.rar']
@@ -155,7 +155,8 @@ OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
 CHEBI_URL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
 CHEBI_URL_WAIT = 300
 CHEBI_PIPELINE_URL = WS_APP_BASE_LINK + "/ws/ebi-internal/"
-CLASSYFIRE_ULR = "http://classyfire.wishartlab.com"
+#CLASSYFIRE_ULR = "http://classyfire.wishartlab.com"
+CLASSYFIRE_ULR = "http://45.88.80.180"
 CLASSYFIRE_MAPPING = "/net/isilon8/ftp_public/databases/metabolights/submissionTool/ClassyFire_Mapping.tsv"
 OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"
 CHEMSPIDER_URL = "http://parts.chemspider.com/JSON.ashx?op="

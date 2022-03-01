@@ -27,16 +27,98 @@ from flask_restful_swagger import swagger
 
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.misc_utilities.request_parsers import RequestParsers
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
 from app.ws.study_files import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
+from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
+from app.ws.report_builders.analytical_method_builder import generate_file
+from app.ws.misc_utilities.request_parsers import RequestParsers
+
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
 
+class StudyAssayTypeReports(Resource):
+
+    @swagger.operation(
+        summary="POST Metabolights study assay type report",
+        notes='POST Metabolights report for a specific study type. This requires a globals.json file to have previously'
+              ' been generated. To generate this globals.json file, hit the /v2/reports endpoint with query type global.'
+              ' This resource does not return the report itself. It creates a new file in the reporting directory under the name '
+              'of {study_type}.csv. Any previous reports of the same study type will be overwritten.',
+
+        parameters=[
+
+            {
+                "name": "studytype",
+                "description": "Which type of study IE NMR to generate the report for",
+                "required": True,
+                "allowEmptyValue": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self):
+
+        parser = RequestParsers.study_type_report_parser()
+        studytype = None
+
+        args = parser.parse_args(req=request)
+        studytype = args['studytype']
+        if studytype:
+            studytype = studytype.strip()
+        else:
+            abort(400)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        wsc = WsClient()
+
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+
+        return jsonify({'message': generate_file(study_location, studytype)})
 
 class reports(Resource):
 
@@ -543,6 +625,60 @@ class reports(Resource):
         writeDataToFile(reporting_path + file_name, res, True)
 
         return jsonify({"POST " + file_name: True})
+
+
+class CrossReferencePublicationInformation(Resource):
+
+    @swagger.operation(
+        summary="GET Metabolights cross referenced with europepmc report (Curator Only)",
+        notes='GET report that checks the publication information provided to Metabolights by our submitters against '
+              'EuropePMC, highlighting any discrepancies. Will fail if user token is not curator level.',
+
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "google_drive",
+                "description": "Save the report to google drive instead of the virtual machine?",
+                "paramType": "query",
+                "type": "Boolean",
+                "required": False,
+            }]
+    )
+    def get(self):
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+        parser = RequestParsers.europepmc_report_parser()
+        args = parser.parse_args(request)
+        logger.info('ARGS ' + str(args))
+        drive = False
+        if 'google_drive' in args:
+            drive = args['google_drive']
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+        if not is_curator:
+            abort(403)
+        priv_list = wsc.get_private_studies()['content']
+
+        msg = EuropePmcReportBuilder(priv_list, user_token, wsc, iac).build(drive)
+        if msg.count('Problem') is 1:
+            abort(500, msg)
+
+        return 200, msg
+
 
 
 def get_file_extensions(id, path):

@@ -131,7 +131,7 @@ class IsaApiClient:
 
         return investigation
 
-    def get_isa_study(self, study_id, api_key, skip_load_tables=True, study_location=None):
+    def get_isa_study(self, study_id, api_key, skip_load_tables=True, study_location=None, failing_gracefully=False):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
@@ -162,11 +162,17 @@ class IsaApiClient:
         except IndexError as e:
             logger.exception("Failed to find Investigation file from %s", study_id, std_path)
             logger.error(str(e))
-            abort(417)
+            if failing_gracefully:
+                return None, None, None
+            else:
+                abort(417)
         except Exception as e:
             logger.exception("Failed to find Investigation file from %s", study_id, std_path)
             logger.error(str(e))
-            abort(417)
+            if failing_gracefully:
+                return None, None, None
+            else:
+                abort(417)
         else:
             return isa_study, isa_inv, std_path
 
