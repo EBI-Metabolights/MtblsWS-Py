@@ -34,11 +34,91 @@ from app.ws.study_files import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
 from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
+from app.ws.report_builders.analytical_method_builder import generate_file
+from app.ws.misc_utilities.request_parsers import RequestParsers
+
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
 
+class StudyAssayTypeReports(Resource):
+
+    @swagger.operation(
+        summary="POST Metabolights study assay type report",
+        notes='POST Metabolights report for a specific study type. This requires a globals.json file to have previously'
+              ' been generated. To generate this globals.json file, hit the /v2/reports endpoint with query type global.'
+              ' This resource does not return the report itself. It creates a new file in the reporting directory under the name '
+              'of {study_type}.csv. Any previous reports of the same study type will be overwritten.',
+
+        parameters=[
+
+            {
+                "name": "studytype",
+                "description": "Which type of study IE NMR to generate the report for",
+                "required": True,
+                "allowEmptyValue": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 400,
+                "message": "Bad Request. Server could not understand the request due to malformed syntax."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self):
+
+        parser = RequestParsers.study_type_report_parser()
+        studytype = None
+
+        args = parser.parse_args(req=request)
+        studytype = args['studytype']
+        if studytype:
+            studytype = studytype.strip()
+        else:
+            abort(400)
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            abort(401)
+
+        wsc = WsClient()
+
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+
+        return jsonify({'message': generate_file(study_location, studytype)})
 
 class reports(Resource):
 
@@ -598,6 +678,7 @@ class CrossReferencePublicationInformation(Resource):
             abort(500, msg)
 
         return 200, msg
+
 
 
 def get_file_extensions(id, path):

@@ -14,4 +14,9 @@ class RequestParsers:
     def europepmc_report_parser():
         parser = reqparse.RequestParser()
         parser.add_argument('google_drive', help='Save the report to google drive instead of the vm?')
+
+    @staticmethod
+    def study_type_report_parser():
+        parser = reqparse.RequestParser()
+        parser.add_argument('studytype', help='The type of assay of the study IE NMR')
         return parser

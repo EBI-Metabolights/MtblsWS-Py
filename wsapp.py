@@ -49,13 +49,14 @@ from app.ws.partner_utils import Metabolon
 from app.ws.pathway import fellaPathway
 from app.ws.pathway import keggid
 from app.ws.reports import reports, CrossReferencePublicationInformation
+from app.ws.reports import reports, StudyAssayTypeReports
 from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
 from app.ws.spectra import ExtractMSSpectra
 from app.ws.stats import StudyStats
 
 from app.ws.study_actions import StudyStatus,ToggleAccess,ToggleAccessGet
-from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders,SyncFolder,FileList, StudyFilesReuse
+from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders,SyncFolder,FileList, StudyFilesReuse, DeleteAsperaFiles
 from app.ws.table_editor import *
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation
@@ -103,6 +104,7 @@ def initialize_app(flask_app):
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
     api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
+    api.add_resource(DeleteAsperaFiles, res_path + "/studies/<string:study_id>/aspera-files")
     api.add_resource(StudyFilesReuse, res_path + "/studies/<string:study_id>/files-fetch")
     api.add_resource(FileList, res_path + "/studies/<string:study_id>/fileslist")
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
@@ -207,6 +209,7 @@ def initialize_app(flask_app):
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
     api.add_resource(CrossReferencePublicationInformation, res_path + "/v2/europe-pmc-report")
+    api.add_resource(StudyAssayTypeReports, res_path + "/v2/study-assay-type-reports")
     api.add_resource(curation_log, res_path + "/v2/curation_log")
 
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
