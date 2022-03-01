@@ -27,13 +27,16 @@ from flask_restful_swagger import swagger
 
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.misc_utilities.request_parsers import RequestParsers
 from app.ws.mtblsWSclient import WsClient
 from app.ws.ontology_info import *
 from app.ws.study_files import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
+from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
 from app.ws.report_builders.analytical_method_builder import generate_file
 from app.ws.misc_utilities.request_parsers import RequestParsers
+
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -624,6 +627,57 @@ class reports(Resource):
         return jsonify({"POST " + file_name: True})
 
 
+class CrossReferencePublicationInformation(Resource):
+
+    @swagger.operation(
+        summary="GET Metabolights cross referenced with europepmc report (Curator Only)",
+        notes='GET report that checks the publication information provided to Metabolights by our submitters against '
+              'EuropePMC, highlighting any discrepancies. Will fail if user token is not curator level.',
+
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "google_drive",
+                "description": "Save the report to google drive instead of the virtual machine?",
+                "paramType": "query",
+                "type": "Boolean",
+                "required": False,
+            }]
+    )
+    def get(self):
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        else:
+            # user token is required
+            abort(401)
+        parser = RequestParsers.europepmc_report_parser()
+        args = parser.parse_args(request)
+        logger.info('ARGS ' + str(args))
+        drive = False
+        if 'google_drive' in args:
+            drive = args['google_drive']
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions('MTBLS1', user_token)
+        if not is_curator:
+            abort(403)
+        priv_list = wsc.get_private_studies()['content']
+
+        msg = EuropePmcReportBuilder(priv_list, user_token, wsc, iac).build(drive)
+        if msg.count('Problem') is 1:
+            abort(500, msg)
+
+        return 200, msg
 
 
 
