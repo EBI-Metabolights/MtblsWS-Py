@@ -11,6 +11,11 @@ class RequestParsers:
         return parser
 
     @staticmethod
+    def study_files_tree_parser():
+        parser = reqparse.RequestParser()
+        parser.add_argument('type', help='Which type of visualisation - tree or list')
+        
+    @staticmethod
     def europepmc_report_parser():
         parser = reqparse.RequestParser()
         parser.add_argument('google_drive', help='Save the report to google drive instead of the vm?')
