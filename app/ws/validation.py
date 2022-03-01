@@ -2361,7 +2361,7 @@ class OverrideValidation(Resource):
 
 class ValidationComment(Resource):
     @swagger.operation(
-        summary="Add Comment to Validation Detail",
+        summary="Add Comment",
         notes='''Add a comment to a specific validation to give the user more context''',
         parameters=[
             {
