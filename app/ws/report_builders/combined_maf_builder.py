@@ -11,6 +11,9 @@ logger = logging.getLogger('wslog')
 
 
 class CombinedMafBuilder:
+    """
+    Builds a combined maf files from a given list of studies.
+    """
 
     def __init__(self, studies_to_combine: List[str], original_study_location: str, method: str):
         self.studies_to_combine = studies_to_combine
@@ -19,6 +22,10 @@ class CombinedMafBuilder:
         self.missed_maf_register = []
 
     def build(self):
+        """
+        Entry method to the class. Gets the generator that yields individual maf dicts, and adds that dict to the list.
+        We then try and create a new DataFrame object from that list of dicts.
+        """
         list_of_mafs = []
         maf_generator = self.get_dataframe()
 
@@ -45,7 +52,12 @@ class CombinedMafBuilder:
 
     def get_dataframe(self):
         """
+        Yield an individual dataframe-as-a-dict. This is a generator method, with the idea being that with such massive files
+        we want to limit how many dataframes we are holding in memory at once. We convert the dataframe to a dict in this method,
+        and then yield it. This means we only have one dataframe open in memory at a time.
 
+        The method also sorts through each of the maf files found in the study directory, attempting to cast off any
+        that might correspond to other analytical methods.
         """
         for study_id in self.studies_to_combine:
             study_location = self.original_study_location.replace("MTBLS1", study_id)
@@ -66,6 +78,12 @@ class CombinedMafBuilder:
 
 
     def sort_mafs(self, study_location):
+        """
+        Sorts through study directory maf files by checking for the presence of 'tokens' in the filename.
+
+        :param study_location: The location in the filesystem of the study, as a string.
+        :return: A List of strings representing culled filenames.
+        """
         filtered_maf_list = []
         tokens = {
             'NMR': ['NMR', 'spectroscopy'],
