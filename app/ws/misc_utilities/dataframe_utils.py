@@ -112,3 +112,39 @@ class DataFrameUtils:
         df = df.rename(columns=rename)
         return df
 
+    @staticmethod
+    def LCMS_maf_cleanup(df: pandas.DataFrame):
+        """
+        Remove any columns we don't want from the LCMS maf file, and rename the others so as to make them more receptive
+        to being computed.
+
+        :param df: LCMS maf file to clean up.
+        :return: Dataframe with renamed columns and unwanted columns removed.
+        """
+        keep = ['database_identifier', 'chemical_formula', 'inchi', 'metabolite_identification', 'mass_to_charge',
+                'fragmentation', 'modification', 'charge', 'retention_time', 'taxid', 'species', 'database',
+                'database_version', 'reliability', 'uri', 'search_engine', 'search_engine_score',
+                'smallmolecule_abundance_sub', 'smallmolecule_abundance_stdev_sub',
+                'smallmolecule_abundance_std_error_sub']
+        k = pandas.DataFrame(colums=keep)
+        k = k.append(df, sort=False)
+        df = k[keep]
+        return df
+
+    @staticmethod
+    def NMR_maf_cleanup(df: pandas.DataFrame):
+        """
+        Remove any columns we don't want from the LCMS maf file, and rename the others so as to make them more receptive
+        to being computed.
+
+        :param df: NMR maf file to clean up.
+        :return: Dataframe with renamed columns and unwanted columns removed.
+        """
+        keep = ['database_identifier', 'chemical_formula', 'smiles', 'inchi', 'metabolite_identification',
+                'chemical_shift', 'multiplicity', 'taxid', 'species', 'database', 'database_version',
+                'reliability','uri', 'search_engine', 'search_engine_score', 'smallmolecule_abundance_sub',
+                'smallmolecule_abundance_stdev_sub']
+        k = pandas.DataFrame(colums=keep)
+        k = k.append(df, sort=False)
+        df = k[keep]
+        return df

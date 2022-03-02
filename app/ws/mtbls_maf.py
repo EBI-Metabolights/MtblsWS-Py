@@ -19,13 +19,17 @@
 import json
 import logging
 import os
+from typing import List
+
 import pandas as pd
 
-from flask import request, abort
+from flask import request, current_app as app, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
+from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.mtblsWSclient import WsClient
+from app.ws.report_builders.combined_maf_builder import CombinedMafBuilder
 from app.ws.utils import create_maf, read_tsv, write_tsv
 
 logger = logging.getLogger('wslog')
@@ -34,7 +38,7 @@ wsc = WsClient()
 
 
 # Convert panda DataFrame to json tuples object
-def totuples(df, text):
+def totuples(df, text) -> dict:
     d = [
         dict([
             (colname, row[i])
@@ -230,4 +234,35 @@ class MetaboliteAnnotationFile(Resource):
                             annotation_file_name
 
         return {"success": "Added/Updated MAF(s)" + maf_feedback}
+
+class CombineMetaboliteAnnotationFiles(Resource):
+
+    def post(self):
+        data_dict = json.loads(request.data.decode('utf-8'))
+        studies_to_combine = data_dict['data']
+        method = data_dict['analytical_method']
+
+        if studies_to_combine is None:
+            abort(417)
+
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        is_curator, __, __, __, study_location, __, __, __ = wsc.get_permissions('MTBLS1', user_token)
+        if is_curator is False:
+            abort(403)
+
+        combiBuilder = CombinedMafBuilder(
+            studies_to_combine=studies_to_combine,
+            original_study_location=study_location,
+            method=method
+        )
+
+        combiBuilder.build()
+
+        return {
+            'status': f'Combined Maf File Built, with {combiBuilder.missed_maf_register.__len__()} missing MAFs:  '
+                      f'{combiBuilder.missed_maf_register.__str__()}'
+        }
 
