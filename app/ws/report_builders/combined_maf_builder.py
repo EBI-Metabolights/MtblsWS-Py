@@ -7,7 +7,7 @@ from flask import current_app as app, abort
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.utils import totuples
 
-logger = logging.getLogger('wslog')
+logger = logging.getLogger('builder')
 
 
 class CombinedMafBuilder:
@@ -30,11 +30,15 @@ class CombinedMafBuilder:
         maf_generator = self.get_dataframe()
 
         for maf_as_dict in maf_generator:
+            logger.info(f'hit no. {list_of_mafs.__len__()}')
             list_of_mafs.extend(maf_as_dict)
 
         reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
-
-        combined_maf = pandas.DataFrame(list_of_mafs)
+        combined_maf = None
+        try:
+            combined_maf = pandas.DataFrame(list_of_mafs)
+        except Exception as e:
+            logger.error(f'Problem creating dataframe from list of dicts: {str(e)}')
         try:
             combined_maf.to_csv(
                     os.path.join(reporting_path, f'{self.method}_combined_maf.tsv'),
@@ -67,6 +71,10 @@ class CombinedMafBuilder:
                     maf_temp = pandas.read_csv(os.path.join(study_location, maf), sep="\t", header=0, encoding='unicode_escape')
                 except pandas.errors.EmptyDataError as e:
                     logger.error(f'EmptyDataError Issue with opening maf file {maf}: {str(e)}')
+                    self.missed_maf_register.append(maf)
+                    continue
+                except Exception as e:
+                    logger.error(f'Issue with opening maf file {maf}, cause of error unclear: {str(e)}')
                     self.missed_maf_register.append(maf)
                     continue
                 cleanup_function = getattr(DataFrameUtils, f'{self.method}_maf_cleanup')
