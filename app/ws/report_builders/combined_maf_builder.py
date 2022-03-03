@@ -21,6 +21,7 @@ class CombinedMafBuilder:
         self.original_study_location = original_study_location
         self.method = method
         self.missed_maf_register = []
+        self.missing_study_directory_register = []
 
     def build(self):
         """
@@ -103,11 +104,20 @@ class CombinedMafBuilder:
             'LCMS': ['LC', 'LC-MS', 'LCMS', 'spectrometry']
         }
         maf_file_list = None
+        logger.info(f'current directory: {os.getcwd()}')
+        os.chdir(study_location)
         try:
-            maf_file_list = [file for file in os.listdir(study_location) if
+            maf_file_list = [file for file in os.listdir() if
                              file.startswith('m_') and file.endswith('.txt')]
+        except FileNotFoundError as e:
+            logger.error(f'FileNotFoundError: {str(e)}')
+        except NotADirectoryError as e:
+            logger.error(f'NotADirectoryError: {str(e)}')
         except Exception as e:
             logger.error(f'Unexpected error: {str(e)}')
+        finally:
+            if maf_file_list is None:
+                self.missing_study_directory_register.append(study_location)
 
         logger.info(f'maf_file_list {str(maf_file_list)}')
         if maf_file_list.__len__() > 1:
