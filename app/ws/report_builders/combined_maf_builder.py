@@ -16,6 +16,7 @@ class CombinedMafBuilder:
     """
 
     def __init__(self, studies_to_combine: List[str], original_study_location: str, method: str):
+        logger.error('error')
         self.studies_to_combine = studies_to_combine
         self.original_study_location = original_study_location
         self.method = method

@@ -296,7 +296,7 @@ class CombineMetaboliteAnnotationFiles(Resource):
     def post(self):
         data_dict = json.loads(request.data.decode('utf-8'))
         studies_to_combine = data_dict['data']
-        method = data_dict['analytical_method']
+        method = data_dict['method']
 
         if studies_to_combine is None:
             abort(417)
