@@ -146,6 +146,7 @@ def initialize_app(flask_app):
 
     # Metabolite Annotation File (MAF)
     api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validate")
+    api.add_resource(CombineMetaboliteAnnotationFiles, res_path + "/ebi-internal/mariana/maf/combine")
 
     # Study
     # api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
