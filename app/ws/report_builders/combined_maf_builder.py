@@ -64,9 +64,12 @@ class CombinedMafBuilder:
         The method also sorts through each of the maf files found in the study directory, attempting to cast off any
         that might correspond to other analytical methods.
         """
-        for study_id in self.studies_to_combine:
-            study_location = self.original_study_location.replace("MTBLS1", study_id)
+        for i, study_id in enumerate(self.studies_to_combine):
+            logger.info(f'hit get dataframes first loop {str(i)} times')
+            copy = repr(self.original_study_location)
+            study_location = copy.replace("MTBLS1", study_id)
             for maf in self.sort_mafs(study_location):
+                logger.error(f'{maf}')
                 maf_temp = None
                 try:
                     maf_temp = pandas.read_csv(os.path.join(study_location, maf), sep="\t", header=0, encoding='unicode_escape')
@@ -86,24 +89,31 @@ class CombinedMafBuilder:
             # assuming that a maf has been found as they have been hand selected
 
 
-    def sort_mafs(self, study_location):
+    def sort_mafs(self, study_location: str):
         """
         Sorts through study directory maf files by checking for the presence of 'tokens' in the filename.
 
         :param study_location: The location in the filesystem of the study, as a string.
         :return: A List of strings representing culled filenames.
         """
+        logger.error(f'hit sorts maf for {study_location}, method: {self.method}')
         filtered_maf_list = []
         tokens = {
             'NMR': ['NMR', 'spectroscopy'],
             'LCMS': ['LC', 'LC-MS', 'LCMS', 'spectrometry']
         }
-        maf_file_list = [file for file in os.listdir(study_location) if
-                         file.startswith('m_') and file.endswith('.txt')]
+        maf_file_list = None
+        try:
+            maf_file_list = [file for file in os.listdir(study_location) if
+                             file.startswith('m_') and file.endswith('.txt')]
+        except Exception as e:
+            logger.error(f'Unexpected error: {str(e)}')
+
+        logger.info(f'maf_file_list {str(maf_file_list)}')
         if maf_file_list.__len__() > 1:
             filtered_maf_list = [file for file in maf_file_list if
                                  any(token.upper() in file.upper() for token in tokens[self.method])]
         else:
             filtered_maf_list = maf_file_list
-
+        logger.info(f'filtered_maf_list {str(filtered_maf_list)}')
         return filtered_maf_list
