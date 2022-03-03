@@ -236,7 +236,63 @@ class MetaboliteAnnotationFile(Resource):
         return {"success": "Added/Updated MAF(s)" + maf_feedback}
 
 class CombineMetaboliteAnnotationFiles(Resource):
-
+    @swagger.operation(
+        summary="Combine MAFs for a list of studies",
+        nickname="Combine MAF files",
+        notes='''Combine MAF files for a given list of studies, by analytical method. If a study contains assays with 
+        more than one analytical method, it will endeavour to try and select only the MAFs that correspond to the chosen 
+        analytical method.
+    <pre><code> 
+    {  
+      "data": [ 
+        "MTBLS1",
+        "MTBLS2",
+        "MTBLS3",
+      ],
+      method: "NMR"
+    }
+    </code></pre>''',
+        parameters=[
+            {
+                "name": "data",
+                "description": "Studies to combine MAFs for, and the analytical method",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "body",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Metabolite Annotation File (MAF) is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Incorrect parameters provided"
+            }
+        ]
+    )
     def post(self):
         data_dict = json.loads(request.data.decode('utf-8'))
         studies_to_combine = data_dict['data']
