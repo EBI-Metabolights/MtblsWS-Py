@@ -67,10 +67,10 @@ class CombinedMafBuilder:
         """
         for i, study_id in enumerate(self.studies_to_combine):
             logger.info(f'hit get dataframes first loop {str(i)} times')
-            copy = repr(self.original_study_location)
+            copy = repr(self.original_study_location).strip("'")
             study_location = copy.replace("MTBLS1", study_id)
             for maf in self.sort_mafs(study_location):
-                logger.error(f'{maf}')
+                logger.error(f' hit get dataframes interior loop with {maf}')
                 maf_temp = None
                 try:
                     maf_temp = pandas.read_csv(os.path.join(study_location, maf), sep="\t", header=0, encoding='unicode_escape')
@@ -83,7 +83,9 @@ class CombinedMafBuilder:
                     self.missed_maf_register.append(maf)
                     continue
                 cleanup_function = getattr(DataFrameUtils, f'{self.method}_maf_cleanup')
+                logger.info(cleanup_function)
                 maf_temp = cleanup_function(maf_temp)
+                logger.info(f'maf file post cleanup: {maf_temp}')
                 maf_as_dict = totuples(df=maf_temp, text='dict')['dict']
                 yield maf_as_dict
 
@@ -97,6 +99,7 @@ class CombinedMafBuilder:
         :param study_location: The location in the filesystem of the study, as a string.
         :return: A List of strings representing culled filenames.
         """
+        #study_location = study_location.strip("'")
         logger.error(f'hit sorts maf for {study_location}, method: {self.method}')
         filtered_maf_list = []
         tokens = {
@@ -105,10 +108,11 @@ class CombinedMafBuilder:
         }
         maf_file_list = None
         logger.info(f'current directory: {os.getcwd()}')
-        os.chdir(study_location)
+        # os.chdir(study_location)
         try:
-            maf_file_list = [file for file in os.listdir() if
-                             file.startswith('m_') and file.endswith('.txt')]
+            logger.info(str([file for file in os.listdir(study_location)]))
+            maf_file_list = [file for file in os.listdir(study_location) if
+                             file.startswith('m_') and file.endswith('.tsv')]
         except FileNotFoundError as e:
             logger.error(f'FileNotFoundError: {str(e)}')
         except NotADirectoryError as e:

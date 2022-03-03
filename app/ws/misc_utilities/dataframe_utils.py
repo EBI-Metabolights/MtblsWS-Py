@@ -1,4 +1,7 @@
+import logging
 import pandas
+
+logger = logging.getLogger('builder')
 
 
 class DataFrameUtils:
@@ -140,11 +143,15 @@ class DataFrameUtils:
         :param df: NMR maf file to clean up.
         :return: Dataframe with renamed columns and unwanted columns removed.
         """
+        logger.info('hit NMR MAF cleanup')
         keep = ['database_identifier', 'chemical_formula', 'smiles', 'inchi', 'metabolite_identification',
                 'chemical_shift', 'multiplicity', 'taxid', 'species', 'database', 'database_version',
                 'reliability','uri', 'search_engine', 'search_engine_score', 'smallmolecule_abundance_sub',
                 'smallmolecule_abundance_stdev_sub']
         k = pandas.DataFrame(colums=keep)
-        k = k.append(df, sort=False)
-        df = k[keep]
+        try:
+            k = k.append(df, sort=False)
+            df = k[keep]
+        except Exception as e:
+            logger.error(f'unexpected issue with cleaning up dataframe: {str(e)}')
         return df
