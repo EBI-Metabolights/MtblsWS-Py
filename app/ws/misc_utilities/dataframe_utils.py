@@ -7,7 +7,7 @@ logger = logging.getLogger('builder')
 class DataFrameUtils:
 
     @staticmethod
-    def NMR_assay_cleanup(df: pandas.DataFrame):
+    def NMR_assay_cleanup(df: pandas.DataFrame) -> pandas.DataFrame:
         '''
         Change / mapping NMR Study dataframe column name
         :param df: NMR Dataframe to cleanup
@@ -45,7 +45,7 @@ class DataFrameUtils:
         return df
 
     @staticmethod
-    def LCMS_assay_cleanup(df: pandas.DataFrame):
+    def LCMS_assay_cleanup(df: pandas.DataFrame) -> pandas.DataFrame:
         '''
         Change / mapping LCMS Study dataframe column name
         :param df: LC** DataFrame to cleanup
@@ -97,11 +97,11 @@ class DataFrameUtils:
 
 
     @staticmethod
-    def sample_cleanup(df):
+    def sample_cleanup(df) -> pandas.DataFrame:
         '''
         Change / mapping sample file dataframe column name
-        :param df:
-        :return:
+        :param df: Sample file to cleanup
+        :return: Dataframe with with renamed columns and unwanted columns removed
         '''
         keep = ['Study', 'Characteristics[Organism]', 'Characteristics[Organism part]', 'Protocol REF', 'Sample Name']
         rename = {'Characteristics[Organism]': 'Characteristics.Organism.',
@@ -116,7 +116,7 @@ class DataFrameUtils:
         return df
 
     @staticmethod
-    def LCMS_maf_cleanup(df: pandas.DataFrame):
+    def LCMS_maf_cleanup(df: pandas.DataFrame, study_id: str, maf_filename: str) -> pandas.DataFrame:
         """
         Remove any columns we don't want from the LCMS maf file, and rename the others so as to make them more receptive
         to being computed.
@@ -129,18 +129,22 @@ class DataFrameUtils:
                 'database_version', 'reliability', 'uri', 'search_engine', 'search_engine_score',
                 'smallmolecule_abundance_sub', 'smallmolecule_abundance_stdev_sub',
                 'smallmolecule_abundance_std_error_sub']
-        k = pandas.DataFrame(colums=keep)
+        k = pandas.DataFrame(columns=keep)
         k = k.append(df, sort=False)
         df = k[keep]
+        df.insert(0, 'maf_filename', maf_filename)
+        df.insert(0, 'study_id', study_id)
         return df
 
     @staticmethod
-    def NMR_maf_cleanup(df: pandas.DataFrame):
+    def NMR_maf_cleanup(df: pandas.DataFrame, study_id: str, maf_filename: str) -> pandas.DataFrame:
         """
         Remove any columns we don't want from the LCMS maf file, and rename the others so as to make them more receptive
         to being computed.
 
         :param df: NMR maf file to clean up.
+        :param study_id: The accession number of the study that the maf belongs to.
+        :param maf_filename: Maf filename to save as a new column in the dataframe.
         :return: Dataframe with renamed columns and unwanted columns removed.
         """
         logger.info('hit NMR MAF cleanup')
@@ -152,6 +156,8 @@ class DataFrameUtils:
         try:
             k = k.append(df, sort=False)
             df = k[keep]
+            df.insert(0, 'maf_filename', maf_filename)
+            df.insert(0, 'study_id', study_id)
         except Exception as e:
             logger.error(f'unexpected issue with cleaning up dataframe: {str(e)}')
         return df

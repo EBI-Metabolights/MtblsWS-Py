@@ -82,11 +82,13 @@ class CombinedMafBuilder:
                     logger.error(f'Issue with opening maf file {maf}, cause of error unclear: {str(e)}')
                     self.missed_maf_register.append(maf)
                     continue
+
                 cleanup_function = getattr(DataFrameUtils, f'{self.method}_maf_cleanup')
                 logger.info(cleanup_function)
-                maf_temp = cleanup_function(maf_temp)
+                maf_temp = cleanup_function(maf_temp, study_id, maf)
                 logger.info(f'maf file post cleanup: {maf_temp}')
                 maf_as_dict = totuples(df=maf_temp, text='dict')['dict']
+
                 yield maf_as_dict
 
             # assuming that a maf has been found as they have been hand selected
