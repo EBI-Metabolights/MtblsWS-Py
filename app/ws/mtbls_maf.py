@@ -318,9 +318,9 @@ class CombineMetaboliteAnnotationFiles(Resource):
         combiBuilder.build()
 
         return {
-            'status': f'Combined Maf File Built, with {len(combiBuilder.missed_maf_register)} missing MAFs:  '
+            'status': f'Combined Maf File Built, with {len(combiBuilder.missed_maf_register)} MAFs unable to be opened:  '
                       f'{str(combiBuilder.missed_maf_register)}. There were '
-                      f'{len(combiBuilder.no_relevant_maf_register)} studies that had no MAF file matching the '
-                      f'given analytical method {method}: {str(combiBuilder.no_relevant_maf_register)}'
+                      f'{len(combiBuilder.no_relevant_maf_register)} studies that had MAF files, but no MAF file '
+                      f'matching the given analytical method {method}: {str(combiBuilder.no_relevant_maf_register)}'
         }
 
