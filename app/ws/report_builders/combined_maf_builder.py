@@ -101,7 +101,6 @@ class CombinedMafBuilder:
         :param study_location: The location in the filesystem of the study, as a string.
         :return: A List of strings representing culled filenames.
         """
-        #study_location = study_location.strip("'")
         logger.error(f'hit sorts maf for {study_location}, method: {self.method}')
         filtered_maf_list = []
         tokens = {
@@ -110,7 +109,7 @@ class CombinedMafBuilder:
         }
         maf_file_list = None
         logger.info(f'current directory: {os.getcwd()}')
-        # os.chdir(study_location)
+
         try:
             logger.info(str([file for file in os.listdir(study_location)]))
             maf_file_list = [file for file in os.listdir(study_location) if

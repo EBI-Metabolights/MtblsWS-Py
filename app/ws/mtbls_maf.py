@@ -316,8 +316,7 @@ class CombineMetaboliteAnnotationFiles(Resource):
         )
 
         combiBuilder.build()
-
-        return {
+        r_d = {
             'status': f'Combined Maf File Built, with {len(combiBuilder.unopenable_maf_register)} MAFs unable to be '
                       f'opened: {str(combiBuilder.unopenable_maf_register)}. There were '
                       f'{len(combiBuilder.missing_maf_register)} studies that had no MAF files: '
@@ -326,4 +325,6 @@ class CombineMetaboliteAnnotationFiles(Resource):
                       f'MAF file matching the given analytical method {method}: '
                       f'{str(combiBuilder.no_relevant_maf_register)}'
         }
-
+        # logging it out in the event of the swagger UI crashing as these are useful numbers
+        logger.info(r_d['status'])
+        return r_d
