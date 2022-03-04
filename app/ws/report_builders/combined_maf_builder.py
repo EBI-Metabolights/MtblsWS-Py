@@ -22,6 +22,7 @@ class CombinedMafBuilder:
         self.method = method
         self.missed_maf_register = []
         self.missing_study_directory_register = []
+        self.no_relevant_maf_register = []
 
     def build(self):
         """
@@ -55,7 +56,6 @@ class CombinedMafBuilder:
             abort(500)
 
 
-
     def get_dataframe(self):
         """
         Yield an individual dataframe-as-a-dict. This is a generator method, with the idea being that with such massive files
@@ -69,7 +69,8 @@ class CombinedMafBuilder:
             logger.info(f'hit get dataframes first loop {str(i)} times')
             copy = repr(self.original_study_location).strip("'")
             study_location = copy.replace("MTBLS1", study_id)
-            for maf in self.sort_mafs(study_location):
+
+            for maf in self.sort_mafs(study_location, study_id):
                 logger.error(f' hit get dataframes interior loop with {maf}')
                 maf_temp = None
                 try:
@@ -91,10 +92,8 @@ class CombinedMafBuilder:
 
                 yield maf_as_dict
 
-            # assuming that a maf has been found as they have been hand selected
 
-
-    def sort_mafs(self, study_location: str):
+    def sort_mafs(self, study_location: str, study_id: str):
         """
         Sorts through study directory maf files by checking for the presence of 'tokens' in the filename.
 
@@ -124,9 +123,12 @@ class CombinedMafBuilder:
         finally:
             if maf_file_list is None:
                 self.missing_study_directory_register.append(study_location)
+            if len(maf_file_list) is 0:
+                self.no_relevant_maf_register.append(study_id)
+
 
         logger.info(f'maf_file_list {str(maf_file_list)}')
-        if maf_file_list.__len__() > 1:
+        if len(maf_file_list) > 1:
             filtered_maf_list = [file for file in maf_file_list if
                                  any(token.upper() in file.upper() for token in tokens[self.method])]
         else:
