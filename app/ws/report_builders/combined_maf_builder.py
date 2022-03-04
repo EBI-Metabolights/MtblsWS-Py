@@ -20,7 +20,8 @@ class CombinedMafBuilder:
         self.studies_to_combine = studies_to_combine
         self.original_study_location = original_study_location
         self.method = method
-        self.missed_maf_register = []
+        self.unopenable_maf_register = []
+        self.missing_maf_register = []
         self.missing_study_directory_register = []
         self.no_relevant_maf_register = []
 
@@ -77,11 +78,11 @@ class CombinedMafBuilder:
                     maf_temp = pandas.read_csv(os.path.join(study_location, maf), sep="\t", header=0, encoding='unicode_escape')
                 except pandas.errors.EmptyDataError as e:
                     logger.error(f'EmptyDataError Issue with opening maf file {maf}: {str(e)}')
-                    self.missed_maf_register.append(maf)
+                    self.unopenable_maf_register.append(maf)
                     continue
                 except Exception as e:
                     logger.error(f'Issue with opening maf file {maf}, cause of error unclear: {str(e)}')
-                    self.missed_maf_register.append(maf)
+                    self.unopenable_maf_register.append(maf)
                     continue
 
                 cleanup_function = getattr(DataFrameUtils, f'{self.method}_maf_cleanup')
@@ -124,7 +125,8 @@ class CombinedMafBuilder:
             if maf_file_list is None:
                 self.missing_study_directory_register.append(study_location)
             if len(maf_file_list) is 0:
-                self.missed_maf_register.append(maf_file_list)
+                self.missing_maf_register.append(study_id)
+                return maf_file_list
 
 
         logger.info(f'maf_file_list {str(maf_file_list)}')

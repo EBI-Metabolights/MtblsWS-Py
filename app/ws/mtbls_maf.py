@@ -318,9 +318,12 @@ class CombineMetaboliteAnnotationFiles(Resource):
         combiBuilder.build()
 
         return {
-            'status': f'Combined Maf File Built, with {len(combiBuilder.missed_maf_register)} MAFs unable to be opened:  '
-                      f'{str(combiBuilder.missed_maf_register)}. There were '
-                      f'{len(combiBuilder.no_relevant_maf_register)} studies that had MAF files, but no MAF file '
-                      f'matching the given analytical method {method}: {str(combiBuilder.no_relevant_maf_register)}'
+            'status': f'Combined Maf File Built, with {len(combiBuilder.unopenable_maf_register)} MAFs unable to be '
+                      f'opened: {str(combiBuilder.unopenable_maf_register)}. There were '
+                      f'{len(combiBuilder.missing_maf_register)} studies that had no MAF files: '
+                      f'{str(combiBuilder.missing_maf_register)} .There were '
+                      f'{len(combiBuilder.no_relevant_maf_register)} studies that had MAF files, but no '
+                      f'MAF file matching the given analytical method {method}: '
+                      f'{str(combiBuilder.no_relevant_maf_register)}'
         }
 
