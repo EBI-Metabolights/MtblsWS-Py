@@ -148,7 +148,7 @@ class DataFrameUtils:
                 'chemical_shift', 'multiplicity', 'taxid', 'species', 'database', 'database_version',
                 'reliability','uri', 'search_engine', 'search_engine_score', 'smallmolecule_abundance_sub',
                 'smallmolecule_abundance_stdev_sub']
-        k = pandas.DataFrame(colums=keep)
+        k = pandas.DataFrame(columns=keep)
         try:
             k = k.append(df, sort=False)
             df = k[keep]
