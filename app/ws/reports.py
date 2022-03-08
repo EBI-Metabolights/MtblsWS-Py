@@ -61,6 +61,15 @@ class StudyAssayTypeReports(Resource):
                 "paramType": "query",
                 "dataType": "string"
             },
+            {
+                "name": "slim",
+                "description": "Whether to generate a slim version of the file",
+                "required": True,
+                "paramType": "query",
+                "dataType": "Boolean",
+                "allowMultiple": False,
+                "default": False
+            },
 
             {
                 "name": "user_token",
@@ -101,6 +110,7 @@ class StudyAssayTypeReports(Resource):
 
         args = parser.parse_args(req=request)
         studytype = args['studytype']
+        slim = args['slim']
         if studytype:
             studytype = studytype.strip()
         else:
@@ -115,10 +125,13 @@ class StudyAssayTypeReports(Resource):
 
         wsc = WsClient()
 
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions('MTBLS1', user_token)
+        is_curator, __, __, __, study_location, __, __, __ = wsc.get_permissions('MTBLS1', user_token)
+        if is_curator is False:
+            abort(413)
 
-        return jsonify({'message': generate_file(study_location, studytype)})
+        msg = generate_file(study_location, studytype, slim)
+        logger.info(msg)
+        return jsonify({'message': msg})
 
 class reports(Resource):
 

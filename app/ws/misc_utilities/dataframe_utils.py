@@ -112,3 +112,15 @@ class DataFrameUtils:
         df = df.rename(columns=rename)
         return df
 
+    @staticmethod
+    def collapse(df):
+        num_rows = len(df.index)
+        num_cols = len(df.columns)
+        df.drop([1, num_rows])
+        new_col_msg = f'Rows collapsed: {num_rows}'
+        df.insert(num_cols, 'Summary', new_col_msg)
+        return df
+
+
+
+

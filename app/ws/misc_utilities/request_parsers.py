@@ -19,4 +19,5 @@ class RequestParsers:
     def study_type_report_parser():
         parser = reqparse.RequestParser()
         parser.add_argument('studytype', help='The type of assay of the study IE NMR')
+        parser.add_argument('slim', help='Whether to generate a slim version of the file.')
         return parser

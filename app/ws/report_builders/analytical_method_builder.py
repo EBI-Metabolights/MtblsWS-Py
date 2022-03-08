@@ -1,18 +1,52 @@
 import logging
 import os
+import time
+
 import pandas
 import numpy
 from pandas import DataFrame
 
 from flask import current_app as app, abort
 
+from app.ws.mtbls_maf import totuples
 from app.ws.utils import readDatafromFile
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 
 logger = logging.getLogger('wslog')
 
 
-def generate_file(original_study_location: str, studytype: str):
+
+class BuilderPerformanceTracker:
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            self.__setattr__(k, v)
+        self._timers = {}
+
+    def push(self, key, val):
+        prev = getattr(self, key)
+        current = prev.append(val)
+        self.__setattr__(key, current)
+
+    def start_timer(self, timer_name: str):
+        self._timers.update(
+            {timer_name: {
+                'start_time': time.time(), 'end_time': None
+                }
+            }
+        )
+
+    def stop_timer(self, timer_name: str):
+        self._timers[timer_name]['end_time'] = time.time()
+
+    def get_duration(self, timer_name: str):
+        return self._timers[timer_name]['end_time'] - self._timers[timer_name]['start_time']
+
+    def report(self):
+        pass
+
+
+def generate_file(original_study_location: str, studytype: str, slim: bool):
     """
     Entry method for generating a report for a given study assay type IE NMR. Calls the build_sheet method, and returns
     a message indicating the outcome of the generation process. Note that the process may fail hard during the
@@ -25,21 +59,16 @@ def generate_file(original_study_location: str, studytype: str):
     """
     reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
 
-    original_sin, missing_samplesheets, assaysheets_causing_errors = build_sheet(original_study_location, studytype, reporting_path)
+    original_sin, tracker = build_sheet(original_study_location, studytype, reporting_path, slim)
 
     if not original_sin.empty:
         try:
-            # original_sin.to_excel(os.path.join(reporting_path, "stats.xlsx"))
-            original_sin.to_csv(os.path.join(reporting_path, "{0}.tsv".format(studytype)), sep="\t", encoding='utf-8', index=False)
-            message = 'Successfully wrote report to excel file at {path}{file}.tsv . There were {bad_samp} studies that ' \
-                      'were missing sample sheets and so were not included in the report. There were {bad_assay} assay'\
-                      ' sheets which caused errors when processed'.format(
-                            path=reporting_path,
-                            file=studytype,
-                            bad_samp=missing_samplesheets,
-                            bad_assay=str(len(assaysheets_causing_errors)))
+            original_sin.to_csv(os.path.join(reporting_path, f"{studytype}.tsv"), sep="\t", encoding='utf-8', index=False)
+            message = f'Successfully wrote report to excel file at {reporting_path}{studytype}.tsv . There were ' \
+                      f'{tracker.missing_sample_sheets} studies that were missing sample sheets and so were not included in the ' \
+                      f'report. There were {str(len(tracker.assays_causing_errors))} assay sheets which caused errors when processed'
         except Exception as e:
-            message = 'Problem with writing report to csv file: {0}'.format(e)
+            message = f'Problem with writing report to csv file: {str(e)}'
             logger.error(message)
             abort(500, message)
     else:
@@ -51,7 +80,7 @@ def generate_file(original_study_location: str, studytype: str):
     return message
 
 
-def build_sheet(original_study_location, studytype, reporting_path):
+def build_sheet(original_study_location, studytype, reporting_path, slim):
     """
     Pulls all studies that are recorded as being of that detection type (referring to the globals.json report file),
     and iterates over the list, creating a dataframe for each study consisting of the study accession number,
@@ -72,15 +101,21 @@ def build_sheet(original_study_location, studytype, reporting_path):
 
     :return: Merged DataFrame object representing the full report.
     """
-
+    tracker = BuilderPerformanceTracker(
+        assays_causing_errors=[],
+        missing_sample_sheets=0,
+    )
     specified_study_data = get_data(studytype, reporting_path)
-    assaysheets_causing_errors = []
-    missing_samplesheets = 0
     sample_df = pandas.DataFrame(
         columns=["Study", "Characteristics.Organism.", "Characteristics.Organism.part.", "Protocol.REF", "Sample.Name"])
     assay_df = get_column_headers_by_detection_type(studytype)
 
+    sample_df_as_list_of_dicts = []
+    assay_df_as_list_dicts = []
+
+
     for study in specified_study_data:
+        tracker.start_timer(study)
         study_location = original_study_location.replace("MTBLS1", study)
         logger.info(study_location)
         sample_file_list = [file for file in os.listdir(study_location) if
@@ -88,7 +123,7 @@ def build_sheet(original_study_location, studytype, reporting_path):
         if len(sample_file_list) is 0:
             logger.error(
                 'Sample sheet not found. Either it is not present or does not follow the proper naming convention.')
-            missing_samplesheets += 1
+            tracker.missing_samplesheets += 1
             # skip this iteration since we cant find the samplesheet
             continue
 
@@ -101,13 +136,17 @@ def build_sheet(original_study_location, studytype, reporting_path):
             sample_temp.insert(0, 'Study', study)
 
             # we want to remove any columns we don't want
-            sample_temp = DataFrameUtils.sample_cleanup(sample_temp)
-            sample_df = sample_df.append(sample_temp, ignore_index=True)
+            sample_temp = DataFrameUtils.sample_cleanup(df=sample_temp)
+            if slim:
+                sample_temp = DataFrameUtils.collapse(df=sample_temp)
+            # sample_df = sample_df.append(sample_temp, ignore_index=True)
+            sample_df_as_list_of_dicts.extend(totuples(df=sample_temp, text='dict')['dict'])
         except UnicodeDecodeError as e:
             logger.error(
-                'UnicodeDecodeError when trying to open sample sheet. Study {0} will not be included in report: {1}'.format(
-                    study, e))
-            missing_samplesheets += 1
+                f'UnicodeDecodeError when trying to open sample sheet. Study {study} will not be included in report: '
+                f'{str(e)}')
+            tracker.missing_samplesheets += 1
+            tracker.stop_timer(study)
             continue
 
         assays_list = sort_assays(study_location, studytype)
@@ -118,14 +157,20 @@ def build_sheet(original_study_location, studytype, reporting_path):
                 assay_temp.insert(0, 'Study', study)
                 assay_temp = assay_temp.replace(numpy.nan, '', regex=True)
                 assay_temp = cleanup(studytype, assay_temp)
-                assay_df = assay_df.append(assay_temp, ignore_index=True)
+                if slim:
+                    assay_temp = DataFrameUtils.collapse(df=assay_temp)
+                # assay_df = assay_df.append(assay_temp, ignore_index=True)
+                assay_df_as_list_dicts.extend(totuples(df=assay_temp, text='dict')['dict'])
+                tracker.stop_timer(study)
             except Exception as e:
                 logger.error('Error appending assay {0} into larger dataframe: {1}'.format(assay, e))
-                assaysheets_causing_errors.append(assay)
+                tracker.push('assay_causing_errors', assay)
+                tracker.stop_timer(study)
                 continue
+
     try:
         result = pandas.merge(sample_df, assay_df, on=['Study', 'Sample.Name'])
-        return result, missing_samplesheets, assaysheets_causing_errors
+        return result, tracker
     except Exception as e:
         logger.error(e)
         abort(500, e)
@@ -159,6 +204,7 @@ def sort_assays(study_location, studytype, include_all=True):
     # more than one assay file, at least one but maybe more of those will be NMR assays, so we need to cull the
     # other assays as they would pollute the resulting table.
     if len(assays_list) > 1:
+        # we could do some column checking?? this would almost certainly eliminate any assays that we dont want.
         filtered_assays_list = [file for file in assays_list if studytype in file.upper()]
 
     if len(filtered_assays_list) == 0:
