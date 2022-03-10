@@ -34,7 +34,7 @@ from app.ws.study_files import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
 from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
-from app.ws.report_builders.analytical_method_builder import generate_file
+from app.ws.report_builders.analytical_method_builder import  AnalyticalMethodBuilder
 from app.ws.misc_utilities.request_parsers import RequestParsers
 
 
@@ -64,6 +64,15 @@ class StudyAssayTypeReports(Resource):
             {
                 "name": "slim",
                 "description": "Whether to generate a slim version of the file",
+                "required": True,
+                "paramType": "query",
+                "dataType": "Boolean",
+                "allowMultiple": False,
+                "default": False
+            },
+            {
+                "name": "verbose",
+                "description": "Whether to give a verbose output of the performance of the builder",
                 "required": True,
                 "paramType": "query",
                 "dataType": "Boolean",
@@ -111,6 +120,8 @@ class StudyAssayTypeReports(Resource):
         args = parser.parse_args(req=request)
         studytype = args['studytype']
         slim = args['slim']
+        verbose = args['verbose']
+
         if studytype:
             studytype = studytype.strip()
         else:
@@ -129,7 +140,13 @@ class StudyAssayTypeReports(Resource):
         if is_curator is False:
             abort(413)
 
-        msg = generate_file(study_location, studytype, slim)
+        msg = AnalyticalMethodBuilder(
+            original_study_location=study_location,
+            studytype=studytype,
+            slim=slim,
+            verbose=verbose,
+        ).build()
+
         logger.info(msg)
         return jsonify({'message': msg})
 
