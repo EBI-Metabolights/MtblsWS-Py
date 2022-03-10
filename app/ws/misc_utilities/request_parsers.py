@@ -20,4 +20,7 @@ class RequestParsers:
         parser = reqparse.RequestParser()
         parser.add_argument('studytype', help='The type of assay of the study IE NMR')
         parser.add_argument('slim', help='Whether to generate a slim version of the file.')
+        parser.add_argument('verbose', help='Whether to give a verbose output on the perforamnce of the builder')
         return parser
+
+

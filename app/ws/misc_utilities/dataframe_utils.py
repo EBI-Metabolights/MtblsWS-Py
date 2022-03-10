@@ -121,6 +121,34 @@ class DataFrameUtils:
         df.insert(num_cols, 'Summary', new_col_msg)
         return df
 
-
+    @staticmethod
+    def get_column_headers_by_detection_type(studytype):
+        """Return column header based on the detection method in the study. Broadly assumes there are only two categories,
+        LCMS and all its variants, and NMR. GC-MS is not accounted for yet, as we currently aren't interested in analysing
+        that data. It would only take the selection of the relevant column headers to implement."""
+        if studytype.count('LC') > 0:
+            return \
+                pandas.DataFrame(columns=['Study', 'Sample.Name', 'Protocol.REF.0', 'Parameter.Value.Post.Extraction.',
+                                          'Parameter.Value.Derivatization.', 'Extract.Name', 'Protocol.REF.1',
+                                          'Parameter.Value.Chromatography.Instrument.', 'Parameter.Value.Column.model.',
+                                          'Parameter.Value.Column.type.', 'Labeled.Extract.Name', 'Label',
+                                          'Protocol.REF.2',
+                                          'Parameter.Value.Scan.polarity.', 'Parameter.Value.Scan.m/z.range.',
+                                          'Parameter.Value.Instrument.', 'Parameter.Value.Ion.source.',
+                                          'Parameter.Value.Mass.analyzer.', 'MS.Assay.Name', 'Raw.Spectral.Data.File',
+                                          'Protocol.REF.3', 'Normalization.Name', 'Derived.Spectral.Data.File',
+                                          'Protocol.REF.4',
+                                          'Data.Transformation.Name', 'Metabolite.Assignment.File'])
+        else:
+            return pandas.DataFrame(columns=['Study', 'Sample.Name', 'Protocol.REF.0', 'Protocol.REF.1',
+                                             'Parameter.Value.NMR.tube.type.', 'Parameter.Value.Solvent.',
+                                             'Parameter.Value.Sample.pH.', 'Parameter.Value.Temperature.', 'Unit',
+                                             'Label', 'Protocol.REF.2', 'Parameter.Value.Instrument.',
+                                             'Parameter.Value.NMR.Probe.', 'Parameter.Value.Number.of.transients.',
+                                             'Parameter.Value.Pulse.sequence.name.',
+                                             'Acquisition.Parameter.Data.File', 'Protocol.REF.3', 'NMR.Assay.Name',
+                                             'Free.Induction.Decay.Data.File', 'Protocol.REF.4',
+                                             'Derived.Spectral.Data.File', 'Protocol.REF.5',
+                                             'Data.Transformation.Name', 'Metabolite.Assignment.File'])
 
 
