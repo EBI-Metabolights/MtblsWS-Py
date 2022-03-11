@@ -25,8 +25,9 @@ class AnalyticalMethodBuilder:
             original_study_location: str,
             studytype: str,
             slim: bool,
+            reporting_path,
             verbose: bool = True,
-            reporting_path=app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
+
     ):
         """"TODO:
         api endpoint for verbose tracker output

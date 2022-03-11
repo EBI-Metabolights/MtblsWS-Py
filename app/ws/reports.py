@@ -140,10 +140,13 @@ class StudyAssayTypeReports(Resource):
         if is_curator is False:
             abort(413)
 
+        reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
+
         msg = AnalyticalMethodBuilder(
             original_study_location=study_location,
             studytype=studytype,
             slim=slim,
+            reporting_path=reporting_path,
             verbose=verbose,
         ).build()
 
