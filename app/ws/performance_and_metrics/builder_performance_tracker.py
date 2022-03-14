@@ -41,7 +41,7 @@ class BuilderPerformanceTracker:
     def stop_timer(self, timer_name: str):
         self._timers[timer_name]['end_time'] = time.time()
 
-    def get_duration(self, timer_name: str):
+    def get_duration(self, timer_name: str) -> float:
         return self._timers[timer_name]['end_time'] - self._timers[timer_name]['start_time']
 
     def report(self, key):

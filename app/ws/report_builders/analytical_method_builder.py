@@ -268,9 +268,10 @@ class AnalyticalMethodBuilder:
         :return: Report of the build process as a string
         """
         base_message = f'Successfully wrote report to excel file at {self.reporting_path}{self.studytype}.tsv in ' \
-                       f'{str(self.tracker.get_duration("total"))}. There were {self.tracker.missing_sample_sheets} ' \
-                       f'studies that were missing sample sheets and so were not included in the report. There were ' \
-                       f'{str(len(self.tracker.assays_causing_errors))} assay sheets which caused errors when processed'
+                       f'{str(round(self.tracker.get_duration("total"), 2))} s. There were ' \
+                       f'{self.tracker.missing_sample_sheets} studies that were missing sample sheets and so were not '\
+                       f'included in the report. There were {str(len(self.tracker.assays_causing_errors))} assay ' \
+                       f'sheets which caused errors when processed'
         if self.verbose:
             time_str = 'Output for all timers in tracker: \n'
             timer_message = '\n '.join(self.tracker.report_all_timers())
