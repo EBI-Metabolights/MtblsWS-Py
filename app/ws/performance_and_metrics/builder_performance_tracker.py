@@ -1,4 +1,7 @@
+import logging
 import time
+
+logger = logging.getLogger('wslog')
 
 
 class BuilderPerformanceTracker:
@@ -14,9 +17,16 @@ class BuilderPerformanceTracker:
         self._timers = {}
 
     def push(self, key, val):
-        if all(isinstance(el, type(val)) for el in getattr(self, key)):
+        logger.info(getattr(self, key))
+        logger.info(f'bpt: {key}:{val}')
+        if getattr(self, key) is []:
+            current = [val]
+            self.__setattr__(key, current)
+        elif all(isinstance(el, type(val)) for el in getattr(self, key)):
             prev = getattr(self, key)
+            logger.info(f'prev: {prev}')
             current = prev.append(val)
+            logger.info(f'current: {current}')
             self.__setattr__(key, current)
         else:
             raise TypeError(f"attempt to push val {val} of type {type(val)} to list of type {type(getattr(self, key))}")

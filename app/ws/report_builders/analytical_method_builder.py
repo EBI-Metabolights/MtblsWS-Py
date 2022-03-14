@@ -53,6 +53,7 @@ class AnalyticalMethodBuilder:
         :return: message indicating the outcome of the file generating process.
         """
         logger.info(f'starting build process for type {self.studytype}')
+        logger.info(self.tracker.__dict__)
         list_of_samps = []
         list_of_assays = []
         dataframe_generator = self._get_dataframe()
