@@ -281,7 +281,7 @@ class AnalyticalMethodBuilder:
             tracking_variables_str = f'Output from tracking variables \n'
             tracking_message = '\n '.join([
                 f'Tracker {key} : {str(val)}'
-                for key, val in self.__dict__.items()
+                for key, val in self.tracker.__dict__.items()
                 if key is not '_timers'])
             total_tracking = '\n '.join((tracking_variables_str, tracking_message))
 
