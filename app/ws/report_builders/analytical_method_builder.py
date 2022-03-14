@@ -52,7 +52,7 @@ class AnalyticalMethodBuilder:
 
         :return: message indicating the outcome of the file generating process.
         """
-
+        logger.info(f'starting build process for type {self.studytype}')
         list_of_samps = []
         list_of_assays = []
         dataframe_generator = self._get_dataframe()
@@ -284,7 +284,7 @@ class AnalyticalMethodBuilder:
                 if key is not '_timers'])
             total_tracking = '\n '.join((tracking_variables_str, tracking_message))
 
-            message = '\n\n '.join((general_message, tracking_message, total_time))
+            message = '\n\n '.join((general_message, total_tracking, total_time))
 
         else:
             message = base_message
