@@ -16,7 +16,6 @@ class CombinedMafBuilder:
     """
 
     def __init__(self, studies_to_combine: List[str], original_study_location: str, method: str):
-        logger.error('error')
         self.studies_to_combine = studies_to_combine
         self.original_study_location = original_study_location
         self.method = method
@@ -34,7 +33,6 @@ class CombinedMafBuilder:
         maf_generator = self.get_dataframe()
 
         for maf_as_dict in maf_generator:
-            logger.info(f'hit no. {list_of_mafs.__len__()}')
             list_of_mafs.extend(maf_as_dict)
 
         reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
@@ -67,12 +65,10 @@ class CombinedMafBuilder:
         that might correspond to other analytical methods.
         """
         for i, study_id in enumerate(self.studies_to_combine):
-            logger.info(f'hit get dataframes first loop {str(i)} times')
             copy = repr(self.original_study_location).strip("'")
             study_location = copy.replace("MTBLS1", study_id)
 
             for maf in self.sort_mafs(study_location, study_id):
-                logger.error(f' hit get dataframes interior loop with {maf}')
                 maf_temp = None
                 try:
                     maf_temp = pandas.read_csv(os.path.join(study_location, maf), sep="\t", header=0, encoding='unicode_escape')
@@ -86,9 +82,7 @@ class CombinedMafBuilder:
                     continue
 
                 cleanup_function = getattr(DataFrameUtils, f'{self.method}_maf_cleanup')
-                logger.info(cleanup_function)
                 maf_temp = cleanup_function(maf_temp, study_id, maf)
-                logger.info(f'maf file post cleanup: {maf_temp}')
                 maf_as_dict = totuples(df=maf_temp, text='dict')['dict']
 
                 yield maf_as_dict
@@ -101,17 +95,14 @@ class CombinedMafBuilder:
         :param study_location: The location in the filesystem of the study, as a string.
         :return: A List of strings representing culled filenames.
         """
-        logger.error(f'hit sorts maf for {study_location}, method: {self.method}')
         filtered_maf_list = []
         tokens = {
             'NMR': ['NMR', 'spectroscopy'],
             'LCMS': ['LC', 'LC-MS', 'LCMS', 'spectrometry']
         }
         maf_file_list = None
-        logger.info(f'current directory: {os.getcwd()}')
 
         try:
-            logger.info(str([file for file in os.listdir(study_location)]))
             maf_file_list = [file for file in os.listdir(study_location) if
                              file.startswith('m_') and file.endswith('.tsv')]
         except FileNotFoundError as e:
@@ -129,11 +120,9 @@ class CombinedMafBuilder:
                 return maf_file_list
 
 
-        logger.info(f'maf_file_list {str(maf_file_list)}')
         filtered_maf_list = [file for file in maf_file_list if
                              any(token.upper() in file.upper() for token in tokens[self.method])]
         if len(filtered_maf_list) is 0:
             self.no_relevant_maf_register.append(study_id)
 
-        logger.info(f'filtered_maf_list {str(filtered_maf_list)}')
         return filtered_maf_list
