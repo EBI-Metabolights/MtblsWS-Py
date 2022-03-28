@@ -249,7 +249,7 @@ class CombineMetaboliteAnnotationFiles(Resource):
         "MTBLS2",
         "MTBLS3",
       ],
-      method: "NMR"
+      "method": "NMR"
     }
     </code></pre>''',
         parameters=[
