@@ -247,7 +247,7 @@ class CombineMetaboliteAnnotationFiles(Resource):
       "data": [ 
         "MTBLS1",
         "MTBLS2",
-        "MTBLS3",
+        "MTBLS3"
       ],
       "method": "NMR"
     }
