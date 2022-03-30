@@ -21,6 +21,7 @@ class RequestParsers:
         parser.add_argument('studytype', help='The type of assay of the study IE NMR')
         parser.add_argument('slim', help='Whether to generate a slim version of the file.')
         parser.add_argument('verbose', help='Whether to give a verbose output on the perforamnce of the builder')
+        parser.add_argument('drive', help='Whether to also save the file to google drive.')
         return parser
 
 

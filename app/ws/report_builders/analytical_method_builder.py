@@ -1,15 +1,19 @@
 import datetime
 import logging
 import os
-import time
 from typing import List
-
+import gspread
+import gspread_dataframe
 import pandas
 import numpy
 from pandas import DataFrame
 
 from flask import current_app as app, abort
+from oauth2client.service_account import ServiceAccountCredentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 
+from app.ws.cronjob import setGoogleSheet
 from app.ws.mtbls_maf import totuples
 from app.ws.performance_and_metrics.builder_performance_tracker import BuilderPerformanceTracker
 from app.ws.utils import readDatafromFile
@@ -27,11 +31,19 @@ class AnalyticalMethodBuilder:
             slim: bool,
             reporting_path,
             verbose: bool = True,
-
+            g_drive: bool = False
     ):
-        """"TODO:
-        api endpoint for verbose tracker output
-        breakup build into some more methods as it is ungainly.
+        """
+        Init method
+
+        :param original_study_location: The location in storage of a single study - we then just reuse this by
+            formatting in each study ID repeatedly, to save making more calls to the IsaAPI.
+        :param studytype: The analytical method used in the study IE NMR.
+        :param slim: Flag to indicate the user wants a slim version of the report, where information for each study is
+            condensed to a single row.
+        :param reporting_path: The location to save the resultant report.
+        :param verbose: Flag to indicate whether to give verbose output from the tracker.
+        :param g_drive: Flag to indicate whether to also save the report to google drive.
         """
         self.original_study_location = original_study_location
         self.studytype = studytype
@@ -82,7 +94,16 @@ class AnalyticalMethodBuilder:
         message = self._builder_report()
         return message
 
-    def _merge(self, list_of_assays, list_of_samps) -> pandas.DataFrame:
+    def _merge(self, list_of_assays, list_of_samps) -> DataFrame:
+        """
+        merge the two list-of-dicts to create two tall dataframes - one representing the assay information, the other
+        representing the sample information. We then merge these two dataframes together side-by-side to create the
+        final dataframe.
+
+        :param list_of_assays: A List of dicts, where each dict represents a row of assay data.
+        :param list_of_samps: A List of dicts where each dict represents a row of sample data.
+        :return: A merged pandas.DataFrame object.
+        """
 
         merged_samp = None
         merged_assay = None
@@ -188,7 +209,7 @@ class AnalyticalMethodBuilder:
                     self.tracker.stop_timer(study)
                     continue
 
-    def _dataframe_cleanup(self, assay_dataframe) -> pandas.DataFrame:
+    def _dataframe_cleanup(self, assay_dataframe) -> DataFrame:
         """
         Pick which cleanup method to use. Uses the same broad assumption as elsewhere that all studies fall into one of two
         categories.
@@ -232,6 +253,82 @@ class AnalyticalMethodBuilder:
             filtered_assays_list = assays_list
 
         return filtered_assays_list
+
+    def _save(self, result):
+        """
+        Save the resulting dataframe as a spreadsheet to the server, and if selected, to the google drive.
+        """
+        token_path = app.config.get('GOOGLE_SHEET_TOKEN')
+        # stick this in app.config
+        mariana_folder_id = '1i8caTtguyLBvQcBt7Lzqfplmmrr5T1JO'
+        ebi_folder_id = '1psQb4OSjAXrEqPmZpt6kQfPZfooHqnBE'
+
+        title = f'{self.studytype} {str(datetime.datetime.now())}'
+
+
+        if not result.empty:
+            try:
+                result.to_csv(
+                    os.path.join(self.reporting_path, f"{self.studytype}.tsv"), sep="\t", encoding='utf-8', index=False)
+            except Exception as e:
+                message = f'Problem with writing report to csv file: {str(e)}'
+                logger.error(message)
+                abort(500, message)
+        else:
+            message = 'Unexpected error in concatenating dataframes - end result is empty. Check the globals.json file ' \
+                  'exists and if so, has been recently generated. Check the spelling of the study type given as a '\
+                  'parameter'
+            logger.error(message)
+            abort(500, message)
+
+
+        spreadsheet = {
+            'properties': {
+                'title': title
+            }
+        }
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
+
+        gc = gspread.authorize(credentials)
+        gc.create(title)
+        empty_worksheet = gc.open(title)
+        gspread_dataframe.set_with_dataframe(
+            worksheet=empty_worksheet,
+            dataframe=result
+        )
+
+        drive_service = build('drive', 'v3', credentials=credentials)
+
+        # Now we need to find the file in google drive
+        spreadsheet_file = None
+        page_token = None
+        while True:
+            response = drive_service.files().list(q="mimeType='application/vnd.google-apps.spreadsheet'",
+                                                  spaces='drive',
+                                                  fields='nextPageToken, files(id, name)',
+                                                  pageToken=page_token).execute()
+            for file in response.get('files', []):
+                # Process change
+                if file.get('name') is title:
+                    spreadsheet_file = file
+                    break
+
+            page_token = response.get('nextPageToken', None)
+            if page_token is None:
+                break
+
+        if spreadsheet_file is None:
+            raise FileNotFoundError
+
+        previous_parents = ",".join(spreadsheet_file.get('parents'))
+        updated_spreadsheet_file = drive_service.files.update(fileId=spreadsheet_file.get('id'),
+                                                              addParents=mariana_folder_id,
+                                                              removeParents=previous_parents,
+                                                              fields="id, parents").execute()
+
+
+
 
     def _get_data_from_reporting_directory(self):
         """
@@ -287,7 +384,7 @@ class AnalyticalMethodBuilder:
                 if key is not '_timers'])
             total_tracking = '\n '.join((tracking_variables_str, tracking_message))
 
-            message = '\n\n '.join((general_message, total_tracking, total_time))
+            message = '\n\n '.join((base_message, general_message, total_tracking, total_time))
 
         else:
             message = base_message

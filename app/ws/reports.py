@@ -79,6 +79,15 @@ class StudyAssayTypeReports(Resource):
                 "allowMultiple": False,
                 "default": False
             },
+            {
+                "name": "drive",
+                "description": "Whether to save the output file to google drive.",
+                "required": False,
+                "paramType": "query",
+                "dataType": "Boolean",
+                "allowMultiple": False,
+                "default": False
+            },
 
             {
                 "name": "user_token",
@@ -121,6 +130,7 @@ class StudyAssayTypeReports(Resource):
         studytype = args['studytype']
         slim = args['slim']
         verbose = args['verbose']
+        drive = args['drive']
 
         if studytype:
             studytype = studytype.strip()
@@ -148,6 +158,7 @@ class StudyAssayTypeReports(Resource):
             slim=slim,
             reporting_path=reporting_path,
             verbose=verbose,
+            g_drive=drive
         ).build()
 
         logger.info(msg)
