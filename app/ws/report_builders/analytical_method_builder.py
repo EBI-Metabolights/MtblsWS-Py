@@ -299,6 +299,7 @@ class AnalyticalMethodBuilder:
                                                   pageToken=page_token).execute()
             for file in response.get('files', []):
                 # Process change
+                logger.info(f"{file.get('id')}, {file.get('title')}")
                 if file.get('name') is title:
                     spreadsheet_file = file
                     break
