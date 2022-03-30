@@ -287,7 +287,7 @@ class AnalyticalMethodBuilder:
             dataframe=result
         )
 
-        drive_service = build('drive', 'v3', credentials=credentials)
+        drive_service = build('drive', 'v3', credentials=credentials, cache_discovery=False)
 
         # Now we need to find the file in google drive
         spreadsheet_file = None
