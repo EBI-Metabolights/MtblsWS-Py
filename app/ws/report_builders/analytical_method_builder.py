@@ -76,20 +76,8 @@ class AnalyticalMethodBuilder:
 
         result = self._merge(list_of_assays, list_of_samps)
 
-        if not result.empty:
-            try:
-                result.to_csv(
-                    os.path.join(self.reporting_path, f"{self.studytype}.tsv"), sep="\t", encoding='utf-8', index=False)
-            except Exception as e:
-                message = f'Problem with writing report to csv file: {str(e)}'
-                logger.error(message)
-                abort(500, message)
-        else:
-            message = 'Unexpected error in concatenating dataframes - end result is empty. Check the globals.json file ' \
-                  'exists and if so, has been recently generated. Check the spelling of the study type given as a '\
-                  'parameter'
-            logger.error(message)
-            abort(500, message)
+        self._save(result)
+
         self.tracker.stop_timer('total')
         message = self._builder_report()
         return message
@@ -384,7 +372,7 @@ class AnalyticalMethodBuilder:
                 if key is not '_timers'])
             total_tracking = '\n '.join((tracking_variables_str, tracking_message))
 
-            message = '\n\n '.join((base_message, general_message, total_tracking, total_time))
+            message = '\n\n '.join(( general_message, total_tracking, total_time))
 
         else:
             message = base_message
