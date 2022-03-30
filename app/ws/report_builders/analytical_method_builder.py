@@ -279,6 +279,7 @@ class AnalyticalMethodBuilder:
         credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
 
         gc = gspread.authorize(credentials)
+        logger.info(gc.__dict__)
         gc.create(title)
         empty_spreadsheet = gc.open(title)
         empty_spreadsheet.add_worksheet(title=title, rows=len(result.index), cols=len(result.columns))
