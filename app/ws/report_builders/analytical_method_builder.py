@@ -280,9 +280,10 @@ class AnalyticalMethodBuilder:
 
         gc = gspread.authorize(credentials)
         gc.create(title)
-        empty_worksheet = gc.open(title)
+        empty_spreadsheet = gc.open(title)
+        empty_spreadsheet.add_worksheet(title=title)
         gspread_dataframe.set_with_dataframe(
-            worksheet=empty_worksheet,
+            worksheet=empty_spreadsheet.worksheet(title),
             dataframe=result
         )
 
