@@ -1131,9 +1131,13 @@ def is_valid_raw_file_column_entry(value: str) -> bool:
 
     """
     valid_filetypes = app.config.get('RAW_FILES_LIST')
+    valid_compressed = app.config.get('COMPRESSED_FILES_LIST')
+    
     for filetype in valid_filetypes:
         if value.endswith(filetype) and len(value) > len(filetype):
             return True
+        elif any(value.endswith(compr) for compr in valid_compressed) and value.count(filetype) is 1:
+            return True 
     return False
 
 
