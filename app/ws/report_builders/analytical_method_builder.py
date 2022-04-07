@@ -55,6 +55,7 @@ class AnalyticalMethodBuilder:
             missing_sample_sheets=0,
         )
         self.specified_study_data = self._get_data_from_reporting_directory()
+        self.g_drive = g_drive
 
     def build(self) -> str:
         """
@@ -270,54 +271,54 @@ class AnalyticalMethodBuilder:
             abort(500, message)
 
 
-        spreadsheet = {
-            'properties': {
-                'title': title
+        if self.g_drive:
+            spreadsheet = {
+                'properties': {
+                    'title': title
+                }
             }
-        }
-        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
+            scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+            credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
 
-        gc = gspread.authorize(credentials)
-        logger.info(gc.__dict__)
-        gc.create(title)
-        empty_spreadsheet = gc.open(title)
-        empty_spreadsheet.add_worksheet(title=title, rows=len(result.index), cols=len(result.columns))
-        gspread_dataframe.set_with_dataframe(
-            worksheet=empty_spreadsheet.worksheet(title),
-            dataframe=result
-        )
+            gc = gspread.authorize(credentials)
+            logger.info(gc.__dict__)
+            gc.create(title)
+            empty_spreadsheet = gc.open(title)
+            empty_spreadsheet.add_worksheet(title=title, rows=len(result.index), cols=len(result.columns))
+            gspread_dataframe.set_with_dataframe(
+                worksheet=empty_spreadsheet.worksheet(title),
+                dataframe=result
+            )
 
-        drive_service = build('drive', 'v3', credentials=credentials, cache_discovery=False)
+            drive_service = build('drive', 'v3', credentials=credentials, cache_discovery=False)
 
-        # Now we need to find the file in google drive
-        spreadsheet_file = None
-        page_token = None
-        while True:
-            response = drive_service.files().list(q="mimeType='application/vnd.google-apps.spreadsheet'",
-                                                  spaces='drive',
-                                                  fields='nextPageToken, files(id, name)',
-                                                  pageToken=page_token).execute()
-            for file in response.get('files', []):
-                # Process change
-                logger.info(f"{file.get('id')}, {file.get('name')}")
-                if file.get('name') is title:
-                    spreadsheet_file = file
+            # Now we need to find the file in google drive
+            spreadsheet_file = None
+            page_token = None
+            while True:
+                response = drive_service.files().list(q="mimeType='application/vnd.google-apps.spreadsheet'",
+                                                      spaces='drive',
+                                                      fields='nextPageToken, files(id, name)',
+                                                      pageToken=page_token).execute()
+                for file in response.get('files', []):
+                    # Process change
+                    logger.info(f"{file.get('id')}, {file.get('name')}")
+                    if file.get('name') is title:
+                        spreadsheet_file = file
+                        break
+
+                page_token = response.get('nextPageToken', None)
+                if page_token is None:
                     break
 
-            page_token = response.get('nextPageToken', None)
-            if page_token is None:
-                break
+            if spreadsheet_file is None:
+                raise FileNotFoundError
 
-        if spreadsheet_file is None:
-            raise FileNotFoundError
-
-        previous_parents = ",".join(spreadsheet_file.get('parents'))
-        updated_spreadsheet_file = drive_service.files.update(fileId=spreadsheet_file.get('id'),
-                                                              addParents=mariana_folder_id,
-                                                              removeParents=previous_parents,
-                                                              fields="id, parents").execute()
-
+            previous_parents = ",".join(spreadsheet_file.get('parents'))
+            updated_spreadsheet_file = drive_service.files.update(fileId=spreadsheet_file.get('id'),
+                                                                  addParents=mariana_folder_id,
+                                                                  removeParents=previous_parents,
+                                                                  fields="id, parents").execute()
 
 
 
