@@ -495,8 +495,9 @@ def get_study(study_id):
         result.append(dict(row))
 
     release_connection(postgresql_pool, conn)
-    return result[0]
-
+    if result:
+        return result[0]
+    return None
 
 def biostudies_acc_to_mtbls(biostudies_id):
     if not biostudies_id:
@@ -748,27 +749,20 @@ def override_validations(study_id, method, override=""):
         return None
 
     if method == 'query':
-        query = "select override from studies where acc = '#study_id#';"
+        query = "select override from studies where acc = %(study_id)s;"
     elif method == 'update':
-        query = "update studies set override = '#override#' where acc = '#study_id#';"
+        query = "update studies set override = %(override)s where acc = %(study_id)s;"
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-
         if method == 'query':
-            query = query.replace("#study_id#", study_id.upper())
-            query = query.replace('\\', '')
-            cursor.execute(query)
+            cursor.execute(query, {'study_id': study_id.upper()})
             data = cursor.fetchall()
             release_connection(postgresql_pool, conn)
             return data[0]
         elif method == 'update' and override:
-            query = query.replace("#study_id#", study_id.upper())
-            query = query.replace("#override#", override)
-            query = query.replace('\\', '')
-            cursor.execute(query)
+            cursor.execute(query, {'study_id': study_id.upper(), 'override': override})
             conn.commit()
-            # conn.close()
             release_connection(postgresql_pool, conn)
     except Exception as e:
         return False
@@ -778,11 +772,12 @@ def update_validation_status(study_id, validation_status):
     val_acc(study_id)
 
     if study_id and validation_status:
-        logger.info('Updating database validation status to ' + validation_status + ' for study ' + study_id)
-        query = "update studies set validation_status = '" + validation_status + "' where acc = '" + study_id + "';"
+        logger.info('Updating database validation status to %s for study %s' % (validation_status, study_id,))
+        query = "update studies set validation_status = %(validation_status)s where acc = %(study_id)s;"
+
         try:
             postgresql_pool, conn, cursor = get_connection()
-            cursor.execute(query)
+            cursor.execute(query, {'validation_status': validation_status, 'study_id': study_id})
             conn.commit()
             release_connection(postgresql_pool, conn)
             return True
