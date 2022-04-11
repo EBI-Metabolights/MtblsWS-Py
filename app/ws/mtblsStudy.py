@@ -174,6 +174,12 @@ class MtblsStudyValidationStatus(Resource):
     )
     def put(self, study_id, validation_status):
         log_request(request)
+
+        validation_status_list = ["error", "warn", "success"]
+
+        if not validation_status in validation_status_list:
+            abort(401)
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
