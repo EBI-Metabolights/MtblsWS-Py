@@ -25,14 +25,11 @@ from flask_restful_swagger import swagger
 from marshmallow import ValidationError
 
 from app.ws.db_connection import create_user, update_user, get_user
-from app.ws.isaApiClient import IsaApiClient
 from app.ws.misc_utilities.request_parsers import RequestParsers
-from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import log_request, val_email, get_new_password_and_api_token
+from app.ws.utils import val_email, get_new_password_and_api_token
+from app.ws.misc_utilities import ws_utils, response_messages as resp
 
 logger = logging.getLogger('wslog')
-iac = IsaApiClient()
-wsc = WsClient()
 
 
 class UserManagement(Resource):
@@ -74,44 +71,11 @@ class UserManagement(Resource):
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
+            resp.HTTP_200, resp.HTTP_400, resp.HTTP_401, resp.HTTP_403, resp.HTTP_404
         ]
     )
     def post(self,):
-        log_request(request)
-
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions('MTBLS1', user_token)
-        if not read_access:
-            abort(403)
+        ws_utils.validate_restricted_ws_request(request, 'MTBLS1')
 
         first_name = None
         last_name = None
@@ -136,7 +100,7 @@ class UserManagement(Resource):
                 orcid = data['orcid']
                 metaspace_api_key = data['metaspace_api_key']
             except Exception as e:
-                abort(412, str(e))
+                abort(400, str(e))
         except (ValidationError, Exception):
             abort(400, 'Incorrect JSON provided')
 
@@ -198,38 +162,12 @@ class UserManagement(Resource):
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. Server could not understand the request due to malformed syntax."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication."
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed for this user."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
+            resp.HTTP_200, resp.HTTP_400, resp.HTTP_401, resp.HTTP_403, resp.HTTP_404
         ]
     )
     def put(self, ):
-        log_request(request)
 
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
+        validation_result = ws_utils.validate_restricted_ws_request(request, 'MTBLS1')
 
         existing_user_name = None
         if "existing_user_name" in request.headers:
@@ -237,12 +175,6 @@ class UserManagement(Resource):
         else:
             # user id is required
             abort(401)
-
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions('MTBLS1', user_token)
-        if not read_access:
-            abort(403)
 
         first_name = None
         last_name = None
@@ -275,7 +207,7 @@ class UserManagement(Resource):
 
         status, message = update_user(first_name, last_name, email, affiliation, affiliation_url,
                                       address, orcid, api_token, password_encoded, existing_user_name,
-                                      is_curator, metaspace_api_key)
+                                      validation_result.is_curator, metaspace_api_key)
 
         if status:
             return {"user_name": email, "api_token": str(api_token), "password": str(password)}
@@ -305,22 +237,8 @@ class UserManagement(Resource):
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 400,
-                "message": "Bad Request. The username was not provided in the param string."
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            },
-            {
-                "code": 500,
-                "message": "Internal server error."
-            }
+            resp.HTTP_200, resp.HTTP_400, resp.HTTP_404, resp.HTTP_500
+
         ]
     )
     def get(self):
@@ -329,22 +247,7 @@ class UserManagement(Resource):
         checks its validity and what permissions are available to the bearer of the token.
         """
 
-        log_request(request)
-
-        # User authentication
-        user_token = None
-
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
-
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS1', user_token)
-
-        if not read_access:
-            abort(403)
+        validation_result = ws_utils.validate_restricted_ws_request(request, 'MTBLS1')
 
         # pull username from query params.
         username = None

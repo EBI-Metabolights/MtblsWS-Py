@@ -25,7 +25,7 @@ import logging
 import os
 import os.path
 import os.path
-import random
+import secrets
 import re
 import shutil
 import string
@@ -1158,7 +1158,8 @@ def val_email(email=None):
 
 def get_new_password_and_api_token():
     api_token = uuid.uuid1()
-    password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
+    choice = string.ascii_uppercase + string.ascii_lowercase + string.digits + "?+-_*$#&%!"
+    password = ''.join(secrets.SystemRandom().choice(choice) for _ in range(12))
     password_encoded = base64.b64encode(password.encode("utf-8"))
     password_encoded = str(password_encoded, 'utf-8')
     return password, password_encoded, api_token
