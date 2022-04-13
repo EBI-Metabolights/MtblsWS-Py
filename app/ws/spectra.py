@@ -317,7 +317,7 @@ class SpectraZipper:
                 self._copy(this_study_location, desired_derived)
 
             else:
-                derived_path = f'{this_study_location}DERIVED_FILES/'
+                derived_path = f'{this_study_location}/DERIVED_FILES/'
                 logger.info(derived_path)
                 if os.path.exists(derived_path):
                     derived = os.listdir(derived_path)
@@ -326,8 +326,8 @@ class SpectraZipper:
 
                     else:
                         if 'POS' in derived or 'NEG' in derived:
-                            pos_path = f'{this_study_location}DERIVED_FILES/POS/'
-                            neg_path = f'{this_study_location}DERIVED_FILES/NEG/'
+                            pos_path = f'{this_study_location}/DERIVED_FILES/POS/'
+                            neg_path = f'{this_study_location}/DERIVED_FILES/NEG/'
                             logger.info(pos_path)
                             logger.info(neg_path)
                             if os.path.exists(pos_path):
