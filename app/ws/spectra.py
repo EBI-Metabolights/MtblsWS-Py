@@ -285,7 +285,7 @@ class SpectraZipper:
 
     @staticmethod
     def _get_filenames(frame):
-        for idx, row in frame.itertuples():
+        for row in frame.itertuples():
             # will need to do a column rename prior to this inorder for this to work as the column is not called
             # DerivedSpectralDataFile by default
             yield row.Study, row.DerivedSpectralDataFile
