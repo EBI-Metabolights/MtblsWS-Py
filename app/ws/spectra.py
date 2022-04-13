@@ -262,7 +262,7 @@ class SpectraZipper:
         self._create_spectra_dir()
 
         file_dataframe = pandas.read_csv(
-            os.path.join(self.reporting_path, f'{self.study_type}.csv'), sep='\t', header=0, encoding='unicode_escape'
+            os.path.join(self.reporting_path, f'{self.study_type}.tsv'), sep='\t', header=0, encoding='unicode_escape'
         )
         derived_file_frame = file_dataframe['Study', 'Derived.Spectral.Data.File']
         derived_file_frame = derived_file_frame.rename(columns={
