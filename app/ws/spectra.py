@@ -318,6 +318,7 @@ class SpectraZipper:
 
             else:
                 derived_path = f'{this_study_location}DERIVED_FILES/'
+                logger.info(derived_path)
                 if os.path.exists(derived_path):
                     derived = os.listdir(derived_path)
                     if desired_derived in derived:
@@ -327,6 +328,8 @@ class SpectraZipper:
                         if 'POS' in derived or 'NEG' in derived:
                             pos_path = f'{this_study_location}DERIVED_FILES/POS/'
                             neg_path = f'{this_study_location}DERIVED_FILES/NEG/'
+                            logger.info(pos_path)
+                            logger.info(neg_path)
                             if os.path.exists(pos_path):
                                 pos = os.listdir(pos_path)
                                 if desired_derived in pos:
