@@ -241,6 +241,7 @@ class ZipSpectraFiles(Resource):
         )
         sz.run()
 
+        logger.info(f'End result of spextra zipper: {len(sz.not_found)}')
         return {
             "status": "completed",
             "missing files": len(sz.not_found)
@@ -307,6 +308,7 @@ class SpectraZipper:
         for items in generator:
             study = items[0]
             desired_derived = items[1]
+            logger.info(f'hit generator loop with {study} & {desired_derived}')
             copy = repr(self.study_location).strip("'")
             this_study_location = copy.replace("MTBLS1", study)
             top_level = os.listdir(this_study_location)
