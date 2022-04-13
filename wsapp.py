@@ -52,7 +52,7 @@ from app.ws.reports import reports, CrossReferencePublicationInformation
 from app.ws.reports import reports, StudyAssayTypeReports
 from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
-from app.ws.spectra import ExtractMSSpectra
+from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
 
 from app.ws.study_actions import StudyStatus,ToggleAccess,ToggleAccessGet
@@ -211,6 +211,7 @@ def initialize_app(flask_app):
     api.add_resource(reports, res_path + "/v2/reports")
     api.add_resource(CrossReferencePublicationInformation, res_path + "/v2/europe-pmc-report")
     api.add_resource(StudyAssayTypeReports, res_path + "/v2/study-assay-type-reports")
+    api.add_resource(ZipSpectraFiles, res_path + "v2/zip-spectra-files")
     api.add_resource(curation_log, res_path + "/v2/curation_log")
 
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
