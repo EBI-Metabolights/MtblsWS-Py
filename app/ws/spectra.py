@@ -228,8 +228,7 @@ class ZipSpectraFiles(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS1', user_token)
+        is_curator, __, __, __, study_location, __, __, __ = wsc.get_permissions('MTBLS1', user_token)
         if not is_curator:
             abort(403)
 
@@ -237,25 +236,25 @@ class ZipSpectraFiles(Resource):
             study_type='NMR',
             reporting_path=app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/',
             private_studies_dir=app.config.get('STUDY_PATH'),
-            spectra_dir=f'NMR_spectra_files_{str(datetime.datetime.now())}'
+            spectra_dir=f'NMR_spectra_files_{str(datetime.datetime.now())}',
+            study_location=study_location
         )
         sz.run()
 
         return {
-            "status": "success",
+            "status": "completed",
             "missing files": len(sz.not_found)
         }
 
 
-
-
 class SpectraZipper:
 
-    def __init__(self, study_type, reporting_path, private_studies_dir, spectra_dir):
+    def __init__(self, study_type, reporting_path, private_studies_dir, spectra_dir, study_location):
         self.study_type = study_type
         self.reporting_path = reporting_path
         self.private_studies_dir = private_studies_dir
         self.spectra_dir = spectra_dir
+        self.study_location = study_location
         self.not_found = []
 
     def run(self):
@@ -278,15 +277,11 @@ class SpectraZipper:
         self._populate_spectra_dir(filename_generator)
         self._zip()
 
-
-
     def _zip(self):
         # undecided whether the webservice should do this or I should just do it on the created directory
         # since this a one time or a couple-of-times operation, I am optioning for the manual way - it will save a huge
         # outlay on memory
         pass
-
-
 
     @staticmethod
     def _get_filenames(frame):
@@ -310,10 +305,12 @@ class SpectraZipper:
 
     def _populate_spectra_dir(self, generator):
         for items in generator:
-            this_study_location = self.study_location.replace("MTBLS1", items[0])
-            top_level = os.listdir(this_study_location)
             study = items[0]
             desired_derived = items[1]
+            copy = repr(self.study_location).strip("'")
+            this_study_location = copy.replace("MTBLS1", study)
+            top_level = os.listdir(this_study_location)
+
             if desired_derived in top_level:
                 self._copy(this_study_location, desired_derived)
 
