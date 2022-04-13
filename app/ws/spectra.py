@@ -14,14 +14,20 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+import datetime
+import gc
+import shutil
 
+import pandas
 import pyopenms
 import logging
 import json
 import os
-from flask import request, abort
+from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+
+from app.ws.misc_utilities.response_messages import HTTP_200, HTTP_404, HTTP_403, HTTP_401
 from app.ws.mtblsWSclient import WsClient
 from pyopenms import *
 
@@ -189,3 +195,166 @@ class ExtractMSSpectra(Resource):
     def write_json(self, filename, data):
         with open(filename, 'w') as outfile:
             json.dump(data, outfile)
+
+
+
+class ZipSpectraFiles(Resource):
+    @swagger.operation(
+        summary="Generate spectra directory",
+        nickname="Grab all spectra files",
+        notes="Gets every spectra file / folder, and copies it to a new directory to be later zipped.",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            HTTP_200,
+            HTTP_401,
+            HTTP_403,
+            HTTP_404
+        ]
+    )
+    def post(self):
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = wsc.get_permissions('MTBLS1', user_token)
+        if not is_curator:
+            abort(403)
+
+        sz = SpectraZipper(
+            study_type='NMR',
+            reporting_path=app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/',
+            private_studies_dir=app.config.get('STUDY_PATH'),
+            spectra_dir=f'NMR_spectra_files_{str(datetime.datetime.now())}'
+        )
+        sz.run()
+
+        return {
+            "status": "success",
+            "missing files": len(sz.not_found)
+        }
+
+
+
+
+class SpectraZipper:
+
+    def __init__(self, study_type, reporting_path, private_studies_dir, spectra_dir):
+        self.study_type = study_type
+        self.reporting_path = reporting_path
+        self.private_studies_dir = private_studies_dir
+        self.spectra_dir = spectra_dir
+        self.not_found = []
+
+    def run(self):
+
+        self._create_spectra_dir()
+
+        file_dataframe = pandas.read_csv(
+            os.path.join(self.reporting_path, f'{self.study_type}.csv'), sep='\t', header=0, encoding='unicode_escape'
+        )
+        derived_file_frame = file_dataframe['Study', 'Derived.Spectral.Data.File']
+        derived_file_frame = derived_file_frame.rename(columns={
+            'Study': 'Study', 'Derived.Spectral.Data.File': 'DerivedSpectralDataFile'
+        })
+
+        # This is a large file, so we don't want it lurking in memory
+        del file_dataframe
+        gc.collect()
+
+        filename_generator = self._get_filenames(derived_file_frame)
+        self._populate_spectra_dir(filename_generator)
+        self._zip()
+
+
+
+    def _zip(self):
+        # undecided whether the webservice should do this or I should just do it on the created directory
+        # since this a one time or a couple-of-times operation, I am optioning for the manual way - it will save a huge
+        # outlay on memory
+        pass
+
+
+
+    @staticmethod
+    def _get_filenames(frame):
+        for idx, row in frame.itertuples():
+            # will need to do a column rename prior to this inorder for this to work as the column is not called
+            # DerivedSpectralDataFile by default
+            yield row.Study, row.DerivedSpectralDataFile
+
+    def _create_spectra_dir(self):
+        try:
+            os.mkdir(os.path.join(self.private_studies_dir, self.spectra_dir))
+        except FileExistsError as e:
+            logger.error(f'Tried to create a new directory to collate {self.study_type} spectra files but '
+                         f'it already exists: {str(e)}')
+            abort(500)
+
+        if os.path.exists(f'{self.private_studies_dir}{self.spectra_dir}'):
+            pass
+        else:
+            raise FileNotFoundError(f'Couldnt create spectra directory at {self.private_studies_dir}{self.spectra_dir}')
+
+    def _populate_spectra_dir(self, generator):
+        for items in generator:
+            this_study_location = self.study_location.replace("MTBLS1", items[0])
+            top_level = os.listdir(this_study_location)
+            study = items[0]
+            desired_derived = items[1]
+            if desired_derived in top_level:
+                self._copy(this_study_location, desired_derived)
+
+            else:
+                derived_path = f'{this_study_location}DERIVED_FILES/'
+                if os.path.exists(derived_path):
+                    derived = os.listdir(derived_path)
+                    if desired_derived in derived:
+                        self._copy(derived_path, desired_derived)
+
+                    else:
+                        if 'POS' in derived or 'NEG' in derived:
+                            pos_path = f'{this_study_location}DERIVED_FILES/POS/'
+                            neg_path = f'{this_study_location}DERIVED_FILES/NEG/'
+                            if os.path.exists(pos_path):
+                                pos = os.listdir(pos_path)
+                                if desired_derived in pos:
+                                    self._copy(pos_path, desired_derived)
+                                else:
+                                    # making a choice not to go any deeper than two levels - may reevaluate off the
+                                    # back of test runs
+                                    self.not_found.append(desired_derived)
+
+                            if os.path.exists(neg_path):
+                                neg = os.listdir(neg_path)
+                                if desired_derived in neg:
+                                    self._copy(neg_path, desired_derived)
+                                else:
+                                    self.not_found.append(desired_derived)
+                else:
+                    # not sure whether i want to go poking around in directory upon directory
+                    self.not_found.append(desired_derived)
+        pass
+
+    def _copy(self, path, derived_file):
+        copy_op_result = shutil.copy2(
+            os.path.join(path, derived_file),
+            os.path.join(self.private_studies_dir, self.spectra_dir)
+        )
+        if not copy_op_result:
+            logger.error(
+                f'Could not copy file {derived_file} to {self.private_studies_dir}{self.spectra_dir}'
+            )
+            self.not_found.append(derived_file)
