@@ -1412,7 +1412,7 @@ def addEntity(new_term, supclass, definition=None):
         abort(400)
         return []
     
-    logger.info(onto)
+    logger.info(onto.classes())
     id = getid(onto)
     namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
 
