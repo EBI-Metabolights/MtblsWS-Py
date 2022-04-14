@@ -1156,9 +1156,16 @@ def is_valid_derived_column_entry(value: str) -> dict:
         'is_text_file': False
     }
     valid_filetypes = app.config.get('DERIVED_FILES_LIST')
+    valid_compressed = app.config.get('COMPRESSED_FILES_LIST')
+
     valid_filetypes.append('.txt')
     for filetype in valid_filetypes:
         if value.endswith(filetype):
+            result_dict['valid'] = True
+            if filetype is '.txt':
+                result_dict['is_text_file'] = True
+            break
+        elif any(value.endswith(compr) for compr in valid_compressed) and value.count(filetype) is 1:
             result_dict['valid'] = True
             if filetype is '.txt':
                 result_dict['is_text_file'] = True
