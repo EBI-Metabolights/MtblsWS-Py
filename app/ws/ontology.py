@@ -1411,7 +1411,8 @@ def addEntity(new_term, supclass, definition=None):
         print('Operation rejected, term exciting')
         abort(400)
         return []
-
+    
+    logger.info(onto)
     id = getid(onto)
     namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')
 
