@@ -1385,7 +1385,7 @@ def addEntity(new_term, supclass, definition=None):
 
         temp = []
         for c in onto.classes():
-            if str(c).lower().startswith('metabolights'):
+            if str(c).lower().startswith('metabolights') or str(c).lower().startswith('ontology'):
                 temp.append(str(c))
 
         last = max(temp)
