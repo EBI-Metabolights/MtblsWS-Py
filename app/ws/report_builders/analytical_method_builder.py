@@ -284,6 +284,7 @@ class AnalyticalMethodBuilder:
             logger.info(gc.__dict__)
             gc.create(title)
             empty_spreadsheet = gc.open(title)
+            logger.info(empty_spreadsheet)
             empty_spreadsheet.add_worksheet(title=title, rows=len(result.index), cols=len(result.columns))
             gspread_dataframe.set_with_dataframe(
                 worksheet=empty_spreadsheet.worksheet(title),
