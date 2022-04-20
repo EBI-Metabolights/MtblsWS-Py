@@ -317,11 +317,11 @@ class AnalyticalMethodBuilder:
 
             logger.info(spreadsheet_file.get('parents'))
             #previous_parents = ",".join(spreadsheet_file.get('parents'))
-            updated_spreadsheet_file = drive_service.files.update(fileId=spreadsheet_file.get('id'),
+            updated_spreadsheet_file = drive_service.files().update(fileId=spreadsheet_file.get('id'),
                                                                   addParents=mariana_folder_id,
                                                                   #removeParents=previous_parents,
                                                                   fields="id, parents").execute()
-
+            logger.info(updated_spreadsheet_file)
 
 
     def _get_data_from_reporting_directory(self):
