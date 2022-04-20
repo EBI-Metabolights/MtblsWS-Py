@@ -316,10 +316,10 @@ class AnalyticalMethodBuilder:
                 raise FileNotFoundError
 
             logger.info(spreadsheet_file.get('parents'))
-            previous_parents = ",".join(spreadsheet_file.get('parents'))
+            #previous_parents = ",".join(spreadsheet_file.get('parents'))
             updated_spreadsheet_file = drive_service.files.update(fileId=spreadsheet_file.get('id'),
                                                                   addParents=mariana_folder_id,
-                                                                  removeParents=previous_parents,
+                                                                  #removeParents=previous_parents,
                                                                   fields="id, parents").execute()
 
 
