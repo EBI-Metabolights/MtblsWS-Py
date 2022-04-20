@@ -53,6 +53,7 @@ class AnalyticalMethodBuilder:
         self.tracker = BuilderPerformanceTracker(
             assays_causing_errors=[],
             missing_sample_sheets=0,
+            saved_to_drive=""
         )
         self.specified_study_data = self._get_data_from_reporting_directory()
         self.g_drive = g_drive
@@ -168,8 +169,7 @@ class AnalyticalMethodBuilder:
                 sample_temp = DataFrameUtils.sample_cleanup(df=sample_temp)
                 if self.slim:
                     sample_temp = DataFrameUtils.collapse(df=sample_temp)
-                # sample_df = sample_df.append(sample_temp, ignore_index=True)
-                # sample_df_as_list_of_dicts.extend(totuples(df=sample_temp, text='dict')['dict'])
+
             except UnicodeDecodeError as e:
                 logger.error(
                     f'UnicodeDecodeError when trying to open sample sheet. Study {study} will not be included in report: '
@@ -188,8 +188,6 @@ class AnalyticalMethodBuilder:
                     assay_temp = self._dataframe_cleanup(assay_temp)
                     if self.slim:
                         assay_temp = DataFrameUtils.collapse(df=assay_temp)
-                    # assay_df = assay_df.append(assay_temp, ignore_index=True)
-                    # assay_df_as_list_dicts.extend(totuples(df=assay_temp, text='dict')['dict'])
                     self.tracker.stop_timer(study)
                     yield totuples(df=sample_temp, text='dict')['dict'], totuples(df=assay_temp, text='dict')['dict']
                 except Exception as e:
@@ -246,11 +244,12 @@ class AnalyticalMethodBuilder:
     def _save(self, result):
         """
         Save the resulting dataframe as a spreadsheet to the server, and if selected, to the google drive.
+
+        :param result: Resultant dataframe from building process.
+        :return: n/a
         """
         token_path = app.config.get('GOOGLE_SHEET_TOKEN')
-        # stick this in app.config
-        mariana_folder_id = '1i8caTtguyLBvQcBt7Lzqfplmmrr5T1JO'
-        ebi_folder_id = '1psQb4OSjAXrEqPmZpt6kQfPZfooHqnBE'
+        mariana_folder_id = app.config.get('MARIANA_DRIVE_ID')
 
         title = f'{self.studytype} {str(datetime.datetime.now())}'
 
@@ -270,21 +269,15 @@ class AnalyticalMethodBuilder:
             logger.error(message)
             abort(500, message)
 
-
         if self.g_drive:
-            spreadsheet = {
-                'properties': {
-                    'title': title
-                }
-            }
+            # there is a bunch of stuff here that would be good to write into a little google interface class,
+            # but this has improvement has been hanging for some time so I am going to shelve it
             scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
             credentials = ServiceAccountCredentials.from_json_keyfile_name(token_path, scope)
 
             gc = gspread.authorize(credentials)
-            logger.info(gc.__dict__)
             gc.create(title)
             empty_spreadsheet = gc.open(title)
-            logger.info(empty_spreadsheet)
             empty_spreadsheet.add_worksheet(title=title, rows=len(result.index), cols=len(result.columns))
             gspread_dataframe.set_with_dataframe(
                 worksheet=empty_spreadsheet.worksheet(title),
@@ -315,13 +308,11 @@ class AnalyticalMethodBuilder:
             if spreadsheet_file is None:
                 raise FileNotFoundError
 
-            logger.info(spreadsheet_file.get('parents'))
-            #previous_parents = ",".join(spreadsheet_file.get('parents'))
             updated_spreadsheet_file = drive_service.files().update(fileId=spreadsheet_file.get('id'),
                                                                   addParents=mariana_folder_id,
-                                                                  #removeParents=previous_parents,
                                                                   fields="id, parents").execute()
             logger.info(updated_spreadsheet_file)
+            self.tracker.saved_to_drive = 'Saved to the BBSRC Mariana Drive successfully.'
 
 
     def _get_data_from_reporting_directory(self):
@@ -362,7 +353,7 @@ class AnalyticalMethodBuilder:
                        f'{str(round(self.tracker.get_duration("total"), 2))} s. There were ' \
                        f'{self.tracker.missing_sample_sheets} studies that were missing sample sheets and so were not '\
                        f'included in the report. There were {str(len(self.tracker.assays_causing_errors))} assay ' \
-                       f'sheets which caused errors when processed'
+                       f'sheets which caused errors when processed. {self.tracker.saved_to_drive}'
         if self.verbose:
             time_str = 'Output for all timers in tracker: \n'
             timer_message = '\n '.join(self.tracker.report_all_timers())
