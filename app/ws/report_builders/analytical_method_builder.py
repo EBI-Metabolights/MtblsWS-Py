@@ -304,7 +304,7 @@ class AnalyticalMethodBuilder:
                 for file in response.get('files', []):
                     # Process change
                     logger.info(f"{file.get('id')}, {file.get('name')}")
-                    if file.get('name') is title:
+                    if file.get('name') == title:
                         spreadsheet_file = file
                         break
 
