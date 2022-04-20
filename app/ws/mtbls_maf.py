@@ -19,13 +19,17 @@
 import json
 import logging
 import os
+from typing import List
+
 import pandas as pd
 
-from flask import request, abort
+from flask import request, current_app as app, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
+from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.mtblsWSclient import WsClient
+from app.ws.report_builders.combined_maf_builder import CombinedMafBuilder
 from app.ws.utils import create_maf, read_tsv, write_tsv
 
 logger = logging.getLogger('wslog')
@@ -34,7 +38,7 @@ wsc = WsClient()
 
 
 # Convert panda DataFrame to json tuples object
-def totuples(df, text):
+def totuples(df, text) -> dict:
     d = [
         dict([
             (colname, row[i])
@@ -231,3 +235,96 @@ class MetaboliteAnnotationFile(Resource):
 
         return {"success": "Added/Updated MAF(s)" + maf_feedback}
 
+class CombineMetaboliteAnnotationFiles(Resource):
+    @swagger.operation(
+        summary="Combine MAFs for a list of studies",
+        nickname="Combine MAF files",
+        notes='''Combine MAF files for a given list of studies, by analytical method. If a study contains assays with 
+        more than one analytical method, it will endeavour to try and select only the MAFs that correspond to the chosen 
+        analytical method.
+    <pre><code> 
+    {  
+      "data": [ 
+        "MTBLS1",
+        "MTBLS2",
+        "MTBLS3"
+      ],
+      "method": "NMR"
+    }
+    </code></pre>''',
+        parameters=[
+            {
+                "name": "data",
+                "description": "Studies to combine MAFs for, and the analytical method",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "body",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The Metabolite Annotation File (MAF) is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Incorrect parameters provided"
+            }
+        ]
+    )
+    def post(self):
+        data_dict = json.loads(request.data.decode('utf-8'))
+        studies_to_combine = data_dict['data']
+        method = data_dict['method']
+
+        if studies_to_combine is None:
+            abort(417)
+
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        is_curator, __, __, __, study_location, __, __, __ = wsc.get_permissions('MTBLS1', user_token)
+        if is_curator is False:
+            abort(403)
+
+        combiBuilder = CombinedMafBuilder(
+            studies_to_combine=studies_to_combine,
+            original_study_location=study_location,
+            method=method
+        )
+
+        combiBuilder.build()
+        r_d = {
+            'status': f'Combined Maf File Built, with {len(combiBuilder.unopenable_maf_register)} MAFs unable to be '
+                      f'opened: {str(combiBuilder.unopenable_maf_register)}. There were '
+                      f'{len(combiBuilder.missing_maf_register)} studies that had no MAF files: '
+                      f'{str(combiBuilder.missing_maf_register)} .There were '
+                      f'{len(combiBuilder.no_relevant_maf_register)} studies that had MAF files, but no '
+                      f'MAF file matching the given analytical method {method}: '
+                      f'{str(combiBuilder.no_relevant_maf_register)}'
+        }
+        # logging it out in the event of the swagger UI crashing as these are useful numbers
+        logger.info(r_d['status'])
+        return r_d

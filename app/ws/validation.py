@@ -1131,9 +1131,13 @@ def is_valid_raw_file_column_entry(value: str) -> bool:
 
     """
     valid_filetypes = app.config.get('RAW_FILES_LIST')
+    valid_compressed = app.config.get('COMPRESSED_FILES_LIST')
+    
     for filetype in valid_filetypes:
         if value.endswith(filetype) and len(value) > len(filetype):
             return True
+        elif any(value.endswith(compr) for compr in valid_compressed) and value.count(filetype) is 1:
+            return True 
     return False
 
 
@@ -1152,9 +1156,16 @@ def is_valid_derived_column_entry(value: str) -> dict:
         'is_text_file': False
     }
     valid_filetypes = app.config.get('DERIVED_FILES_LIST')
+    valid_compressed = app.config.get('COMPRESSED_FILES_LIST')
+
     valid_filetypes.append('.txt')
     for filetype in valid_filetypes:
         if value.endswith(filetype):
+            result_dict['valid'] = True
+            if filetype is '.txt':
+                result_dict['is_text_file'] = True
+            break
+        elif any(value.endswith(compr) for compr in valid_compressed) and value.count(filetype) is 1:
             result_dict['valid'] = True
             if filetype is '.txt':
                 result_dict['is_text_file'] = True
@@ -1168,6 +1179,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     validations = []
     all_assay_samples = []
     unique_file_names = []
+    missing_or_incorrect_files = []
 
     study_id = isa_study.identifier
 
@@ -1350,6 +1362,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                                          assay_file_list=all_assay_raw_files,
                                                          assay_file_name=a_file_name)
         if not valid:
+            missing_or_incorrect_files.append(file_name + ' ({0}) [{1}]'
+                                              .format(column_name, (a_file_name if a_file_name is not None else '')))
             err_msg = "File '" + file_name + "'"
             if file_type != unknown_file:
                 err_msg = err_msg + " of type '" + file_type + "'"
@@ -1363,7 +1377,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
                 + column_name + "'", success, descr=file_description, val_sequence=8.1, log_category=log_category)
 
+    if len(missing_or_incorrect_files) > 0:
+        with open(study_location + '/missing_files.txt', 'w') as file:
+            file.write("\n".join(missing_or_incorrect_files))
     return return_validations(val_section, validations, override_list)
+
 
 
 def get_files_in_sub_folders(study_location):

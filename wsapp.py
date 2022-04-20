@@ -146,6 +146,7 @@ def initialize_app(flask_app):
 
     # Metabolite Annotation File (MAF)
     api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validate")
+    api.add_resource(CombineMetaboliteAnnotationFiles, res_path + "/ebi-internal/mariana/maf/combine")
 
     # Study
     # api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
@@ -174,6 +175,7 @@ def initialize_app(flask_app):
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
     api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
+    api.add_resource(MtblsStudyValidationStatus, res_path + "/studies/<string:study_id>/validation-status/<string:validation_status>")
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
