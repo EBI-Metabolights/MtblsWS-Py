@@ -29,6 +29,7 @@ from app.ws.assay_protocol import *
 from app.ws.assay_table import *
 from app.ws.biostudies import *
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
+from app.ws.chebi_ws import ChebiLiteEntity, ChebiEntity
 from app.ws.cluster_jobs import LsfUtils, LsfUtilsStatus
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import *
@@ -213,6 +214,9 @@ def initialize_app(flask_app):
     api.add_resource(StudyAssayTypeReports, res_path + "/v2/study-assay-type-reports")
     api.add_resource(curation_log, res_path + "/v2/curation_log")
 
+    api.add_resource(ChebiLiteEntity, res_path + "/chebi/chebi-ids/<string:compound_name>")
+    api.add_resource(ChebiEntity, res_path + "/chebi/entities/<string:chebi_id>")
+
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
 
 
@@ -222,7 +226,7 @@ def main():
     logger.info("Starting server %s v%s", application.config.get('WS_APP_NAME'),
                 application.config.get('WS_APP_VERSION'))
     # application.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG, ssl_context=context)
-    print("Starting application")
+    print("Starting application on port %s" % str(application.config.get('PORT')))
     application.run(host="0.0.0.0", port=application.config.get('PORT'), debug=application.config.get('DEBUG'),
                     threaded=True)
     logger.info("Finished server %s v%s", application.config.get('WS_APP_NAME'),
