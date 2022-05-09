@@ -1,22 +1,40 @@
 from functools import lru_cache
 
-from pydantic import BaseSettings
+from flask import current_app as app
 
 
-class ChebiWsSettings(BaseSettings):
-    chebi_ws_wsdl: str = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
-    chebi_ws_wsdl_service: str = 'ChebiWebServiceService'
-    chebi_ws_wsdl_service_port: str = 'ChebiWebServicePort'
-    chebi_ws_strict: bool = False
-    chebi_ws_xml_huge_tree: bool = True
-    chebi_ws_service_binding_log_level: str = "ERROR"
+class ChebiWsSettings(object):
+    def __init__(self):
+        self.chebi_ws_wsdl = None
+        self.chebi_ws_wsdl_service = None
+        self.chebi_ws_wsdl_service_port = None
+        self.chebi_ws_strict = None
+        self.chebi_ws_xml_huge_tree = None
+        self.chebi_ws_service_binding_log_level = None
 
 
-    class Config:
-        # read and set settings variables from this env_file
-        env_file = ".env"
+class ChebiWsSettingsFlaskConfig(ChebiWsSettings):
+
+    def __init__(self, application=None):
+        super().__init__()
+        self.app = application
+        if not self.app:
+            self.app = app
+        self.chebi_ws_wsdl = app.config.get("CHEBI_WS_WSDL")
+        self.chebi_ws_wsdl_service = app.config.get("CHEBI_WS_WSDL_SERVICE")
+        self.chebi_ws_wsdl_service_port = app.config.get("CHEBI_WS_WSDL_SERVICE_PORT")
+        self.chebi_ws_strict = app.config.get("CHEBI_WS_STRICT")
+        self.chebi_ws_xml_huge_tree = app.config.get("CHEBI_WS_XML_HUGE_TREE")
+        self.chebi_ws_service_binding_log_level = app.config.get("CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL")
 
 
 @lru_cache
 def get_chebi_ws_settings():
-    return ChebiWsSettings()
+    settings = ChebiWsSettings()
+    settings.chebi_ws_wsdl = app.config.get("CHEBI_WS_WSDL")
+    settings.chebi_ws_wsdl_service = app.config.get("CHEBI_WS_WSDL_SERVICE")
+    settings.chebi_ws_wsdl_service_port = app.config.get("CHEBI_WS_WSDL_SERVICE_PORT")
+    settings.chebi_ws_strict = app.config.get("CHEBI_WS_STRICT")
+    settings.chebi_ws_xml_huge_tree = app.config.get("CHEBI_WS_XML_HUGE_TREE")
+    settings.chebi_ws_service_binding_log_level = app.config.get("CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL")
+    return settings

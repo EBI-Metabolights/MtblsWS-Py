@@ -1,0 +1,25 @@
+<p>We are happy to inform you that your upload folder for study <b> {{ study_id}} </b> has been successfully
+        created and is now ready for use. You can use either FTP or Aspera Client to upload your study files.<p/>
+<p>
+<b> Using FTP Client:</b><br/>
+Username : <b> {{ user_name }}</b> <br/>
+Password : <b> {{ user_password }}</b><br/>
+Server : <b> {{ server }}</b><br/>
+Remote Folder : <b> {{ ftp_folder }}</b><br/>
+</p>
+<p>
+Please, note that the remote folder needs to be entirely typed, as the folder is not browsable.
+So use the following command to access your private folder: <br/>
+<code>"cd {{ ftp_folder }}"</code>
+</p>
+
+<p>
+<b>Using Aspera Client:</b> <br/>
+You can also use the high-speed Aspera client to upload with the same username and password listed above using the command below.
+<br/>
+<code>"ascp -QT -P 33001 -L-  -l 300M <b>[your_local_data_folder]</b> mtblight@hx-fasp-1.ebi.ac.uk:{{ftp_folder}}"</code>
+</p>
+<p>
+Detailed Instructions on data upload through FTP/Aspera is available here: {{ ftp_upload_doc_link }}
+<p/> <br/>
+<b>Metabolights Team</b>

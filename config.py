@@ -46,7 +46,6 @@ MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 UPDATE_PATH_SUFFIX = "audit"
 
 MTBLS_FILE_BASE = "<some local filesystem>/"
-MTBLS_FTP_ROOT = MTBLS_FILE_BASE + "<some local filesystem>/"
 REPORTING_PATH = "<report folder name>/"
 STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
 FILE_SYSTEM_PATH = '<some local filesystem>/'
@@ -55,8 +54,35 @@ MTBLS_ONTOLOGY_FILE = "<local file>"
 BIOPORTAL_TOKEN = '<your bioportal token>'
 METABOLIGHTS_TOKEN = '<your administrative metabolights token>'
 MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
+STUDY_QUEUE_FOLDER = "<some local filesystem>"
 
-MTBLS_PRIVATE_FTP_ROOT = ""
+#FTP
+MTBLS_FTP_ROOT = "MTBLS_FTP_ROOT"
+MTBLS_PRIVATE_FTP_ROOT = "MTBLS_PRIVATE_FTP_ROOT"
+PRIVATE_FTP_SERVER = "PRIVATE_FTP_SERVER"
+PRIVATE_FTP_SERVER_USER = "PRIVATE_FTP_SERVER_USER"
+PRIVATE_FTP_SERVER_PASSWORD= "PRIVATE_FTP_SERVER_PASSWORD"
+FTP_UPLOAD_HELP_DOC_URL = "FTP_UPLOAD_HELP_DOC_URL"
+
+#EMAIL SERVICE
+EMAIL_NO_REPLY_ADDRESS = "EMAIL_NO_REPLY_ADDRESSs"
+CURATION_EMAIL_ADDRESS = "CURATION_EMAIL_ADDRESS"
+METABOLIGHTS_HOST_URL = "https://www.ebi.ac.uk/metabolights"
+MAIL_SERVER = 'localhost'
+MAIL_PORT = 25
+MAIL_USE_TLS = False
+MAIL_USE_SSL = False
+MAIL_USERNAME = None
+MAIL_PASSWORD = None
+
+#CHEBI SEARCH
+CURATED_METABOLITE_LIST_FILE_LOCATION = "<some folder>"
+CHEBI_WS_WSDL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
+CHEBI_WS_WSDL_SERVICE = "ChebiWebServiceService"
+CHEBI_WS_WSDL_SERVICE_PORT = "ChebiWebServicePort"
+CHEBI_WS_STRICT = False
+CHEBI_WS_XML_HUGE_TREE = True
+CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL = "ERROR"
 
 # GOOGLE SHEETS
 GOOLGE_ZOOMA_SHEET = "<Google sheet url>"

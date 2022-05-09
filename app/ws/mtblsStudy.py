@@ -1023,15 +1023,12 @@ class CreateAccession(Resource):
 
         logger.info('Creating a new MTBLS Study')
 
-        study_message, status_code = wsc.add_empty_study(user_token)
-        if status_code != 200:
-            logger.error('Failed to create new study. ' + study_message)
+        study_acc = wsc.add_empty_study(user_token)
+        if not study_acc:
+            logger.error('Failed to create new study. ')
             flaskabort(503, "Could not create a new study.")
-
+        # TODO 5 second is too big value
         time.sleep(5)  # give the Java WebService time to recover! ;-)
-
-        data_dict = json.loads(study_message)
-        study_acc = data_dict["message"]
 
         # Now, if the production Tomcats have recently been restarted, we may not have a fully associated study yet
         all_studies = get_all_studies_for_user(user_token)

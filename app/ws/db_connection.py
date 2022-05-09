@@ -15,11 +15,12 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
+import datetime
 import logging
 import os
 import re
 import traceback
+import uuid
 
 import psycopg2
 import psycopg2.extras
@@ -98,6 +99,35 @@ query_studies_user = """
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = (%s);
     """
+
+query_submitted_study_ids_for_user = """
+    SELECT distinct s.acc 
+    from studies s, users u, study_user su 
+    where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
+    """
+
+get_next_mtbls_id = """
+select (seq + 1) as next_acc from stableid where prefix = 'MTBLS';
+"""
+
+insert_empty_study = """   
+    insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
+    updatedate, validations, validation_status) 
+    values ( 
+        (select nextval('hibernate_sequence')),
+        %(acc)s, 
+        %(obfuscationcode)s,
+        %(releasedate)s,
+        0, 0, current_timestamp, 
+        current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
+"""
+
+update_metaboligts_id_sequence = """
+update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = 'MTBLS') where prefix = 'MTBLS';
+"""
+link_study_with_user = """
+insert into study_user(userid, studyid) select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(acc)s;
+"""
 
 query_user_access_rights = """
     select distinct role, read, write, obfuscationcode, releasedate, submissiondate, 
@@ -239,7 +269,6 @@ def get_user(username):
     else:
         # no user found by that username, abort with 404
         abort(404, 'User with username {0} not found.'.format(username))
-
 
 
 def get_all_private_studies_for_user(user_token):
@@ -648,6 +677,7 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 def get_email(user_token):
 
     val_query_params(user_token)
+    user_email = None
     try:
         user_email = get_user_email(user_token)
     except Exception as e:
@@ -709,6 +739,97 @@ def get_user_email(user_token):
         return data
     except Exception as e:
         return False
+
+
+def get_submitted_study_ids_for_user(user_token):
+    val_query_params(user_token)
+
+    study_id_list = execute_select_with_params(query_submitted_study_ids_for_user, {"user_token": user_token})
+    complete_list = []
+    for i, row in enumerate(study_id_list):
+        study_id = row[0]
+        complete_list.append(study_id)
+    return complete_list
+
+
+def create_empty_study(user_token):
+    email = get_email(user_token)
+    if not email:
+        return None
+
+    conn = None
+    postgresql_pool = None
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+
+        cursor.execute(get_next_mtbls_id)
+        data = cursor.fetchone()[0]
+        acc = f"MTBLS{data}"
+        obfuscationcode = str(uuid.uuid4())
+        releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
+        content = {"acc": acc,
+                   "obfuscationcode": obfuscationcode,
+                   "releasedate": releasedate,
+                   "email": email}
+        cursor.execute(insert_empty_study, content)
+        cursor.execute(update_metaboligts_id_sequence)
+        cursor.execute(link_study_with_user, content)
+        conn.commit()
+        return acc
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return None
+    finally:
+        if postgresql_pool and conn:
+            release_connection(postgresql_pool, conn)
+
+
+def execute_select_with_params(query, params):
+    conn = None
+    postgresql_pool = None
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query, params)
+
+        data = cursor.fetchall()
+        return data
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return None
+    finally:
+        if postgresql_pool and conn:
+            release_connection(postgresql_pool, conn)
+
+
+def execute_query_with_parameter(query, parameters):
+    conn = None
+    postgresql_pool = None
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query, parameters)
+        conn.commit()
+        release_connection(postgresql_pool, conn)
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return None
+    finally:
+        if postgresql_pool and conn:
+            release_connection(postgresql_pool, conn)
+
+def get_release_date_of_study(study_id):
+    query = f"select acc, to_char(releasedate, 'DD/MM/YYYY') as release_date from studies where acc={study_id};"
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query)
+        data = cursor.fetchone()[0]
+        release_connection(postgresql_pool, conn)
+        return data
+    except Exception as e:
+        return None
+
 
 def query_study_submitters(study_id):
     val_acc(study_id)
