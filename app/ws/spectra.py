@@ -304,51 +304,71 @@ class SpectraZipper:
         else:
             raise FileNotFoundError(f'Couldnt create spectra directory at {self.private_studies_dir}{self.spectra_dir}')
 
-    def _populate_spectra_dir(self, generator):
+    def _populate_spectra_dir(self, generator, shallow=False):
         for items in generator:
             study = items[0]
             desired_derived = items[1]
             logger.info(f'hit generator loop with {study} & {desired_derived}')
+
             copy = repr(self.study_location).strip("'")
             this_study_location = copy.replace("MTBLS1", study)
             top_level = os.listdir(this_study_location)
+            derived_path = f'{this_study_location}/DERIVED_FILES/'
 
             if desired_derived in top_level:
                 self._copy(this_study_location, desired_derived)
 
+            elif os.path.exists(derived_path):
+                if self._basic_search(derived_path,desired_derived,this_study_location):
+                    break
             else:
-                derived_path = f'{this_study_location}/DERIVED_FILES/'
-                logger.info(derived_path)
-                if os.path.exists(derived_path):
-                    derived = os.listdir(derived_path)
-                    if desired_derived in derived:
-                        self._copy(derived_path, desired_derived)
-
-                    else:
-                        if 'POS' in derived or 'NEG' in derived:
-                            pos_path = f'{this_study_location}/DERIVED_FILES/POS/'
-                            neg_path = f'{this_study_location}/DERIVED_FILES/NEG/'
-                            logger.info(pos_path)
-                            logger.info(neg_path)
-                            if os.path.exists(pos_path):
-                                pos = os.listdir(pos_path)
-                                if desired_derived in pos:
-                                    self._copy(pos_path, desired_derived)
-                                else:
-                                    # making a choice not to go any deeper than two levels - may reevaluate off the
-                                    # back of test runs
-                                    self.not_found.append(desired_derived)
-
-                            if os.path.exists(neg_path):
-                                neg = os.listdir(neg_path)
-                                if desired_derived in neg:
-                                    self._copy(neg_path, desired_derived)
-                                else:
-                                    self.not_found.append(desired_derived)
-                else:
-                    # not sure whether i want to go poking around in directory upon directory
+                if shallow:
                     self.not_found.append(desired_derived)
-        pass
+                else:
+                    self._deep_search(this_study_location, desired_derived)
+
+    def _basic_search(self, derived_path, desired_derived, this_study_location) -> bool:
+        logger.info(derived_path)
+
+        if os.path.exists(derived_path):
+            derived = os.listdir(derived_path)
+            if desired_derived in derived:
+                self._copy(derived_path, desired_derived)
+                return True
+
+            else:
+                if 'POS' in derived or 'NEG' in derived:
+                    pos_path = f'{this_study_location}/DERIVED_FILES/POS/'
+                    neg_path = f'{this_study_location}/DERIVED_FILES/NEG/'
+
+                    if os.path.exists(pos_path):
+                        pos = os.listdir(pos_path)
+                        if desired_derived in pos:
+                            self._copy(pos_path, desired_derived)
+                            return True
+                        else:
+                            self.not_found.append(desired_derived)
+
+                    if os.path.exists(neg_path):
+                        neg = os.listdir(neg_path)
+                        if desired_derived in neg:
+                            self._copy(neg_path, desired_derived)
+                            return True
+                        else:
+                            self.not_found.append(desired_derived)
+        self.not_found.append()
+        return False
+
+    def _deep_search(self, this_study_location, desired_derived) -> bool:
+        found = False
+        for subdir, dirs, files in os.walk(this_study_location):
+            if desired_derived in files:
+                self._copy(subdir, desired_derived)
+                found = True
+                break
+        if found is False:
+            self.not_found.append(desired_derived)
+        return found
 
     def _copy(self, path, derived_file):
         copy_op_result = shutil.copy2(
