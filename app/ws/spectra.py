@@ -197,7 +197,6 @@ class ExtractMSSpectra(Resource):
             json.dump(data, outfile)
 
 
-
 class ZipSpectraFiles(Resource):
     @swagger.operation(
         summary="Generate spectra directory",
@@ -244,21 +243,37 @@ class ZipSpectraFiles(Resource):
         logger.info(f'End result of spextra zipper: {len(sz.not_found)}')
         return {
             "status": "completed",
-            "missing files": len(sz.not_found)
+            "missing files": len(sz.not_found),
+            "files unable to be copied": len(sz.not_copied)
         }
 
 
 class SpectraZipper:
 
     def __init__(self, study_type, reporting_path, private_studies_dir, spectra_dir, study_location):
+        """
+        Init method
+
+        :param study_type: Analytical method used in the study IE NMR
+        :param reporting_path: The location of the reporting directory
+        :param private_studies_dir: The root private studies directory
+        :param spectra_dir: The name of the spectra directory to be created
+        :param study_location: Base study location
+        """
         self.study_type = study_type
         self.reporting_path = reporting_path
         self.private_studies_dir = private_studies_dir
         self.spectra_dir = spectra_dir
         self.study_location = study_location
         self.not_found = []
+        self.not_copied = []
 
     def run(self):
+        """
+        Entry point method for the zipper class. Creates a new directory for the spectra, Opens the NMR report file
+        into memory, extracts the columns we want, and then sets to work populating the spectra directory by searching for
+        each of those filenames.
+        """
 
         self._create_spectra_dir()
 
@@ -286,12 +301,22 @@ class SpectraZipper:
 
     @staticmethod
     def _get_filenames(frame):
+        """
+        Get the study accession number and derived file name from each row of the table. This method returns a generator
+        object.
+
+        :param frame: pandas DataFrame object.
+        :yield: a tuple of study accession and derived filename.
+        """
         for row in frame.itertuples():
-            # will need to do a column rename prior to this inorder for this to work as the column is not called
-            # DerivedSpectralDataFile by default
             yield row.Study, row.DerivedSpectralDataFile
 
     def _create_spectra_dir(self):
+        """
+        Create a new spectra directory using the name given to the object at init. If this fails it will abort or raise
+        an error.
+        :return: N/A
+        """
         try:
             os.mkdir(os.path.join(self.private_studies_dir, self.spectra_dir))
         except FileExistsError as e:
@@ -305,6 +330,16 @@ class SpectraZipper:
             raise FileNotFoundError(f'Couldnt create spectra directory at {self.private_studies_dir}{self.spectra_dir}')
 
     def _populate_spectra_dir(self, generator, shallow=False):
+        """
+        Populate the newly created spectra directory. For each derived filename yielded by the generator, we check the
+        top level directory, then the derived files dir. If shallow is False, we then check every subdirectory
+        (however deep) in the study folder. If after all that the file is not found it is marked as so by appending that
+         filename to the not found list.
+
+        :param generator: Generator object which yields tuples that hold study accession numbers and derived filenames.
+        :param shallow: Flag to indicate whether to check every subdir if the file is not found in the basic places.
+        :return: N/A.
+        """
         for items in generator:
             study = items[0]
             desired_derived = items[1]
@@ -319,7 +354,7 @@ class SpectraZipper:
                 self._copy(this_study_location, desired_derived)
 
             elif os.path.exists(derived_path):
-                if self._basic_search(derived_path,desired_derived,this_study_location):
+                if self._basic_search(derived_path, desired_derived, this_study_location, shallow):
                     break
             else:
                 if shallow:
@@ -327,7 +362,19 @@ class SpectraZipper:
                 else:
                     self._deep_search(this_study_location, desired_derived)
 
-    def _basic_search(self, derived_path, desired_derived, this_study_location) -> bool:
+    def _basic_search(self, derived_path, desired_derived, this_study_location, shallow) -> bool:
+        """
+        Checks the derived files directory for the desired derived file. if the file is found it is copied to the
+        spectra directory. If the file is not found, and we are only searching shallow, we add that file to the not
+        found list. Returns a value of true or false, which will trigger a deep search if said return value is false and
+         shallow is False.
+
+        :param derived_path: The location of the derived files directory.
+        :param desired_derived: The name of the derived file we are after.
+        :param this_study_location: The location of the current study folder.
+        :param shallow: Flag to indicate whether to check every subdir if the file is not found in the basic places.
+        :return: bool indicating success or failure.
+        """
         logger.info(derived_path)
 
         if os.path.exists(derived_path):
@@ -347,7 +394,8 @@ class SpectraZipper:
                             self._copy(pos_path, desired_derived)
                             return True
                         else:
-                            self.not_found.append(desired_derived)
+                            if shallow:
+                                self.not_found.append(desired_derived)
 
                     if os.path.exists(neg_path):
                         neg = os.listdir(neg_path)
@@ -355,11 +403,21 @@ class SpectraZipper:
                             self._copy(neg_path, desired_derived)
                             return True
                         else:
-                            self.not_found.append(desired_derived)
-        self.not_found.append()
+                            if shallow:
+                                self.not_found.append(desired_derived)
+        if shallow:
+            self.not_found.append(desired_derived)
         return False
 
     def _deep_search(self, this_study_location, desired_derived) -> bool:
+        """
+        Searches every subdirectory in the study folder for the given file. If this is successful, it breaks out of
+        iterating over every subdir and returns true. If not, the filename is added to the not found list.
+
+        :param this_study_location: Location of the current study folder.
+        :param desired_derived: The name of the derived file we are after.
+        :return: bool indicating success or failure.
+        """
         found = False
         for subdir, dirs, files in os.walk(this_study_location):
             if desired_derived in files:
@@ -371,6 +429,14 @@ class SpectraZipper:
         return found
 
     def _copy(self, path, derived_file):
+        """
+        Copies the file from a study folder to the spectra directory. If the copy operation fails it will add that file
+        to the list of files that were unsuccessful in attempts to copy.
+
+        :param path: The path to the directory where the derived file is found.
+        :param derived_file: The derived filename.
+        :return: N/A
+        """
         copy_op_result = shutil.copy2(
             os.path.join(path, derived_file),
             os.path.join(self.private_studies_dir, self.spectra_dir)
@@ -379,4 +445,4 @@ class SpectraZipper:
             logger.error(
                 f'Could not copy file {derived_file} to {self.private_studies_dir}{self.spectra_dir}'
             )
-            self.not_found.append(derived_file)
+            self.not_copied.append(derived_file)
