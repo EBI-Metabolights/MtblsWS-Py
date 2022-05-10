@@ -20,6 +20,7 @@ import logging.config
 
 from flask import Flask
 from flask_cors import CORS
+from flask_mail import Mail
 from flask_restful import Api
 
 import config
@@ -28,12 +29,18 @@ from app.ws.about import About
 from app.ws.assay_protocol import *
 from app.ws.assay_table import *
 from app.ws.biostudies import *
+from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
+from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
+from app.ws.chebi.settings import get_chebi_ws_settings
+from app.ws.chebi.wsproxy import ChebiWsProxy
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
 from app.ws.chebi_ws import ChebiLiteEntity, ChebiEntity
 from app.ws.cluster_jobs import LsfUtils, LsfUtilsStatus
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import *
 from app.ws.curation_log import *
+from app.ws.email.email_service import EmailService
+from app.ws.email.settings import EmailServiceSettings, get_email_service_settings
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.isaAssay import *
@@ -77,6 +84,18 @@ def configure_app(flask_app):
     flask_app.config.from_object(config)
     flask_app.config.from_pyfile('config.py', silent=True)
 
+    # These code completes WsClient initialization using flask app context
+    chebi_settings = get_chebi_ws_settings(flask_app)
+    chebi_proxy = ChebiWsProxy(settings=chebi_settings)
+    curation_table_file_path = flask_app.config.get("CURATED_METABOLITE_LIST_FILE_LOCATION")
+    curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
+    chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
+    WsClient.search_manager = chebi_search_manager
+
+    email_settings = get_email_service_settings(flask_app)
+    flask_mail = Mail(flask_app)
+    email_service = EmailService(settings=email_settings, mail=flask_mail)
+    WsClient.email_service = email_service
 
 def initialize_app(flask_app):
     configure_app(flask_app)

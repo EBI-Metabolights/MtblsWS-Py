@@ -3,7 +3,6 @@ import math
 
 import numpy as np
 import pandas as pd
-from flask import current_app as app
 
 from app.ws.chebi.search.models import CuratedMetabolitesFileColumn
 from app.ws.chebi.search.utils import remove_few_characters_for_consistency, safe_split_string
@@ -22,11 +21,11 @@ class CuratedMetaboliteTable(object):
     EMPTY_LIST = []
     _instance = None
 
-    @staticmethod
-    def get_instance(file_path=None):
+    @classmethod
+    def get_instance(cls, file_path=None):
         if not CuratedMetaboliteTable._instance:
-            CuratedMetaboliteTable._instance = CuratedMetaboliteTable(file_path)
-        return CuratedMetaboliteTable._instance
+            cls._instance = CuratedMetaboliteTable(file_path)
+        return cls._instance
 
     def __init__(self, file_path=None):
         self.file_path = file_path

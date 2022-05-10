@@ -16,11 +16,7 @@ class ChebiSearchManager(object):
 
     def __init__(self, ws_proxy=None, curated_metabolite_table=None):
         self.ws_proxy = ws_proxy
-        if not self.ws_proxy:
-            self.ws_proxy = get_chebi_ws_proxy()
         self.curated_metabolite_table = curated_metabolite_table
-        if not self.curated_metabolite_table:
-            self.curated_metabolite_table = CuratedMetaboliteTable.get_instance()
 
     def search_by_type(self, search_type, search_value):
         search_type_lower = search_type.lower()

@@ -1,6 +1,3 @@
-from functools import lru_cache
-
-from flask import current_app as app
 from pydantic import BaseSettings
 
 
@@ -14,8 +11,7 @@ class EmailServiceSettings(BaseSettings):
     metabolights_host_url: str = None
 
 
-@lru_cache
-def get_email_service_settings() -> EmailServiceSettings:
+def get_email_service_settings(app) -> EmailServiceSettings:
     settings = EmailServiceSettings()
 
     if app.config:

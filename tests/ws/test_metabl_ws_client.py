@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import Mock
 
 from flask import Flask
+from flask_mail import Mail
 from pydantic import BaseSettings
 
 import config as base_config
@@ -46,7 +47,8 @@ class WebServiceClientTest(unittest.TestCase):
         proxy = ChebiWsProxy(settings=settings)
         cls.search_manager = ChebiSearchManager(ws_proxy=proxy, curated_metabolite_table=curated_table)
         with cls.app.app_context():
-            cls.mail_service = EmailService(cls.app, get_email_service_settings())
+            mail = Mail(cls.app)
+            cls.mail_service = EmailService(get_email_service_settings(cls.app), mail)
 
     @classmethod
     def tearDownClass(cls):

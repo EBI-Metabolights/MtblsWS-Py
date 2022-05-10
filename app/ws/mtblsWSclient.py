@@ -27,7 +27,7 @@ from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.db_connection import check_access_rights, get_public_studies, get_private_studies, get_study_by_type, \
     get_email, query_study_submitters, create_empty_study, \
     get_release_date_of_study, get_submitted_study_ids_for_user
-from app.ws.email.email_service import EmailService, get_email_service
+from app.ws.email.email_service import EmailService
 
 """
 MetaboLights WS client
@@ -40,13 +40,12 @@ logger = logging.getLogger('wslog')
 
 class WsClient:
 
+    search_manager = None
+    email_service = None
+
     def __init__(self, search_manager: ChebiSearchManager = None, email_service: EmailService = None):
-        self.search_manager = search_manager
-        self.email_service = email_service
-        if not self.email_service:
-            self.email_service = get_email_service(app)
-        if not self.search_manager:
-            self.search_manager = ChebiSearchManager()
+        WsClient.email_service = email_service
+        WsClient.search_manager = search_manager
 
     def get_study_location(self, study_id, user_token):
         """

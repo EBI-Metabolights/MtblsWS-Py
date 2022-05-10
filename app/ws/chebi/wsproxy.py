@@ -6,7 +6,7 @@ from zeep import Client, Settings, helpers
 from zeep.exceptions import Fault
 
 from app.ws.chebi.models import Entity, LiteEntity, OntologyDataItem
-from app.ws.chebi.settings import ChebiWsSettings, get_chebi_ws_settings
+from app.ws.chebi.settings import ChebiWsSettings
 from app.ws.chebi.types import SearchCategory, StarsCategory, RelationshipType, StructureType, \
     StructureSearchCategory
 
@@ -31,9 +31,11 @@ class ChebiWsProxy(object):
     def __init__(self, settings: ChebiWsSettings = None):
 
         self.settings = settings
-        if not self.settings:
-            self.settings = get_chebi_ws_settings()
+        if settings:
+            self.setup(settings)
 
+    def setup(self, settings: ChebiWsSettings):
+        self.settings = settings
         if self.settings.chebi_ws_service_binding_log_level == "WARNING":
             zeep_operation_log_level = logging.WARNING
         elif self.settings.chebi_ws_service_binding_log_level == "ERROR":

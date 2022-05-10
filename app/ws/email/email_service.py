@@ -1,6 +1,5 @@
 import os.path
 
-from flask import current_app as app
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -14,10 +13,9 @@ env = Environment(
 
 class EmailService(object):
 
-    def __init__(self, application=None, settings: EmailServiceSettings = None):
-        self.app = application
+    def __init__(self, settings: EmailServiceSettings = None, mail: Mail = None):
         self.settings = settings
-        self.mail = Mail(self.app)
+        self.mail = mail
 
     def send_email(self, subject_name, body, submitters_mail_addresses, user_email,
                    from_mail_address=None, curation_mail_address=None):
@@ -65,8 +63,3 @@ class EmailService(object):
 
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
 
-
-def get_email_service(application=None):
-    if not application:
-        application = app
-    return EmailService(application)
