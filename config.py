@@ -42,7 +42,6 @@ WS_APP_DESCRIPTION = "MetaboLights RESTful WebService"
 RESOURCES_PATH = "/metabolights/ws"
 CORS_RESOURCES_PATH = RESOURCES_PATH + "/*"
 API_DOC = RESOURCES_PATH + "/api/spec"
-MTBLS_WS_RESOURCES_PATH = "/metabolights/webservice"
 UPDATE_PATH_SUFFIX = "audit"
 
 MTBLS_FILE_BASE = "<some local filesystem>/"
@@ -83,6 +82,13 @@ CHEBI_WS_WSDL_SERVICE_PORT = "ChebiWebServicePort"
 CHEBI_WS_STRICT = False
 CHEBI_WS_XML_HUGE_TREE = True
 CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL = "ERROR"
+
+# ELASTICSEARCH
+ELASTICSEARCH_HOST = "localhost"
+ELASTICSEARCH_PORT = 9200
+ELASTICSEARCH_USE_TLS = True
+ELASTICSEARCH_USER_NAME = "<username here>"
+ELASTICSEARCH_USER_PASSWORD = "<password here>"
 
 # GOOGLE SHEETS
 GOOLGE_ZOOMA_SHEET = "<Google sheet url>"
@@ -139,9 +145,7 @@ REMOVED_HS_MOL_COUNT = 500
 
 # Validations
 VALIDATION_FILES_LIMIT = 10000
-
 VALIDATION_SCRIPT = "/nfs/www-prod/web_hx2/cm/metabolights/scripts/cluster_scripts/val/validation.sh"
-VALIDATION_FILES_LIMIT = 10000
 VALIDATION_RUN_MSG = 'Validation is running, Please check after some time.'
 ASSAY_VALIDATION_FILE = '/validation_assay.json'
 FILES_VALIDATION_FILE = '/validation_files.json'

@@ -1,6 +1,4 @@
-from functools import lru_cache
 
-from flask import current_app as app
 from pydantic import BaseSettings
 
 
@@ -12,8 +10,7 @@ class DatabaseSettings(BaseSettings):
     database_port: int = 5432
 
 
-@lru_cache
-def get_database_settings() -> DatabaseSettings:
+def get_database_settings(app) -> DatabaseSettings:
     settings = DatabaseSettings()
     if app.config:
         settings.database_name = app.config.get("DB_PARAMS")["database"]
@@ -31,8 +28,7 @@ class DirectorySettings(BaseSettings):
     private_ftp_folder: str = None
 
 
-@lru_cache
-def get_directory_settings() -> DirectorySettings:
+def get_directory_settings(app) -> DirectorySettings:
     settings = DirectorySettings()
     if app.config:
         settings.studies_folder = app.config.get("STUDY_PATH")

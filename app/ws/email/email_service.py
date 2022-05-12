@@ -3,7 +3,7 @@ import os.path
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from app.ws.email.settings import EmailServiceSettings
+from app.ws.email.settings import EmailServiceSettings, get_email_service_settings
 
 env = Environment(
     loader=PackageLoader("app.ws.email", 'email_templates'),
@@ -16,6 +16,15 @@ class EmailService(object):
     def __init__(self, settings: EmailServiceSettings = None, mail: Mail = None):
         self.settings = settings
         self.mail = mail
+
+    email_service = None
+
+    @classmethod
+    def get_instance(cls, app):
+        if app and not cls.email_service:
+            settings = get_email_service_settings(app)
+            cls.email_service = EmailService(settings)
+        return cls.email_service
 
     def send_email(self, subject_name, body, submitters_mail_addresses, user_email,
                    from_mail_address=None, curation_mail_address=None):

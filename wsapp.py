@@ -39,8 +39,12 @@ from app.ws.cluster_jobs import LsfUtils, LsfUtilsStatus
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import *
 from app.ws.curation_log import *
+from app.ws.db.dbmanager import DBManager
+from app.ws.db.settings import get_database_settings, get_directory_settings
+from app.ws.elasticsearch.elastic_service import ElasticsearchService
+from app.ws.elasticsearch.settings import get_elasticsearch_settings
 from app.ws.email.email_service import EmailService
-from app.ws.email.settings import EmailServiceSettings, get_email_service_settings
+from app.ws.email.settings import get_email_service_settings
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.isaAssay import *
@@ -97,20 +101,28 @@ def configure_app(flask_app):
     email_service = EmailService(settings=email_settings, mail=flask_mail)
     WsClient.email_service = email_service
 
+    settings = get_database_settings(flask_app)
+    db_manager = DBManager(settings)
+    directory_settings = get_directory_settings(flask_app)
+    elasticsearch_settings = get_elasticsearch_settings(flask_app)
+    elasticsearch_service = ElasticsearchService(settings=elasticsearch_settings,
+                                                 db_manager=db_manager, directory_settings=directory_settings)
+    WsClient.elasticsearch_service = elasticsearch_service
+
 def initialize_app(flask_app):
     configure_app(flask_app)
 
-    CORS(application, resources={application.config.get('CORS_RESOURCES_PATH')},
-         origins={application.config.get('CORS_HOSTS')},
+    CORS(application, resources={flask_app.config.get('CORS_RESOURCES_PATH')},
+         origins={flask_app.config.get('CORS_HOSTS')},
          methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
          )
 
-    res_path = application.config.get('RESOURCES_PATH')
-    api = swagger.docs(Api(application),
+    res_path = flask_app.config.get('RESOURCES_PATH')
+    api = swagger.docs(Api(flask_app),
                        description='MetaboLights RESTful WebService',
-                       apiVersion=application.config.get('API_VERSION'),
-                       basePath=application.config.get('WS_APP_BASE_LINK'),
-                       api_spec_url=application.config.get('API_DOC'),
+                       apiVersion=flask_app.config.get('API_VERSION'),
+                       basePath=flask_app.config.get('WS_APP_BASE_LINK'),
+                       api_spec_url=flask_app.config.get('API_DOC'),
                        resourcePath=res_path
                        )
 

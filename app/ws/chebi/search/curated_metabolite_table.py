@@ -29,8 +29,6 @@ class CuratedMetaboliteTable(object):
 
     def __init__(self, file_path=None):
         self.file_path = file_path
-        if not self.file_path:
-            self.file_path = app.config.get("CURATED_METABOLITE_LIST_FILE_LOCATION")
         self.df = None
         try:
             self.df = pd.read_table(file_path, engine='python', header=None)

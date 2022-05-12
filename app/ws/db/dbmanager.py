@@ -9,10 +9,9 @@ from app.ws.db.settings import DatabaseSettings, get_database_settings
 
 class DBManager(object):
     def __init__(self, db_config: DatabaseSettings = None):
-        if db_config:
-            self.db_config = db_config
-        else:
-            self.db_config = get_database_settings()
+
+        self.db_config = db_config
+
         self.db_url = self._get_db_url()
 
         self._engine = create_engine(self.db_url)

@@ -5,7 +5,7 @@ from app.ws.chebi.models import OntologyDataItem
 from app.ws.chebi.search import commons
 from app.ws.chebi.search import utils
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
-from app.ws.chebi.search.models import CompoundSearchResonseModel, CompoundSearchResultModel, SearchResource
+from app.ws.chebi.search.models import CompoundSearchResponseModel, CompoundSearchResultModel, SearchResource
 from app.ws.chebi.types import SearchCategory, StarsCategory
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy, ChebiWsException
 
@@ -31,14 +31,14 @@ class ChebiSearchManager(object):
             elif search_type_lower == "smiles":
                 return self.get_compound_by_smiles(encoded_search_value)
             else:
-                response = CompoundSearchResonseModel()
+                response = CompoundSearchResponseModel()
                 response.message = f"Not valid search type: {search_type}"
                 return response
 
     def get_compound_by_database_id(self, database_id: str):
         logger.debug("Searching by compound id %s" % database_id)
 
-        response = CompoundSearchResonseModel()
+        response = CompoundSearchResponseModel()
         if "chebi" in database_id.lower():
             result_model = commons.fill_with_complete_entity(database_id, self.ws_proxy)
             if result_model and result_model.databaseId:
@@ -67,7 +67,7 @@ class ChebiSearchManager(object):
 
     def _search_by_category(self, filtered_search_value, search_value,
                             category: SearchCategory, curation_table_index: int):
-        response = CompoundSearchResonseModel()
+        response = CompoundSearchResponseModel()
         commons.search_hits_with_search_category(filtered_search_value, category, curation_table_index,
                                                  response, StarsCategory.ALL, self.ws_proxy,
                                                  self.curated_metabolite_table)
@@ -100,7 +100,7 @@ class ChebiSearchManager(object):
     def get_compound_by_name(self, compound_name: str):
         logger.debug("Searching by compound name %s" % compound_name)
 
-        response = CompoundSearchResonseModel()
+        response = CompoundSearchResponseModel()
         if not compound_name or compound_name.lower() in ("unknown", "unidentified"):
             compound_search_result = CompoundSearchResultModel(search_resource=SearchResource.CURATED, name="unknown")
             response.content.append(compound_search_result)
@@ -112,7 +112,7 @@ class ChebiSearchManager(object):
             response.message = f"No match found for {compound_name}"
         return response
 
-    def _search_hits_from_list_and_chebi_only(self, compound_name: str, response: CompoundSearchResonseModel):
+    def _search_hits_from_list_and_chebi_only(self, compound_name: str, response: CompoundSearchResponseModel):
         curated_metabolite_table = self.curated_metabolite_table
 
         name_match = curated_metabolite_table.get_matching_rows(CuratedMetaboliteTable.COMPOUND_INDEX, compound_name)

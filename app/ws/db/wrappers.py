@@ -2,16 +2,16 @@ import json
 import logging
 import os
 import os.path
-import time
 from decimal import Decimal, ROUND_UP
 
 from isatools import isatab
 
 from app.ws.db import models
+from app.ws.db.models import ValidationEntriesModel, ValidationEntryModel, BackupModel
 from app.ws.db.schemes import Study, User
-from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.db.utils import date_str_to_int, datetime_to_int
+from app.ws.study.validation.commons import validate_study
 
 logger = logging.getLogger(__file__)
 
@@ -58,12 +58,11 @@ def get_user_model(db_user: User):
     return m_user
 
 
-def update_study_model_from_directory(m_study: models.StudyModel, include_maf_files: bool = False,
-                                      directory_settings=None):
-    if not directory_settings:
-        directory_settings = get_directory_settings()
+def update_study_model_from_directory(m_study: models.StudyModel, studies_root_path,
+                                      optimize_for_es_indexing=False, include_maf_files: bool = False,
+                                      revalidate_study=False, user_token_to_revalidate=None, ):
 
-    path = os.path.join(directory_settings.studies_folder, m_study.studyIdentifier)
+    path = os.path.join(studies_root_path, m_study.studyIdentifier)
     if not os.path.isdir(path):
         return
     investigation_file = os.path.join(path, 'i_Investigation.txt')
@@ -73,37 +72,85 @@ def update_study_model_from_directory(m_study: models.StudyModel, include_maf_fi
         if not os.path.exists(investigation_file) or not os.path.isfile(investigation_file):
             return
 
-    with open(investigation_file) as f:
-        start = time.time()
+    with open(investigation_file, encoding="utf-8") as f:
         investigation = isatab.load_investigation(f)
-
-        end = time.time()
-        logger.debug(f"Investigation file is read in {(end - start) / 1000.0} sec")
         if "studies" in investigation:
             studies = investigation["studies"]
             if studies:
-                study = studies[0]
-                study_title = get_value_with_column_name(study, "Study Title")
-                study_description = get_value_with_column_name(study, "Study Description")
-                study_submission_date = get_value_with_column_name(study, "Study Submission Date")
-                study_release_date = get_value_with_column_name(study, "Study Public Release Date")
-                study_file_name = get_value_with_column_name(study, "Study File Name")
-                m_study.title = study_title
-                m_study.description = study_description
-                # !TODO check. this assignment overrides db data
-                m_study.studySubmissionDate = date_str_to_int(study_submission_date)
-                # !TODO check. this assignment overrides db data
-                m_study.studyPublicReleaseDate = date_str_to_int(study_release_date)
-                m_study.studyLocation = path
-                fill_contacts(m_study, investigation)
+                f_study = studies[0]
+                create_study_model(m_study, path, f_study)
+
                 fill_descriptors(m_study, investigation)
                 fill_factors(m_study, investigation)
                 fill_publications(m_study, investigation)
-                fill_protocols(m_study, investigation)
                 fill_assays(m_study, investigation, path, include_maf_files)
-                fill_sample_table(m_study, path)
+                fill_sample_table(m_study, path)  # required for fill organism, later remove from model
                 fill_organism(m_study)
-                # TODO add validations to study!!!
+                fill_backups(m_study, path)
+                fill_validations(m_study, path, revalidate_study, user_token_to_revalidate)
+
+                if not optimize_for_es_indexing:
+                    fill_protocols(m_study, investigation)
+                    fill_contacts(m_study, investigation)
+                else:
+                    m_study.sampleTable = None  # delete sample table data from model for indexing.
+
+
+def fill_backups(m_study, path):
+    backup_path = os.path.join(path, "audit")
+    os.makedirs(backup_path, exist_ok=True)
+    backup_directories = [x[0] for x in os.walk(backup_path)]
+    id = 0
+    for directory in backup_directories:
+        directory_name = os.path.basename(directory)
+        if directory_name.isnumeric():
+            backup_model = BackupModel()
+            backup_model.backupId = str(id)
+            id = id + 1
+            backup_model.folderPath = directory
+            backup_model.backupTimeStamp = int(directory_name)
+            m_study.backups.append(backup_model)
+
+
+def create_study_model(m_study, path, study):
+    study_title = get_value_with_column_name(study, "Study Title")
+    study_description = get_value_with_column_name(study, "Study Description")
+    study_submission_date = get_value_with_column_name(study, "Study Submission Date")
+    study_release_date = get_value_with_column_name(study, "Study Public Release Date")
+    study_file_name = get_value_with_column_name(study, "Study File Name")  # not used
+    m_study.title = study_title
+    m_study.description = study_description
+    # !TODO check. this assignment overrides db data
+    m_study.studySubmissionDate = date_str_to_int(study_submission_date)
+    # !TODO check. this assignment overrides db data
+    m_study.studyPublicReleaseDate = date_str_to_int(study_release_date)
+    m_study.studyLocation = path
+
+
+def fill_validations(m_study, path, revalidate_study, user_token_to_revalidate):
+    if revalidate_study:
+        # TODO review validations mappings
+        results = validate_study(m_study.studyIdentifier, path, user_token_to_revalidate, m_study.obfuscationCode)
+        validation_entries_model = ValidationEntriesModel()
+        m_study.validations = validation_entries_model
+        if results and "validation" in results:
+            validation_result = results["validation"]
+            if "status" in validation_result:
+                validation_entries_model.status = validation_result["status"]
+            validation_entries_model.overriden = False
+            validation_entries_model.passedMinimumRequirement = False
+            if "validations" in validation_result:
+                validations = validation_result["validations"]
+                for section in validations:
+                    if "details" in section:
+                        for message in section["details"]:
+                            validation_entry_model = ValidationEntryModel()
+                            validation_entry_model.status = message["status"]
+                            validation_entry_model.description = message["description"]
+                            validation_entry_model.message = message["message"]
+                            validation_entry_model.group = message["section"]
+                            validation_entry_model.overriden = message["val_override"]
+                            validation_entries_model.entries.append(validation_entry_model)
 
 
 def get_value_with_column_name(dataframe, column_name):
@@ -260,7 +307,7 @@ def fill_protocols(m_study, investigation):
             model = models.ProtocolModel()
 
             model.name = get_value_from_dict(item[1], "Study Protocol Name")
-            model.Description = get_value_from_dict(item[1], "Study Protocol Description")
+            model.description = get_value_from_dict(item[1], "Study Protocol Description")
             m_study.protocols.append(model)
 
 

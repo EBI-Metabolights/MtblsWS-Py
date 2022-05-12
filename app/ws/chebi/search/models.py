@@ -51,7 +51,7 @@ class CompoundSearchResultModel(BaseModel):
         return score
 
 
-class CompoundSearchResonseModel(BaseModel):
+class CompoundSearchResponseModel(BaseModel):
     content: List[CompoundSearchResultModel] = Field([],
                                                      description="""
                          This field contains data of service result

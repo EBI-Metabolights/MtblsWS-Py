@@ -26,7 +26,7 @@ from isatools.convert import isatab2json
 from isatools.isatab import load, dump
 from isatools.model import *
 
-from app.ws.mtblsWSclient import WsClient
+from app.ws.study import commons
 from app.ws.utils import copy_file, new_timestamped_folder
 
 """
@@ -42,11 +42,9 @@ class IsaApiClient:
 
     def __init__(self):
         self.inv_filename = "i_Investigation.txt"
-        self.wsc = WsClient()   # MetaboLights (Java-Based) WebService client
 
-        return
-
-    def get_isa_json(self, study_id, api_key, study_location=None):
+    @staticmethod
+    def get_isa_json(study_id, api_key, study_location=None):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
@@ -58,7 +56,7 @@ class IsaApiClient:
 
         if study_location is None:
             logger.info("Study location is not set, will have load study from filesystem")
-            path = self.wsc.get_study_location(study_id, api_key)
+            path = commons.get_study_location(study_id, api_key)
         else:
             logger.info("Study location is: " + study_location)
             path = study_location
@@ -147,7 +145,7 @@ class IsaApiClient:
 
         if study_location is None:
             logger.info("Study location is not set, will have load study from filesystem")
-            std_path = self.wsc.get_study_location(study_id, api_key)
+            std_path = commons.get_study_location(study_id, api_key)
         else:
             logger.info("Study location is: " + study_location)
             std_path = study_location

@@ -22,6 +22,7 @@ from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.folder_utils import write_audit_files
 from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
@@ -1220,29 +1221,6 @@ class DeleteStudy(Resource):
         return {"Success": "Study " + study_id + " has been removed"}
 
 
-def write_audit_files(study_location):
-    """
-    Write back an ISA-API Investigation object directly into ISA-Tab files
-    :param study_location: the filesystem where the study is located
-    :return:
-    """
-    # dest folder name is a timestamp
-    update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
-    update_path = os.path.join(study_location, update_path_suffix)
-    dest_path = new_timestamped_folder(update_path)
-
-    try:
-        # make a copy of ISA-Tab & MAF
-        for isa_file in glob.glob(os.path.join(study_location, "?_*.t*")):
-            isa_file_name = os.path.basename(isa_file)
-            src_file = isa_file
-            dest_file = os.path.join(dest_path, isa_file_name)
-            logger.info("Copying %s to %s", src_file, dest_file)
-            copy_file(src_file, dest_file)
-    except:
-        return False, dest_path
-
-    return True, dest_path
 
 
 def get_audit_files(study_location):

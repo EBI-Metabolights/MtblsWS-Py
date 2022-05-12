@@ -904,8 +904,9 @@ def map_file_type(file_name, directory, assay_file_list=None):
             if os.sep + 'audit' + os.sep in directory:
                 return 'metadata_investigation', none_active_status, folder
             for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
-                if open(invest_file, encoding='utf8', errors="ignore").read():
-                    return 'metadata_investigation', active_status, folder
+                with open(invest_file, encoding='utf8', errors="ignore") as file:
+                    if file.read():
+                        return 'metadata_investigation', active_status, folder
         return 'metadata', none_active_status, folder
     elif final_filename in ('fid', 'fid.txt'):  # NMR data
         return 'fid', active_status, folder
@@ -1056,8 +1057,9 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
             current """
             try:
                 logger.info("Checking if file " + file_name + " is referenced in " + ref_file_name)
-                if file_name in io.open(ref_file_name, 'r', encoding='utf8', errors="ignore").read():
-                    found = True
+                with io.open(ref_file_name, 'r', encoding='utf8', errors="ignore") as file:
+                    if file_name in file.read():
+                        found = True
             except Exception as e:
                 logger.error('File Format error? Cannot read or open file ' + file_name)
                 logger.error(str(e))
@@ -1077,8 +1079,9 @@ def find_text_in_isatab_file(study_folder, text_to_find):
     for ref_file in glob.glob(isa_tab_file):
         try:
             logger.info("Checking if text " + text_to_find + " is referenced in " + ref_file)
-            if text_to_find in io.open(ref_file, 'r', encoding='utf8', errors="ignore").read():
-                found = True
+            with io.open(ref_file, 'r', encoding='utf8', errors="ignore") as file:
+                if text_to_find in file.read():
+                    found = True
         except Exception as e:
             logger.error('File Format error? Cannot read or open file ' + ref_file)
             logger.error(str(e))

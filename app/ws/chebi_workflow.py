@@ -42,9 +42,8 @@ from pubchempy import get_compounds
 from zeep import Client
 from app.ws.cluster_jobs import lsf_job
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.mtblsStudy import write_audit_files
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study_files import get_all_files_from_filesystem
+from app.ws.study.folder_utils import write_audit_files, get_all_files_from_filesystem
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
 from app.ws.db_connection import get_user_email
 
@@ -453,7 +452,7 @@ def duplicate(my_list, n):
 
 def unique_list(l):
     ulist = []
-    [ulist.append(x) for x in l if x not in ulist and x is not '']
+    [ulist.append(x) for x in l if x not in ulist and x]
     return ulist
 
 

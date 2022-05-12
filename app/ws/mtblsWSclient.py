@@ -27,12 +27,14 @@ from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.db_connection import check_access_rights, get_public_studies, get_private_studies, get_study_by_type, \
     get_email, query_study_submitters, create_empty_study, \
     get_release_date_of_study, get_submitted_study_ids_for_user
+from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.email.email_service import EmailService
+from app.ws.study import commons
 
 """
 MetaboLights WS client
 
-Use the Java-based REST resources provided from MTBLS
+Updated from the Java-based REST resources
 """
 
 logger = logging.getLogger('wslog')
@@ -40,33 +42,16 @@ logger = logging.getLogger('wslog')
 
 class WsClient:
 
-    search_manager = None
-    email_service = None
+    search_manager: ChebiSearchManager = None
+    email_service: EmailService = None
+    elasticsearch_service: ElasticsearchService = None
 
     def __init__(self, search_manager: ChebiSearchManager = None, email_service: EmailService = None):
         WsClient.email_service = email_service
         WsClient.search_manager = search_manager
 
     def get_study_location(self, study_id, user_token):
-        """
-        Get the actual location of the study files in the File System
-
-        :param study_id: Identifier of the study in MetaboLights
-        :param user_token: User API token. Used to check for permissions
-        """
-        logger.info('Getting actual location for Study %s on the filesystem', study_id)
-
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            self.get_permissions(study_id, user_token)
-        if not read_access:
-            abort(403)
-
-        location = os.path.join(app.config.get('STUDY_PATH'), study_id.upper())
-        location = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), location.strip('/'))
-        if not os.path.isdir(location):
-            abort(404, 'There is no path for %s' %(study_id,))
-        logger.info('... found study folder %s', location)
-        return location
+        return commons.get_study_location(study_id, user_token)
 
     def get_maf_search(self, search_type, search_value):
         # Updated to remove Java WS /genericcompoundsearch/{search_type}/{search_value} dependency
@@ -82,95 +67,31 @@ class WsClient:
 
     @staticmethod
     def get_public_studies():
-        logger.info('Getting all public studies')
-        studies = []
-        study_list = get_public_studies()
-        for acc in study_list:
-            studies.append(acc[0])
-
-        logger.info('... found %d public studies', len(studies))
-        return {"studies": len(studies), "content": studies}
+        return commons.get_public_studies_list()
 
     @staticmethod
     def get_private_studies():
-        logger.info('Getting all private studies')
-        studies = []
-        study_list = get_private_studies()
-        for acc in study_list:
-            studies.append(acc[0])
-
-        logger.info('... found %d private studies', len(studies))
-        return {"studies": len(studies), "content": studies}
+        return commons.get_private_studies_list()
 
     @staticmethod
     def get_study_by_type(stype, publicS=True):
-        logger.info('Getting all public studies')
-        studyID, studytype = get_study_by_type(stype, publicS)
-        res = json.dumps(dict(zip(studyID, studytype)))
-        return res
+        return commons.get_study_by_type(stype, publicS)
 
     @staticmethod
     def get_all_studies_for_user(user_token):
-        # remove this method if CloneAccession is not used
-        logger.info('Getting submitted studies using user_token')
-        study_id_list = get_submitted_study_ids_for_user(user_token)
-        text_resp = json.dumps(study_id_list)
-        logger.info('Found the following studies %s', text_resp)
-        return text_resp
-
-    # used to index the tuple response
-    CAN_READ = 0
-    CAN_WRITE = 1
+        return commons.get_all_studies_for_user(user_token)
 
     @staticmethod
     def get_permissions(study_id, user_token, obfuscation_code=None):
-        """
-        Check MTBLS-WS for permissions on this Study for this user
-
-        Study       User    Submitter   Curator     Reviewer/Read-only
-        SUBMITTED   ----    Read+Write  Read+Write  Read
-        INCURATION  ----    Read        Read+Write  Read
-        INREVIEW    ----    Read        Read+Write  Read
-        PUBLIC      Read    Read        Read+Write  Read
-
-        :param obfuscation_code:
-        :param study_id:
-        :param user_token:
-        :return: study details and permission levels
-
-        """
-
-        if not user_token:
-            user_token = "public_access_only"
-
-        # Reviewer access will pass the study obfuscation code instead of api_key
-        if study_id and not obfuscation_code and user_token.startswith("ocode:"):
-            logger.info("Study obfuscation code passed instead of user API_CODE")
-            obfuscation_code = user_token.replace("ocode:", "")
-
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        updated_date, study_status = check_access_rights(user_token, study_id.upper(),
-                                                         study_obfuscation_code=obfuscation_code)
-
-        logger.info("Read access: " + str(read_access) + ". Write access: " + str(write_access))
-
-        return is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
-               submission_date, study_status
+        return commons.get_permissions(study_id, user_token, obfuscation_code)
 
     @staticmethod
     def get_user_email(user_token):
-
-        user_email= get_email(user_token)
-        logger.info(" User Email: " + str(user_email))
-        return user_email
+        return commons.get_user_email(user_token)
 
     @staticmethod
     def get_queue_folder():
-        # Updated to remove Java WS /study/getQueueFolder dependency
-        queue_folder = app.config.get('STUDY_QUEUE_FOLDER')
-        logger.info('Found queue upload folder for this server as:' + queue_folder)
-
-        return queue_folder
+        return commons.get_queue_folder()
 
     def create_upload_folder(self, study_id, obfuscation_code, user_token):
         # Updated to remove Java WS /study/requestFtpFolderOnApiKey dependency
@@ -222,20 +143,17 @@ class WsClient:
         return study_id
 
 
-    @staticmethod
-    def reindex_study(study_id, user_token):
+    def reindex_study(self, study_id, user_token):
         # TODO Updated to remove Java WS /study/reindexStudyOnToken dependency
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/reindexStudyOnToken"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        logger.info('Reindex study ' + study_id)
-        resp = requests.post(
-            url,
-            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-            data={"token": user_token, "study_id": study_id}
-        )
+        is_curator, read_access, write_access, study_obfuscation_code, study_location, \
+        release_date, submission_date, study_status = self.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(401, "No permission")
 
-        if resp.status_code != 200:
-            abort(resp.status_code)
+        success, message = WsClient.elasticsearch_service.reindex_study(study_id, user_token)
 
-        message = resp.text
-        return True, message
+        if not success:
+            abort(501, message)
+
+        return success, message
+

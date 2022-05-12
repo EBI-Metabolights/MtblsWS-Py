@@ -5,8 +5,8 @@ class UserRole(Enum):
     SUBMITTER = 0
     CURATOR = 1
     ANONYMOUS = 2
-    REVIEWER = 3
-    SYSTEM_ADMIN = 4
+    REVIEWER = 3  # this is not in java project
+    SYSTEM_ADMIN = 4 # this is not in java project
 
 
 class UserStatus(Enum):

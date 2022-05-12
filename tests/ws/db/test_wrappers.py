@@ -1,10 +1,11 @@
 import unittest
 
 from flask import Flask
+from pydantic import BaseSettings
 
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
-from app.ws.db.settings import DatabaseSettings
+from app.ws.db.settings import DatabaseSettings, get_directory_settings
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 from instance import config
 
@@ -16,6 +17,14 @@ class DatabaseSettingsFromConfig(DatabaseSettings):
     database_host: str = config.DB_PARAMS["host"]
     database_port: int = config.DB_PARAMS["port"]
 
+class TestSensitiveData(BaseSettings):
+    wrappers_super_user_token_1: str
+
+    class Config:
+        # read and set security settings variables from this env_file
+        env_file = "./tests/ws/.test_data"
+
+sensitive_data = TestSensitiveData()
 
 class WrappersTest(unittest.TestCase):
 
@@ -37,7 +46,12 @@ class WrappersTest(unittest.TestCase):
             with self.db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)
-            update_study_model_from_directory(study)
+            studies_root_path = get_directory_settings(app)
+            update_study_model_from_directory(study, studies_root_path.studies_folder,
+                                              optimize_for_es_indexing=False,
+                                              revalidate_study=True,
+                                              user_token_to_revalidate=sensitive_data.wrappers_super_user_token_1,
+                                              include_maf_files=False)
 
         self.assertGreaterEqual(len(study.protocols), 1)
         self.assertGreaterEqual(len(study.users), 1)

@@ -1,5 +1,5 @@
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
-from app.ws.chebi.search.models import CompoundSearchResultModel, SearchResource, CompoundSearchResonseModel
+from app.ws.chebi.search.models import CompoundSearchResultModel, SearchResource, CompoundSearchResponseModel
 from app.ws.chebi.search.utils import get_term_in_source, find_term_index_in_source
 from app.ws.chebi.types import SearchCategory, StarsCategory
 from app.ws.chebi.wsproxy import get_chebi_ws_proxy, ChebiWsProxy, ChebiWsException
@@ -60,7 +60,7 @@ def fill_from_metabolite_table(index, row, result: CompoundSearchResultModel):
 def search_hits_with_search_category(search_name: str,
                                      search_category: SearchCategory,
                                      curation_table_index: int,
-                                     response: CompoundSearchResonseModel,
+                                     response: CompoundSearchResponseModel,
                                      stars: StarsCategory = StarsCategory.ALL,
                                      ws_proxy: ChebiWsProxy = None,
                                      curated_metabolite_table: CuratedMetaboliteTable = None
