@@ -1,5 +1,4 @@
 import logging
-from functools import lru_cache
 from typing import List, Optional
 
 from zeep import Client, Settings, helpers
@@ -128,6 +127,5 @@ class ChebiWsProxy(object):
         return None
 
 
-@lru_cache
 def get_chebi_ws_proxy():
     return ChebiWsProxy()

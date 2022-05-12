@@ -73,7 +73,7 @@ def update_study_model_from_directory(m_study: models.StudyModel, include_maf_fi
         if not os.path.exists(investigation_file) or not os.path.isfile(investigation_file):
             return
 
-    with open(investigation_file) as f:
+    with open(investigation_file, encoding="unicode_escape") as f:
         start = time.time()
         investigation = isatab.load_investigation(f)
 
@@ -149,7 +149,7 @@ def fill_sample_table(m_study, path):
     sample_file_name = "s_" + m_study.studyIdentifier + ".txt"
     file_path = os.path.join(path, sample_file_name)
     if os.path.isfile(file_path):
-        with open(file_path) as f:
+        with open(file_path, encoding="unicode_escape") as f:
             sample = isatab.load_table(f)
             m_sample = models.TableModel()
             m_study.sampleTable = m_sample
@@ -178,7 +178,7 @@ def fill_assays(m_study, investigation, path, include_maf_files):
             m_study.assays.append(model)
             file = os.path.join(path, model.fileName)
             if os.path.isfile(file):
-                with open(file) as f:
+                with open(file, encoding="unicode_escape") as f:
                     table = isatab.load_table(f)
                     m_table = models.TableModel()
                     model.assayTable = m_table

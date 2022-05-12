@@ -1,4 +1,3 @@
-from functools import lru_cache
 
 from flask import current_app as app
 from pydantic import BaseSettings
@@ -12,7 +11,6 @@ class DatabaseSettings(BaseSettings):
     database_port: int = 5432
 
 
-@lru_cache
 def get_database_settings() -> DatabaseSettings:
     settings = DatabaseSettings()
     if app.config:
@@ -31,7 +29,6 @@ class DirectorySettings(BaseSettings):
     private_ftp_folder: str = None
 
 
-@lru_cache
 def get_directory_settings() -> DirectorySettings:
     settings = DirectorySettings()
     if app.config:
