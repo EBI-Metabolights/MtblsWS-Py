@@ -763,7 +763,11 @@ def create_empty_study(user_token):
         postgresql_pool, conn, cursor = get_connection()
 
         cursor.execute(get_next_mtbls_id)
-        data = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        if not result:
+            logger.error("There is not data prefix with MTBLS in stableid table")
+            raise ValueError()
+        data = result[0]
         acc = f"MTBLS{data}"
         obfuscationcode = str(uuid.uuid4())
         releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
@@ -779,7 +783,7 @@ def create_empty_study(user_token):
     except Exception as e:
         if conn:
             conn.rollback()
-        return None
+        raise e
     finally:
         if postgresql_pool and conn:
             release_connection(postgresql_pool, conn)
