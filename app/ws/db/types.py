@@ -22,3 +22,29 @@ class StudyStatus(Enum):
     INREVIEW = 2
     PUBLIC = 3
     DORMANT = 4
+
+
+class MetabolightsException(Exception):
+
+    def __init__(self, message: str, exception : Exception = None):
+        super(MetabolightsException, self).__init__()
+        self.message = message
+        self.exception = exception
+
+
+class MetabolightsDBException(MetabolightsException):
+
+    def __init__(self, message: str, exception : Exception = None):
+        super(MetabolightsDBException, self).__init__(message, exception)
+
+
+class MetabolightsFileOperationException(MetabolightsException):
+
+    def __init__(self, message: str, exception : Exception = None):
+        super(MetabolightsFileOperationException, self).__init__(message, exception)
+
+
+class MetabolightsAuthorizationException(MetabolightsException):
+
+    def __init__(self, message: str, exception : Exception = None):
+        super(MetabolightsAuthorizationException, self).__init__(message, exception)

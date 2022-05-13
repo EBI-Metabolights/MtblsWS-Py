@@ -17,6 +17,9 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import logging.config
+import os
+import pathlib
+import shutil
 
 from flask import Flask
 from flask_cors import CORS
@@ -80,6 +83,17 @@ MetaboLights Python-based REST Web Service
 """
 application = Flask(__name__, instance_relative_config=True)
 hostname = os.uname().nodename
+logging_config_file_name = 'logging_' + hostname + '.conf'
+current_dir = pathlib.Path(__file__).parent.resolve()
+file_path = os.path.join(current_dir, logging_config_file_name)
+
+if not os.path.exists(file_path):
+    print(f"{file_path} is not found. It is being created from default.")
+    shutil.copy('logging.conf', logging_config_file_name)
+    default_log_dir = os.path.join(current_dir, "logs")
+    if not os.path.exists(default_log_dir):
+        os.makedirs(default_log_dir, exist_ok=True)
+
 logging.config.fileConfig('logging_' + hostname + '.conf')
 logger = logging.getLogger('wslog')
 
@@ -101,8 +115,7 @@ def configure_app(flask_app):
     email_service = EmailService(settings=email_settings, mail=flask_mail)
     WsClient.email_service = email_service
 
-    settings = get_database_settings(flask_app)
-    db_manager = DBManager(settings)
+    db_manager = DBManager.get_instance(flask_app)
     directory_settings = get_directory_settings(flask_app)
     elasticsearch_settings = get_elasticsearch_settings(flask_app)
     elasticsearch_service = ElasticsearchService(settings=elasticsearch_settings,

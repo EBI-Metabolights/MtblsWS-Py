@@ -1,5 +1,6 @@
 from urllib.parse import quote
 
+from flask import current_app as app
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -16,6 +17,18 @@ class DBManager(object):
 
         self._engine = create_engine(self.db_url)
         self.session_maker = sessionmaker(autocommit=False, autoflush=False, bind=self._engine)
+
+    instance = None
+
+    @classmethod
+    def get_instance(cls, application=None):
+        if not cls.instance:
+            if not application:
+                application = app
+            db_settings = get_database_settings(application)
+
+            cls.instance = DBManager(db_config=db_settings)
+        return cls.instance
 
     def get_db_session(self):
         db = self.session_maker()

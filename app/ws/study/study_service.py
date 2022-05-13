@@ -1,24 +1,14 @@
-from typing import Optional
-
 from flask import current_app as app
 
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.db.settings import get_database_settings, get_directory_settings
-from app.ws.db.types import UserStatus, UserRole, StudyStatus
+from app.ws.db.types import UserStatus, UserRole, StudyStatus, MetabolightsDBException, \
+    MetabolightsFileOperationException
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 
 
-class StudyReadException(Exception):
-
-    def __init__(self, message: str, exception : Exception):
-        self.__init__(self)
-        self.message = message
-        self.exception = exception
-
-
 class StudyService(object):
-
 
     instance = None
     db_manager = None
@@ -30,8 +20,7 @@ class StudyService(object):
             cls.instance = StudyService()
             if not application:
                 application = app
-            db_settings = get_database_settings(application)
-            cls.db_manager = DBManager(db_config=db_settings)
+            cls.db_manager = DBManager.get_instance(application)
             cls.directory_settings = get_directory_settings(application)
         return cls.instance
 
@@ -42,7 +31,7 @@ class StudyService(object):
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 m_study = create_study_model_from_db_study(db_study_obj)
         except Exception as e:
-            raise StudyReadException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
+            raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
 
         try:
             update_study_model_from_directory(m_study, self.directory_settings.studies_folder,
@@ -51,7 +40,7 @@ class StudyService(object):
                                               user_token_to_revalidate=user_token,
                                               include_maf_files=include_maf_files)
         except Exception as e:
-            raise StudyReadException(message=f"Error while updating study from study folder: {str(e)}", exception=e)
+            raise MetabolightsFileOperationException(message=f"Error while updating study from study folder: {str(e)}", exception=e)
 
         return m_study
 

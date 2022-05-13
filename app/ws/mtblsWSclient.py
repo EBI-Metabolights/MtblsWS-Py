@@ -16,20 +16,18 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import json
 import logging
-import os
 
-import requests
 from flask import current_app as app, abort
 
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
-from app.ws.db_connection import check_access_rights, get_public_studies, get_private_studies, get_study_by_type, \
-    get_email, query_study_submitters, create_empty_study, \
-    get_release_date_of_study, get_submitted_study_ids_for_user
+from app.ws.db.types import MetabolightsException
+from app.ws.db_connection import create_empty_study, \
+    get_release_date_of_study
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.email.email_service import EmailService
 from app.ws.study import commons
+from app.ws.study.user_service import UserService
 
 """
 MetaboLights WS client
@@ -41,7 +39,6 @@ logger = logging.getLogger('wslog')
 
 
 class WsClient:
-
     search_manager: ChebiSearchManager = None
     email_service: EmailService = None
     elasticsearch_service: ElasticsearchService = None
@@ -93,67 +90,32 @@ class WsClient:
     def get_queue_folder():
         return commons.get_queue_folder()
 
-    def create_upload_folder(self, study_id, obfuscation_code, user_token):
+    @staticmethod
+    def create_upload_folder(study_id, obfuscation_code, user_token):
         # Updated to remove Java WS /study/requestFtpFolderOnApiKey dependency
-        is_curator, read_access, write_access, study_obfuscation_code, study_location, release_date, submission_date, study_status = \
-            self.get_permissions("MTBLS1", user_token)
-        if not write_access:
-            abort(401, "No permission")
 
-        new_folder_name = study_id.lower() + '-' + obfuscation_code
-        ftp_folder = os.path.join(app.config.get('MTBLS_FTP_ROOT'), new_folder_name)
-        os_upload = ftp_folder
-        if not os.path.exists(ftp_folder):
-            logger.info('Creating a new study upload folder for Study %s', study_id)
-            ftp_private_folder_root = app.config.get('MTBLS_PRIVATE_FTP_ROOT')
-            ftp_path = os.path.join(ftp_private_folder_root, new_folder_name)
-            raw_files_path = os.path.join(ftp_path, "RAW_FILES")
-            derived_files_path = os.path.join(ftp_path, "DERIVED_FILES")
-            logger.info(f"Creating folder {ftp_path}")
-            os.makedirs(ftp_path, mode=0o770, exist_ok=True)
-            os.makedirs(raw_files_path, mode=0o770, exist_ok=True)
-            os.makedirs(derived_files_path, mode=0o770, exist_ok=True)
-            os_upload = ftp_path
-            user_email = get_email(user_token)
-            submitter_emails = query_study_submitters(study_id)
-            submitters_email_list = [ submitter[0] for submitter in submitter_emails]
-            self.email_service.send_email_for_requested_ftp_folder_created(study_id,
-                                                                           ftp_path, user_email, submitters_email_list)
-        upload_loc = ftp_folder
-        private_ftp_user = app.config.get("PRIVATE_FTP_SERVER_USER")
-        if private_ftp_user in ftp_folder:
-            upload_location = ftp_folder.split('/' + private_ftp_user)  # FTP/Aspera root starts here
-            upload_location = [x for x in upload_location if x]
-            if len(upload_location) > 0:
-                upload_loc = upload_location[1]
-            else:
-                upload_loc = upload_location[0]
-
-        return {'os_upload_path': os_upload, 'upload_location': upload_loc}
+        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        return commons.create_ftp_folder(study_id, obfuscation_code, user_token, WsClient.email_service)
 
     def add_empty_study(self, user_token):
         # Updated to remove Java WS /study/createEmptyStudy dependency
+
+        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+
         study_id = create_empty_study(user_token)
-        user_email = get_email(user_token)
-        submitter_emails = query_study_submitters(study_id)
-        submitters_email_list = [submitter[0] for submitter in submitter_emails]
+        user_email = user.username
+        submitters_email_list = [user_email]
         release_date = get_release_date_of_study(study_id)
         self.email_service.send_email_for_queued_study_submitted(study_id, release_date,
                                                                  user_email, submitters_email_list)
         return study_id
 
-
     def reindex_study(self, study_id, user_token):
-        # TODO Updated to remove Java WS /study/reindexStudyOnToken dependency
-        is_curator, read_access, write_access, study_obfuscation_code, study_location, \
-        release_date, submission_date, study_status = self.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(401, "No permission")
+        # Updated to remove Java WS /study/reindexStudyOnToken dependency
 
-        success, message = WsClient.elasticsearch_service.reindex_study(study_id, user_token)
-
-        if not success:
-            abort(501, message)
-
-        return success, message
-
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        try:
+            indexed_data = ElasticsearchService.get_instance(app).reindex_study(study_id, user_token)
+            return True, f" {indexed_data.studyIdentifier} is successfully indexed"
+        except MetabolightsException as e:
+            abort(501, e.message)

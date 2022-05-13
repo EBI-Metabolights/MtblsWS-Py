@@ -13,6 +13,7 @@ import config as base_config
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.wsproxy import ChebiWsProxy
+from app.ws.db.types import MetabolightsException
 from app.ws.db_connection import get_email, study_submitters, execute_query_with_parameter
 from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings
@@ -188,7 +189,35 @@ class WebServiceClientTest(unittest.TestCase):
             expected = self.app.config.get('STUDY_QUEUE_FOLDER')
             self.assertEqual(expected, actual)
 
-    def test_create_upload_folder_1(self):
+    def test_create_upload_folder_valid_study_01(self):
+
+        with self.app.app_context():
+            send_mail_mock = Mock()
+            self.mail_service.send_email = send_mail_mock
+            ws_client = WsClient(self.search_manager, self.mail_service)
+            input_study_id = "MTBLS1"
+            input_obfusucation_code = "XYZTaamss"
+            expected_path = os.path.join(self.app.config.get('MTBLS_FTP_ROOT'),
+                                         input_study_id.lower() + "-" + input_obfusucation_code)
+            if os.path.exists(expected_path):
+                created_path = pathlib.Path(expected_path)
+                shutil.rmtree(created_path)
+            try:
+                actual = ws_client.create_upload_folder(input_study_id, input_obfusucation_code,
+                                                        sensitive_data.metabl_ws_client__super_user_token_1)
+
+                self.assertIsNotNone(actual)
+                self.assertEqual(expected_path, actual['os_upload_path'])
+
+                send_mail_mock.assert_called()
+
+            finally:
+                if os.path.exists(expected_path):
+                    created_path = pathlib.Path(expected_path)
+                    shutil.rmtree(created_path)
+
+
+    def test_create_upload_folder_invalid_study_01(self):
 
         with self.app.app_context():
             send_mail_mock = Mock()
@@ -200,13 +229,10 @@ class WebServiceClientTest(unittest.TestCase):
                                          input_study_id.lower() + "-" + input_obfusucation_code)
 
             try:
-                actual = ws_client.create_upload_folder(input_study_id, input_obfusucation_code,
-                                                        sensitive_data.metabl_ws_client__super_user_token_1)
-
-                self.assertIsNotNone(actual)
-                self.assertEqual(expected_path, actual['os_upload_path'])
-
-                send_mail_mock.assert_called()
+                with self.assertRaises(MetabolightsException):
+                    ws_client.create_upload_folder(input_study_id, input_obfusucation_code,
+                                                            sensitive_data.metabl_ws_client__super_user_token_1)
+                send_mail_mock.assert_not_called()
 
             finally:
                 if os.path.exists(expected_path):
@@ -232,5 +258,52 @@ class WebServiceClientTest(unittest.TestCase):
                     user_email = get_email(user_token)
                     study_submitters(study_id, user_email, "delete")
                     sql = "delete study where acc = %(acc)s;"
+                    params = {"acc": study_id}
+                    execute_query_with_parameter(sql, params)
+
+
+    def test_reindex_1(self):
+
+        with self.app.app_context():
+            user_token = sensitive_data.metabl_ws_client__super_user_token_1
+            send_mail_mock = Mock()
+            self.mail_service.send_email = send_mail_mock
+            ws_client = WsClient(self.search_manager, self.mail_service)
+            study_id = None
+            try:
+                actual = ws_client.reindex_study("MTBLS1", user_token)
+                self.assertIsNotNone(actual)
+                send_mail_mock.assert_not_called()
+
+            finally:
+                if study_id:
+                    user_email = get_email(user_token)
+                    study_submitters(study_id, user_email, "delete")
+
+                    sql = "delete from studies where acc = %(acc)s;"
+                    params = {"acc": study_id}
+                    execute_query_with_parameter(sql, params)
+
+
+    def test_reindex_submitter_01_permission_error(self):
+
+        with self.app.app_context():
+            user_token = sensitive_data.metabl_ws_client__submitter_token_1
+            send_mail_mock = Mock()
+            self.mail_service.send_email = send_mail_mock
+            ws_client = WsClient(self.search_manager, self.mail_service)
+            study_id = None
+            try:
+                with self.assertRaises(MetabolightsException):
+                    study_id = ws_client.reindex_study("MTBLS1", user_token)
+
+                send_mail_mock.assert_not_called()
+
+            finally:
+                if study_id:
+                    user_email = get_email(user_token)
+                    study_submitters(study_id, user_email, "delete")
+
+                    sql = "delete from studies where acc = %(acc)s;"
                     params = {"acc": study_id}
                     execute_query_with_parameter(sql, params)

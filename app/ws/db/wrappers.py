@@ -7,7 +7,8 @@ from decimal import Decimal, ROUND_UP
 from isatools import isatab
 
 from app.ws.db import models
-from app.ws.db.models import ValidationEntriesModel, ValidationEntryModel, BackupModel
+from app.ws.db.models import ValidationEntriesModel, ValidationEntryModel, BackupModel, IndexedUserModel, \
+    IndexedAssayModel
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.db.utils import date_str_to_int, datetime_to_int
@@ -26,7 +27,7 @@ def create_study_model_from_db_study(db_study: Study):
     )
 
     m_study.studyStatus = StudyStatus(db_study.status).name
-    m_study.studySize = db_study.studysize  # This value is different in DB and www.ebi.ac.uk
+    m_study.studySize = db_study.studysize                            # This value is different in DB and www.ebi.ac.uk
     size_in_mb = m_study.studySize / MB_FACTOR
     m_study.studyHumanReadable = str(size_in_mb.quantize(Decimal('.01'), rounding=ROUND_UP)) + "MB"
     m_study.publicStudy = StudyStatus(db_study.status) == StudyStatus.PUBLIC
@@ -52,10 +53,30 @@ def get_user_model(db_user: User):
     m_user = models.UserModel.from_orm(db_user)
     m_user.fullName = m_user.firstName + " " + m_user.lastName
     m_user.joinDate = datetime_to_int(m_user.joinDate)
-    m_user.dbPassword = ""  # This value is set to empty string intentionally
+    m_user.dbPassword = None                        # This value is set to empty string intentionally
     m_user.role = UserRole(int(m_user.role)).name
     m_user.status = UserStatus(int(m_user.status)).name
     return m_user
+
+
+def update_users_for_indexing(m_study):
+    new_indexed_user_list = []
+    for user in m_study.users:
+        indexed_user = IndexedUserModel.from_orm(user)
+        new_indexed_user_list.append(indexed_user)
+
+    m_study.users.clear()
+    m_study.users.extend(new_indexed_user_list)
+
+
+def update_assays_for_indexing(m_study):
+    new_indexed_assay_list = []
+    for assay in m_study.assays:
+        indexed_assay = IndexedAssayModel.from_orm(assay)
+        new_indexed_assay_list.append(indexed_assay)
+
+    m_study.assays.clear()
+    m_study.assays.extend(new_indexed_assay_list)
 
 
 def update_study_model_from_directory(m_study: models.StudyModel, studies_root_path,
@@ -72,7 +93,7 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
         if not os.path.exists(investigation_file) or not os.path.isfile(investigation_file):
             return
 
-    with open(investigation_file, encoding="utf-8") as f:
+    with open(investigation_file, encoding="unicode_escape") as f:
         investigation = isatab.load_investigation(f)
         if "studies" in investigation:
             studies = investigation["studies"]
@@ -93,7 +114,14 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
                     fill_protocols(m_study, investigation)
                     fill_contacts(m_study, investigation)
                 else:
-                    m_study.sampleTable = None  # delete sample table data from model for indexing.
+
+                    del m_study.sampleTable # delete sample table data from model for indexing.
+                    del m_study.contacts
+                    del m_study.studyLocation
+                    del m_study.protocols
+
+                    update_users_for_indexing(m_study)
+                    update_assays_for_indexing(m_study)
 
 
 def fill_backups(m_study, path):
@@ -196,15 +224,16 @@ def fill_sample_table(m_study, path):
     sample_file_name = "s_" + m_study.studyIdentifier + ".txt"
     file_path = os.path.join(path, sample_file_name)
     if os.path.isfile(file_path):
-        with open(file_path) as f:
+        with open(file_path, encoding="unicode_escape") as f:
             sample = isatab.load_table(f)
             m_sample = models.TableModel()
             m_study.sampleTable = m_sample
-            set_table_fields(m_sample.fields, sample)
+            _, valid_indices = set_table_fields(m_sample.fields, sample)
 
             for i in range(sample.index.size):
                 row = sample.iloc[i].to_list()
-                m_sample.data.append(row)
+                trimmed_row = [row[valid_ind] for valid_ind in valid_indices]
+                m_sample.data.append(trimmed_row)
 
 
 def fill_assays(m_study, investigation, path, include_maf_files):
@@ -225,15 +254,16 @@ def fill_assays(m_study, investigation, path, include_maf_files):
             m_study.assays.append(model)
             file = os.path.join(path, model.fileName)
             if os.path.isfile(file):
-                with open(file) as f:
+                with open(file, encoding="unicode_escape", ) as f:
                     table = isatab.load_table(f)
                     m_table = models.TableModel()
                     model.assayTable = m_table
-                    maf_file_index = set_table_fields(m_table.fields, table, "metabolite assignment file")
+                    maf_file_index, valid_indices = set_table_fields(m_table.fields, table, "metabolite assignment file")
 
                     for i in range(table.index.size):
                         row = table.iloc[i].to_list()
-                        m_table.data.append(row)
+                        trimmed_row = [row[valid_ind] for valid_ind in valid_indices]
+                        m_table.data.append(trimmed_row)
                         if maf_file_index >= 0:
                             # Get MAF file name from first row
                             if not model.metaboliteAssignment:
@@ -250,25 +280,28 @@ def fill_assays(m_study, investigation, path, include_maf_files):
 def set_table_fields(fields, table, requested_field_name=None):
     requested_field_index = -1
     headers = table.columns.to_list()
+    valid_indices = []
     for i in range(len(headers)):
-        key = str(i) + "~" + headers[i].lower()
-        value = models.FieldModel()
-        value.index = i
-        data = headers[i]
-        if requested_field_name and data.lower() == requested_field_name:
-            requested_field_index = value.index
+        if headers[i]:
+            key = str(i) + "~" + headers[i].lower()
+            value = models.FieldModel()
+            value.index = i
+            data = headers[i]
+            if requested_field_name and data.lower() == requested_field_name:
+                requested_field_index = value.index
 
-        value.fieldType = "basic"
-        if "[" in data:
-            data_list = data.split("[")
-            value.fieldType = data_list[0]
-            value.header = data_list[1].split("]")[0]
-        else:
-            value.header = data
-        value.cleanHeader = value.header
-        value.description = ""  # TODO How can be filled this value?
-        fields[key] = value
-    return requested_field_index
+            value.fieldType = "basic"
+            if "[" in data:
+                data_list = data.split("[")
+                value.fieldType = data_list[0]
+                value.header = data_list[1].split("]")[0]
+            else:
+                value.header = data
+            value.cleanHeader = value.header
+            value.description = ""  # TODO How can be filled this value?
+            fields[key] = value
+            valid_indices.append(i)
+    return requested_field_index, valid_indices
 
 
 def remove_ontology(data: str):
@@ -287,7 +320,11 @@ def fill_descriptors(m_study, investigation):
         items = investigation['s_design_descriptors'][0]
         for item in items.iterrows():
             model = models.StudyDesignDescriptor()
-            model.description = get_value_from_dict(item[1], "Study Design Type")
+            design_type = get_value_from_dict(item[1], "Study Design Type")
+            ref = get_value_from_dict(item[1], "Study Design Type Term Source REF")
+            model.description = design_type
+            if ref:
+                model.description = ref + ":" + design_type
             m_study.descriptors.append(model)
 
 

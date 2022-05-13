@@ -107,7 +107,7 @@ query_submitted_study_ids_for_user = """
     """
 
 get_next_mtbls_id = """
-select (seq + 1) as next_acc from stableid where prefix = 'MTBLS';
+select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s;
 """
 
 insert_empty_study = """   
@@ -123,10 +123,23 @@ insert_empty_study = """
 """
 
 update_metaboligts_id_sequence = """
-update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = 'MTBLS') where prefix = 'MTBLS';
+    update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s) 
+    where prefix = %(stable_id_prefix)s;
 """
 link_study_with_user = """
 insert into study_user(userid, studyid) select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(acc)s;
+"""
+
+insert_empty_study_with_id = """   
+    insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
+    updatedate, validations, validation_status) 
+    values ( 
+        (select nextval('hibernate_sequence')),
+        %(acc)s, 
+        %(obfuscationcode)s,
+        %(releasedate)s,
+        0, 0, current_timestamp, 
+        current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
 """
 
 query_user_access_rights = """
@@ -233,6 +246,7 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
 
     except Exception as e:
         return False, str(e)
+
 
 def get_user(username):
     """
@@ -393,6 +407,7 @@ def get_public_studies():
     release_connection(postgresql_pool, conn)
     return data
 
+
 def get_private_studies():
     query = "select acc from studies where status = 0;"
     query = query.replace('\\', '')
@@ -401,6 +416,7 @@ def get_private_studies():
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data
+
 
 def get_study_by_type(sType, publicStudy=True):
     q2 = ' '
@@ -675,7 +691,6 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
 
 def get_email(user_token):
-
     val_query_params(user_token)
     user_email = None
     try:
@@ -683,7 +698,6 @@ def get_email(user_token):
     except Exception as e:
         logger.error("Could not query the database " + str(e))
     return user_email
-
 
 
 def study_submitters(study_id, user_email, method):
@@ -727,9 +741,7 @@ def get_all_study_acc():
         return False
 
 
-
 def get_user_email(user_token):
-
     input = "select email from users where apitoken = '{token}'".format(token=user_token)
     try:
         postgresql_pool, conn, cursor = get_connection()
@@ -752,7 +764,7 @@ def get_submitted_study_ids_for_user(user_token):
     return complete_list
 
 
-def create_empty_study(user_token):
+def create_empty_study(user_token, study_id=None):
     email = get_email(user_token)
     if not email:
         return None
@@ -761,10 +773,16 @@ def create_empty_study(user_token):
     postgresql_pool = None
     try:
         postgresql_pool, conn, cursor = get_connection()
-
-        cursor.execute(get_next_mtbls_id)
-        data = cursor.fetchone()[0]
-        acc = f"MTBLS{data}"
+        acc = study_id
+        stable_id_input = {"stable_id_prefix": app.config.get("MTBLS_STABLE_ID_PREFIX")}
+        if not study_id:
+            cursor.execute(get_next_mtbls_id, stable_id_input)
+            result = cursor.fetchone()
+            if not result:
+                logger.error("There is not data prefix with MTBLS in stableid table")
+                raise ValueError()
+            data = result[0]
+            acc = f"{app.config.get('MTBLS_STABLE_ID_PREFIX')}{data}"
         obfuscationcode = str(uuid.uuid4())
         releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
         content = {"acc": acc,
@@ -772,7 +790,7 @@ def create_empty_study(user_token):
                    "releasedate": releasedate,
                    "email": email}
         cursor.execute(insert_empty_study, content)
-        cursor.execute(update_metaboligts_id_sequence)
+        cursor.execute(update_metaboligts_id_sequence, stable_id_input)
         cursor.execute(link_study_with_user, content)
         conn.commit()
         return acc
@@ -810,7 +828,6 @@ def execute_query_with_parameter(query, parameters):
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query, parameters)
         conn.commit()
-        release_connection(postgresql_pool, conn)
     except Exception as e:
         if conn:
             conn.rollback()
@@ -818,6 +835,7 @@ def execute_query_with_parameter(query, parameters):
     finally:
         if postgresql_pool and conn:
             release_connection(postgresql_pool, conn)
+
 
 def get_release_date_of_study(study_id):
     query = f"select acc, to_char(releasedate, 'DD/MM/YYYY') as release_date from studies where acc={study_id};"
@@ -1042,7 +1060,7 @@ def get_connection():
     except Exception as e:
         logger.error("Could not query the database " + str(e))
         if postgresql_pool:
-            postgresql_pool.closeall
+            postgresql_pool.closeall()
     return postgresql_pool, conn, cursor
 
 
@@ -1060,7 +1078,7 @@ def get_connection2():
     except Exception as e:
         logger.error("Could not query the database " + str(e))
         if postgresql_pool:
-            postgresql_pool.closeall
+            postgresql_pool.closeall()
     return postgresql_pool, conn, cursor
 
 
@@ -1104,7 +1122,7 @@ def add_maf_info_data(acc, database_identifier, metabolite_identification, datab
 
 def val_acc(study_id=None):
     if study_id:
-        if not study_id.startswith('MTBLS') or study_id.lower() in stop_words:
+        if not study_id.startswith(app.config.get("MTBLS_STABLE_ID_PREFIX")) or study_id.lower() in stop_words:
             logger.error("Incorrect accession number string pattern")
             abort(406, "'" + study_id + "' incorrect accession number string pattern")
 

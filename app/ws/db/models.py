@@ -1,9 +1,19 @@
 import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field, validator
 
 from app.ws.db.utils import datetime_to_int
+
+class IndexedUserModel(BaseModel):
+    firstName: str = Field(None)
+    fullName: str = Field(None)                                         # assigned as not_analyzed in es
+    lastName: str = Field(None)
+    orcid: str = Field(None)
+    userName: str = Field(None)                        # assigned as not_analyzed in es
+
+    class Config:
+        orm_mode = True
 
 
 class UserModel(BaseModel):
@@ -142,6 +152,12 @@ class MetaboliteAssignmentModel(BaseModel):
     metaboliteAssignmentFileName: str = None
     metaboliteAssignmentLines: List[MetaboliteAssignmentLine] = []
 
+class IndexedAssayModel(BaseModel):
+    measurement: str = None                                 # assigned as not_analyzed
+    technology: str = None                                  # assigned as not_analyzed
+    platform: str = None
+    class Config:
+        orm_mode = True
 
 class AssayModel(BaseModel):
     measurement: str = None                                 # assigned as not_analyzed
@@ -187,7 +203,7 @@ class LiteStudyModel(EntityModel):
     factors: List[StudyFactorModel] = []
     isatabErrorMessages: List[str] = []
     studyHumanReadable: str = None
-    users: List[UserModel] = []
+    users: Union[List[UserModel], List[IndexedUserModel]] = []
     publicStudy: bool = False
 
     class Config:
@@ -196,13 +212,14 @@ class LiteStudyModel(EntityModel):
 
 
 class StudyModel(LiteStudyModel):
+    indexTimestamp: int = 0
     ObjectType: str = "Study"
     description: Optional[str]
     studyLocation: Optional[str]                            # excluded from es
     descriptors: List[StudyDesignDescriptor] = []
     publications: List[PublicationModel] = []
     protocols: List[ProtocolModel] = []
-    assays: List[AssayModel] = []
+    assays: Union[List[AssayModel], List[IndexedAssayModel]] = []
     contacts: List[ContactModel] = []                       # excluded from es
     backups: List[BackupModel] = []
     sampleTable: TableModel = None                          # excluded from es

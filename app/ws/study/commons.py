@@ -5,8 +5,7 @@ from copy import deepcopy
 from datetime import time
 from operator import itemgetter
 
-from flask import current_app as app
-from flask_restful import abort
+from flask import abort, current_app as app
 
 from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
     query_study_submitters, get_public_studies, get_private_studies
@@ -64,7 +63,6 @@ def get_queue_folder():
     logger.info('Found queue upload folder for this server as:' + queue_folder)
     return queue_folder
 
-
 def get_permissions(study_id, user_token, obfuscation_code=None):
     """
     Check MTBLS-WS for permissions on this Study for this user
@@ -121,15 +119,7 @@ def get_study_location(study_id, user_token):
     return location
 
 
-
-
-def create_upload_folder(self, study_id, obfuscation_code, user_token, email_service: EmailService = None):
-    # Updated to remove Java WS /study/requestFtpFolderOnApiKey dependency
-    is_curator, read_access, write_access, study_obfuscation_code, study_location, release_date, submission_date, study_status = \
-        get_permissions("MTBLS1", user_token)
-    if not write_access:
-        abort(401, "No permission")
-
+def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
     new_folder_name = study_id.lower() + '-' + obfuscation_code
     ftp_folder = os.path.join(app.config.get('MTBLS_FTP_ROOT'), new_folder_name)
     os_upload = ftp_folder
@@ -146,10 +136,14 @@ def create_upload_folder(self, study_id, obfuscation_code, user_token, email_ser
         os_upload = ftp_path
         user_email = get_email(user_token)
         submitter_emails = query_study_submitters(study_id)
-        submitters_email_list = [ submitter[0] for submitter in submitter_emails]
-        EmailService.get_instance(app).send_email_for_requested_ftp_folder_created(study_id,
-                                                                       ftp_path, user_email, submitters_email_list)
-    upload_loc = ftp_folder
+        submitters_email_list = []
+        if submitter_emails:
+            submitters_email_list = [submitter[0] for submitter in submitter_emails if submitter]
+
+        email_service.send_email_for_requested_ftp_folder_created(study_id,
+                                                                           ftp_path, user_email,
+                                                                           submitters_email_list)
+    upload_loc = None
     private_ftp_user = app.config.get("PRIVATE_FTP_SERVER_USER")
     if private_ftp_user in ftp_folder:
         upload_location = ftp_folder.split('/' + private_ftp_user)  # FTP/Aspera root starts here
@@ -158,5 +152,4 @@ def create_upload_folder(self, study_id, obfuscation_code, user_token, email_ser
             upload_loc = upload_location[1]
         else:
             upload_loc = upload_location[0]
-
     return {'os_upload_path': os_upload, 'upload_location': upload_loc}

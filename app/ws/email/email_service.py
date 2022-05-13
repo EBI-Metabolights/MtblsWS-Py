@@ -20,10 +20,10 @@ class EmailService(object):
     email_service = None
 
     @classmethod
-    def get_instance(cls, app):
+    def get_instance(cls, app=None, mail=None):
         if app and not cls.email_service:
             settings = get_email_service_settings(app)
-            cls.email_service = EmailService(settings)
+            cls.email_service = EmailService(settings, mail)
         return cls.email_service
 
     def send_email(self, subject_name, body, submitters_mail_addresses, user_email,

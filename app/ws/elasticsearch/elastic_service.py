@@ -1,10 +1,14 @@
+import time
+
 from elasticsearch import Elasticsearch
 from flask import current_app as app
 
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.settings import DirectorySettings, get_database_settings, get_directory_settings
+from app.ws.db.types import MetabolightsException, UserRole
 from app.ws.elasticsearch.settings import ElasticsearchSettings, get_elasticsearch_settings
 from app.ws.study.study_service import StudyService
+from app.ws.study.user_service import UserService
 
 
 class ElasticsearchService(object):
@@ -29,35 +33,29 @@ class ElasticsearchService(object):
     instance = None
 
     @classmethod
-    def get_instance(cls):
+    def get_instance(cls, application):
+        if not application:
+            application = application
         if not cls.instance:
-            settings = get_elasticsearch_settings(app)
-            db_settings = get_database_settings(app)
-            directory_settings = get_directory_settings(app)
-            db_mananager = DBManager(db_settings)
+            settings = get_elasticsearch_settings(application)
+            directory_settings = get_directory_settings(application)
+            db_mananager = DBManager.get_instance(application)
             cls.instance = ElasticsearchService(settings=settings, db_manager=db_mananager,
                                                 directory_settings=directory_settings)
         return cls.instance
 
     def reindex_study(self, study_id, user_token):
-
-        m_study = StudyService.get_instance().get_study_from_db_and_folder(study_id, user_token,
+        # insure user permission
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        try:
+            m_study = StudyService.get_instance().get_study_from_db_and_folder(study_id, user_token,
                                                                            optimize_for_es_indexing=True,
                                                                            revalidate_study=True,
                                                                            include_maf_files=False)
-        try:
+            m_study.indexTimestamp = time.time()
             document = m_study.dict()
-            self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document, id=m_study.studyIdentifier)
-            return True, "success"
+            self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
+                              id=m_study.studyIdentifier)
+            return m_study
         except Exception as e:
-            return False, f"Error while indexing: {str(e)}"
-
-    def reindex_compound_by_chebi_id(self, chebi_id, user_token):
-
-        m_compound = None   # TODO complete here to create Compound Model to index in ES
-        try:
-            document = m_compound.dict()
-            self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_COMPOUND, body=document, id=m_compound.accession)
-            return True, "success"
-        except Exception as e:
-            return False, f"Error while indexing: {str(e)}"
+            raise MetabolightsException("Error while indexing", exception=e)

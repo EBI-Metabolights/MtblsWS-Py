@@ -54,7 +54,7 @@ BIOPORTAL_TOKEN = '<your bioportal token>'
 METABOLIGHTS_TOKEN = '<your administrative metabolights token>'
 MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
 STUDY_QUEUE_FOLDER = "<some local filesystem>"
-
+MTBLS_STABLE_ID_PREFIX = "MTBLS"
 #FTP
 MTBLS_FTP_ROOT = "MTBLS_FTP_ROOT"
 MTBLS_PRIVATE_FTP_ROOT = "MTBLS_PRIVATE_FTP_ROOT"
