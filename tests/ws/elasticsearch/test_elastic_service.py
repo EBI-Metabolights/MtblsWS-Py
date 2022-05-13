@@ -20,9 +20,9 @@ class DatabaseSettingsFromConfig(DatabaseSettings):
 
 
 class TestSensitiveData(BaseSettings):
-    elasticsearch__super_user_token_1: str
-    elasticsearch__submitter_user_token_1: str
-
+    super_user_token_001: str
+    submitter_token_001: str
+    invalid_user_token_001: str
     class Config:
         # read and set security settings variables from this env_file
         env_file = "./tests/ws/.test_data"
@@ -45,7 +45,7 @@ class ElasticServiceTest(unittest.TestCase):
             service = ElasticsearchService.get_instance(self.app)
             mock_index = Mock()
             service.client.index = mock_index
-            study = service.reindex_study(study_id=study_id, user_token=sensitive_data.elasticsearch__super_user_token_1)
+            study = service.reindex_study(study_id=study_id, user_token=sensitive_data.super_user_token_001)
 
             self.assertIsNotNone(study)
             self.assertIsNotNone(study)
@@ -58,7 +58,7 @@ class ElasticServiceTest(unittest.TestCase):
             service = ElasticsearchService.get_instance(self.app)
             mock_index = Mock()
             service.client.index = mock_index
-            study = service.reindex_study(study_id=study_id, user_token=sensitive_data.elasticsearch__super_user_token_1)
+            study = service.reindex_study(study_id=study_id, user_token=sensitive_data.super_user_token_001)
 
             self.assertIsNotNone(study)
             self.assertIsNotNone(study)
@@ -71,7 +71,7 @@ class ElasticServiceTest(unittest.TestCase):
             mock_index = Mock()
             service.client.index = mock_index
             with self.assertRaises(MetabolightsException) as context:
-                study = service.reindex_study(study_id=study_id, user_token=sensitive_data.elasticsearch__submitter_user_token_1)
+                study = service.reindex_study(study_id=study_id, user_token=sensitive_data.submitter_token_001)
 
             self.assertIsNotNone(context.exception)
             mock_index.assert_not_called()

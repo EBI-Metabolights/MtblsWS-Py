@@ -34,7 +34,7 @@ class EmailService(object):
             curation_mail_address = self.settings.curation_mail_address
         recipients = set()
         recipients.add(user_email)
-        recipients = recipients.union(submitters_mail_addresses)
+        recipients = list(recipients.union(submitters_mail_addresses))
         msg = Message(subject=subject_name,
                       sender=from_mail_address,
                       recipients=recipients,

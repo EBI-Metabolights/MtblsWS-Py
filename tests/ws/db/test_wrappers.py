@@ -19,7 +19,7 @@ class DatabaseSettingsFromConfig(DatabaseSettings):
 
 
 class TestSensitiveData(BaseSettings):
-    wrappers__super_user_token_1: str
+    super_user_token_001: str
 
     class Config:
         # read and set security settings variables from this env_file
@@ -45,7 +45,7 @@ class WrappersTest(unittest.TestCase):
             update_study_model_from_directory(study, studies_root_path.studies_folder,
                                               optimize_for_es_indexing=False,
                                               revalidate_study=True,
-                                              user_token_to_revalidate=sensitive_data.wrappers__super_user_token_1,
+                                              user_token_to_revalidate=sensitive_data.super_user_token_001,
                                               include_maf_files=False)
 
         self.assertGreaterEqual(len(study.protocols), 1)
@@ -73,7 +73,7 @@ class WrappersTest(unittest.TestCase):
             update_study_model_from_directory(study, studies_root_path.studies_folder,
                                               optimize_for_es_indexing=True,
                                               revalidate_study=True,
-                                              user_token_to_revalidate=sensitive_data.wrappers__super_user_token_1,
+                                              user_token_to_revalidate=sensitive_data.super_user_token_001,
                                               include_maf_files=False)
 
         self.assertFalse(hasattr(study, "protocols"))
@@ -102,7 +102,7 @@ class WrappersTest(unittest.TestCase):
             update_study_model_from_directory(study, studies_root_path.studies_folder,
                                               optimize_for_es_indexing=True,
                                               revalidate_study=True,
-                                              user_token_to_revalidate=sensitive_data.wrappers__super_user_token_1,
+                                              user_token_to_revalidate=sensitive_data.super_user_token_001,
                                               include_maf_files=False)
 
         self.assertFalse(hasattr(study, "protocols"))

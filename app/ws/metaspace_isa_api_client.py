@@ -69,7 +69,7 @@ class MetaSpaceIsaApiClient(Resource):
         if not isa_inv:
             try:
                 study_path = app.config.get('STUDY_PATH')
-                from_path = study_path + app.config.get('DEFAULT_TEMPLATE')  # 'DUMMY'
+                from_path = os.path.join(study_path, app.config.get('DEFAULT_TEMPLATE'))  # 'DUMMY'
                 to_path = output_dir
                 copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
                 # status, message = convert_to_isa(to_path, study_id)

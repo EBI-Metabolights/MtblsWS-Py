@@ -25,9 +25,9 @@ curated_file_location = config.CURATED_METABOLITE_LIST_FILE_LOCATION
 
 
 class TestSensitiveData(BaseSettings):
-    metabl_ws_client__super_user_token_1: str
-    metabl_ws_client__invalid_token_1: str
-    metabl_ws_client__submitter_token_1: str
+    super_user_token_001: str
+    invalid_user_token_001: str
+    submitter_token_001: str
 
     class Config:
         # read and set security settings variables from this env_file
@@ -63,7 +63,7 @@ class WebServiceClientTest(unittest.TestCase):
             ws_client = WsClient(self.search_manager, self.mail_service)
 
             with self.assertRaises(Exception) as context:
-                ws_client.get_study_location("MTBLS9999", sensitive_data.metabl_ws_client__invalid_token_1)
+                ws_client.get_study_location("MTBLS9999", sensitive_data.invalid_user_token_001)
 
             self.assertEqual(context.exception.code, 403)
             send_mail_mock.assert_not_called()
@@ -75,7 +75,7 @@ class WebServiceClientTest(unittest.TestCase):
             self.mail_service.send_email = send_mail_mock
             ws_client = WsClient(self.search_manager, self.mail_service)
 
-            actual = ws_client.get_study_location("MTBLS1", sensitive_data.metabl_ws_client__super_user_token_1)
+            actual = ws_client.get_study_location("MTBLS1", sensitive_data.super_user_token_001)
             expected = os.path.join(self.app.config.get('STUDY_PATH'), "MTBLS1")
             self.assertEqual(expected, actual)
 
@@ -85,7 +85,7 @@ class WebServiceClientTest(unittest.TestCase):
             self.mail_service.send_email = send_mail_mock
             ws_client = WsClient(self.search_manager, self.mail_service)
 
-            actual = ws_client.get_study_location("MTBLS1", sensitive_data.metabl_ws_client__super_user_token_1)
+            actual = ws_client.get_study_location("MTBLS1", sensitive_data.super_user_token_001)
             expected = os.path.join(self.app.config.get('STUDY_PATH'), "MTBLS1")
             self.assertEqual(expected, actual)
 
@@ -163,7 +163,7 @@ class WebServiceClientTest(unittest.TestCase):
             self.mail_service.send_email = send_mail_mock
             ws_client = WsClient(self.search_manager, self.mail_service)
 
-            result = ws_client.get_all_studies_for_user(sensitive_data.metabl_ws_client__invalid_token_1)
+            result = ws_client.get_all_studies_for_user(sensitive_data.invalid_user_token_001)
             self.assertIsNotNone(result)
             data = json.loads(result)
             self.assertEqual(len(data), 0)
@@ -174,7 +174,7 @@ class WebServiceClientTest(unittest.TestCase):
             self.mail_service.send_email = send_mail_mock
             ws_client = WsClient(self.search_manager, self.mail_service)
 
-            result = ws_client.get_all_studies_for_user(sensitive_data.metabl_ws_client__submitter_token_1)
+            result = ws_client.get_all_studies_for_user(sensitive_data.submitter_token_001)
             self.assertIsNotNone(result)
             data = json.loads(result)
             self.assertGreater(len(data), 0)
@@ -204,7 +204,7 @@ class WebServiceClientTest(unittest.TestCase):
                 shutil.rmtree(created_path)
             try:
                 actual = ws_client.create_upload_folder(input_study_id, input_obfusucation_code,
-                                                        sensitive_data.metabl_ws_client__super_user_token_1)
+                                                        sensitive_data.super_user_token_001)
 
                 self.assertIsNotNone(actual)
                 self.assertEqual(expected_path, actual['os_upload_path'])
@@ -231,7 +231,7 @@ class WebServiceClientTest(unittest.TestCase):
             try:
                 with self.assertRaises(MetabolightsException):
                     ws_client.create_upload_folder(input_study_id, input_obfusucation_code,
-                                                            sensitive_data.metabl_ws_client__super_user_token_1)
+                                                            sensitive_data.super_user_token_001)
                 send_mail_mock.assert_not_called()
 
             finally:
@@ -242,7 +242,7 @@ class WebServiceClientTest(unittest.TestCase):
     def test_add_empty_study_1(self):
 
         with self.app.app_context():
-            user_token = sensitive_data.metabl_ws_client__super_user_token_1
+            user_token = sensitive_data.super_user_token_001
             send_mail_mock = Mock()
             self.mail_service.send_email = send_mail_mock
             ws_client = WsClient(self.search_manager, self.mail_service)
@@ -265,7 +265,7 @@ class WebServiceClientTest(unittest.TestCase):
     def test_reindex_1(self):
 
         with self.app.app_context():
-            user_token = sensitive_data.metabl_ws_client__super_user_token_1
+            user_token = sensitive_data.super_user_token_001
             send_mail_mock = Mock()
             self.mail_service.send_email = send_mail_mock
             ws_client = WsClient(self.search_manager, self.mail_service)
@@ -288,7 +288,7 @@ class WebServiceClientTest(unittest.TestCase):
     def test_reindex_submitter_01_permission_error(self):
 
         with self.app.app_context():
-            user_token = sensitive_data.metabl_ws_client__submitter_token_1
+            user_token = sensitive_data.submitter_token_001
             send_mail_mock = Mock()
             self.mail_service.send_email = send_mail_mock
             ws_client = WsClient(self.search_manager, self.mail_service)
