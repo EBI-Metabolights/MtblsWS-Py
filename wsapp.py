@@ -54,7 +54,7 @@ if not os.path.exists(file_path):
     if not os.path.exists(default_log_dir):
         os.makedirs(default_log_dir, exist_ok=True)
 
-logging.config.fileConfig('logging_' + hostname + '.conf')
+logging.config.fileConfig(logging_config_file_name)
 logger = logging.getLogger('wslog')
 
 

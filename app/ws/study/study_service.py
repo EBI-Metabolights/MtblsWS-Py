@@ -1,10 +1,10 @@
 from flask import current_app as app
 
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.schemes import Study, User
+from app.ws.db.schemes import Study, User, Stableid
 from app.ws.db.settings import get_database_settings, get_directory_settings
-from app.ws.db.types import UserStatus, UserRole, StudyStatus, MetabolightsDBException, \
-    MetabolightsFileOperationException
+from app.ws.db.types import UserStatus, UserRole, StudyStatus
+from app.utils import MetabolightsDBException, MetabolightsFileOperationException
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 
 
@@ -23,6 +23,28 @@ class StudyService(object):
             cls.db_manager = DBManager.get_instance(application)
             cls.directory_settings = get_directory_settings(application)
         return cls.instance
+
+    def get_study_by_acc(self, study_id):
+        try:
+            with self.db_manager.session_maker() as db_session:
+                query = db_session.query(Study)
+                result = query.filter(Study.acc == study_id).first()
+                if result:
+                    return result
+                raise MetabolightsDBException("DB error while retrieving stable id")
+        except Exception as e:
+            raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
+
+    def get_next_stable_study_id(self):
+        try:
+            with self.db_manager.session_maker() as db_session:
+                query = db_session.query(Stableid.seq)
+                result = query.filter(Stableid.prefix == app.config.get("MTBLS_STABLE_ID_PREFIX")).first()
+                if result:
+                    return result.seq
+                raise MetabolightsDBException("DB error while retrieving stable id")
+        except Exception as e:
+            raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
 
     def get_study_from_db_and_folder(self, study_id, user_token, optimize_for_es_indexing=False, revalidate_study=True, include_maf_files=False):
 

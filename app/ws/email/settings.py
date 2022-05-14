@@ -21,6 +21,6 @@ def get_email_service_settings(app) -> EmailServiceSettings:
         settings.private_ftp_server_user = app.config.get("PRIVATE_FTP_SERVER_USER")
         settings.private_ftp_server_password = app.config.get("PRIVATE_FTP_SERVER_PASSWORD")
         settings.private_ftp_server = app.config.get("PRIVATE_FTP_SERVER")
-        settings.ftp_upload_help_doc = app.config.get("FTP_UPLOAD_HELP_DOC")
+        settings.ftp_upload_help_doc = app.config.get("FTP_UPLOAD_HELP_DOC_URL")
 
     return settings

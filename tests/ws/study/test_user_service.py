@@ -5,15 +5,12 @@ from flask import Flask
 from flask_mail import Mail
 
 import config as base_config
-from app.ws.db.types import MetabolightsException
+from app.utils import MetabolightsException
 from app.ws.db_connection import create_empty_study, execute_query_with_parameter
 from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings
 from app.ws.study.user_service import UserService
 from instance import config
-
-curated_file_location = config.CURATED_METABOLITE_LIST_FILE_LOCATION
-
 
 class TestData:
 

@@ -8,13 +8,13 @@ from operator import itemgetter
 from flask import abort, current_app as app
 
 from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
-    query_study_submitters, get_public_studies, get_private_studies
+    query_study_submitters, get_public_studies, get_private_studies, get_study_by_type
 from app.ws.email.email_service import EmailService
 
 logger = logging.getLogger(__file__)
 
 
-def get_study_by_type(stype, publicS=True):
+def get_study_by_status(stype, publicS=True):
     logger.info('Getting all public studies')
     studyID, studytype = get_study_by_type(stype, publicS)
     res = json.dumps(dict(zip(studyID, studytype)))
@@ -123,6 +123,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
     new_folder_name = study_id.lower() + '-' + obfuscation_code
     ftp_folder = os.path.join(app.config.get('MTBLS_FTP_ROOT'), new_folder_name)
     os_upload = ftp_folder
+    status  = "folder already exist"
     if not os.path.exists(ftp_folder):
         logger.info('Creating a new study upload folder for Study %s', study_id)
         ftp_private_folder_root = app.config.get('MTBLS_PRIVATE_FTP_ROOT')
@@ -143,6 +144,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
         email_service.send_email_for_requested_ftp_folder_created(study_id,
                                                                            ftp_path, user_email,
                                                                            submitters_email_list)
+        status = "folder created"
     upload_loc = None
     private_ftp_user = app.config.get("PRIVATE_FTP_SERVER_USER")
     if private_ftp_user in ftp_folder:
@@ -152,4 +154,4 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
             upload_loc = upload_location[1]
         else:
             upload_loc = upload_location[0]
-    return {'os_upload_path': os_upload, 'upload_location': upload_loc}
+    return {'os_upload_path': os_upload, 'upload_location': upload_loc, 'status': status}

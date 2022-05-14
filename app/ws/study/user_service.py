@@ -3,8 +3,8 @@ from flask import current_app as app
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
 from app.ws.db.settings import get_database_settings, get_directory_settings
-from app.ws.db.types import UserStatus, UserRole, StudyStatus, MetabolightsDBException, MetabolightsException, \
-    MetabolightsAuthorizationException
+from app.ws.db.types import UserStatus, UserRole, StudyStatus
+from app.utils import MetabolightsException, MetabolightsDBException, MetabolightsAuthorizationException
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 
 
@@ -85,10 +85,10 @@ class UserService(object):
 
             if db_user:
                 if db_user.status not in allowed_status_list:
-                    raise MetabolightsAuthorizationException(message=f"User role is not accepted")
+                    raise MetabolightsAuthorizationException(message=f"User status is not accepted")
 
                 if db_user.role not in allowed_role_list:
-                    raise MetabolightsAuthorizationException(message=f"User status is not accepted")
+                    raise MetabolightsAuthorizationException(message=f"User role is not accepted")
                 return db_user
             else:
                 raise MetabolightsAuthorizationException(message=f"User not in database")

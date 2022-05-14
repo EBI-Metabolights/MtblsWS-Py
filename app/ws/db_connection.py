@@ -27,6 +27,7 @@ import psycopg2.extras
 from flask import current_app as app, abort
 from psycopg2 import pool
 
+from app.utils import MetabolightsException
 from app.ws.utils import get_single_file_information, check_user_token, val_email
 
 logger = logging.getLogger('wslog')

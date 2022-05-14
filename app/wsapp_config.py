@@ -71,28 +71,31 @@ from app.ws.validation import Validation, OverrideValidation, UpdateValidationFi
 
 
 def configure_app(flask_app):
-    flask_app.config.from_object(config)
+    flask_app.config.from_object('config')
     flask_app.config.from_pyfile('config.py', silent=True)
 
     # These code completes WsClient initialization using flask app context
-    chebi_settings = get_chebi_ws_settings(flask_app)
-    chebi_proxy = ChebiWsProxy(settings=chebi_settings)
-    curation_table_file_path = flask_app.config.get("CURATED_METABOLITE_LIST_FILE_LOCATION")
-    curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
-    chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
-    WsClient.search_manager = chebi_search_manager
+    if not WsClient.search_manager:
+        chebi_settings = get_chebi_ws_settings(flask_app)
+        chebi_proxy = ChebiWsProxy(settings=chebi_settings)
+        curation_table_file_path = flask_app.config.get("CURATED_METABOLITE_LIST_FILE_LOCATION")
+        curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
+        chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
+        WsClient.search_manager = chebi_search_manager
 
-    email_settings = get_email_service_settings(flask_app)
-    flask_mail = Mail(flask_app)
-    email_service = EmailService(settings=email_settings, mail=flask_mail)
-    WsClient.email_service = email_service
+    if not WsClient.email_service:
+        email_settings = get_email_service_settings(flask_app)
+        flask_mail = Mail(flask_app)
+        email_service = EmailService(settings=email_settings, mail=flask_mail)
+        WsClient.email_service = email_service
 
-    db_manager = DBManager.get_instance(flask_app)
-    directory_settings = get_directory_settings(flask_app)
-    elasticsearch_settings = get_elasticsearch_settings(flask_app)
-    elasticsearch_service = ElasticsearchService(settings=elasticsearch_settings,
-                                                 db_manager=db_manager, directory_settings=directory_settings)
-    WsClient.elasticsearch_service = elasticsearch_service
+    if not WsClient.elasticsearch_service:
+        db_manager = DBManager.get_instance(flask_app)
+        directory_settings = get_directory_settings(flask_app)
+        elasticsearch_settings = get_elasticsearch_settings(flask_app)
+        elasticsearch_service = ElasticsearchService(settings=elasticsearch_settings,
+                                                     db_manager=db_manager, directory_settings=directory_settings)
+        WsClient.elasticsearch_service = elasticsearch_service
 
 
 def initialize_app(flask_app):

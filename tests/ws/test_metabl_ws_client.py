@@ -13,7 +13,7 @@ import config as base_config
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.wsproxy import ChebiWsProxy
-from app.ws.db.types import MetabolightsException
+from app.utils import MetabolightsException
 from app.ws.db_connection import get_email, study_submitters, execute_query_with_parameter
 from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings

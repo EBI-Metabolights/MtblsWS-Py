@@ -5,7 +5,8 @@ from flask import current_app as app
 
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.settings import DirectorySettings, get_database_settings, get_directory_settings
-from app.ws.db.types import MetabolightsException, UserRole
+from app.ws.db.types import UserRole
+from app.utils import MetabolightsException
 from app.ws.elasticsearch.settings import ElasticsearchSettings, get_elasticsearch_settings
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService

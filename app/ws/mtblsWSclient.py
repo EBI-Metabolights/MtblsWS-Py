@@ -21,7 +21,7 @@ import logging
 from flask import current_app as app, abort
 
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
-from app.ws.db.types import MetabolightsException
+from app.utils import MetabolightsException
 from app.ws.db_connection import create_empty_study, \
     get_release_date_of_study
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
@@ -72,7 +72,7 @@ class WsClient:
 
     @staticmethod
     def get_study_by_type(stype, publicS=True):
-        return commons.get_study_by_type(stype, publicS)
+        return commons.get_study_by_status(stype, publicS)
 
     @staticmethod
     def get_all_studies_for_user(user_token):
@@ -103,6 +103,8 @@ class WsClient:
         user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
 
         study_id = create_empty_study(user_token)
+        if not study_id:
+            raise MetabolightsException("Error while creating new study in db")
         user_email = user.username
         submitters_email_list = [user_email]
         release_date = get_release_date_of_study(study_id)

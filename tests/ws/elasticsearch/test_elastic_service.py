@@ -6,7 +6,7 @@ from pydantic import BaseSettings
 
 import config as base_config
 from app.ws.db.settings import DatabaseSettings
-from app.ws.db.types import MetabolightsException
+from app.utils import MetabolightsException
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from instance import config
 
