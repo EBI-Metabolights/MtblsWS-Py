@@ -28,12 +28,12 @@ def flask_app():
     yield flask_app
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def flask_app_client(flask_app):
     yield flask_app.test_client()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def elasticsearch_service(flask_app):
     with flask_app.app_context():
         db_manager = DBManager.get_instance(flask_app)
@@ -44,7 +44,7 @@ def elasticsearch_service(flask_app):
     return service
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def email_service(flask_app):
     with flask_app.app_context():
         mail = Mail(flask_app)
@@ -52,7 +52,7 @@ def email_service(flask_app):
         return email_service
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def chebi_search(flask_app):
     curated_file_location = flask_app.config.get("CURATED_METABOLITE_LIST_FILE_LOCATION")
     curated_table = CuratedMetaboliteTable(curated_file_location)
@@ -64,7 +64,7 @@ def chebi_search(flask_app):
     yield chebi_search_manager
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def ws_client(flask_app, chebi_search, email_service, elasticsearch_service):
     with flask_app.app_context():
         ws_client_object = WsClient(chebi_search, email_service, elasticsearch_service)
@@ -72,7 +72,7 @@ def ws_client(flask_app, chebi_search, email_service, elasticsearch_service):
         yield ws_client_object
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def email_service_isolated_ws_client(flask_app, ws_client, mocker: MockerFixture):
     with flask_app.app_context():
         send_mail_mock = mocker.Mock()
