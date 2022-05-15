@@ -1,15 +1,14 @@
 from flask import current_app as app
 
+from app.utils import MetabolightsDBException, MetabolightsFileOperationException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User, Stableid
-from app.ws.db.settings import get_database_settings, get_directory_settings
+from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import UserStatus, UserRole, StudyStatus
-from app.utils import MetabolightsDBException, MetabolightsFileOperationException
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 
 
 class StudyService(object):
-
     instance = None
     db_manager = None
     directory_settings = None
@@ -46,7 +45,8 @@ class StudyService(object):
         except Exception as e:
             raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
 
-    def get_study_from_db_and_folder(self, study_id, user_token, optimize_for_es_indexing=False, revalidate_study=True, include_maf_files=False):
+    def get_study_from_db_and_folder(self, study_id, user_token, optimize_for_es_indexing=False, revalidate_study=True,
+                                     include_maf_files=False):
 
         try:
             with self.db_manager.session_maker() as db_session:
@@ -62,7 +62,8 @@ class StudyService(object):
                                               user_token_to_revalidate=user_token,
                                               include_maf_files=include_maf_files)
         except Exception as e:
-            raise MetabolightsFileOperationException(message=f"Error while updating study from study folder: {str(e)}", exception=e)
+            raise MetabolightsFileOperationException(message=f"Error while updating study from study folder: {str(e)}",
+                                                     exception=e)
 
         return m_study
 
@@ -75,8 +76,8 @@ class StudyService(object):
                 if db_user.role == UserRole.CURATOR:
                     study_id_list = db_session.query(Study.acc).order_by(Study.submissiondate).first()
                 else:
-                    study_id_list = db_session.query(Study.acc)\
-                        .filter(Study.status == StudyStatus.PUBLIC.value)\
+                    study_id_list = db_session.query(Study.acc) \
+                        .filter(Study.status == StudyStatus.PUBLIC.value) \
                         .order_by(Study.submissiondate).first()
 
                     own_study_id_list = [x.acc for x in db_user.studies if x.status != StudyStatus.PUBLIC.value]

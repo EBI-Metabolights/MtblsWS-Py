@@ -1032,7 +1032,7 @@ class CreateAccession(Resource):
         study_acc = None
         if "study_id" in request.headers:
             requested_study_id = request.headers["study_id"]
-            study_acc = self.validate_requested_study_id(requested_study_id, study_acc, user_token)
+            study_acc = self.validate_requested_study_id(requested_study_id, user_token)
 
         if study_acc:
             # Only create dababase row without sending e-mail
@@ -1110,7 +1110,7 @@ class CreateAccession(Resource):
 
         return {"new_study": study_acc}
 
-    def validate_requested_study_id(self, requested_study_id, study_acc, user_token):
+    def validate_requested_study_id(self, requested_study_id, user_token):
         """
         If study_id is set, check the rules below:
         Rule 1- study_id must start with  MTBLS_STABLE_ID_PREFIX
@@ -1137,7 +1137,7 @@ class CreateAccession(Resource):
         except:
             abort(400, message="Invalid study id")
         if requested_id:
-            if not (last_stable_id > requested_id > 0):
+            if not (last_stable_id >= requested_id > 0):
                 abort(400, message="Requested study id must be less then last study id")
         # Rule 4
         study_location = os.path.join(app.config.get('STUDY_PATH'), requested_study_id)
@@ -1148,8 +1148,7 @@ class CreateAccession(Resource):
         if obfuscation_code:
             abort(400, message="Study id already used.")
         else:
-            study_acc = requested_study_id
-        return study_acc
+            return requested_study_id
 
 
 class DeleteStudy(Resource):

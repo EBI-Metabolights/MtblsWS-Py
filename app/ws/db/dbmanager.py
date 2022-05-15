@@ -10,9 +10,7 @@ from app.ws.db.settings import DatabaseSettings, get_database_settings
 
 class DBManager(object):
     def __init__(self, db_config: DatabaseSettings = None):
-
         self.db_config = db_config
-
         self.db_url = self._get_db_url()
 
         self._engine = create_engine(self.db_url)
@@ -47,5 +45,6 @@ class DBManager(object):
 
         url = f"postgresql://{quote(user)}:{quote(password)}@{quote(host)}:{port}/{db_name}"
         return url
+
 
 Base = declarative_base()

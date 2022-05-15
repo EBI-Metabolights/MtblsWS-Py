@@ -6,7 +6,7 @@ class UserRole(Enum):
     CURATOR = 1
     ANONYMOUS = 2
     REVIEWER = 3  # this is not in java project
-    SYSTEM_ADMIN = 4 # this is not in java project
+    SYSTEM_ADMIN = 4  # this is not in java project
 
 
 class UserStatus(Enum):

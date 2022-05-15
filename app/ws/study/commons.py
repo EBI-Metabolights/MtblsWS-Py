@@ -1,15 +1,11 @@
 import json
 import logging
 import os
-from copy import deepcopy
-from datetime import time
-from operator import itemgetter
 
 from flask import abort, current_app as app
 
 from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
     query_study_submitters, get_public_studies, get_private_studies, get_study_by_type
-from app.ws.email.email_service import EmailService
 
 logger = logging.getLogger(__file__)
 
@@ -62,6 +58,7 @@ def get_queue_folder():
     queue_folder = app.config.get('STUDY_QUEUE_FOLDER')
     logger.info('Found queue upload folder for this server as:' + queue_folder)
     return queue_folder
+
 
 def get_permissions(study_id, user_token, obfuscation_code=None):
     """
@@ -123,7 +120,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
     new_folder_name = study_id.lower() + '-' + obfuscation_code
     ftp_folder = os.path.join(app.config.get('MTBLS_FTP_ROOT'), new_folder_name)
     os_upload = ftp_folder
-    status  = "folder already exist"
+    status = "folder already exist"
     if not os.path.exists(ftp_folder):
         logger.info('Creating a new study upload folder for Study %s', study_id)
         ftp_private_folder_root = app.config.get('MTBLS_PRIVATE_FTP_ROOT')
@@ -142,8 +139,8 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
             submitters_email_list = [submitter[0] for submitter in submitter_emails if submitter]
 
         email_service.send_email_for_requested_ftp_folder_created(study_id,
-                                                                           ftp_path, user_email,
-                                                                           submitters_email_list)
+                                                                  ftp_path, user_email,
+                                                                  submitters_email_list)
         status = "folder created"
     upload_loc = None
     private_ftp_user = app.config.get("PRIVATE_FTP_SERVER_USER")

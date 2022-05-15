@@ -27,7 +27,7 @@ def create_study_model_from_db_study(db_study: Study):
     )
 
     m_study.studyStatus = StudyStatus(db_study.status).name
-    m_study.studySize = db_study.studysize                            # This value is different in DB and www.ebi.ac.uk
+    m_study.studySize = db_study.studysize  # This value is different in DB and www.ebi.ac.uk
     size_in_mb = m_study.studySize / MB_FACTOR
     m_study.studyHumanReadable = str(size_in_mb.quantize(Decimal('.01'), rounding=ROUND_UP)) + "MB"
     m_study.publicStudy = StudyStatus(db_study.status) == StudyStatus.PUBLIC
@@ -53,7 +53,7 @@ def get_user_model(db_user: User):
     m_user = models.UserModel.from_orm(db_user)
     m_user.fullName = m_user.firstName + " " + m_user.lastName
     m_user.joinDate = datetime_to_int(m_user.joinDate)
-    m_user.dbPassword = None                        # This value is set to empty string intentionally
+    m_user.dbPassword = None  # This value is set to empty string intentionally
     m_user.role = UserRole(int(m_user.role)).name
     m_user.status = UserStatus(int(m_user.status)).name
     return m_user
@@ -82,7 +82,6 @@ def update_assays_for_indexing(m_study):
 def update_study_model_from_directory(m_study: models.StudyModel, studies_root_path,
                                       optimize_for_es_indexing=False, include_maf_files: bool = False,
                                       revalidate_study=False, user_token_to_revalidate=None, ):
-
     path = os.path.join(studies_root_path, m_study.studyIdentifier)
     if not os.path.isdir(path):
         return
@@ -115,7 +114,7 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
                     fill_contacts(m_study, investigation)
                 else:
 
-                    del m_study.sampleTable # delete sample table data from model for indexing.
+                    del m_study.sampleTable  # delete sample table data from model for indexing.
                     del m_study.contacts
                     del m_study.studyLocation
                     del m_study.protocols
@@ -258,7 +257,8 @@ def fill_assays(m_study, investigation, path, include_maf_files):
                     table = isatab.load_table(f)
                     m_table = models.TableModel()
                     model.assayTable = m_table
-                    maf_file_index, valid_indices = set_table_fields(m_table.fields, table, "metabolite assignment file")
+                    maf_file_index, valid_indices = set_table_fields(m_table.fields, table,
+                                                                     "metabolite assignment file")
 
                     for i in range(table.index.size):
                         row = table.iloc[i].to_list()

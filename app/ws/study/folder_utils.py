@@ -61,6 +61,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     return study_files, upload_files, upload_diff, upload_location, latest_update_time
 
+
 def get_all_files(path, directory=None, include_raw_data=False, assay_file_list=None,
                   validation_only=False, short_format=None, include_sub_dir=None,
                   static_validation_file=None):
@@ -162,8 +163,6 @@ def get_file_information(study_location=None, path=None, directory=None, include
         logger.error(str(e))
 
     return file_list, latest_update_time
-
-
 
 
 def flatten_list(list_name, flat_list=None):

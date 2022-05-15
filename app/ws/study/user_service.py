@@ -1,15 +1,13 @@
 from flask import current_app as app
 
+from app.utils import MetabolightsException, MetabolightsAuthorizationException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
-from app.ws.db.settings import get_database_settings, get_directory_settings
-from app.ws.db.types import UserStatus, UserRole, StudyStatus
-from app.utils import MetabolightsException, MetabolightsDBException, MetabolightsAuthorizationException
-from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
+from app.ws.db.settings import get_directory_settings
+from app.ws.db.types import UserStatus, UserRole
 
 
 class UserService(object):
-
     instance = None
     db_manager = None
     directory_settings = None
@@ -42,7 +40,6 @@ class UserService(object):
                 return self.validate_user_has_curator_role(user_token)
             raise MetabolightsException(message=f"Not a valid study id")
 
-
     def validate_user_has_curator_role(self, user_token):
         return self.validate_user_by_token(user_token, [UserRole.CURATOR.value])
 
@@ -70,25 +67,25 @@ class UserService(object):
 
     def validate_user_by_user_field(self, filter_clause, allowed_role_list, allowed_status_list=None):
 
-            if not allowed_role_list:
-                raise MetabolightsAuthorizationException (message=f"Define user role to validate")
+        if not allowed_role_list:
+            raise MetabolightsAuthorizationException(message=f"Define user role to validate")
 
-            if not allowed_status_list:
-                allowed_status_list = [UserStatus.ACTIVE.value]
+        if not allowed_status_list:
+            allowed_status_list = [UserStatus.ACTIVE.value]
 
-            try:
-                with self.db_manager.session_maker() as db_session:
-                    query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken)
-                    db_user = filter_clause(query).first()
-            except Exception as e:
-                raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
+        try:
+            with self.db_manager.session_maker() as db_session:
+                query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken)
+                db_user = filter_clause(query).first()
+        except Exception as e:
+            raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
 
-            if db_user:
-                if db_user.status not in allowed_status_list:
-                    raise MetabolightsAuthorizationException(message=f"User status is not accepted")
+        if db_user:
+            if db_user.status not in allowed_status_list:
+                raise MetabolightsAuthorizationException(message=f"User status is not accepted")
 
-                if db_user.role not in allowed_role_list:
-                    raise MetabolightsAuthorizationException(message=f"User role is not accepted")
-                return db_user
-            else:
-                raise MetabolightsAuthorizationException(message=f"User not in database")
+            if db_user.role not in allowed_role_list:
+                raise MetabolightsAuthorizationException(message=f"User role is not accepted")
+            return db_user
+        else:
+            raise MetabolightsAuthorizationException(message=f"User not in database")

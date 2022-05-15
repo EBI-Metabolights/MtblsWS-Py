@@ -5,7 +5,7 @@ from flask import Flask
 
 
 ignore_used_in_other_packages = ['MAIL_PASSWORD', 'MAIL_PORT', 'MAIL_SERVER',
-                                'MAIL_USERNAME', 'MAIL_USE_SSL', 'MAIL_USE_TLS']
+                                 'MAIL_USERNAME', 'MAIL_USE_SSL', 'MAIL_USE_TLS']
 
 
 def check_configuration(verbose=True):
@@ -45,7 +45,6 @@ def check_configuration(verbose=True):
 
 
 def get_configs_used_in_source_files(path="./app"):
-
     patterns = [f'grep -R "config.get(\'[A-Za-z_0-9_$]*\')" {path}',
                 f'grep -R "config.get(\"[A-Za-z_0-9_$]*\")" {path}']
 
@@ -109,5 +108,4 @@ def check_config_file_usage(config, path, ignore_list):
 
 
 if __name__ == "__main__":
-
     check_configuration()

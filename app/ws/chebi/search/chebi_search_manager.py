@@ -7,7 +7,7 @@ from app.ws.chebi.search import utils
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.search.models import CompoundSearchResponseModel, CompoundSearchResultModel, SearchResource
 from app.ws.chebi.types import SearchCategory, StarsCategory
-from app.ws.chebi.wsproxy import get_chebi_ws_proxy, ChebiWsException
+from app.ws.chebi.wsproxy import ChebiWsException
 
 logger = logging.getLogger(__file__)
 
@@ -54,7 +54,6 @@ class ChebiSearchManager(object):
     def get_compound_by_inchi(self, inchi: str):
         logger.debug("Searching by compound inchi %s" % inchi)
         compound_inchi = inchi
-        # compound_inchi = self._check_for_inchi_prefix(compound_inchi)
         return self._search_by_category(compound_inchi, inchi,
                                         SearchCategory.INCHI_INCHI_KEY, CuratedMetaboliteTable.INCHI_INDEX)
 
@@ -77,19 +76,6 @@ class ChebiSearchManager(object):
             if len(response.content) > 1:
                 response.content.sort(key=lambda x: x.score(), reverse=True)
         return response
-
-    def _check_for_inchi_prefix(self, inchi: str):
-        inchi_lower = inchi.lower()
-        expected_string = "InChI="
-        if inchi_lower.startswith("inchi=inchi="):
-            return inchi_lower.replace("inchi=inchi=", expected_string)
-        if inchi_lower.startswith("inchi="):
-            return inchi_lower.replace("inchi=", expected_string)
-
-        if "inchi=" not in inchi_lower:
-            return expected_string + inchi_lower
-
-        return inchi_lower
 
     def _check_for_smiles_prefix(self, smiles: str):
         smiles_lower = smiles.lower()

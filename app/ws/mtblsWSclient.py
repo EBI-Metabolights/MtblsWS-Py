@@ -20,8 +20,8 @@ import logging
 
 from flask import current_app as app, abort
 
-from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.utils import MetabolightsException
+from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.db_connection import create_empty_study, \
     get_release_date_of_study
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
@@ -43,9 +43,11 @@ class WsClient:
     email_service: EmailService = None
     elasticsearch_service: ElasticsearchService = None
 
-    def __init__(self, search_manager: ChebiSearchManager = None, email_service: EmailService = None):
+    def __init__(self, search_manager: ChebiSearchManager = None, email_service: EmailService = None,
+                 elasticsearch_service: ElasticsearchService = None):
         WsClient.email_service = email_service
         WsClient.search_manager = search_manager
+        WsClient.elasticsearch_service = elasticsearch_service
 
     def get_study_location(self, study_id, user_token):
         return commons.get_study_location(study_id, user_token)
@@ -117,7 +119,7 @@ class WsClient:
 
         UserService.get_instance(app).validate_user_has_curator_role(user_token)
         try:
-            indexed_data = ElasticsearchService.get_instance(app).reindex_study(study_id, user_token)
+            indexed_data = self.elasticsearch_service.reindex_study(study_id, user_token)
             return True, f" {indexed_data.studyIdentifier} is successfully indexed"
         except MetabolightsException as e:
             abort(501, e.message)

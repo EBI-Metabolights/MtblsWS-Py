@@ -71,4 +71,3 @@ class EmailService(object):
         subject_name = f"Requested Study upload folder for {study_id}"
 
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
-

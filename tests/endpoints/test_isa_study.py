@@ -1,53 +1,20 @@
 import json
-import logging.config
-import os
-import unittest
-
-from flask import Flask
-from pydantic import BaseSettings
-
-from app.wsapp_config import initialize_app
 
 context_path = "/metabolights/ws"
 
 
-class TestSensitiveData(BaseSettings):
-    super_user_token_001: str
-    invalid_user_token_001: str
-    submitter_token_001: str
+class TestIsaStudy(object):
 
-    class Config:
-        # read and set security settings variables from this env_file
-        env_file = "./tests/ws/.test_data"
-
-
-sensitive_data = TestSensitiveData()
-
-
-class IsaStudyTest(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.app = Flask(__name__, instance_relative_config=True)
-        hostname = os.uname().nodename
-        logging_config_file_name = 'logging_' + hostname + '.conf'
-        logging.config.fileConfig(logging_config_file_name)
-        initialize_app(cls.app)
-
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
-    def test_get_study_contacts_01(self):
+    def test_get_study_contacts_01(self, flask_app, sensitive_data):
         study_id = "MTBLS1"
-        with self.app.test_client() as c:
+        with flask_app.test_client() as c:
             headers = {"user_token": sensitive_data.super_user_token_001}
             result = c.get(f"{context_path}/studies/{study_id}/contacts", headers=headers, json={})
-            self.assertIsNotNone(result)
+            assert result is not None
             contacts = json.loads(result.data)
-            self.assertIsNotNone(contacts)
+            assert contacts is not None
 
-    def test_post_study_contacts_02(self):
+    def test_post_study_contacts_01(self, flask_app, sensitive_data):
         """
         Verifies  WsClient reindex_study method update
         """
@@ -58,10 +25,10 @@ class IsaStudyTest(unittest.TestCase):
                                    'fax': '', 'midInitials': 'M', 'phone': '',
                                    'roles': [{'annotationValue': 'principal investigator role'}]}]}
 
-        with self.app.test_client() as c:
-            headers = {"user_token": "4cece4ef-257e-4e28-993a-35fa2e4fa1c7", "save_audit_copy": True}
+        with flask_app.test_client() as c:
+            headers = {"user_token": sensitive_data.super_user_token_001, "save_audit_copy": True}
             result = c.post(f"{context_path}/studies/{study_id}/contacts", headers=headers, json=json_data)
-            self.assertIsNotNone(result)
-            self.assertIn(result.status_code, (200, 201))
+            assert result is not None
+            assert result.status_code in (200, 201)
             contacts = json.loads(result.data)
-            self.assertIsNotNone(contacts)
+            assert contacts is not None

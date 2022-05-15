@@ -17,8 +17,6 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 import subprocess
 import traceback
-from copy import deepcopy
-from operator import itemgetter
 
 from app.ws.cluster_jobs import lsf_job
 from app.ws.db_connection import update_validation_status, override_validations
@@ -26,7 +24,6 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.study import commons
 from app.ws.study.folder_utils import list_directories_full, get_all_files_from_filesystem
 from app.ws.utils import *
-from isatools.isatab import load
 
 iac = IsaApiClient()
 
