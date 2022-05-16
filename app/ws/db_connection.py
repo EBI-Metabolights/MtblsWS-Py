@@ -765,7 +765,7 @@ def get_submitted_study_ids_for_user(user_token):
     return complete_list
 
 
-def create_empty_study(user_token, study_id=None):
+def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     email = get_email(user_token)
     if not email:
         return None
@@ -784,7 +784,8 @@ def create_empty_study(user_token, study_id=None):
                 raise ValueError()
             data = result[0]
             acc = f"{app.config.get('MTBLS_STABLE_ID_PREFIX')}{data}"
-        obfuscationcode = str(uuid.uuid4())
+        if not obfuscationcode:
+            obfuscationcode = str(uuid.uuid4())
         releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
         content = {"acc": acc,
                    "obfuscationcode": obfuscationcode,

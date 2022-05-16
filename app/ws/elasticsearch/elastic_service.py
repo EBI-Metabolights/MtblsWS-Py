@@ -53,7 +53,7 @@ class ElasticsearchService(object):
         return self.client
 
     def reindex_study(self, study_id, user_token):
-        # insure user permission
+        # Revalidate user permission
         UserService.get_instance(app).validate_user_has_curator_role(user_token)
         try:
             m_study = StudyService.get_instance().get_study_from_db_and_folder(study_id, user_token,

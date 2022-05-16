@@ -1115,8 +1115,8 @@ class CreateAccession(Resource):
         If study_id is set, check the rules below:
         Rule 1- study_id must start with  MTBLS_STABLE_ID_PREFIX
         Rule 2- user must be superuser role
-        Rule 3- study_id must be less than last study id and greater than 0
-        Rule 4- study folder does not exist
+        Rule 3- study_id must be equal or less than last study id, and greater than 0
+        Rule 4- study folder does not exist or is empty
         Rule 5- study_id must not be in database
         """
         # Rule 1
