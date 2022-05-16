@@ -1,5 +1,10 @@
 import json
 
+import elasticsearch
+
+import app
+from app.ws.elasticsearch.elastic_service import ElasticsearchService
+
 context_path = "/metabolights/ws"
 
 
@@ -14,7 +19,7 @@ class TestIsaStudy(object):
             contacts = json.loads(result.data)
             assert contacts is not None
 
-    def test_post_study_contacts_01(self, flask_app, sensitive_data):
+    def test_post_study_contacts_01(self, flask_app, sensitive_data, mocker):
         """
         Verifies  WsClient reindex_study method update
         """
@@ -27,8 +32,12 @@ class TestIsaStudy(object):
 
         with flask_app.test_client() as c:
             headers = {"user_token": sensitive_data.super_user_token_001, "save_audit_copy": True}
+            mock_elastic = mocker.Mock()
+            mocker.patch("app.ws.elasticsearch.elastic_service.ElasticsearchService.get_client", mock_elastic)
+            mock_elastic.index.return_value = ""
             result = c.post(f"{context_path}/studies/{study_id}/contacts", headers=headers, json=json_data)
             assert result is not None
             assert result.status_code in (200, 201)
+            mock_elastic.assert_called()
             contacts = json.loads(result.data)
             assert contacts is not None
