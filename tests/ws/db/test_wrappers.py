@@ -58,7 +58,7 @@ class TestWrappers(object):
         assert not hasattr(study.assays[0], "assayTable")
 
     def test_create_mtbls_file_obj_02_optimized(self, flask_app, sensitive_data):
-        study_id = "MTBLS4654"
+        study_id = "MTBLS2435"
         with flask_app.app_context():
             db_manager = DBManager.get_instance(flask_app)
             with db_manager.session_maker() as db_session:
@@ -74,11 +74,6 @@ class TestWrappers(object):
         assert not hasattr(study, "protocols")
         assert not hasattr(study, "contacts")
         assert not hasattr(study, "sampleTable")
-        assert len(study.factors) >= 1
-
         assert len(study.users) >= 1
-        assert len(study.publications) >= 1
-        assert len(study.organism) >= 1
-        assert len(study.descriptors) >= 1
         assert len(study.assays) >= 1
         assert not hasattr(study.assays[0], "assayTable")

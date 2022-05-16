@@ -51,6 +51,8 @@ class StudyService(object):
         try:
             with self.db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
+                if not db_study_obj:
+                    raise MetabolightsDBException(message=f"Study {study_id} is not in database")
                 m_study = create_study_model_from_db_study(db_study_obj)
         except Exception as e:
             raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)

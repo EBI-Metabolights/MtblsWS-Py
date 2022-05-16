@@ -26,7 +26,7 @@ class TestElasticService(object):
                                                   elasticsearch_service: ElasticsearchService,
                                                   sensitive_data: SensitiveDatastorage, mocker):
         with flask_app.app_context():
-            study_id = "MTBLS4654"
+            study_id = "MTBLS2435"
             mock_index_method = mocker.Mock()
             elasticsearch_service.client = mock_index_method
             mock_index_method.index = mocker.Mock()
