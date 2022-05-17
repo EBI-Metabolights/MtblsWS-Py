@@ -33,13 +33,11 @@ logger = logging.getLogger('wslog')
 stop_words = "insert", "select", "drop", "delete", "from", "into", "studies", "users", "stableid", "study_user", \
              "curation_log_temp", "ref_", "ebi_reporting", "exists"
 
-query_curation_log = "select * from curation_log_temp order by acc_short asc;"
-
 query_all_studies = """
     select * from (
         select 
           s.acc, 
-          string_agg(u.firstname || ' ' || u.lastname, ', ' order by lastname) as username, 
+          string_agg(u.firstname || ' ' || u.lastname, ', ' order by u.lastname) as username, 
           to_char(s.releasedate, 'YYYYMMDD') as release_date,
           to_char(s.updatedate, 'YYYYMMDD') as update_date, 
           case when s.status = 0 then 'Submitted' 
@@ -55,16 +53,16 @@ query_all_studies = """
           study_user su,
           users u
         where
-           -- date_trunc('day',s.updatedate) >= date_trunc('day',current_date-180) and
            s.id = su.studyid and
            su.userid = u.id
     group by 1,3,4,5,6,7,8) status
-    where exists (select 1 from users where apitoken = (%s) and role = 1);"""
+    where exists (select 1 from users where apitoken = %(apitoken)s and role = 1);
+    """
 
 query_study_info = """
         select * from (
              select s.acc                                                                as studyid,
-                    string_agg(u.firstname || ' ' || u.lastname, ', ' order by lastname) as username,
+                    string_agg(u.firstname || ' ' || u.lastname, ', ' order by u.lastname) as username,
                     case
                         when s.status = 0 then 'Submitted'
                         when s.status = 1 then 'In Curation'
@@ -83,7 +81,7 @@ query_study_info = """
              where s.id = su.studyid
                and su.userid = u.id
         group by 1, 3, 4) status
-        where exists(select 1 from users where apitoken = (%s) and role = 1);
+        where exists(select 1 from users where apitoken = %(apitoken)s and role = 1);
 """
 
 query_studies_user = """
@@ -96,63 +94,87 @@ query_studies_user = """
            when s.status = 3 then 'Public' 
            else 'Dormant' end 
     from studies s, users u, study_user su 
-    where s.id = su.studyid and su.userid = u.id and u.apitoken = (%s);
+    where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
 
 query_user_access_rights = """
-    select distinct role, read, write, obfuscationcode, releasedate, submissiondate, 
-    case when status = 0 then 'Submitted' when status = 1 then 'In Curation' when status = 2 then 'In Review' 
-         when status = 3 then 'Public' else 'Dormant' end as status, 
-    acc from
-    ( 
-        select 'curator' as role, 'True' as read, 'True' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc from studies s
-        where exists (select 1 from users where apitoken = '#user_token#' and role = 1)
-        and acc = '#study_id#' -- CURATOR
-        union select * from (
-            select 'user' as role, 'True' as read, 'True' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
-            from studies s, study_user su, users u
-            where s.acc = '#study_id#' and s.status = 0 and s.id = su.studyid and su.userid = u.id and 
-            u.apitoken = '#user_token#' -- USER own data, submitted
-            union
-            select 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
-            from studies s, study_user su, users u
-            where s.acc = '#study_id#' and s.status in (1, 2, 4) and s.id = su.studyid and su.userid = u.id and 
-            u.apitoken = '#user_token#' -- USER own data, in curation, review or dormant
-            union 
-            select 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
-            from studies s where acc = '#study_id#' and status = 3) user_data 
-        where not exists(select 1 from users where apitoken = '#user_token#' and role = 1)
-    ) study_user_data;
+    SELECT DISTINCT role, read, write, obfuscationcode, releasedate, submissiondate, 
+        CASE    WHEN status = 0 THEN 'Submitted'
+                WHEN status = 1 THEN 'In Curation' 
+                WHEN status = 2 THEN 'In Review' 
+                WHEN status = 3 THEN 'Public' 
+                ELSE 'Dormant' end 
+        AS status, 
+        acc from
+        ( 
+            SELECT 'curator' as role, 'True' as read, 'True' as write, s.obfuscationcode, 
+                    s.releasedate, s.submissiondate, s.status, s.acc from studies s
+            WHERE   exists (select 1 from users where apitoken = %(apitoken)s and role = 1)
+                    AND acc = %(study_id)s -- CURATOR
+            UNION 
+            SELECT * from (
+                SELECT 'user' as role, 'True' as read, 'True' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+                from studies s, study_user su, users u
+                where s.acc = %(study_id)s and s.status = 0 and s.id = su.studyid and su.userid = u.id and 
+                u.apitoken = %(apitoken)s -- USER own data, submitted
+                UNION
+                SELECT 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+                from studies s, study_user su, users u
+                where s.acc = %(study_id)s and s.status in (1, 2, 4) and s.id = su.studyid and su.userid = u.id and 
+                u.apitoken = %(apitoken)s -- USER own data, in curation, review or dormant
+                UNION 
+                SELECT 'user' as role, 'True' as read, 'False' as write, s.obfuscationcode, s.releasedate, s.submissiondate, s.status, s.acc 
+                from studies s where acc = %(study_id)s and status = 3) user_data 
+            WHERE NOT EXISTS (SELECT 1 from users where apitoken = %(apitoken)s and role = 1)
+        ) study_user_data;
 """
 
+study_by_obfuscation_code_query = """
+    select distinct 'user', 'True', 'False', obfuscationcode, releasedate, submissiondate,
+    case when status = 0 then 'Submitted'
+         when status = 1 then 'In Curation'
+         when status = 2 then 'In Review'
+         when status = 3 then 'Public'
+         else 'Dormant' end as status,
+    acc from studies
+    where obfuscationcode = %(study_obfuscation_code)s and acc= %(study_id)s;
+"""
 
 def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, metaspace_api_key):
     val_email(email)
 
-    insert_user_query = \
-        "INSERT INTO users(address, affiliation, affiliationurl, apitoken, email, firstname, " \
-        "joindate, lastname, password, role, status, username, orcid, metaspace_api_key) " \
-        "VALUES ('address_value', 'affiliation_value', 'affiliationurl_value', 'apitoken_value', 'email_value', " \
-        "'firstname_value', current_timestamp, 'lastname_value', 'password_value', 2, 0, 'email_value', " \
-        "'orcid_value', 'metaspace_api_key_value' );"
+    insert_user_query = """
+        INSERT INTO users (
+            address, affiliation, affiliationurl,
+            apitoken, email, firstname, 
+            joindate,
+            lastname, password, 
+            role, status,
+            username, orcid, metaspace_api_key
+            ) 
+        VALUES 
+        (
+            %(address_value)s, %(affiliation_value)s, %(affiliationurl_value)s,
+            %(apitoken_value)s, %(email_value)s, %(firstname_value)s,
+            current_timestamp, 
+            %(lastname_value)s, %(password_value)s, 
+            2, 0,
+            %(email_value)s, %(orcid_value)s, %(metaspace_api_key_value)s
+        );
+    """
 
-    subs = {"address_value": address, "affiliation_value": affiliation,
+    input_values = {"address_value": address, "affiliation_value": affiliation,
             "affiliationurl_value": affiliation_url, "apitoken_value": api_token,
             "email_value": email, "firstname_value": first_name, "lastname_value": last_name,
             "password_value": password_encoded, "orcid_value": orcid, "metaspace_api_key_value": metaspace_api_key}
-
-    for key, value in subs.items():
-        val_query_params(value)
-        insert_user_query = insert_user_query.replace(str(key), str(value))
 
     query = insert_user_query
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
+        cursor.execute(query, input_values)
         conn.commit()
-        # conn.close()
         release_connection(postgresql_pool, conn)
         return True, "User account '" + email + "' created successfully"
 
@@ -165,33 +187,38 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
     val_email(existing_user_name)
     val_email(email)
 
-    update_user_query = \
-        "update users set address = 'address_value', affiliation = 'affiliation_value', " \
-        "affiliationurl = 'affiliationurl_value', email = 'email_value', " \
-        "firstname = 'firstname_value', lastname = 'lastname_value', username = 'email_value', " \
-        "orcid = 'orcid_value', metaspace_api_key = 'metaspace_api_key_value' " \
-        "where username = 'existing_user_name_value'"
+    update_user_query = """
+        update users set address = %(address_value)s, affiliation = %(affiliation_value)s,
+        affiliationurl = %(affiliationurl_value)s, email = %(email_value)s,
+        firstname = %(firstname_value)s, lastname = %(lastname_value)s, username = %(email_value)s,
+        orcid = %(orcid_value)s, metaspace_api_key = %(metaspace_api_key_value)s
+        where username = %(existing_user_name_value)s
+    """
+
 
     if not is_curator:
-        update_user_query = update_user_query + " and apitoken = 'apitoken_value'"
+        update_user_query = update_user_query + " and apitoken = %s(apitoken_value)s"
 
     update_user_query = update_user_query + ";"
 
-    subs = {"address_value": address, "affiliation_value": affiliation,
-            "affiliationurl_value": affiliation_url, "apitoken_value": api_token,
-            "email_value": email, "firstname_value": first_name, "lastname_value": last_name,
-            "password_value": password_encoded, "orcid_value": orcid, "username_value": email,
-            "existing_user_name_value": existing_user_name, "metaspace_api_key_value": metaspace_api_key}
-
-    for key, value in subs.items():
-        val_query_params(str(value))
-        update_user_query = update_user_query.replace(str(key), str(value))
+    input_values = {"address_value": address,
+            "affiliation_value": affiliation,
+            "affiliationurl_value": affiliation_url,
+            "apitoken_value": api_token,
+            "email_value": email,
+            "firstname_value": first_name,
+            "lastname_value": last_name,
+            "password_value": password_encoded,
+            "orcid_value": orcid,
+            "username_value": email,
+            "existing_user_name_value": existing_user_name,
+            "metaspace_api_key_value": metaspace_api_key}
 
     query = update_user_query
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
+        cursor.execute(query, input_values)
         number_of_users = cursor.rowcount
         conn.commit()
         release_connection(postgresql_pool, conn)
@@ -211,31 +238,26 @@ def get_user(username):
     :return: a user object as a dict.
     """
     val_query_params(username)
-    get_user_query = "select firstname, lastname, email, affiliation, affiliationurl, address, orcid, " \
-                     "metaspace_api_key from users where username = '{0}';".format(username)
+    get_user_query = """
+        select firstname, lastname, email, affiliation, affiliationurl, address, orcid, metaspace_api_key 
+        from users
+        where username = %(username)s;
+    """
+    postgresql_pool = None
+    conn = None
+    data = None
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(get_user_query)
-        data = cursor.fetchall()
+        cursor.execute(get_user_query, {'username': username})
+        data = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
     except Exception as e:
         logger.error('An error occurred while retrieving user {0}: {1}'.format(username, e))
         abort(500)
+    finally:
+        release_connection(postgresql_pool, conn)
 
-    release_connection(postgresql_pool, conn)
-    if len(data) > 0:
-        # static referencing is bad but there will only ever be one result for a single username.
-        return {
-            'user': {
-                'firstName': data[0][0],
-                'lastName': data[0][1],
-                'email': data[0][2],
-                'affiliation': data[0][3],
-                'affiliation_url': data[0][4],
-                'address': data[0][5],
-                'orcid': data[0][6],
-                'metaspace_api_key': data[0][7]
-            }
-        }
+    if data:
+        return {'user': data[0]}
     else:
         # no user found by that username, abort with 404
         abort(404, 'User with username {0} not found.'.format(username))
@@ -245,7 +267,7 @@ def get_user(username):
 def get_all_private_studies_for_user(user_token):
     val_query_params(user_token)
 
-    study_list = execute_query(query=query_studies_user, user_token=user_token)
+    study_list = execute_select_query(query=query_studies_user, user_token=user_token)
     study_location = app.config.get('STUDY_PATH')
     file_name = 'i_Investigation.txt'
     isa_title = 'Study Title'
@@ -292,7 +314,7 @@ def get_all_private_studies_for_user(user_token):
 def get_all_studies_for_user(user_token):
     val_query_params(user_token)
 
-    study_list = execute_query(query=query_studies_user, user_token=user_token)
+    study_list = execute_select_query(query=query_studies_user, user_token=user_token)
     study_location = app.config.get('STUDY_PATH')
     file_name = 'i_Investigation.txt'
     isa_title = 'Study Title'
@@ -335,19 +357,18 @@ def get_all_studies_for_user(user_token):
     return complete_list
 
 
-def get_all_studies(user_token, date_from=None):
-    data = execute_query(query=query_all_studies, user_token=user_token, date_from=date_from)
+def get_all_studies(user_token):
+    data = execute_select_query(query=query_all_studies, user_token=user_token)
     return data
 
 
 def get_study_info(user_token):
-    data = execute_query(query=query_study_info, user_token=user_token)
+    data = execute_select_query(query=query_study_info, user_token=user_token)
     return data
 
 
 def get_public_studies_with_methods():
     query = "select acc, studytype from studies where status = 3;"
-    query = query.replace('\\', '')
     postgresql_pool, conn, cursor = get_connection()
     cursor.execute(query)
     data = cursor.fetchall()
@@ -357,7 +378,6 @@ def get_public_studies_with_methods():
 
 def get_public_studies():
     query = "select acc from studies where status = 3;"
-    query = query.replace('\\', '')
     postgresql_pool, conn, cursor = get_connection()
     cursor.execute(query)
     data = cursor.fetchall()
@@ -366,7 +386,6 @@ def get_public_studies():
 
 def get_private_studies():
     query = "select acc from studies where status = 0;"
-    query = query.replace('\\', '')
     postgresql_pool, conn, cursor = get_connection()
     cursor.execute(query)
     data = cursor.fetchall()
@@ -377,24 +396,28 @@ def get_study_by_type(sType, publicStudy=True):
     q2 = ' '
     if publicStudy:
         q2 = ' status in (2, 3) and '
-
+    input_data = {}
     if type(sType) == str:
-        q3 = "studytype = '{sType}'".format(sType=sType)
-
+        q3 = "studytype = %(study_type)s"
+        input_data['study_type'] =  sType
     # fuzzy search
     elif type(sType) == list:
-        DB_query = []
-        for q in sType:
-            query = "studytype like '%{q}%'".format(q=q)
-            DB_query.append(query)
-        q3 = ' and '.join(DB_query)
+        db_query = []
+        counter = 0
+        for type_item in sType:
+            counter = counter + 1
+            input = "study_type_" + str(counter)
+            query = "studytype like %("+ input +")s"
+            input_data[input] = "%" + type_item + "%"
+            db_query.append(query)
+        q3 = ' and '.join(db_query)
 
     else:
         return None
 
-    query = "SELECT acc,studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
+    query = "SELECT acc, studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
     postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query)
+    cursor.execute(query, input_data)
     data = cursor.fetchall()
     studyID = [r[0] for r in data]
     studytype = [r[1] for r in data]
@@ -403,11 +426,10 @@ def get_study_by_type(sType, publicStudy=True):
 
 def update_release_date(study_id, release_date):
     val_acc(study_id)
-    query_update_release_date = "update studies set releasedate = %s where acc = %s;"
-    query_update_release_date = query_update_release_date.replace('\\', '')
+    query_update_release_date = "update studies set releasedate = %(releasedate)s where acc = %(study_id)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query_update_release_date, (release_date, study_id))
+        cursor.execute(query_update_release_date, {'releasedate': release_date, 'study_id': study_id})
         conn.commit()
         release_connection(postgresql_pool, conn)
         return True, "Date updated for study " + study_id
@@ -418,31 +440,22 @@ def update_release_date(study_id, release_date):
 
 def add_placeholder_flag(study_id):
     val_acc(study_id)
-    query_update = "update studies set placeholder = 1, status = 0 where acc = '" + study_id + "';"
-    query_update = query_update.replace('\\', '')
+    query_update = "update studies set placeholder = 1, status = 0 where acc = %(study_id)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query_update)
+        cursor.execute(query_update, {'study_id': study_id})
         conn.commit()
         release_connection(postgresql_pool, conn)
-        return True, "Placeholder flag updated for study " + study_id
+        return True, "Placeholder flag updated for study %s" % (study_id, )
 
     except Exception as e:
         return False, str(e)
 
-
-def get_curation_log(user_token):
-    val_query_params(user_token)
-    data = execute_query(query=query_curation_log, user_token=user_token)
-    return data
-
-
 def get_obfuscation_code(study_id):
     val_acc(study_id)
-    query = "select obfuscationcode from studies where acc = '" + study_id + "';"
-    query = query.replace('\\', '')
+    query = "select obfuscationcode from studies where acc = %(study_id)s;"
     postgresql_pool, conn, cursor = get_connection()
-    cursor.execute(query)
+    cursor.execute(query, {'study_id': study_id})
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data
@@ -484,11 +497,13 @@ def get_study(study_id):
                  join study_user su on u.id = su.userid
         group by su.studyid
     ) as su on s.id = su.studyid
-    where s.acc = '{studyID}';
-    '''.format(studyID=study_id)
-    query = query.replace('\\', '')
+    where s.acc = %(study_id)s;
+'''
+
+
+
     postgresql_pool, conn, cursor = get_connection2()
-    cursor.execute(query)
+    cursor.execute(query, {'study_id': study_id})
     data = cursor.fetchall()
     result = []
     for row in data:
@@ -504,13 +519,11 @@ def biostudies_acc_to_mtbls(biostudies_id):
 
     val_query_params(biostudies_id)
     # Default query to get the mtbls accession
-    query = "SELECT acc from studies where biostudies_acc = '#biostudies_id#';"
-    query = query.replace("#biostudies_id#", biostudies_id)
-    query = query.replace('\\', '')
+    query = "SELECT acc from studies where biostudies_acc = %(biostudies_id)s;"
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
+        cursor.execute(query, {'biostudies_id': biostudies_id})
         data = cursor.fetchall()
         # conn.close()
         release_connection(postgresql_pool, conn)
@@ -527,28 +540,22 @@ def biostudies_accession(study_id, biostudies_id, method):
     val_acc(study_id)
 
     # Default query to get the biosd accession
-    s_query = "SELECT biostudies_acc from studies where acc = '#study_id#';"
+    s_query = "SELECT biostudies_acc from studies where acc = %(study_id)s;"
 
     if method == 'add':
-        query = "update studies set biostudies_acc = '#biostudies_acc#' where acc = '#study_id#';"
+        query = "update studies set biostudies_acc = %(biostudies_id)s where acc = %(study_id)s;"
     elif method == 'query':
         query = s_query
     elif method == 'delete':
-        query = "update studies set biostudies_acc = '' where acc = '#study_id#';"
-
-    query = query.replace("#study_id#", study_id)
-    s_query = s_query.replace("#study_id#", study_id)
-    if biostudies_id:
-        query = query.replace("#biostudies_acc#", biostudies_id)
-    query = query.replace('\\', '')
+        query = "update studies set biostudies_acc = '' where acc = %(study_id)s;"
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
+        cursor.execute(query, {'study_id': study_id, 'biostudies_acc': biostudies_id})
 
         if method == 'add' or method == 'delete':
             conn.commit()
-            cursor.execute(s_query)
+            cursor.execute(s_query, {'study_id': study_id})
 
         data = cursor.fetchall()
         # conn.close()
@@ -565,17 +572,14 @@ def mtblc_on_chebi_accession(chebi_id):
 
     if not chebi_id.startswith('CHEBI'):
         logger.error("Incorrect ChEBI accession number string pattern")
-        abort(406, chebi_id + " incorrect ChEBI accession number string pattern")
+        abort(406, "%s incorrect ChEBI accession number string pattern" % chebi_id)
 
     # Default query to get the biosd accession
-    query = "select acc from ref_metabolite where temp_id = '#chebi_id#';"
-    query = query.replace("#chebi_id#", chebi_id).replace('\\', '')
-
+    query = "select acc from ref_metabolite where temp_id = %(chebi_id)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
+        cursor.execute(query, {'chebi_id': chebi_id})
         data = cursor.fetchall()
-        # conn.close()
         release_connection(postgresql_pool, conn)
         return True, data[0]
 
@@ -655,7 +659,6 @@ def get_email(user_token):
     return user_email
 
 
-
 def study_submitters(study_id, user_email, method):
     if not study_id or len(user_email) < 5:
         return None
@@ -663,20 +666,24 @@ def study_submitters(study_id, user_email, method):
     val_acc(study_id)
     if user_email:
         val_email(user_email)
-
+    query = None
     if method == 'add':
-        query = 'insert into study_user(userid, studyid) ' \
-                'select u.id, s.id from users u, studies s where lower(u.email) = %s and acc=%s;'
+        query = """
+            insert into study_user(userid, studyid)
+            select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(study_id)s;    
+        """
     elif method == 'delete':
-        query = 'delete from study_user su where exists(' \
-                'select u.id, s.id from users u, studies s ' \
-                'where su.userid = u.id and su.studyid = s.id and lower(u.email) = %s and acc=%s);'
+        query = """
+            delete from study_user su where exists(
+            select u.id, s.id from users u, studies s
+            where su.userid = u.id and su.studyid = s.id and lower(u.email) = %(email)s and acc=%(study_id)s; 
+        """
+
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, (user_email.lower(), study_id))
+        cursor.execute(query, {'email': user_email.lower(), 'study_id': study_id})
         conn.commit()
-        # conn.close()
         release_connection(postgresql_pool, conn)
         return True
     except Exception as e:
@@ -686,7 +693,6 @@ def study_submitters(study_id, user_email, method):
 def get_all_study_acc():
     # Select all study accessions which are not in Dormant status or currently only a placeholder
     query = "select acc from studies where placeholder != '1' and status != 4;"
-    query = query.replace('\\', '')
     try:
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(query)
@@ -700,10 +706,10 @@ def get_all_study_acc():
 
 def get_user_email(user_token):
 
-    input = "select email from users where apitoken = '{token}'".format(token=user_token)
+    input = "select email from users where apitoken = %(apitoken)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(input)
+        cursor.execute(input, {'apitoken': user_token})
         data = cursor.fetchone()[0]
         release_connection(postgresql_pool, conn)
         return data
@@ -716,12 +722,13 @@ def query_study_submitters(study_id):
     if not study_id:
         return None
 
-    query = "select u.email from users u, studies s, study_user su where " \
-            "su.userid = u.id and su.studyid = s.id and acc='" + study_id + "';"
-    query = query.replace('\\', '')
+    query = """
+        select u.email from users u, studies s, study_user su where
+        su.userid = u.id and su.studyid = s.id and acc = %(study_id)s; 
+    """
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
+        cursor.execute(query, {'study_id': study_id})
         data = cursor.fetchall()
         release_connection(postgresql_pool, conn)
         return data
@@ -730,10 +737,10 @@ def query_study_submitters(study_id):
 
 
 def get_username_by_token(token):
-    query = "select concat(firstname,' ',lastname) from users where apitoken = '{token}'".format(token=token)
+    query = "select concat(firstname,' ',lastname) from users where apitoken = %(apitoken)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
+        cursor.execute(query, {'apitoken': token})
         data = cursor.fetchone()[0]
         release_connection(postgresql_pool, conn)
         return data
@@ -796,18 +803,21 @@ def update_validation_status(study_id, validation_status):
 def update_study_status_change_date(study_id):
     val_acc(study_id)
 
-    query = "update studies set status_date = current_timestamp where acc = '" + study_id + "';"
-    status, msg = insert_update_data(query)
+    query = "update studies set status_date = current_timestamp where acc = %(study_id)s;"
+    status, msg = insert_update_data(query, {'study_id': study_id})
     if not status:
         logger.error('Database update of study status date failed with error ' + msg)
         return False
     return True
 
 
-def insert_update_data(query):
+def insert_update_data(query, inputs=None):
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
+        if inputs:
+            cursor.execute(query, inputs)
+        else:
+            cursor.execute(query)
         conn.commit()
         release_connection(postgresql_pool, conn)
         return True, "Database command success " + query
@@ -833,17 +843,17 @@ def update_study_status(study_id, study_status, is_curator=False):
     elif study_status == 'dormant':
         status = '4'
 
-    query = "update studies set status = '" + status + "'"
+    query = "UPDATE studies SET status = %(status)s"
     if not is_curator:  # Add 28 days to the database release date when a submitter change the status
         query = query + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE + integer '28'"
     if study_status == 'public' and is_curator:
         query = query + ", updatedate = CURRENT_DATE, releasedate = CURRENT_DATE"
 
-    query = query + " where acc = '" + study_id + "';"
+    query = query + " WHERE acc = %(study_id)s;"
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query)
+        cursor.execute(query, {'study_id': study_id, 'status': status})
         conn.commit()
         release_connection(postgresql_pool, conn)
         return True
@@ -852,11 +862,39 @@ def update_study_status(study_id, study_status, is_curator=False):
         return False
 
 
-def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_code=None, date_from=None):
+def execute_select_query(query, user_token):
+    if not user_token:
+        return None
+    val_query_params(user_token)
+
+    input_data = {'apitoken': user_token}
+
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query, input_data)
+        data = cursor.fetchall()
+        release_connection(postgresql_pool, conn)
+        return data
+    except psycopg2.Error as e:
+        print("Unable to connect to the database")
+        print(e.pgcode)
+        print(e.pgerror)
+        print(traceback.format_exc())
+    except Exception as e:
+        print("Error: " + str(e))
+        logger.error("Error: " + str(e))
+    return None
+
+
+def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_code=None):
     if not user_token and study_obfuscation_code:
         return None
 
-    obfuscation_code = None
+    input_data = {'apitoken': user_token,
+                  'study_id': study_id,
+                  'study_obfuscation_code': study_obfuscation_code
+     }
+
     if not study_obfuscation_code:
         obfuscation_code = ""
     else:
@@ -873,25 +911,12 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        query = query.replace('\\', '')
         if study_id is None and study_obfuscation_code is None:
-            if date_from:
-                query = query.replace("current_date", date_from)
-            cursor.execute(query, [user_token])
+            cursor.execute(query, input_data)
         elif study_id and user_token and not study_obfuscation_code:
-            query2 = query_user_access_rights.replace("#user_token#", user_token)
-            query2 = query2.replace("#study_id#", study_id)
-            cursor.execute(query2)
+            cursor.execute(query_user_access_rights, input_data)
         elif study_id and study_obfuscation_code:
-            cursor.execute("select distinct 'user', 'True', 'False', obfuscationcode, releasedate, submissiondate, "
-                           "case when status = 0 then 'Submitted' "
-                           "     when status = 1 then 'In Curation' "
-                           "     when status = 2 then 'In Review' "
-                           "     when status = 3 then 'Public' "
-                           "     else 'Dormant' end as status, "
-                           "acc from studies "
-                           "where obfuscationcode = '" + study_obfuscation_code + "' and acc='" + study_id + "';")
-
+            cursor.execute(study_by_obfuscation_code_query, input_data)
         data = cursor.fetchall()
         release_connection(postgresql_pool, conn)
 
@@ -905,7 +930,7 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
     except Exception as e:
         print("Error: " + str(e))
         logger.error("Error: " + str(e))
-
+    return data
 
 def get_connection():
     postgresql_pool = None
@@ -956,12 +981,19 @@ def database_maf_info_table_actions(study_id=None):
 
         val_acc(study_id)
 
-        status, msg = insert_update_data("delete from maf_info where acc = '" + study_id + "';")
+        status, msg = insert_update_data("delete from maf_info where acc = %(study_id)s;", {'study_id': study_id})
     else:
         try:
             sql_trunc = "truncate table maf_info;"
             sql_drop = "drop table maf_info;"
-            sql_create = "create table maf_info(acc VARCHAR, database_identifier VARCHAR, metabolite_identification VARCHAR, database_found VARCHAR, metabolite_found VARCHAR);"
+            sql_create = """
+                CREATE table maf_info(  
+                                        acc VARCHAR, 
+                                        database_identifier VARCHAR, 
+                                        metabolite_identification VARCHAR, 
+                                        database_found VARCHAR,
+                                        metabolite_found VARCHAR);
+            """
             status, msg = insert_update_data(sql_trunc)
             status, msg = insert_update_data(sql_drop)
             status, msg = insert_update_data(sql_create)
@@ -973,9 +1005,22 @@ def add_maf_info_data(acc, database_identifier, metabolite_identification, datab
     val_acc(acc)
     status = False
     msg = None
-    sql = "insert into maf_info values('" + acc + "','" + database_identifier + "','" + metabolite_identification + "','" + database_found + "','" + metabolite_found + "');"
+    sql = """
+        insert into maf_info values(
+                                %(acc)s, 
+                                %(database_identifier)s, 
+                                %(metabolite_identification)s,
+                                %(database_found)s, 
+                                %(metabolite_found)s
+                                );
+    """
+    input_data = {'acc': acc,
+                  'database_identifier': database_identifier,
+                  "metabolite_identification": metabolite_identification,
+                  "database_found": database_found,
+                  'metabolite_found': metabolite_found}
     try:
-        status, msg = insert_update_data(sql)
+        status, msg = insert_update_data(sql, input_data)
     except Exception as e:
         return False, str(e)
     return status, msg
@@ -985,7 +1030,7 @@ def val_acc(study_id=None):
     if study_id:
         if not study_id.startswith('MTBLS') or study_id.lower() in stop_words:
             logger.error("Incorrect accession number string pattern")
-            abort(406, "'" + study_id + "' incorrect accession number string pattern")
+            abort(406, "'%s' incorrect accession number string pattern" % study_id)
 
 
 def val_query_params(text_to_val):

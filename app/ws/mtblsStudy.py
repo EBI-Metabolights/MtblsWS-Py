@@ -25,7 +25,6 @@ from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import *
 from app.ws.isaApiClient import IsaApiClient
 from distutils.dir_util import copy_tree
-from app.ws import db_connection as db_proxy
 from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
     query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user
 from app.ws.study_utilities import StudyUtils
