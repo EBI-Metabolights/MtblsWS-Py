@@ -67,6 +67,7 @@ MTBLS_CURATION_LOG_TEST = "<Google sheet url>"
 GOOGLE_SHEET_TOKEN = "./instance/google_sheet_api_credentials.json"
 GOOGLE_CALENDAR_TOKEN = "./instance/google_calendar_api_credentials.json"
 GOOGLE_CALENDAR_ID = ""
+MARIANA_DRIVE_ID = ""
 
 PARTNER_TEMPLATE_METABOLON = 'TEMPLATES/METABOLON'
 DEFAULT_TEMPLATE = 'TEMPLATES/DUMMY'
@@ -143,9 +144,9 @@ RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp'
                   '.lcd', '.abf', '.jpf', '.xps', '.mgf', '.qgd', '.hr']
 
 DERIVED_FILES_LIST = ['.mzml', '.imzML', '.wiff', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef', '.cnx', '.peakml', '.xy', '.smp',
-                      '.scan', '.dx', '.DX','.msp', '.mzML', '.xlsx', '.CDF', '.imzml', 'mzXML', '.mgf']
+                      '.scan', '.dx', '.DX','.msp', '.mzML', '.xlsx', '.CDF', '.imzml', 'mzXML', '.mzXML', '.Izma', '.lzma', '.mgf']
 
-COMPRESSED_FILES_LIST = ['.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', '.rar',
+COMPRESSED_FILES_LIST = ['.zip', '.ZIP', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', '.rar',
                          '.bz2', '.arj', '.z', '.war', '.raw.rar']
 
 INTERNAL_MAPPING_LIST = ['metexplore_mapping', 'chebi_pipeline_annotations', 'validation_report', 'validation_files']

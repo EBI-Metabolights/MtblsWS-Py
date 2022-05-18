@@ -1385,7 +1385,7 @@ def addEntity(new_term, supclass, definition=None):
 
         temp = []
         for c in onto.classes():
-            if str(c).lower().startswith('metabolights'):
+            if str(c).lower().startswith('metabolights') or str(c).lower().startswith('ontology'):
                 temp.append(str(c))
 
         last = max(temp)
@@ -1404,6 +1404,7 @@ def addEntity(new_term, supclass, definition=None):
 
     all_class = []
     for cls in onto.classes():
+        logger.info(cls)
         all_class += cls.label
 
     if new_term.lower() in [x.lower() for x in all_class]:
@@ -1411,6 +1412,7 @@ def addEntity(new_term, supclass, definition=None):
         print('Operation rejected, term exciting')
         abort(400)
         return []
+    
 
     id = getid(onto)
     namespace = onto.get_namespace('http://www.ebi.ac.uk/metabolights/ontology/')

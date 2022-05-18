@@ -35,6 +35,7 @@ from owlready2 import urllib
 from app.ws.db_connection import *
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request, writeDataToFile
+from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -493,7 +494,7 @@ def getNMRinfo():
         sample_temp = get_sample_file(studyID, sample_file)
         # sample_temp2 = readSSHDataFrame(app.config.get('FILE_SYSTEM_PATH') + studyID + '/' + sample_file)
         sample_temp.insert(0, 'Study', studyID)
-        sample_temp = sample_cleanup(sample_temp)
+        sample_temp = DataFrameUtils.sample_cleanup(sample_temp)
 
         sample_df = sample_df.append(sample_temp, ignore_index=True)
         # print('get sample file from', studyID, end='\t')
@@ -507,7 +508,7 @@ def getNMRinfo():
                 continue
             else:
                 assay_temp.insert(0, 'Study', studyID)
-                assay_temp = NMR_assay_cleanup(assay_temp)
+                assay_temp = DataFrameUtils.NMR_assay_cleanup(assay_temp)
                 assay_df = assay_df.append(assay_temp, ignore_index=True)
 
             # print('get assay file from', studyID, end='\t')
@@ -562,7 +563,7 @@ def getLCMSinfo():
                     continue
                 else:
                     assay_temp.insert(0, 'Study', studyID)
-                    assay_temp = LCMS_assay_cleanup(assay_temp)
+                    assay_temp = DataFrameUtils.LCMS_assay_cleanup(assay_temp)
                     assay_df = assay_df.append(assay_temp, ignore_index=True)
 
                     # print('get assay file from', studyID, end='\t')
@@ -571,7 +572,7 @@ def getLCMSinfo():
             # ------------------------ SAMPLE FILE ----------------------------------------
             sample_temp = get_sample_file(studyID, sample_file)
             sample_temp.insert(0, 'Study', studyID)
-            sample_temp = sample_cleanup(sample_temp)
+            sample_temp = DataFrameUtils.sample_cleanup(sample_temp)
 
             sample_df = sample_df.append(sample_temp, ignore_index=True)
             # print('get sample file from', studyID, end='\t')
@@ -740,112 +741,6 @@ def assay_sample_list(studyID):
         logger.info(e)
         print(e)
         logger.info('Fail to load investigation file from', studyID)
-
-
-def NMR_assay_cleanup(df):
-    '''
-    Change / mapping NMR Study dataframe column name
-    :param df:
-    :return:
-    '''
-    keep = ['Study', 'Sample Name', 'Protocol REF', 'Protocol REF.1',
-            'Parameter Value[NMR tube type]', 'Parameter Value[Solvent]',
-            'Parameter Value[Sample pH]', 'Parameter Value[Temperature]', 'Unit',
-            'Label', 'Protocol REF.2', 'Parameter Value[Instrument]',
-            'Parameter Value[NMR Probe]', 'Parameter Value[Number of transients]',
-            'Parameter Value[Pulse sequence name]',
-            'Acquisition Parameter Data File', 'Protocol REF.3', 'NMR Assay Name',
-            'Free Induction Decay Data File', 'Protocol REF.4',
-            'Derived Spectral Data File', 'Protocol REF.5',
-            'Data Transformation Name', 'Metabolite Assignment File']
-
-    rename = {'Sample Name': 'Sample.Name', 'Protocol REF': 'Protocol.REF.0', 'Protocol REF.1': 'Protocol.REF.1',
-              'Parameter Value[NMR tube type]': 'Parameter.Value.NMR.tube.type.',
-              'Parameter Value[Solvent]': 'Parameter.Value.Solvent.',
-              'Parameter Value[Sample pH]': 'Parameter.Value.Sample.pH.',
-              'Parameter Value[Temperature]': 'Parameter.Value.Temperature.', 'Unit': 'Unit', 'Label': 'Label',
-              'Protocol REF.2': 'Protocol.REF.2', 'Parameter Value[Instrument]': 'Parameter.Value.Instrument.',
-              'Parameter Value[NMR Probe]': 'Parameter.Value.NMR.Probe.',
-              'Parameter Value[Number of transients]': 'Parameter.Value.Number.of.transients.',
-              'Parameter Value[Pulse sequence name]': 'Parameter.Value.Pulse.sequence.name.',
-              'Acquisition Parameter Data File': 'Acquisition.Parameter.Data.File', 'Protocol REF.3': 'Protocol.REF.3',
-              'NMR Assay Name': 'NMR.Assay.Name', 'Free Induction Decay Data File': 'Free.Induction.Decay.Data.File',
-              'Protocol REF.4': 'Protocol.REF.4', 'Derived Spectral Data File': 'Derived.Spectral.Data.File',
-              'Protocol REF.5': 'Protocol.REF.5', 'Data Transformation Name': 'Data.Transformation.Name',
-              'Metabolite Assignment File': 'Metabolite.Assignment.File'}
-    df = df[keep]
-    df = df.rename(columns=rename)
-    return df
-
-
-def LCMS_assay_cleanup(df):
-    '''
-    Change / mapping LCMS Study dataframe column name
-    :param df:
-    :return:
-    '''
-    keep = ['Study', 'Sample Name', 'Protocol REF', 'Parameter Value[Post Extraction]',
-            'Parameter Value[Derivatization]', 'Extract Name', 'Protocol REF.1',
-            'Parameter Value[Chromatography Instrument]',
-            'Parameter Value[Column model]', 'Parameter Value[Column type]',
-            'Labeled Extract Name', 'Label', 'Protocol REF.2',
-            'Parameter Value[Scan polarity]', 'Parameter Value[Scan m/z range]',
-            'Parameter Value[Instrument]', 'Parameter Value[Ion source]',
-            'Parameter Value[Mass analyzer]', 'MS Assay Name',
-            'Raw Spectral Data File', 'Protocol REF.3', 'Normalization Name',
-            'Derived Spectral Data File', 'Protocol REF.4',
-            'Data Transformation Name', 'Metabolite Assignment File']
-
-    rename = {'Study': 'Study',
-              'Sample Name': 'Sample.Name',
-              'Protocol REF': 'Protocol.REF.0',
-              'Parameter Value[Post Extraction]': 'Parameter.Value.Post.Extraction.',
-              'Parameter Value[Derivatization]': 'Parameter.Value.Derivatization.',
-              'Extract Name': 'Extract.Name',
-              'Protocol REF.1': 'Protocol.REF.1',
-              'Parameter Value[Chromatography Instrument]': 'Parameter.Value.Chromatography.Instrument.',
-              'Parameter Value[Column model]': 'Parameter.Value.Column.model.',
-              'Parameter Value[Column type]': 'Parameter.Value.Column.type.',
-              'Labeled Extract Name': 'Labeled.Extract.Name',
-              'Label': 'Label',
-              'Protocol REF.2': 'Protocol.REF.2',
-              'Parameter Value[Scan polarity]': 'Parameter.Value.Scan.polarity.',
-              'Parameter Value[Scan m/z range]': 'Parameter.Value.Scan.m/z.range.',
-              'Parameter Value[Instrument]': 'Parameter.Value.Instrument.',
-              'Parameter Value[Ion source]': 'Parameter.Value.Ion.source.',
-              'Parameter Value[Mass analyzer]': 'Parameter.Value.Mass.analyzer.',
-              'MS Assay Name': 'MS.Assay.Name',
-              'Raw Spectral Data File': 'Raw.Spectral.Data.File',
-              'Protocol REF.3': 'Protocol.REF.3',
-              'Normalization Name': 'Normalization.Name',
-              'Derived Spectral Data File': 'Derived.Spectral.Data.File',
-              'Protocol REF.4': 'Protocol.REF.4',
-              'Data Transformation Name': 'Data.Transformation.Name',
-              'Metabolite Assignment File': 'Metabolite.Assignment.File'}
-    k = pd.DataFrame(columns=keep)
-    k = k.append(df, sort=False)
-    df = k[keep]
-    df = df.rename(columns=rename)
-    return df
-
-
-def sample_cleanup(df):
-    '''
-    Change / mapping sample file dataframe column name
-    :param df:
-    :return:
-    '''
-    keep = ['Study', 'Characteristics[Organism]', 'Characteristics[Organism part]', 'Protocol REF', 'Sample Name']
-    rename = {'Characteristics[Organism]': 'Characteristics.Organism.',
-              'Characteristics[Organism part]': 'Characteristics.Organism.part.',
-              'Protocol REF': 'Protocol.REF',
-              'Sample Name': 'Sample.Name'}
-
-    k = pd.DataFrame(columns=keep)
-    k = k.append(df, sort=False)
-    df = k[keep]
-    df = df.rename(columns=rename)
-    return df
 
 
 def atoi(text):

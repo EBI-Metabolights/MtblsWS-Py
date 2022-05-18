@@ -48,10 +48,11 @@ from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
 from app.ws.pathway import fellaPathway
 from app.ws.pathway import keggid
-from app.ws.reports import reports
+from app.ws.reports import reports, CrossReferencePublicationInformation
+from app.ws.reports import reports, StudyAssayTypeReports
 from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
-from app.ws.spectra import ExtractMSSpectra
+from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
 
 from app.ws.study_actions import StudyStatus,ToggleAccess,ToggleAccessGet
@@ -145,6 +146,7 @@ def initialize_app(flask_app):
 
     # Metabolite Annotation File (MAF)
     api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validate")
+    api.add_resource(CombineMetaboliteAnnotationFiles, res_path + "/ebi-internal/mariana/maf/combine")
 
     # Study
     # api.add_resource(StudySources, res_path + "/studies/<string:study_id>/sources")
@@ -173,6 +175,7 @@ def initialize_app(flask_app):
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
     api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
+    api.add_resource(MtblsStudyValidationStatus, res_path + "/studies/<string:study_id>/validation-status/<string:validation_status>")
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
@@ -208,6 +211,9 @@ def initialize_app(flask_app):
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
+    api.add_resource(CrossReferencePublicationInformation, res_path + "/v2/europe-pmc-report")
+    api.add_resource(StudyAssayTypeReports, res_path + "/v2/study-assay-type-reports")
+    api.add_resource(ZipSpectraFiles, res_path + "/v2/zip-spectra-files")
     api.add_resource(curation_log, res_path + "/v2/curation_log")
 
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
