@@ -775,7 +775,7 @@ def override_validations(study_id, method, override=""):
 
 def query_comments(study_id):
     """
-    Get any commentd associated with a study.
+    Get any comments associated with a study.
 
     :param study_id: The accession number of the study we want to retrieve comments for.
     :return: The comments as a string (can be null if none are found)

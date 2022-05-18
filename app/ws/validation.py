@@ -2423,8 +2423,7 @@ class ValidationComment(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        is_curator, __, __, __, __, __, __, __ = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403)
 
@@ -2454,11 +2453,12 @@ class ValidationComment(Resource):
         db_update_string = f' {"|".join(comment_list)}'
 
         try:
-            __ = update_comments(study_id, comment_list)
+            __ = update_comments(study_id, db_update_string)
         except Exception as e:
             logger.error(f"Could not store new comments in the database: {str(e)}")
+            abort(500, str(e))
 
-        return {"success": feedback}
+        return {"status": feedback}
 
 def run_validation_in_File(validations_file, study_id, study_location, user_token, obfuscation_code, section,
                            log_category, validation_run_msg):
