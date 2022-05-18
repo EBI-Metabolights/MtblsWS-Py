@@ -42,23 +42,31 @@ MTBLS WS-Py
 MetaboLights Python-based REST Web Service
 """
 application = Flask(__name__, instance_relative_config=True)
-hostname = os.uname().nodename
-logging_config_file_name = 'logging_' + hostname + '.conf'
-current_dir = pathlib.Path(__file__).parent.resolve()
-file_path = os.path.join(current_dir, logging_config_file_name)
-
-if not os.path.exists(file_path):
-    print(f"{file_path} is not found. It is being created from default.")
-    shutil.copy('logging.conf', logging_config_file_name)
-    default_log_dir = os.path.join(current_dir, "logs")
-    if not os.path.exists(default_log_dir):
-        os.makedirs(default_log_dir, exist_ok=True)
-
-logging.config.fileConfig(logging_config_file_name)
 logger = logging.getLogger('wslog')
+
+def setup_logging():
+
+    hostname = os.uname().nodename
+    logging_config_file_name = 'logging_' + hostname + '.conf'
+    current_dir = pathlib.Path(__file__).parent.resolve()
+
+    logger_config_file_path = os.path.join(current_dir, logging_config_file_name)
+    if not os.path.exists(logger_config_file_path):
+        print(f"{logger_config_file_path} is not found. It is being created from default.")
+        shutil.copy('logging.conf', logging_config_file_name)
+        default_log_dir = os.path.join(current_dir, "logs")
+        if not os.path.exists(default_log_dir):
+            os.makedirs(default_log_dir, exist_ok=True)
+
+    logging.config.fileConfig(logger_config_file_path)
+
 
 
 def main():
+    setup_logging()
+    application.config.from_object('config')
+    application.config.from_pyfile('config.py', silent=True)
+
     print("Initialising application")
     initialize_app(application)
     logger.info("Starting server %s v%s", application.config.get('WS_APP_NAME'),

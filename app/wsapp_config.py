@@ -20,7 +20,6 @@ from flask_cors import CORS
 from flask_mail import Mail
 from flask_restful import Api
 
-import config
 from app.ws.MapStudies import *
 from app.ws.about import About
 from app.ws.assay_protocol import *
@@ -35,7 +34,6 @@ from app.ws.cluster_jobs import LsfUtils, LsfUtilsStatus
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import *
 from app.ws.curation_log import *
-from app.ws.db.dbmanager import DBManager
 from app.ws.db.settings import get_directory_settings
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.elasticsearch.settings import get_elasticsearch_settings

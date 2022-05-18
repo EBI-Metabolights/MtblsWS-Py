@@ -115,14 +115,14 @@ class CombinedMafBuilder:
             if maf_file_list is None:
                 self.missing_study_directory_register.append(study_location)
                 return []
-            elif len(maf_file_list) is 0:
+            elif len(maf_file_list) == 0:
                 self.missing_maf_register.append(study_id)
                 return maf_file_list
 
 
         filtered_maf_list = [file for file in maf_file_list if
                              any(token.upper() in file.upper() for token in tokens[self.method])]
-        if len(filtered_maf_list) is 0:
+        if len(filtered_maf_list) == 0:
             self.no_relevant_maf_register.append(study_id)
 
         return filtered_maf_list

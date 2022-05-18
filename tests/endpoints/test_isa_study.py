@@ -1,9 +1,5 @@
 import json
 
-import elasticsearch
-
-import app
-from app.ws.elasticsearch.elastic_service import ElasticsearchService
 
 context_path = "/metabolights/ws"
 

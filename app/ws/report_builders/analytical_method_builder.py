@@ -85,7 +85,7 @@ def build_sheet(original_study_location, studytype, reporting_path):
         logger.info(study_location)
         sample_file_list = [file for file in os.listdir(study_location) if
                             file.startswith('s_') and file.endswith('.txt')]
-        if len(sample_file_list) is 0:
+        if len(sample_file_list) == 0:
             logger.error(
                 'Sample sheet not found. Either it is not present or does not follow the proper naming convention.')
             missing_samplesheets += 1
