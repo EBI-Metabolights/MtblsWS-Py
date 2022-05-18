@@ -158,14 +158,14 @@ class IsaApiClient:
             # ToDo. Add MAF to isa_study
             isa_study = isa_inv.studies[0]
         except IndexError as e:
-            logger.exception("Failed to find Investigation file from %s", study_id, std_path)
+            logger.exception("Failed to find Investigation file %s from %s", study_id, std_path)
             logger.error(str(e))
             if failing_gracefully:
                 return None, None, None
             else:
                 abort(417)
         except Exception as e:
-            logger.exception("Failed to find Investigation file from %s", study_id, std_path)
+            logger.exception("Failed to find Investigation file %s from %s", study_id, std_path)
             logger.error(str(e))
             if failing_gracefully:
                 return None, None, None

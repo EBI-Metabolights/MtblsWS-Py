@@ -1138,7 +1138,7 @@ class CreateAccession(Resource):
                                                  include_investigation_file=True)
         if not result:
             raise MetabolightsFileOperationException(
-                'Could not copy files from {0} to {1}, Error {2}'.format(from_path, to_path, str(e)))
+                'Could not copy files from {0} to {1}'.format(from_path, to_path))
 
         # Create upload folder
         try:
