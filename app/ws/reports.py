@@ -34,7 +34,7 @@ from app.ws.study.folder_utils import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
 from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
-from app.ws.report_builders.analytical_method_builder import generate_file
+from app.ws.report_builders.analytical_method_builder import  AnalyticalMethodBuilder
 from app.ws.misc_utilities.request_parsers import RequestParsers
 
 
@@ -60,6 +60,33 @@ class StudyAssayTypeReports(Resource):
                 "allowEmptyValue": False,
                 "paramType": "query",
                 "dataType": "string"
+            },
+            {
+                "name": "slim",
+                "description": "Whether to generate a slim version of the file",
+                "required": True,
+                "paramType": "query",
+                "dataType": "Boolean",
+                "allowMultiple": False,
+                "default": False
+            },
+            {
+                "name": "verbose",
+                "description": "Whether to give a verbose output of the performance of the builder",
+                "required": True,
+                "paramType": "query",
+                "dataType": "Boolean",
+                "allowMultiple": False,
+                "default": False
+            },
+            {
+                "name": "drive",
+                "description": "Whether to save the output file to google drive.",
+                "required": False,
+                "paramType": "query",
+                "dataType": "Boolean",
+                "allowMultiple": False,
+                "default": False
             },
 
             {
@@ -101,6 +128,10 @@ class StudyAssayTypeReports(Resource):
 
         args = parser.parse_args(req=request)
         studytype = args['studytype']
+        slim = args['slim']
+        verbose = args['verbose']
+        drive = args['drive']
+
         if studytype:
             studytype = studytype.strip()
         else:
@@ -115,10 +146,23 @@ class StudyAssayTypeReports(Resource):
 
         wsc = WsClient()
 
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions('MTBLS1', user_token)
+        is_curator, __, __, __, study_location, __, __, __ = wsc.get_permissions('MTBLS1', user_token)
+        if is_curator is False:
+            abort(413)
 
-        return jsonify({'message': generate_file(study_location, studytype)})
+        reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
+
+        msg = AnalyticalMethodBuilder(
+            original_study_location=study_location,
+            studytype=studytype,
+            slim=slim,
+            reporting_path=reporting_path,
+            verbose=verbose,
+            g_drive=drive
+        ).build()
+
+        logger.info(msg)
+        return jsonify({'message': msg})
 
 class reports(Resource):
 

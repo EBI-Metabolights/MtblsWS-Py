@@ -99,6 +99,7 @@ MTBLS_CURATION_LOG_TEST = "<Google sheet url>"
 GOOGLE_SHEET_TOKEN = "./instance/google_sheet_api_credentials.json"
 GOOGLE_CALENDAR_TOKEN = "./instance/google_calendar_api_credentials.json"
 GOOGLE_CALENDAR_ID = ""
+MARIANA_DRIVE_ID = ""
 
 PARTNER_TEMPLATE_METABOLON = 'TEMPLATES/METABOLON'
 DEFAULT_TEMPLATE = 'TEMPLATES/DUMMY'

@@ -119,7 +119,9 @@ class CombinedMafBuilder:
                 self.missing_maf_register.append(study_id)
                 return maf_file_list
 
-
+        if len(maf_file_list) == 1:
+            filtered_maf_list = maf_file_list
+         
         filtered_maf_list = [file for file in maf_file_list if
                              any(token.upper() in file.upper() for token in tokens[self.method])]
         if len(filtered_maf_list) == 0:
