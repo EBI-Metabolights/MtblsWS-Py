@@ -511,11 +511,12 @@ class ValidationComment(Resource):
         db_update_string = f' {"|".join(comment_list)}'
 
         try:
-            __ = update_comments(study_id, comment_list)
+            __ = update_comments(study_id, db_update_string)
         except Exception as e:
             logger.error(f"Could not store new comments in the database: {str(e)}")
+            abort(500, str(e))
 
-        return {"success": feedback}
+        return {"status": feedback}
 
 class NewValidation(Resource):
     @swagger.operation(
