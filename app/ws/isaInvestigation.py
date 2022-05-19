@@ -19,10 +19,11 @@
 import json
 from flask import request
 from flask_restful import Resource, abort, reqparse
+from isatools.model import Investigation
 from marshmallow import ValidationError
-from app.ws.mm_models import *
 from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.mm_models import IsaInvestigationSchema
 from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
 import logging

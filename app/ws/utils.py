@@ -23,8 +23,6 @@ import io
 import json
 import logging
 import os
-import os.path
-import os.path
 import random
 import re
 import shutil
@@ -308,7 +306,7 @@ def get_assay_headers_and_protcols(assay_type):
         return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, \
                assay_file_type, assay_mandatory_type
 
-    resource_folder = os.path.join(".", "resources")
+    resource_folder = os.path.join(os.getcwd(), "resources")
     logger.info(' - get_assay_headers_and_protcols for assay type ' + assay_type)
     assay_master_template = os.path.join(resource_folder, 'MetaboLightsAssayMaster.tsv')
     master_df = read_tsv(assay_master_template)
@@ -749,7 +747,7 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
 
 
 def create_maf(technology, study_location, assay_file_name, annotation_file_name):
-    resource_folder = os.path.join(".", "resources")
+    resource_folder = os.path.join(os.getcwd(), "resources")
     update_maf = False
 
     if technology is None:

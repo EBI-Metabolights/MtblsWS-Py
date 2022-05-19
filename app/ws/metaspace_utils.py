@@ -18,16 +18,19 @@
 
 import configparser
 import csv
+import json
+import logging
+import os
 import sys
 from collections import OrderedDict
 from functools import lru_cache
 
 import boto3
+import requests
+from flask import current_app as app
 
 import config
 from app.ws.metaspace_isa_api_client import MetaSpaceIsaApiClient
-
-from app.ws.utils import *
 
 logger = logging.getLogger('wslog')
 

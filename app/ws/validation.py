@@ -16,18 +16,22 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import threading
-import traceback
 
-from flask_restful import Resource, reqparse
+import json
+import logging
+import os
+import re
+import threading
+
+from flask import current_app as app
+from flask import request
+from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.cluster_jobs import lsf_job
 from app.ws.db_connection import override_validations
 from app.ws.study import commons
 from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser, is_newer_files, \
     update_val_schema_files, validate_study
-from app.ws.utils import *
 
 logger = logging.getLogger('wslog')
 

@@ -15,17 +15,17 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
+import json
 import logging
 import os
 
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from isatools.model import OntologySource
 from marshmallow import ValidationError
 
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.models import *
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv, write_tsv, \
     update_ontolgies_in_isa_tab_sheets, totuples

@@ -116,4 +116,4 @@ class ChebiEntity(Resource):
 
             return search_result.dict()
         except ChebiWsException as e:
-            abort(501, "Remote server error")
+            abort(501, "Remote server error", e.message)

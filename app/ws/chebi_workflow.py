@@ -25,8 +25,7 @@ import subprocess
 import time
 import urllib.parse
 from pathlib import Path
-from subprocess import *
-import json
+
 import cirpy
 import ctfile
 import numpy as np
@@ -34,18 +33,18 @@ import pandas as pd
 import pronto
 import pubchempy as pcp
 import requests
-from flask import current_app as app
-from flask import request, abort
+from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
 from zeep import Client
+
 from app.ws.cluster_jobs import lsf_job
+from app.ws.db_connection import get_user_email
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.folder_utils import write_audit_files, get_all_files_from_filesystem
 from app.ws.utils import read_tsv, write_tsv, get_assay_file_list, safe_str
-from app.ws.db_connection import get_user_email
 
 logger = logging.getLogger('wslog_chebi')
 

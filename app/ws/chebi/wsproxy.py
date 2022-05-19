@@ -30,8 +30,12 @@ class ChebiWsProxy(object):
     def __init__(self, settings: ChebiWsSettings = None):
 
         self.settings = settings
-        if settings:
-            self.setup(settings)
+        self.service = None
+
+    def get_service(self):
+        if not self.service:
+            self.setup(self.settings)
+        return self.service
 
     def setup(self, settings: ChebiWsSettings):
         self.settings = settings
@@ -56,7 +60,7 @@ class ChebiWsProxy(object):
 
     @ws_fault_exception_handler
     def get_complete_entity(self, chebi_id: str) -> Optional[Entity]:
-        result = self.service.getCompleteEntity(chebi_id)
+        result = self.get_service().getCompleteEntity(chebi_id)
         serialized_result = helpers.serialize_object(result, dict)
 
         if serialized_result:
@@ -67,7 +71,7 @@ class ChebiWsProxy(object):
     @ws_fault_exception_handler
     def get_lite_entity_list(self, search_text: str, search_category: SearchCategory,
                              maximum_results: int, stars: StarsCategory) -> Optional[List[LiteEntity]]:
-        result = self.service.getLiteEntity(search_text, search_category.value, maximum_results, stars.value)
+        result = self.get_service().getLiteEntity(search_text, search_category.value, maximum_results, stars.value)
         serialized_result = helpers.serialize_object(result, dict)
         if serialized_result:
             result = [LiteEntity.parse_obj(data) for data in serialized_result]
@@ -76,7 +80,7 @@ class ChebiWsProxy(object):
 
     @ws_fault_exception_handler
     def get_complete_entity_by_list(self, chebi_id_list: List[str]) -> Optional[List[Entity]]:
-        service_result = self.service.getCompleteEntityByList(chebi_id_list)
+        service_result = self.get_service().getCompleteEntityByList(chebi_id_list)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
             result = [Entity.parse_obj(data) for data in serialized_result]
@@ -85,7 +89,7 @@ class ChebiWsProxy(object):
 
     @ws_fault_exception_handler
     def get_ontology_parents(self, chebi_id: str) -> Optional[List[OntologyDataItem]]:
-        service_result = self.service.getOntologyParents(chebi_id)
+        service_result = self.get_service().getOntologyParents(chebi_id)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
             result = [OntologyDataItem.parse_obj(data) for data in serialized_result]
@@ -94,7 +98,7 @@ class ChebiWsProxy(object):
 
     @ws_fault_exception_handler
     def get_ontology_children(self, chebi_id: str) -> Optional[List[OntologyDataItem]]:
-        service_result = self.service.getOntologyChildren(chebi_id)
+        service_result = self.get_service().getOntologyChildren(chebi_id)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
             result = [OntologyDataItem.parse_obj(data) for data in serialized_result]
@@ -104,7 +108,7 @@ class ChebiWsProxy(object):
     @ws_fault_exception_handler
     def get_all_ontology_children_in_path(self, chebi_id: str, relationship_type: RelationshipType,
                                           structure_only: bool) -> Optional[List[LiteEntity]]:
-        service_result = self.service.getAllOntologyChildrenInPath(chebi_id, relationship_type.value, structure_only)
+        service_result = self.get_service().getAllOntologyChildrenInPath(chebi_id, relationship_type.value, structure_only)
         serialized_result = helpers.serialize_object(service_result, dict)
         if serialized_result:
             result = [LiteEntity.parse_obj(data) for data in serialized_result]
@@ -116,7 +120,7 @@ class ChebiWsProxy(object):
                              structure_search_category: StructureSearchCategory,
                              total_results: int, tanimoto_cutoff: float) -> Optional[List[LiteEntity]]:
 
-        service_result = self.service.getStructureSearch(structure, structure_type,
+        service_result = self.get_service().getStructureSearch(structure, structure_type,
                                                          structure_search_category,
                                                          total_results, tanimoto_cutoff)
 

@@ -44,9 +44,8 @@ CORS_RESOURCES_PATH = RESOURCES_PATH + "/*"
 API_DOC = RESOURCES_PATH + "/api/spec"
 UPDATE_PATH_SUFFIX = "audit"
 
-MTBLS_FILE_BASE = "<some local filesystem>/"
 REPORTING_PATH = "<report folder name>/"
-STUDY_PATH = MTBLS_FILE_BASE + "/prod/<final file system>"
+STUDY_PATH = "<full path file system>"
 FILE_SYSTEM_PATH = '<some local filesystem>/'
 MTBLS_ZOOMA_FILE = "<local file>"
 MTBLS_ONTOLOGY_FILE = "<local file>"

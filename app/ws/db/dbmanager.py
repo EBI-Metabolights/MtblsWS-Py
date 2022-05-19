@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import quote
 
 from flask import current_app as app
@@ -42,8 +43,7 @@ class DBManager(object):
         host = db_config.database_host
         port = db_config.database_port
         db_name = db_config.database_name
-
-        url = f"postgresql://{quote(user)}:{quote(password)}@{quote(host)}:{port}/{db_name}"
+        url = f"postgresql://{quote(user)}:{quote(password)}@{host}:{port}/{db_name}"
         return url
 
 

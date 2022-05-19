@@ -17,6 +17,7 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import glob
+import logging
 import os
 import time
 
@@ -24,7 +25,7 @@ from flask import current_app as app
 from flask_restful import abort
 from isatools.convert import isatab2json
 from isatools.isatab import load, dump
-from isatools.model import *
+from isatools.model import Investigation, Study, Protocol, Assay
 
 from app.ws.study import commons
 from app.ws.utils import copy_file, new_timestamped_folder

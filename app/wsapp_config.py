@@ -19,11 +19,12 @@
 from flask_cors import CORS
 from flask_mail import Mail
 from flask_restful import Api
+from flask_restful_swagger import swagger
 
-from app.ws.MapStudies import *
-from app.ws.about import About
-from app.ws.assay_protocol import *
-from app.ws.biostudies import *
+from app.ws.MapStudies import MapStudies
+from app.ws.about import About, ServerAbout
+from app.ws.assay_protocol import GetProtocolForAssays
+from app.ws.biostudies import BioStudiesFromMTBLS, BioStudies
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.settings import get_chebi_ws_settings
@@ -32,8 +33,9 @@ from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
 from app.ws.chebi_ws import ChebiLiteEntity, ChebiEntity
 from app.ws.cluster_jobs import LsfUtils, LsfUtilsStatus
 from app.ws.compare_files import CompareTsvFiles
-from app.ws.cronjob import *
-from app.ws.curation_log import *
+from app.ws.cronjob import cronjob
+from app.ws.curation_log import curation_log
+from app.ws.db.dbmanager import DBManager
 from app.ws.db.settings import get_directory_settings
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.elasticsearch.settings import get_elasticsearch_settings
@@ -41,29 +43,32 @@ from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.google_calendar import GoogleCalendar
-from app.ws.isaAssay import *
+from app.ws.isaAssay import StudyAssay, StudyAssayDelete
 from app.ws.isaInvestigation import IsaInvestigation
-from app.ws.isaStudy import *
+from app.ws.isaStudy import StudyMetaInfo, StudyPublications, StudyDescriptors, StudyFactors, StudyProtocols, \
+    StudySubmitters, StudyContacts, StudyDescription, StudyTitle, StudyReleaseDate
 from app.ws.jira_update import Jira
 from app.ws.metaspace_pipeline import MetaspacePipeLine
-from app.ws.mtblsStudy import *
-from app.ws.mtbls_maf import *
-from app.ws.mzML2ISA import *
-from app.ws.ontology import *
+from app.ws.mtblsStudy import MtblsStudies, MtblsPrivateStudies, MtblsStudiesWithMethods, MyMtblsStudiesDetailed, \
+    MyMtblsStudies, IsaTabInvestigationFile, IsaTabSampleFile, IsaTabAssayFile, CreateAccession, CloneAccession, \
+    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy
+from app.ws.mtblsWSclient import WsClient
+from app.ws.mtbls_maf import MtblsMAFSearch, CombineMetaboliteAnnotationFiles, MetaboliteAnnotationFile
+from app.ws.mzML2ISA import ValidateMzML, Convert2ISAtab
+from app.ws.ontology import Cellosaurus, Placeholder, Ontology
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
 from app.ws.pathway import fellaPathway
 from app.ws.pathway import keggid
 from app.ws.reports import CrossReferencePublicationInformation
 from app.ws.reports import reports, StudyAssayTypeReports
-from app.ws.sample_table import *
 from app.ws.send_files import SendFiles
 from app.ws.spectra import ExtractMSSpectra
 from app.ws.stats import StudyStats
 from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder, \
     FileList, StudyFilesReuse, DeleteAsperaFiles
-from app.ws.table_editor import *
+from app.ws.table_editor import GetTsvFile, AddRows, ColumnsRows, ComplexColumns, SimpleColumns
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation
 
@@ -114,6 +119,8 @@ def initialize_app(flask_app):
                        )
 
     api.add_resource(About, res_path)
+
+    api.add_resource(ServerAbout, "/ebi-internal/server-info")
     api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query_type>")
 
     # MTBLS studies

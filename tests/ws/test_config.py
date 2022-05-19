@@ -43,7 +43,6 @@ class TestConfig(object):
             assert flask_app.config.get("PRIVATE_FTP_SERVER_USER") is not None
             assert flask_app.config.get("PRIVATE_FTP_SERVER_PASSWORD") is not None
             assert flask_app.config.get("FTP_UPLOAD_HELP_DOC_URL") is not None
-            assert flask_app.config.get("MTBLS_FILE_BASE") is not None
             assert flask_app.config.get("STUDY_PATH") is not None
             assert flask_app.config.get("DEFAULT_TEMPLATE") is not None
 
@@ -51,7 +50,6 @@ class TestConfig(object):
         with flask_app.app_context():
             assert os.path.exists(flask_app.config.get("STUDY_QUEUE_FOLDER"))
             assert os.path.exists(flask_app.config.get("MTBLS_FTP_ROOT"))
-            assert os.path.exists(flask_app.config.get("MTBLS_FILE_BASE"))
             assert os.path.exists(flask_app.config.get("STUDY_PATH"))
 
     def test_validation_settings_01(self, flask_app):

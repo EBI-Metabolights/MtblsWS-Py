@@ -16,17 +16,21 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask_restful import Resource
-from flask import abort
-from app.ws.utils import *
+import errno
+import os
+import time
+
+from flask import current_app as app
+from flask_restful import Resource, abort
 from isatools.isatab import dump
 from isatools.model import *
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.mtblsWSclient import WsClient
-from app.ws.isaAssay import create_assay
-import time
-import errno
 
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.isaAssay import create_assay
+from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import copy_files_and_folders, add_ontology_to_investigation, update_correct_sample_file_name
+
+logger = logging.getLogger('wslog')
 isa_api = IsaApiClient()
 wsc = WsClient()
 

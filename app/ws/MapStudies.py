@@ -30,7 +30,6 @@ import pandas as pd
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from owlready2 import urllib
 
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.study_service import StudyService

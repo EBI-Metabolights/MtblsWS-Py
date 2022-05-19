@@ -1,10 +1,18 @@
+import datetime
+import glob
+import json
+import logging
+import os
+import os.path
+import os.path
+import time
 from copy import deepcopy
-from datetime import datetime
 from operator import itemgetter
-from os import scandir
+from flask import current_app as app
 
-from app.ws.utils import *
+from app.ws.utils import date_format, file_date_format, map_file_type, new_timestamped_folder, copy_file
 
+logger = logging.getLogger("wslog")
 
 def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None,
                                   include_raw_data=None, assay_file_list=None, validation_only=False,
@@ -154,8 +162,8 @@ def get_file_information(study_location=None, path=None, directory=None, include
                     if latest_update_time == "":
                         latest_update_time = file_time
                     else:
-                        latest_update_time = latest_update_time if datetime.strptime(latest_update_time,
-                                                                                     "%B %d %Y %H:%M:%S") > datetime.strptime(
+                        latest_update_time = latest_update_time if datetime.datetime.strptime(latest_update_time,
+                                                                                     "%B %d %Y %H:%M:%S") > datetime.datetime.strptime(
                             file_time, "%B %d %Y %H:%M:%S") \
                             else file_time
     except Exception as e:
@@ -211,7 +219,7 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
         file_list = list_directories_full(study_location, file_list, base_study_location=study_location)
         # file_list = list_directories(study_location, file_list, base_study_location=study_location, include_sub_dir=include_sub_dir)
     else:
-        for entry in scandir(study_location):
+        for entry in os.scandir(study_location):
             if not entry.name.startswith("."):
                 file_name = entry.name
                 fname, ext = os.path.splitext(file_name)
@@ -232,7 +240,7 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
 
 
 def list_directories_full(file_location, dir_list, base_study_location, assay_file_list=None):
-    for entry in scandir(file_location):
+    for entry in os.scandir(file_location):
         name = entry.path.replace(base_study_location + os.sep, '')
         file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
         dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
@@ -258,7 +266,7 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
             logger.error(str(e))
         dir_list = validation_files
     else:
-        for entry in scandir(file_location):
+        for entry in os.scandir(file_location):
             file_type = None
             ignored_file = False
 

@@ -1,27 +1,34 @@
-FROM ubuntu:16.04
+FROM python:3.8-slim
 LABEL maintainer="MetaboLights (metabolights-help @ ebi.ac.uk)"
 
 RUN apt-get -y update \
-    && apt-get -y install git \
-    && apt-get -y install python3 python3-dev python3-pip \
-    && pip3 install --upgrade pip
+    && apt-get -y --no-install-recommends install python3 python3-dev python3-pip libpq-dev libglib2.0-0 \
+    && apt-get -y --no-install-recommends install net-tools wget curl \
+    && mkdir -p /app-root \
+    && useradd -ms /bin/bash tc_cm01 \
+    && chown -R tc_cm01:tc_cm01 /app-root \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get -y autoremove --purge
 
-# make deployment environment
-RUN mkdir -p /deployment
-RUN cd /deployment \
-    && git clone https://github.com/EBI-Metabolights/MtblsWS-Py.git \
-    && cd MtblsWS-Py \
-    && mkdir -p logs \
-    && mkdir instance \
-    && cp config.py instance/config.py
+COPY requirements.txt .
 
-WORKDIR /deployment/MtblsWS-Py
-RUN pip install -r requirements.txt
+RUN apt-get -y update \
+    && apt-get -y --no-install-recommends install gcc \
+    && pip3 install --upgrade --no-cache-dir pip \
+    && pip3 install --no-cache-dir -r requirements.txt \
+    && apt-get -y remove gcc \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get -y autoremove --purge
 
-# Add mtbls user so we aren't running as root.
-RUN useradd -ms /bin/bash tc_cm01
-RUN chown -R tc_cm01:tc_cm01 /deployment
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
 USER tc_cm01
 
+WORKDIR /app-root
+
 EXPOSE 5000
-CMD python3 wsapp.py
+
+
+CMD ["python3", "wsapp.py"]

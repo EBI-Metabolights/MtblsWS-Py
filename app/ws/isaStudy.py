@@ -15,21 +15,23 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-from flask import request, abort, jsonify
-from flask_restful import Resource, marshal_with, reqparse
-from marshmallow import ValidationError
-from app.ws import utils
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.mm_models import *
-from app.ws.mtblsWSclient import WsClient
-from app.ws.models import *
-from flask_restful_swagger import swagger
-from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv, update_ontolgies_in_isa_tab_sheets
-from app.ws.db_connection import study_submitters, update_release_date
+import datetime
+import json
 import logging
 import os
-import datetime
+
+from flask import request, jsonify
+from flask_restful import Resource, marshal_with, reqparse, abort
+from flask_restful_swagger import swagger
+from marshmallow import ValidationError
+
+from app.ws import utils
+from app.ws.db_connection import study_submitters, update_release_date
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.mm_models import *
+from app.ws.models import Investigation_api_model, serialize_investigation
+from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv, update_ontolgies_in_isa_tab_sheets
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()

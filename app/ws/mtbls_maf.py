@@ -19,15 +19,13 @@
 import json
 import logging
 import os
-from typing import List
 
 import pandas as pd
 
-from flask import request, current_app as app, abort
+from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.combined_maf_builder import CombinedMafBuilder
 from app.ws.utils import create_maf, read_tsv, write_tsv

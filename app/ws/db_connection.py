@@ -27,7 +27,6 @@ import psycopg2.extras
 from flask import current_app as app, abort
 from psycopg2 import pool
 
-from app.utils import MetabolightsException
 from app.ws.utils import get_single_file_information, check_user_token, val_email
 
 logger = logging.getLogger('wslog')
@@ -1081,10 +1080,10 @@ def get_connection():
     postgresql_pool = None
     conn = None
     cursor = None
+    params = app.config.get('DB_PARAMS')
+    conn_pool_min = app.config.get('CONN_POOL_MIN')
+    conn_pool_max = app.config.get('CONN_POOL_MAX')
     try:
-        params = app.config.get('DB_PARAMS')
-        conn_pool_min = app.config.get('CONN_POOL_MIN')
-        conn_pool_max = app.config.get('CONN_POOL_MAX')
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
         cursor = conn.cursor()

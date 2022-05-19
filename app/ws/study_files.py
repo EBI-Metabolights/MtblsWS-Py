@@ -16,17 +16,24 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import json
+import logging
+import os
+import shutil
 import zipfile
 
+from dirsync import sync
+from flask import current_app as app
 from flask.json import jsonify
-from flask_restful import Resource, reqparse
+from flask import request, abort
+from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
-from marshmallow import ValidationError
+from jsonschema.exceptions import ValidationError
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.folder_utils import get_basic_files, get_all_files_from_filesystem, get_all_files, write_audit_files
-from app.ws.utils import *
+from app.ws.utils import get_assay_file_list, remove_file, delete_asper_files, log_request, copy_files_and_folders
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -752,12 +759,17 @@ class SampleStudyFiles(Resource):
         if not read_access:
             abort(403)
 
-        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
+        upload_location = os.path.join(app.config.get('MTBLS_FTP_ROOT'), study_id.lower() + "-" + obfuscation_code)
 
         # Get all unique file names
-        all_files = get_files(get_all_files(study_location, include_raw_data=True,
-                                            assay_file_list=get_assay_file_list(study_location))) + \
-                    get_files(get_all_files(upload_location, include_raw_data=True))
+        all_files_in_study_location = get_all_files(study_location, include_raw_data=True,  assay_file_list=get_assay_file_list(study_location))
+        all_files_in_upload_location = get_all_files(upload_location, include_raw_data=True)
+        filtered_files_in_study_location = get_files(all_files_in_study_location[0])
+        filtered_files_in_upload_location = []
+        if all_files_in_upload_location:
+            filtered_files_in_upload_location = get_files(all_files_in_upload_location[0])
+        filtered_files_in_study_location.extend(filtered_files_in_upload_location)
+        all_files = get_files(filtered_files_in_study_location)
 
         try:
             isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
@@ -771,7 +783,8 @@ class SampleStudyFiles(Resource):
             s_name = sample.name
             # For each sample, loop over all the files
             # Todo, some studies has lots more files than samples, consider if this should be reversed
-            for f_name in all_files:
+            for file_item in all_files:
+                f_name = file_item["file"]
                 filename, file_extension = os.path.splitext(f_name)
                 s = s_name.lower()
                 f = filename.lower()
@@ -955,7 +968,7 @@ def get_files(file_list):
         f_name = files["file"]
         if f_type == 'raw' or f_type == 'derived' or f_type == 'compressed' or f_type == 'unknown':
             if f_name not in all_files:
-                all_files.append(f_name)
+                all_files.append(files)
     return all_files
 
 

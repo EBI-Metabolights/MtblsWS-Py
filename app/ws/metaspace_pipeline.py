@@ -16,13 +16,18 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask_restful import Resource
+import json
+import logging
+import os
+
+from flask import request
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from metaspace.sm_annotation_utils import SMInstance
 
 from app.ws.metaspace_utils import annotate_metaspace, import_metaspace
 from app.ws.study import commons
-from app.ws.utils import *
+from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
 

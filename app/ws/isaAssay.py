@@ -16,19 +16,24 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask import request, abort
-from flask_restful import Resource, reqparse
-from marshmallow import ValidationError
-from app.ws.mm_models import *
-from flask_restful_swagger import swagger
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.mtblsWSclient import WsClient
-from flask import current_app as app
-from app.ws.utils import *
-import logging
-import json
-import os.path
+
 import csv
+import json
+import logging
+import os
+import os.path
+
+from flask import request, current_app as app
+from flask_restful import Resource, reqparse, abort
+from flask_restful_swagger import swagger
+from isatools.model import Extract, Sample, OntologyAnnotation, Assay
+from marshmallow import ValidationError
+
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.mm_models import AssaySchema, ProcessSchema, OtherMaterialSchema, DataFileSchema, SampleSchema
+from app.ws.mtblsWSclient import WsClient
+from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protcols, write_tsv, remove_file, \
+    get_maf_name_from_assay_name, add_new_protocols_from_assay, create_maf, add_ontology_to_investigation, read_tsv
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()

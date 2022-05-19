@@ -30,8 +30,10 @@ class CuratedMetaboliteTable(object):
     def __init__(self, file_path=None):
         self.file_path = file_path
         self.df = None
+
+    def initialize_df(self):
         try:
-            self.df = pd.read_table(file_path, engine='python', header=None)
+            self.df = pd.read_table(self.file_path, engine='python', header=None)
             self.df[self.COMPOUND_INDEX] = self.df[self.COMPOUND_INDEX].str.replace('\"', '', regex=True)
             logger.info(f"Curated table is loaded. Current row count is {len(self.df.index)}.")
             priority_row_list = self.df.index[self.df[self.PRIORITY_INDEX] >= 1].to_list()
@@ -40,6 +42,10 @@ class CuratedMetaboliteTable(object):
             logger.warning(f"Error while reading curated metabolite table file {self.file_path}.")
 
     def get_matching_rows(self, column_index: int, value: str):
+
+        if not self.df:
+            self.initialize_df()
+
         input_value = ''.join(value.split())
         input_value = remove_few_characters_for_consistency(input_value).lower()
         search_column = self.df[column_index]
