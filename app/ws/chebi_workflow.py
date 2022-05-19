@@ -33,6 +33,7 @@ import pandas as pd
 import pronto
 import pubchempy as pcp
 import requests
+import subprocess
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
@@ -204,7 +205,7 @@ def split_maf_df(maf_file_name):
 
 
 def jar_wrapper(*args):
-    process = Popen(['java', '-jar'] + list(args), stdout=PIPE, stderr=PIPE)
+    process = subprocess.Popen(['java', '-jar'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     process.wait()
     stdout, stderr = process.communicate()
     return stdout, stderr

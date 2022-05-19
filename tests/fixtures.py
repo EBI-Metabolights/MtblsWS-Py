@@ -1,8 +1,9 @@
+import os
+
 import pytest
 from flask import Flask
 from flask_mail import Mail
 from pydantic import BaseSettings
-from pytest_mock import MockerFixture
 
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
@@ -19,7 +20,13 @@ from app.wsapp_config import initialize_app
 
 @pytest.fixture(scope="session")
 def flask_app():
-    flask_app = Flask(__name__, instance_relative_config=True)
+
+    instance_dir = os.path.join(os.getcwd(), "instance")
+
+    if "INSTANCE_DIR" in os.environ and os.environ["INSTANCE_DIR"]:
+        instance_dir = os.environ["INSTANCE_DIR"]
+
+    flask_app = Flask(__name__, instance_relative_config=True, instance_path=instance_dir)
     initialize_app(flask_app)
 
     flask_app.config.update({

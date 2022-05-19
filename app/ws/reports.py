@@ -323,7 +323,7 @@ class reports(Resource):
             for date, report in j_file['data'].items():
                 d = datetime.strptime(date, '%Y-%m-%d')
                 if d >= start_date and d <= end_date:
-                    if query_field != None:
+                    if query_field:
                         slim_report = {k: report[k] for k in query_field}
                         data_res.update({date: slim_report})
                     else:
@@ -357,7 +357,7 @@ class reports(Resource):
                 d = datetime.strptime(study_info['submissiondate'], '%Y-%m-%d')
                 status = study_info['status']
 
-                if studyStatus == None:
+                if not studyStatus:
                     if d >= start_date and d <= end_date:
                         data_res.update({studyID: study_info})
                     else:

@@ -196,7 +196,7 @@ class Ontology(Resource):
                     except Exception as e:
                         print(e.args)
 
-        if ontology != None:
+        if ontology:
             ontology = [x.lower() for x in ontology]
 
         result = []
@@ -1442,7 +1442,7 @@ def addEntity(new_term, supclass, definition=None):
 
             newEntity = types.new_class(id, (cls,))
             newEntity.label = new_term
-            if definition != None:
+            if definition:
                 newEntity.isDefinedBy = definition
             else:
                 pass

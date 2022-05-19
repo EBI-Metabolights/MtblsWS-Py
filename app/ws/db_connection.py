@@ -462,7 +462,7 @@ def get_study_by_type(sType, publicStudy=True):
     else:
         return None
 
-    query = "SELECT acc, studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
+    query = "SELECT acc, studytype FROM studies WHERE {q2} = {q3};".format(q2=q2, q3=q3)
     postgresql_pool, conn, cursor = get_connection()
     cursor.execute(query, input_data)
     data = cursor.fetchall()

@@ -413,11 +413,10 @@ def getBioportalTerm(keyword, ontology=''):
         else:
             url = 'http://data.bioontology.org/search?q=' + keyword.replace(' ', "+")
 
-        if ontology not in [None, '']:
-            if ontology != None:
-                ontology = [x.upper() for x in ontology]
-            onto_list = ','.join(ontology)
-            url += '&ontologies=' + onto_list + '&require_exact_match=true'
+        if ontology:
+            ontology = [x.upper() for x in ontology]
+        onto_list = ','.join(ontology)
+        url += '&ontologies=' + onto_list + '&require_exact_match=true'
 
         request = urllib.request.Request(url)
         request.add_header('Authorization', 'apikey token=' + app.config.get('BIOPORTAL_TOKEN'))
@@ -465,7 +464,7 @@ def getWormsTerm(keyword):
         j_content = json.loads(content)
 
         for term in j_content:
-            if term["scientificname"] != None and term["url"] != None:
+            if term and "scientificname" in term and term["scientificname"] and "url" in term and term["url"]:
                 name = term["scientificname"]
                 iri = term["url"]
                 definition = term["authority"]

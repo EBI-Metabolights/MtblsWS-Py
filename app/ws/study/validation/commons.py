@@ -16,40 +16,25 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import base64
-import datetime
 import glob
-import io
 import json
 import logging
 import os
-import os.path
-import os.path
-import random
 import re
-import shutil
-import string
 import time
-import urllib
-import uuid
-from os.path import normpath, basename
 
 import numpy as np
 import pandas as pd
-import psycopg2
 import requests
-from flask import request, current_app as app
-from flask_restful import abort
-from isatools.model import Protocol, ProtocolParameter, OntologySource
-from lxml import etree
-from mzml2isa.parsing import convert as isa_convert
-from pandas import Series
-from psycopg2 import pool
-from dirsync import sync
+from flask import current_app as app
 
+from app.ws.cluster_jobs import lsf_job
+from app.ws.db_connection import override_validations, update_validation_status
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.study import commons
+from app.ws.study.folder_utils import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import read_tsv, map_file_type, get_assay_file_list, find_text_in_isatab_file, get_table_header, \
-    get_assay_type_from_file_name
+    get_assay_type_from_file_name, get_assay_headers_and_protcols
 
 iac = IsaApiClient()
 

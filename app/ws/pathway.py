@@ -21,7 +21,7 @@ import urllib
 
 import pandas as pd
 import requests
-from flask import request, jsonify, current_app as apps
+from flask import request, jsonify, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
@@ -326,7 +326,7 @@ def maf_reader(studyID, maf_file_name, sample_df):
     get maf file
 
     :param studyID:  study ID
-    :param sample_file_name: active maf file name
+    :param maf_file_name: active maf file name
     :return:  dict{chebiID:[sampleNames]
     '''
 

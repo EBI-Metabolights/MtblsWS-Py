@@ -697,16 +697,15 @@ class SyncFolder(Resource):
             sync(source, destination, 'sync', purge=False, logger=logger)
             logger.info('Copied file %s to %s', source, destination)
             return {'Success': 'Copied files from study folder to  ftp folder'}
-        except OSError as e:
-            logger.error('Does the folder already exists? Can not copy %s to %s', source,
-                         destination, str(e))
         except FileExistsError as e:
             logger.error('Folder already exists! Can not copy %s to %s', source, destination,
                          str(e))
+        except OSError as e:
+            logger.error('Does the folder already exists? Can not copy %s to %s', source,
+                         destination, str(e))
+
         except Exception as e:
             logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
-
-
 class SampleStudyFiles(Resource):
     @swagger.operation(
         summary="Get a list of all sample names, mapped to files in the study and upload folder(s)",

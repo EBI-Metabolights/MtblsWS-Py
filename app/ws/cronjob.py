@@ -422,7 +422,7 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
     def getDescriptor(sIDs=None):
         res = []
 
-        if sIDs == None:
+        if not sIDs:
             studyIDs = wsc.get_public_studies()
         else:
             studyIDs = sIDs
@@ -447,7 +447,7 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
         df = pd.DataFrame(res)
         return df
 
-    if studyType == None:
+    if not studyType:
         studyIDs = get_public_studies()
     else:
         studyIDs, _ = get_study_by_type(studyType, publicStudy=publicStudy)

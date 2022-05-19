@@ -164,12 +164,12 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                 else:
                                     shutil.copytree(source, destination, symlinks=symlinks, ignore=ignore)
                                 logger.info('Copied file %s to %s', source, destination)
-                            except OSError as e:
-                                logger.error('Does the folder already exists? Can not copy %s to %s', source,
-                                             destination, str(e))
                             except FileExistsError as e:
                                 logger.error('Folder already exists! Can not copy %s to %s', source, destination,
                                              str(e))
+                            except OSError as e:
+                                logger.error('Does the folder already exists? Can not copy %s to %s', source,
+                                             destination, str(e))
                             except Exception as e:
                                 logger.error('Other error! Can not copy %s to %s', source, destination,
                                              str(e))
@@ -187,11 +187,11 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                         logger.info('Destination file with later timestamp, So not copying')
                                 else:
                                     shutil.copy2(source, destination)
+                            except FileExistsError as e:
+                                logger.error('File already exists! Can not copy %s to %s', source, destination, str(e))
                             except OSError as e:
                                 logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
                                              str(e))
-                            except FileExistsError as e:
-                                logger.error('File already exists! Can not copy %s to %s', source, destination, str(e))
                             except Exception as e:
                                 logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
     except Exception as e:
@@ -1250,7 +1250,7 @@ def get_techniques(studyID=None):
     print('getting techniques.... ')
     params = app.config.get('DB_PARAMS')
 
-    if studyID != None:
+    if studyID:
         sql = "select acc,studytype from studies where status= 3 and acc= '{studyid}'".format(studyid=studyID)
     else:
         sql = 'select acc,studytype from studies where status= 3'
@@ -1335,7 +1335,7 @@ def get_studytype(studyID=None):
                   "untargeted": [],
                   "targeted_untargeted": []}
 
-    if studyID == None:
+    if not studyID:
         studyIDs = get_public_review_studies()
     else:
         studyIDs = [studyID]
@@ -1375,7 +1375,7 @@ def get_studytype(studyID=None):
 
 
 def get_instruments_organism(studyID=None):
-    if studyID != None:
+    if studyID:
         studyIDs = [studyID]
     else:
         studyIDs = get_public_review_studies()
@@ -1388,7 +1388,7 @@ def get_instruments_organism(studyID=None):
 
         for assay in assay_file:
             ins = get_instrument(studyID, assay)
-            if ins != None:
+            if ins:
                 for i in ins['instruments']:
                     instruments_df.loc[len(instruments_df)] = [ins['studyID'], ins['assay_name'], i]
 

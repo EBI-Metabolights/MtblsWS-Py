@@ -109,7 +109,7 @@ def searchStudies(query, user_token, feature='factor'):
         else:
             fea = None
 
-        if fea != None and query.casefold() in (f.casefold() for f in fea):
+        if fea and query.casefold() in (f.casefold() for f in fea):
             print('adding', studyID)
             res.append(studyID)
 
