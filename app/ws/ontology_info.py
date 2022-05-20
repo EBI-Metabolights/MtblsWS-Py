@@ -91,7 +91,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
                 logger.info("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
                 print("Can't find terms similar with {term} in MTBLS ontology, continue...".format(term=keyword))
 
-        if len(cls) == 0:
+        if not cls:
             return []
 
         if branch not in [None, '']:  # term = 1 , branch = 1, search branch

@@ -57,12 +57,14 @@ class WsClient:
         result = None
         try:
             result = self.search_manager.search_by_type(search_type, search_value)
-            return result.json()
         except Exception as e:
             abort(500, "MAF search failed")
 
         if not result or result.err:
             abort(400, result.err)
+
+        json_result = result.dict()
+        return json_result
 
     @staticmethod
     def get_public_studies():
@@ -117,7 +119,7 @@ class WsClient:
     def reindex_study(self, study_id, user_token):
         # Updated to remove Java WS /study/reindexStudyOnToken dependency
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
         try:
             indexed_data = self.elasticsearch_service.reindex_study(study_id, user_token)
             return True, f" {indexed_data.studyIdentifier} is successfully indexed"

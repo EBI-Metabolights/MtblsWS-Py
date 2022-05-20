@@ -13,12 +13,12 @@ class CuratedMetabolitesFileColumn(Enum):
     PRIORITY = 6
 
 
-class SearchResource(Enum):
-    CURATED = 1
-    CTS = 2
-    CHEBI = 3
-    CHEMSPIDER = 4
-    PUBCHEM = 5
+class SearchResource(str, Enum):
+    CURATED = "CURATED"
+    CTS = "CTS"
+    CHEBI = "CHEBI"
+    CHEMSPIDER = "CHEMSPIDER"
+    PUBCHEM = "PUBCHEM"
 
 
 class CompoundSearchResultModel(BaseModel):

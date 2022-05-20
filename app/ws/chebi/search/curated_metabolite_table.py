@@ -30,6 +30,7 @@ class CuratedMetaboliteTable(object):
     def __init__(self, file_path=None):
         self.file_path = file_path
         self.df = None
+        self.initialized = False
 
     def initialize_df(self):
         try:
@@ -38,12 +39,13 @@ class CuratedMetaboliteTable(object):
             logger.info(f"Curated table is loaded. Current row count is {len(self.df.index)}.")
             priority_row_list = self.df.index[self.df[self.PRIORITY_INDEX] >= 1].to_list()
             self.priority_row_set = set(priority_row_list)
+            self.initialized = True
         except Exception as e:
             logger.warning(f"Error while reading curated metabolite table file {self.file_path}.")
 
     def get_matching_rows(self, column_index: int, value: str):
 
-        if not self.df:
+        if not self.initialized:
             self.initialize_df()
 
         input_value = ''.join(value.split())

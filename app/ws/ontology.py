@@ -235,7 +235,7 @@ class Ontology(Resource):
                 print('Search %s from resources one by one' % term)
                 result = getMetaboTerm(term, branch, mapping)
 
-                if len(result) == 0 and not is_url:
+                if not result and not is_url:
                     print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                     logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                     try:
@@ -244,7 +244,7 @@ class Ontology(Resource):
                         print(e.args)
                         logger.info(e.args)
 
-                if len(result) == 0:
+                if not result:
                     print("Can't query it in Zooma.tsv, requesting OLS")
                     logger.info("Can't query it in Zooma.tsv, requesting OLS")
                     try:
@@ -253,7 +253,7 @@ class Ontology(Resource):
                         print(e.args)
                         logger.info(e.args)
 
-                if len(result) == 0 and not is_url:
+                if not result and not is_url:
                     print("Can't find query in OLS, requesting Zooma")
                     logger.info("Can't find query in OLS, requesting Zooma")
                     try:
@@ -262,7 +262,7 @@ class Ontology(Resource):
                         print(e.args)
                         logger.info(e.args)
 
-                if len(result) == 0:
+                if not result:
                     print("Can't query it in Zooma, request Bioportal")
                     logger.info("Can't query it in Zooma, request Bioportal")
                     try:

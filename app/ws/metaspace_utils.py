@@ -71,7 +71,7 @@ class AwsCredentials(object):
 
 
 
-@lru_cache
+@lru_cache(1)
 def get_s3():
     aws_cred = AwsCredentials()
     session = boto3.Session(aws_cred.get_access_key, aws_cred.get_secret_access_key)
