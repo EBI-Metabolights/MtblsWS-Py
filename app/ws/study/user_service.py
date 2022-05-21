@@ -8,6 +8,7 @@ from app.ws.db.models import SimplifiedUserModel
 from app.ws.db.schemes import Study, User
 from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import UserStatus, UserRole
+from app.ws.db.utils import datetime_to_int
 
 
 class UserService(object):
@@ -126,6 +127,7 @@ class UserService(object):
             m_user.fullName = m_user.firstName + " " + m_user.lastName
             m_user.role = UserRole(m_user.role).name
             m_user.status = UserStatus(m_user.status).name
+            m_user.joinDate = datetime_to_int(m_user.joinDate)
             return m_user
         else:
             raise MetabolightsAuthorizationException(message=f"User not in database")
