@@ -1,3 +1,6 @@
+import json
+import re
+
 from flask import request, jsonify, make_response, current_app as app
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -29,6 +32,21 @@ def validate_token_in_request_body(content):
     response.headers["Jwt"] = jwt_token
     response.headers["User"] = username
     return response
+
+
+def parse_response_body(request):
+    pattern_string = r"[\|{|\|}|\s|\"|']"
+    pattern = re.compile(pattern_string)
+
+    request_body = request.data.decode()
+    request_body = re.sub(pattern, '', request_body)
+    split_body = re.split(',', request_body)
+    results = {}
+    for item in split_body:
+        if ":" in item:
+            param = item.split(":")
+            results[param[0]] = param[1]
+    return results
 
 
 response_messages = [
@@ -70,7 +88,11 @@ class AuthLogin(Resource):
     @metabolights_exception_handler
     def post(self):
         # User authentication
-        content = request.json
+
+        try:
+            content = request.json
+        except:
+            content = parse_response_body(request)
 
         if not content or "email" not in content or "secret" not in content:
             return make_response(jsonify({"content": False,
@@ -96,6 +118,8 @@ class AuthLogin(Resource):
         return resp
 
 
+
+
 class AuthValidation(Resource):
     @swagger.operation(
         summary="Validate authentication token",
@@ -115,8 +139,11 @@ class AuthValidation(Resource):
     )
     @metabolights_exception_handler
     def post(self):
-        # User authentication
-        content = request.json
+        try:
+            content = request.json
+        except:
+            content = parse_response_body(request)
+
         response = validate_token_in_request_body(content)
         return response
 
@@ -140,7 +167,12 @@ class AuthUser(Resource):
     )
     @metabolights_exception_handler
     def post(self):
-        content = request.json
+
+        try:
+            content = request.json
+        except:
+            content = parse_response_body(request)
+
         response = validate_token_in_request_body(content)
         if "Jwt" in response.headers and "User" in response.headers and response.headers["Jwt"]:
             username = response.headers["User"]
