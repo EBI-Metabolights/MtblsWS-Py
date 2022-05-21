@@ -18,6 +18,11 @@
 
 import os
 
+ACCESS_TOKEN_HASH_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRES_DELTA = 300    # in minutes
+ACCESS_TOKEN_ALLOWED_AUDIENCE = "Metabolights Editor"
+ACCESS_TOKEN_ISSUER_NAME = "Metabolights PythonWS"
+
 PORT = 5000
 WS_APP_BASE_LINK = "https://www.ebi.ac.uk/metabolights"
 DEBUG = False

@@ -1,148 +1,118 @@
 import base64
 import hashlib
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from functools import lru_cache
+from typing import Optional, List
 
-from fastapi import HTTPException
-from fastapi import status
-from fastapi.requests import Request
-from fastapi.security import (
-    OAuth2PasswordBearer, SecurityScopes,
-)
+from flask import current_app as app
+from flask_restful import abort
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from pydantic import ValidationError
+from pydantic import ValidationError, BaseModel, BaseSettings
 
-from app.db.schemes import UserTable
-from app.security.models import TokenData, User
-from app.security.types import UserStatus
-from app.settings import SecuritySettings
-from app.utils.redis import RedisStorage
+from app.ws.db.dbmanager import DBManager
+from app.ws.db.models import SimplifiedUserModel
+from app.ws.db.schemes import User
+from app.ws.db.types import UserStatus, UserRole
+from app.ws.study.user_service import UserService
+
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    scopes: List[str] = []
+
+
+class SecuritySettings(BaseSettings):
+    application_secret_key: str
+    access_token_hash_algorithm: str = "HS256"
+    access_token_expires_delta: int = 300
+    access_token_allowed_audience: str = None
+    access_token_issuer_name: str = "Metabolights PythonWS"
+
+    class Config:
+        # read and set secrets from this secret directory
+        secrets_dir = "./.secrets"
+
+
+@lru_cache(1)
+def get_security_settings(app):
+    settings = SecuritySettings()
+    if app:
+        settings.access_token_hash_algorithm = app.config.get("ACCESS_TOKEN_HASH_ALGORITHM")
+        settings.access_token_expires_delta = app.config.get("ACCESS_TOKEN_EXPIRES_DELTA")
+        settings.access_token_allowed_audience = app.config.get("ACCESS_TOKEN_ALLOWED_AUDIENCE")
+        settings.access_token_issuer_name = app.config.get("ACCESS_TOKEN_ISSUER_NAME")
+    return settings
 
 
 class AuthenticationManager(object):
-
-    def __init__(self, settings: SecuritySettings, storage: RedisStorage, role_scope_mapping: Dict):
+    def __init__(self, settings: SecuritySettings = None, app=None):
         self.settings = settings
-        self.storage = storage
-        self.role_scope_mapping = role_scope_mapping
+        if not self.settings and app:
+            self.settings = get_security_settings(app)
+        else:
+            self.settings = SecuritySettings()
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        self.oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token",
-                                                  description="Please login to use web services require authorization.")
 
+    instance = None
 
+    @classmethod
+    def get_instance(cls, app):
+        if not cls.instance:
+            cls.instance = AuthenticationManager(app=app)
+        return cls.instance
 
-    def create_oauth2_token(self, username, password, db_session):
+    def create_oauth2_token(self, username, password, audience=None, db_session=None):
         user = self.authenticate_user(username, password, db_session=db_session)
         if not user:
-            raise HTTPException(status_code=400, detail="Incorrect username or password")
+            abort(http_status_code=400, detail="Incorrect username or password")
+        if not audience:
+            audience = self.settings.access_token_allowed_audience
         access_token_expires = timedelta(minutes=self.settings.access_token_expires_delta)
-        access_token = self._create_access_token(
-            data={"sub": user.username, "scopes": self.role_scope_mapping[user.role]},
-            expires_delta=access_token_expires,
-        )
+        issuer_name = self.settings.access_token_issuer_name
+        token_base_data = {"sub": user.username, "scopes": [UserRole(user.role).name], "role": UserRole(user.role).name,
+                           "iss": issuer_name, "aud": audience, "Name": username}
+
+        access_token = self._create_jwt_token(data=token_base_data, expires_delta=access_token_expires)
         return access_token
 
-    def revoke_oauth2_token(self, token: str):
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-        )
-        try:
-            if self.storage.is_key_in_store("%s%s" %(self.settings.revoced_acces_token_prefix, token)):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token has already revoked.")
+    def validate_oauth2_token(self, token: str, audience: str = None, issuer_name: str = None, db_session=None):
 
-            payload = jwt.decode(token, self.settings.application_secret_key,
+        user = None
+        try:
+            if not audience:
+                audience = self.settings.access_token_allowed_audience
+            if not issuer_name:
+                issuer_name = self.settings.access_token_issuer_name
+            payload = jwt.decode(token, self.settings.application_secret_key, audience=audience, issuer=issuer_name,
                                  algorithms=[self.settings.access_token_hash_algorithm])
             username: str = payload.get("sub")
             if username is None:
-                raise credentials_exception
+                abort(http_status_code=401, detail="Could not validate credentials, no username")
+            if not db_session:
+                db_session = DBManager.get_instance(app).session_maker()
 
-            exp = payload.get("exp")
-            if exp >= int(datetime.utcnow().timestamp()):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token has already expired.")
-
-            key = self.settings.revoced_acces_token_prefix + token
-            self.storage.set_value_with_expiration_time(key, username, exp)
-            return {"status": "token is revoked"}
-        except (JWTError, ValidationError):
-            raise credentials_exception
-
-    def validate_oauth2_token(self, security_scopes: SecurityScopes, token: str, request: Request, db_session ):
-        if security_scopes.scopes:
-            authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
-        else:
-            authenticate_value = f"Bearer"
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": authenticate_value},
-        )
-        try:
-            payload = jwt.decode(token, self.settings.application_secret_key,
-                                 algorithms=[self.settings.access_token_hash_algorithm])
-            username: str = payload.get("sub")
-            if username is None:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Could not validate credentials",
-                    headers={"WWW-Authenticate": authenticate_value},
-                )
-
-            if self.storage.is_key_in_store(self.settings.revoced_acces_token_prefix + token):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Used authorization session has been revoked.",
-                    headers={"WWW-Authenticate": authenticate_value},
-                )
-            token_scopes = payload.get("scopes", [])
-            token_data = TokenData(scopes=token_scopes, username=username)
+            with db_session:
+                query = db_session.query(User)
+                db_user = query.filter(User.username == username).first()
+            if not db_user:
+                abort(401, detail="Could not validate credentials, username is not in db", )
+            user = SimplifiedUserModel.from_orm(db_user)
         except (JWTError, ValidationError) as e:
-            raise credentials_exception
-        db_user = self.get_user(username=token_data.username, db_session=db_session)
-        if db_user is None:
-            raise credentials_exception
-
-        user = User.from_orm(db_user)
+            abort(http_status_code=401, detail="Could not validate credentials")
 
         if UserStatus(user.status) != UserStatus.ACTIVE:
-            raise HTTPException(status_code=400, detail="Not active user")
-
-        for scope in security_scopes.scopes:
-            if scope not in token_data.scopes:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Not enough permissions",
-                    headers={"WWW-Authenticate": authenticate_value},
-                )
-
-        request.state.user = user
-        request.state.token = token
-        request.state.token_data = token_data
-        request.state.valid_user = True
+            abort(http_status_code=401, detail="Not active user")
 
         return user
 
-    def get_user(self, username: str, db_session):
-
-        try:
-            db_user = db_session.query(UserTable).filter(UserTable.username == username).first()
-            if db_user:
-                return db_user
-            return None
-        except Exception as e:
-            raise HTTPException(status_code=500, detail="Server internal error: %s" % str(e))
-
-
-    def authenticate_user(self, username: str, password: str, db_session) :
-        user = self.get_user(username, db_session=db_session)
-        if not user:
-            return False
+    def authenticate_user(self, username: str, password: str, db_session=None):
+        user = UserService.get_instance(app).validate_username_with_submitter_or_super_user_role(username)
         if not self._verify_password(password, user.password):
             return False
         return user
 
-    def _create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None):
+    def _create_jwt_token(self, data: dict, expires_delta: Optional[timedelta] = None):
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.utcnow() + expires_delta

@@ -1,12 +1,14 @@
 import os
 
+import pytest
+
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, Stableid
 from tests.ws.check_confguration import check_configuration
 
 
 class TestConfig(object):
-
+    @pytest.mark.skip
     def test_unused_undefined_configurations_01(self, flask_app):
         with flask_app.app_context():
             unused_configs, undefined_configs = check_configuration()

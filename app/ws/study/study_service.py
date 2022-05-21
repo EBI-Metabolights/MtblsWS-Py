@@ -74,8 +74,8 @@ class StudyService(object):
         with self.db_manager.session_maker() as db_session:
             db_user = db_session.query(User).filter(Study.apitoken == user_token).first()
 
-            if db_user and db_user.status == UserStatus.ACTIVE.value:
-                if db_user.role == UserRole.CURATOR:
+            if db_user and int(db_user.status) == UserStatus.ACTIVE.value:
+                if UserRole(db_user.role) == UserRole.ROLE_SUPER_USER:
                     study_id_list = db_session.query(Study.acc).order_by(Study.submissiondate).first()
                 else:
                     study_id_list = db_session.query(Study.acc) \

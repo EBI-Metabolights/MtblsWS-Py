@@ -43,8 +43,7 @@ class TestWebServiceClient(object):
             expected_value = "CHEBI:10225"
             result = ws_client.get_maf_search(search_type, search_value)
             assert result is not None
-            data = json.loads(result)
-            assert "content" in data
+            data = result
             assert 1 == len(data["content"])
             assert "databaseId" in data["content"][0]
             assert expected_value == data["content"][0]["databaseId"]
@@ -58,7 +57,7 @@ class TestWebServiceClient(object):
             expected_value = "CHEBI:10136"
             result = ws_client.get_maf_search(search_type, search_value)
             assert result is not None
-            data = json.loads(result)
+            data = result
             assert "content" in data
             assert 1 == len(data["content"])
             assert "databaseId" in data["content"][0]
@@ -73,7 +72,7 @@ class TestWebServiceClient(object):
             expected_value = "CHEBI:17790"
             result = ws_client.get_maf_search(search_type, search_value)
             assert result is not None
-            data = json.loads(result)
+            data = result
             assert "content" in data
             assert 1 == len(data["content"])
             assert "databaseId" in data["content"][0]
@@ -88,7 +87,7 @@ class TestWebServiceClient(object):
             expected_value = "CHEBI:10136"
             result = ws_client.get_maf_search(search_type, search_value)
             assert result is not None
-            data = json.loads(result)
+            data = result
             assert "content" in data
             assert 1 == len(data["content"])
             assert "databaseId" in data["content"][0]
@@ -211,19 +210,19 @@ class TestWebServiceClient(object):
                 if study_id:
                     delete_test_study_from_db(study_id)
 
+
     def test_reindex_unauthorized_1(self, flask_app: Flask,
                                     email_service_isolated_ws_client: WsClient,
                                     sensitive_data: SensitiveDatastorage, mocker):
         with flask_app.app_context():
             ws_client = email_service_isolated_ws_client
-            user_token = sensitive_data.submitter_token_001
             study_id = None
             try:
                 with pytest.raises(MetabolightsException):
                     mock_index_method = mocker.Mock()
                     ws_client.elasticsearch_service.client = mock_index_method
                     mock_index_method.index = mocker.Mock()
-                    study_id = ws_client.reindex_study("MTBLS1", user_token)
+                    study_id = ws_client.reindex_study("MTBLS1", "<invalid token>")
 
                     mock_index_method.index.assert_not_called()
             finally:

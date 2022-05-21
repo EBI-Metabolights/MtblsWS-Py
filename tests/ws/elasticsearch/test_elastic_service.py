@@ -65,7 +65,7 @@ class TestElasticService(object):
             assert context.value is not None
             mock_index_method.index.assert_not_called()
 
-    def test_reindex_study_unauthorize_user_token_01(self, flask_app: Flask,
+    def test_reindex_study_sumitter_user_token_01(self, flask_app: Flask,
                                                      elasticsearch_service: ElasticsearchService,
                                                      sensitive_data: SensitiveDatastorage, mocker):
         with flask_app.app_context():
@@ -73,11 +73,8 @@ class TestElasticService(object):
             mock_index_method = mocker.Mock()
             elasticsearch_service.client = mock_index_method
             mock_index_method.index = mocker.Mock()
-            study = None
-            with pytest.raises(MetabolightsException) as context:
-                study = elasticsearch_service.reindex_study(study_id=study_id,
+            study = elasticsearch_service.reindex_study(study_id=study_id,
                                                             user_token=sensitive_data.submitter_token_001)
 
-            assert context.value is not None
-            assert study is None
-            mock_index_method.index.assert_not_called()
+            assert study is not None
+            mock_index_method.index.assert_called()

@@ -29,8 +29,8 @@ class UserModel(BaseModel):
     joinDate: datetime.datetime = Field(None, alias="joindate")  # excluded from es
     lastName: str = Field(None, alias="lastname")
     orcid: str = Field(None, alias="orcid")
-    role: str = Field(..., alias="role")  # excluded from es
-    status: str = Field(..., alias="status")  # excluded from es
+    role: Union[int, str] = Field(..., alias="role")  # excluded from es
+    status: Union[int, str] = Field(..., alias="status")  # excluded from es
     userId: int = Field(..., alias="id")  # excluded from es
     userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
     userVerifyDbPassword: str = None  # not in es index mapping
@@ -38,6 +38,24 @@ class UserModel(BaseModel):
     officePhoneNumber: str = None  # not in es index mapping
     apiToken: str = None  # excluded from es
 
+    class Config:
+        orm_mode = True
+
+
+class SimplifiedUserModel(BaseModel):
+    address: str = Field(None, alias="address")  # excluded from es
+    affiliation: str = Field(None, alias="affiliation")  # excluded from es
+    affiliationUrl: str = Field(None, alias="affiliationurl")  # excluded from es
+    email: str = Field(..., alias="email")  # excluded from es
+    firstName: str = Field(None, alias="firstname")
+    fullName: str = Field(None)  # assigned as not_analyzed in es
+    joinDate: datetime.datetime = Field(None, alias="joindate")  # excluded from es
+    lastName: str = Field(None, alias="lastname")
+    orcid: str = Field(None, alias="orcid")
+    role: Union[int, str] = Field(..., alias="role")  # excluded from es
+    status: Union[int, str] = Field(..., alias="status")  # excluded from es
+    userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
+    apiToken: str = Field(..., alias="apitoken")  # excluded from es
     class Config:
         orm_mode = True
 

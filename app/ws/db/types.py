@@ -2,8 +2,8 @@ from enum import Enum
 
 
 class UserRole(Enum):
-    SUBMITTER = 0
-    CURATOR = 1
+    ROLE_SUBMITTER = 0
+    ROLE_SUPER_USER = 1
     ANONYMOUS = 2
     REVIEWER = 3  # this is not in java project
     SYSTEM_ADMIN = 4  # this is not in java project

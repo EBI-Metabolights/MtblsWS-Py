@@ -19,7 +19,7 @@ def create_user_in_db(user):
         INSERT INTO users (id, apitoken, email, password, role, status, username) 
         VALUES (%(id)s, %(apitoken)s, %(email)s, %(password)s, %(role)s, %(status)s, %(username)s);"""
     content1 = {"id": user.userid, "apitoken": user.user_token,
-                "email": user.email, "password": "", "status": user.status, "role": user.role, "username": user.email}
+                "email": user.email, "password": "", "status": str(user.status), "role": user.role, "username": user.email}
     execute_query_with_parameter(insert_user_sql, content1)
 
 
