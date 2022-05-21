@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 
 from flask import request, jsonify, make_response, current_app as app
@@ -8,16 +9,19 @@ from flask_restful_swagger import swagger
 from app.utils import metabolights_exception_handler
 from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.study.user_service import UserService
+from app.ws.utils import log_request
+
+logger = logging.getLogger('wslog')
 
 
 def validate_token_in_request_body(content):
-    if not content or "Jwt" not in content or "User" not in content:
+    if not content or "jwt" not in content or "user" not in content:
         return make_response(jsonify({"content": False,
                                       "message": "Invalid request. token and user inputs are required",
                                       "err": None}), 400)
 
-    jwt_token = content["Jwt"]
-    username = content["User"]
+    jwt_token = content["jwt"]
+    username = content["user"]
 
     try:
         user_in_token = AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt_token)
@@ -29,8 +33,8 @@ def validate_token_in_request_body(content):
 
     response = make_response(jsonify({"content": "true", "message": "Authentication successful", "err": None}), 200)
     response.headers["Access-Control-Expose-Headers"] = "Jwt, User"
-    response.headers["Jwt"] = jwt_token
-    response.headers["User"] = username
+    response.headers["jwt"] = jwt_token
+    response.headers["user"] = username
     return response
 
 
@@ -88,7 +92,7 @@ class AuthLogin(Resource):
     @metabolights_exception_handler
     def post(self):
         # User authentication
-
+        log_request(request)
         try:
             content = request.json
         except:
@@ -112,8 +116,8 @@ class AuthLogin(Resource):
 
         resp = make_response(jsonify({"content": True, "message": "Authentication successful", "err": None}), 200)
         resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
-        resp.headers["Jwt"] = token
-        resp.headers["User"] = username
+        resp.headers["jwt"] = token
+        resp.headers["user"] = username
 
         return resp
 
@@ -139,6 +143,7 @@ class AuthValidation(Resource):
     )
     @metabolights_exception_handler
     def post(self):
+        log_request(request)
         try:
             content = request.json
         except:
@@ -167,15 +172,15 @@ class AuthUser(Resource):
     )
     @metabolights_exception_handler
     def post(self):
-
+        log_request(request)
         try:
             content = request.json
         except:
             content = parse_response_body(request)
 
         response = validate_token_in_request_body(content)
-        if "Jwt" in response.headers and "User" in response.headers and response.headers["Jwt"]:
-            username = response.headers["User"]
+        if "jwt" in response.headers and "user" in response.headers and response.headers["jwt"]:
+            username = response.headers["user"]
             try:
                 UserService.get_instance(app).validate_username_with_submitter_or_super_user_role(username)
                 m_user = UserService.get_instance(app).get_simplified_user_by_username(username)
