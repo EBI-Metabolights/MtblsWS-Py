@@ -16,15 +16,17 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import logging
 import json
-import pandas as pd
-import numpy as np
-import re
+import logging
 import os
+import re
+
+import numpy as np
+import pandas as pd
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import get_table_header, totuples
 

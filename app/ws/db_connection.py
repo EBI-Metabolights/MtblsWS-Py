@@ -15,11 +15,12 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
+import datetime
 import logging
 import os
 import re
 import traceback
+import uuid
 
 import psycopg2
 import psycopg2.extras
@@ -32,6 +33,8 @@ logger = logging.getLogger('wslog')
 
 stop_words = "insert", "select", "drop", "delete", "from", "into", "studies", "users", "stableid", "study_user", \
              "curation_log_temp", "ref_", "ebi_reporting", "exists"
+
+query_curation_log = "select * from curation_log_temp order by acc_short asc;"
 
 query_all_studies = """
     select * from (
@@ -96,6 +99,48 @@ query_studies_user = """
     from studies s, users u, study_user su 
     where s.id = su.studyid and su.userid = u.id and u.apitoken = %(apitoken)s;
     """
+
+query_submitted_study_ids_for_user = """
+    SELECT distinct s.acc 
+    from studies s, users u, study_user su 
+    where s.id = su.studyid and su.userid = u.id and u.apitoken = %(user_token)s and s.status=0;
+    """
+
+get_next_mtbls_id = """
+select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s;
+"""
+
+insert_empty_study = """   
+    insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
+    updatedate, validations, validation_status) 
+    values ( 
+        (select nextval('hibernate_sequence')),
+        %(acc)s, 
+        %(obfuscationcode)s,
+        %(releasedate)s,
+        0, 0, current_timestamp, 
+        current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
+"""
+
+update_metaboligts_id_sequence = """
+    update stableid set seq = (select (seq + 1) as next_acc from stableid where prefix = %(stable_id_prefix)s) 
+    where prefix = %(stable_id_prefix)s;
+"""
+link_study_with_user = """
+insert into study_user(userid, studyid) select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(acc)s;
+"""
+
+insert_empty_study_with_id = """   
+    insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
+    updatedate, validations, validation_status) 
+    values ( 
+        (select nextval('hibernate_sequence')),
+        %(acc)s, 
+        %(obfuscationcode)s,
+        %(releasedate)s,
+        0, 0, current_timestamp, 
+        current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
+"""
 
 query_user_access_rights = """
     SELECT DISTINCT role, read, write, obfuscationcode, releasedate, submissiondate, 
@@ -231,6 +276,7 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
     except Exception as e:
         return False, str(e)
 
+
 def get_user(username):
     """
     Get a single user from the database, searching by attribute username.
@@ -261,7 +307,6 @@ def get_user(username):
     else:
         # no user found by that username, abort with 404
         abort(404, 'User with username {0} not found.'.format(username))
-
 
 
 def get_all_private_studies_for_user(user_token):
@@ -315,6 +360,8 @@ def get_all_studies_for_user(user_token):
     val_query_params(user_token)
 
     study_list = execute_select_query(query=query_studies_user, user_token=user_token)
+    if not study_list:
+        return []
     study_location = app.config.get('STUDY_PATH')
     file_name = 'i_Investigation.txt'
     isa_title = 'Study Title'
@@ -384,6 +431,7 @@ def get_public_studies():
     release_connection(postgresql_pool, conn)
     return data
 
+
 def get_private_studies():
     query = "select acc from studies where status = 0;"
     postgresql_pool, conn, cursor = get_connection()
@@ -391,6 +439,7 @@ def get_private_studies():
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data
+
 
 def get_study_by_type(sType, publicStudy=True):
     q2 = ' '
@@ -415,7 +464,7 @@ def get_study_by_type(sType, publicStudy=True):
     else:
         return None
 
-    query = "SELECT acc, studytype FROM studies WHERE {q2} {q3};".format(q2=q2, q3=q3)
+    query = "SELECT acc, studytype FROM studies WHERE {q2} = {q3};".format(q2=q2, q3=q3)
     postgresql_pool, conn, cursor = get_connection()
     cursor.execute(query, input_data)
     data = cursor.fetchall()
@@ -650,8 +699,8 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
 
 def get_email(user_token):
-
     val_query_params(user_token)
+    user_email = None
     try:
         user_email = get_user_email(user_token)
     except Exception as e:
@@ -676,7 +725,7 @@ def study_submitters(study_id, user_email, method):
         query = """
             delete from study_user su where exists(
             select u.id, s.id from users u, studies s
-            where su.userid = u.id and su.studyid = s.id and lower(u.email) = %(email)s and acc=%(study_id)s; 
+            where su.userid = u.id and su.studyid = s.id and lower(u.email) = %(email)s and acc=%(study_id)s); 
         """
 
 
@@ -703,7 +752,6 @@ def get_all_study_acc():
         return False
 
 
-
 def get_user_email(user_token):
 
     input = "select email from users where apitoken = %(apitoken)s;"
@@ -715,6 +763,104 @@ def get_user_email(user_token):
         return data
     except Exception as e:
         return False
+
+
+def get_submitted_study_ids_for_user(user_token):
+    val_query_params(user_token)
+
+    study_id_list = execute_select_with_params(query_submitted_study_ids_for_user, {"user_token": user_token})
+    complete_list = []
+    for i, row in enumerate(study_id_list):
+        study_id = row[0]
+        complete_list.append(study_id)
+    return complete_list
+
+
+def create_empty_study(user_token, study_id=None, obfuscationcode=None):
+    email = get_email(user_token)
+    if not email:
+        return None
+
+    conn = None
+    postgresql_pool = None
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        acc = study_id
+        stable_id_input = {"stable_id_prefix": app.config.get("MTBLS_STABLE_ID_PREFIX")}
+        if not study_id:
+            cursor.execute(get_next_mtbls_id, stable_id_input)
+            result = cursor.fetchone()
+            if not result:
+                logger.error("There is not data prefix with MTBLS in stableid table")
+                raise ValueError()
+            data = result[0]
+            acc = f"{app.config.get('MTBLS_STABLE_ID_PREFIX')}{data}"
+        if not obfuscationcode:
+            obfuscationcode = str(uuid.uuid4())
+        releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
+        content = {"acc": acc,
+                   "obfuscationcode": obfuscationcode,
+                   "releasedate": releasedate,
+                   "email": email}
+        cursor.execute(insert_empty_study, content)
+        cursor.execute(update_metaboligts_id_sequence, stable_id_input)
+        cursor.execute(link_study_with_user, content)
+        conn.commit()
+        return acc
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return None
+    finally:
+        if postgresql_pool and conn:
+            release_connection(postgresql_pool, conn)
+
+
+def execute_select_with_params(query, params):
+    conn = None
+    postgresql_pool = None
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query, params)
+
+        data = cursor.fetchall()
+        return data
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return None
+    finally:
+        if postgresql_pool and conn:
+            release_connection(postgresql_pool, conn)
+
+
+def execute_query_with_parameter(query, parameters):
+    conn = None
+    postgresql_pool = None
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query, parameters)
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return None
+    finally:
+        if postgresql_pool and conn:
+            release_connection(postgresql_pool, conn)
+
+
+def get_release_date_of_study(study_id):
+    query = f"select acc, to_char(releasedate, 'DD/MM/YYYY') as release_date from studies where acc={study_id};"
+    try:
+        postgresql_pool, conn, cursor = get_connection()
+        cursor.execute(query)
+        data = cursor.fetchone()[0]
+        release_connection(postgresql_pool, conn)
+        return data
+    except Exception as e:
+        return None
+
 
 def query_study_submitters(study_id):
     val_acc(study_id)
@@ -981,10 +1127,10 @@ def get_connection():
     postgresql_pool = None
     conn = None
     cursor = None
+    params = app.config.get('DB_PARAMS')
+    conn_pool_min = app.config.get('CONN_POOL_MIN')
+    conn_pool_max = app.config.get('CONN_POOL_MAX')
     try:
-        params = app.config.get('DB_PARAMS')
-        conn_pool_min = app.config.get('CONN_POOL_MIN')
-        conn_pool_max = app.config.get('CONN_POOL_MAX')
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
         cursor = conn.cursor()
@@ -992,7 +1138,7 @@ def get_connection():
     except Exception as e:
         logger.error("Could not query the database " + str(e))
         if postgresql_pool:
-            postgresql_pool.closeall
+            postgresql_pool.closeall()
     return postgresql_pool, conn, cursor
 
 
@@ -1010,7 +1156,7 @@ def get_connection2():
     except Exception as e:
         logger.error("Could not query the database " + str(e))
         if postgresql_pool:
-            postgresql_pool.closeall
+            postgresql_pool.closeall()
     return postgresql_pool, conn, cursor
 
 
@@ -1074,7 +1220,7 @@ def add_maf_info_data(acc, database_identifier, metabolite_identification, datab
 
 def val_acc(study_id=None):
     if study_id:
-        if not study_id.startswith('MTBLS') or study_id.lower() in stop_words:
+        if not study_id.startswith(app.config.get("MTBLS_STABLE_ID_PREFIX")) or study_id.lower() in stop_words:
             logger.error("Incorrect accession number string pattern")
             abort(406, "'%s' incorrect accession number string pattern" % study_id)
 
