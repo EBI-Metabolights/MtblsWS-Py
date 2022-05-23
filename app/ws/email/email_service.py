@@ -39,7 +39,8 @@ class EmailService(object):
                       sender=from_mail_address,
                       recipients=recipients,
                       cc=[curation_mail_address],
-                      body=body)
+                      html=body
+                      )
         self.mail.send(msg)
 
     def send_email_for_queued_study_submitted(self, study_id, release_date, user_email, submitters_mail_addresses):

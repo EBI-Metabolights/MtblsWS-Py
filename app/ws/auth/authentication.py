@@ -15,13 +15,15 @@ logger = logging.getLogger('wslog')
 
 
 def validate_token_in_request_body(content):
-    if not content or "jwt" not in content or "user" not in content:
+    if not content \
+            or ("jwt" not in content and "Jwt" not in content) \
+            or ("user" not in content and "User" not in content ):
         return make_response(jsonify({"content": False,
                                       "message": "Invalid request. token and user inputs are required",
                                       "err": None}), 400)
 
-    jwt_token = content["jwt"]
-    username = content["user"]
+    username = content["user"] if "user" in content else content["User"]
+    jwt_token = content["jwt"] if "jwt" in content else content["Jwt"]
 
     try:
         user_in_token = AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt_token)

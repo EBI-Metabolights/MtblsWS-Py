@@ -130,18 +130,6 @@ link_study_with_user = """
 insert into study_user(userid, studyid) select u.id, s.id from users u, studies s where lower(u.email) = %(email)s and acc=%(acc)s;
 """
 
-insert_empty_study_with_id = """   
-    insert into studies (id, acc, obfuscationcode, releasedate, status, studysize, submissiondate, 
-    updatedate, validations, validation_status) 
-    values ( 
-        (select nextval('hibernate_sequence')),
-        %(acc)s, 
-        %(obfuscationcode)s,
-        %(releasedate)s,
-        0, 0, current_timestamp, 
-        current_timestamp, '{"entries":[],"status":"RED","passedMinimumRequirement":false,"overriden":false}', 'error');
-"""
-
 query_user_access_rights = """
     SELECT DISTINCT role, read, write, obfuscationcode, releasedate, submissiondate, 
         CASE    WHEN status = 0 THEN 'Submitted'

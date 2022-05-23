@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import pathlib
 
 from flask import abort, current_app as app
 
@@ -128,9 +129,9 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
         raw_files_path = os.path.join(ftp_path, "RAW_FILES")
         derived_files_path = os.path.join(ftp_path, "DERIVED_FILES")
         logger.info(f"Creating folder {ftp_path}")
-        os.makedirs(ftp_path, mode=0o770, exist_ok=True)
-        os.makedirs(raw_files_path, mode=0o770, exist_ok=True)
-        os.makedirs(derived_files_path, mode=0o770, exist_ok=True)
+        pathlib.Path(ftp_path).mkdir(mode=0o770, exist_ok=True)
+        pathlib.Path(raw_files_path).mkdir(mode=0o770, exist_ok=True)
+        pathlib.Path(derived_files_path).mkdir(mode=0o770, exist_ok=True)
         os_upload = ftp_path
         user_email = get_email(user_token)
         submitter_emails = query_study_submitters(study_id)

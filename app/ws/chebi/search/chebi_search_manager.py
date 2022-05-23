@@ -36,7 +36,7 @@ class ChebiSearchManager(object):
                 return response
 
     def get_compound_by_database_id(self, database_id: str):
-        logger.debug("Searching by compound id %s" % database_id)
+        logger.debug("Searching by compound database id %s" % database_id)
 
         response = CompoundSearchResponseModel()
         if "chebi" in database_id.lower():
@@ -112,6 +112,7 @@ class ChebiSearchManager(object):
                                                        search_category=SearchCategory.ALL_NAMES,
                                                        maximum_results=200, stars=StarsCategory.ALL)
             except ChebiWsException as e:
+                logger.error(f"Error while chebi ws call: {compound_name}, {e.message}")
                 response.message = "An error was occurred:"
                 response.err = e.message
                 return
@@ -123,6 +124,8 @@ class ChebiSearchManager(object):
                     result_model = commons.fill_with_complete_entity(checked_chebi_id, self.ws_proxy)
                     if result_model:
                         response.content.append(result_model)
+            else:
+                logger.error(f"No result after chebi ws call: {compound_name}")
 
     def _search_and_fill_by_name(self, compound_name, name_match, response):
         name_match_compound_name = name_match[CuratedMetaboliteTable.COMPOUND_INDEX]
