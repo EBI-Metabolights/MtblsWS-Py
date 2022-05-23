@@ -28,6 +28,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study_files import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import *
+from app.ws.misc_utilities.response_messages import HTTP_403, HTTP_400, HTTP_200, HTTP_500, HTTP_404, HTTP_401
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -122,6 +123,7 @@ def return_validations(section, validations, override_list=[], comment_list=[]):
         val["val_sequence"] = val_sequence
         val["val_override"] = 'false'
         val["val_message"] = ''
+        val["comment"] = ''
 
         comment_list = [string for string in comment_list if val_sequence in string]
 
@@ -2379,8 +2381,16 @@ class OverrideValidation(Resource):
 
 class ValidationComment(Resource):
     @swagger.operation(
-        summary="Add Comment",
-        notes='''Add a comment to a specific validation to give the user more context''',
+        summary="Add Comment To Validation",
+        notes='''Add a comment to a specific validation message to give the user more context.    <pre><code>
+    { 
+      "comment": 
+        {
+          "publication_3": "The PubChem id is for a different paper"
+        } 
+      
+    }
+    </code></pre>''',
         parameters=[
             {
                 "name": "study_id",
@@ -2409,23 +2419,12 @@ class ValidationComment(Resource):
             }
         ],
         responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
+            HTTP_200,
+            HTTP_400,
+            HTTP_401,
+            HTTP_403,
+            HTTP_404,
+            HTTP_500
         ]
     )
     def post(self, study_id):
@@ -2449,7 +2448,7 @@ class ValidationComment(Resource):
         comment_list = []
         # query_comments is a db_connection.py method
         query_list = query_comments(study_id)
-        if query_list:
+        if query_list and query_list[0] is not None:
             for val in query_list[0].split('|'):
                 comment_list.append(val)
 
@@ -2461,7 +2460,7 @@ class ValidationComment(Resource):
             val_found = False
             for i, existing_comment in enumerate(comment_list):
                 if val_sequence + ":" in existing_comment:  # Do we already have this comment in the database
-                    comment_list[i] += f' {comment}'
+                    comment_list[i] = f' {comment}'
                     feedback += f"Comment for {val_sequence} has been updated."
 
             if not val_found:
