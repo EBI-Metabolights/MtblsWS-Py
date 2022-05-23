@@ -186,7 +186,7 @@ class AuthUser(Resource):
             try:
                 UserService.get_instance(app).validate_username_with_submitter_or_super_user_role(username)
                 m_user = UserService.get_instance(app).get_simplified_user_by_username(username)
-                response_data = {"content": {"owner": m_user.dict()}, "message": None, "err": None}
+                response_data = {"content": json.dumps({"owner": m_user.dict()}), "message": None, "err": None}
                 response = make_response(response_data, 200)
                 response.headers["Access-Control-Allow-Origin"] = "*"
             except Exception as e:
