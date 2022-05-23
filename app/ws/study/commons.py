@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import pathlib
 
 from flask import abort, current_app as app
 
@@ -121,7 +120,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
     new_folder_name = study_id.lower() + '-' + obfuscation_code
     ftp_folder = os.path.join(app.config.get('MTBLS_FTP_ROOT'), new_folder_name)
     os_upload = ftp_folder
-    status = "folder already exist"
+    new_folder = False
     if not os.path.exists(ftp_folder):
         logger.info('Creating a new study upload folder for Study %s', study_id)
         ftp_private_folder_root = app.config.get('MTBLS_PRIVATE_FTP_ROOT')
@@ -129,20 +128,12 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
         raw_files_path = os.path.join(ftp_path, "RAW_FILES")
         derived_files_path = os.path.join(ftp_path, "DERIVED_FILES")
         logger.info(f"Creating folder {ftp_path}")
-        pathlib.Path(ftp_path).mkdir(mode=0o770, exist_ok=True)
-        pathlib.Path(raw_files_path).mkdir(mode=0o770, exist_ok=True)
-        pathlib.Path(derived_files_path).mkdir(mode=0o770, exist_ok=True)
+        os.makedirs(ftp_path, mode=0o770, exist_ok=True)
+        os.makedirs(raw_files_path, mode=0o770, exist_ok=True)
+        os.makedirs(derived_files_path, mode=0o770, exist_ok=True)
         os_upload = ftp_path
-        user_email = get_email(user_token)
-        submitter_emails = query_study_submitters(study_id)
-        submitters_email_list = []
-        if submitter_emails:
-            submitters_email_list = [submitter[0] for submitter in submitter_emails if submitter]
+        new_folder = True
 
-        email_service.send_email_for_requested_ftp_folder_created(study_id,
-                                                                  ftp_path, user_email,
-                                                                  submitters_email_list)
-        status = "folder created"
     upload_loc = None
     private_ftp_user = app.config.get("PRIVATE_FTP_SERVER_USER")
     if private_ftp_user in ftp_folder:
@@ -152,4 +143,17 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
             upload_loc = upload_location[1]
         else:
             upload_loc = upload_location[0]
-    return {'os_upload_path': os_upload, 'upload_location': upload_loc, 'status': status}
+
+    if new_folder:
+        user_email = get_email(user_token)
+        submitter_emails = query_study_submitters(study_id)
+        submitters_email_list = []
+        if submitter_emails:
+            submitters_email_list = [submitter[0] for submitter in submitter_emails if submitter]
+
+        email_service.send_email_for_requested_ftp_folder_created(study_id,
+                                                                  upload_loc, user_email,
+                                                                  submitters_email_list)
+    status_message = "FTP folder created" if new_folder else "Folder is already created"
+
+    return {'os_upload_path': os_upload, 'upload_location': upload_loc, 'status': status_message}
