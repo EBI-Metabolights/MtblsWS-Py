@@ -29,7 +29,7 @@ import requests
 from flask import current_app as app
 
 from app.ws.cluster_jobs import lsf_job
-from app.ws.db_connection import override_validations, update_validation_status
+from app.ws.db_connection import override_validations, update_validation_status, query_comments
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study import commons
 from app.ws.study.folder_utils import get_all_files_from_filesystem, list_directories_full
@@ -120,14 +120,19 @@ def extract_details(rule):
     return val, val_error, val_condition, val_type
 
 
-def return_validations(section, validations, override_list=[]):
+def return_validations(section, validations, override_list=[], comment_list=[]):
     # Add the validation sequence
+
     for val in validations:
         # idx += 1  # Set the sequence to 1, as this is the section we will override
         val_sequence = section + '_' + val['val_sequence']
         val["val_sequence"] = val_sequence
         val["val_override"] = 'false'
         val["val_message"] = ''
+        val["comment"] = ''
+
+        comment_list = [string for string in comment_list if val_sequence in string]
+
         if len(override_list) > 0:  # These are from the database, ie. already over-ridden
             try:
                 for db_val in override_list:
@@ -143,6 +148,13 @@ def return_validations(section, validations, override_list=[]):
                             val["status"] = error
             except:
                 logger.error('Could not read the validation override list, is the required ":" there?')
+        if len(comment_list) > 0:
+            for comment in comment_list:
+                # we can't assume that we will get only one result, as the list comp would catch both 7.11 and 7.1
+                comment_validation_seq = comment.split(':')[0]
+                text = comment.split(':')[0]
+                if comment_validation_seq == val_sequence:
+                    val['comment'] = 'text'
 
     error_found = False
     warning_found = False
@@ -549,6 +561,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
         logger.error(str(e))
 
     override_list = []
+    comment_list = []
     try:
         query_list = override_validations(study_id, 'query')
         if query_list and query_list[0]:
@@ -557,10 +570,18 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     except Exception as e:
         logger.error('Could not query overridden validations from the database. ' + str(e))
 
+
+    try:
+        query_comment_list = query_comments(study_id)
+        if query_comment_list and query_comment_list[0]:
+            comment_list.extend(query_comment_list[0].split('|'))
+    except IndexError as e:
+        logger.error(f'Unable to retrieve comment list from database: {str(e)}')
+
     # Validate basic ISA-Tab structure
     isa_study, isa_inv, isa_samples, std_path, status, amber_warning, isa_validation, inv_file, s_file, assay_files = \
         validate_basic_isa_tab(
-            study_id, user_token, study_location, db_release_date, override_list, log_category=log_category)
+            study_id, user_token, study_location, db_release_date, override_list, comment_list, log_category=log_category)
     all_validations.append(isa_validation)
     if not status:
         error_found = True
@@ -573,7 +594,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     val_section = "publication"
     if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, pub_validation = validate_publication(
-            isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
+            isa_study, validation_schema, inv_file, override_list, comment_list, val_section, log_category=log_category)
         all_validations.append(pub_validation)
 
     if not status:
@@ -585,7 +606,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     val_section = "isa-tab"
     if validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_meta_validation = validate_isa_tab_metadata(
-            isa_inv, isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
+            isa_inv, isa_study, validation_schema, inv_file, override_list, comment_list, val_section, log_category=log_category)
         all_validations.append(isa_meta_validation)
 
     if not status:
@@ -597,7 +618,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     val_section = "person"
     if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_person_validation = validate_contacts(
-            isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
+            isa_study, validation_schema, inv_file, override_list, comment_list, val_section, log_category=log_category)
         all_validations.append(isa_person_validation)
 
     if not status:
@@ -609,7 +630,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     val_section = "protocols"
     if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_protocol_validation = validate_protocols(
-            isa_study, validation_schema, inv_file, override_list, val_section, log_category=log_category)
+            isa_study, validation_schema, inv_file, override_list, comment_list, val_section, log_category=log_category)
         all_validations.append(isa_protocol_validation)
 
     if not status:
@@ -622,7 +643,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     sample_name_list = []
     if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, isa_sample_validation = \
-            validate_samples(isa_study, isa_samples, validation_schema, s_file, override_list,
+            validate_samples(isa_study, isa_samples, validation_schema, s_file, override_list, comment_list,
                              sample_name_list, val_section, log_category=log_category)
         all_validations.append(isa_sample_validation)
 
@@ -636,7 +657,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     file_name_list = []
     if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, files_validation = validate_files(
-            study_id, study_location, obfuscation_code, override_list,
+            study_id, study_location, obfuscation_code, override_list, comment_list,
             file_name_list, val_section, log_category=log_category, static_validation_file=static_validation_file)
         all_validations.append(files_validation)
 
@@ -649,7 +670,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     val_section = "assays"
     if isa_study and validation_section == 'all' or val_section in validation_section or 'maf' in validation_section:
         status, amber_warning, assay_validation = \
-            validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
+            validate_assays(isa_study, study_location, validation_schema, override_list, comment_list, sample_name_list,
                             file_name_list, val_section, log_category=log_category)
         all_validations.append(assay_validation)
 
@@ -911,7 +932,7 @@ def is_valid_derived_column_entry(value: str) -> dict:
     return result_dict
 
 
-def validate_assays(isa_study, study_location, validation_schema, override_list, sample_name_list,
+def validate_assays(isa_study, study_location, validation_schema, override_list, comment_list, sample_name_list,
                     file_name_list, val_section="assays", log_category=error):
     validations = []
     all_assay_samples = []
@@ -1117,7 +1138,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     if len(missing_or_incorrect_files) > 0:
         with open(study_location + '/missing_files.txt', 'w') as file:
             file.write("\n".join(missing_or_incorrect_files))
-    return return_validations(val_section, validations, override_list)
+    return return_validations(val_section, validations, override_list, comment_list)
 
 
 def get_files_in_sub_folders(study_location):
@@ -1149,7 +1170,7 @@ def get_files_in_sub_folders(study_location):
     return folder_list
 
 
-def validate_files(study_id, study_location, obfuscation_code, override_list, file_name_list,
+def validate_files(study_id, study_location, obfuscation_code, override_list, comment_list, file_name_list,
                    val_section="files", log_category=error, static_validation_file=None):
     validations = []
     assay_file_list = get_assay_file_list(study_location)
@@ -1269,10 +1290,10 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, fi
         add_msg(validations, val_section, "No raw files found", error, val_section,
                 value="", val_sequence=10, log_category=log_category)
 
-    return return_validations(val_section, validations, override_list)
+    return return_validations(val_section, validations, override_list, comment_list)
 
 
-def validate_samples(isa_study, isa_samples, validation_schema, file_name, override_list, sample_name_list,
+def validate_samples(isa_study, isa_samples, validation_schema, file_name, override_list, comment_list, sample_name_list,
                      val_section="samples", log_category=error):
     # check for Publication
     validations = []
@@ -1392,10 +1413,10 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
         add_msg(validations, val_section, "Organism name is missing or too short (<4 characters)", error, file_name,
                 val_sequence=9, log_category=log_category)
 
-    return return_validations(val_section, validations, override_list)
+    return return_validations(val_section, validations, override_list, comment_list)
 
 
-def validate_protocols(isa_study, validation_schema, file_name, override_list, val_section="protocols",
+def validate_protocols(isa_study, validation_schema, file_name, override_list, comment_list, val_section="protocols",
                        log_category=error):
     # check for Publication
     validations = []
@@ -1539,10 +1560,10 @@ def validate_protocols(isa_study, validation_schema, file_name, override_list, v
                     add_msg(validations, val_section, prot_name + ": " + param_val_error, error, file_name,
                             value="", descr=param_val_description, val_sequence=14, log_category=log_category)
 
-    return return_validations(val_section, validations, override_list)
+    return return_validations(val_section, validations, override_list, comment_list)
 
 
-def validate_contacts(isa_study, validation_schema, file_name, override_list, val_section="person", log_category=error):
+def validate_contacts(isa_study, validation_schema, file_name, override_list, comment_list, val_section="person", log_category=error):
     # check for People ie. authors
     validations = []
 
@@ -1615,7 +1636,7 @@ def validate_contacts(isa_study, validation_schema, file_name, override_list, va
         add_msg(validations, val_section, "No study persons/authors found", error, file_name,
                 val_sequence=9, log_category=log_category)
 
-    return return_validations(val_section, validations, override_list)
+    return return_validations(val_section, validations, override_list, comment_list)
 
 
 def check_doi(pub_doi, doi_val):
@@ -1644,7 +1665,7 @@ def validate_name(name, name_type):
     return validates
 
 
-def validate_publication(isa_study, validation_schema, file_name, override_list, val_section="publication",
+def validate_publication(isa_study, validation_schema, file_name, override_list, comment_list, val_section="publication",
                          log_category=error):
     # check for Publication
     validations = []
@@ -1768,10 +1789,10 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
     else:
         add_msg(validations, val_section, title_val_error, error, val_sequence=21, log_category=log_category)
 
-    return return_validations(val_section, validations, override_list)
+    return return_validations(val_section, validations, override_list, comment_list)
 
 
-def validate_basic_isa_tab(study_id, user_token, study_location, release_date, override_list, log_category=error):
+def validate_basic_isa_tab(study_id, user_token, study_location, release_date, override_list, comment_list, log_category=error):
     validates = True
     amber_warning = False
     validations = []
@@ -1913,7 +1934,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
         add_msg(validations, "ISA-Tab", "Could not find or read the investigation file",
                 error, inv_file_name, val_sequence=18, log_category=log_category)
 
-    validates, amber_warning, ret_list = return_validations(val_section, validations, override_list)
+    validates, amber_warning, ret_list = return_validations(val_section, validations, override_list, comment_list)
 
     inv_file = 'i_Investigation.txt'
 
@@ -1928,7 +1949,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
            ret_list, inv_file, s_file, assay_files
 
 
-def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list,
+def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list, comment_list,
                               val_section="isa-tab", log_category=error):
     validations = []
 
@@ -1970,7 +1991,7 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
         add_msg(validations, val_section, "Could not find or read the investigation file", error,
                 val_sequence=5, log_category=log_category)
 
-    return return_validations(val_section, validations, override_list)
+    return return_validations(val_section, validations, override_list, comment_list)
 
 
 def run_validation_in_File(validations_file, study_id, study_location, user_token, obfuscation_code, section,
