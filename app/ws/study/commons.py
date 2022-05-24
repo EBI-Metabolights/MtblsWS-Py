@@ -128,16 +128,18 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
         raw_files_path = os.path.join(ftp_path, "RAW_FILES")
         derived_files_path = os.path.join(ftp_path, "DERIVED_FILES")
         logger.info(f"Creating folder {ftp_path}")
+        previous_mask = os.umask(0)
         os.makedirs(ftp_path, mode=0o770, exist_ok=True)
         os.makedirs(raw_files_path, mode=0o770, exist_ok=True)
         os.makedirs(derived_files_path, mode=0o770, exist_ok=True)
+        os.umask(previous_mask)
         os_upload = ftp_path
         new_folder = True
 
     upload_loc = None
     private_ftp_user = app.config.get("PRIVATE_FTP_SERVER_USER")
     if private_ftp_user in ftp_folder:
-        upload_location = ftp_folder.split('/' + private_ftp_user)  # FTP/Aspera root starts here
+        upload_location = ftp_folder.split('/' + private_ftp_user + '/')  # FTP/Aspera root starts here
         upload_location = [x for x in upload_location if x]
         if len(upload_location) > 0:
             upload_loc = upload_location[1]

@@ -1,3 +1,4 @@
+sudo docker stop metablws-py
 sudo docker rm metablws-py
 sudo docker run --name metablws-py \
     --mount src=$(pwd)/,dst=/app-root,type=bind \
@@ -9,4 +10,5 @@ sudo docker run --name metablws-py \
     --mount src=/home/ozgur/work/metabolights/dev/validation/,dst=/shared-folders/validation/,type=bind \
     -e INSTANCE_DIR="$(pwd)/docker-instance" \
     -p 9999:5000 \
+    -d \
     metablws-py
