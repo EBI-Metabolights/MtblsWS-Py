@@ -7,7 +7,7 @@ from flask import abort, current_app as app
 from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
     query_study_submitters, get_public_studies, get_private_studies, get_study_by_type
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger('wslog')
 
 
 def get_study_by_status(stype, publicS=True):
@@ -129,10 +129,12 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
         derived_files_path = os.path.join(ftp_path, "DERIVED_FILES")
         logger.info(f"Creating folder {ftp_path}")
         previous_mask = os.umask(0)
-        os.makedirs(ftp_path, mode=0o770, exist_ok=True)
-        os.makedirs(raw_files_path, mode=0o770, exist_ok=True)
-        os.makedirs(derived_files_path, mode=0o770, exist_ok=True)
-        os.umask(previous_mask)
+        try:
+            os.makedirs(ftp_path, mode=0o770, exist_ok=True)
+            os.makedirs(raw_files_path, mode=0o770, exist_ok=True)
+            os.makedirs(derived_files_path, mode=0o770, exist_ok=True)
+        finally:
+            os.umask(previous_mask)
         os_upload = ftp_path
         new_folder = True
 

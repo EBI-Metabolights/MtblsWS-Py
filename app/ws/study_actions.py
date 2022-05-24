@@ -333,7 +333,7 @@ class ToggleAccessGet(Resource):
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
         db_study_status = wsc.get_permissions(study_id, user_token)
-        if not is_curator:
+        if not write_access:
             abort(403)
 
         ftp_path = app.config.get(
