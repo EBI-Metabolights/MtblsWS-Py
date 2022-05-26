@@ -28,4 +28,4 @@ COPY . .
 EXPOSE 5000
 
 
-CMD ["python3", "wsapp.py"]
+CMD ["./start_gunicorn_in_docker.sh"]

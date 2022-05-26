@@ -1,3 +1,7 @@
+#configurations
+.secrets/
+.test_data
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -39,6 +43,7 @@ htmlcov/
 .tox/
 .coverage
 .coverage.*
+.coveralls.*
 .cache
 nosetests.xml
 coverage.xml
@@ -50,7 +55,7 @@ coverage.xml
 *.pot
 
 # Flask stuff:
-instance/
+/*instance*/
 .webassets-cache
 
 # pyenv
@@ -60,33 +65,26 @@ instance/
 .env
 
 # virtualenv
-venv/
-ENV/
-venv351
+/venv*/
+/VENV*/
+/old_venv*/
 
 # Editors
 .idea/
 
 # Logs
-logs/
+/logs*/
 logs.txt
+/logging_*.conf
 
 # SSL
 ssl/
 
 # files for keeping PID
-/app-pid.old
-/app.pid
+/app*.pid.old
+/app*.pid
 /tests/.pytest_cache/
 tests/.pytest_cache/
 .pytest_cache
 examples/
-venv37
-old_venv37
 token.pickle
-logging_kenneth-ml.conf
-logging_jkchang.conf
-logging_C02R51F3FVH8.conf
-logging_C02RN2JFFVH8.conf
-logging_JF3F6YXL4V.conf
-venv382
