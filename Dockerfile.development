@@ -23,7 +23,6 @@ RUN  pip3 install --upgrade pip \
 USER tc_cm01
 
 WORKDIR /app-root
-COPY . .
 
 EXPOSE 5000
 
