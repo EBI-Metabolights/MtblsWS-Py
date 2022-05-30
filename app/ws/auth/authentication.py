@@ -6,7 +6,7 @@ from flask import request, jsonify, make_response, current_app as app
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 
-from app.utils import metabolights_exception_handler
+from app.utils import metabolights_exception_handler, MetabolightsException
 from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
@@ -110,8 +110,10 @@ class AuthLogin(Resource):
 
         try:
             token = AuthenticationManager.get_instance(app).create_oauth2_token(username, password)
+        except MetabolightsException as e:
+            return make_response(jsonify({"content": "invalid", "message": e.message, "err": e.exception}), e.http_code)
         except Exception as e:
-            return make_response(jsonify({"content": "invalid", "message": "Authentication failed", "err": None}), 403)
+            return make_response(jsonify({"content": "invalid", "message": "Authentication failed", "err": str(e)}), 403)
 
         if not token:
             return make_response(jsonify({"content": "invalid", "message": "Authentication failed", "err": None}), 403)

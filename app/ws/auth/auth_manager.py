@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import os
 from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Optional, List
@@ -22,6 +23,11 @@ class TokenData(BaseModel):
     scopes: List[str] = []
 
 
+app_secrets_dir = os.path.join(os.getcwd(), ".secrets")
+if "SECRETS_DIR" in os.environ and os.environ["SECRETS_DIR"]:
+    app_secrets_dir = os.environ["SECRETS_DIR"]
+
+
 class SecuritySettings(BaseSettings):
     application_secret_key: str
     access_token_hash_algorithm: str = "HS256"
@@ -31,7 +37,7 @@ class SecuritySettings(BaseSettings):
 
     class Config:
         # read and set secrets from this secret directory
-        secrets_dir = "./.secrets"
+        secrets_dir = app_secrets_dir
 
 
 @lru_cache(1)
