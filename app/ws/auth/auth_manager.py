@@ -29,15 +29,11 @@ if "SECRETS_DIR" in os.environ and os.environ["SECRETS_DIR"]:
 
 
 class SecuritySettings(BaseSettings):
-    application_secret_key: str
+    application_secret_key: str = ""
     access_token_hash_algorithm: str = "HS256"
     access_token_expires_delta: int = 300
     access_token_allowed_audience: str = None
     access_token_issuer_name: str = "Metabolights PythonWS"
-
-    class Config:
-        # read and set secrets from this secret directory
-        secrets_dir = app_secrets_dir
 
 
 @lru_cache(1)
@@ -48,6 +44,7 @@ def get_security_settings(app):
         settings.access_token_expires_delta = app.config.get("ACCESS_TOKEN_EXPIRES_DELTA")
         settings.access_token_allowed_audience = app.config.get("ACCESS_TOKEN_ALLOWED_AUDIENCE")
         settings.access_token_issuer_name = app.config.get("ACCESS_TOKEN_ISSUER_NAME")
+        settings.application_secret_key = app.config.get("APPLICATION_SECRET_KEY")
     return settings
 
 

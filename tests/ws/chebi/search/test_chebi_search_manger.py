@@ -1,5 +1,5 @@
 from app.ws.chebi.settings import ChebiWsSettings
-from instance import config
+import config
 
 curated_file_location = config.CURATED_METABOLITE_LIST_FILE_LOCATION
 

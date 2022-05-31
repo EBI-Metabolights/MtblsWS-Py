@@ -1,213 +1,603 @@
-#  EMBL-EBI MetaboLights - https://www.ebi.ac.uk/metabolights
-#  Metabolomics team
-#
-#  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
-#
-#  Last modified: 2020-Mar-12
-#  Modified by:   kenneth
-#
-#  Copyright 2020 EMBL - European Bioinformatics Institute
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
 import os
+from app import file_utils as utils
 
-ACCESS_TOKEN_HASH_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRES_DELTA = 300    # in minutes
-ACCESS_TOKEN_ALLOWED_AUDIENCE = "Metabolights Editor"
-ACCESS_TOKEN_ISSUER_NAME = "Metabolights PythonWS"
-
-PORT = 5000
-WS_APP_BASE_LINK = "https://www.ebi.ac.uk/metabolights"
-DEBUG = False
 PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
 STATIC_FOLDER = os.path.join(PROJECT_PATH, "static")
 TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
+RESOURCES_FOLDER = os.path.join(PROJECT_PATH, "resources")
 
-# Increment when the WS app changes. Follow the Semantic Versioning schema:
-#   MAJOR version when backwards incompatible changes are introduced
-#   MINOR version when new functionality is added in a backwards-compatible manner
-#   PATCH version when bugs are fixed (but still backwards-compatible)
-WS_APP_VERSION = "1.7.5"
-API_VERSION = WS_APP_VERSION
-ISA_API_VERSION = "0.11.0"
-METASPACE_API_VERSION = "1.7.2"
-MZML2ISA_VERSION = "1.0.3"
+LOG_FILE_CONFIG = os.path.join(PROJECT_PATH, "logging.conf")
+if "LOG_FILE_CONFIG" in os.environ and os.environ["LOG_FILE_CONFIG"]:
+    LOG_FILE_CONFIG = os.environ["LOG_FILE_CONFIG"]
 
-GA_TRACKING_ID = ""
+INSTANCE_DIR = os.path.join(PROJECT_PATH, "instance")
+if "INSTANCE_DIR" in os.environ and os.environ["INSTANCE_DIR"]:
+    INSTANCE_DIR = os.environ["INSTANCE_DIR"]
 
-WS_APP_NAME = "MtblsWS-Py"
-WS_APP_DESCRIPTION = "MetaboLights RESTful WebService"
-RESOURCES_PATH = "/metabolights/ws"
-CORS_RESOURCES_PATH = RESOURCES_PATH + "/*"
-API_DOC = RESOURCES_PATH + "/api/spec"
-UPDATE_PATH_SUFFIX = "audit"
+CONFIG_DIR = os.path.join(PROJECT_PATH, "configs")
+if "CONFIG_DIR" in os.environ and os.environ["CONFIG_DIR"]:
+    CONFIG_DIR = os.environ["CONFIG_DIR"]
 
-REPORTING_PATH = "<report folder name>/"
-STUDY_PATH = "<full path file system>"
-FILE_SYSTEM_PATH = '<some local filesystem>/'
-MTBLS_ZOOMA_FILE = "<local file>"
-MTBLS_ONTOLOGY_FILE = "<local file>"
-BIOPORTAL_TOKEN = '<your bioportal token>'
-METABOLIGHTS_TOKEN = '<your administrative metabolights token>'
-MZML_XSD_SCHEMA = ["<local file>", "<script location>"]
-STUDY_QUEUE_FOLDER = "<some local filesystem>"
-MTBLS_STABLE_ID_PREFIX = "MTBLS"
-#FTP
-MTBLS_FTP_ROOT = "MTBLS_FTP_ROOT"
-MTBLS_PRIVATE_FTP_ROOT = "MTBLS_PRIVATE_FTP_ROOT"
-PRIVATE_FTP_SERVER = "PRIVATE_FTP_SERVER"
-PRIVATE_FTP_SERVER_USER = "PRIVATE_FTP_SERVER_USER"
-PRIVATE_FTP_SERVER_PASSWORD= "PRIVATE_FTP_SERVER_PASSWORD"
-FTP_UPLOAD_HELP_DOC_URL = "FTP_UPLOAD_HELP_DOC_URL"
+SECRETS_DIR = os.path.join(PROJECT_PATH, ".secrets")
+if "SECRETS_DIR" in os.environ and os.environ["SECRETS_DIR"]:
+    SECRETS_DIR = os.environ["SECRETS_DIR"]
 
-#EMAIL SERVICE
-EMAIL_NO_REPLY_ADDRESS = "EMAIL_NO_REPLY_ADDRESSs"
-CURATION_EMAIL_ADDRESS = "CURATION_EMAIL_ADDRESS"
-METABOLIGHTS_HOST_URL = "https://www.ebi.ac.uk/metabolights"
-MAIL_SERVER = 'localhost'
-MAIL_PORT = 25
-MAIL_USE_TLS = False
-MAIL_USE_SSL = False
-MAIL_USERNAME = None
-MAIL_PASSWORD = None
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#
+#                                           SERVER SETTINGS SECTION
+#
+#                       This section is ordered by key names in CONFIG_DIR/server_settings.json file
+#
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
 
-#CHEBI SEARCH
-CURATED_METABOLITE_LIST_FILE_LOCATION = "<some folder>"
-CHEBI_WS_WSDL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
-CHEBI_WS_WSDL_SERVICE = "ChebiWebServiceService"
-CHEBI_WS_WSDL_SERVICE_PORT = "ChebiWebServicePort"
-CHEBI_WS_STRICT = False
-CHEBI_WS_XML_HUGE_TREE = True
-CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL = "ERROR"
+server_settings = utils.load_json_config_file("server_settings.json", config_dir=CONFIG_DIR)
 
-# ELASTICSEARCH
-ELASTICSEARCH_HOST = "localhost"
-ELASTICSEARCH_PORT = 9200
-ELASTICSEARCH_USE_TLS = True
-ELASTICSEARCH_USER_NAME = "<username here>"
-ELASTICSEARCH_USER_PASSWORD = "<password here>"
+########################################################################################################################
+#   ENVIRONMENT
+#
+#   Load from the following file: CONFIG_DIR/server_settings.json with key "ENV"
+#
+#   Configuration examples:
+#
+#   "ENV": "Development"
+#   "ENV": "Test"
+#   "ENV": "Production"
+########################################################################################################################
+ENV = server_settings["ENV"]
 
-# GOOGLE SHEETS
-GOOLGE_ZOOMA_SHEET = "<Google sheet url>"
-MTBLS_STATISITC = "<Google sheet url>"
-MTBLS_CURATION_LOG = "<Google sheet url>"
-MTBLS_CURATION_LOG_TEST = "<Google sheet url>"
+########################################################################################################################
+#   SERVICE
+#
+#   Load from the following file: CONFIG_DIR/server_settings.json with key "SERVICE"
+########################################################################################################################
+server_service = server_settings["SERVICE"]
 
-GOOGLE_SHEET_TOKEN = "./instance/google_sheet_api_credentials.json"
-GOOGLE_CALENDAR_TOKEN = "./instance/google_calendar_api_credentials.json"
-GOOGLE_CALENDAR_ID = ""
-MARIANA_DRIVE_ID = ""
+PORT = server_service["PORT"]
+APP_BASE_LINK = server_service["APP_BASE_LINK"]
+WS_APP_BASE_LINK = server_service["WS_APP_BASE_LINK"]
+MTBLS_WS_HOST = server_service["MTBLS_WS_HOST"]
+MTBLS_WS_PORT = server_service["MTBLS_WS_PORT"]
+RESOURCES_PATH = server_service["RESOURCES_PATH"]
+CORS_HOSTS = server_service["CORS_HOSTS"]
+CORS_RESOURCES_PATH = server_service["CORS_RESOURCES_PATH"]
+API_DOC = server_service["API_DOC"]
 
-PARTNER_TEMPLATE_METABOLON = 'TEMPLATES/METABOLON'
-DEFAULT_TEMPLATE = 'TEMPLATES/DUMMY'
+########################################################################################################################
+#   DESCRIPTION
+#
+#   Load from the following file: CONFIG_DIR/server_settings.json with key "DESCRIPTION"
+########################################################################################################################
+server_description = server_settings["DESCRIPTION"]
 
-CORS_HOSTS = "http://localhost:8000", \
-             "http://localhost:4200", \
-             "http://localhost:8080", \
-             "http://localhost.ebi.ac.uk:8080", \
-             "http://wwwdev.ebi.ac.uk", \
-             "http://wp-np3-15:8080", \
-             "http://wp-np3-15.ebi.ac.uk:8080"
-
-DELETED_SAMPLES_PREFIX_TAG = "__TO_BE_DELETED__"
-
-# These variabled will be overridden in  instance/config.py
-# MTBLS_WS_HOST = "https://www.ebi.ac.uk"
-# MTBLS_WS_PORT = ""
-# MTBLS_FTP_ROOT = "<Folder to private ftp root>"
-
-DB_PARAMS = {
-    'database': 'db-name', 'user': 'user-name', 'password': 'user-password', 'host': 'hostname', 'port': 1234
-}
-
-SSH_PARAMS = {
-    'host': 'ebi-cli',
-    'user': 'user_name',
-    'password': 'user_password'
-}
-
-JIRA_PARAMS = {
-    'username': 'jira_username',
-    'password': 'jira_password'
-}
-
-# Connection Pool parameters
-CONN_POOL_MIN = 1
-CONN_POOL_MAX = 20
-
-# Timeout in secounds when listing a large folder for files
-FILE_LIST_TIMEOUT = 900
-
-# chebi
-REMOVED_HS_MOL_COUNT = 500
-
-# Validations
-VALIDATION_FILES_LIMIT = 10000
-VALIDATION_SCRIPT = "/nfs/www-prod/web_hx2/cm/metabolights/scripts/cluster_scripts/val/validation.sh"
-VALIDATION_RUN_MSG = 'Validation is running, Please check after some time.'
-ASSAY_VALIDATION_FILE = '/validation_assay.json'
-FILES_VALIDATION_FILE = '/validation_files.json'
-METADATA_VALIDATION_FILE = '/validation_meta.json'
-COMPLETE_VALIDATION_FILE = '/validation_complete.json'
+WS_APP_NAME = server_description["WS_APP_NAME"]
+WS_APP_DESCRIPTION = server_description["WS_APP_DESCRIPTION"]
+WS_APP_VERSION = server_description["WS_APP_VERSION"]
+API_VERSION = server_description["API_VERSION"]
+ISA_API_VERSION = server_description["ISA_API_VERSION"]
+METASPACE_API_VERSION = server_description["METASPACE_API_VERSION"]
+MZML2ISA_VERSION = server_description["MZML2ISA_VERSION"]
 
 
-VALIDATIONS_FILE = "https://www.ebi.ac.uk/metabolights/editor/assets/configs/config20180618/validations.json"
+########################################################################################################################
+#   DEBUG
+#
+#   Load from the following file: CONFIG_DIR/server_settings.json with key "DEBUG"
+#
+#   Configuration example 
+#
+#   "DEBUG": {
+#     "DEBUG": true,
+#     "DEBUG_LOG_HEADERS": true,
+#     "DEBUG_LOG_BODY": false,
+#     "DEBUG_LOG_JSON": false
+#   }
+########################################################################################################################
+server_debug = server_settings["DEBUG"]
 
-FOLDER_EXCLUSION_LIST = ['audit', '.d', '.raw', 'metaspace', 'chebi', 'old', 'backup', 'chebi_pipeline_annotations',
-                         '/audit', '/metaspace', '/chebi', '/old', '/backup', '/chebi_pipeline_annotations']
+DEBUG = server_debug["DEBUG"]
+DEBUG_LOG_HEADERS = server_debug["DEBUG_LOG_HEADERS"]
+DEBUG_LOG_BODY = server_debug["DEBUG_LOG_BODY"]
+DEBUG_LOG_JSON = server_debug["DEBUG_LOG_JSON"]
 
-EMPTY_EXCLUSION_LIST = ['tempbase', 'metexplore_mapping.json', 'synchelper', '_chroms.inf', 'prosol_history', 'title',
-                        'msprofile.bin', 'tcc_1.xml', 'msactualdefs.xml', 'msmasscal.bin', 'tcc_1.xml', 'format.temp']
+########################################################################################################################
+#                                    END OF SERVER SETTINGS SECTION
+########################################################################################################################
 
-IGNORE_FILE_LIST = ['msprofile', '_func', '_chroms', '_header', 'defaultmasscal', 'checksum.xml', 'info.xml',
-                    'binpump', 'tdaspec', 'isopump', 'acqmethod', 'msperiodicactuals', 'tofdataindex',
-                    'devices.xml', '_inlet', '_extern', 'synchelper', 'title', 'msts.xml', 'metexplore_mapping',
-                    'tempbase', 'prosol_history', 'validation_files', 'pulseprogram', '_history', 'tcc_1',
-                    'msactualdefs', 'msmasscal', 'fq1list', 'pdata', 'uxnmr', 'shimvalues', 'specpar', 'output',
-                    'format.temp', 'scon2', 'stanprogram', 'precom', 'settings', 'outd', 'gpnam', 'base_info',
-                    'clevels']
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#
+#                                  CREDENTIALS AND SECRETS SECTION
+#
+#                          This section is ordered by file names in SECRETS_DIR
+#
+########################################################################################################################
+#   APPLICATION SECRETS
+#
+#   Load from the following file: SECRETS_DIR/application_secrets.json
+#
+#    Configuration Example:
+#
+#    {
+#       "APPLICATION_SECRET_KEY": "invalid-secret-key",
+#       "BIOPORTAL_TOKEN": "uuid api token of bioportal service user",
+#       "METABOLIGHTS_TOKEN": "uuid api token of bioportal metabolights service user",
+#       "MTBLS_SUBMITTER_EMAIL": "email address of placeholder service user"
+#     }
+########################################################################################################################
+application_secrets = utils.load_json_credentials_file("application_secrets.json", secrets_dir=SECRETS_DIR)
 
-RAW_FILES_LIST = ['.d', '.raw', '.idb', '.cdf', '.wiff', '.scan', '.dat', '.cmp', '.cdf.cmp',
-                  '.lcd', '.abf', '.jpf', '.xps', '.mgf', '.qgd', '.hr']
+APPLICATION_SECRET_KEY = application_secrets["APPLICATION_SECRET_KEY"]
+BIOPORTAL_TOKEN = application_secrets["BIOPORTAL_TOKEN"]
+METABOLIGHTS_TOKEN = application_secrets["METABOLIGHTS_TOKEN"]
+MTBLS_SUBMITTER_EMAIL = application_secrets["MTBLS_SUBMITTER_EMAIL"]
 
-DERIVED_FILES_LIST = ['.mzml', '.imzML', '.wiff', '.nmrml', '.mzxml', '.xml', '.mzdata', '.cef', '.cnx', '.peakml', '.xy', '.smp',
-                      '.scan', '.dx', '.DX','.msp', '.mzML', '.xlsx', '.CDF', '.imzml', 'mzXML', '.mgf']
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#   AWS CREDENTIALS
+#
+#   Path of credential file. Default is SECRETS_DIR/jira_credentials.json
+########################################################################################################################
+AWS_CREDENTIALS = os.path.join(SECRETS_DIR, "aws_credentials.cfg")
 
-COMPRESSED_FILES_LIST = ['.zip', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', '.rar',
-                         '.bz2', '.arj', '.z', '.war', '.raw.rar']
+########################################################################################################################
+#   DATABASE CREDENTIALS
+#
+#   Load from the following file: SECRETS_DIR/database_credentials.json
+#
+#   Configuration example
+#
+#   {
+#     "database": "database-name",
+#     "user": "db-user",
+#     "password": "db-user-password",
+#     "host": "localhost",
+#      "port": 5432
+#   }
+########################################################################################################################
+DB_PARAMS = utils.load_json_credentials_file("database_credentials.json", secrets_dir=SECRETS_DIR)
 
-INTERNAL_MAPPING_LIST = ['metexplore_mapping', 'chebi_pipeline_annotations', 'validation_report', 'validation_files']
+########################################################################################################################
+#   ELASTICSEARCH CREDENTIALS
+#
+#   Load from the following file: SECRETS_DIR/elasticsearch_credentials.json
+#
+#   Configuration example:
+#
+#   {
+#     "ELASTICSEARCH_HOST": "localhost",
+#     "ELASTICSEARCH_PORT": 9200,
+#     "ELASTICSEARCH_USE_TLS": false,
+#     "ELASTICSEARCH_USER_NAME": "",
+#     "ELASTICSEARCH_USER_PASSWORD": ""
+#   }
+########################################################################################################################
+elasticsearch_credentials = utils.load_json_credentials_file("elasticsearch_credentials.json", secrets_dir=SECRETS_DIR)
 
-# Other files
-OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"
-CHEBI_URL = "https://www.ebi.ac.uk/webservices/chebi/2.0/webservice?wsdl"
-CHEBI_URL_WAIT = 300
-CHEBI_PIPELINE_URL = WS_APP_BASE_LINK + "/ws/ebi-internal/"
-#CLASSYFIRE_ULR = "http://classyfire.wishartlab.com"
-CLASSYFIRE_ULR = "http://45.88.80.180"
-CLASSYFIRE_MAPPING = "/net/isilon8/ftp_public/databases/metabolights/submissionTool/ClassyFire_Mapping.tsv"
-OPSIN_URL = "https://opsin.ch.cam.ac.uk/opsin/"
-CHEMSPIDER_URL = "http://parts.chemspider.com/JSON.ashx?op="
-CHEBI_UPLOAD_SCRIPT = ""
-MTBLS_SUBMITTER_EMAIL = ""
-CHEM_PLUS_URL = "https://chem.nlm.nih.gov/api/data/inchikey/equals/INCHI_KEY?data=summary"
-UNICHEM_URL = "https://www.ebi.ac.uk/unichem/rest/inchikey/INCHI_KEY"
-DIME_URL = "https://dimedb.ibers.aber.ac.uk/api/metabolites?where={%22_id%22%20:%20%22INCHI_KEY%22}&projection={%22External%20Sources%22%20:%201}"
-# METASPACE
-METASPACE_DATABASE = "HMDB-v4"
-METASPACE_FDR = 0.1
-METASPACE_APP_NAME = "MMIT"
-METASPACE_APP_DESCRIPTION = "METASPACE-MetaboLights Interface Tools"
-AWS_CREDENTIALS = "./instance/aws_credentials.cfg"
+ELASTICSEARCH_HOST = elasticsearch_credentials["ELASTICSEARCH_HOST"]
+ELASTICSEARCH_PORT = elasticsearch_credentials["ELASTICSEARCH_PORT"]
+ELASTICSEARCH_USE_TLS = elasticsearch_credentials["ELASTICSEARCH_USE_TLS"]
+ELASTICSEARCH_USER_NAME = elasticsearch_credentials["ELASTICSEARCH_USER_NAME"]
+ELASTICSEARCH_USER_PASSWORD = elasticsearch_credentials["ELASTICSEARCH_USER_PASSWORD"]
 
-LSF_COMMAND_PATH = '<path to LSF command, bsub/bkill/bjobs>'
-LSF_COMMAND_EMAIL = '<email to use for EBI LSF jobs>'
+########################################################################################################################
+#   EMAIL SERVICE CREDENTIALS
+#
+#   Load from the following file: SECRETS_DIR/mail_service_credentials.json
+#
+#   Configuration Example:
+#
+#   {
+#      "MAIL_SERVER": "localhost",
+#      "MAIL_PORT": 25,
+#      "MAIL_USE_TLS": false,
+#      "MAIL_USE_SSL": false,
+#      "MAIL_USERNAME": null,
+#      "MAIL_PASSWORD": null
+#   }
+########################################################################################################################
+email_service_credentials = utils.load_json_credentials_file("email_service_credentials.json", secrets_dir=SECRETS_DIR)
 
-FILES_LIST_JSON = 'files-all.json'
+MAIL_SERVER = email_service_credentials["MAIL_SERVER"]
+MAIL_PORT = email_service_credentials["MAIL_PORT"]
+MAIL_USE_TLS = email_service_credentials["MAIL_USE_TLS"]
+MAIL_USE_SSL = email_service_credentials["MAIL_USE_SSL"]
+MAIL_USERNAME = email_service_credentials["MAIL_USERNAME"]
+MAIL_PASSWORD = email_service_credentials["MAIL_PASSWORD"]
+
+########################################################################################################################
+#   FTP SERVER CREDENTIALS
+#
+#   Load from the following file: SECRETS_DIR/ftp_server_credentials.json
+#
+#   Configuration example
+#
+#   {
+#     "PRIVATE_FTP_SERVER": "ftp-private-dir.ebi.ac.uk",
+#     "PRIVATE_FTP_SERVER_USER": "metabolights-user-name",
+#     "PRIVATE_FTP_SERVER_PASSWORD": "metabolights-user-password"
+#   }
+########################################################################################################################
+ftp_server_credentials = utils.load_json_credentials_file("ftp_server_credentials.json", secrets_dir=SECRETS_DIR)
+
+PRIVATE_FTP_SERVER = ftp_server_credentials["PRIVATE_FTP_SERVER"]
+PRIVATE_FTP_SERVER_USER = ftp_server_credentials["PRIVATE_FTP_SERVER_USER"]
+PRIVATE_FTP_SERVER_PASSWORD = ftp_server_credentials["PRIVATE_FTP_SERVER_PASSWORD"]
+
+########################################################################################################################
+#   GOOGLE CALENDAR API CREDENTIALS
+#
+#   Load file: CONFIG_DIR/google_calendar_api_credentials.json
+########################################################################################################################
+GOOGLE_CALENDAR_TOKEN = os.path.join(SECRETS_DIR, "google_calendar_api_credentials.json")
+
+########################################################################################################################
+#   GOOGLE SERVICE SECRETS
+#
+#   Load from the following file: SECRETS_DIR/google_service_secrets.json
+########################################################################################################################
+google_service_secrets = utils.load_json_credentials_file("google_service_secrets.json", secrets_dir=SECRETS_DIR)
+
+GOOGLE_CALENDAR_ID = google_service_secrets["GOOGLE_CALENDAR_ID"]
+MARIANA_DRIVE_ID = google_service_secrets["MARIANA_DRIVE_ID"]
+GA_TRACKING_ID = google_service_secrets["GA_TRACKING_ID"]
+
+########################################################################################################################
+#   GOOGLE SHEETS API CREDENTIALS
+#
+#   Load file: CONFIG_DIR/google_sheet_api_credentials.json
+########################################################################################################################
+GOOGLE_SHEET_TOKEN = os.path.join(SECRETS_DIR, "google_sheet_api_credentials.json")
+
+########################################################################################################################
+#   JIRA CREDENTIALS
+#
+#   Load from the following file: SECRETS_DIR/jira_credentials.json
+########################################################################################################################
+JIRA_PARAMS = utils.load_json_credentials_file("jira_credentials.json", secrets_dir=SECRETS_DIR)
+
+########################################################################################################################
+#   SSH CREDENTIALS
+#
+#   Load from the following file: SECRETS_DIR/ssh_credentials.json
+########################################################################################################################
+SSH_PARAMS = utils.load_json_credentials_file("ssh_credentials.json", secrets_dir=SECRETS_DIR)
+
+########################################################################################################################
+#   UNUSED CREDENTIALS
+#
+#   This file and parameters will be removed
+#   Load from the following file: SECRETS_DIR/unused_credentials.json
+########################################################################################################################
+unused_credentials = utils.load_json_credentials_file("unused_credentials.json", secrets_dir=SECRETS_DIR)
+
+metaspace_unused_credentials = unused_credentials["UNUSED_METASPACE"]
+METASPACE_ACCESS_KEY_ID = metaspace_unused_credentials["METASPACE_ACCESS_KEY_ID"]
+METASPACE_SECRET_ACCESS_KEY = metaspace_unused_credentials["METASPACE_SECRET_ACCESS_KEY"]
+METASPACE_BUCKET = metaspace_unused_credentials["METASPACE_BUCKET"]
+
+########################################################################################################################
+#                                    END OF SECRETS AND CREDENTIALS SECTION
+########################################################################################################################
+
+
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#
+#                                        SERVICE SETTINGS SECTION
+#
+#                       This section is ordered by key names in CONFIG_DIR/service_settings.json file
+#
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+
+service_settings = utils.load_json_config_file("service_settings.json", config_dir=CONFIG_DIR)
+
+########################################################################################################################
+#   AUTHENTICATION SERVICE SETTINGS
+#
+#   Load from the following file: CONFIG_DIR/service_settings.json with key "AUTH_SERVICE_SETTINGS"
+#
+#    Configuration Example:
+#
+#    "AUTH_SERVICE_SETTINGS": {
+#     "ACCESS_TOKEN_HASH_ALGORITHM": "HS256",
+#     "ACCESS_TOKEN_EXPIRES_DELTA": 300,
+#     "ACCESS_TOKEN_ALLOWED_AUDIENCE": "Metabolights Editor",
+#     "ACCESS_TOKEN_ISSUER_NAME": "Metabolights PythonWS"
+#   }
+########################################################################################################################
+auth_service_settings = service_settings["AUTH_SERVICE_SETTINGS"]
+
+ACCESS_TOKEN_HASH_ALGORITHM = auth_service_settings["ACCESS_TOKEN_HASH_ALGORITHM"]
+ACCESS_TOKEN_EXPIRES_DELTA = auth_service_settings["ACCESS_TOKEN_EXPIRES_DELTA"]
+ACCESS_TOKEN_ALLOWED_AUDIENCE = auth_service_settings["ACCESS_TOKEN_ALLOWED_AUDIENCE"]
+ACCESS_TOKEN_ISSUER_NAME = auth_service_settings["ACCESS_TOKEN_ISSUER_NAME"]
+
+########################################################################################################################
+#   CLUSTER JOB SETTINGS
+#
+#   Load from the following file: CONFIG_DIR/service_settings.json with key "CLUSTER_JOB"
+#
+#    Configuration Example:
+#
+#    "CLUSTER_JOB": {
+#     "LSF_COMMAND_PATH": "SOFTWARE-PATH/bin/",
+#     "LSF_COMMAND_EMAIL": "valid.email.address@ebi.ac.uk"
+#   }
+########################################################################################################################
+cluster_job_settings = service_settings["CLUSTER_JOB"]
+
+LSF_COMMAND_PATH = cluster_job_settings["LSF_COMMAND_PATH"]
+LSF_COMMAND_EMAIL = cluster_job_settings["LSF_COMMAND_EMAIL"]
+
+########################################################################################################################
+#   DATABASE SETTINGS
+#
+#   Load from the following file: CONFIG_DIR/service_settings.json with key "DB_SETTINGS"
+#
+#   Configuration example:
+#
+#   "DB_SETTINGS": {
+#     "CONN_POOL_MIN": 10,
+#     "CONN_POOL_MAX": 30
+#   }
+########################################################################################################################
+db_settings = service_settings["DB_SETTINGS"]
+
+CONN_POOL_MIN = db_settings["CONN_POOL_MIN"]
+CONN_POOL_MAX = db_settings["CONN_POOL_MAX"]
+
+########################################################################################################################
+#   EMAIL SERVICE CONFIGURATION
+#
+#   Load from the following file: CONFIG_DIR/service_settings.json with key "EMAIL_SERVICE_SETTINGS"
+#
+#   Configuration Example:
+#
+#   "EMAIL_SERVICE_SETTINGS": {
+#     "EMAIL_NO_REPLY_ADDRESS": "invalid-mail1@ebi.ac.uk",
+#     "CURATION_EMAIL_ADDRESS": "invalid-mail2@ebi.ac.uk",
+#     "METABOLIGHTS_HOST_URL": "https://www.ebi.ac.uk/metabolights",
+#     "FTP_UPLOAD_HELP_DOC_URL": "https://docs.google.com/document/d/invalid-ftp-url"
+#   }
+########################################################################################################################
+mail_service_settings = service_settings["EMAIL_SERVICE_SETTINGS"]
+
+EMAIL_NO_REPLY_ADDRESS = mail_service_settings["EMAIL_NO_REPLY_ADDRESS"]
+CURATION_EMAIL_ADDRESS = mail_service_settings["CURATION_EMAIL_ADDRESS"]
+METABOLIGHTS_HOST_URL = mail_service_settings["METABOLIGHTS_HOST_URL"]
+FTP_UPLOAD_HELP_DOC_URL = mail_service_settings["FTP_UPLOAD_HELP_DOC_URL"]
+
+########################################################################################################################
+#   FTP SERVER SETTINGS
+#
+#   Load from the following file: CONFIG_DIR/service_settings.json with key "FTP_SERVER_SETTINGS"
+#
+#   Configuration example
+#
+#   "FTP_SERVER_SETTINGS": {
+#     "MTBLS_FTP_ROOT": "/ftp/private/root/path",
+#     "MTBLS_PRIVATE_FTP_ROOT": "/ftp/private/root/path",
+#     "MARIANA_PATH": "ACTUAL-MARIANA-PATH/",
+#     "REPORTING_PATH": "REPORTING-PATH/"
+#   }
+########################################################################################################################
+ftp_server_settings = service_settings["FTP_SERVER_SETTINGS"]
+
+MTBLS_FTP_ROOT = ftp_server_settings["MTBLS_FTP_ROOT"]
+MTBLS_PRIVATE_FTP_ROOT = ftp_server_settings["MTBLS_PRIVATE_FTP_ROOT"]
+MARIANA_PATH = ftp_server_settings["MARIANA_PATH"]
+REPORTING_PATH = ftp_server_settings["REPORTING_PATH"]
+
+########################################################################################################################
+#   GOOGLE SERVICE SETTINGS
+#
+#   Load from the following file: CONFIG_DIR/service_settings.json with key "GOOGLE_SERVICE_SETTINGS"
+########################################################################################################################
+google_service_settings = service_settings["GOOGLE_SERVICE_SETTINGS"]
+
+GOOLGE_ZOOMA_SHEET = google_service_settings["GOOLGE_ZOOMA_SHEET"]
+MTBLS_STATISITC = google_service_settings["MTBLS_STATISITC"]
+LC_MS_STATISITC = google_service_settings["LC_MS_STATISITC"]
+MTBLS_CURATION_LOG = google_service_settings["MTBLS_CURATION_LOG"]
+MTBLS_CURATION_LOG_TEST = google_service_settings["MTBLS_CURATION_LOG_TEST"]
+EUROPE_PMC_REPORT = google_service_settings["EUROPE_PMC_REPORT"]
+
+########################################################################################################################
+#   METASPACE SETTINGS
+#
+#   Load from the following file: CONFIG_DIR/service_settings.json with key "METASPACE"
+#
+#   Configuration example:
+#
+#   "METASPACE": {
+#     "METASPACE_DATABASE": "DATABASE-NAME",
+#     "METASPACE_FDR": 0.1
+#   }
+########################################################################################################################
+metaspace_settings = service_settings["METASPACE"]
+
+METASPACE_DATABASE = metaspace_settings["METASPACE_DATABASE"]
+METASPACE_FDR = metaspace_settings["METASPACE_FDR"]
+
+########################################################################################################################
+#                                    END OF SERVICE SETTINGS SECTION
+########################################################################################################################
+
+
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#
+#                                             CHEBI SETTINGS SECTION
+#
+#                       This section is ordered by key names in CONFIG_DIR/chebi_settings.json file
+#
+########################################################################################################################
+chebi_settings = utils.load_json_config_file("chebi_settings.json")
+
+########################################################################################################################
+#   CHEBI SERVICE
+#
+#   Load from the following file: CONFIG_DIR/chebi_settings.json with key "CHEBI_SERVICE_SETTINGS"
+########################################################################################################################
+chebi_service_settings = chebi_settings["CHEBI_SERVICE_SETTINGS"]
+
+CURATED_METABOLITE_LIST_FILE_LOCATION = chebi_service_settings["CURATED_METABOLITE_LIST_FILE_LOCATION"]
+CHEBI_WS_WSDL = chebi_service_settings["CHEBI_WS_WSDL"]
+CHEBI_WS_WSDL_SERVICE = chebi_service_settings["CHEBI_WS_WSDL"]
+CHEBI_WS_WSDL_SERVICE_PORT = chebi_service_settings["CHEBI_WS_WSDL_SERVICE"]
+CHEBI_WS_STRICT = chebi_service_settings["CHEBI_WS_STRICT"]
+CHEBI_WS_XML_HUGE_TREE = chebi_service_settings["CHEBI_WS_XML_HUGE_TREE"]
+CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL = chebi_service_settings["CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL"]
+
+########################################################################################################################
+#   CHEBI PIPELINE
+#
+#   Load from the following file: CONFIG_DIR/chebi_settings.json with key "CEHBI_PIPELINE"
+########################################################################################################################
+chebi_pipeline_settings = chebi_settings["CEHBI_PIPELINE"]
+
+CHEBI_UPLOAD_SCRIPT = chebi_pipeline_settings["CHEBI_UPLOAD_SCRIPT"]
+CHEBI_PIPELINE_URL = chebi_pipeline_settings["CHEBI_PIPELINE_URL"]
+OBO_FILE = chebi_pipeline_settings["OBO_FILE"]
+CHEBI_URL = chebi_pipeline_settings["CHEBI_URL"]
+CHEBI_URL_WAIT = chebi_pipeline_settings["CHEBI_URL_WAIT"]
+REMOVED_HS_MOL_COUNT = chebi_pipeline_settings["REMOVED_HS_MOL_COUNT"]
+CLASSYFIRE_ULR = chebi_pipeline_settings["CLASSYFIRE_ULR"]
+CLASSYFIRE_MAPPING = chebi_pipeline_settings["CLASSYFIRE_MAPPING"]
+OPSIN_URL = chebi_pipeline_settings["OPSIN_URL"]
+CHEMSPIDER_URL = chebi_pipeline_settings["CHEMSPIDER_URL"]
+CHEM_PLUS_URL = chebi_pipeline_settings["CHEM_PLUS_URL"]
+UNICHEM_URL = chebi_pipeline_settings["UNICHEM_URL"]
+DIME_URL = chebi_pipeline_settings["DIME_URL"]
+
+########################################################################################################################
+#                                    END OF CHEBI SETTINGS SECTION
+########################################################################################################################
+
+
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#
+#                                             STUDY FILE SETTINGS SECTION
+#
+#                     This section is ordered by key names in CONFIG_DIR/study_file_settings.json file
+#
+########################################################################################################################
+study_file_settings = utils.load_json_config_file("study_file_settings.json")
+
+########################################################################################################################
+#   STUDY FILES
+#
+#   Load from the following file: CONFIG_DIR/study_file_settings.json with key "STUDY_FILES"
+########################################################################################################################
+study_files_settings = study_file_settings["STUDY_FILES"]
+
+STUDY_PATH = study_files_settings["STUDY_PATH"]
+MTBLS_STABLE_ID_PREFIX = study_files_settings["MTBLS_STABLE_ID_PREFIX"]
+DEFAULT_TEMPLATE = study_files_settings["DEFAULT_TEMPLATE"]
+PARTNER_TEMPLATE_METABOLON = study_files_settings["PARTNER_TEMPLATE_METABOLON"]
+UPDATE_PATH_SUFFIX = study_files_settings["UPDATE_PATH_SUFFIX"]
+DEBUG_STUDIES_PATH = study_files_settings["DEBUG_STUDIES_PATH"]
+FILES_LIST_JSON = study_files_settings["FILES_LIST_JSON"]
+FILE_LIST_TIMEOUT = study_files_settings["FILE_LIST_TIMEOUT"]
+STUDY_QUEUE_FOLDER = study_files_settings["STUDY_QUEUE_FOLDER"]
+study_files_settings = study_file_settings["STUDY_FILES"]
+
+########################################################################################################################
+#   ONTOLOGY
+#
+#   Load from the following file: CONFIG_DIR/study_file_settings.json with key "ONTOLOGY"
+########################################################################################################################
+ontology_settings = study_file_settings["ONTOLOGY"]
+
+MTBLS_ONTOLOGY_FILE = ontology_settings["MTBLS_ONTOLOGY_FILE"]
+MTBLS_ZOOMA_FILE = ontology_settings["MTBLS_ZOOMA_FILE"]
+
+########################################################################################################################
+#   VALIDATION
+#
+#   Load from the following file: CONFIG_DIR/study_file_settings.json with key "VALIDATION"
+########################################################################################################################
+validation_settings = study_file_settings["VALIDATION"]
+
+MZML_XSD_SCHEMA = validation_settings["MZML_XSD_SCHEMA"]
+VALIDATIONS_FILE = validation_settings["VALIDATIONS_FILE"]
+VALIDATION_SCRIPT = validation_settings["VALIDATION_SCRIPT"]
+VALIDATION_FILES_LIMIT = validation_settings["VALIDATION_FILES_LIMIT"]
+
+########################################################################################################################
+#   FILE FILTERS
+#
+#   Load from the following file: CONFIG_DIR/study_file_settings.json with key "FILE_FILTERS"
+########################################################################################################################
+file_filter_settings = study_file_settings["FILE_FILTERS"]
+
+DELETED_SAMPLES_PREFIX_TAG = file_filter_settings["DELETED_SAMPLES_PREFIX_TAG"]
+FOLDER_EXCLUSION_LIST = file_filter_settings["FOLDER_EXCLUSION_LIST"]
+EMPTY_EXCLUSION_LIST = file_filter_settings["EMPTY_EXCLUSION_LIST"]
+IGNORE_FILE_LIST = file_filter_settings["IGNORE_FILE_LIST"]
+RAW_FILES_LIST = file_filter_settings["RAW_FILES_LIST"]
+DERIVED_FILES_LIST = file_filter_settings["DERIVED_FILES_LIST"]
+COMPRESSED_FILES_LIST = file_filter_settings["COMPRESSED_FILES_LIST"]
+INTERNAL_MAPPING_LIST = file_filter_settings["INTERNAL_MAPPING_LIST"]
+
+########################################################################################################################
+#                                    END OF STUDY FILE SETTINGS SECTION
+########################################################################################################################
+
+
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#
+#                                             UNUSED SETTINGS SECTION
+#
+#                     This section is for backward compatibility and will be removed next release.
+#                     This section is ordered by key names in CONFIG_DIR/unused_settings.json file
+#
+########################################################################################################################
+unused_settings = utils.load_json_config_file("unused_settings.json")
+
+MS_ASSAY_TEMPLATE = unused_settings["UNUSED_FILES"]["MS_ASSAY_TEMPLATE"]
+NMR_ASSAY_TEMPLATE = unused_settings["UNUSED_FILES"]["NMR_ASSAY_TEMPLATE"]
+
+MTBLS_FILE_BASE = unused_settings["UNUSED_PATHS"]["MTBLS_FILE_BASE"]
+
+FILE_SYSTEM_PATH = unused_settings["UNUSED_INSTANCE_SETTINGS"]["FILE_SYSTEM_PATH"]
+MTBLS_WS_RESOURCES_PATH = unused_settings["UNUSED_INSTANCE_SETTINGS"]["MTBLS_WS_RESOURCES_PATH"]
+
+VALIDATION_RUN_MSG = unused_settings["UNUSED_VALIDATION_SETTINGS"]["VALIDATION_RUN_MSG"]
+ASSAY_VALIDATION_FILE = unused_settings["UNUSED_VALIDATION_SETTINGS"]["ASSAY_VALIDATION_FILE"]
+FILES_VALIDATION_FILE = unused_settings["UNUSED_VALIDATION_SETTINGS"]["FILES_VALIDATION_FILE"]
+METADATA_VALIDATION_FILE = unused_settings["UNUSED_VALIDATION_SETTINGS"]["METADATA_VALIDATION_FILE"]
+COMPLETE_VALIDATION_FILE = unused_settings["UNUSED_VALIDATION_SETTINGS"]["COMPLETE_VALIDATION_FILE"]
+
+
+METASPACE = unused_settings["METASPACE"]["METASPACE"]
+METASPACE_APP_NAME = unused_settings["METASPACE"]["METASPACE_APP_NAME"]
+METASPACE_APP_DESCRIPTION = unused_settings["METASPACE"]["METASPACE_APP_DESCRIPTION"]
+
+########################################################################################################################
+#                                    END OF STUDY FILE SETTINGS SECTION
+########################################################################################################################
+
+
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#                                           END OF CONFIGURATION FILE
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################

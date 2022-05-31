@@ -29,7 +29,6 @@ import boto3
 import requests
 from flask import current_app as app
 
-import config
 from app.ws.metaspace_isa_api_client import MetaSpaceIsaApiClient
 
 logger = logging.getLogger('wslog')
@@ -169,7 +168,11 @@ def save_file(content, path, filename, data_type='text'):
         data_file.write(content)
 
 
-def aws_get_annotations(mtspc_obj, output_dir, database=config.METASPACE_DATABASE, fdr=config.METASPACE_FDR, sm_instance=None):
+def aws_get_annotations(mtspc_obj, output_dir, database=None, fdr=None, sm_instance=None):
+    if not database:
+        database = app.config.get("METASPACE_DATABASE")
+    if not fdr:
+        fdr = app.config.get("METASPACE_FDR")
 
     filename = 'annotations'
 
@@ -253,8 +256,9 @@ def get_metadata(dataset_ids, output_dir, sm_instance=None):
             except:
                 logger.error('Could not find dataset ' + ds_id + ' in the METASPACE database')
                 continue
-
-            annotation = db.get_annotations(fdr=config.METASPACE_FDR, db_name=config.METASPACE_DATABASE,
+            fdr = app.config.get("METASPACE_FDR")
+            db_name = app.config.get("METASPACE_DATABASE")
+            annotation = db.get_annotations(fdr=fdr, db_name=db_name,
                                             datasetFilter={'ids': ds_id})
             annotation_json = annotation.to_json(orient='records')
             annos.append({ds_id: tidy_chars(annotation_json)})
