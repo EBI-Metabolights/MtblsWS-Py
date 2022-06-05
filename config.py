@@ -442,7 +442,7 @@ METASPACE_FDR = metaspace_settings["METASPACE_FDR"]
 #                       This section is ordered by key names in CONFIG_DIR/chebi_settings.json file
 #
 ########################################################################################################################
-chebi_settings = utils.load_json_config_file("chebi_settings.json")
+chebi_settings = utils.load_json_config_file("chebi_settings.json", config_dir=CONFIG_DIR)
 
 ########################################################################################################################
 #   CHEBI SERVICE
@@ -453,8 +453,8 @@ chebi_service_settings = chebi_settings["CHEBI_SERVICE_SETTINGS"]
 
 CURATED_METABOLITE_LIST_FILE_LOCATION = chebi_service_settings["CURATED_METABOLITE_LIST_FILE_LOCATION"]
 CHEBI_WS_WSDL = chebi_service_settings["CHEBI_WS_WSDL"]
-CHEBI_WS_WSDL_SERVICE = chebi_service_settings["CHEBI_WS_WSDL"]
-CHEBI_WS_WSDL_SERVICE_PORT = chebi_service_settings["CHEBI_WS_WSDL_SERVICE"]
+CHEBI_WS_WSDL_SERVICE = chebi_service_settings["CHEBI_WS_WSDL_SERVICE"]
+CHEBI_WS_WSDL_SERVICE_PORT = chebi_service_settings["CHEBI_WS_WSDL_SERVICE_PORT"]
 CHEBI_WS_STRICT = chebi_service_settings["CHEBI_WS_STRICT"]
 CHEBI_WS_XML_HUGE_TREE = chebi_service_settings["CHEBI_WS_XML_HUGE_TREE"]
 CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL = chebi_service_settings["CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL"]
@@ -494,7 +494,7 @@ DIME_URL = chebi_pipeline_settings["DIME_URL"]
 #                     This section is ordered by key names in CONFIG_DIR/study_file_settings.json file
 #
 ########################################################################################################################
-study_file_settings = utils.load_json_config_file("study_file_settings.json")
+study_file_settings = utils.load_json_config_file("study_file_settings.json", config_dir=CONFIG_DIR)
 
 ########################################################################################################################
 #   STUDY FILES
@@ -567,7 +567,7 @@ INTERNAL_MAPPING_LIST = file_filter_settings["INTERNAL_MAPPING_LIST"]
 #                     This section is ordered by key names in CONFIG_DIR/unused_settings.json file
 #
 ########################################################################################################################
-unused_settings = utils.load_json_config_file("unused_settings.json")
+unused_settings = utils.load_json_config_file("unused_settings.json", config_dir=CONFIG_DIR)
 
 MS_ASSAY_TEMPLATE = unused_settings["UNUSED_FILES"]["MS_ASSAY_TEMPLATE"]
 NMR_ASSAY_TEMPLATE = unused_settings["UNUSED_FILES"]["NMR_ASSAY_TEMPLATE"]
