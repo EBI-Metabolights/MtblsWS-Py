@@ -149,7 +149,7 @@ DERIVED_FILES_LIST = ['.mzml', '.imzML', '.wiff', '.nmrml', '.mzxml', '.xml', '.
 COMPRESSED_FILES_LIST = ['.zip', '.ZIP', 'zipx', '.gz', '.cdf.gz', '.tar', '.7z', '.z', '.g7z', '.arj', '.rar',
                          '.bz2', '.arj', '.z', '.war', '.raw.rar']
 
-INTERNAL_MAPPING_LIST = ['metexplore_mapping', 'chebi_pipeline_annotations', 'validation_report', 'validation_files']
+INTERNAL_MAPPING_LIST = ['metexplore_mapping', 'chebi_pipeline_annotations', 'validation_report', 'validation_files' , 'files-all']
 
 # Other files
 OBO_FILE = "/net/isilon8/ftp_public/databases/chebi/ontology/chebi_lite.obo"

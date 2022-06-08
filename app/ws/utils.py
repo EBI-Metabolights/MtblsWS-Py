@@ -956,10 +956,11 @@ def map_file_type(file_name, directory, assay_file_list=None):
             if ignore in fname:
                 return 'part_of_raw', none_active_status, folder
         if is_file_referenced(file_name, directory, 'a_', assay_file_list=assay_file_list):
-            if os.path.isdir(os.path.join(directory, file_name)):
-                return 'raw', active_status, True
-            else:
-                return 'raw', active_status, folder
+            if ext in raw_files_list:
+                if os.path.isdir(os.path.join(directory, file_name)):
+                    return 'raw', active_status, True
+                else:
+                    return 'raw', active_status, folder
         else:
             if ext in raw_files_list:
                 if os.path.isdir(os.path.join(directory, file_name)):
