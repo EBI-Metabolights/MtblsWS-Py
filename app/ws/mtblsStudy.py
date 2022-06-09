@@ -1342,7 +1342,7 @@ class DeleteStudy(Resource):
             else:
                 # as theres only two files in the directory this will be the sample file.
                 from_path = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'),
-                                         '/s_Sample.txt')
+                                         "s_Sample.txt")
                 copy_file(from_path, study_location + '/s_{0}.txt'.format(study_id))
                 logger.info('Restored sample.txt file for {0} to template state.'.format(study_id))
 
