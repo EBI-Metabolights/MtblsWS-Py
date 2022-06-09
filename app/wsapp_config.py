@@ -70,7 +70,7 @@ from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder, \
     FileList, StudyFilesReuse, DeleteAsperaFiles
 from app.ws.table_editor import GetTsvFile, AddRows, ColumnsRows, ComplexColumns, SimpleColumns
-from app.ws.tasks.tweet import PublicStudyTweet
+from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation
 
