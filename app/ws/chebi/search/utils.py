@@ -25,14 +25,16 @@ def remove_few_characters_for_consistency(term):
 def find_term_index_in_source(source: str, match_term: str):
     if not source or not match_term:
         return -1
-    ref_data = match_term.lower().strip()
+    match_term_filtered = remove_few_characters_for_consistency(match_term.lower().strip())
     if "|" in source:
         search_terms = safe_split_string(source)
         for term in search_terms:
-            if term.lower().strip() == ref_data:
+            term_filtered = remove_few_characters_for_consistency(term.lower().strip())
+            if term_filtered == match_term_filtered:
                 return search_terms.index(term)
     else:
-        if source.lower().strip() == ref_data:
+        source_filtered = remove_few_characters_for_consistency(source.lower().strip())
+        if source_filtered == match_term_filtered:
             return 0
     return -1
 

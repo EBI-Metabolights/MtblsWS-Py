@@ -6,18 +6,10 @@ from flask_restful_swagger import swagger
 
 from app.ws.chebi.settings import get_chebi_ws_settings
 from app.ws.chebi.types import SearchCategory, StarsCategory
-from app.ws.chebi.wsproxy import ChebiWsProxy, ChebiWsException
+from app.ws.chebi.wsproxy import ChebiWsProxy, ChebiWsException, get_chebi_ws_proxy
 from app.ws.utils import log_request
 
 logger = logging.getLogger(__file__)
-
-_chebi_proxy = ChebiWsProxy()
-
-
-def get_chebi_proxy():
-    if not _chebi_proxy.settings:
-        _chebi_proxy.setup(get_chebi_ws_settings(app))
-    return _chebi_proxy
 
 
 responseMessages = [
@@ -64,12 +56,13 @@ class ChebiLiteEntity(Resource):
         if not compound_name:
             abort(400, "Invalid compound name")
 
-        if not get_chebi_proxy():
+        if not get_chebi_ws_proxy(app):
             abort(501, "Remote server error")
 
         try:
-            search_result = get_chebi_proxy().get_lite_entity_list(compound_name.lower(), SearchCategory.ALL_NAMES, 20,
-                                                                   StarsCategory.ALL)
+            search_result = get_chebi_ws_proxy(app).get_lite_entity_list(compound_name.lower(),
+                                                                         SearchCategory.ALL_NAMES, 20,
+                                                                         StarsCategory.ALL)
 
             if not search_result:
                 return abort(404, f"Entity not found with name {compound_name}")
@@ -102,14 +95,14 @@ class ChebiEntity(Resource):
     def get(self, chebi_id):
         log_request(request)
 
-        if not get_chebi_proxy():
+        if not get_chebi_ws_proxy(app):
             abort(400, "Invalid ChEBI id")
 
-        if not get_chebi_proxy():
+        if not get_chebi_ws_proxy(app):
             abort(501, "Remote server error")
 
         try:
-            search_result = get_chebi_proxy().get_complete_entity(chebi_id)
+            search_result = get_chebi_ws_proxy(app).get_complete_entity(chebi_id)
 
             if not search_result:
                 return abort(404, f"Entity not found with ChEBI id {chebi_id}")
