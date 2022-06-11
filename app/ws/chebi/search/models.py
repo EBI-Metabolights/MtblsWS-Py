@@ -30,7 +30,7 @@ class CompoundSearchResultModel(BaseModel):
     search_resource: SearchResource = None
 
     def is_complete(self):
-        if not self.name and not self.inchi and not self.formula and not self.smiles and not self.databaseId:
+        if self.name and self.inchi and self.formula and self.smiles and self.databaseId:
             return True
         return False
 
