@@ -2071,6 +2071,9 @@ def processUniChemResponse(inchi_key):
     if resp.status_code == 200:
         json_resp = resp.json()
         response_dict = {item['src_id']: item for item in json_resp if item and 'src_id' in item}
+        if len(response_dict):
+            print_log(' Chem plus search for inchi key - ' + inchi_key + ' contains no data.')
+            return unichem_id
         if '2' in response_dict:
             unichem_id = 'DrugBank:' + response_dict['2']['src_compound_id'] + ";"
         if '3' in response_dict:
