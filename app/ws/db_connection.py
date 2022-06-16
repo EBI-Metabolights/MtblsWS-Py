@@ -323,6 +323,17 @@ def get_all_studies_for_user(user_token):
                         description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
         except FileNotFoundError:
             logger.error("The file %s was not found", complete_file_name)
+        except:
+            logger.error("An exception occurred while parsing ISA")
+            logger.info("Retrying with another encoding ")
+            with open(complete_file_name, encoding='latin-1') as f:
+                for line in f:
+                    line = re.sub('\s+', ' ', line)
+                    if line.startswith(isa_title):
+                        title = line.replace(isa_title, '').replace(' "', '').replace('" ', '')
+                    if line.startswith(isa_descr):
+                        description = line.replace(isa_descr, '').replace(' "', '').replace('" ', '')
+
 
         complete_list.append({'accession': study_id,
                               'updated': get_single_file_information(complete_file_name),
