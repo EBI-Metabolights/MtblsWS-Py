@@ -175,5 +175,8 @@ AWS_CREDENTIALS = "./instance/aws_credentials.cfg"
 
 LSF_COMMAND_PATH = '<path to LSF command, bsub/bkill/bjobs>'
 LSF_COMMAND_EMAIL = '<email to use for EBI LSF jobs>'
+LSF_COMMAND_BSUB = 'bsub'
+LSF_COMMAND_BJOBS = 'bjobs'
+LSF_COMMAND_BKILL = 'bkill'
 
 FILES_LIST_JSON = 'files-all.json'

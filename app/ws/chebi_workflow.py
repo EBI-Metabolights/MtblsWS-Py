@@ -2321,7 +2321,7 @@ class ChEBIPipeLine(Resource):
                             cmd = cmd.replace(old_file_name, file_name)
                         old_file_name = file_name
                         print_log("Starting cluster job for ChEBI pipeline: " + cmd)
-                        status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=True, user_email = user_email)
+                        status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=cmd, send_email=True, user_email = user_email)
 
                         if status:
                             return {"success": message, "message": job_out, "errors": job_err}
@@ -2340,7 +2340,7 @@ class ChEBIPipeLine(Resource):
             if run_on_cluster:
                 # create param file
                 print_log("Starting cluster job for ChEBI pipeline: " + cmd)
-                status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=True, user_email = user_email)
+                status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=cmd, send_email=True, user_email = user_email)
                 print_log("job submitted")
                 if status:
                     return {"success": message, "message": job_out, "errors": job_err}

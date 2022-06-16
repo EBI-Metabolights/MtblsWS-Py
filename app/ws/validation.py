@@ -627,7 +627,7 @@ class Validation(Resource):
             #         cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
             #         cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
             #         logger.info("Starting cluster job for Validation schema update: " + cmd)
-            #         status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=False)
+            #         status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=cmd, send_email=False)
             #         lsf_msg = message + '. ' + job_out + '. ' + job_err
             #         if not status:
             #             logger.error("LSF job error: " + lsf_msg)
@@ -2416,7 +2416,7 @@ def job_status(job_id):
 
 def submitJobToCluser(command, section, study_location):
     logger.info("Starting cluster job for Validation : " + command)
-    status, message, job_out, job_err = lsf_job('bsub', job_param=command, send_email=True)
+    status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=command, send_email=True)
 
     if status:
         start = 'Job <'
