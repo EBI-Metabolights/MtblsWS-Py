@@ -153,11 +153,12 @@ class ChebiSearchManager(object):
     def _check_for_anion_case(self, compound_name, chebi_id):
         if compound_name.endswith("ate"):
             ontology_items = self.ws_proxy.get_ontology_children(chebi_id)
-            for item in ontology_items:
-                data_item: OntologyDataItem = item
-                data_item_type = data_item.type.lower()
-                if data_item_type == "is conjugate acid of" or data_item_type == "is conjugate base of":
-                    return data_item.chebiId
+            if ontology_items:
+                for item in ontology_items:
+                    data_item: OntologyDataItem = item
+                    data_item_type = data_item.type.lower()
+                    if data_item_type == "is conjugate acid of" or data_item_type == "is conjugate base of":
+                        return data_item.chebiId
 
         return chebi_id
 

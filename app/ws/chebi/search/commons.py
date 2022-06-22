@@ -42,19 +42,19 @@ def fill_from_metabolite_table(index, row, result: CompoundSearchResultModel):
     result.search_resource = SearchResource.CURATED
 
     name_match_formula = row[CuratedMetaboliteTable.FORMULA_INDEX]
-    result.formula = get_term_in_source(name_match_formula, index)
+    result.formula = get_term_in_source(name_match_formula, index) if name_match_formula else None
 
     name_match_inchi = row[CuratedMetaboliteTable.INCHI_INDEX]
-    result.inchi = get_term_in_source(name_match_inchi, index)
+    result.inchi = get_term_in_source(name_match_inchi, index) if name_match_inchi and isinstance(name_match_inchi, str) else None
 
     name_match_chebi_id = row[CuratedMetaboliteTable.CHEBI_ID_INDEX]
-    result.databaseId = get_term_in_source(name_match_chebi_id, index)
+    result.databaseId = get_term_in_source(name_match_chebi_id, index) if name_match_chebi_id else None
 
     name_match_compound_name = row[CuratedMetaboliteTable.COMPOUND_INDEX]
-    result.name = get_term_in_source(name_match_compound_name, index)
+    result.name = get_term_in_source(name_match_compound_name, index) if name_match_compound_name else None
 
     name_match_smiles = row[CuratedMetaboliteTable.SMILES_INDEX]
-    result.smiles = get_term_in_source(name_match_smiles, index)
+    result.smiles = get_term_in_source(name_match_smiles, index) if name_match_smiles and isinstance(name_match_smiles, str) else None
 
 
 def search_hits_with_search_category(search_name: str,

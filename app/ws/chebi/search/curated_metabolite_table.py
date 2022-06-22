@@ -44,9 +44,8 @@ class CuratedMetaboliteTable(object):
             logger.warning(f"Error while reading curated metabolite table file {self.file_path}.")
 
     def get_matching_rows(self, column_index: int, value: str):
-
-        if not self.initialized:
-            self.initialize_df()
+        if self.df is None:
+            return self.EMPTY_LIST
 
         input_value = ''.join(value.split())
         input_value = remove_few_characters_for_consistency(input_value).lower()
@@ -75,10 +74,20 @@ class CuratedMetaboliteTable(object):
         if len(result_list) == 1:
             return self.df.loc[result_list[0]].to_list()
 
+        same_name_match = False
+        same_name_index = result_list[0]
+        for item in result.items():
+            if item[1] == input_value:
+                same_name_index = item[0]
+                same_name_match = True
+        if same_name_match:
+            return self.df.loc[same_name_index].to_list()
+
         result_match_index_set = set(result_list)
         priorities = result_match_index_set.intersection(self.priority_row_set)
         if priorities:
-            first_priority_item = next(iter(priorities))
-            return self.df.loc[first_priority_item].to_list()
+            if same_name_index not in priorities:
+                same_name_index = next(iter(priorities))
+            return self.df.loc[same_name_index].to_list()
         else:
-            return self.df.loc[result_list[0]].to_list()
+            return self.df.loc[same_name_index].to_list()
