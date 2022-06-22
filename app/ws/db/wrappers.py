@@ -80,8 +80,9 @@ def update_assays_for_indexing(m_study):
 
 
 def update_study_model_from_directory(m_study: models.StudyModel, studies_root_path,
-                                      optimize_for_es_indexing=False, include_maf_files: bool = False,
-                                      revalidate_study=False, user_token_to_revalidate=None, ):
+                                      optimize_for_es_indexing=False, include_maf_files: bool=False,
+                                      revalidate_study=False, user_token_to_revalidate=None,
+                                      title_and_description_only: bool = False):
     path = os.path.join(studies_root_path, m_study.studyIdentifier)
     if not os.path.isdir(path):
         return
@@ -99,7 +100,8 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
             if studies:
                 f_study = studies[0]
                 create_study_model(m_study, path, f_study)
-
+                if title_and_description_only:
+                    return
                 fill_descriptors(m_study, investigation)
                 fill_factors(m_study, investigation)
                 fill_publications(m_study, investigation)

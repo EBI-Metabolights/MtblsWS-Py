@@ -70,6 +70,7 @@ from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder, \
     FileList, StudyFilesReuse, DeleteAsperaFiles
 from app.ws.table_editor import GetTsvFile, AddRows, ColumnsRows, ComplexColumns, SimpleColumns
+from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation
 
@@ -235,6 +236,8 @@ def initialize_app(flask_app):
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
     api.add_resource(keggid, res_path + "/ebi-internal/keggid")
     api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
+    api.add_resource(PublicStudyTweet, res_path + "/ebi-internal/public-study-tweet")
+
 
     # https://www.ebi.ac.uk:443/metabolights/ws/v2
     api.add_resource(reports, res_path + "/v2/reports")
