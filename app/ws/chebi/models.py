@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -48,7 +48,8 @@ class LiteEntity(BaseModel):
     chebiId: str = None
     chebiAsciiName: str = None
     entityStar: int = 0
-    searchScore: float = 0
+    searchScore: Optional[float] = 0
+
 
 class Entity(BaseModel):
     chebiId: str = None

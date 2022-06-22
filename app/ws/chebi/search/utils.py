@@ -3,7 +3,7 @@ import re
 dash_characters = "\u002D|\u058A|\u05BE|\u1400|\u1806|\u2010|\u2011|\u2012|\u2013|\u2014|\u2015|" \
                   "\u2053|\u207B|\u208B|\u2212|\u2E1A|\u2E3A|\u2E3B|\u2E40|\u301C|\u3030|\u30A0|" \
                   "\uFE31|\uFE32|\uFE58|\uFE63|\uFF0D"
-special_chars = r"\s+|\-|_|,|\'|\[|\]|(|)|{|}|\""
+special_chars = r"\s|\-|_|,|\'|\[|\]|(|)|{|}|\""
 search_regex = f"[{dash_characters}|{special_chars}]"
 search_pattern = re.compile(search_regex)
 
@@ -25,14 +25,16 @@ def remove_few_characters_for_consistency(term):
 def find_term_index_in_source(source: str, match_term: str):
     if not source or not match_term:
         return -1
-    ref_data = match_term.lower().strip()
+    match_term_filtered = remove_few_characters_for_consistency(match_term.lower().strip())
     if "|" in source:
         search_terms = safe_split_string(source)
         for term in search_terms:
-            if term.lower().strip() == ref_data:
+            term_filtered = remove_few_characters_for_consistency(term.lower().strip())
+            if term_filtered == match_term_filtered:
                 return search_terms.index(term)
     else:
-        if source.lower().strip() == ref_data:
+        source_filtered = remove_few_characters_for_consistency(source.lower().strip())
+        if source_filtered == match_term_filtered:
             return 0
     return -1
 
