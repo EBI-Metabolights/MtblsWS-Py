@@ -167,7 +167,7 @@ class EuropePmcReportBuilder:
                         'Released before curated?': 'N/A'
                     })
                 row_dicts.append(temp_dict)
-        if len(publications) is 0:
+        if not publications:
             row_dicts.append(base_return_dict)
 
         return row_dicts
@@ -196,7 +196,7 @@ class EuropePmcReportBuilder:
             journal_publication_date = datetime.strptime(europe_pmc_publication['printPublicationDate'], '%Y-%m-%d')
             logger.info('ASSESSIF' + str(journal_publication_date))
             now = datetime.now()
-            return status.upper() is not 'PUBLIC' and now > journal_publication_date
+            return status.upper() != 'PUBLIC' and now > journal_publication_date
         else:
             return 'No publication date given.'
 
