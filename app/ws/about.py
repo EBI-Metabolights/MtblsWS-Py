@@ -94,21 +94,13 @@ class About(Resource):
         return about
 
 
-class ServerAbout(Resource):
+class AboutServer(Resource):
     """Basic description of the Web Service host"""
     @swagger.operation(
         summary="About this Web Service host",
         notes="Basic description of the Web Service service",
         nickname="about service",
         parameters=[
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            }
         ],
         responseMessages=[
             {
@@ -132,12 +124,7 @@ class ServerAbout(Resource):
     @metabolights_exception_handler
     def get(self):
         log_request(request)
-        # User authentication
-        user_token = None
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
         hostname = os.uname().nodename
         about = {'server_name': hostname}
         return about

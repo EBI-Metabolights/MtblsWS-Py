@@ -22,7 +22,7 @@ from flask_restful import Api
 from flask_restful_swagger import swagger
 
 from app.ws.MapStudies import MapStudies
-from app.ws.about import About, ServerAbout
+from app.ws.about import About, AboutServer
 from app.ws.assay_protocol import GetProtocolForAssays
 from app.ws.auth.authentication import AuthLogin, AuthValidation, AuthUser
 from app.ws.biostudies import BioStudiesFromMTBLS, BioStudies
@@ -121,11 +121,10 @@ def initialize_app(flask_app):
                        )
 
     api.add_resource(About, res_path)
-
+    api.add_resource(AboutServer, res_path + "/ebi-internal/server-info")
     api.add_resource(AuthLogin, res_path + "/auth/login")
     api.add_resource(AuthValidation, res_path + "/auth/validate-token")
     api.add_resource(AuthUser, res_path + "/auth/user")
-    api.add_resource(ServerAbout, res_path + "/ebi-internal/server-info")
     api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query_type>")
 
     # MTBLS studies
