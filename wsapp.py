@@ -21,6 +21,7 @@ import os
 import shutil
 
 from flask import Flask
+from jinja2 import Environment, select_autoescape, FileSystemLoader
 
 from app.wsapp_config import initialize_app
 
@@ -31,36 +32,44 @@ MetaboLights Python-based REST Web Service
 """
 hostname = os.uname().nodename
 current_dir = os.path.dirname(os.path.abspath(__file__))
-instance_dir = os.path.join(current_dir, "instance")
-if not os.path.exists(instance_dir):
-    os.makedirs(instance_dir, exist_ok=True)
 
-if "INSTANCE_DIR" in os.environ and os.environ["INSTANCE_DIR"]:
-    instance_dir = os.environ["INSTANCE_DIR"]
-    logging_config_file_name = 'logging_docker.conf'
-else:
-    logging_config_file_name = 'logging_' + hostname + '.conf'
-
-print(f"Running on: {hostname}")
-print(f"Instance directory is: {instance_dir}")
-application = Flask(__name__, instance_relative_config=True, instance_path=instance_dir)
+application = Flask(__name__)
 
 application.config.setdefault("PYTHON_WS_APPLICATION_PATH", current_dir)
 logger = logging.getLogger('wslog')
 
 
 def setup_logging():
-    logger_config_file_path = os.path.join(current_dir, logging_config_file_name)
-    if not os.path.exists(logger_config_file_path):
-        print(f"{logger_config_file_path} is not found. It is being created from default.")
-        shutil.copy('logging.conf', logging_config_file_name)
-
     default_log_dir = os.path.join(current_dir, "logs")
     if not os.path.exists(default_log_dir):
         os.makedirs(default_log_dir, exist_ok=True)
 
-    logging.config.fileConfig(logging_config_file_name)
-    print(f"Running on: {hostname}")
+    logging_config_file_path = None
+    if "LOG_FILE_CONFIG" in os.environ and os.environ["LOG_FILE_CONFIG"]:
+        logging_config_file_path = os.environ["LOG_FILE_CONFIG"]
+
+    if logging_config_file_path and os.path.exists(logging_config_file_path):
+        print(f"Using logging config file {logging_config_file_path}")
+    else:
+        default_logging_config_file_path = os.path.join(current_dir, f"logging_{hostname}.conf")
+        logging_config_file_path = default_logging_config_file_path
+        if os.path.exists(default_logging_config_file_path):
+            print(f"Using default logging config file {default_logging_config_file_path}")
+        else:
+            print(f"Creating default logging config file {default_logging_config_file_path}")
+
+            env = Environment(
+                loader=FileSystemLoader('resources/'),
+                autoescape=select_autoescape(['html', 'xml'])
+            )
+            template = env.get_template('template_logging.conf')
+            content = {"hostname": hostname}
+            log_file_content = template.render(content)
+            with open(default_logging_config_file_path, "w") as file:
+                file.writelines(log_file_content)
+
+    logging.config.fileConfig(logging_config_file_path)
+    print(f"Running on server: '{hostname}' using logging config {logging_config_file_path}")
 
 
 def main():

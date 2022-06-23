@@ -15,6 +15,7 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+import logging
 
 from flask_cors import CORS
 from flask_mail import Mail
@@ -77,7 +78,7 @@ from app.ws.validation import Validation, OverrideValidation, UpdateValidationFi
 
 def configure_app(flask_app):
     flask_app.config.from_object('config')
-    flask_app.config.from_pyfile('config.py', silent=True)
+    #flask_app.config.from_pyfile('config.py', silent=True)
 
     # These code completes WsClient initialization using flask app context
     if not WsClient.search_manager:

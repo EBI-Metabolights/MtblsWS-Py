@@ -1,26 +1,40 @@
+import logging
 import os
 from app import file_utils as utils
+
+
+def get_path_from_environment(name, default_value):
+    if name in os.environ and os.environ[name]:
+        value = os.environ[name]
+    else:
+        value = default_value
+        message = f"Environment {name} is not set, trying default path:  '{default_value}'"
+        logger.error(message)
+        print(message)
+
+    if not os.path.exists(value):
+        message = f"{name} path '{value}' does not exist. Set this environment variable"
+        logger.error(message)
+        print(message)
+        exit(1)
+    else:
+        message = f"{name} is set as '{value}'"
+        logger.info(message)
+        print(message)
+    return value
+
 
 PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
 STATIC_FOLDER = os.path.join(PROJECT_PATH, "static")
 TEMPLATE_FOLDER = os.path.join(PROJECT_PATH, "templates")
 RESOURCES_FOLDER = os.path.join(PROJECT_PATH, "resources")
 
-LOG_FILE_CONFIG = os.path.join(PROJECT_PATH, "logging.conf")
-if "LOG_FILE_CONFIG" in os.environ and os.environ["LOG_FILE_CONFIG"]:
-    LOG_FILE_CONFIG = os.environ["LOG_FILE_CONFIG"]
+logger = logging.getLogger('wslog')
+default_configs_folder = os.path.join(PROJECT_PATH, "configs")
+default_secrets_folder = os.path.join(PROJECT_PATH, ".secrets")
+CONFIGS_DIR = get_path_from_environment("CONFIGS_DIR", default_configs_folder)
+SECRETS_DIR = get_path_from_environment("SECRETS_DIR", default_secrets_folder)
 
-INSTANCE_DIR = os.path.join(PROJECT_PATH, "instance")
-if "INSTANCE_DIR" in os.environ and os.environ["INSTANCE_DIR"]:
-    INSTANCE_DIR = os.environ["INSTANCE_DIR"]
-
-CONFIG_DIR = os.path.join(PROJECT_PATH, "configs")
-if "CONFIG_DIR" in os.environ and os.environ["CONFIG_DIR"]:
-    CONFIG_DIR = os.environ["CONFIG_DIR"]
-
-SECRETS_DIR = os.path.join(PROJECT_PATH, ".secrets")
-if "SECRETS_DIR" in os.environ and os.environ["SECRETS_DIR"]:
-    SECRETS_DIR = os.environ["SECRETS_DIR"]
 
 ########################################################################################################################
 ########################################################################################################################
@@ -28,18 +42,18 @@ if "SECRETS_DIR" in os.environ and os.environ["SECRETS_DIR"]:
 #
 #                                           SERVER SETTINGS SECTION
 #
-#                       This section is ordered by key names in CONFIG_DIR/server_settings.json file
+#                       This section is ordered by key names in CONFIGS_DIR/server_settings.json file
 #
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
 
-server_settings = utils.load_json_config_file("server_settings.json", config_dir=CONFIG_DIR)
+server_settings = utils.load_json_config_file("server_settings.json", configs_dir=CONFIGS_DIR)
 
 ########################################################################################################################
 #   ENVIRONMENT
 #
-#   Load from the following file: CONFIG_DIR/server_settings.json with key "ENV"
+#   Load from the following file: CONFIGS_DIR/server_settings.json with key "ENV"
 #
 #   Configuration examples:
 #
@@ -52,7 +66,7 @@ ENV = server_settings["ENV"]
 ########################################################################################################################
 #   SERVICE
 #
-#   Load from the following file: CONFIG_DIR/server_settings.json with key "SERVICE"
+#   Load from the following file: CONFIGS_DIR/server_settings.json with key "SERVICE"
 ########################################################################################################################
 server_service = server_settings["SERVICE"]
 
@@ -69,7 +83,7 @@ API_DOC = server_service["API_DOC"]
 ########################################################################################################################
 #   DESCRIPTION
 #
-#   Load from the following file: CONFIG_DIR/server_settings.json with key "DESCRIPTION"
+#   Load from the following file: CONFIGS_DIR/server_settings.json with key "DESCRIPTION"
 ########################################################################################################################
 server_description = server_settings["DESCRIPTION"]
 
@@ -85,7 +99,7 @@ MZML2ISA_VERSION = server_description["MZML2ISA_VERSION"]
 ########################################################################################################################
 #   DEBUG
 #
-#   Load from the following file: CONFIG_DIR/server_settings.json with key "DEBUG"
+#   Load from the following file: CONFIGS_DIR/server_settings.json with key "DEBUG"
 #
 #   Configuration example 
 #
@@ -232,7 +246,7 @@ PRIVATE_FTP_SERVER_PASSWORD = ftp_server_credentials["PRIVATE_FTP_SERVER_PASSWOR
 ########################################################################################################################
 #   GOOGLE CALENDAR API CREDENTIALS
 #
-#   Load file: CONFIG_DIR/google_calendar_api_credentials.json
+#   Load file: CONFIGS_DIR/google_calendar_api_credentials.json
 ########################################################################################################################
 GOOGLE_CALENDAR_TOKEN = os.path.join(SECRETS_DIR, "google_calendar_api_credentials.json")
 
@@ -250,7 +264,7 @@ GA_TRACKING_ID = google_service_secrets["GA_TRACKING_ID"]
 ########################################################################################################################
 #   GOOGLE SHEETS API CREDENTIALS
 #
-#   Load file: CONFIG_DIR/google_sheet_api_credentials.json
+#   Load file: CONFIGS_DIR/google_sheet_api_credentials.json
 ########################################################################################################################
 GOOGLE_SHEET_TOKEN = os.path.join(SECRETS_DIR, "google_sheet_api_credentials.json")
 
@@ -292,18 +306,18 @@ METASPACE_BUCKET = metaspace_unused_credentials["METASPACE_BUCKET"]
 #
 #                                        SERVICE SETTINGS SECTION
 #
-#                       This section is ordered by key names in CONFIG_DIR/service_settings.json file
+#                       This section is ordered by key names in CONFIGS_DIR/service_settings.json file
 #
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
 
-service_settings = utils.load_json_config_file("service_settings.json", config_dir=CONFIG_DIR)
+service_settings = utils.load_json_config_file("service_settings.json", configs_dir=CONFIGS_DIR)
 
 ########################################################################################################################
 #   AUTHENTICATION SERVICE SETTINGS
 #
-#   Load from the following file: CONFIG_DIR/service_settings.json with key "AUTH_SERVICE_SETTINGS"
+#   Load from the following file: CONFIGS_DIR/service_settings.json with key "AUTH_SERVICE_SETTINGS"
 #
 #    Configuration Example:
 #
@@ -324,7 +338,7 @@ ACCESS_TOKEN_ISSUER_NAME = auth_service_settings["ACCESS_TOKEN_ISSUER_NAME"]
 ########################################################################################################################
 #   CLUSTER JOB SETTINGS
 #
-#   Load from the following file: CONFIG_DIR/service_settings.json with key "CLUSTER_JOB"
+#   Load from the following file: CONFIGS_DIR/service_settings.json with key "CLUSTER_JOB"
 #
 #    Configuration Example:
 #
@@ -341,7 +355,7 @@ LSF_COMMAND_EMAIL = cluster_job_settings["LSF_COMMAND_EMAIL"]
 ########################################################################################################################
 #   DATABASE SETTINGS
 #
-#   Load from the following file: CONFIG_DIR/service_settings.json with key "DB_SETTINGS"
+#   Load from the following file: CONFIGS_DIR/service_settings.json with key "DB_SETTINGS"
 #
 #   Configuration example:
 #
@@ -358,7 +372,7 @@ CONN_POOL_MAX = db_settings["CONN_POOL_MAX"]
 ########################################################################################################################
 #   EMAIL SERVICE CONFIGURATION
 #
-#   Load from the following file: CONFIG_DIR/service_settings.json with key "EMAIL_SERVICE_SETTINGS"
+#   Load from the following file: CONFIGS_DIR/service_settings.json with key "EMAIL_SERVICE_SETTINGS"
 #
 #   Configuration Example:
 #
@@ -379,7 +393,7 @@ FTP_UPLOAD_HELP_DOC_URL = mail_service_settings["FTP_UPLOAD_HELP_DOC_URL"]
 ########################################################################################################################
 #   FTP SERVER SETTINGS
 #
-#   Load from the following file: CONFIG_DIR/service_settings.json with key "FTP_SERVER_SETTINGS"
+#   Load from the following file: CONFIGS_DIR/service_settings.json with key "FTP_SERVER_SETTINGS"
 #
 #   Configuration example
 #
@@ -400,7 +414,7 @@ REPORTING_PATH = ftp_server_settings["REPORTING_PATH"]
 ########################################################################################################################
 #   GOOGLE SERVICE SETTINGS
 #
-#   Load from the following file: CONFIG_DIR/service_settings.json with key "GOOGLE_SERVICE_SETTINGS"
+#   Load from the following file: CONFIGS_DIR/service_settings.json with key "GOOGLE_SERVICE_SETTINGS"
 ########################################################################################################################
 google_service_settings = service_settings["GOOGLE_SERVICE_SETTINGS"]
 
@@ -414,7 +428,7 @@ EUROPE_PMC_REPORT = google_service_settings["EUROPE_PMC_REPORT"]
 ########################################################################################################################
 #   METASPACE SETTINGS
 #
-#   Load from the following file: CONFIG_DIR/service_settings.json with key "METASPACE"
+#   Load from the following file: CONFIGS_DIR/service_settings.json with key "METASPACE"
 #
 #   Configuration example:
 #
@@ -439,15 +453,15 @@ METASPACE_FDR = metaspace_settings["METASPACE_FDR"]
 #
 #                                             CHEBI SETTINGS SECTION
 #
-#                       This section is ordered by key names in CONFIG_DIR/chebi_settings.json file
+#                       This section is ordered by key names in CONFIGS_DIR/chebi_settings.json file
 #
 ########################################################################################################################
-chebi_settings = utils.load_json_config_file("chebi_settings.json", config_dir=CONFIG_DIR)
+chebi_settings = utils.load_json_config_file("chebi_settings.json", configs_dir=CONFIGS_DIR)
 
 ########################################################################################################################
 #   CHEBI SERVICE
 #
-#   Load from the following file: CONFIG_DIR/chebi_settings.json with key "CHEBI_SERVICE_SETTINGS"
+#   Load from the following file: CONFIGS_DIR/chebi_settings.json with key "CHEBI_SERVICE_SETTINGS"
 ########################################################################################################################
 chebi_service_settings = chebi_settings["CHEBI_SERVICE_SETTINGS"]
 
@@ -462,7 +476,7 @@ CHEBI_WS_WSDL_SERVICE_BINDING_LOG_LEVEL = chebi_service_settings["CHEBI_WS_WSDL_
 ########################################################################################################################
 #   CHEBI PIPELINE
 #
-#   Load from the following file: CONFIG_DIR/chebi_settings.json with key "CEHBI_PIPELINE"
+#   Load from the following file: CONFIGS_DIR/chebi_settings.json with key "CEHBI_PIPELINE"
 ########################################################################################################################
 chebi_pipeline_settings = chebi_settings["CEHBI_PIPELINE"]
 
@@ -491,15 +505,15 @@ DIME_URL = chebi_pipeline_settings["DIME_URL"]
 #
 #                                             STUDY FILE SETTINGS SECTION
 #
-#                     This section is ordered by key names in CONFIG_DIR/study_file_settings.json file
+#                     This section is ordered by key names in CONFIGS_DIR/study_file_settings.json file
 #
 ########################################################################################################################
-study_file_settings = utils.load_json_config_file("study_file_settings.json", config_dir=CONFIG_DIR)
+study_file_settings = utils.load_json_config_file("study_file_settings.json", configs_dir=CONFIGS_DIR)
 
 ########################################################################################################################
 #   STUDY FILES
 #
-#   Load from the following file: CONFIG_DIR/study_file_settings.json with key "STUDY_FILES"
+#   Load from the following file: CONFIGS_DIR/study_file_settings.json with key "STUDY_FILES"
 ########################################################################################################################
 study_files_settings = study_file_settings["STUDY_FILES"]
 
@@ -512,12 +526,13 @@ DEBUG_STUDIES_PATH = study_files_settings["DEBUG_STUDIES_PATH"]
 FILES_LIST_JSON = study_files_settings["FILES_LIST_JSON"]
 FILE_LIST_TIMEOUT = study_files_settings["FILE_LIST_TIMEOUT"]
 STUDY_QUEUE_FOLDER = study_files_settings["STUDY_QUEUE_FOLDER"]
+STUDY_TREE_BLACKLIST = study_files_settings["STUDY_TREE_BLACKLIST"]
 study_files_settings = study_file_settings["STUDY_FILES"]
 
 ########################################################################################################################
 #   ONTOLOGY
 #
-#   Load from the following file: CONFIG_DIR/study_file_settings.json with key "ONTOLOGY"
+#   Load from the following file: CONFIGS_DIR/study_file_settings.json with key "ONTOLOGY"
 ########################################################################################################################
 ontology_settings = study_file_settings["ONTOLOGY"]
 
@@ -527,7 +542,7 @@ MTBLS_ZOOMA_FILE = ontology_settings["MTBLS_ZOOMA_FILE"]
 ########################################################################################################################
 #   VALIDATION
 #
-#   Load from the following file: CONFIG_DIR/study_file_settings.json with key "VALIDATION"
+#   Load from the following file: CONFIGS_DIR/study_file_settings.json with key "VALIDATION"
 ########################################################################################################################
 validation_settings = study_file_settings["VALIDATION"]
 
@@ -539,7 +554,7 @@ VALIDATION_FILES_LIMIT = validation_settings["VALIDATION_FILES_LIMIT"]
 ########################################################################################################################
 #   FILE FILTERS
 #
-#   Load from the following file: CONFIG_DIR/study_file_settings.json with key "FILE_FILTERS"
+#   Load from the following file: CONFIGS_DIR/study_file_settings.json with key "FILE_FILTERS"
 ########################################################################################################################
 file_filter_settings = study_file_settings["FILE_FILTERS"]
 
@@ -564,10 +579,10 @@ INTERNAL_MAPPING_LIST = file_filter_settings["INTERNAL_MAPPING_LIST"]
 #                                             UNUSED SETTINGS SECTION
 #
 #                     This section is for backward compatibility and will be removed next release.
-#                     This section is ordered by key names in CONFIG_DIR/unused_settings.json file
+#                     This section is ordered by key names in CONFIGS_DIR/unused_settings.json file
 #
 ########################################################################################################################
-unused_settings = utils.load_json_config_file("unused_settings.json", config_dir=CONFIG_DIR)
+unused_settings = utils.load_json_config_file("unused_settings.json", configs_dir=CONFIGS_DIR)
 
 MS_ASSAY_TEMPLATE = unused_settings["UNUSED_FILES"]["MS_ASSAY_TEMPLATE"]
 NMR_ASSAY_TEMPLATE = unused_settings["UNUSED_FILES"]["NMR_ASSAY_TEMPLATE"]
