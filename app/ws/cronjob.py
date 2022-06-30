@@ -181,7 +181,6 @@ class cronjob(Resource):
 def curation_log_database_query():
     try:
         params = app.config.get('DB_PARAMS')
-
         with psycopg2.connect(**params) as conn:
             sql = open('./resources/updateDB.sql', 'r').read()
             data = pd.read_sql_query(sql, conn)
@@ -203,7 +202,7 @@ def curation_log_database_query():
 
     except Exception as e:
         print(e)
-        logger.info(e)
+        logger.error(e)
 
 
 def curation_log_database_update():
@@ -231,9 +230,26 @@ def curation_log_database_update():
     # empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
     # command_list = [x for x in command_list if empty_study not in x]
 
+    #Find the maximum number of Metlite ID
+    try:
+        params = app.config.get('DB_PARAMS')
+        connection = psycopg2.connect(**params)
+        cursor = connection.cursor()
+        select_Query = "select max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short"
+        cursor.execute(select_Query)
+        result = cursor.fetchone()
+        max_acc_short = int(result[0])
+        logger.info("max_acc_short")
+        logger.info(max_acc_short)
+    except Exception as e:
+        logger.error("Retrieving acc from DB failed "+e)
+    i = 1
     res = []
     for line in command_list:
+        i = i + 1
         res.append(update_species(line))
+        if i == max_acc_short:
+            break
 
     res += ['commit;']
     sql = ''.join(res)

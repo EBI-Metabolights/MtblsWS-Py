@@ -35,8 +35,10 @@ alter table curation_log_temp alter column ms_size type bigint;
 alter table curation_log_temp alter column number_of_files type bigint;
 DO
 $$
+    DECLARE maxacc integer;
     BEGIN
-        FOR i_acc in 1..5000
+        SELECT max(lpad(replace(acc, 'MTBLS', ''), 4, '0')) as acc_short from studies order by acc_short asc into maxacc;
+        FOR i_acc in 1..maxacc
             LOOP
                 insert into curation_log_temp(acc, acc_short)
                 values ('MTBLS' || i_acc, i_acc);
