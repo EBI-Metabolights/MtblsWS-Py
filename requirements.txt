@@ -21,7 +21,7 @@ gunicorn==20.0.4
 gspread==3.4.2
 isatools==0.11.0
 jira==2.0.0
-lxml==4.5.0
+lxml==4.9.1
 marshmallow==2.21.0
 metaspace2020==1.7.2
 mzml2isa==1.0.3
