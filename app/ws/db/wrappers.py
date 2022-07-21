@@ -200,25 +200,27 @@ def get_value_from_dict(series, column_name):
 def fill_organism(m_study):
     organism_index = -1
     organism_part_index = -1
-    for key, value in m_study.sampleTable.fields.items():
-        if key.split("~")[1] == "characteristics[organism]":
-            organism_index = value.index
+    if m_study and m_study.sampleTable:
+        if m_study.sampleTable.fields:
+            for key, value in m_study.sampleTable.fields.items():
+                if key.split("~")[1] == "characteristics[organism]":
+                    organism_index = value.index
 
-    for key, value in m_study.sampleTable.fields.items():
-        if key.split("~")[1] == "characteristics[organism part]":
-            organism_part_index = value.index
-
-    organism_dic = dict()
-    for data in m_study.sampleTable.data:
-        model = models.OrganismModel()
-        if organism_index >= 0:
-            model.organismName = data[organism_index]
-        if organism_part_index >= 0:
-            model.organismPart = data[organism_part_index]
-        ind = model.organismName + model.organismPart
-        if ind not in organism_dic:
-            organism_dic[ind] = model
-            m_study.organism.append(model)
+            for key, value in m_study.sampleTable.fields.items():
+                if key.split("~")[1] == "characteristics[organism part]":
+                    organism_part_index = value.index
+        if m_study.sampleTable.data:
+            organism_dic = dict()
+            for data in m_study.sampleTable.data:
+                model = models.OrganismModel()
+                if organism_index >= 0:
+                    model.organismName = data[organism_index]
+                if organism_part_index >= 0:
+                    model.organismPart = data[organism_part_index]
+                ind = model.organismName + model.organismPart
+                if ind not in organism_dic:
+                    organism_dic[ind] = model
+                    m_study.organism.append(model)
 
 
 def fill_sample_table(m_study, path):
