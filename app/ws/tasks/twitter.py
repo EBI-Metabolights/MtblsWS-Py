@@ -22,7 +22,7 @@ from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
-app_secrets_dir = os.path.join(os.getcwd(), ".secrets")
+app_secrets_dir = app.config.get('SECRETS_DIR')
 
 
 class TwitterSettings(BaseSettings):
