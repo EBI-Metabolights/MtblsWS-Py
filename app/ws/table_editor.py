@@ -1089,7 +1089,7 @@ class GetTsvFile(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
+        logger.info('Assay Table: Getting ISA-JSON Study Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = commons.get_permissions(study_id, user_token)

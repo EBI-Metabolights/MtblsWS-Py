@@ -22,13 +22,14 @@ import logging
 import os
 import re
 import threading
+import traceback
 
 from flask import current_app as app
 from flask import request
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.db_connection import override_validations
+from app.ws.db_connection import override_validations, query_comments, update_comments
 from app.ws.study import commons
 from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser, is_newer_files, \
     update_val_schema_files, validate_study
@@ -414,6 +415,115 @@ class OverrideValidation(Resource):
 
         return {"success": val_feedback}
 
+
+class ValidationComment(Resource):
+    @swagger.operation(
+        summary="Add Comment To Validation",
+        notes='''Add a comment to a specific validation message to give the user more context.    <pre><code>
+    { 
+      "comment": 
+        {
+          "publication_3": "The PubChem id is for a different paper"
+        } 
+      
+    }
+    </code></pre>''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study to add a validation comment to",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "comments",
+                "description": "Which validation details to add comments for.",
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": "True"
+
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def post(self, study_id):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        # param validation
+        is_curator, __, __, __, __, __, __, __ = commons.get_permissions(study_id, user_token)
+        if not is_curator:
+            abort(403)
+
+        feedback = ""
+        comment_list = []
+        # query_comments is a db_connection.py method
+        query_list = query_comments(study_id)
+        if query_list and query_list[0] is not None:
+            for val in query_list[0].split('|'):
+                comment_list.append(val)
+
+        # Get the new validations submitted
+        data_dict = json.loads(request.data.decode('utf-8'))
+        new_comments = data_dict['comments']
+
+        for val_sequence, comment in new_comments.items():
+            val_found = False
+            for i, existing_comment in enumerate(comment_list):
+                if val_sequence + ":" in existing_comment:  # Do we already have this comment in the database
+                    comment_list[i] = f' {comment}'
+                    feedback += f"Comment for {val_sequence} has been updated."
+
+            if not val_found:
+                comment_list.append(val_sequence + ':' + comment)
+                feedback += f"Comment for {val_sequence} has been stored in the database."
+
+        db_update_string = f' {"|".join(comment_list)}'
+
+        try:
+            __ = update_comments(study_id, db_update_string)
+        except Exception as e:
+            logger.error(f"Could not store new comments in the database: {str(e)}")
+            abort(500, str(e))
+
+        return {"status": feedback}
 
 class NewValidation(Resource):
     @swagger.operation(

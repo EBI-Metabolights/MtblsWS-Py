@@ -914,6 +914,51 @@ def override_validations(study_id, method, override=""):
     except Exception as e:
         return False
 
+def query_comments(study_id):
+    """
+    Get any comments associated with a study.
+
+    :param study_id: The accession number of the study we want to retrieve comments for.
+    :return: The comments as a string (can be null if none are found)
+    """
+    val_acc(study_id)
+
+    if not study_id:
+        return None
+
+    query = "select comment from studies where acc = '#study_id#';"
+
+    postgresql_pool, conn, cursor = get_connection()
+    query = query.replace("#study_id#", study_id.upper())
+    query = query.replace('\\', '')
+    cursor.execute(query)
+    data = cursor.fetchall()
+    release_connection(postgresql_pool, conn)
+    return data[0]
+
+def update_comments(study_id, comments=None):
+    """
+    Update the comments string for the given study row in the studies table.
+
+    :param study_id: The accession number of the study we want to update comments for
+    :param comments: The new comments string.
+    """
+    val_acc(study_id)
+    if comments is None:
+        comments = ""
+    if not study_id:
+        return None
+    query = "update studies set comment = '#comments#' where acc = '#study_id#';"
+
+    postgresql_pool, conn, cursor = get_connection()
+    query = query.replace("#study_id#", study_id.upper())
+    query = query.replace("#comments#", comments)
+    query = query.replace('\\', '')
+    cursor.execute(query)
+    conn.commit()
+    release_connection(postgresql_pool, conn)
+    return True
+
 
 def update_validation_status(study_id, validation_status):
     val_acc(study_id)
@@ -1077,6 +1122,7 @@ def get_connection():
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
         cursor = conn.cursor()
+    # TODO: Actual exception handling, this is crap
     except Exception as e:
         logger.error("Could not query the database " + str(e))
         if postgresql_pool:
