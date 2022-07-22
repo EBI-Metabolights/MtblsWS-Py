@@ -73,7 +73,7 @@ from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, Unz
 from app.ws.table_editor import GetTsvFile, AddRows, ColumnsRows, ComplexColumns, SimpleColumns
 from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
-from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation
+from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation, ValidationComment
 
 
 def configure_app(flask_app):
@@ -226,6 +226,7 @@ def initialize_app(flask_app):
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
     api.add_resource(UpdateValidationFile, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
+    api.add_resource(ValidationComment, res_path + "/ebi-internal/<string:study_id>/validate-study/comment")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
