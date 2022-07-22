@@ -1,16 +1,10 @@
-import json
 import logging
-import os
-import time
 from datetime import timedelta, datetime
-from functools import lru_cache
-from typing import Dict
 
 import tweepy
 from flask import request, current_app as app
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from pydantic import BaseSettings
 
 from app.utils import metabolights_exception_handler, MetabolightsException
 from app.ws.db.dbmanager import DBManager
@@ -22,20 +16,7 @@ from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
-app_secrets_dir = app.config.get('SECRETS_DIR')
 
-
-class TwitterSettings(BaseSettings):
-    twitter_credentials: Dict = None
-
-    class Config:
-        # read and set secrets from this secret directory
-        secrets_dir = app_secrets_dir
-
-
-@lru_cache(1)
-def get_twitter_credentials():
-    return TwitterSettings()
 
 
 class PublicStudyTweet(Resource):
@@ -114,7 +95,7 @@ class PublicStudyTweet(Resource):
     @staticmethod
     def configure_twitter_api(twitter_credentials=None):
         if not twitter_credentials:
-            twitter_credentials = get_twitter_credentials()
+            twitter_credentials = app.config.get('TWITTER_CREDENTIALS')
 
         consumer_key = twitter_credentials["consumer_key"]
         consumer_secret = twitter_credentials["consumer_secret"]

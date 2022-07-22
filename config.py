@@ -160,6 +160,16 @@ MTBLS_SUBMITTER_EMAIL = application_secrets["MTBLS_SUBMITTER_EMAIL"]
 AWS_CREDENTIALS = os.path.join(SECRETS_DIR, "aws_credentials.cfg")
 
 ########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#   TWITTER CREDENTIALS
+#
+#   Path of credential file. Default is SECRETS_DIR/twitter_credentials.json
+########################################################################################################################
+
+TWITTER_CREDENTIALS = utils.load_json_credentials_file("twitter_credentials.json", secrets_dir=SECRETS_DIR)
+
+########################################################################################################################
 #   DATABASE CREDENTIALS
 #
 #   Load from the following file: SECRETS_DIR/database_credentials.json
