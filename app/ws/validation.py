@@ -29,7 +29,7 @@ from flask import request
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.db_connection import override_validations
+from app.ws.db_connection import override_validations, query_comments, update_comments
 from app.ws.study import commons
 from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser, is_newer_files, \
     update_val_schema_files, validate_study
