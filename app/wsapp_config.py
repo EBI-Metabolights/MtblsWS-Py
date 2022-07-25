@@ -53,7 +53,7 @@ from app.ws.jira_update import Jira
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtblsStudy import MtblsStudies, MtblsPrivateStudies, MtblsStudiesWithMethods, MyMtblsStudiesDetailed, \
     MyMtblsStudies, IsaTabInvestigationFile, IsaTabSampleFile, IsaTabAssayFile, CreateAccession, CloneAccession, \
-    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy
+    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies
 from app.ws.mtblsWSclient import WsClient
 from app.ws.mtbls_maf import MtblsMAFSearch, CombineMetaboliteAnnotationFiles, MetaboliteAnnotationFile
 from app.ws.mzML2ISA import ValidateMzML, Convert2ISAtab
@@ -71,6 +71,7 @@ from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder, \
     FileList, StudyFilesReuse, DeleteAsperaFiles
 from app.ws.table_editor import GetTsvFile, AddRows, ColumnsRows, ComplexColumns, SimpleColumns
+# from app.ws.tasks.study_file_encoding import FileEncodingChecker
 from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation, ValidationComment
@@ -220,6 +221,8 @@ def initialize_app(flask_app):
     api.add_resource(UserManagement, res_path + "/ebi-internal/users")
     api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
+    api.add_resource(ReindexAllPublicStudies, res_path + "/ebi-internal/studies/public/reindex-all")
+    # api.add_resource(FileEncodingChecker, res_path + "/ebi-internal/studies/encoding-check")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
 
     # api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")

@@ -30,6 +30,9 @@ from flask_restful_swagger import swagger
 
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException
 from app.ws import db_connection as db_proxy
+from app.ws.db.dbmanager import DBManager
+from app.ws.db.schemes import Study
+from app.ws.db.types import StudyStatus
 from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
     query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user, get_obfuscation_code, \
     create_empty_study
@@ -1384,6 +1387,16 @@ class ReindexStudy(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "include_validation_results",
+                "description": "run study validation and include in indexed data.",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": 'true'
             }
         ],
         responseMessages=[
@@ -1422,16 +1435,106 @@ class ReindexStudy(Resource):
 
         study_id = study_id.upper()
 
+        parser = reqparse.RequestParser()
+        parser.add_argument('include_validation_results')
+        include_validation_results = True
+        if request.args:
+            args = parser.parse_args(req=request)
+            include_validation_results = True if args['include_validation_results'].lower() == 'true' else False
+
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
         study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(401)
 
-        status, message = wsc.reindex_study(study_id, user_token)
+        status, message = wsc.reindex_study(study_id, user_token, include_validation_results=include_validation_results)
 
         if not status:
             abort(417, message=message)
 
         return {"Success": "Study " + study_id + " has been re-indexed",
                 "read_access": read_access, "write_access": write_access}
+
+
+class ReindexAllPublicStudies(Resource):
+    @swagger.operation(
+        summary="Reindex a MetaboLights study (curator only)",
+        notes='''Reindexing a MetaboLights study to ensure the search index is up to date''',
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Unexpected result."
+            }
+        ]
+    )
+    def post(self):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None:
+            abort(404)
+
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+
+        with DBManager.get_instance(app).session_maker() as db_session:
+
+            query = db_session.query(Study.acc)
+            query = query.filter(Study.status == StudyStatus.PUBLIC.value).order_by(Study.acc.desc())
+            studies = query.all()
+
+            indexed_studies = []
+            unindexed_studies = []
+            total = len(studies)
+            index = 0
+            for study in studies:
+                index += 1
+                print(f'{index}/{total} Indexing {study[0]}')
+                try:
+                    logger.info(f'{index}/{total} Indexing {study[0]}')
+                    status, message = wsc.reindex_study(study[0], user_token)
+                    if not status:
+                        logger.info(f'Unindexed study {study[0]}')
+                        print(f'Unindexed study {study[0]}')
+                        unindexed_studies.append(study[0])
+                    else:
+                        indexed_studies.append(study[0])
+                        logger.info(f'Indexed study {study[0]}')
+                        print(f'Indexed study {study[0]}')
+                except Exception as e:
+                    unindexed_studies.append(study[0])
+                    logger.info(f'Unindexed study {study[0]}')
+                    print(f'Unindexed study {study[0]}')
+
+
+        return {"indexed_studies": indexed_studies, "unindexed_studies": unindexed_studies}

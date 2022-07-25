@@ -29,7 +29,7 @@ class TestIsaStudy(object):
         with flask_app.test_client() as c:
             headers = {"user_token": sensitive_data.super_user_token_001, "save_audit_copy": True}
             mock_elastic = mocker.Mock()
-            mocker.patch("app.ws.elasticsearch.elastic_service.ElasticsearchService.get_client", mock_elastic)
+            mocker.patch("app.ws.elasticsearch.elastic_service.ElasticsearchService.client", mock_elastic)
             mock_elastic.index.return_value = ""
             result = c.post(f"{context_path}/studies/{study_id}/contacts", headers=headers, json=json_data)
             assert result is not None

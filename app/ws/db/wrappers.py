@@ -80,8 +80,8 @@ def update_assays_for_indexing(m_study):
 
 
 def update_study_model_from_directory(m_study: models.StudyModel, studies_root_path,
-                                      optimize_for_es_indexing=False, include_maf_files: bool=False,
-                                      revalidate_study=False, user_token_to_revalidate=None,
+                                      optimize_for_es_indexing: bool = False, include_maf_files: bool = False,
+                                      revalidate_study: bool = False, user_token_to_revalidate=None,
                                       title_and_description_only: bool = False):
     path = os.path.join(studies_root_path, m_study.studyIdentifier)
     if not os.path.isdir(path):
@@ -92,37 +92,48 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
         investigation_file = os.path.join(path, 'i_investigation.txt')
         if not os.path.exists(investigation_file) or not os.path.isfile(investigation_file):
             return
-
+    investigation = None
     with open(investigation_file, encoding="unicode_escape") as f:
-        investigation = isatab.load_investigation(f)
-        if "studies" in investigation:
-            studies = investigation["studies"]
-            if studies:
-                f_study = studies[0]
-                create_study_model(m_study, path, f_study)
-                if title_and_description_only:
-                    return
-                fill_descriptors(m_study, investigation)
-                fill_factors(m_study, investigation)
-                fill_publications(m_study, investigation)
-                fill_assays(m_study, investigation, path, include_maf_files)
-                fill_sample_table(m_study, path)  # required for fill organism, later remove from model
-                fill_organism(m_study)
-                fill_backups(m_study, path)
-                fill_validations(m_study, path, revalidate_study, user_token_to_revalidate)
+        try:
+            investigation = isatab.load_investigation(f)
+        except Exception as e:
+            logger.warning(f'{investigation_file} file is not opened with unicode_escape mode')
+    if investigation is None:
+        with open(investigation_file, encoding="latin-1") as f:
+            try:
+                investigation = isatab.load_investigation(f)
+            except Exception as e:
+                logger.warning(f'{investigation_file} file is not opened with latin-1 mode')
 
-                if not optimize_for_es_indexing:
-                    fill_protocols(m_study, investigation)
-                    fill_contacts(m_study, investigation)
-                else:
+    if "studies" in investigation:
+        studies = investigation["studies"]
+        if studies:
+            f_study = studies[0]
+            create_study_model(m_study, path, f_study)
+            if title_and_description_only:
+                return
+            fill_descriptors(m_study, investigation)
+            fill_factors(m_study, investigation)
+            fill_publications(m_study, investigation)
+            fill_assays(m_study, investigation, path, include_maf_files)
+            fill_sample_table(m_study, path)  # required for fill organism, later remove from model
+            fill_organism(m_study)
+            fill_backups(m_study, path)
 
-                    del m_study.sampleTable  # delete sample table data from model for indexing.
-                    del m_study.contacts
-                    del m_study.studyLocation
-                    del m_study.protocols
+            fill_validations(m_study, path, revalidate_study, user_token_to_revalidate)
 
-                    update_users_for_indexing(m_study)
-                    update_assays_for_indexing(m_study)
+            if not optimize_for_es_indexing:
+                fill_protocols(m_study, investigation)
+                fill_contacts(m_study, investigation)
+            else:
+
+                #del m_study.sampleTable  # delete sample table data from model for indexing.
+                #del m_study.contacts
+                del m_study.studyLocation
+                #del m_study.protocols
+
+                update_users_for_indexing(m_study)
+                update_assays_for_indexing(m_study)
 
 
 def fill_backups(m_study, path):
@@ -157,11 +168,12 @@ def create_study_model(m_study, path, study):
 
 
 def fill_validations(m_study, path, revalidate_study, user_token_to_revalidate):
+    # TODO review validations mappings
+    results = validate_study(m_study.studyIdentifier, path, user_token_to_revalidate, m_study.obfuscationCode)
+    validation_entries_model = ValidationEntriesModel()
+    m_study.validations = validation_entries_model
+
     if revalidate_study:
-        # TODO review validations mappings
-        results = validate_study(m_study.studyIdentifier, path, user_token_to_revalidate, m_study.obfuscationCode)
-        validation_entries_model = ValidationEntriesModel()
-        m_study.validations = validation_entries_model
         if results and "validation" in results:
             validation_result = results["validation"]
             if "status" in validation_result:
@@ -227,20 +239,29 @@ def fill_sample_table(m_study, path):
     sample_file_name = "s_" + m_study.studyIdentifier + ".txt"
     file_path = os.path.join(path, sample_file_name)
     if os.path.isfile(file_path):
-        with open(file_path, encoding="unicode_escape") as f:
-            sample = isatab.load_table(f)
-            m_sample = models.TableModel()
-            m_study.sampleTable = m_sample
-            _, valid_indices = set_table_fields(m_sample.fields, sample)
+        sample = None
+        try:
+            with open(file_path, encoding="unicode_escape") as f:
+                sample = isatab.load_table(f)
+        except Exception as e:
+            logger.warning(f"{file_path} is not opened with unicode_escape mode")
 
-            for i in range(sample.index.size):
-                row = sample.iloc[i].to_list()
-                trimmed_row = [row[valid_ind] for valid_ind in valid_indices]
-                m_sample.data.append(trimmed_row)
+        if sample is None:
+            with open(file_path, encoding="latin-1") as f:
+                sample = isatab.load_table(f)
+
+        m_sample = models.TableModel()
+        m_study.sampleTable = m_sample
+        _, valid_indices = set_table_fields(m_sample.fields, sample)
+
+        for i in range(sample.index.size):
+            row = sample.iloc[i].to_list()
+            trimmed_row = [row[valid_ind] for valid_ind in valid_indices]
+            m_sample.data.append(trimmed_row)
 
 
 def fill_assays(m_study, investigation, path, include_maf_files):
-    if "s_assays" in investigation:
+    if "s_assays" in investigation and investigation['s_assays']:
         items = investigation['s_assays'][0]
         index = 0
         for item in items.iterrows():
@@ -257,28 +278,37 @@ def fill_assays(m_study, investigation, path, include_maf_files):
             m_study.assays.append(model)
             file = os.path.join(path, model.fileName)
             if os.path.isfile(file):
-                with open(file, encoding="unicode_escape", ) as f:
-                    table = isatab.load_table(f)
-                    m_table = models.TableModel()
-                    model.assayTable = m_table
-                    maf_file_index, valid_indices = set_table_fields(m_table.fields, table,
-                                                                     "metabolite assignment file")
+                table = None
+                try:
+                    with open(file, encoding="unicode_escape", ) as f:
+                        table = isatab.load_table(f)
+                except Exception as e:
+                    logger.warning(f'{file} is not open with unicode_escape mode')
 
-                    for i in range(table.index.size):
-                        row = table.iloc[i].to_list()
-                        trimmed_row = [row[valid_ind] for valid_ind in valid_indices]
-                        m_table.data.append(trimmed_row)
-                        if maf_file_index >= 0:
-                            # Get MAF file name from first row
-                            if not model.metaboliteAssignment:
-                                maf_file_path = os.path.join(path, row[maf_file_index])
-                                if os.path.exists(maf_file_path):
-                                    assignment_model = models.MetaboliteAssignmentModel()
-                                    model.metaboliteAssignment = assignment_model
-                                    model.metaboliteAssignment.metaboliteAssignmentFileName = maf_file_path
-                                    if include_maf_files:
-                                        pass  # TODO fill metabolite alignment lines if needed (not needed now)
-                    # end of method
+                if table is None:
+                    with open(file, encoding="latin-1", ) as f:
+                        table = isatab.load_table(f)
+
+                m_table = models.TableModel()
+                model.assayTable = m_table
+                maf_file_index, valid_indices = set_table_fields(m_table.fields, table,
+                                                                 "metabolite assignment file")
+
+                for i in range(table.index.size):
+                    row = table.iloc[i].to_list()
+                    trimmed_row = [row[valid_ind] for valid_ind in valid_indices]
+                    m_table.data.append(trimmed_row)
+                    if maf_file_index >= 0:
+                        # Get MAF file name from first row
+                        if not model.metaboliteAssignment:
+                            maf_file_path = os.path.join(path, row[maf_file_index])
+                            if os.path.exists(maf_file_path):
+                                assignment_model = models.MetaboliteAssignmentModel()
+                                model.metaboliteAssignment = assignment_model
+                                model.metaboliteAssignment.metaboliteAssignmentFileName = maf_file_path
+                                if include_maf_files:
+                                    pass  # TODO fill metabolite alignment lines if needed (not needed now)
+                # end of method
 
 
 def set_table_fields(fields, table, requested_field_name=None):
@@ -320,7 +350,7 @@ def remove_ontology(data: str):
 
 
 def fill_descriptors(m_study, investigation):
-    if "s_design_descriptors" in investigation:
+    if "s_design_descriptors" in investigation and investigation['s_design_descriptors']:
         items = investigation['s_design_descriptors'][0]
         for item in items.iterrows():
             model = models.StudyDesignDescriptor()
@@ -333,7 +363,7 @@ def fill_descriptors(m_study, investigation):
 
 
 def fill_factors(m_study, investigation):
-    if "s_factors" in investigation:
+    if "s_factors" in investigation and investigation['s_factors']:
         items = investigation['s_factors'][0]
         for item in items.iterrows():
             model = models.StudyFactorModel()
@@ -342,7 +372,7 @@ def fill_factors(m_study, investigation):
 
 
 def fill_protocols(m_study, investigation):
-    if "s_protocols" in investigation:
+    if "s_protocols" in investigation and investigation['s_protocols']:
         items = investigation['s_protocols'][0]
         for item in items.iterrows():
             model = models.ProtocolModel()
@@ -353,7 +383,7 @@ def fill_protocols(m_study, investigation):
 
 
 def fill_publications(m_study, investigation):
-    if "s_publications" in investigation:
+    if "s_publications" in investigation and investigation['s_publications']:
         items = investigation['s_publications'][0]
         for item in items.iterrows():
             model = models.PublicationModel()
@@ -367,7 +397,7 @@ def fill_publications(m_study, investigation):
 
 
 def fill_contacts(m_study, investigation):
-    if "s_contacts" in investigation:
+    if "s_contacts" in investigation and investigation['s_contacts']:
         contacts = investigation['s_contacts'][0]
         for item in contacts.iterrows():
             model = models.ContactModel()

@@ -22,6 +22,7 @@ import logging
 import os
 import re
 import time
+import traceback
 
 import numpy as np
 import pandas as pd
@@ -1134,10 +1135,12 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         else:
             add_msg(validations, val_section, "File '" + file_name + "' found and appears to be correct for column '"
                     + column_name + "'", success, descr=file_description, val_sequence=8.1, log_category=log_category)
-
     if len(missing_or_incorrect_files) > 0:
-        with open(study_location + '/missing_files.txt', 'w') as file:
-            file.write("\n".join(missing_or_incorrect_files))
+        try:
+            with open(study_location + '/missing_files.txt', 'w', encoding='utf-8') as file:
+                file.write("\n".join(missing_or_incorrect_files))
+        except Exception as e:
+            logger.error(f'Error writing missing file {str(e)}')
     return return_validations(val_section, validations, override_list, comment_list)
 
 

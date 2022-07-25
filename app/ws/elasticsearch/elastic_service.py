@@ -20,18 +20,18 @@ class ElasticsearchService(object):
         self.settings = settings
         self.db_manager = db_manager
         self.directory_settings = directory_settings
-        self.client = None  # lazy load
+        self._client = None  # lazy load
 
     def initialize_client(self):
         settings = self.settings
         if settings.elasticsearch_use_tls:
             url = f"https://{settings.elasticsearch_host}:{settings.elasticsearch_port}"
             http_auth = (settings.elasticsearch_user_name, settings.elasticsearch_user_password)
-            self.client = Elasticsearch(url, http_auth=http_auth, verify_certs=False)
+            self._client = Elasticsearch(url, http_auth=http_auth, verify_certs=False)
         else:
             url = f"http://{settings.elasticsearch_host}:{settings.elasticsearch_port}"
-            self.client = Elasticsearch(url)
-        self.client.indices.create(index=self.INDEX_NAME, ignore=400)
+            self._client = Elasticsearch(url)
+        self._client.indices.create(index=self.INDEX_NAME, ignore=400)
 
     instance = None
 
@@ -47,23 +47,25 @@ class ElasticsearchService(object):
                                                 directory_settings=directory_settings)
         return cls.instance
 
-    def get_client(self):
-        if not self.client:
+    @property
+    def client(self):
+        if not self._client:
             self.initialize_client()
-        return self.client
+        return self._client
 
-    def reindex_study(self, study_id, user_token):
+    def reindex_study(self, study_id, user_token, include_validation_results: bool = False):
         # Revalidate user permission
         UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
         try:
+            validations = include_validation_results
             m_study = StudyService.get_instance().get_study_from_db_and_folder(study_id, user_token,
                                                                                optimize_for_es_indexing=True,
-                                                                               revalidate_study=True,
+                                                                               revalidate_study=validations,
                                                                                include_maf_files=False)
             m_study.indexTimestamp = time.time()
             document = m_study.dict()
-            self.get_client().index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
-                                    id=m_study.studyIdentifier)
+            self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
+                              id=m_study.studyIdentifier)
             return m_study
         except Exception as e:
             raise MetabolightsException("Error while indexing", exception=e)
