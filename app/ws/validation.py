@@ -421,7 +421,7 @@ class ValidationComment(Resource):
         summary="Add Comment To Validation",
         notes='''Add a comment to a specific validation message to give the user more context.    <pre><code>
     { 
-      "comment": 
+      "comments": 
         {
           "publication_3": "The PubChem id is for a different paper"
         } 
