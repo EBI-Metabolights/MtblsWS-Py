@@ -14,6 +14,7 @@ class RequestParsers:
     def europepmc_report_parser():
         parser = reqparse.RequestParser()
         parser.add_argument('google_drive', help='Save the report to google drive instead of the vm?')
+        return parser
 
     @staticmethod
     def study_type_report_parser():
