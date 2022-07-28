@@ -53,7 +53,7 @@ from app.ws.jira_update import Jira
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtblsStudy import MtblsStudies, MtblsPrivateStudies, MtblsStudiesWithMethods, MyMtblsStudiesDetailed, \
     MyMtblsStudies, IsaTabInvestigationFile, IsaTabSampleFile, IsaTabAssayFile, CreateAccession, CloneAccession, \
-    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies
+    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies, MtblsStudyValidationStatus
 from app.ws.mtblsWSclient import WsClient
 from app.ws.mtbls_maf import MtblsMAFSearch, CombineMetaboliteAnnotationFiles, MetaboliteAnnotationFile
 from app.ws.mzML2ISA import ValidateMzML, Convert2ISAtab
@@ -207,6 +207,8 @@ def initialize_app(flask_app):
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
     api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
+    api.add_resource(MtblsStudyValidationStatus,
+                     res_path + "/studies/<string:study_id>/validation-status/<string:validation_status>")
     # Direct API consumers/Partners
     api.add_resource(Metabolon, res_path + "/partners/metabolon/<string:study_id>/confirm")
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
