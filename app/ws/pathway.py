@@ -289,7 +289,7 @@ class fellaPathway(Resource):
         command = script + ' ' + para
 
         logger.info("Starting cluster job for FELLA pathway: " + command)
-        status, message, job_out, job_err = lsf_job('bsub', job_param=command, send_email=True)
+        status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=command, send_email=True)
 
         if status:
             return {"success": message, "message": job_out, "errors": job_err}

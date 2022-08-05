@@ -361,6 +361,8 @@ cluster_job_settings = service_settings["CLUSTER_JOB"]
 
 LSF_COMMAND_PATH = cluster_job_settings["LSF_COMMAND_PATH"]
 LSF_COMMAND_EMAIL = cluster_job_settings["LSF_COMMAND_EMAIL"]
+LSF_COMMAND_BJOBS = cluster_job_settings["LSF_COMMAND_BJOBS"]
+LSF_COMMAND_BKILL = cluster_job_settings["LSF_COMMAND_BKILL"]
 
 ########################################################################################################################
 #   DATABASE SETTINGS
