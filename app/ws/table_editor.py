@@ -26,8 +26,8 @@ from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.mtblsStudy import write_audit_files
-from app.ws.mtblsWSclient import WsClient
+from app.ws.study import commons
+from app.ws.study.folder_utils import write_audit_files
 from app.ws.utils import get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv
 
 """
@@ -37,9 +37,6 @@ Manage the CSV/TSV tables in MTBLS studies.
 """
 
 logger = logging.getLogger('wslog')
-
-# MetaboLights (Java-Based) WebService client
-wsc = WsClient()
 
 
 def insert_row(idx, df, df_insert):
@@ -156,7 +153,7 @@ class SimpleColumns(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -275,7 +272,7 @@ class ComplexColumns(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -425,7 +422,7 @@ class ComplexColumns(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+            commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -539,7 +536,7 @@ class ColumnsRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+            study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -693,7 +690,7 @@ class AddRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+            study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -870,7 +867,7 @@ class AddRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
+        study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -989,7 +986,7 @@ class AddRows(Resource):
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+            study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
 
@@ -1092,10 +1089,10 @@ class GetTsvFile(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        logger.info('Assay Table: Getting ISA-JSON Study %s', study_id)
+        logger.info('Assay Table: Getting ISA-JSON Study Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+            study_status = commons.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 

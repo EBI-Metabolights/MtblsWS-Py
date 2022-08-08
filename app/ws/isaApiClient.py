@@ -17,6 +17,7 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import glob
+import logging
 import os
 import time
 
@@ -24,9 +25,9 @@ from flask import current_app as app
 from flask_restful import abort
 from isatools.convert import isatab2json
 from isatools.isatab import load, dump
-from isatools.model import *
+from isatools.model import Investigation, Study, Protocol, Assay
 
-from app.ws.mtblsWSclient import WsClient
+from app.ws.study import commons
 from app.ws.utils import copy_file, new_timestamped_folder
 
 """
@@ -42,11 +43,9 @@ class IsaApiClient:
 
     def __init__(self):
         self.inv_filename = "i_Investigation.txt"
-        self.wsc = WsClient()   # MetaboLights (Java-Based) WebService client
 
-        return
-
-    def get_isa_json(self, study_id, api_key, study_location=None):
+    @staticmethod
+    def get_isa_json(study_id, api_key, study_location=None):
         """
         Get an ISA-API Investigation object reading directly from the ISA-Tab files
         :param study_id: MTBLS study identifier
@@ -58,7 +57,7 @@ class IsaApiClient:
 
         if study_location is None:
             logger.info("Study location is not set, will have load study from filesystem")
-            path = self.wsc.get_study_location(study_id, api_key)
+            path = commons.get_study_location(study_id, api_key)
         else:
             logger.info("Study location is: " + study_location)
             path = study_location
@@ -147,7 +146,7 @@ class IsaApiClient:
 
         if study_location is None:
             logger.info("Study location is not set, will have load study from filesystem")
-            std_path = self.wsc.get_study_location(study_id, api_key)
+            std_path = commons.get_study_location(study_id, api_key)
         else:
             logger.info("Study location is: " + study_location)
             std_path = study_location
@@ -160,14 +159,14 @@ class IsaApiClient:
             # ToDo. Add MAF to isa_study
             isa_study = isa_inv.studies[0]
         except IndexError as e:
-            logger.exception("Failed to find Investigation file from %s", study_id, std_path)
+            logger.exception("Failed to find Investigation file %s from %s", study_id, std_path)
             logger.error(str(e))
             if failing_gracefully:
                 return None, None, None
             else:
                 abort(417)
         except Exception as e:
-            logger.exception("Failed to find Investigation file from %s", study_id, std_path)
+            logger.exception("Failed to find Investigation file %s from %s", study_id, std_path)
             logger.error(str(e))
             if failing_gracefully:
                 return None, None, None

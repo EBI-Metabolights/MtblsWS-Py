@@ -15,18 +15,17 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
 import json
+import logging
 
-from flask import request
-from flask_restful import Resource, reqparse
+from flask import request, jsonify, current_app as app
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
-from app.ws.cronjob import getGoogleSheet, getCellCoordinate, getWorksheet, update_cell
-from app.ws.db_connection import *
+from app.ws.cronjob import getGoogleSheet, getWorksheet, update_cell
+from app.ws.db_connection import get_username_by_token
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request
-from flask import jsonify
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()

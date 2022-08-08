@@ -30,9 +30,9 @@ import pandas as pd
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from owlready2 import urllib
 
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.study_service import StudyService
 from app.ws.utils import log_request
 
 wsc = WsClient()
@@ -42,12 +42,11 @@ class getStudyInfo():
 
     def __init__(self, studyID, user_token):
         try:
-            url = 'https://www.ebi.ac.uk/metabolights/webservice/study/' + studyID
-            request = urllib.request.Request(url)
-            request.add_header('user_token', user_token)
-            response = urllib.request.urlopen(request)
-            content = response.read().decode('utf-8')
-            self.study_content = json.loads(content)
+            m_study = StudyService.get_instance().get_study_from_db_and_folder(studyID, user_token,
+                                                                               optimize_for_es_indexing=False,
+                                                                               revalidate_study=True,
+                                                                          include_maf_files=False)
+            self.study_content = {"content": m_study.dict()}
         except:
             print('cant find study', studyID)
 
@@ -86,14 +85,8 @@ class getStudyInfo():
 
 
 def searchStudies(query, user_token, feature='factor'):
-    # list of all studies
-    url = 'https://www.ebi.ac.uk/metabolights/webservice/study/list'
-    request = urllib.request.Request(url)
-    request.add_header('user_token', user_token)
-    response = urllib.request.urlopen(request)
-    content = response.read().decode('utf-8')
-    j_content = json.loads(content)
-
+    study_id_list = StudyService.get_instance().get_all_authorized_study_ids(user_token)
+    j_content = {'content': study_id_list}
     import re
 
     def atoi(text):
@@ -116,7 +109,7 @@ def searchStudies(query, user_token, feature='factor'):
         else:
             fea = None
 
-        if fea != None and query.casefold() in (f.casefold() for f in fea):
+        if fea and query.casefold() in (f.casefold() for f in fea):
             print('adding', studyID)
             res.append(studyID)
 

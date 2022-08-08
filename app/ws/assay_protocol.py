@@ -16,17 +16,20 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-from flask import abort, jsonify
-from flask_restful import Resource
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import *
-from flask_restful_swagger import swagger
 import logging
+import os
+
+from flask import abort, jsonify
+from flask import request
+from flask_restful import Resource, abort
+from flask_restful_swagger import swagger
+
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.study import commons
+from app.ws.utils import read_tsv, totuples
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
-wsc = WsClient()
 
 
 class GetProtocolForAssays(Resource):
@@ -86,7 +89,7 @@ class GetProtocolForAssays(Resource):
         logger.info('Assay Table mapping: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+            commons.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 

@@ -16,19 +16,34 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+
+import glob
 import json
-from flask import request, abort as flaskabort, send_file
-from flask.json import jsonify
-from flask_restful import Resource, reqparse
-from flask_restful_swagger import swagger
-from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import *
-from app.ws.isaApiClient import IsaApiClient
+import logging
+import os
+import time
 from distutils.dir_util import copy_tree
+
+from flask import request, send_file, current_app as app, jsonify
+from flask_restful import Resource, reqparse, abort
+from flask_restful_swagger import swagger
+
+from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException
 from app.ws import db_connection as db_proxy
+from app.ws.db.dbmanager import DBManager
+from app.ws.db.schemes import Study
+from app.ws.db.types import StudyStatus
 from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
-    query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user
+    query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user, get_obfuscation_code, \
+    create_empty_study
+from app.ws.isaApiClient import IsaApiClient
+from app.ws.mtblsWSclient import WsClient
+from app.ws.study.folder_utils import write_audit_files
+from app.ws.study.study_service import StudyService
+from app.ws.study.user_service import UserService
 from app.ws.study_utilities import StudyUtils
+from app.ws.utils import get_year_plus_one, update_correct_sample_file_name, read_tsv, remove_file, copy_file, \
+    get_timestamp, copy_files_and_folders, write_tsv
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -69,6 +84,7 @@ class MtblsStudies(Resource):
         pub_list = wsc.get_public_studies()
         return jsonify(pub_list)
 
+
 class MtblsPrivateStudies(Resource):
     @swagger.operation(
         summary="Get all private studies",
@@ -102,21 +118,15 @@ class MtblsPrivateStudies(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self):
         log_request(request)
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-        else:
-            # user token is required
-            abort(401)
 
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions('MTBLS1', user_token)
-        if not write_access:
-            abort(403)
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
 
         priv_list = wsc.get_private_studies()
         return jsonify(priv_list)
@@ -261,6 +271,7 @@ class MyMtblsStudies(Resource):
         user_studies = get_all_private_studies_for_user(user_token)
         return jsonify({"data": user_studies})
 
+
 class MyMtblsStudiesDetailed(Resource):
     @swagger.operation(
         summary="Get all studies, with details, for a user",
@@ -353,7 +364,7 @@ class IsaTabInvestigationFile(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(401, "Missing study_id")
+            abort(401, message="Missing study_id")
 
         study_id = study_id.upper()
 
@@ -363,7 +374,7 @@ class IsaTabInvestigationFile(Resource):
             user_token = request.headers['user_token']
 
         if user_token is None:
-            flaskabort(401, "Missing user_token")
+            abort(401, message="Missing user_token")
 
         # query validation
         parser = reqparse.RequestParser()
@@ -383,9 +394,9 @@ class IsaTabInvestigationFile(Resource):
             logger.info("Loading version " + study_version + " of the metadata")
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            flaskabort(403, "Study does not exist or your do not have access to this study")
+            abort(403, message="Study does not exist or your do not have access to this study")
 
         logger.info('Getting ISA-Tab Investigation file for %s', study_id)
         location = study_location
@@ -402,9 +413,9 @@ class IsaTabInvestigationFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                flaskabort(503, "Wrong investigation filename or file could not be read.")
+                abort(503, message="Wrong investigation filename or file could not be read.")
         else:
-            flaskabort(503, "Wrong investigation filename or file could not be read.")
+            abort(503, message="Wrong investigation filename or file could not be read.")
 
 
 class IsaTabSampleFile(Resource):
@@ -481,13 +492,13 @@ class IsaTabSampleFile(Resource):
             # sample_filename = sample_filename.lower() if args['sample_filename'] else None
         if not sample_filename:
             logger.warning("Missing Sample filename.")
-            flaskabort(404, "Missing Sample filename.")
+            abort(404, message="Missing Sample filename.")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            flaskabort(401, "Study does not exist or your do not have access to this study.")
+            abort(401, message="Study does not exist or your do not have access to this study.")
 
         logger.info('Getting ISA-Tab Sample file %s for %s', sample_filename, study_id)
         location = study_location
@@ -500,9 +511,9 @@ class IsaTabSampleFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                flaskabort(404, "Wrong sample filename or file could not be read.")
+                abort(404, message="Wrong sample filename or file could not be read.")
         else:
-            flaskabort(404, "Wrong sample filename or file could not be read.")
+            abort(404, message="Wrong sample filename or file could not be read.")
 
 
 class IsaTabAssayFile(Resource):
@@ -578,13 +589,13 @@ class IsaTabAssayFile(Resource):
             assay_filename = args['assay_filename'] if args['assay_filename'] else None
         if not assay_filename:
             logger.warning("Missing Assay filename.")
-            flaskabort(404, "Missing Assay filename.")
+            abort(404, message="Missing Assay filename.")
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            flaskabort(401, "Study does not exist or your do not have access to this study.")
+            abort(401, message="Study does not exist or your do not have access to this study.")
 
         logger.info('Getting ISA-Tab Assay file for %s', study_id)
         location = study_location
@@ -598,9 +609,9 @@ class IsaTabAssayFile(Resource):
                                  as_attachment=True, attachment_filename=filename)
             except OSError as err:
                 logger.error(err)
-                flaskabort(404, "Wrong assay filename or file could not be read.")
+                abort(404, message="Wrong assay filename or file could not be read.")
         else:
-            flaskabort(404, "Wrong assay filename or file could not be read.")
+            abort(404, message="Wrong assay filename or file could not be read.")
 
 
 class CloneAccession(Resource):
@@ -705,11 +716,11 @@ class CloneAccession(Resource):
 
         # Can the user read the study requested?
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
 
         if not bypass:
             if not read_access:
-                flaskabort(401, "Study does not exist or your do not have access to this study.")
+                abort(401, message="Study does not exist or your do not have access to this study.")
 
         study_id = study_id.upper()
 
@@ -755,7 +766,7 @@ class CloneAccession(Resource):
                     abort(408)
 
                 logger.info('Checking if the new study has been processed by the queue')
-                time.sleep(5)  # Have to check every so many secounds to see if the queue has finished
+                time.sleep(3)  # Have to check every so many secounds to see if the queue has finished
                 new_studies = wsc.get_all_studies_for_user(user_token)
 
             logger.info('Ok, now there is a new private study for the user')
@@ -772,7 +783,7 @@ class CloneAccession(Resource):
         else:  # User proved an existing study to clone into
             # Can the user read the study requested?
             is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-                study_status = wsc.get_permissions(to_study_id, user_token)
+            study_status = wsc.get_permissions(to_study_id, user_token)
 
             # Can the user write into the given study?
             if not write_access:
@@ -844,10 +855,10 @@ class CreateUploadFolder(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(401, "Unauthorized. Access to the resource requires user authentication. "
-                       "Please provide a study id and a valid user token")
+            abort(401, message="Unauthorized. Access to the resource requires user authentication. "
+                               "Please provide a study id and a valid user token")
 
         logger.info('Creating a new study upload folder for study %s', study_id)
         status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
@@ -912,7 +923,7 @@ class CreateUploadFolder(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(401)
 
@@ -976,10 +987,10 @@ class AuditFiles(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(401, "Unauthorized. Write access to the resource requires user authentication. "
-                       "Please provide a study id and a valid user token")
+            abort(401, message="Unauthorized. Write access to the resource requires user authentication. "
+                               "Please provide a study id and a valid user token")
 
         logger.info('Creating a new study audit folder for study %s', study_id)
         status, dest_path = write_audit_files(study_location)
@@ -1041,10 +1052,10 @@ class AuditFiles(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
-            flaskabort(401, "Unauthorized. Read access to the resource requires user authentication. "
-                       "Please provide a study id and a valid user token")
+            abort(401, message="Unauthorized. Read access to the resource requires user authentication. "
+                               "Please provide a study id and a valid user token")
 
         return jsonify(get_audit_files(study_location))
 
@@ -1062,6 +1073,14 @@ class CreateAccession(Resource):
                 "paramType": "header",
                 "type": "string",
                 "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "study_id",
+                "description": "Requested study id",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
                 "allowMultiple": False
             }
         ],
@@ -1084,6 +1103,7 @@ class CreateAccession(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self):
 
         # User authentication
@@ -1091,59 +1111,50 @@ class CreateAccession(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        if not user_token:
-            abort(404)
+        try:
+            user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+        except MetabolightsException as e:
+            abort(401, message=e.message)
 
-        # Need to check that the user is actually an active user, ie the user_token exists
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS1', user_token)
-        if not read_access:
-            abort(401)
+        study_acc = None
+        if "study_id" in request.headers:
+            requested_study_id = request.headers["study_id"]
+            study_acc = self.validate_requested_study_id(requested_study_id, user_token)
 
+        if study_acc:
+            # Only create dababase row without sending e-mail
+            study_acc = create_empty_study(user_token, study_id=study_acc)
+        else:
+            try:
+                study_acc = wsc.add_empty_study(user_token)
+            except Exception as e:
+                abort(501, message="Error while creating study in database")
         logger.info('Creating a new MTBLS Study')
 
-        study_message, status_code = wsc.add_empty_study(user_token)
-        if status_code != 200:
-            logger.error('Failed to create new study. ' + study_message)
-            flaskabort(503, "Could not create a new study.")
+        if not study_acc:
+            logger.error('Failed to create new study. ')
+            abort(503, message="Could not create a new study in db.")
 
-        time.sleep(5)  # give the Java WebService time to recover! ;-)
-
-        data_dict = json.loads(study_message)
-        study_acc = data_dict["message"]
-
-        # Now, if the production Tomcats have recently been restarted, we may not have a fully associated study yet
-        all_studies = get_all_studies_for_user(user_token)
-        found_new_study = False
-        for j_study in all_studies:
-            acc = j_study['accession']
-            if acc == study_acc:
-                found_new_study = True
-                break
-
-        if found_new_study:
-            logger.info('Created new study ' + study_acc)
-        else:
-            logger.error('Could not find new study %s for the user', study_acc)
-
-        # We should have a new study now, so we need to refresh the local variables based on the new study
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_acc, user_token)
-
-        if not write_access:
-            flaskabort(409, "Something went wrong with the creation of study " + study_acc)
+        study = StudyService.get_instance(app).get_study_by_acc(study_acc)
 
         study_path = app.config.get('STUDY_PATH')
-        from_path = study_path + app.config.get('DEFAULT_TEMPLATE')  # 'DUMMY'
+        from_path = os.path.join(study_path, app.config.get('DEFAULT_TEMPLATE'))  # 'DUMMY'
+        study_location = os.path.join(study_path, study.acc)
         to_path = study_location
 
-        try:
-            copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
-        except Exception as e:
-            flaskabort(409, 'Could not copy files from {0} to {1}, Error {2}'.format(from_path, to_path, str(e)))
+        result, message = copy_files_and_folders(from_path, to_path,
+                                                 include_raw_data=True,
+                                                 include_investigation_file=True)
+        if not result:
+            raise MetabolightsFileOperationException(
+                'Could not copy files from {0} to {1}'.format(from_path, to_path))
 
         # Create upload folder
-        status = wsc.create_upload_folder(study_acc, obfuscation_code, user_token)
+        try:
+            status = wsc.create_upload_folder(study.acc, study.obfuscationcode, user_token)
+        except Exception as e:
+            raise MetabolightsFileOperationException(
+                'Could not create ftp upload folder for study {0}, Error {1}'.format(study.acc, str(e)))
 
         if os.path.isfile(os.path.join(to_path, 'i_Investigation.txt')):
             # Get the ISA documents so we can edit the investigation file
@@ -1172,19 +1183,59 @@ class CreateAccession(Resource):
             file_name = os.path.join(study_location, sample_file_name)
             try:
                 sample_df = read_tsv(file_name)
+
+                try:
+                    sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row, if there is one
+                except IndexError:
+                    logger.info("No empty rows in the default sample sheet template, so nothing to remove")
+
+                write_tsv(sample_df, file_name)
             except FileNotFoundError:
-                abort(400, "The file " + file_name + " was not found")
-
-            try:
-                sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row, if there is one
-            except IndexError:
-                logger.info("No empty rows in the default sample sheet template, so nothing to remove")
-
-            write_tsv(sample_df, file_name)
+                abort(400, message="The file " + file_name + " was not found")
         else:
-            flaskabort(409, "Could not find ISA-Tab investigation template for study {0}".format(study_acc))
+            abort(409, message="Could not find ISA-Tab investigation template for study {0}".format(study_acc))
 
         return {"new_study": study_acc}
+
+    def validate_requested_study_id(self, requested_study_id, user_token):
+        """
+        If study_id is set, check the rules below:
+        Rule 1- study_id must start with  MTBLS_STABLE_ID_PREFIX
+        Rule 2- user must be superuser role
+        Rule 3- study_id must be equal or less than last study id, and greater than 0
+        Rule 4- study folder does not exist or is empty
+        Rule 5- study_id must not be in database
+        """
+        # Rule 1
+        study_id_prefix = app.config.get("MTBLS_STABLE_ID_PREFIX")
+        if not requested_study_id.startswith(study_id_prefix):
+            abort(401, message="Invalid study id format. Study id must start with %s" % study_id_prefix)
+        # Rule 2
+        try:
+            UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        except MetabolightsException as e:
+            abort(401, message=e.message)
+        # Rule 3
+        last_stable_id = StudyService.get_instance(app).get_next_stable_study_id()
+        requested_id_str = requested_study_id.upper().replace(study_id_prefix, "")
+        requested_id = None
+        try:
+            requested_id = int(requested_id_str)
+        except:
+            abort(400, message="Invalid study id")
+        if requested_id:
+            if not (last_stable_id >= requested_id > 0):
+                abort(400, message="Requested study id must be less then last study id")
+        # Rule 4
+        study_location = os.path.join(app.config.get('STUDY_PATH'), requested_study_id)
+        if os.path.exists(study_location):
+            abort(400, message="Study folder is already exist")
+        # Rule 5
+        obfuscation_code = get_obfuscation_code(requested_study_id)
+        if obfuscation_code:
+            abort(400, message="Study id already used.")
+        else:
+            return requested_study_id
 
 
 class DeleteStudy(Resource):
@@ -1246,7 +1297,7 @@ class DeleteStudy(Resource):
 
         # Need to check that the user is actually an active user, ie the user_token exists
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(401)
 
@@ -1279,7 +1330,9 @@ class DeleteStudy(Resource):
         for file_name in os.listdir(study_location):
 
             if file_name.startswith("i_Investigation"):
-                from_path = app.config.get('STUDY_PATH') + app.config.get('DEFAULT_TEMPLATE') + '/i_Investigation.txt'
+                from_path = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'),
+                                         "i_Investigation.txt")
+
                 logger.info('Attempting to copy {0} to {1}'.format(from_path, study_location))
 
                 copy_file(from_path, study_location + '/i_Investigation.txt')
@@ -1288,43 +1341,19 @@ class DeleteStudy(Resource):
                 StudyUtils.overwrite_investigation_file(study_location=study_location, study_id=study_id)
                 logger.info(
                     'Updated investigation file with values for Study Identifier and Study File Name for study: {0}'
-                    .format(study_id))
+                        .format(study_id))
             else:
                 # as theres only two files in the directory this will be the sample file.
-                from_path = app.config.get('STUDY_PATH') + app.config.get('DEFAULT_TEMPLATE') + '/s_Sample.txt'
+                from_path = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'),
+                                         "s_Sample.txt")
                 copy_file(from_path, study_location + '/s_{0}.txt'.format(study_id))
                 logger.info('Restored sample.txt file for {0} to template state.'.format(study_id))
 
         status, message = wsc.reindex_study(study_id, user_token)
         if not status:
-            flaskabort(500, "Could not reindex the study")
+            abort(500, "Could not reindex the study")
 
         return {"Success": "Study " + study_id + " has been removed"}
-
-
-def write_audit_files(study_location):
-    """
-    Write back an ISA-API Investigation object directly into ISA-Tab files
-    :param study_location: the filesystem where the study is located
-    :return:
-    """
-    # dest folder name is a timestamp
-    update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
-    update_path = os.path.join(study_location, update_path_suffix)
-    dest_path = new_timestamped_folder(update_path)
-
-    try:
-        # make a copy of ISA-Tab & MAF
-        for isa_file in glob.glob(os.path.join(study_location, "?_*.t*")):
-            isa_file_name = os.path.basename(isa_file)
-            src_file = isa_file
-            dest_file = os.path.join(dest_path, isa_file_name)
-            logger.info("Copying %s to %s", src_file, dest_file)
-            copy_file(src_file, dest_file)
-    except:
-        return False, dest_path
-
-    return True, dest_path
 
 
 def get_audit_files(study_location):
@@ -1358,6 +1387,16 @@ class ReindexStudy(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "include_validation_results",
+                "description": "run study validation and include in indexed data.",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": 'true'
             }
         ],
         responseMessages=[
@@ -1396,16 +1435,106 @@ class ReindexStudy(Resource):
 
         study_id = study_id.upper()
 
+        parser = reqparse.RequestParser()
+        parser.add_argument('include_validation_results')
+        include_validation_results = True
+        if request.args:
+            args = parser.parse_args(req=request)
+            include_validation_results = True if args['include_validation_results'].lower() == 'true' else False
+
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+        study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(401)
 
-        status, message = wsc.reindex_study(study_id, user_token)
+        status, message = wsc.reindex_study(study_id, user_token, include_validation_results=include_validation_results)
 
         if not status:
-            flaskabort(417, message)
+            abort(417, message=message)
 
         return {"Success": "Study " + study_id + " has been re-indexed",
                 "read_access": read_access, "write_access": write_access}
+
+
+class ReindexAllPublicStudies(Resource):
+    @swagger.operation(
+        summary="Reindex a MetaboLights study (curator only)",
+        notes='''Reindexing a MetaboLights study to ensure the search index is up to date''',
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Unexpected result."
+            }
+        ]
+    )
+    def post(self):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None:
+            abort(404)
+
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+
+        with DBManager.get_instance(app).session_maker() as db_session:
+
+            query = db_session.query(Study.acc)
+            query = query.filter(Study.status == StudyStatus.PUBLIC.value).order_by(Study.acc.desc())
+            studies = query.all()
+
+            indexed_studies = []
+            unindexed_studies = []
+            total = len(studies)
+            index = 0
+            for study in studies:
+                index += 1
+                print(f'{index}/{total} Indexing {study[0]}')
+                try:
+                    logger.info(f'{index}/{total} Indexing {study[0]}')
+                    status, message = wsc.reindex_study(study[0], user_token)
+                    if not status:
+                        logger.info(f'Unindexed study {study[0]}')
+                        print(f'Unindexed study {study[0]}')
+                        unindexed_studies.append(study[0])
+                    else:
+                        indexed_studies.append(study[0])
+                        logger.info(f'Indexed study {study[0]}')
+                        print(f'Indexed study {study[0]}')
+                except Exception as e:
+                    unindexed_studies.append(study[0])
+                    logger.info(f'Unindexed study {study[0]}')
+                    print(f'Unindexed study {study[0]}')
+
+
+        return {"indexed_studies": indexed_studies, "unindexed_studies": unindexed_studies}

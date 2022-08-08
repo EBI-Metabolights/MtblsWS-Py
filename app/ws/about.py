@@ -17,9 +17,16 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import logging
+import os
 
+from flask import current_app as app
+from flask import request
 from flask_restful import Resource, fields, marshal_with
 from flask_restful_swagger import swagger
+
+from app.utils import metabolights_exception_handler
+from app.ws.isaAssay import log_request
+from app.ws.study.user_service import UserService
 
 """
 MtblsWS-Py About
@@ -84,4 +91,40 @@ class About(Resource):
                 "WsURL": app.config.get('WS_APP_BASE_LINK') + app.config.get('RESOURCES_PATH')
                 }
         about = {'WsApp': appl, 'WsApi': api}
+        return about
+
+
+class AboutServer(Resource):
+    """Basic description of the Web Service host"""
+    @swagger.operation(
+        summary="About this Web Service host",
+        notes="Basic description of the Web Service service",
+        nickname="about service",
+        parameters=[
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self):
+        log_request(request)
+
+        hostname = os.uname().nodename
+        about = {'server_name': hostname}
         return about

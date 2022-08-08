@@ -23,8 +23,6 @@ import io
 import json
 import logging
 import os
-import os.path
-import os.path
 import random
 import re
 import shutil
@@ -166,12 +164,12 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                 else:
                                     shutil.copytree(source, destination, symlinks=symlinks, ignore=ignore)
                                 logger.info('Copied file %s to %s', source, destination)
-                            except OSError as e:
-                                logger.error('Does the folder already exists? Can not copy %s to %s', source,
-                                             destination, str(e))
                             except FileExistsError as e:
                                 logger.error('Folder already exists! Can not copy %s to %s', source, destination,
                                              str(e))
+                            except OSError as e:
+                                logger.error('Does the folder already exists? Can not copy %s to %s', source,
+                                             destination, str(e))
                             except Exception as e:
                                 logger.error('Other error! Can not copy %s to %s', source, destination,
                                              str(e))
@@ -189,11 +187,11 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
                                         logger.info('Destination file with later timestamp, So not copying')
                                 else:
                                     shutil.copy2(source, destination)
+                            except FileExistsError as e:
+                                logger.error('File already exists! Can not copy %s to %s', source, destination, str(e))
                             except OSError as e:
                                 logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
                                              str(e))
-                            except FileExistsError as e:
-                                logger.error('File already exists! Can not copy %s to %s', source, destination, str(e))
                             except Exception as e:
                                 logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
     except Exception as e:
@@ -308,7 +306,7 @@ def get_assay_headers_and_protcols(assay_type):
         return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, \
                assay_file_type, assay_mandatory_type
 
-    resource_folder = os.path.join(".", "resources")
+    resource_folder = os.path.join(os.getcwd(), "resources")
     logger.info(' - get_assay_headers_and_protcols for assay type ' + assay_type)
     assay_master_template = os.path.join(resource_folder, 'MetaboLightsAssayMaster.tsv')
     master_df = read_tsv(assay_master_template)
@@ -749,7 +747,7 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
 
 
 def create_maf(technology, study_location, assay_file_name, annotation_file_name):
-    resource_folder = os.path.join(".", "resources")
+    resource_folder = os.path.join(os.getcwd(), "resources")
     update_maf = False
 
     if technology is None:
@@ -904,8 +902,9 @@ def map_file_type(file_name, directory, assay_file_list=None):
             if os.sep + 'audit' + os.sep in directory:
                 return 'metadata_investigation', none_active_status, folder
             for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
-                if open(invest_file, encoding='utf8', errors="ignore").read():
-                    return 'metadata_investigation', active_status, folder
+                with open(invest_file, encoding='utf8', errors="ignore") as file:
+                    if file.read():
+                        return 'metadata_investigation', active_status, folder
         return 'metadata', none_active_status, folder
     elif final_filename in ('fid', 'fid.txt'):  # NMR data
         return 'fid', active_status, folder
@@ -1057,8 +1056,9 @@ def is_file_referenced(file_name, directory, isa_tab_file_to_check, assay_file_l
             current """
             try:
                 logger.info("Checking if file " + file_name + " is referenced in " + ref_file_name)
-                if file_name in io.open(ref_file_name, 'r', encoding='utf8', errors="ignore").read():
-                    found = True
+                with io.open(ref_file_name, 'r', encoding='utf8', errors="ignore") as file:
+                    if file_name in file.read():
+                        found = True
             except Exception as e:
                 logger.error('File Format error? Cannot read or open file ' + file_name)
                 logger.error(str(e))
@@ -1078,8 +1078,9 @@ def find_text_in_isatab_file(study_folder, text_to_find):
     for ref_file in glob.glob(isa_tab_file):
         try:
             logger.info("Checking if text " + text_to_find + " is referenced in " + ref_file)
-            if text_to_find in io.open(ref_file, 'r', encoding='utf8', errors="ignore").read():
-                found = True
+            with io.open(ref_file, 'r', encoding='utf8', errors="ignore") as file:
+                if text_to_find in file.read():
+                    found = True
         except Exception as e:
             logger.error('File Format error? Cannot read or open file ' + ref_file)
             logger.error(str(e))
@@ -1250,7 +1251,7 @@ def get_techniques(studyID=None):
     print('getting techniques.... ')
     params = app.config.get('DB_PARAMS')
 
-    if studyID != None:
+    if studyID:
         sql = "select acc,studytype from studies where status= 3 and acc= '{studyid}'".format(studyid=studyID)
     else:
         sql = 'select acc,studytype from studies where status= 3'
@@ -1335,7 +1336,7 @@ def get_studytype(studyID=None):
                   "untargeted": [],
                   "targeted_untargeted": []}
 
-    if studyID == None:
+    if not studyID:
         studyIDs = get_public_review_studies()
     else:
         studyIDs = [studyID]
@@ -1375,7 +1376,7 @@ def get_studytype(studyID=None):
 
 
 def get_instruments_organism(studyID=None):
-    if studyID != None:
+    if studyID:
         studyIDs = [studyID]
     else:
         studyIDs = get_public_review_studies()
@@ -1388,7 +1389,7 @@ def get_instruments_organism(studyID=None):
 
         for assay in assay_file:
             ins = get_instrument(studyID, assay)
-            if ins != None:
+            if ins:
                 for i in ins['instruments']:
                     instruments_df.loc[len(instruments_df)] = [ins['studyID'], ins['assay_name'], i]
 

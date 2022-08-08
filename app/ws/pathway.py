@@ -15,19 +15,20 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+import json
+import logging
+import urllib
 
+import pandas as pd
 import requests
-from flask import jsonify
-from flask import request
-from flask_restful import Resource, reqparse
+from flask import request, jsonify, current_app as app
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
 from app.ws.cluster_jobs import lsf_job
-from app.ws.db_connection import *
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import *
-from app.ws.utils import log_request
+from app.ws.utils import log_request, get_connection
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -325,7 +326,7 @@ def maf_reader(studyID, maf_file_name, sample_df):
     get maf file
 
     :param studyID:  study ID
-    :param sample_file_name: active maf file name
+    :param maf_file_name: active maf file name
     :return:  dict{chebiID:[sampleNames]
     '''
 

@@ -15,28 +15,24 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
+import logging
 import os
 import zipfile
 from datetime import datetime
 
-from flask import jsonify
-from flask import request, abort
-from flask_restful import Resource, reqparse
+from flask import request, jsonify, current_app as app
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
 from app.ws.db_connection import get_connection, get_study
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.misc_utilities.request_parsers import RequestParsers
 from app.ws.mtblsWSclient import WsClient
-from app.ws.ontology_info import *
-from app.ws.study_files import get_all_files
+from app.ws.report_builders.analytical_method_builder import AnalyticalMethodBuilder
+from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
+from app.ws.study.folder_utils import get_all_files
 from app.ws.utils import log_request, writeDataToFile, readDatafromFile, clean_json, get_techniques, get_studytype, \
     get_instruments_organism
-from app.ws.report_builders.europe_pmc_builder import EuropePmcReportBuilder
-from app.ws.report_builders.analytical_method_builder import  AnalyticalMethodBuilder
-from app.ws.misc_utilities.request_parsers import RequestParsers
-
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -327,7 +323,7 @@ class reports(Resource):
             for date, report in j_file['data'].items():
                 d = datetime.strptime(date, '%Y-%m-%d')
                 if d >= start_date and d <= end_date:
-                    if query_field != None:
+                    if query_field:
                         slim_report = {k: report[k] for k in query_field}
                         data_res.update({date: slim_report})
                     else:
@@ -361,7 +357,7 @@ class reports(Resource):
                 d = datetime.strptime(study_info['submissiondate'], '%Y-%m-%d')
                 status = study_info['status']
 
-                if studyStatus == None:
+                if not studyStatus:
                     if d >= start_date and d <= end_date:
                         data_res.update({studyID: study_info})
                     else:
@@ -718,7 +714,7 @@ class CrossReferencePublicationInformation(Resource):
         priv_list = wsc.get_private_studies()['content']
 
         msg = EuropePmcReportBuilder(priv_list, user_token, wsc, iac).build(drive)
-        if msg.count('Problem') is 1:
+        if msg.count('Problem') == 1:
             abort(500, msg)
 
         return 200, msg

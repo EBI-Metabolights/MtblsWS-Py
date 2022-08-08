@@ -22,11 +22,11 @@ import os
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from flask import request, abort
-from app.ws.mtblsWSclient import WsClient
 from flask import current_app as app
 
+from app.ws.study import commons
+
 logger = logging.getLogger('wslog')
-wsc = WsClient()
 
 
 def lsf_job(job_cmd, job_param=None, send_email=True, user_email=""):
@@ -131,7 +131,7 @@ class LsfUtils(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions('MTBLS2', user_token)
+        study_status = commons.get_permissions('MTBLS2', user_token)
         if not is_curator:
             abort(403)
 
@@ -185,7 +185,7 @@ class LsfUtils(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS2', user_token)
+            study_status = commons.get_permissions('MTBLS2', user_token)
         if not is_curator:
             abort(403)
 
@@ -258,7 +258,7 @@ class LsfUtils(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS2', user_token)
+            study_status = commons.get_permissions('MTBLS2', user_token)
         if not is_curator:
             abort(403)
 
@@ -330,7 +330,7 @@ class LsfUtilsStatus(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS2', user_token)
+            study_status = commons.get_permissions('MTBLS2', user_token)
         if not is_curator:
             abort(403)
 

@@ -16,26 +16,31 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+
+import datetime
 import json
+import logging
+import os
+import re
 import urllib
 from datetime import datetime
 
 import gspread
 import numpy as np
 import pandas as pd
+import psycopg2
 import requests
-from flask import jsonify
-from flask import request
-from flask_restful import Resource, reqparse
+from flask import jsonify, request, current_app as app
+from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import urllib
 
-from app.ws.db_connection import *
+from app.ws.db_connection import get_study_info, get_study_by_type, get_public_studies
+from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request, writeDataToFile
-from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -433,7 +438,7 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
     def getDescriptor(sIDs=None):
         res = []
 
-        if sIDs == None:
+        if not sIDs:
             studyIDs = wsc.get_public_studies()
         else:
             studyIDs = sIDs
@@ -458,7 +463,7 @@ def extractUntargetStudy(studyType=None, publicStudy=True):
         df = pd.DataFrame(res)
         return df
 
-    if studyType == None:
+    if not studyType:
         studyIDs = get_public_studies()
     else:
         studyIDs, _ = get_study_by_type(studyType, publicStudy=publicStudy)

@@ -150,7 +150,7 @@ class AnalyticalMethodBuilder:
             logger.info(study_location)
             sample_file_list = [file for file in os.listdir(study_location) if
                                 file.startswith('s_') and file.endswith('.txt')]
-            if len(sample_file_list) is 0:
+            if len(sample_file_list) == 0:
                 logger.error(
                     'Sample sheet not found. Either it is not present or does not follow the proper naming convention.')
                 self.tracker.missing_samplesheets += 1
@@ -221,7 +221,7 @@ class AnalyticalMethodBuilder:
             'NMR': ['NMR', 'spectroscopy'],
             'LCMS': ['LC', 'LC-MS', 'LCMS', 'spectrometry']
         }
-        t = 'LCMS' if self.studytype is not 'NMR' else 'NMR'
+        t = 'LCMS' if self.studytype != 'NMR' else 'NMR'
 
         assays_list = [file for file in os.listdir(study_location) if file.startswith('a_') and file.endswith('.txt')]
 
@@ -232,7 +232,7 @@ class AnalyticalMethodBuilder:
             # attempt to cull any irrelevant assays by checking for tokens in the assay filenames.
             filtered_assays_list = [file for file in assays_list if
                                     any(token.upper() in file.upper() for token in tokens[t])]
-        elif len(assays_list) is 1:
+        elif len(assays_list) == 1:
             filtered_assays_list = assays_list
 
         if len(filtered_assays_list) == 0:
@@ -366,7 +366,7 @@ class AnalyticalMethodBuilder:
             tracking_message = '\n '.join([
                 f'Tracker {key} : {str(val)}'
                 for key, val in self.tracker.__dict__.items()
-                if key is not '_timers'])
+                if key != '_timers'])
             total_tracking = '\n '.join((tracking_variables_str, tracking_message))
 
             message = '\n\n '.join(( general_message, total_tracking, total_time))

@@ -16,418 +16,112 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-import json
 import logging
-import os
-from datetime import datetime
 
-import requests
-from flask import current_app as app
-from flask_restful import abort
+from flask import current_app as app, abort
 
-from app.ws.db_connection import check_access_rights, get_public_studies, get_private_studies, get_study_by_type,get_email
+from app.utils import MetabolightsException
+from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
+from app.ws.db_connection import create_empty_study, \
+    get_release_date_of_study
+from app.ws.elasticsearch.elastic_service import ElasticsearchService
+from app.ws.email.email_service import EmailService
+from app.ws.study import commons
+from app.ws.study.user_service import UserService
 
 """
 MetaboLights WS client
 
-Use the Java-based REST resources provided from MTBLS
+Updated from the Java-based REST resources
 """
 
 logger = logging.getLogger('wslog')
 
 
 class WsClient:
+    search_manager: ChebiSearchManager = None
+    email_service: EmailService = None
+    elasticsearch_service: ElasticsearchService = None
+
+    def __init__(self, search_manager: ChebiSearchManager = None, email_service: EmailService = None,
+                 elasticsearch_service: ElasticsearchService = None):
+        WsClient.email_service = email_service
+        WsClient.search_manager = search_manager
+        WsClient.elasticsearch_service = elasticsearch_service
 
     def get_study_location(self, study_id, user_token):
-        """
-        Get the actual location of the study files in the File System
+        return commons.get_study_location(study_id, user_token)
 
-        :param study_id: Identifier of the study in MetaboLights
-        :param user_token: User API token. Used to check for permissions
-        """
-        logger.info('Getting actual location for Study %s on the filesystem', study_id)
-        study = self.get_study(study_id, user_token)
-        location = study["content"]["studyLocation"]
-        logger.info('... found study folder %s', location)
-        location = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), location.strip('/'))
-        return location
+    def get_maf_search(self, search_type, search_value):
+        # Updated to remove Java WS /genericcompoundsearch/{search_type}/{search_value} dependency
+        result = None
+        try:
+            result = self.search_manager.search_by_type(search_type, search_value)
+        except Exception as e:
+            abort(500, "MAF search failed")
 
-    def get_study_location_and_obfuscation_code(self, study_id, user_token):
-        """
-        Get the actual location of the study files in the File System
+        if not result or result.err:
+            abort(400, result.err)
 
-        :param study_id: Identifier of the study in MetaboLights
-        :param user_token: User API token. Used to check for permissions
-        """
-        logger.info('Getting actual location for Study %s on the filesystem', study_id)
-        study = self.get_study(study_id, user_token)
-        location = study["content"]["studyLocation"]
-        obfuscation_code = study["content"]["obfuscationCode"]
-        logger.info('... found study folder %s', location)
-        location = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), location.strip('/'))
-        return location, obfuscation_code
-
-    def get_study_obfuscation(self, study_id, user_token):
-        """
-        Get the obfuscation code of the study files in the File System
-
-        :param study_id: Identifier of the study in MetaboLights
-        :param user_token: User API token. Used to check for permissions
-        """
-        logger.info('Getting actual location for Study %s on the filesystem', study_id)
-        study = self.get_study(study_id, user_token)
-        obfuscationCode = study["content"]["obfuscationCode"]
-        logger.info('... found study obfuscationCode %s', obfuscationCode)
-        return obfuscationCode
-
-    def get_study_updates_location(self, study_id, user_token):
-        """
-        Get location for output updates in a MetaboLights study.
-        This is where affected files are copied before applying changes, for audit purposes.
-        :param study_id:
-        :param user_token:
-        :return:
-        """
-        logger.info('Getting location for output updates for Study %s on the filesystem', study_id)
-
-        study = self.get_study(study_id, user_token)
-        std_folder = study["content"]["studyLocation"]
-
-        update_folder = std_folder + app.config.get('UPDATE_PATH_SUFFIX')
-        update_folder = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), update_folder.strip('/'))
-        logger.info('... found updates folder %s', update_folder)
-        return update_folder
-
-    def get_study_status_and_release_date(self, study_id, user_token):
-        """
-        Get the study status and public release date
-        @param study_id:
-        @param user_token:
-        @return:
-        """
-        study_json = self.get_study(study_id, user_token)
-        std_status = study_json["content"]["studyStatus"]
-        release_date = study_json["content"]["studyPublicReleaseDate"]
-        # 2012-02-14 00:00:00.0
-        readable = datetime.fromtimestamp(release_date / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')
-        return [std_status, readable]
-
-    def get_study(self, study_id, user_token):
-        """
-        Get the JSON object for a MTBLS study
-        by calling current Java-based WS
-            {{server}}{{port}}/metabolights/webservice/study/MTBLS_ID
-
-        :param study_id: Identifier of the study in MetaboLights
-        :param user_token: User API token. Used to check for permissions
-        """
-        logger.info('Getting JSON object for Study %s', study_id)
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url, headers={"user_token": user_token})
-        if resp.status_code != 200:
-            abort(resp.status_code)
-
-        json_resp = resp.json()
-
-        # double check for errors
-        if json_resp["message"] is not None:
-            if json_resp["message"] == 'Study not found':
-                abort(404)
-        if json_resp["err"] is not None:
-            if user_token is None:
-                abort(401)
-            else:
-                abort(403)
-
-        logger.info('... found Study  %s', json_resp['content']['title'])
-        return json_resp
-
-    @staticmethod
-    def get_study_maf(study_id, assay_id, user_token):
-        """
-        Get the JSON object for a given MAF for a MTBLS study
-        by calling current Java-based WS
-            {{server}}{{port}}/metabolights/webservice/study/MTBLS_ID/assay/ASSAY_ID/jsonmaf
-
-        :param study_id: Identifier of the study in MetaboLights
-        :param assay_id: The number of the assay for the given study_id
-        :param user_token: User API token. Used to check for permissions
-        """
-        logger.info('Getting JSON object for MAF for Study %s (Assay %s)', study_id, assay_id)
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/" + study_id + "/assay/" + assay_id + "/jsonmaf"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.get(url, headers={"user_token": user_token})
-        if resp.status_code != 200:
-            abort(resp.status_code)
-
-        json_resp = resp.json()
-        return json_resp
-
-    @staticmethod
-    def get_maf_search(search_type, search_value):
-        """
-        Get the JSON object for a given MAF for a MTBLS study
-        by calling current Java-based WS
-            {{server}}{{port}}/metabolights/webservice/genericcompoundsearch/{search_type}/{search_value}
-
-        :param search_type: The type of search to preform. 'name','databaseid','smiles','inchi'
-        :param search_value: The actual value to search for
-        """
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/genericcompoundsearch/" + search_type
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = None
-        json_resp = None
-        if search_type == 'name' or search_type == 'databaseid':
-            try:
-                resp = requests.get(url + "/" + search_value, headers={"body": search_value})
-            except Exception as e:
-                logger.error("MAF search failed. " + str(e))
-
-        if search_type == 'inchi' or search_type == 'smiles':
-            try:
-                bytes_search = search_value.encode()
-                resp = requests.post(url, data={search_type: bytes_search})
-            except Exception as e:
-                logger.error("MAF search failed. " + str(e))
-
-        if resp:
-            if resp.status_code != 200:
-                abort(resp.status_code)
-
-            json_resp = resp.json()
-        return json_resp
-
-    def get_study_status(self, study_id, user_token):
-        """
-        Get the status of the Study: PUBLIC, INCURATION, ...
-        :param study_id:
-        :param user_token:
-        :return:
-        """
-        logger.info('Getting the status of the Study %s', study_id)
-        study = self.get_study(study_id, user_token)
-        std_status = study["content"]["studyStatus"]
-        logger.info('... found Study is %s', std_status)
-        return std_status
-
-    def is_study_public(self, study_id, user_token):
-        """
-        Check if the Study is public
-        :param study_id:
-        :param user_token:
-        :return:
-        """
-        logger.info('Checking if Study %s is public', study_id)
-        study = self.get_study(study_id, user_token)
-        # Check for
-        #   "publicStudy": true
-        # and
-        #   "studyStatus": "PUBLIC"
-        std_status = study["content"]["studyStatus"]
-        std_public = study["content"]["publicStudy"]
-        is_public = std_public and std_status == "PUBLIC"
-        logger.info('... found Study is %s', std_status)
-        return is_public
+        json_result = result.dict()
+        return json_result
 
     @staticmethod
     def get_public_studies():
-        logger.info('Getting all public studies')
-        studies = []
-        study_list = get_public_studies()
-        for acc in study_list:
-            studies.append(acc[0])
-
-        logger.info('... found %d public studies', len(studies))
-        return {"studies": len(studies), "content": studies}
+        return commons.get_public_studies_list()
 
     @staticmethod
     def get_private_studies():
-        logger.info('Getting all private studies')
-        studies = []
-        study_list = get_private_studies()
-        for acc in study_list:
-            studies.append(acc[0])
-
-        logger.info('... found %d private studies', len(studies))
-        return {"studies": len(studies), "content": studies}
+        return commons.get_private_studies_list()
 
     @staticmethod
     def get_study_by_type(stype, publicS=True):
-        logger.info('Getting all public studies')
-        studyID, studytype = get_study_by_type(stype, publicS)
-        res = json.dumps(dict(zip(studyID, studytype)))
-        return res
+        return commons.get_study_by_status(stype, publicS)
 
     @staticmethod
     def get_all_studies_for_user(user_token):
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/studyListOnUserToken"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        logger.info('Getting all studies for user_token %s using url %s', user_token, url)
-        resp = requests.post(url, data='{"token":"' + user_token + '"}', headers={"user_token": user_token})
-        if resp.status_code != 200:
-            abort(resp.status_code)
-
-        text_resp = resp.text
-        logger.info('Found the following studies %s', text_resp)
-        return text_resp
-
-    @staticmethod
-    def is_user_token_valid(user_token):
-        logger.info('Checking for user credentials in MTBLS-Labs')
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/labs/" + "authenticateToken"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        resp = requests.post(url, data='{"token":"' + user_token + '"}')
-        if resp.status_code != 200:
-            abort(resp.status_code)
-
-        user = resp.headers.get('user')
-        jwt = resp.headers.get('jwt')
-        if user is None or jwt is None:
-            abort(403)
-        logger.info('... found user %s with jwt key: %s', user, jwt)
-        return True
-
-    # used to index the tuple response
-    CAN_READ = 0
-    CAN_WRITE = 1
+        return commons.get_all_studies_for_user(user_token)
 
     @staticmethod
     def get_permissions(study_id, user_token, obfuscation_code=None):
-        """
-        Check MTBLS-WS for permissions on this Study for this user
-
-        Study       User    Submitter   Curator     Reviewer/Read-only
-        SUBMITTED   ----    Read+Write  Read+Write  Read
-        INCURATION  ----    Read        Read+Write  Read
-        INREVIEW    ----    Read        Read+Write  Read
-        PUBLIC      Read    Read        Read+Write  Read
-
-        :param obfuscation_code:
-        :param study_id:
-        :param user_token:
-        :return: study details and permission levels
-
-        """
-
-        if not user_token:
-            user_token = "public_access_only"
-
-        # Reviewer access will pass the study obfuscation code instead of api_key
-        if study_id and not obfuscation_code and user_token.startswith("ocode:"):
-            logger.info("Study obfuscation code passed instead of user API_CODE")
-            obfuscation_code = user_token.replace("ocode:", "")
-
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        updated_date, study_status = check_access_rights(user_token, study_id.upper(),
-                                                         study_obfuscation_code=obfuscation_code)
-
-        logger.info("Read access: " + str(read_access) + ". Write access: " + str(write_access))
-
-        return is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
-               submission_date, study_status
+        return commons.get_permissions(study_id, user_token, obfuscation_code)
 
     @staticmethod
     def get_user_email(user_token):
-
-        user_email= get_email(user_token)
-        logger.info(" User Email: " + str(user_email))
-        return user_email
+        return commons.get_user_email(user_token)
 
     @staticmethod
     def get_queue_folder():
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/getQueueFolder"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-
-        try:
-            resp = requests.get(url)
-        except:
-            logger.info('Call to url %s failed with %s', url, resp.text)
-
-        if resp.status_code != 200:
-            abort(resp.status_code)
-
-        text_resp = resp.content
-        str_resp = text_resp.decode("utf-8")
-        logger.info('Found queue upload folder for this server as:' + str_resp)
-
-        return str_resp
+        return commons.get_queue_folder()
 
     @staticmethod
     def create_upload_folder(study_id, obfuscation_code, user_token):
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') \
-                   + "/study/requestFtpFolderOnApiKey?studyIdentifier=" + study_id
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
+        # Updated to remove Java WS /study/requestFtpFolderOnApiKey dependency
 
-        ftp_folder = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
-        os_upload = ftp_folder
+        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        return commons.create_ftp_folder(study_id, obfuscation_code, user_token, WsClient.email_service)
 
-        if not os.path.exists(ftp_folder):
-            logger.info('Creating a new study upload folder for Study %s, using URL %s', study_id, url)
+    def add_empty_study(self, user_token):
+        # Updated to remove Java WS /study/createEmptyStudy dependency
 
-            resp = requests.post(
-                url,
-                headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-                data="token=" + (user_token or ''))
+        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
 
-            if resp.status_code != 200:
-                abort(resp.status_code)
+        study_id = create_empty_study(user_token)
+        if not study_id:
+            raise MetabolightsException("Error while creating new study in db")
+        user_email = user.username
+        submitters_email_list = [user_email]
+        release_date = get_release_date_of_study(study_id)
+        self.email_service.send_email_for_queued_study_submitted(study_id, release_date,
+                                                                 user_email, submitters_email_list)
+        return study_id
 
-            logger.info('Study upload folder for %s has been created', study_id)
-            data_dict = json.loads(resp.text)
-            os_upload_path = data_dict["message"]
-            os_upload = os_upload_path
+    def reindex_study(self, study_id, user_token, include_validation_results: bool = False):
+        # Updated to remove Java WS /study/reindexStudyOnToken dependency
 
-        upload_location = ftp_folder.split('/mtblight')  # FTP/Aspera root starts here
-        upload_loc = upload_location[1]
-
-        return {'os_upload_path': os_upload, 'upload_location': upload_loc}
-
-    @staticmethod
-    def add_empty_study(user_token):
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/createEmptyStudy"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        logger.info('Creating a new empty study')
-        resp = requests.post(
-            url,
-            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-            data="token=" + (user_token or ''))
-
-        if resp.status_code != 200:
-            logger.error('Could not create a new study using the Java web service')
-
-        return resp.text, resp.status_code
-
-    @staticmethod
-    def reindex_study(study_id, user_token):
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/reindexStudyOnToken"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        logger.info('Reindex study ' + study_id)
-        resp = requests.post(
-            url,
-            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-            data={"token": user_token, "study_id": study_id}
-        )
-
-        if resp.status_code != 200:
-            abort(resp.status_code)
-
-        message = resp.text
-        return True, message
-
-    @staticmethod
-    def add_user_to_study(study_id, email):
-        resource = app.config.get('MTBLS_WS_RESOURCES_PATH') + "/study/reindexStudyOnToken"
-        url = app.config.get('MTBLS_WS_HOST') + app.config.get('MTBLS_WS_PORT') + resource
-        logger.info('Reindex study ' + study_id)
-        resp = requests.post(
-            url,
-            headers={"content-type": "application/x-www-form-urlencoded", "cache-control": "no-cache"},
-            data={"email": email, "study_id": study_id}
-        )
-
-        if resp.status_code != 200:
-            abort(resp.status_code)
-
-        message = resp.text
-        return True, message
+        UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+        try:
+            indexed_data = self.elasticsearch_service.reindex_study(study_id, user_token, include_validation_results)
+            return True, f" {indexed_data.studyIdentifier} is successfully indexed"
+        except MetabolightsException as e:
+            abort(501, e.message)
