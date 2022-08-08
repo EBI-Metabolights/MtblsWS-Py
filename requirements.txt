@@ -10,7 +10,7 @@ chardet==3.0.4
 dirsync==2.2.5
 docutils==0.15.2
 Flask==1.1.2
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-RESTful==0.3.8
 flask-restful-swagger==0.20.1
 fuzzywuzzy==0.18.0
