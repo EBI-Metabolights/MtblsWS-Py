@@ -439,6 +439,13 @@ def get_private_studies():
     release_connection(postgresql_pool, conn)
     return data
 
+def get_all_non_public_studies():
+    query = "select acc from studies where status = 0 OR status = 1 OR status = 2;"
+    postgresql_pool, conn, cursor = get_connection()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    release_connection(postgresql_pool, conn)
+    return data
 
 def get_study_by_type(sType, publicStudy=True):
     q2 = ' '

@@ -712,7 +712,7 @@ class CrossReferencePublicationInformation(Resource):
             wsc.get_permissions('MTBLS1', user_token)
         if not is_curator:
             abort(403)
-        priv_list = wsc.get_private_studies()['content']
+        priv_list = wsc.get_non_public_studies()['content']
 
         msg = EuropePmcReportBuilder(priv_list, user_token, wsc, iac).build(drive)
         if msg.count('Problem') == 1:
