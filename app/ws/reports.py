@@ -704,7 +704,8 @@ class CrossReferencePublicationInformation(Resource):
         logger.info('ARGS ' + str(args))
         drive = False
         if 'google_drive' in args:
-            drive = args['google_drive']
+            if args['google_drive'] == 'true':
+                drive = True
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
