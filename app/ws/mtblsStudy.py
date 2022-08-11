@@ -1396,7 +1396,7 @@ class ReindexStudy(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "type": "Boolean",
-                "defaultValue": 'true'
+                "defaultValue": 'false'
             }
         ],
         responseMessages=[

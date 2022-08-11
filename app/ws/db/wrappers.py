@@ -169,11 +169,11 @@ def create_study_model(m_study, path, study):
 
 def fill_validations(m_study, path, revalidate_study, user_token_to_revalidate):
     # TODO review validations mappings
-    results = validate_study(m_study.studyIdentifier, path, user_token_to_revalidate, m_study.obfuscationCode)
     validation_entries_model = ValidationEntriesModel()
     m_study.validations = validation_entries_model
 
     if revalidate_study:
+        results = validate_study(m_study.studyIdentifier, path, user_token_to_revalidate, m_study.obfuscationCode)
         if results and "validation" in results:
             validation_result = results["validation"]
             if "status" in validation_result:

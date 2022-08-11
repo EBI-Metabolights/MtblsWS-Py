@@ -64,8 +64,9 @@ class ElasticsearchService(object):
                                                                                include_maf_files=False)
             m_study.indexTimestamp = time.time()
             document = m_study.dict()
+            params = {"request_timeout": 120}
             self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
-                              id=m_study.studyIdentifier)
+                              id=m_study.studyIdentifier, params=params)
             return m_study
         except Exception as e:
             raise MetabolightsException("Error while indexing", exception=e)
