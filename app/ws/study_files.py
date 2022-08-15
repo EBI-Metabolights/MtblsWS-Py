@@ -15,17 +15,18 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
+import glob
 import json
 import logging
 import os
 import shutil
+import time
 import zipfile
 
 from dirsync import sync
 from flask import current_app as app
-from flask.json import jsonify
 from flask import request, abort
+from flask.json import jsonify
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 from jsonschema.exceptions import ValidationError
@@ -38,6 +39,7 @@ from app.ws.utils import get_assay_file_list, remove_file, delete_asper_files, l
 logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
+
 
 class StudyFiles(Resource):
     @swagger.operation(
@@ -297,6 +299,612 @@ without setting the "force" parameter to True''',
             return {'Success': message}
         else:
             return {'Error': message}
+
+
+class StudyRawAndDerivedDataFile(Resource):
+    @swagger.operation(
+        summary="Search raw and derived data files in the study",
+        notes="""
+        Search raw and derived data files in the study. 
+        Study metadata files (i_Investigation.txt, m_*.tsv, etc) are filtered.
+        """,
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "search_pattern",
+                "description": "search pattern (*.mzML, *.zip, etc.). Default is *",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "default": '*'
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # If false, only sync ISA-Tab metadata files
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('search_pattern', help='Search pattern')
+
+        search_pattern = '*'
+
+        if request.args:
+            args = parser.parse_args(req=request)
+            search_pattern = args['search_pattern'] if args['search_pattern'] else '*'
+            if '..' + os.path.sep in search_pattern or '.' + os.path.sep in search_pattern:
+                abort(401, error="Relative folder search patterns (., ..) are not allowed")
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not is_curator:
+            abort(403, error="User has no curator role")
+
+        studies_folder = app.config.get("STUDY_PATH")
+        study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
+        search_path = os.path.abspath(os.path.join(studies_folder, study_id))
+        ignore_list = self.get_ignore_list(search_path)
+
+        glob_search_result = glob.glob(os.path.join(search_path, search_pattern))
+        search_results = [os.path.abspath(file) for file in glob_search_result if not os.path.isdir(file)]
+        excluded_folders = app.config.get("FOLDER_EXCLUSION_LIST")
+
+        excluded_folder_set = set(
+            [os.path.basename(os.path.abspath(os.path.join(study_folder, file))) for file in excluded_folders])
+        filtered_result = []
+        warning_occurred = False
+        for item in search_results:
+            is_in_study_folder = item.startswith(study_folder + os.path.sep) and ".." + os.path.sep not in item
+            if is_in_study_folder:
+                relative_path = item.replace(study_folder + os.path.sep, '')
+                sub_path = relative_path.split(os.path.sep)
+                if sub_path and sub_path[0] not in excluded_folder_set:
+                    filtered_result.append(item)
+            else:
+                if not warning_occurred:
+                    message = f"{search_pattern} pattern results for {study_id} are not allowed: {item}"
+                    logger.warning(message)
+                    warning_occurred = True
+
+        files = [file for file in filtered_result if file not in ignore_list]
+        files.sort()
+
+        result = [{"name": file.replace(search_path + "/", "")} for file in files]
+
+        return jsonify({'files': result})
+
+    def get_ignore_list(self, search_path):
+        ignore_list = []
+
+        metadata_files = glob.glob(os.path.join(search_path, "[isam]_*.t[xs]?"))
+        internal_file_names = app.config.get("INTERNAL_MAPPING_LIST")
+        internal_files = [os.path.join(search_path, file + ".json") for file in internal_file_names]
+        internal_files.append(os.path.join(search_path, "missing_files.txt"))
+        ignore_list.extend(metadata_files)
+        ignore_list.extend(internal_files)
+        return ignore_list
+
+    @swagger.operation(
+        summary="Move raw and drived data files to RAW_FILES, DERIVED_FILES or RECYCLE_BIN folder",
+        nickname="Move files",
+        notes='''Move files to RAW_FILES, DERIVED_FILES, or RECYCLE_BIN folder. <pre><code>
+{    
+    "files": [
+        {"name": "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"},
+        {"name": "Raw-File-001.raw"}
+    ]
+}</pre></code></br> 
+''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "files",
+                "description": 'Files to move other folder',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "target_location",
+                "description": "Target folder",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["RAW_FILES", "DERIVED_FILES", "RECYCLE_BIN"]
+            },
+            {
+                "name": "override",
+                "description": "If file exists in target location, file is overridden",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": "false",
+                "default": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. Files/Folders were removed."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404, 'Please provide valid parameter for study identifier')
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('files', help='files')
+        parser.add_argument('target_location', help='Target Location')
+        parser.add_argument('override', help='Override target file if it exists')
+
+        target_location = None
+        files = None
+        override = False
+        # If false, only sync ISA-Tab metadata files
+        if request.args:
+            args = parser.parse_args(req=request)
+            files = args['files'] if args['files'] else None
+            target_location = args['target_location'] if args['target_location'] else None
+            override = True if args['override'] and args['override'].lower() == "true" else False
+
+        if not target_location or target_location not in ("RAW_FILES", "DERIVED_FILES", "RECYCLE_BIN"):
+            abort(400, error='target location is invalid or not defined')
+        # body content validation
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['files']
+            if data is None:
+                abort(412, error='Files are defined')
+            files = data
+        except (ValidationError, Exception):
+            abort(400, error='Incorrect JSON provided')
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+        studies_folder = app.config.get("STUDY_PATH")
+        study_path = os.path.abspath(os.path.join(studies_folder, study_id))
+
+        ignore_list = self.get_ignore_list(study_path)
+
+        raw_data_dir = os.path.abspath(os.path.join(study_path, "RAW_FILES"))
+        derived_data_dir = os.path.abspath(os.path.join(study_path, "DERIVED_FILES"))
+        recycle_bin_dir = os.path.abspath(os.path.join(studies_folder, "DELETED_FILES", study_id))
+        if target_location == 'RAW_FILES':
+            os.makedirs(raw_data_dir, exist_ok=True)
+        elif target_location == 'DERIVED_FILES':
+            os.makedirs(derived_data_dir, exist_ok=True)
+        else:
+            os.makedirs(recycle_bin_dir, exist_ok=True)
+
+        warnings = []
+        successes = []
+        errors = []
+        for file in files:
+
+            if "name" in file and file["name"]:
+                f_name = file["name"]
+                try:
+                    file_path = os.path.abspath(os.path.join(study_path, f_name))
+                    if not os.path.exists(file_path):
+                        warnings.append({'file': f_name, 'message': 'Operation is ignored. File does not exist.'})
+                        continue
+
+                    if file_path in ignore_list:
+                        warnings.append({'file': f_name, 'message': 'Operation is ignored. File is in ignore list.'})
+                        continue
+
+                    base_name = os.path.basename(f_name)
+                    if target_location == 'RAW_FILES':
+                        target_path = os.path.abspath(os.path.join(raw_data_dir, base_name))
+                    elif target_location == 'DERIVED_FILES':
+                        target_path = os.path.abspath(os.path.join(derived_data_dir, base_name))
+                    else:
+                        target_path = os.path.abspath(os.path.join(recycle_bin_dir, f_name))
+                        split = os.path.split(target_path)
+                        if not os.path.exists(split[0]):
+                            os.makedirs(split[0])
+
+                    if file_path == target_path:
+                        warnings.append({'file': f_name, 'message': 'Operation is ignored. Target is same directory.'})
+                        continue
+
+                    if not override and os.path.exists(target_path):
+                        warnings.append({'file': f_name, 'message': 'Operation is ignored. Target file exists.'})
+                        continue
+
+                    shutil.move(file_path, target_path)
+                    successes.append({'file': f_name, 'message': f'File is moved to {target_location}'})
+
+                except Exception as e:
+                    errors.append({'file': f_name, 'message': str(e)})
+        return jsonify({'successes': successes, 'warnings': warnings, 'errors': errors})
+
+
+class StudyRawAndDerivedDataFolder(Resource):
+    @swagger.operation(
+        summary="Search raw and derived data folders in the study.",
+        notes="Search raw and derived data folders in the study. All files and internal folders are excluded.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Study Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "search_pattern",
+                "description": "search pattern (*HILIC*, POS*, etc.). Default is *",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "default": '*'
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404)
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # If false, only sync ISA-Tab metadata files
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('search_pattern', help='Search pattern')
+
+        search_pattern = '*'
+
+        if request.args:
+            args = parser.parse_args(req=request)
+            search_pattern = args['search_pattern'] if args['search_pattern'] else '*'
+            if '..' + os.path.sep in search_pattern or '.' + os.path.sep in search_pattern:
+                abort(401, error="Relative folder search patterns (., ..) are not allowed")
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+            wsc.get_permissions(study_id, user_token)
+        if not is_curator:
+            abort(403, error="User has no curator role")
+
+        studies_folder = app.config.get("STUDY_PATH")
+        study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
+        search_path = os.path.abspath(os.path.join(studies_folder, study_id))
+
+        glob_search_result = glob.glob(os.path.join(search_path, search_pattern))
+        search_results = [os.path.abspath(file) for file in glob_search_result if os.path.isdir(file)]
+        excluded_folders = app.config.get("FOLDER_EXCLUSION_LIST")
+
+        excluded_folder_set = set([self.get_validated_basename(study_folder, file) for file in excluded_folders])
+        excluded_folder_set.add("RAW_FILES")
+        excluded_folder_set.add("DERIVED_FILES")
+
+        filtered_result = []
+        warning_occurred = False
+        for item in search_results:
+            is_in_study_folder = item.startswith(study_folder + os.path.sep) and ".." + os.path.sep not in item
+            if is_in_study_folder:
+                relative_path = item.replace(study_folder + os.path.sep, '')
+                sub_path = relative_path.split(os.path.sep)
+                if sub_path and sub_path[0] not in excluded_folder_set:
+                    filtered_result.append(item)
+            else:
+                if not warning_occurred:
+                    message = f"{search_pattern} pattern results for {study_id} are not allowed: {item}"
+                    logger.warning(message)
+                    warning_occurred = True
+
+        files = filtered_result
+        files.sort()
+
+        result = [{"name": file.replace(search_path + "/", "")} for file in files]
+
+        return jsonify({'folders': result})
+
+
+    def get_validated_basename(self, study_folder, file):
+
+        return os.path.basename(os.path.abspath(os.path.join(study_folder, file)))
+
+    @swagger.operation(
+        summary="Move raw and drived data folders into RAW_FILES, DERIVED_FILES or RECYCLE_BIN folder",
+        nickname="Move folders",
+        notes='''Move folders to RAW_FILES, DERIVED_FILES, or RECYCLE_BIN folder<pre><code>
+{    
+    "folders": [
+        {"name": "POS"},
+        {"name": "Method_2"}
+    ]
+}</pre></code></br> 
+''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "folders",
+                "description": 'Folders to move other folder',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "target_location",
+                "description": "Target folder",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "enum": ["RAW_FILES", "DERIVED_FILES", "RECYCLE_BIN"]
+            },
+            {
+                "name": "override",
+                "description": "If file exists in target location, file is overridden",
+                "required": True,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": "false",
+                "default": False
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. Files/Folders were removed."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def put(self, study_id):
+
+        # param validation
+        if study_id is None:
+            abort(404, 'Please provide valid parameter for study identifier')
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('folders', help='folders')
+        parser.add_argument('target_location', help='Target Location')
+        parser.add_argument('override', help='Override target file if it exists')
+
+        target_location = None
+        folders = None
+        override = False
+        # If false, only sync ISA-Tab metadata files
+        if request.args:
+            args = parser.parse_args(req=request)
+            folders = args['folders'] if args['folders'] else None
+            target_location = args['target_location'] if args['target_location'] else None
+            override = True if args['override'] and args['override'].lower() == "true" else False
+
+        if not target_location or target_location not in ("RAW_FILES", "DERIVED_FILES", "RECYCLE_BIN"):
+            abort(400, error='target location is invalid or not defined')
+        # body content validation
+        try:
+            data_dict = json.loads(request.data.decode('utf-8'))
+            data = data_dict['folders']
+            if data is None:
+                abort(412, error='Folders are defined')
+            folders = data
+        except (ValidationError, Exception):
+            abort(400, error='Incorrect JSON provided')
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        study_status = wsc.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+        studies_folder = app.config.get("STUDY_PATH")
+        study_path = os.path.abspath(os.path.join(studies_folder, study_id))
+        excluded_folders = app.config.get("FOLDER_EXCLUSION_LIST")
+
+        excluded_folder_set = set([os.path.abspath(os.path.join(study_path, file)) for file in excluded_folders])
+
+        raw_data_dir = os.path.abspath(os.path.join(study_path, "RAW_FILES"))
+        derived_data_dir = os.path.abspath(os.path.join(study_path, "DERIVED_FILES"))
+        excluded_folder_set.add(raw_data_dir)
+        excluded_folder_set.add(derived_data_dir)
+
+        recycle_bin_dir = os.path.abspath(os.path.join(studies_folder, "DELETED_FILES", study_id))
+        if target_location == 'RAW_FILES':
+            os.makedirs(raw_data_dir, exist_ok=True)
+        elif target_location == 'DERIVED_FILES':
+            os.makedirs(derived_data_dir, exist_ok=True)
+        else:
+            os.makedirs(recycle_bin_dir, exist_ok=True)
+
+        warnings = []
+        successes = []
+        errors = []
+        for folder in folders:
+
+            if "name" in folder and folder["name"]:
+                f_name = folder["name"]
+                try:
+                    file_path = os.path.abspath(os.path.join(study_path, f_name))
+                    if not os.path.exists(file_path):
+                        warnings.append({'folder': f_name, 'message': 'Operation is ignored. Folder does not exist.'})
+                        continue
+
+                    if file_path in excluded_folder_set:
+                        warnings.append({'folder': f_name, 'message': 'Operation is ignored. Folder is in exclude list.'})
+                        continue
+
+                    base_name = os.path.basename(f_name)
+                    if target_location == 'RAW_FILES':
+                        target_path = os.path.abspath(os.path.join(raw_data_dir, base_name))
+                    elif target_location == 'DERIVED_FILES':
+                        target_path = os.path.abspath(os.path.join(derived_data_dir, base_name))
+                    else:
+                        target_path = os.path.abspath(os.path.join(recycle_bin_dir, f_name))
+                        split = os.path.split(target_path)
+                        if not os.path.exists(split[0]):
+                            os.makedirs(split[0])
+                    if f_name == target_path:
+                        warnings.append({'folder': f_name, 'message': 'Operation is ignored. Target is same folder.'})
+                        continue
+                    if os.path.exists(target_path):
+                        if not override:
+                            warnings.append({'folder': f_name, 'message': 'Operation is ignored. Target folder exists.'})
+                            continue
+                        else:
+                            date_format = "%Y%m%d%H%M%S"
+                            shutil.move(target_path, target_path + "-" + time.strftime(date_format))
+
+                    shutil.move(file_path, target_path)
+                    successes.append({'folder': f_name, 'message': f'Folder is moved to {target_location}'})
+
+                except Exception as e:
+                    errors.append({'folder': f_name, 'message': str(e)})
+        return jsonify({'successes': successes, 'warnings': warnings, 'errors': errors})
 
 
 class StudyFilesReuse(Resource):
@@ -706,6 +1314,8 @@ class SyncFolder(Resource):
 
         except Exception as e:
             logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
+
+
 class SampleStudyFiles(Resource):
     @swagger.operation(
         summary="Get a list of all sample names, mapped to files in the study and upload folder(s)",
@@ -761,7 +1371,8 @@ class SampleStudyFiles(Resource):
         upload_location = os.path.join(app.config.get('MTBLS_FTP_ROOT'), study_id.lower() + "-" + obfuscation_code)
 
         # Get all unique file names
-        all_files_in_study_location = get_all_files(study_location, include_raw_data=True,  assay_file_list=get_assay_file_list(study_location))
+        all_files_in_study_location = get_all_files(study_location, include_raw_data=True,
+                                                    assay_file_list=get_assay_file_list(study_location))
         all_files_in_upload_location = get_all_files(upload_location, include_raw_data=True)
         filtered_files_in_study_location = get_files(all_files_in_study_location[0])
         filtered_files_in_upload_location = []

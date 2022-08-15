@@ -69,7 +69,7 @@ from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
 from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder, \
-    FileList, StudyFilesReuse, DeleteAsperaFiles
+    FileList, StudyFilesReuse, DeleteAsperaFiles, StudyRawAndDerivedDataFile, StudyRawAndDerivedDataFolder
 from app.ws.table_editor import GetTsvFile, AddRows, ColumnsRows, ComplexColumns, SimpleColumns
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
 from app.ws.tasks.twitter import PublicStudyTweet
@@ -135,6 +135,8 @@ def initialize_app(flask_app):
     api.add_resource(MtblsStudiesWithMethods, res_path + "/studies/technology")
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
     api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
+    api.add_resource(StudyRawAndDerivedDataFile, res_path + "/studies/<string:study_id>/files/raw-and-derived-data")
+    api.add_resource(StudyRawAndDerivedDataFolder, res_path + "/studies/<string:study_id>/folders/raw-and-derived-data")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(DeleteAsperaFiles, res_path + "/studies/<string:study_id>/aspera-files")
     api.add_resource(StudyFilesReuse, res_path + "/studies/<string:study_id>/files-fetch")
