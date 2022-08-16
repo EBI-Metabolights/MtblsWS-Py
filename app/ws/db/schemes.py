@@ -7,6 +7,21 @@ Base = declarative_base()
 metadata = Base.metadata
 
 
+class StudyTask(Base):
+    __tablename__ = 'study_tasks'
+
+    id = Column(BigInteger, primary_key=True)
+    study_acc = Column(String(255), nullable=False)
+    task_name = Column(String(255), nullable=False)
+    last_request_time = Column(DateTime, nullable=False)
+    last_request_executed = Column(DateTime, nullable=False)
+    last_execution_time = Column(String(255), nullable=False)
+    last_execution_status = Column(String(255), nullable=False)
+    last_execution_message = Column(Text)
+    UniqueConstraint('study_acc', 'task_name'),
+    Index('ref_xref_acc_task', 'study_acc', 'task_name', unique=True)
+
+
 class RegisteredUserView(Base):
     __tablename__ = 'registered_users_view'
 

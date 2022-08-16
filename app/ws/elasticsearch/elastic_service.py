@@ -1,14 +1,22 @@
+import logging
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 from elasticsearch import Elasticsearch
 from flask import current_app as app
 
 from app.utils import MetabolightsException
 from app.ws.db.dbmanager import DBManager
+from app.ws.db.schemes import StudyTask
 from app.ws.db.settings import DirectorySettings, get_directory_settings
+from app.ws.db.types import StudyTaskStatus, StudyTaskName
 from app.ws.elasticsearch.settings import ElasticsearchSettings, get_elasticsearch_settings
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
+
+logger = logging.getLogger('wslog')
 
 
 class ElasticsearchService(object):
@@ -21,6 +29,7 @@ class ElasticsearchService(object):
         self.db_manager = db_manager
         self.directory_settings = directory_settings
         self._client = None  # lazy load
+        self.thread_pool_executor = ThreadPoolExecutor(max_workers=5)
 
     def initialize_client(self):
         settings = self.settings
@@ -57,16 +66,74 @@ class ElasticsearchService(object):
         # Revalidate user permission
         UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
         try:
-            validations = include_validation_results
-            m_study = StudyService.get_instance().get_study_from_db_and_folder(study_id, user_token,
-                                                                               optimize_for_es_indexing=True,
-                                                                               revalidate_study=validations,
-                                                                               include_maf_files=False)
-            m_study.indexTimestamp = time.time()
-            document = m_study.dict()
-            params = {"request_timeout": 120}
-            self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
-                              id=m_study.studyIdentifier, params=params)
-            return m_study
+            self.reindex_study_async(study_id, user_token, include_validation_results)
+            return study_id
         except Exception as e:
-            raise MetabolightsException("Error while indexing", exception=e)
+            raise MetabolightsException(f"Error while triggering reindex {str(e)}", exception=e)
+
+    def reindex_study_async(self, study_id, user_token, include_validation_results):
+        task_name = StudyTaskName.REINDEX
+        tasks = StudyService.get_instance(app).get_study_tasks(study_id=study_id, task_name=task_name)
+
+        with self.db_manager.session_maker() as db_session:
+            if tasks:
+                task = tasks[0]
+            else:
+                now = datetime.now()
+                task = StudyTask()
+                task.study_acc = study_id
+                task.task_name = task_name
+                task.last_request_time = now
+                task.last_execution_time = now
+                task.last_request_executed = now
+                task.last_execution_status = StudyTaskStatus.NOT_EXECUTED
+                task.last_execution_message = 'Task is initiated to reindex.'
+
+            task.last_execution_status = StudyTaskStatus.EXECUTING
+            task.last_execution_time = task.last_request_time
+            task.last_execution_message = ''
+            db_session.add(task)
+            db_session.commit()
+            logger.info(f'Indexing is started for {study_id}')
+
+        def index_study():
+            try:
+                validations = include_validation_results
+                m_study = StudyService.get_instance().get_study_from_db_and_folder(study_id, user_token,
+                                                                                   optimize_for_es_indexing=True,
+                                                                                   revalidate_study=validations,
+                                                                                   include_maf_files=False)
+                m_study.indexTimestamp = time.time()
+                document = m_study.dict()
+                params = {"request_timeout": 120}
+                self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
+                                  id=m_study.studyIdentifier, params=params)
+                message = f'{study_id} is indexed.'
+                tasks = StudyService.get_instance(app).get_study_tasks(study_id=study_id, task_name=task_name)
+                if tasks:
+                    task = tasks[0]
+                    with self.db_manager.session_maker() as db_session:
+                        task.last_request_time = datetime.now()
+                        task.last_execution_status = StudyTaskStatus.EXECUTION_SUCCESSFUL
+                        task.last_execution_time = datetime.now()
+                        task.last_execution_message = message
+                        db_session.add(task)
+                        db_session.commit()
+                logger.info(message)
+            except Exception as e:
+                tasks = StudyService.get_instance(app).get_study_tasks(study_id=study_id, task_name=task_name)
+
+                message = f'{study_id} reindex is failed: {str(e)}'
+                if tasks:
+                    task = tasks[0]
+                    with self.db_manager.session_maker() as db_session:
+                        task.last_request_time = datetime.now()
+                        task.last_execution_status = StudyTaskStatus.EXECUTION_FAILED
+                        task.last_execution_time = datetime.now()
+                        task.last_execution_message = message
+                        db_session.add(task)
+                        db_session.commit()
+                logger.error(message)
+
+        self.thread_pool_executor.submit(index_study)
+

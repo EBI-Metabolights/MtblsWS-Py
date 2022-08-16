@@ -2,7 +2,7 @@ from flask import current_app as app
 
 from app.utils import MetabolightsDBException, MetabolightsFileOperationException
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.schemes import Study, User, Stableid
+from app.ws.db.schemes import Study, User, Stableid, StudyTask
 from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import UserStatus, UserRole, StudyStatus
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
@@ -87,3 +87,16 @@ class StudyService(object):
                 return study_id_list
 
         return []
+
+    def get_study_tasks(self, study_id, task_name=None):
+        try:
+            with self.db_manager.session_maker() as db_session:
+                query = db_session.query(StudyTask)
+                if task_name:
+                    filtered = query.filter(StudyTask.study_acc == study_id and StudyTask.task_name == task_name)
+                else:
+                    filtered = query.filter(StudyTask.study_acc == study_id)
+                result = filtered.all()
+                return result
+        except Exception as e:
+            raise MetabolightsDBException(message=f"Error while retreiving study tasks from database: {str(e)}", exception=e)
