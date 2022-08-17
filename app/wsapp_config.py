@@ -53,7 +53,8 @@ from app.ws.jira_update import Jira
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtblsStudy import MtblsStudies, MtblsPrivateStudies, MtblsStudiesWithMethods, MyMtblsStudiesDetailed, \
     MyMtblsStudies, IsaTabInvestigationFile, IsaTabSampleFile, IsaTabAssayFile, CreateAccession, CloneAccession, \
-    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies, MtblsStudyValidationStatus
+    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies, MtblsStudyValidationStatus, \
+    UnindexedStudy
 from app.ws.mtblsWSclient import WsClient
 from app.ws.mtbls_maf import MtblsMAFSearch, CombineMetaboliteAnnotationFiles, MetaboliteAnnotationFile
 from app.ws.mzML2ISA import ValidateMzML, Convert2ISAtab
@@ -224,6 +225,7 @@ def initialize_app(flask_app):
     api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(ReindexAllPublicStudies, res_path + "/ebi-internal/studies/public/reindex-all")
+    api.add_resource(UnindexedStudy, res_path + "/ebi-internal/unindexed-studies")
     # api.add_resource(FileEncodingChecker, res_path + "/ebi-internal/studies/encoding-check")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
 

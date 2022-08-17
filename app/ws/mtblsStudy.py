@@ -28,11 +28,13 @@ from flask import request, send_file, current_app as app, jsonify
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
-from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException
+from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException, \
+    MetabolightsDBException
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.schemes import Study
-from app.ws.db.types import StudyStatus
+from app.ws.db.models import StudyTaskModel
+from app.ws.db.schemes import Study, StudyTask
+from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus
 from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
     query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user, get_obfuscation_code, \
     create_empty_study
@@ -1455,6 +1457,72 @@ class ReindexStudy(Resource):
 
         return {"Success": "Study " + study_id + " has been re-indexed",
                 "read_access": read_access, "write_access": write_access}
+
+
+class UnindexedStudy(Resource):
+    @swagger.operation(
+        summary="Gets unindexed studies from database (curator only)",
+        notes='''Gets MetaboLights studies that should be updated for the up-to-date search index''',
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Unexpected result."
+            }
+        ]
+    )
+    def get(self):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        try:
+            with DBManager.get_instance(app).session_maker() as db_session:
+                query = db_session.query(StudyTask)
+                filtered = query.filter(StudyTask.last_execution_status != StudyTaskStatus.EXECUTION_SUCCESSFUL,
+                                        StudyTask.task_name == StudyTaskName.REINDEX).order_by(StudyTask.study_acc)
+                result = filtered.all()
+                result_list = []
+                for task in result:
+                    model: StudyTaskModel = StudyTaskModel.from_orm(task)
+                    result_list.append(model.dict())
+
+                if result_list:
+                    return jsonify({'result': 'Found', 'tasks': result_list})
+                return jsonify({'result': 'There is no study that will be reindexed.'})
+
+        except Exception as e:
+            raise MetabolightsDBException(message=f"Error while retreiving study tasks from database: {str(e)}",
+                                          exception=e)
 
 
 class ReindexAllPublicStudies(Resource):
