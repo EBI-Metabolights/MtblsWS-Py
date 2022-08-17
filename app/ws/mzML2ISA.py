@@ -15,15 +15,21 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
+import glob
 import logging
+import os
 
-from flask import request, abort
+from lxml import etree
+
+from flask import request, abort, current_app as app, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
+from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.study_service import StudyService
+from app.ws.study.user_service import UserService
 from app.ws.utils import convert_to_isa, validate_mzml_files
 
 logger = logging.getLogger('wslog')
@@ -104,6 +110,9 @@ class Convert2ISAtab(Resource):
 
 
 class ValidateMzML(Resource):
+    def __init__(self):
+        self.xmlschema_map = {}
+
     @swagger.operation(
         summary="Validate mzML files",
         notes='''Validating mzML file structure. 
@@ -165,3 +174,120 @@ class ValidateMzML(Resource):
             abort(403)
 
         return validate_mzml_files(study_id, obfuscation_code, study_location)
+
+    @swagger.operation(
+        summary="Validate mzML files and report results",
+        notes='''Searching and validating all mzML file recursively in the study folder.''',
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Existing Study Identifier with mzML files to validate",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self, study_id):
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        if user_token is None or study_id is None:
+            abort(401)
+
+        study_id = study_id.upper()
+
+        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        return self.validate_mzml_files(study_id)
+
+    def validate_mzml_files(self, study_id):
+
+        schema = app.config.get('MZML_XSD_SCHEMA')
+        studies_folder = app.config.get('STUDY_PATH')
+        study_folder = os.path.join(studies_folder, study_id)
+        xsd_path = os.path.join(schema[1], schema[0])
+
+        xmlschema_doc = etree.parse(xsd_path)
+        xmlschema = etree.XMLSchema(xmlschema_doc)
+        files = glob.glob(os.path.join(study_folder, '**/*.mzML'), recursive=True)
+        files.sort()
+        error_list = []
+        mzml_file_count = 0
+
+        for file in files:
+            mzml_file_count += 1
+            relative_file_path = file.replace(study_folder + os.path.sep, '')
+
+            is_valid, result, err = self.validate_xml(xml_file=file, xmlschema=xmlschema)
+
+            if not is_valid:
+                item = {"file": relative_file_path, 'message': result, "error": str(err)}
+                error_list.append(item)
+
+        return jsonify({'total_mzml_file_count': mzml_file_count, 'invalid_mzml_file_count': len(error_list), 'errors': error_list})
+
+    def validate_xml(self, xml_file=None, xmlschema=None):
+        # parse xml
+        try:
+            doc = etree.parse(xml_file)
+            if not xmlschema:
+                # try to find schema
+                root = doc.getroot()
+                if root:
+                    schema_key = '{http://www.w3.org/2001/XMLSchema-instance}schemaLocation'
+                    if schema_key in root.attrib:
+                        schema_value = root.attrib[schema_key]
+                        parsed_schema_value = schema_value.split(' ')
+                        location = parsed_schema_value[1]
+
+                        if location in self.xmlschema_map and self.xmlschema_map[location]:
+                            xmlschema = self.xmlschema_map[location]
+                        else:
+                            xmlschema_doc = etree.parse(location)
+                            xmlschema = etree.XMLSchema(xmlschema_doc)
+                            self.xmlschema_map[location] = xmlschema
+
+        except IOError as e:
+            return False, {"Error": "Can not read the file "}, e
+        except etree.XMLSyntaxError as e:
+            return False, {"Invalid": "XML Syntax error "}, e
+        except Exception as e:
+            return False, {"Error": "Unexpected error"}, e
+        try:
+            if not xmlschema:
+                return False, "Schema is not defined", ''
+            xmlschema.assertValid(doc)
+            return True, f" Valid XML file'", None
+        except etree.DocumentInvalid as e:
+            return False, "Schema validation is failed", e
