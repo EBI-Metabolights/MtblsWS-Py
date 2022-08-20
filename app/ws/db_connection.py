@@ -21,6 +21,7 @@ import os
 import re
 import traceback
 import uuid
+from typing import Optional
 
 import psycopg2
 import psycopg2.extras
@@ -176,7 +177,7 @@ study_by_obfuscation_code_query = """
 def create_user(first_name, last_name, email, affiliation, affiliation_url, address, orcid, api_token,
                 password_encoded, metaspace_api_key):
     val_email(email)
-
+    email = email.lower()
     insert_user_query = """
         INSERT INTO users (
             address, affiliation, affiliationurl,
@@ -219,6 +220,8 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
                 password_encoded, existing_user_name, is_curator, metaspace_api_key):
     val_email(existing_user_name)
     val_email(email)
+    existing_user_name = existing_user_name.lower()
+    email = email.lower()
 
     update_user_query = """
         update users set address = %(address_value)s, affiliation = %(affiliation_value)s,
@@ -273,7 +276,7 @@ def get_user(username):
     """
     val_query_params(username)
     get_user_query = """
-        select firstname, lastname, email, affiliation, affiliationurl, address, orcid, metaspace_api_key 
+        select firstname, lastname, lower(email), affiliation, affiliationurl, address, orcid, metaspace_api_key 
         from users
         where username = %(username)s;
     """
@@ -697,7 +700,7 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
            submission_date, updated_date, study_status
 
 
-def get_email(user_token):
+def get_email(user_token) -> Optional[str]:
     val_query_params(user_token)
     user_email = None
     try:
@@ -712,8 +715,8 @@ def study_submitters(study_id, user_email, method):
         return None
 
     val_acc(study_id)
-    if user_email:
-        val_email(user_email)
+    val_email(user_email)
+    user_email = user_email.lower()
     query = None
     if method == 'add':
         query = """
@@ -730,7 +733,7 @@ def study_submitters(study_id, user_email, method):
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'email': user_email.lower(), 'study_id': study_id})
+        cursor.execute(query, {'email': user_email, 'study_id': study_id})
         conn.commit()
         release_connection(postgresql_pool, conn)
         return True
@@ -753,7 +756,7 @@ def get_all_study_acc():
 
 def get_user_email(user_token):
 
-    input = "select email from users where apitoken = %(apitoken)s;"
+    input = "select lower(email) from users where apitoken = %(apitoken)s;"
     try:
         postgresql_pool, conn, cursor = get_connection()
         cursor.execute(input, {'apitoken': user_token})
@@ -777,9 +780,8 @@ def get_submitted_study_ids_for_user(user_token):
 
 def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     email = get_email(user_token)
-    if not email:
-        return None
-
+    val_email(email)
+    email = email.lower()
     conn = None
     postgresql_pool = None
     try:

@@ -10,6 +10,7 @@ from flask_restful import abort
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from pydantic import ValidationError, BaseModel, BaseSettings
+from sqlalchemy import func
 
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import SimplifiedUserModel
@@ -97,7 +98,7 @@ class AuthenticationManager(object):
 
             with db_session:
                 query = db_session.query(User)
-                db_user = query.filter(User.username == username).first()
+                db_user = query.filter(func.lower(User.username) == username.lower()).first()
             if not db_user:
                 abort(401, detail="Could not validate credentials, username is not in db", )
             user = SimplifiedUserModel.from_orm(db_user)
