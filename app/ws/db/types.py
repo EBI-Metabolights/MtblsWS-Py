@@ -22,3 +22,15 @@ class StudyStatus(Enum):
     INREVIEW = 2
     PUBLIC = 3
     DORMANT = 4
+
+
+class StudyTaskStatus(str, Enum):
+    NOT_EXECUTED = 'NOT_EXECUTED'
+    EXECUTING = 'EXECUTING'
+    EXECUTION_SUCCESSFUL = 'EXECUTION_SUCCESSFUL'
+    EXECUTION_FAILED = 'EXECUTION_FAILED'
+
+
+class StudyTaskName(str, Enum):
+    REINDEX = 'REINDEX'
+    SEND_TWEET = 'SEND_TWEET'
