@@ -255,13 +255,13 @@ without setting the "force" parameter to True''',
                 abort(412)
             files = data
         except (ValidationError, Exception):
-            abort(400, 'Incorrect JSON provided')
+            abort(400, error='Incorrect JSON provided')
 
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
         study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
-            abort(403)
+            abort(403, error='Not authorized')
 
         status = False
         message = None

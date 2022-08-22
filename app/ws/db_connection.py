@@ -575,10 +575,10 @@ def biostudies_acc_to_mtbls(biostudies_id):
         data = cursor.fetchall()
         # conn.close()
         release_connection(postgresql_pool, conn)
-        return data[0]
-
+        return data[0] if data else None
     except Exception as e:
-        return False, "MTBLS accession was not found for BioStudies accession " + biostudies_id
+        logger.error(f"Error while searching def biostudies_acc_to_mtbls(biostudies_id): {str(e)}")
+        return None
 
 
 def biostudies_accession(study_id, biostudies_id, method):
