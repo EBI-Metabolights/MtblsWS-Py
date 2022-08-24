@@ -1787,7 +1787,7 @@ def validate_publication(isa_study, validation_schema, file_name, override_list,
                             success, file_name, val_sequence=19, log_category=log_category)
                 else:
                     add_msg(validations, val_section, status_val_error, error, file_name,
-                            value=pub_status.title, descr=status_val_description,
+                            value=pub_status.term, descr=status_val_description,
                             val_sequence=20, log_category=log_category)
     else:
         add_msg(validations, val_section, title_val_error, error, val_sequence=21, log_category=log_category)
