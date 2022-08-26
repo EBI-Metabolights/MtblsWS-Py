@@ -229,7 +229,8 @@ def fill_organism(m_study):
                     model.organismName = data[organism_index]
                 if organism_part_index >= 0:
                     model.organismPart = data[organism_part_index]
-                ind = model.organismName + model.organismPart
+                ind = model.organismName if model.organismName else ''
+                ind += model.organismPart if model.organismPart else ''
                 if ind not in organism_dic:
                     organism_dic[ind] = model
                     m_study.organism.append(model)
