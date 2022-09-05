@@ -1226,7 +1226,7 @@ def add_maf_info_data(acc, database_identifier, metabolite_identification, datab
 
 def val_acc(study_id=None):
     if study_id:
-        if not study_id.startswith(app.config.get("MTBLS_STABLE_ID_PREFIX")) or study_id.lower() in stop_words:
+        if not study_id.startswith(tuple(app.config.get("MTBLS_STABLE_ID_PREFIX"))) or study_id.lower() in stop_words:
             logger.error("Incorrect accession number string pattern")
             abort(406, "'%s' incorrect accession number string pattern" % study_id)
 

@@ -146,12 +146,11 @@ class EuropePmcReportBuilder:
         ]
         if len(culled_results) > 0:
             for pub in publications:
-                logger.info(pub)
+
                 result = self.has_mapping(pub, culled_results)
                 if result:
-                    logger.info('hit ' + str(result))
                     temp_dict = base_return_dict.cascade({
-                        'Title': title, 'PubmedId': result['pmid'], 'DOI': pub.doi, 'Author List': pub.author_list,
+                        'Title': title, 'PubmedId': self.check_pubmed_id(result), 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': result['journalInfo']['printPublicationDate'],
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
                         'Journal in EuropePMC': result['journalInfo']['journal']['title'],
@@ -217,3 +216,15 @@ class EuropePmcReportBuilder:
         else:
             return response_xmldict['responseWrapper']['rdf:RDF']['rdf:Description']['dcterms:bibliographicCitation']
 
+    @staticmethod
+    def check_pubmed_id(europepmc_result):
+        """
+        Occasionally a result will not have a pubmed ID, and so previously we were getting a KeyError. Here we perform a
+        simple check to see if the key exists in the object, and return its value if it does.
+
+        :param europepmc_result: an individual result from a set of results from europepmc, as a dict.
+        :return: Either the pubmed id or a message indicating it could not be found, as a string.
+        """
+        if 'pmid' in europepmc_result:
+            return europepmc_result['pmid']
+        return 'no pubmed id'
