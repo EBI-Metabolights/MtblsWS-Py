@@ -89,4 +89,3 @@ tests/.pytest_cache/
 .pytest_cache
 examples/
 token.pickle
-start_gunicorn_in_conda.sh

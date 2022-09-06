@@ -5,7 +5,7 @@ import os
 from flask import abort, current_app as app
 
 from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
-    query_study_submitters, get_public_studies, get_private_studies, get_study_by_type, get_all_non_public_studies
+    query_study_submitters, get_public_studies, get_private_studies, get_study_by_type
 
 logger = logging.getLogger('wslog')
 
@@ -33,15 +33,6 @@ def get_private_studies_list():
     logger.info('... found %d private studies', len(studies))
     return {"studies": len(studies), "content": studies}
 
-def get_non_public_studies_list():
-    logger.info('Getting all non public studies')
-    studies = []
-    study_list = get_all_non_public_studies()
-    for acc in study_list:
-        studies.append(acc[0])
-
-    logger.info(f'...found {len(studies)} non public studies')
-    return {"studies": len(studies), "content": studies}
 
 def get_public_studies_list():
     logger.info('Getting all public studies')

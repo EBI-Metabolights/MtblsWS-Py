@@ -75,10 +75,6 @@ class WsClient:
         return commons.get_private_studies_list()
 
     @staticmethod
-    def get_non_public_studies():
-        return commons.get_non_public_studies_list()
-
-    @staticmethod
     def get_study_by_type(stype, publicS=True):
         return commons.get_study_by_status(stype, publicS)
 
