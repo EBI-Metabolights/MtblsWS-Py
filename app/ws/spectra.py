@@ -22,10 +22,10 @@ import os
 import shutil
 
 import pandas
-import pyopenms
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from pyopenms import MSExperiment, FileHandler
 
 from app.ws.misc_utilities.response_messages import HTTP_200, HTTP_404, HTTP_403, HTTP_401
 from app.ws.mtblsWSclient import WsClient
@@ -133,18 +133,22 @@ class ExtractMSSpectra(Resource):
         retention_time = args['retention_time']
         if retention_time:
             retention_time = retention_time.strip()
-
+        full_mzml_file_name = None
         if mzml_file_name:
             full_mzml_file_name = os.path.join(study_location, mzml_file_name)
 
         peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list = \
             self.create_mtblc_peak_list(full_mzml_file_name, retention_time)
-        short_name = mzml_file_name.replace(".mzML", "")
-        json_file_name = mtbls_compound_id + '-' + short_name + ".json"
+        base_file_name = os.path.basename(full_mzml_file_name)
+        parent_folder = os.path.dirname(full_mzml_file_name)
+
+        short_name = base_file_name.replace(".mzML", "")
+        json_file_name = base_file_name.replace(".mzML", ".json")
+        new_file_path = os.path.join(parent_folder, mtbls_compound_id + '-' + json_file_name)
 
         data = {"mzStart": mz_start, "mzStop": mz_stop, "spectrumId": short_name,
                 "fileName": json_file_name, "peaks": peak_list}
-        self.write_json(os.path.join(study_location, json_file_name), data)
+        self.write_json(new_file_path, data)
 
         return {"mzStart": mz_start, "mzStop": mz_stop, "spectrumId": short_name,
                 "intensityMin": intensity_min, "intensityMax": intensity_max,
@@ -159,8 +163,8 @@ class ExtractMSSpectra(Resource):
         path = str.encode(filepath)
 
         try:
-            exp = pyopenms.MSExperiment()
-            pyopenms.FileHandler().loadExperiment(path, exp)
+            exp = MSExperiment()
+            FileHandler().loadExperiment(path, exp)
         except Exception as error:
             print(str(error))
         for spectrum in exp:
@@ -180,6 +184,8 @@ class ExtractMSSpectra(Resource):
 
     def create_mtblc_peak_list(self, filepath, retention_time):
         peak_list, mz_list, rt_list, intensity_list = self.get_spectrum(filepath, retention_time)
+        intensity_min = 0
+        intensity_max = 0
         try:
             mz_start = min(mz_list)
             mz_stop = max(mz_list)
