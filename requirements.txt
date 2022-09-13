@@ -14,7 +14,7 @@ Flask-Cors==3.0.8
 Flask-RESTful==0.3.8
 flask-restful-swagger==0.20.1
 fuzzywuzzy==0.18.0
-gevent==1.4.0
+gevent==20.9.0
 google-api-core==1.26.3
 google-api-python-client==1.8.0
 google-auth-httplib2==0.0.3
