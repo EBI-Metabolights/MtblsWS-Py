@@ -274,3 +274,7 @@ class StudyModel(LiteStudyModel):
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
+
+        json_encoders = {
+            datetime.datetime: lambda v: v.timestamp()
+        }
