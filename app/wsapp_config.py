@@ -54,7 +54,7 @@ from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtblsStudy import MtblsStudies, MtblsPrivateStudies, MtblsStudiesWithMethods, MyMtblsStudiesDetailed, \
     MyMtblsStudies, IsaTabInvestigationFile, IsaTabSampleFile, IsaTabAssayFile, CreateAccession, CloneAccession, \
     DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies, MtblsStudyValidationStatus, \
-    UnindexedStudy
+    UnindexedStudy, PublicStudyDetail
 from app.ws.mtblsWSclient import WsClient
 from app.ws.mtbls_maf import MtblsMAFSearch, CombineMetaboliteAnnotationFiles, MetaboliteAnnotationFile
 from app.ws.mzML2ISA import ValidateMzML, Convert2ISAtab
@@ -136,11 +136,13 @@ def initialize_app(flask_app):
     api.add_resource(MtblsStudiesWithMethods, res_path + "/studies/technology")
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
     api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
+    api.add_resource(PublicStudyDetail, res_path + "/studies/public/study/<string:study_id>")
     api.add_resource(StudyRawAndDerivedDataFile, res_path + "/studies/<string:study_id>/files/raw-and-derived-data")
     api.add_resource(StudyRawAndDerivedDataFolder, res_path + "/studies/<string:study_id>/folders/raw-and-derived-data")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(DeleteAsperaFiles, res_path + "/studies/<string:study_id>/aspera-files")
     api.add_resource(StudyFilesReuse, res_path + "/studies/<string:study_id>/files-fetch")
+
     api.add_resource(FileList, res_path + "/studies/<string:study_id>/fileslist")
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")

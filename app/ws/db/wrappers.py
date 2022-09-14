@@ -16,7 +16,7 @@ from app.ws.study.validation.commons import validate_study
 
 logger = logging.getLogger(__file__)
 
-MB_FACTOR = Decimal.from_float(1024.0 ** 2)
+MB_FACTOR = 1024.0 ** 2
 
 
 def create_study_model_from_db_study(db_study: Study):
@@ -27,9 +27,9 @@ def create_study_model_from_db_study(db_study: Study):
     )
 
     m_study.studyStatus = StudyStatus(db_study.status).name
-    m_study.studySize = db_study.studysize  # This value is different in DB and www.ebi.ac.uk
+    m_study.studySize = float(db_study.studysize)  # This value is different in DB and www.ebi.ac.uk
     size_in_mb = m_study.studySize / MB_FACTOR
-    m_study.studyHumanReadable = str(size_in_mb.quantize(Decimal('.01'), rounding=ROUND_UP)) + "MB"
+    m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "MB"
     m_study.publicStudy = StudyStatus(db_study.status) == StudyStatus.PUBLIC
 
     if db_study.submissiondate:
@@ -110,11 +110,11 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
         if studies:
             f_study = studies[0]
             create_study_model(m_study, path, f_study)
+            fill_factors(m_study, investigation)
+            fill_descriptors(m_study, investigation)
+            fill_publications(m_study, investigation)
             if title_and_description_only:
                 return
-            fill_descriptors(m_study, investigation)
-            fill_factors(m_study, investigation)
-            fill_publications(m_study, investigation)
             fill_assays(m_study, investigation, path, include_maf_files)
             fill_sample_table(m_study, path)  # required for fill organism, later remove from model
             fill_organism(m_study)
