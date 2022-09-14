@@ -1118,7 +1118,7 @@ class PublicStudyDetail(Resource):
 
         update_study_model_from_directory(m_study, study_folders)
         dict_data = m_study.dict()
-        return jsonify(dict_data)
+        return {'content': jsonify(dict_data), 'message': None, "err": None}
 
 class CreateAccession(Resource):
     @swagger.operation(
