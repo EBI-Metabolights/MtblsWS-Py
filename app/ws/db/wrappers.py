@@ -1,8 +1,8 @@
+import glob
 import json
 import logging
 import os
 import os.path
-from decimal import Decimal, ROUND_UP
 
 from isatools import isatab
 
@@ -237,9 +237,19 @@ def fill_organism(m_study):
 
 
 def fill_sample_table(m_study, path):
-    sample_file_name = "s_" + m_study.studyIdentifier + ".txt"
-    file_path = os.path.join(path, sample_file_name)
-    if os.path.isfile(file_path):
+    sample_files = glob.glob(os.path.join(path, "s_*.txt"))
+    first_priority_path = os.path.join(path, "s_" + m_study.studyIdentifier + ".txt")
+    second_priority_path = os.path.join(path, 's_Sample.txt')
+    selected = sample_files[0] if sample_files else None
+    if sample_files:
+        if first_priority_path in sample_files:
+            selected = first_priority_path
+        elif second_priority_path in sample_files:
+            selected = second_priority_path
+
+    file_path = selected
+
+    if file_path and os.path.isfile(file_path):
         sample = None
         try:
             with open(file_path, encoding="unicode_escape") as f:
