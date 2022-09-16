@@ -1106,7 +1106,7 @@ class PublicStudyDetail(Resource):
         with DBManager.get_instance(app).session_maker() as db_session:
             query = db_session.query(Study)
             query = query.filter(Study.status == StudyStatus.PUBLIC.value,
-                                 Study.acc >= study_id)
+                                 Study.acc == study_id)
             study = query.first()
 
             if not study:
