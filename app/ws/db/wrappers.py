@@ -40,9 +40,12 @@ def create_study_model_from_db_study(db_study: Study):
         m_study.updateDate = datetime_to_int(db_study.updatedate)
 
     if db_study.validations:
-        db_study.validations = json.loads(db_study.validations)
-        validation_entries_model = models.ValidationEntriesModel.parse_obj(db_study.validations)
-        m_study.validations = validation_entries_model
+        try:
+            db_study.validations = json.loads(db_study.validations)
+            validation_entries_model = models.ValidationEntriesModel.parse_obj(db_study.validations)
+            m_study.validations = validation_entries_model
+        except Exception as e:
+            logger.warning(f'{e.args}')
 
     m_study.users = [get_user_model(x) for x in db_study.users]
 

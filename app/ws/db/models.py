@@ -100,7 +100,7 @@ class ValidationEntryModel(BaseModel):
 
 class ValidationEntriesModel(BaseModel):
     entries: List[ValidationEntryModel] = []
-    status: str = None
+    status: str = 'failed'
     passedMinimumRequirement: bool = False
     overriden: bool = False
 
