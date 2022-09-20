@@ -23,7 +23,7 @@ logger = logging.getLogger('wslog')
 
 class PublicStudyJsonExporter(Resource):
     @swagger.operation(
-        summary="Returns details of a public study",
+        summary="Export all public studies in a folder (Curator only)",
         parameters=[
             {
                 "name": "user_token",
