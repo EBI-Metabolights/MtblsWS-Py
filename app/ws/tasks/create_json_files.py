@@ -27,6 +27,14 @@ class PublicStudyJsonExporter(Resource):
         parameters=[
             {
                 "name": "user_token",
+                "description": "user token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            },
+            {
+                "name": "study_id",
                 "description": "Requested public study id",
                 "paramType": "header",
                 "type": "string",
@@ -61,6 +69,10 @@ class PublicStudyJsonExporter(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        study_id = None
+        if "study_id" in request.headers:
+            study_id = request.headers["study_id"]
+
         def get_study_id(study: StudyModel):
             study_id = study.studyIdentifier
             study_id = study_id.replace("MTBLS_DEV", '')
@@ -73,7 +85,10 @@ class PublicStudyJsonExporter(Resource):
         m_study_list = []
         with DBManager.get_instance(app).session_maker() as db_session:
             query = db_session.query(Study)
-            query = query.filter(Study.status == StudyStatus.PUBLIC.value).order_by(Study.acc)
+            if not study_id:
+                query = query.filter(Study.status == StudyStatus.PUBLIC.value).order_by(Study.acc)
+            else:
+                query = query.filter(Study.status == StudyStatus.PUBLIC.value, Study.acc == study_id)
             studies = query.all()
 
             if not studies:
