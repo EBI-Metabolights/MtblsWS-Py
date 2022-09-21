@@ -208,7 +208,7 @@ def get_value_with_column_name(dataframe, column_name):
 
 def get_value_from_dict(series, column_name):
     if column_name in series:
-        return series[column_name]
+        return series[column_name].strip()
     return None
 
 
