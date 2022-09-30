@@ -6,6 +6,7 @@ from decimal import Decimal, ROUND_UP
 
 from isatools import isatab
 
+from app.utils import MetabolightsFileOperationException
 from app.ws.db import models
 from app.ws.db.models import ValidationEntriesModel, ValidationEntryModel, BackupModel, IndexedUserModel, \
     IndexedAssayModel
@@ -103,9 +104,15 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
             try:
                 investigation = isatab.load_investigation(f)
             except Exception as e:
-                logger.warning(f'{investigation_file} file is not opened with latin-1 mode')
+                logger.error(f'{investigation_file} file is not opened with latin-1 mode')
+                message = f'{m_study.studyIdentifier} indexing is not updated from study directory'
+                raise MetabolightsFileOperationException(message=message, exception=e, http_code=500)
+    if not investigation:
+        logger.error(f'{investigation_file} is not valid.')
+    elif "studies" not in investigation:
+        logger.error(f'No study is defined in {investigation_file}')
 
-    if "studies" in investigation:
+    if investigation and "studies" in investigation:
         studies = investigation["studies"]
         if studies:
             f_study = studies[0]

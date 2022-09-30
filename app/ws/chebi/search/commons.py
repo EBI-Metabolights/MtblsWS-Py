@@ -25,7 +25,7 @@ def fill_with_complete_entity(chebi_id, chebi_ws=None):
         if chebi_entity.formulae:
             formula = chebi_entity.formulae[0].data
             charge = chebi_entity.charge
-            if charge != "0":
+            if formula and charge and charge != "0":
                 if charge == "+1":
                     formula = formula + "+"
                 elif charge == "-1":
