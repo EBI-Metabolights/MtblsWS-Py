@@ -58,7 +58,7 @@ class WsClient:
         try:
             result = self.search_manager.search_by_type(search_type, search_value)
         except Exception as e:
-            abort(500, "MAF search failed")
+            abort(500, f"MAF search failed {e.args}")
 
         if not result or result.err:
             abort(400, result.err)
