@@ -4,6 +4,8 @@ import os
 
 from flask import abort, current_app as app
 
+from app.services.storage_service.acl import Acl
+from app.services.storage_service.storage_service import StorageService
 from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
     query_study_submitters, get_public_studies, get_private_studies, get_study_by_type
 
@@ -116,48 +118,34 @@ def get_study_location(study_id, user_token):
     return location
 
 
-def create_ftp_folder(study_id, obfuscation_code, user_token, email_service):
+def create_ftp_folder(study_id, obfuscation_code, user_token, email_service, send_email=True):
+    private_ftp_sm = StorageService.get_ftp_private_storage(app)
     new_folder_name = study_id.lower() + '-' + obfuscation_code
-    ftp_folder = os.path.join(app.config.get('MTBLS_FTP_ROOT'), new_folder_name)
-    os_upload = ftp_folder
+
     new_folder = False
-    if not os.path.exists(ftp_folder):
+    if not private_ftp_sm.remote.exists(new_folder_name):
         logger.info('Creating a new study upload folder for Study %s', study_id)
-        ftp_private_folder_root = app.config.get('MTBLS_PRIVATE_FTP_ROOT')
-        ftp_path = os.path.join(ftp_private_folder_root, new_folder_name)
-        raw_files_path = os.path.join(ftp_path, "RAW_FILES")
-        derived_files_path = os.path.join(ftp_path, "DERIVED_FILES")
-        logger.info(f"Creating folder {ftp_path}")
-        previous_mask = os.umask(0)
-        try:
-            os.makedirs(ftp_path, mode=0o770, exist_ok=True)
-            os.makedirs(raw_files_path, mode=0o770, exist_ok=True)
-            os.makedirs(derived_files_path, mode=0o770, exist_ok=True)
-        finally:
-            os.umask(previous_mask)
-        os_upload = ftp_path
+        raw_files_path = os.path.join(new_folder_name, "RAW_FILES")
+        derived_files_path = os.path.join(new_folder_name, "DERIVED_FILES")
+
+        logger.info(f"Creating folder {new_folder_name}")
+        private_ftp_sm.remote.create_folder(new_folder_name, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        private_ftp_sm.remote.create_folder(raw_files_path, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        private_ftp_sm.remote.create_folder(derived_files_path, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
         new_folder = True
 
-    upload_loc = None
-    private_ftp_user = app.config.get("PRIVATE_FTP_SERVER_USER")
-    if private_ftp_user in ftp_folder:
-        upload_location = ftp_folder.split('/' + private_ftp_user + '/')  # FTP/Aspera root starts here
-        upload_location = [x for x in upload_location if x]
-        if len(upload_location) > 0:
-            upload_loc = upload_location[1]
-        else:
-            upload_loc = upload_location[0]
+    relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+    relative_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), new_folder_name)
 
-    if new_folder:
+    if new_folder and send_email:
         user_email = get_email(user_token)
         submitter_emails = query_study_submitters(study_id)
         submitters_email_list = []
         if submitter_emails:
             submitters_email_list = [submitter[0] for submitter in submitter_emails if submitter]
 
-        email_service.send_email_for_requested_ftp_folder_created(study_id,
-                                                                  upload_loc, user_email,
+        email_service.send_email_for_requested_ftp_folder_created(study_id, relative_study_path, user_email,
                                                                   submitters_email_list)
     status_message = "FTP folder created" if new_folder else "Folder is already created"
 
-    return {'os_upload_path': os_upload, 'upload_location': upload_loc, 'status': status_message}
+    return {'os_upload_path': new_folder_name, 'upload_location': relative_study_path, 'status': status_message}

@@ -6,7 +6,7 @@ from flask import request, current_app as app
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
 
-from app.utils import metabolights_exception_handler, MetabolightsException
+from app.utils import metabolights_exception_handler
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
 from app.ws.db.settings import get_directory_settings

@@ -407,22 +407,21 @@ FTP_UPLOAD_HELP_DOC_URL = mail_service_settings["FTP_UPLOAD_HELP_DOC_URL"]
 #   FTP SERVER SETTINGS
 #
 #   Load from the following file: CONFIGS_DIR/service_settings.json with key "FTP_SERVER_SETTINGS"
-#
-#   Configuration example
+#   FTP_PRIVATE_MOUNT_TYPE options: MOUNTED|CODON|OBJECT_STORAGE
+#   PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH relative path after FTP user mtblight home path
+#   Configuration example:
 #
 #   "FTP_SERVER_SETTINGS": {
-#     "MTBLS_FTP_ROOT": "/ftp/private/root/path",
-#     "MTBLS_PRIVATE_FTP_ROOT": "/ftp/private/root/path",
-#     "MARIANA_PATH": "ACTUAL-MARIANA-PATH/",
-#     "REPORTING_PATH": "REPORTING-PATH/"
+#     "FTP_PRIVATE_MOUNT_TYPE": "MOUNTED",
+#     "MOUNTED_FTP_PRIVATE_ROOT_PATH": "/ftp/private/root/path",
+#     "PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH": "/metabolights/prod/studies",
 #   }
 ########################################################################################################################
 ftp_server_settings = service_settings["FTP_SERVER_SETTINGS"]
 
-MTBLS_FTP_ROOT = ftp_server_settings["MTBLS_FTP_ROOT"]
-MTBLS_PRIVATE_FTP_ROOT = ftp_server_settings["MTBLS_PRIVATE_FTP_ROOT"]
-MARIANA_PATH = ftp_server_settings["MARIANA_PATH"]
-REPORTING_PATH = ftp_server_settings["REPORTING_PATH"]
+FTP_PRIVATE_MOUNT_TYPE = ftp_server_settings["FTP_PRIVATE_MOUNT_TYPE"]
+MOUNTED_FTP_PRIVATE_ROOT_PATH = ftp_server_settings["MOUNTED_FTP_PRIVATE_ROOT_PATH"]
+PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH = ftp_server_settings["PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH"]
 
 ########################################################################################################################
 #   GOOGLE SERVICE SETTINGS
@@ -541,6 +540,9 @@ FILE_LIST_TIMEOUT = study_files_settings["FILE_LIST_TIMEOUT"]
 STUDY_QUEUE_FOLDER = study_files_settings["STUDY_QUEUE_FOLDER"]
 STUDY_TREE_BLACKLIST = study_files_settings["STUDY_TREE_BLACKLIST"]
 study_files_settings = study_file_settings["STUDY_FILES"]
+REPORTING_ROOT_PATH = study_files_settings["REPORTING_ROOT_PATH"]
+MARIANA_PATH = study_files_settings["MARIANA_PATH"]
+REPORTING_PATH = study_files_settings["REPORTING_PATH"]
 
 ########################################################################################################################
 #   ONTOLOGY

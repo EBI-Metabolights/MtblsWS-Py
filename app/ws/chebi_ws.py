@@ -4,9 +4,8 @@ from flask import request, abort, current_app as app
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 
-from app.ws.chebi.settings import get_chebi_ws_settings
 from app.ws.chebi.types import SearchCategory, StarsCategory
-from app.ws.chebi.wsproxy import ChebiWsProxy, ChebiWsException, get_chebi_ws_proxy
+from app.ws.chebi.wsproxy import ChebiWsException, get_chebi_ws_proxy
 from app.ws.utils import log_request
 
 logger = logging.getLogger(__file__)

@@ -15,7 +15,6 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-import logging
 
 from flask_cors import CORS
 from flask_mail import Mail
@@ -65,7 +64,7 @@ from app.ws.pathway import fellaPathway
 from app.ws.pathway import keggid
 from app.ws.reports import CrossReferencePublicationInformation
 from app.ws.reports import reports, StudyAssayTypeReports
-from app.ws.send_files import SendFiles
+from app.ws.send_files import SendFiles, SendFilesPrivate
 from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
 from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
@@ -148,9 +147,8 @@ def initialize_app(flask_app):
     api.add_resource(FileList, res_path + "/studies/<string:study_id>/fileslist")
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
-    api.add_resource(SendFiles,
-                     res_path + "/studies/<string:study_id>/download",
-                     res_path + "/studies/<string:study_id>/download/<string:obfuscation_code>")
+    api.add_resource(SendFiles, res_path + "/studies/<string:study_id>/download")
+    api.add_resource(SendFilesPrivate, res_path + "/studies/<string:study_id>/download/<string:obfuscation_code>")
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
     api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")

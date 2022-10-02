@@ -25,7 +25,7 @@ from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import logger, log_request, read_tsv
+from app.ws.utils import log_request, read_tsv
 from app.ws.isaApiClient import IsaApiClient
 
 

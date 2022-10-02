@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 import time
 import traceback
 
@@ -121,8 +122,13 @@ def extract_details(rule):
     return val, val_error, val_condition, val_type
 
 
-def return_validations(section, validations, override_list=[], comment_list=[]):
+def return_validations(section, validations, override_list=None, comment_list=None):
     # Add the validation sequence
+    if not override_list:
+        override_list = []
+
+    if not comment_list:
+        comment_list = []
 
     for val in validations:
         # idx += 1  # Set the sequence to 1, as this is the section we will override

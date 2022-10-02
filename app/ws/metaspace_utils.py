@@ -96,23 +96,6 @@ def aws_download_file(bucket_name, aws_path, aws_file_name, data_type='binary'):
     return body
 
 
-def aws_download_file(bucket_name, aws_path, aws_file_name, data_type='binary'):
-    aws_bucket = get_s3().Bucket(bucket_name)
-    source = os.path.join(aws_path, aws_file_name)
-    obj = aws_bucket.Object(source)
-    logger.info("Downloading %s %s", bucket_name, source)
-    body = None
-    try:
-        if data_type == 'utf-8':
-            body = obj.get()['Body'].read().decode('utf-8')
-        else:
-            body = obj.get()['Body'].read()
-    except Exception:
-        logger.warning("Failed to download %s", source)
-
-    return body
-
-
 def print_need_additional_params(missing, options_help, exit_code=1):
     print()
     print('=> Missing required parameters:')

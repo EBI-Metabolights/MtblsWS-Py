@@ -28,7 +28,6 @@ import re
 import shutil
 import string
 import time
-import urllib
 import uuid
 from os.path import normpath, basename
 
@@ -36,6 +35,8 @@ import numpy as np
 import pandas as pd
 import psycopg2
 import requests
+
+from urllib import request as urllib_request
 from flask import current_app as app
 from flask import request, abort
 from flask_restful import abort
@@ -45,6 +46,10 @@ from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
 from psycopg2 import pool
 from dirsync import sync
+
+from app.services.storage_service.file_descriptor import FileType, FileDescriptor
+from app.services.storage_service.storage import Storage
+from app.services.storage_service.storage_service import StorageService
 from app.ws.mm_models import OntologyAnnotation
 
 """
@@ -120,6 +125,83 @@ def copy_file(source, destination):
         logger.error('Could not copy file for study: ' + str(e))
         raise
 
+def copytree_from_storage(storage: Storage, src, dst, symlinks=False, ignore=None, include_raw_data=False, include_investigation_file=True):
+    try:
+        if not os.path.exists(dst):
+            logger.info('Creating a new folder for the study, %s', dst)
+            os.makedirs(dst, exist_ok=True)
+
+        file_list = {}
+        for file_item in storage.remote.list_folder(src):
+            item = file_item.name
+            source = os.path.join(src, item)
+            destination = os.path.join(dst, item)
+
+            if item.endswith('.partial') or item.endswith('.aspera-ckpt') or item.endswith('.aspx'):
+                logger.info('Do NOT copy any aspera files')
+                continue
+
+            if not include_investigation_file and item.startswith('i_'):
+                logger.info('Do NOT copy any i_Investigation files from the upload folder')
+                continue
+
+            if item.startswith('i_') or item.startswith('s_') or item.startswith('a_') or item.startswith('m_'):
+                try:
+                    source_file_time = int(get_single_file_information(source))
+                    desc_file_time = 0
+                    if os.path.isfile(destination):
+                        desc_file_time = int(get_single_file_information(destination))
+                    diff = source_file_time - desc_file_time
+                except Exception as e:
+                    diff = 1  # if there is no destination file (in the study folder) then copy the file
+                    logger.error('Error copying metadata file %s to %s. Error %s', source, destination, str(e))
+
+                if diff > 0:
+                    logger.info('Will copy files')
+                    storage.download_file(source, destination)
+            else:
+                if include_raw_data:
+                        if storage.remote.is_folder(source):
+                            logger.info(source + ' is a directory')
+                            try:
+                                if os.path.isdir(destination):
+                                    storage.sync_from_storage(source, destination, 'sync', purge=False,logger=logger)
+                                else:
+                                    storage.download_file(source, destination, symlinks=symlinks, ignore=ignore)
+                                logger.info('Copied file %s to %s', source, destination)
+                            except FileExistsError as e:
+                                logger.error('Folder already exists! Can not copy %s to %s', source, destination,
+                                             str(e))
+                            except OSError as e:
+                                logger.error('Does the folder already exists? Can not copy %s to %s', source,
+                                             destination, str(e))
+                            except Exception as e:
+                                logger.error('Other error! Can not copy %s to %s', source, destination,
+                                             str(e))
+                        else:  # elif not os.path.exists(destination):
+                            logger.info(source + ' is not a directory')
+                            try:
+                                if os.path.isfile(destination):
+                                    upload_file_time = file_item.modified_time
+                                    study_file_time = os.path.getmtime(destination)
+                                    if upload_file_time > study_file_time:
+                                        logger.info('Do sync')
+                                        storage.sync_from_storage(source, destination)  # Should retain all file metadata, ie. timestamps
+                                        logger.info('Copied file %s to %s', source, destination)
+                                    else:
+                                        logger.info('Destination file with later timestamp, So not copying')
+                                else:
+                                    storage.sync_from_storage(source, destination)
+                            except FileExistsError as e:
+                                logger.error('File already exists! Can not copy %s to %s', source, destination, str(e))
+                            except OSError as e:
+                                logger.error('Does the file already exists? Can not copy %s to %s', source, destination,
+                                             str(e))
+                            except Exception as e:
+                                logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
+    except Exception as e:
+        logger.error(str(e))
+        raise
 
 def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, include_investigation_file=True):
     try:
@@ -198,6 +280,25 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
         logger.error(str(e))
         raise
 
+
+def scandir_get_aspera_on_remote_storage(storage: Storage, directory):
+    subfolders, files = [], []
+
+    for f in storage.remote.list_folder(directory):
+        file_path = os.path.join(f.folder, f.name)
+        if f.file_type == FileType.FOLDER:
+            subfolders.append(file_path)
+        if f.file_type == FileType.FILE:
+            if os.path.splitext(f.name)[1].lower() in ('.partial', '.aspera-ckpt', '.aspx'):
+                files.append(file_path)
+
+    for subdir in list(subfolders):
+        sf, f = scandir_get_aspera_on_remote_storage(storage, subdir)
+        subfolders.extend(sf)
+        files.extend(f)
+    return subfolders, files
+
+
 def scandir_get_aspera(dir):
     subfolders, files = [], []
 
@@ -214,6 +315,16 @@ def scandir_get_aspera(dir):
         files.extend(f)
     return subfolders, files
 
+
+def delete_asper_files_from_remote_storage(storage: Storage, directory):
+    subs, files = scandir_get_aspera_on_remote_storage(storage, directory)
+    for file_to_delete in files:
+        print("File to delete  : " + file_to_delete)
+        if storage.remote.exists(file_to_delete):  # First, does the file/folder exist?
+            if storage.remote.is_file(file_to_delete):  # is it a file?
+                storage.remote.delete(file_to_delete)
+
+
 def delete_asper_files(directory):
     subs, files = scandir_get_aspera(directory)
     for file_to_delete in files:
@@ -221,6 +332,7 @@ def delete_asper_files(directory):
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
             if os.path.isfile(file_to_delete):  # is it a file?
                 os.remove(file_to_delete)
+
 
 def copy_files_and_folders(source, destination, include_raw_data=True, include_investigation_file=True):
     """
@@ -249,6 +361,32 @@ def copy_files_and_folders(source, destination, include_raw_data=True, include_i
 
     return True, 'Files successfully copied from ' + source + ' to ' + destination
 
+def copy_files_and_folders_from_storage(storage, source, destination, include_raw_data=True, include_investigation_file=True):
+    """
+      Make a copy of files/folders from origin to destination. If destination already exists, it will be replaced.
+      :param source:  string containing the full path to the source file, including filename
+      :param destination: string containing the path to the source file, including filename
+      :param include_raw_data: Copy all files or metadata only, Boolean (default True)
+      :param include_investigation_file: Copy the i_Investigation.txt file, Boolean (default True)
+      :return:
+      """
+
+    if source is None or destination is None:
+        return False, 'Study or upload folder is not known, aborting'
+
+    try:
+        # copy origin to destination
+        logger.info("Copying %s to %s", source, destination)
+        copytree_from_storage(storage, source, destination, include_raw_data=include_raw_data,
+                 include_investigation_file=include_investigation_file)
+    except FileNotFoundError:
+        return False, 'No files found under ' + source
+    except IsADirectoryError:
+        return False, 'Please give filename(s), not only upload folder ' + source
+    except Exception:
+        return False, 'Could not copy files from ' + source
+
+    return True, 'Files successfully copied from ' + source + ' to ' + destination
 
 def remove_samples_from_isatab(std_path):
     # dest folder name is a timestamp
@@ -428,15 +566,19 @@ def totuples(df, text):
 
 # Allow for a more detailed logging when on DEBUG mode
 def log_request(request_obj):
+
     if app.config.get('DEBUG'):
+        if not request_obj:
+            logger.error('REQUEST OBJECT is NONE')
+            return
         if app.config.get('DEBUG_LOG_HEADERS'):
             logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
         if app.config.get('DEBUG_LOG_BODY'):
             logger.debug('REQUEST BODY    -> %s', request_obj.data)
         if app.config.get('DEBUG_LOG_JSON'):
-            try:
+            if request_obj.is_json:
                 logger.debug('REQUEST JSON    -> %s', request_obj.json)
-            except:
+            else:
                 logger.debug('REQUEST JSON    -> EMPTY')
 
 
@@ -606,10 +748,31 @@ def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, s
     return isa_study
 
 
+def copy_all_mzml_files(storage: Storage, root_source_folder: str, folder: str, target_local_root_folder: str):
+    if storage.remote.exists(folder):  # Only check if the folder exists
+        files = storage.remote.list_folder(folder)
+        for item in files:
+            path = os.path.join(item.folder, item.name)
+            joined_file = item.folder.replace(root_source_folder, "", 1)
+            if not joined_file or joined_file == os.sep:
+                target_path = target_local_root_folder
+            else:
+                target_path = os.path.join(target_local_root_folder, joined_file.lstrip('/'))
+
+            if item.file_type == FileType.FILE:
+                if item.name.endswith(".mzML"):
+                    storage.download_file(path, target_path)
+            elif item.file_type == FileType.FOLDER:
+                copy_all_mzml_files(storage, root_source_folder, path, target_local_root_folder)
+
+
 def validate_mzml_files(study_id, obfuscation_code, study_location):
-    upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
 
     status, result = True, "All mzML files validated in both study and upload folder"
+    ftp_private_storage = StorageService.get_ftp_private_storage(app)
+    private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
+
+    copy_all_mzml_files(ftp_private_storage, private_ftp_study_folder, private_ftp_study_folder, study_location)
 
     # Getting xsd schema for validation
     items = app.config.get('MZML_XSD_SCHEMA')
@@ -619,7 +782,7 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
     xmlschema_doc = etree.parse(os.path.join(script_loc, xsd_name))
     xmlschema = etree.XMLSchema(xmlschema_doc)
 
-    for file_loc in [study_location, upload_location]:  # Check both study and upload location. Study first!!!!
+    for file_loc in [study_location]:
         if os.path.isdir(file_loc):  # Only check if the folder exists
             files = glob.iglob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
             if files.gi_yieldfrom is None:  # No files, check sub-folders
@@ -632,18 +795,8 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
                     status, result = validate_xml(xml=file, xmlschema=xmlschema)
                     if not status:
                         return status, result
-                    # Ok, the file validated, so we now copy it file to the study folder
-                    if file_loc == upload_location:
-                        shutil.copy(file, study_location)
-                        # copy_file(file, study_location)
-                        try:
-                            logger.info('Moving mzML file "' + file + '" into study location ' + study_location)
-                            # Rename the file so that we don't have to validate/copy it again
-                            shutil.move(file, file + ".MOVED")
-                        except Exception:
-                            return False, "Could not copy the mzML file " + file
-                except Exception:
-                    return status
+                except Exception as e:
+                    return False, f'Error while validating file {file}: {str(e)}'
 
     return status, result
 
@@ -721,7 +874,7 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
         elif ontology_type.lower() == 'characteristics':
             prefix = 'Characteristics['
 
-        file_names = []
+        file_names = list()
         # Sample sheet
         file_names.append(os.path.join(study_location, isa_study.filename))
         #  assay_sheet(s)
@@ -846,7 +999,7 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
     return isa_inv, onto
 
 
-def remove_file(file_location, file_name, allways_remove=False):
+def remove_file_from_storage(storage: Storage, file_location, file_name, always_remove=False):
     # Raw files are sometimes actually folders, so need to check if file or folder before removing
     file_to_delete = os.path.join(file_location, file_name)
     # file_status == 'active' of a file is actively used as metadata
@@ -854,7 +1007,26 @@ def remove_file(file_location, file_name, allways_remove=False):
 
     try:
         if file_type == 'metadata_investigation' or file_type == 'metadata_assay' or file_type == 'metadata_sample' or file_type == 'metadata_maf':
-            if file_status == 'active' and not allways_remove:  # If active metadata and "remove anyway" flag if not set
+            if file_status == 'active' and not always_remove:  # If active metadata and "remove anyway" flag if not set
+                return False, "Can not delete any active metadata files " + file_name
+        if storage.remote.exists(file_to_delete):  # First, does the file/folder exist?
+            storage.remote.delete(file_to_delete)  # is it a file?
+        else:
+            return False, "Can not find file " + file_name
+    except:
+        return False, "Can not delete file " + file_name
+    return True, "File " + file_name + " deleted"
+
+
+def remove_file(file_location, file_name, always_remove=False):
+    # Raw files are sometimes actually folders, so need to check if file or folder before removing
+    file_to_delete = os.path.join(file_location, file_name)
+    # file_status == 'active' of a file is actively used as metadata
+    file_type, file_status, folder = map_file_type(file_name, file_location)
+
+    try:
+        if file_type == 'metadata_investigation' or file_type == 'metadata_assay' or file_type == 'metadata_sample' or file_type == 'metadata_maf':
+            if file_status == 'active' and not always_remove:  # If active metadata and "remove anyway" flag if not set
                 return False, "Can not delete any active metadata files " + file_name
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
             if os.path.isfile(file_to_delete):  # is it a file?
@@ -1354,7 +1526,7 @@ def get_studytype(studyID=None):
                 term = str(descriptor['annotationValue'])
                 if term.startswith(('untargeted', 'Untargeted', 'non-targeted')):
                     untarget = True
-                elif term.startswith(('targeted')):
+                elif term.startswith('targeted'):
                     target = True
 
             if target and untarget:
@@ -1479,9 +1651,9 @@ def getFileList(studyID):
     try:
         source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
         url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
-        request = urllib.request.Request(url)
-        request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
-        response = urllib.request.urlopen(request)
+        request_obj = urllib_request.Request(url)
+        request_obj.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        response = urllib_request.urlopen(request_obj)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
 
@@ -1500,10 +1672,14 @@ def getFileList(studyID):
                 maf_file.append(files['file'])
                 continue
 
-        if assay_file == []: print('Fail to load assay file from ', studyID)
-        if sample_file == '': print('Fail to load sample file from ', studyID)
-        if investigation_file == '': print('Fail to load investigation file from ', studyID)
-        if maf_file == []: print('Fail to load maf file from ', studyID)
+        if not assay_file:
+            print('Fail to load assay file from ', studyID)
+        if not sample_file:
+            print('Fail to load sample file from ', studyID)
+        if not investigation_file:
+            print('Fail to load investigation file from ', studyID)
+        if not maf_file:
+            print('Fail to load maf file from ', studyID)
 
         return assay_file, investigation_file, sample_file, maf_file
     except Exception as e:

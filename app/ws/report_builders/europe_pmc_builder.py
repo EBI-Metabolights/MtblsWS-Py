@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 
 import pandas
@@ -26,7 +27,6 @@ class EuropePmcReportBuilder:
         Sets up a headers register (as we are hitting the same endpoint twice, but with different formats) and a set of
         base parameters for requests to the europePMC API.
 
-        :param priv_list: A list of studies to iterate over, throwing each at europePMC.
         :param user_token: User token for use with javawebservice, must be curator or will have failed prior.
         :param wsc: WsClient that interfaces with the java webservice.
         :param iac: IsaApiClient, used to get study information.
@@ -60,7 +60,8 @@ class EuropePmcReportBuilder:
         :return: A message as a string indicating success or failure.
         """
         list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
-        path = app.config.get('MTBLS_PRIVATE_FTP_ROOT') + '/' + app.config.get('REPORTING_PATH') + 'global/europepmc.csv'
+        root_path = app.config.get('REPORTING_ROOT_PATH')
+        path = os.path.join(root_path, app.config.get('REPORTING_PATH'), 'global', 'europepmc.csv')
         try:
 
             report_dataframe = pandas.DataFrame(list_of_result_dicts,

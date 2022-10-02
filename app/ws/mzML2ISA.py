@@ -28,7 +28,6 @@ from flask_restful_swagger import swagger
 from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.utils import convert_to_isa, validate_mzml_files
 
@@ -240,7 +239,10 @@ class ValidateMzML(Resource):
 
         xmlschema_doc = etree.parse(xsd_path)
         xmlschema = etree.XMLSchema(xmlschema_doc)
-        files = glob.glob(os.path.join(study_folder, '**/*.mzML'), recursive=True)
+        files = glob.glob(os.path.join(study_folder, '*.mzML'))
+        files_in_subfolders = glob.glob(os.path.join(study_folder, '**/*.mzML'), recursive=True)
+        files.extend(files_in_subfolders)
+
         files.sort()
         error_list = []
         mzml_file_count = 0

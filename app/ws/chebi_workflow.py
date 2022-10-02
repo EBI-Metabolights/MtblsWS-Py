@@ -21,7 +21,6 @@ import logging
 import os
 import re
 import shlex
-import subprocess
 import time
 import urllib.parse
 from pathlib import Path
@@ -40,6 +39,9 @@ from flask_restful_swagger import swagger
 from pubchempy import get_compounds
 from zeep import Client
 
+from app.services.storage_service.acl import Acl
+from app.services.storage_service.storage import Storage
+from app.services.storage_service.storage_service import StorageService
 from app.ws.cluster_jobs import lsf_job
 from app.ws.db_connection import get_user_email
 from app.ws.isaApiClient import IsaApiClient
@@ -278,7 +280,7 @@ def clean_comp_name(comp_name):
 
 
 def get_pubchem_substance(comp_name, res_type):
-    results = []
+    results = {}
     result = ""
     comp_name_url = urllib.parse.quote(comp_name)
     url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/name/" + comp_name_url + "/cids/JSON"
@@ -464,7 +466,6 @@ def get_cas_from_synonyms(synonyms):
             return i[4:]
 
 
-
 def search_and_update_maf(study_id, study_location, annotation_file_name, classyfire_search, user_token,
                           run_silently=None, update_study_maf=None, obfuscation_code=None):
     sdf_file_list = []
@@ -472,8 +473,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     first_start_time = time.time()
     # Please note that the original MAF must exist without the _pubchem.tsv extension!!
     original_maf_name = annotation_file_name.replace("_pubchem.tsv", ".tsv")
-    short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
-                                   annotation_file_name.replace('.tsv', ''))
+    short_file_name = os.path.join(study_location, anno_sub_folder, annotation_file_name.replace('.tsv', ''))
     if annotation_file_name.endswith(pubchem_end):
         exiting_pubchem_file = True
         short_file_name = os.path.join(study_location + os.sep + anno_sub_folder + os.sep,
@@ -488,6 +488,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
     glytoucan_file_df = read_glytoucan_file()
     maf_len = 0
+    maf_df = None
     try:
         maf_df = read_tsv(annotation_file_name)
         maf_len = len(maf_df.index)
@@ -496,8 +497,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
 
     create_annotation_folder(study_location + os.sep + anno_sub_folder)
     if obfuscation_code:  # So the curators can FTP new files into the private upload folder for the study
-        create_annotation_folder(app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" +
-                                 obfuscation_code + os.sep + anno_sub_folder)
+        ftp_private_annotation_folder = os.path.join(study_id.lower() + "-" + obfuscation_code, anno_sub_folder)
+        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        create_annotation_folder_on_remote_storage(ftp_private_storage, ftp_private_annotation_folder)
 
     # First make sure the existing pubchem annotated spreadsheet is loaded
     pubchem_df = maf_df.copy()
@@ -1008,6 +1010,16 @@ def reindex_row_id(pubchem_df, pubchem_df_headers):
     return pubchem_df
 
 
+def create_annotation_folder_on_remote_storage(storage: Storage, folder_loc):
+    print_log("Checking for ChEBI folder " + folder_loc)
+    try:
+        if not storage.remote.exists(folder_loc):
+            print_log(f"Creating ChEBI folder {folder_loc} on storage {storage.get_name()}")
+            storage.remote.create_folder(folder_loc, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+    except Exception as e:
+        print_log(str(e))
+
+
 def create_annotation_folder(folder_loc):
     print_log("Checking for ChEBI folder " + folder_loc)
     try:
@@ -1168,7 +1180,7 @@ def removeHydrogen(sdf_file_name):
     else:
         file_data = open(sdf_file_name, 'rb').read()
         fileText = ''
-        count = 0;
+        count = 0
         final_file = ''
         molecule = str(file_data, 'utf-8').split('$$$$')
         mol_count = app.config.get('REMOVED_HS_MOL_COUNT')
@@ -1372,7 +1384,7 @@ def remove_sdf_files(sdf_file_name, study_location, sdf_file_list):
                 sdf_path = Path(os.path.join(study_location, fname[0]))
                 sdf_path.unlink()
             except Exception as e:
-                print_log(" -- Error: Could not remove file: " + sdf_path + ". Error " + str(e), mode='error')
+                print_log(" -- Error: Could not remove file: " + str(sdf_file) + ". Error " + str(e), mode='error')
 
 
 def classyfire(inchi):

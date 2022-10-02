@@ -15,13 +15,11 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-import glob
 import json
 import logging
 import os
 import re
 import threading
-import traceback
 
 from flask import current_app as app
 from flask import request
@@ -524,36 +522,6 @@ class ValidationComment(Resource):
             abort(500, str(e))
 
         return {"status": feedback}
-
-
-def submitJobToCluser(command, section, study_location):
-    logger.info("Starting cluster job for Validation : " + command)
-    status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=command, send_email=True)
-
-    if status:
-        start = 'Job <'
-        end = '> is'
-        cron_job_id = (job_out[job_out.find("Job <") + len(start):job_out.rfind(end)])
-        cron_job_file = study_location + "/validation_" + section + "_" + cron_job_id + '.json'
-        with open(cron_job_file, 'w') as fp:
-            pass
-        os.chmod(cron_job_file, 0o777)
-        return {"success": message, "job_id": cron_job_id, "message": job_out, "errors": job_err}
-    else:
-        return {"error": message, "message": job_out, "errors": job_err}
-
-
-def is_newer_timestamp(location, fileToCompare):
-    need_validation_update = False
-    try:
-        list_of_files = glob.glob(os.path.join(location, '*'))
-        latest_file = max(list_of_files, key=os.path.getctime)
-    except:
-        return need_validation_update
-    updateTime = os.path.getctime(latest_file)
-    if os.path.getctime(fileToCompare) < updateTime:
-        need_validation_update = True  # No files modified since the validation schema files
-    return need_validation_update
 
 
 class NewValidation(Resource):

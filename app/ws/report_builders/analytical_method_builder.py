@@ -11,9 +11,7 @@ from pandas import DataFrame
 from flask import current_app as app, abort
 from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
 
-from app.ws.cronjob import setGoogleSheet
 from app.ws.mtbls_maf import totuples
 from app.ws.performance_and_metrics.builder_performance_tracker import BuilderPerformanceTracker
 from app.ws.utils import readDatafromFile
@@ -212,7 +210,6 @@ class AnalyticalMethodBuilder:
         but if include_all is set to false it attempts to try and detect which assays are relevant via the filename.
 
         :param study_location: path on the server of the study in question.
-        :param studytype: Used to differentiate assays if include_all is false.
         :param include_all: Flag that decides whether to include all assay files in a study folder, defaults to True.
         :return: A filtered list of assay files
         """
@@ -321,8 +318,6 @@ class AnalyticalMethodBuilder:
         not all grouped together like say NMR. We need to check which keys in the techniques section are LCMS relevant, and
         then use the keys to pull out the accession numbers we want.
 
-        :param studytype: Type of detection method we want accession numbers for.
-        :param reporting_path: Where the global.json report file can be found.
         :return: List of relevant accession numbers.
         """
         json_data = readDatafromFile(self.reporting_path + 'global.json')

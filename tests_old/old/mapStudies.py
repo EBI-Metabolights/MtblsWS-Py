@@ -22,20 +22,18 @@
 # Tag:
 # Description: map metabolights_zooma.tsv terms with studies
 
-import json
 import logging
 
 import numpy as np
 import pandas as pd
 from flask import current_app as app
-from owlready2 import urllib
 
 from app.ws.study.study_service import StudyService
 
 
-class getStudyInfo():
+class getStudyInfo(object):
 
-    def __init__(self, studyID):
+    def __init__(self, studyID, user_token):
         try:
             m_study = StudyService.get_instance().get_study_from_db_and_folder(studyID, user_token,
                                                                                optimize_for_es_indexing=False,
@@ -94,7 +92,7 @@ def searchStudies(query, feature='factors'):
     res = []
     for studyID in j_content['content']:
         print('searching', studyID)
-        info = getStudyInfo(studyID)
+        info = getStudyInfo(studyID, user_token)
         if feature.casefold() == 'factors'.casefold():
             fea = info.getFactors()
         elif feature.casefold() == 'organism'.casefold():

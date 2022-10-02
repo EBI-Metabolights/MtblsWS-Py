@@ -1,4 +1,3 @@
-import logging
 from urllib.parse import quote
 
 from flask import current_app as app
