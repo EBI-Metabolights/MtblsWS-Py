@@ -330,7 +330,7 @@ class SpectraZipper:
                          f'it already exists: {str(e)}')
             abort(500)
 
-        if os.path.exists(f'{self.private_studies_dir}{self.spectra_dir}'):
+        if os.path.exists(os.path.join(self.private_studies_dir, self.spectra_dir)):
             pass
         else:
             raise FileNotFoundError(f'Couldnt create spectra directory at {self.private_studies_dir}{self.spectra_dir}')

@@ -131,15 +131,15 @@ class SendFiles(Resource):
                     files = files + f_name + ','
             file_name = files.rstrip(",")
 
+        remove_file = False
+        safe_path = safe_join(study_location, file_name)
+        zip_name = None
         try:
-            remove_file = False
-
             short_zip = study_id + "_compressed_files.zip"
             zip_name = os.path.join(study_location, short_zip)
             if os.path.isfile(zip_name):
                 os.remove(zip_name)
-
-            if ',' in file_name:
+            if ',' in file_name and not os.path.exists(safe_path):
                 zipfile = ZipFile(zip_name, mode='a')
                 remove_file = True
                 files = file_name.split(',')
@@ -156,7 +156,6 @@ class SendFiles(Resource):
                 safe_path = zip_name
                 file_name = short_zip
             else:
-                safe_path = safe_join(study_location, file_name)
                 if os.path.isdir(safe_path):
                     zipfile = ZipFile(zip_name, mode='a')
                     for sub_file in recursively_get_files(safe_path):
@@ -179,9 +178,9 @@ class SendFiles(Resource):
         except Exception as e:
             abort(404, "Could not create zip file " + str(e))
         finally:
-            if remove_file:
-                os.remove(safe_path)
-                logger.info('Removed zip file ' + safe_path)
+            if remove_file and os.path.exists(zip_name):
+                os.remove(zip_name)
+                logger.info('Removed zip file ' + zip_name)
 
 
 class SendFilesPrivate(Resource):

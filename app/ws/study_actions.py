@@ -32,6 +32,7 @@ from app.utils import metabolights_exception_handler, MetabolightsException
 from app.ws.db_connection import update_study_status, update_study_status_change_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.commons import create_ftp_folder
 from app.ws.validation import validate_study
 
 logger = logging.getLogger('wslog')
@@ -122,6 +123,8 @@ class StudyStatus(Resource):
 
         if study_status.lower() == db_study_status.lower():
             raise MetabolightsException(message=f"Status is already {str(study_status)} so there is nothing to change")
+        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        ftp_private_study_folder = study_id.lower() + '-' + obfuscation_code
 
         # Update the last status change date field
         status_date_logged = update_study_status_change_date(study_id)
@@ -143,13 +146,15 @@ class StudyStatus(Resource):
                 isa_inv.public_release_date = new_date
                 isa_study.public_release_date = new_date
                 release_date = new_date
-            self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
+            self.update_status(study_id, study_status, is_curator=is_curator,
+                               obfuscation_code=obfuscation_code, user_token=user_token)
         elif write_access:
             if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':
                 abort(403, "You can not change the study to this status")
 
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
-                self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
+                self.update_status(study_id, study_status, is_curator=is_curator,
+                                   obfuscation_code=obfuscation_code, user_token=user_token)
 
                 if release_date < new_date:  # Set the release date to a minimum of 28 days in the future
                     isa_inv.public_release_date = new_date
@@ -165,8 +170,6 @@ class StudyStatus(Resource):
 
         status, message = wsc.reindex_study(study_id, user_token)
         # Explictly changing the FTP folder permission for In Curation and Submitted state
-        ftp_private_study_folder = study_id.lower() + '-' + obfuscation_code
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
         if db_study_status.lower() == 'submitted' and study_status.lower() == 'In Curation'.lower():
             if ftp_private_storage.remote.exists(ftp_private_study_folder):
                 ftp_private_storage.remote.update_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ)
@@ -179,19 +182,29 @@ class StudyStatus(Resource):
                 "release-date": release_date}
 
     @staticmethod
-    def update_status(study_id, study_status, is_curator=False, obfuscation_code=None):
+    def update_status(study_id, study_status, is_curator=False, obfuscation_code=None, user_token=None):
         study_status = study_status.lower()
         # Update database
         update_study_status(study_id, study_status, is_curator=is_curator)
         # Move the private fto folder if the new status is Public
+        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        study_folder = study_id.lower() + '-' + obfuscation_code
+        backup_folder = os.path.join('old', study_folder)
         if study_status == 'public':
-            study_folder = study_id.lower() + '-' + obfuscation_code
             src = study_folder
-            dst = os.path.join('old', study_folder)
             try:
-                StorageService.get_ftp_private_storage(app).remote.move(src, dst)
+                StorageService.get_ftp_private_storage(app).remote.move(src, backup_folder)
             except Exception as e:
                 logger.error('Could not move private FTP folder ' + src + '. Error: ' + str(e))
+        else:
+            if not ftp_private_storage.remote.exists(study_folder):
+                if ftp_private_storage.remote.exists(backup_folder):
+                    try:
+                        StorageService.get_ftp_private_storage(app).remote.move(backup_folder, study_folder)
+                    except Exception as e:
+                        logger.error('Could not move private FTP folder ' + study_folder + '. Error: ' + str(e))
+                else:
+                    create_ftp_folder(study_id, obfuscation_code, user_token, None, send_email=False)
 
     @staticmethod
     def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):

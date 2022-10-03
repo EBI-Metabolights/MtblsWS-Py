@@ -293,7 +293,7 @@ def get_pubchem_substance(comp_name, res_type):
     if resp.status_code == 404:
         print_log("    -- No PubChem Substance found for '" + comp_name + "'")
 
-    for idx, result in enumerate(results['InformationList']['Information']) if results else []:
+    for idx, result in enumerate(results["InformationList"]['Information']) if results else []:
         print_log("    -- Found PubChem Substance(s) for '" + comp_name + "' (" + res_type + "), search record #" + str(
             idx + 1))
         if res_type == 'cid':
@@ -2040,11 +2040,13 @@ class SplitMaf(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('annotation_file_name', help="Metabolite Annotation File", location="args")
         args = parser.parse_args()
-        annotation_file_name = args['annotation_file_name'].strip()
+        annotation_file_name = None
+        if args['annotation_file_name']:
+            annotation_file_name = args['annotation_file_name'].strip()
 
-        if annotation_file_name is None:
+        if not annotation_file_name:
             # Loop through all m_*_v2_maf.tsv files
-            study_files, upload_files, upload_diff, upload_location = \
+            study_files, upload_files, upload_diff, upload_location, latest_update_time = \
                 get_all_files_from_filesystem(
                     study_id, obfuscation_code, study_location, directory=None, include_raw_data=False,
                     assay_file_list=get_assay_file_list(study_location))  # ToDo, Overkill just loop through the folder

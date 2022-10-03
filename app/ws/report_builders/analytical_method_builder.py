@@ -320,7 +320,7 @@ class AnalyticalMethodBuilder:
 
         :return: List of relevant accession numbers.
         """
-        json_data = readDatafromFile(self.reporting_path + 'global.json')
+        json_data = readDatafromFile(os.path.join(self.reporting_path, 'global.json'))
         specified_study_data = []
         if str(self.studytype) == 'LCMS':
             keys = [key for key in json_data['data']['techniques'].keys() if key.count('LC') > 0]

@@ -470,7 +470,7 @@ class reports(Resource):
 
         if query == 'daily_stats':
             try:
-                sql = open('./instance/study_report.sql', 'r').read()
+                sql = open('./resources/study_report.sql', 'r').read()
                 postgresql_pool, conn, cursor = get_connection()
                 cursor.execute(sql)
                 dates = cursor.fetchall()
@@ -495,7 +495,7 @@ class reports(Resource):
             # try:
             file_name = 'study_report.json'
             study_data = readDatafromFile(os.path.join(reporting_path,  file_name))
-            sql = open('./instance/user_report.sql', 'r').read()
+            sql = open('./resources/user_report.sql', 'r').read()
             postgresql_pool, conn, cursor = get_connection()
             cursor.execute(sql)
             result = cursor.fetchall()
@@ -512,10 +512,9 @@ class reports(Resource):
                     except:
                         continue
                 dict_temp = {str(dt[0]):
-                                 {"name": dt[13],
+                                 {
                                   "user_email": str(dt[1]),
                                   "country_code": dt[2],
-                                  "joindate": dt[12],
                                   "total": str(dt[5]),
                                   "submitted": str(dt[7]),
                                   "review": str(dt[9]),

@@ -1295,6 +1295,19 @@ class DeleteStudy(Resource):
         study_submitters(study_id, mtbls_email, 'add')
 
         # Remove all files in the study folder except the sample sheet and the investigation sheet.
+        if not os.path.exists(study_location):
+            os.makedirs(study_location, exist_ok=True)
+
+        template_folder = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'))
+        target_file = os.path.join(study_location, 's_{0}.txt'.format(study_id))
+        if not os.path.exists(target_file):
+            from_path = os.path.join(template_folder, "s_Sample.txt")
+            copy_file(from_path, target_file)
+        target_file = os.path.join(study_location, 's_{0}.txt'.format(study_id))
+        if not os.path.exists(target_file):
+            from_path = os.path.join(template_folder, "i_Investigation.txt")
+            copy_file(from_path, target_file)
+
         files = os.listdir(study_location)
         files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
 
@@ -1304,7 +1317,9 @@ class DeleteStudy(Resource):
         # Remove all files in the upload folder
         ftp_private_storage = StorageService.get_ftp_private_storage(app)
         private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
-        ftp_private_storage.remote.delete(private_ftp_study_folder)
+        if ftp_private_storage.remote.exists(private_ftp_study_folder):
+            ftp_private_storage.remote.delete(private_ftp_study_folder)
+
         ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
         raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
         derived_files_folder = os.path.join(private_ftp_study_folder, 'DERIVED_FILES')
@@ -1336,7 +1351,7 @@ class DeleteStudy(Resource):
 
         status, message = wsc.reindex_study(study_id, user_token)
         if not status:
-            abort(500, "Could not reindex the study")
+            abort(500, error="Could not reindex the study")
 
         return {"Success": "Study " + study_id + " has been removed"}
 
@@ -1570,22 +1585,22 @@ class ReindexAllPublicStudies(Resource):
             index = 0
             for study in studies:
                 index += 1
-                print(f'{index}/{total} Indexing {study[0]}')
+                logger.debug(f'{index}/{total} Indexing {study[0]}')
                 try:
                     logger.info(f'{index}/{total} Indexing {study[0]}')
                     status, message = wsc.reindex_study(study[0], user_token)
                     if not status:
                         logger.info(f'Unindexed study {study[0]}')
-                        print(f'Unindexed study {study[0]}')
+                        logger.debug(f'Unindexed study {study[0]}')
                         unindexed_studies.append(study[0])
                     else:
                         indexed_studies.append(study[0])
                         logger.info(f'Indexed study {study[0]}')
-                        print(f'Indexed study {study[0]}')
+                        logger.debug(f'Indexed study {study[0]}')
                 except Exception as e:
                     unindexed_studies.append(study[0])
                     logger.info(f'Unindexed study {study[0]}')
-                    print(f'Unindexed study {study[0]}')
+                    logger.debug(f'Unindexed study {study[0]}')
 
 
         return {"indexed_studies": indexed_studies, "unindexed_studies": unindexed_studies}
