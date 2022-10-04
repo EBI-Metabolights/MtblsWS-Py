@@ -546,7 +546,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         final_inchi = None
         csid_ik = None
         final_cid = None
-        db_acc = pubchem_df.iloc[idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)]
+        db_acc = str(pubchem_df.iloc[idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)])
         if exiting_pubchem_file:
             if str(row[3]).rstrip('.0') == '1':  # This is the already searched flag in the spreadsheet
                 search = False
@@ -561,7 +561,7 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             pubchem_df.iloc[idx, get_idx('ID', pubchem_df_headers)] = "temp_" + str(org_row_id)
             pubchem_df.iloc[idx, get_idx('NAME', pubchem_df_headers)] = safe_str(row[1])
             if csid_ik:
-                db_acc = db_acc + ';ChemSpider:' + csid_ik + ';'
+                db_acc = db_acc + ';ChemSpider:' + str(csid_ik) + ';'
                 db_acc = ';'.join(unique_list(db_acc.split(';')))
 
         if not exiting_pubchem_file:
