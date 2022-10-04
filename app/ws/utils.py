@@ -443,17 +443,17 @@ def log_request(request_obj):
 def read_tsv(file_name):
     table_df = pd.DataFrame()  # Empty file
     try:
+        # Enforce str datatype for all columns we read from ISA-Tab tables
+        col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
+        types_dict = {col: str for col in col_names}
         try:
             if os.path.getsize(file_name) == 0:  # Empty file
                 logger.error("Could not read file " + file_name)
             else:
-                # Enforce str datatype for all columns we read from ISA-Tab tables
-                col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
-                types_dict = {col: str for col in col_names}
                 table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8', dtype=types_dict)
         except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
             if os.path.getsize(file_name) > 0:
-                table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1')  # Excel format
+                table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1', dtype=types_dict)  # Excel format
                 logger.info("Tried to open as Excel tsv file 'ISO-8859-1' file " + file_name + ". " + str(e))
     except Exception as e:
         logger.error("Could not read file " + file_name + ". " + str(e))
