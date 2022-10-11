@@ -4,7 +4,6 @@ import os
 import random
 import shutil
 from distutils.dir_util import copy_tree
-from pathlib import Path
 from typing import List
 
 from dirhash import dirhash
@@ -51,12 +50,6 @@ class MountedVolumeFileManager(FileManager):
         except (OSError, Exception):
             return False
 
-    def move(self, source: str, target: str, force: bool = True, backup_target: bool = False) -> bool:
-        return self._safe_copy_or_move(self._move, source, target, force, backup_target)
-
-    def copy(self, source: str, target: str, force: bool = True, backup_target: bool = False) -> bool:
-        return self._safe_copy_or_move(self._copy, source, target, force, backup_target)
-
     @staticmethod
     def _move(source_path: str, target_path: str):
         try:
@@ -88,7 +81,7 @@ class MountedVolumeFileManager(FileManager):
             base_name = os.path.basename(target_path)
             dir_name = os.path.dirname(target_path)
             timestamp = str(int(datetime.datetime.now().timestamp()* 1000))
-            random_data = random.randint(1000000, 9999999)
+            random_data = str(random.randint(1000000, 9999999))
             file_name = base_name + timestamp + "-" + random_data
             backup_file_path = os.path.join(dir_name, file_name.lstrip(os.sep))
             os.rename(target_path, backup_file_path)
@@ -129,38 +122,11 @@ class MountedVolumeFileManager(FileManager):
 
         return permission
 
-    def update_permission(self, source: str, acl: Acl = Acl.AUTHORIZED_READ_WRITE, recursive: bool = False) -> bool:
+    def update_permission(self, source: str, acl: Acl = Acl.AUTHORIZED_READ_WRITE) -> bool:
         source_path = self._get_abs_path(source)
         chmod = acl.value
-        if self.is_file(source_path) or not recursive:
-            return self._update_chmod(source_path, chmod)
 
-        if self.is_folder(source_path):
-            success = self._update_chmod(source_path, chmod)
-            error = success
-            for root, dirs, files in os.walk(source_path):
-                for d in dirs:
-                    success = self._update_chmod(os.path.join(root, d), chmod)
-                    if not success:
-                        error = True
-                for f in files:
-                    success = self._update_chmod(os.path.join(root, f), chmod)
-                    if not success:
-                        error = True
-            return not error
-        return False
-
-    def update_owner(self, source: str, user: str, group, recursive: bool = False) -> bool:
-        source_path = self._get_abs_path(source)
-
-        shutil.chown(source_path, user, group)
-        return True
-
-    def get_owner(self, source: str) -> str:
-        source_path = self._get_abs_path(source)
-        path = Path(source_path)
-        owner = path.owner()
-        return owner
+        return self._update_chmod(source_path, chmod)
 
     def list_folder(self, source: str, filter_pattern=None) -> List[FileDescriptor]:
         source_path = self._get_abs_path(source)

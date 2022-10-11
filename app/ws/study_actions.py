@@ -186,25 +186,6 @@ class StudyStatus(Resource):
         study_status = study_status.lower()
         # Update database
         update_study_status(study_id, study_status, is_curator=is_curator)
-        # Move the private fto folder if the new status is Public
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
-        study_folder = study_id.lower() + '-' + obfuscation_code
-        backup_folder = os.path.join('old', study_folder)
-        if study_status == 'public':
-            src = study_folder
-            try:
-                StorageService.get_ftp_private_storage(app).remote.move(src, backup_folder)
-            except Exception as e:
-                logger.error('Could not move private FTP folder ' + src + '. Error: ' + str(e))
-        else:
-            if not ftp_private_storage.remote.exists(study_folder):
-                if ftp_private_storage.remote.exists(backup_folder):
-                    try:
-                        StorageService.get_ftp_private_storage(app).remote.move(backup_folder, study_folder)
-                    except Exception as e:
-                        logger.error('Could not move private FTP folder ' + study_folder + '. Error: ' + str(e))
-                else:
-                    create_ftp_folder(study_id, obfuscation_code, user_token, None, send_email=False)
 
     @staticmethod
     def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):

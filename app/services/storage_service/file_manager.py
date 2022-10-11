@@ -32,14 +32,6 @@ class FileManager(ABC):
         pass
 
     @abstractmethod
-    def move(self, source: str, target: str, force: bool = True, backup_target: bool = False) -> bool:
-        pass
-
-    @abstractmethod
-    def copy(self, source: str, target: str, force: bool = True, backup_target: bool = False) -> bool:
-        pass
-
-    @abstractmethod
     def exists(self, source: str) -> bool:
         pass
 
@@ -52,19 +44,11 @@ class FileManager(ABC):
         pass
 
     @abstractmethod
-    def update_permission(self, source: str, acl: Acl = Acl.AUTHORIZED_READ_WRITE, recursive: bool = False) -> bool:
+    def update_permission(self, source: str, acl: Acl = Acl.AUTHORIZED_READ_WRITE) -> bool:
         pass
 
     @abstractmethod
     def get_permission(self, source: str) -> Acl:
-        pass
-
-    @abstractmethod
-    def update_owner(self, source: str, user: str, group: str, recursive: bool = False) -> bool:
-        pass
-
-    @abstractmethod
-    def get_owner(self, source: str) -> str:
         pass
 
     @abstractmethod
@@ -73,8 +57,4 @@ class FileManager(ABC):
 
     @abstractmethod
     def get_file_descriptor(self, source: str) -> FileDescriptor:
-        pass
-
-    @abstractmethod
-    def hash_sha256(self, source, ignore_list=None):
         pass

@@ -10,6 +10,7 @@ from app.services.storage_service.exceptions import StorageServiceException
 from app.services.storage_service.file_manager import FileManager
 from app.services.storage_service.mounted.local_file_manager import MountedVolumeFileManager
 from app.services.storage_service.storage import Storage
+from app.services.storage_service.unmounted.ftp_client_file_manager import FtpClientFileManager
 
 
 class LocalStorage(Storage):
@@ -19,7 +20,7 @@ class LocalStorage(Storage):
         local_file_manager: FileManager = MountedVolumeFileManager(manager_name, mounted_root_folder=local_folder)
 
         manager_name = name + '_mounted_volume_file_manager'
-        mounted_volume_file_manager: FileManager = MountedVolumeFileManager(manager_name, mounted_root_folder=remote_folder)
+        mounted_volume_file_manager: FileManager = FtpClientFileManager(manager_name)
         remote_file_manager: FileManager = mounted_volume_file_manager
 
         super(LocalStorage, self).__init__(name=name, local_file_manager=local_file_manager,
