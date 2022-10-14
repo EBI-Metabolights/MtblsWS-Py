@@ -1,8 +1,8 @@
+import glob
 import json
 import logging
 import os
 import os.path
-from decimal import Decimal, ROUND_UP
 
 from isatools import isatab
 
@@ -17,7 +17,7 @@ from app.ws.study.validation.commons import validate_study
 
 logger = logging.getLogger(__file__)
 
-MB_FACTOR = Decimal.from_float(1024.0 ** 2)
+MB_FACTOR = 1024.0 ** 2
 
 
 def create_study_model_from_db_study(db_study: Study):
@@ -28,9 +28,9 @@ def create_study_model_from_db_study(db_study: Study):
     )
 
     m_study.studyStatus = StudyStatus(db_study.status).name
-    m_study.studySize = db_study.studysize  # This value is different in DB and www.ebi.ac.uk
+    m_study.studySize = float(db_study.studysize)  # This value is different in DB and www.ebi.ac.uk
     size_in_mb = m_study.studySize / MB_FACTOR
-    m_study.studyHumanReadable = str(size_in_mb.quantize(Decimal('.01'), rounding=ROUND_UP)) + "MB"
+    m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "MB"
     m_study.publicStudy = StudyStatus(db_study.status) == StudyStatus.PUBLIC
 
     if db_study.submissiondate:
@@ -41,9 +41,12 @@ def create_study_model_from_db_study(db_study: Study):
         m_study.updateDate = datetime_to_int(db_study.updatedate)
 
     if db_study.validations:
-        db_study.validations = json.loads(db_study.validations)
-        validation_entries_model = models.ValidationEntriesModel.parse_obj(db_study.validations)
-        m_study.validations = validation_entries_model
+        try:
+            db_study.validations = json.loads(db_study.validations)
+            validation_entries_model = models.ValidationEntriesModel.parse_obj(db_study.validations)
+            m_study.validations = validation_entries_model
+        except Exception as e:
+            logger.warning(f'{e.args}')
 
     m_study.users = [get_user_model(x) for x in db_study.users]
 
@@ -117,11 +120,11 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
         if studies:
             f_study = studies[0]
             create_study_model(m_study, path, f_study)
+            fill_factors(m_study, investigation)
+            fill_descriptors(m_study, investigation)
+            fill_publications(m_study, investigation)
             if title_and_description_only:
                 return
-            fill_descriptors(m_study, investigation)
-            fill_factors(m_study, investigation)
-            fill_publications(m_study, investigation)
             fill_assays(m_study, investigation, path, include_maf_files)
             fill_sample_table(m_study, path)  # required for fill organism, later remove from model
             fill_organism(m_study)
@@ -212,7 +215,7 @@ def get_value_with_column_name(dataframe, column_name):
 
 def get_value_from_dict(series, column_name):
     if column_name in series:
-        return series[column_name]
+        return series[column_name].strip()
     return None
 
 
@@ -244,9 +247,19 @@ def fill_organism(m_study):
 
 
 def fill_sample_table(m_study, path):
-    sample_file_name = "s_" + m_study.studyIdentifier + ".txt"
-    file_path = os.path.join(path, sample_file_name)
-    if os.path.isfile(file_path):
+    sample_files = glob.glob(os.path.join(path, "s_*.txt"))
+    first_priority_path = os.path.join(path, "s_" + m_study.studyIdentifier + ".txt")
+    second_priority_path = os.path.join(path, 's_Sample.txt')
+    selected = sample_files[0] if sample_files else None
+    if sample_files:
+        if first_priority_path in sample_files:
+            selected = first_priority_path
+        elif second_priority_path in sample_files:
+            selected = second_priority_path
+
+    file_path = selected
+
+    if file_path and os.path.isfile(file_path):
         sample = None
         try:
             with open(file_path, encoding="unicode_escape") as f:
