@@ -621,7 +621,50 @@ METASPACE_APP_DESCRIPTION = unused_settings["METASPACE"]["METASPACE_APP_DESCRIPT
 ########################################################################################################################
 #                                    END OF STUDY FILE SETTINGS SECTION
 ########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#
+#                                           CLUSTER JOB SETTINGS SECTION
+#
+#                       This section is ordered by key names in CONFIGS_DIR/cluster_settings.json file
+#
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
 
+cluster_settings = utils.load_json_config_file("cluster_settings.json", configs_dir=CONFIGS_DIR)
+
+########################################################################################################################
+#   CLUSTER
+#
+#   Load from the following file: CONFIGS_DIR/cluster_settings.json with key "CLUSTER"
+########################################################################################################################
+cluster = cluster_settings["CLUSTER"]
+
+LSF_HOST = cluster["LSF_HOST"]
+LSF_HOST_USER = cluster["LSF_HOST_USER"]
+LSF_DATAMOVER_USER = cluster["LSF_DATAMOVER_USER"]
+LSF_HOST_SSH_CMD = cluster["LSF_HOST_SSH_CMD"]
+LSF_BSUB_DEFAULT_Q = cluster["LSF_BSUB_DEFAULT_Q"]
+LSF_DATAMOVER_Q = cluster["LSF_DATAMOVER_Q"]
+LSF_BSUB_STANDARD_Q = cluster["LSF_BSUB_STANDARD_Q"]
+LSF_BSUB_LONG_PROCESS_Q = cluster["LSF_BSUB_LONG_PROCESS_Q"]
+
+########################################################################################################################
+#   JOB
+#
+#   Load from the following file: CONFIGS_DIR/server_settings.json with key "JOB"
+########################################################################################################################
+JOB = cluster_settings["JOB"]
+
+JOB_SUBMIT_COMMAND = JOB["JOB_SUBMIT_COMMAND"]
+JOB_RUNNING_COMMAND = JOB["JOB_RUNNING_COMMAND"]
+JOB_KILL_COMMAND = JOB["JOB_KILL_COMMAND"]
+JOB_TRACK_EMAIL = JOB["JOB_TRACK_EMAIL"]
+JOB_TRACK_LOG_LOCATION = JOB["JOB_TRACK_LOG_LOCATION"]
+
+########################################################################################################################
 
 ########################################################################################################################
 ########################################################################################################################

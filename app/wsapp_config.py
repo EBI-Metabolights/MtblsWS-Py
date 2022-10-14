@@ -32,7 +32,7 @@ from app.ws.chebi.settings import get_chebi_ws_settings
 from app.ws.chebi.wsproxy import ChebiWsProxy
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
 from app.ws.chebi_ws import ChebiLiteEntity, ChebiEntity
-from app.ws.cluster_jobs import LsfUtils, LsfUtilsStatus
+from app.ws.cluster_jobs import LsfUtils
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import cronjob
 from app.ws.curation_log import curation_log
@@ -242,7 +242,6 @@ def initialize_app(flask_app):
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
-    api.add_resource(LsfUtilsStatus, res_path + "/ebi-internal/cluster-jobs-status")
     api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats")
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 

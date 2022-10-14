@@ -5,9 +5,6 @@ import random
 import shutil
 from distutils.dir_util import copy_tree
 from typing import List
-
-from dirhash import dirhash
-
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.exceptions import StorageServiceException
 from app.services.storage_service.file_descriptor import FileDescriptor, FileType
@@ -168,18 +165,6 @@ class MountedVolumeFileManager(FileManager):
         fd = FileDescriptor(base_name, parent_folder, file_type,
                             created_time=created_time, modified_time=modified_time, size_in_bytes=size)
         return fd
-
-    def hash_sha256(self, source, ignore_list=None):
-        source_path = self._get_abs_path(source)
-        if os.path.isfile(source_path):
-            return self._calculate_sha256(source_path)
-        elif os.path.isdir(source_path):
-            if ignore_list:
-                return dirhash(source_path, 'sha256', ignore=ignore_list)
-            else:
-                return dirhash(source_path, 'sha256')
-        else:
-            return None
 
     @staticmethod
     def _calculate_sha256(file):
