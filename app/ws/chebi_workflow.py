@@ -42,7 +42,7 @@ from zeep import Client
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage import Storage
 from app.services.storage_service.storage_service import StorageService
-from app.ws.cluster_jobs import lsf_job
+from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import get_user_email
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -2308,7 +2308,7 @@ class ChEBIPipeLine(Resource):
                 update_study_maf).lower() + "' "
             cmd = cmd + param + " -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
             cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + \
-                  "/chebi-pipeline?source=cluster ' "
+                  "/chebi-pipeline?source=cluster' "
             print_log("cluster job -  %s", cmd)
 
         maf_len = 0
@@ -2334,7 +2334,7 @@ class ChEBIPipeLine(Resource):
                             cmd = cmd.replace(old_file_name, file_name)
                         old_file_name = file_name
                         print_log("Starting cluster job for ChEBI pipeline: " + cmd)
-                        status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=cmd, send_email=True, user_email = user_email)
+                        status, message, job_out, job_err = submit_job(True, account=user_email, job_cmd=cmd, job_params=None, submitter=user_email, log=False)
 
                         if status:
                             return {"success": message, "message": job_out, "errors": job_err}
@@ -2353,7 +2353,7 @@ class ChEBIPipeLine(Resource):
             if run_on_cluster:
                 # create param file
                 print_log("Starting cluster job for ChEBI pipeline: " + cmd)
-                status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=cmd, send_email=True, user_email = user_email)
+                status, message, job_out, job_err, log_file = submit_job(True, account=user_email, job_cmd=cmd, job_params=None, submitter=user_email, log=False)
                 print_log("job submitted")
                 if status:
                     return {"success": message, "message": job_out, "errors": job_err}

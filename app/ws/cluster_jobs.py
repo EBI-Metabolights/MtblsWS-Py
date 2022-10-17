@@ -29,6 +29,7 @@ from app.ws.study import commons
 logger = logging.getLogger('wslog')
 
 
+# Deprecated use submit job instead
 def lsf_job(job_cmd, job_param=None, send_email=True, user_email=""):
     no_jobs = "rm", "mv", "cat", "more", "ln", "ls", "mount", "kill", "who", "hostname", "ifconfig"
     status = True
@@ -76,6 +77,7 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
     lsf_host_user = app.config.get('LSF_HOST_USER')
     ssh_cmd = app.config.get('LSF_HOST_SSH_CMD')
     log_file = None
+    job_cmd1 = job_cmd
 
     if email:
         if account is None:
@@ -96,7 +98,7 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
     ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
 
     if job_params:
-        job_cmd1 = job_cmd + " " + job_params
+        job_cmd1 = job_cmd1 + " " + job_params
 
     if submitter is None:
         submitter = "None"
