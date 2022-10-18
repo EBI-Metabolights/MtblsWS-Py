@@ -17,6 +17,22 @@ class IndexedUserModel(BaseModel):
         orm_mode = True
 
 
+class StudyTaskModel(BaseModel):
+    id: int = Field(0)
+    study_acc: str = Field(None)
+    task_name: str = Field(None)
+    last_request_time: datetime.datetime = Field(None)
+    last_request_executed: datetime.datetime = Field(None)
+    last_execution_time: datetime.datetime = Field(None)
+    last_execution_status: str = Field(None)
+    last_execution_message: str = Field(None)
+
+    class Config:
+        orm_mode = True
+        json_encoders = {
+            datetime.datetime: lambda v: v.timestamp(),
+        }
+
 class UserModel(BaseModel):
     address: str = Field(None, alias="address")  # excluded from es
     affiliation: str = Field(None, alias="affiliation")  # excluded from es
@@ -84,8 +100,8 @@ class ValidationEntryModel(BaseModel):
 
 class ValidationEntriesModel(BaseModel):
     entries: List[ValidationEntryModel] = []
-    status: str = None
-    passedMinimumRequirement: bool = None
+    status: str = 'failed'
+    passedMinimumRequirement: bool = False
     overriden: bool = False
 
     class Config:
@@ -258,3 +274,7 @@ class StudyModel(LiteStudyModel):
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
+
+        json_encoders = {
+            datetime.datetime: lambda v: v.timestamp()
+        }

@@ -53,7 +53,8 @@ from app.ws.jira_update import Jira
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtblsStudy import MtblsStudies, MtblsPrivateStudies, MtblsStudiesWithMethods, MyMtblsStudiesDetailed, \
     MyMtblsStudies, IsaTabInvestigationFile, IsaTabSampleFile, IsaTabAssayFile, CreateAccession, CloneAccession, \
-    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies, MtblsStudyValidationStatus
+    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies, MtblsStudyValidationStatus, \
+    UnindexedStudy, PublicStudyDetail
 from app.ws.mtblsWSclient import WsClient
 from app.ws.mtbls_maf import MtblsMAFSearch, CombineMetaboliteAnnotationFiles, MetaboliteAnnotationFile
 from app.ws.mzML2ISA import ValidateMzML, Convert2ISAtab
@@ -69,9 +70,10 @@ from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
 from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
 from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder, \
-    FileList, StudyFilesReuse, DeleteAsperaFiles
+    FileList, StudyFilesReuse, DeleteAsperaFiles, StudyRawAndDerivedDataFile, StudyRawAndDerivedDataFolder
 from app.ws.table_editor import GetTsvFile, AddRows, ColumnsRows, ComplexColumns, SimpleColumns
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
+from app.ws.tasks.create_json_files import PublicStudyJsonExporter
 from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation, ValidationComment
@@ -135,9 +137,14 @@ def initialize_app(flask_app):
     api.add_resource(MtblsStudiesWithMethods, res_path + "/studies/technology")
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
     api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
+    api.add_resource(PublicStudyJsonExporter, res_path + "/studies/public/export-as-json")
+    api.add_resource(PublicStudyDetail, res_path + "/studies/public/study/<string:study_id>")
+    api.add_resource(StudyRawAndDerivedDataFile, res_path + "/studies/<string:study_id>/files/raw-and-derived-data")
+    api.add_resource(StudyRawAndDerivedDataFolder, res_path + "/studies/<string:study_id>/folders/raw-and-derived-data")
     api.add_resource(StudyFiles, res_path + "/studies/<string:study_id>/files")
     api.add_resource(DeleteAsperaFiles, res_path + "/studies/<string:study_id>/aspera-files")
     api.add_resource(StudyFilesReuse, res_path + "/studies/<string:study_id>/files-fetch")
+
     api.add_resource(FileList, res_path + "/studies/<string:study_id>/fileslist")
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
@@ -224,6 +231,7 @@ def initialize_app(flask_app):
     api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
     api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
     api.add_resource(ReindexAllPublicStudies, res_path + "/ebi-internal/studies/public/reindex-all")
+    api.add_resource(UnindexedStudy, res_path + "/ebi-internal/unindexed-studies")
     # api.add_resource(FileEncodingChecker, res_path + "/ebi-internal/studies/encoding-check")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
 

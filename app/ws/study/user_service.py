@@ -1,6 +1,7 @@
 from typing import Optional
 
 from flask import current_app as app
+from sqlalchemy import func
 
 from app.utils import MetabolightsException, MetabolightsAuthorizationException
 from app.ws.db.dbmanager import DBManager
@@ -61,7 +62,7 @@ class UserService(object):
         if not user_name:
             raise MetabolightsException(message=f"User token is not valid")
 
-        filter_clause = lambda query: query.filter(User.username == user_name)
+        filter_clause = lambda query: query.filter(func.lower(User.username) == user_name.lower())
 
         return self.validate_user_by_user_field(filter_clause, allowed_role_list, allowed_status_list)
 
@@ -124,6 +125,8 @@ class UserService(object):
 
         if db_user:
             m_user = SimplifiedUserModel.from_orm(db_user)
+            m_user.email = m_user.email.lower()
+            m_user.userName = m_user.userName.lower()
             m_user.fullName = m_user.firstName + " " + m_user.lastName
             m_user.role = UserRole(m_user.role).name
             m_user.status = UserStatus(m_user.status).name

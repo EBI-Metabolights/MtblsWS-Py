@@ -126,10 +126,14 @@ class PublicStudyTweet(Resource):
             public_study_messages = []
             public_study_ids = []
             for study in new_public_studies:
-                m_study = create_study_model_from_db_study(study)
-                update_study_model_from_directory(m_study, study_folders, title_and_description_only=True)
+                try:
+                    m_study = create_study_model_from_db_study(study)
+                    update_study_model_from_directory(m_study, study_folders, title_and_description_only=True)
+                except Exception as e:
+                    logger.error(f"Error while reading title of study for {study.acc}")
+                    raise e
                 if not m_study.title:
-                    logger.warning(f"Title is not valid for {study.acc}")
+                    logger.error(f"Title is not read or valid for {study.acc}")
                     continue
 
                 short_title = m_study.title if len(m_study.title) <= 60 else m_study.title[:60]

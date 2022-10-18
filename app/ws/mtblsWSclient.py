@@ -58,7 +58,7 @@ class WsClient:
         try:
             result = self.search_manager.search_by_type(search_type, search_value)
         except Exception as e:
-            abort(500, "MAF search failed")
+            abort(500, f"MAF search failed {e.args}")
 
         if not result or result.err:
             abort(400, result.err)
@@ -125,7 +125,7 @@ class WsClient:
 
         UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
         try:
-            indexed_data = self.elasticsearch_service.reindex_study(study_id, user_token, include_validation_results)
-            return True, f" {indexed_data.studyIdentifier} is successfully indexed"
+            self.elasticsearch_service.reindex_study(study_id, user_token, include_validation_results)
+            return True, f" {study_id} is successfully indexed"
         except MetabolightsException as e:
             abort(501, e.message)

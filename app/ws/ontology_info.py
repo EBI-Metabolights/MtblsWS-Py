@@ -60,7 +60,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
         onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
     except:
         logger.info("Fail to load ontology from {path}".format(path=app.config.get('MTBLS_ONTOLOGY_FILE')))
-        return None
+        return []
 
     result = []
     cls = []

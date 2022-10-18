@@ -260,6 +260,8 @@ class BioStudiesFromMTBLS(Resource):
             user_token = request.headers["user_token"]
 
         study_id = biostudies_acc_to_mtbls(biostudies_acc)
+        if not study_id:
+            abort(403, error=f"No study id for {biostudies_acc}")
         study_id = study_id[0]
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
