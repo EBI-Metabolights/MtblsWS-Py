@@ -28,7 +28,7 @@ import psycopg2.extras
 from flask import current_app as app, abort
 from psycopg2 import pool
 
-from app.ws.utils import get_single_file_information, check_user_token, val_email
+from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
 
 logger = logging.getLogger('wslog')
 
@@ -240,7 +240,7 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
     input_values = {"address_value": address,
             "affiliation_value": affiliation,
             "affiliationurl_value": affiliation_url,
-            "apitoken_value": api_token,
+            "apitoken_value": str(api_token),
             "email_value": email,
             "firstname_value": first_name,
             "lastname_value": last_name,
@@ -294,7 +294,7 @@ def get_user(username):
         release_connection(postgresql_pool, conn)
 
     if data:
-        return {'user': data[0]}
+        return {'user': fixUserDictKeys(data[0])}
     else:
         # no user found by that username, abort with 404
         abort(404, 'User with username {0} not found.'.format(username))
