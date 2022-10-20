@@ -28,7 +28,7 @@ import psycopg2.extras
 from flask import current_app as app, abort
 from psycopg2 import pool
 
-from app.ws.utils import get_single_file_information, check_user_token, val_email
+from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
 
 logger = logging.getLogger('wslog')
 
@@ -220,41 +220,34 @@ def update_user(first_name, last_name, email, affiliation, affiliation_url, addr
                 password_encoded, existing_user_name, is_curator, metaspace_api_key):
     val_email(existing_user_name)
     val_email(email)
-    existing_user_name = existing_user_name.lower()
-    email = email.lower()
 
-    update_user_query = """
-        update users set address = %(address_value)s, affiliation = %(affiliation_value)s,
-        affiliationurl = %(affiliationurl_value)s, email = %(email_value)s,
-        firstname = %(firstname_value)s, lastname = %(lastname_value)s, username = %(email_value)s,
-        orcid = %(orcid_value)s, metaspace_api_key = %(metaspace_api_key_value)s
-        where username = %(existing_user_name_value)s
-    """
-
+    update_user_query = \
+        "update users set address = 'address_value', affiliation = 'affiliation_value', " \
+        "affiliationurl = 'affiliationurl_value', email = 'email_value', " \
+        "firstname = 'firstname_value', lastname = 'lastname_value', username = 'email_value', " \
+        "orcid = 'orcid_value', metaspace_api_key = 'metaspace_api_key_value' " \
+        "where username = 'existing_user_name_value'"
 
     if not is_curator:
-        update_user_query = update_user_query + " and apitoken = %s(apitoken_value)s"
+        update_user_query = update_user_query + " and apitoken = 'apitoken_value'"
 
     update_user_query = update_user_query + ";"
 
-    input_values = {"address_value": address,
-            "affiliation_value": affiliation,
-            "affiliationurl_value": affiliation_url,
-            "apitoken_value": api_token,
-            "email_value": email,
-            "firstname_value": first_name,
-            "lastname_value": last_name,
-            "password_value": password_encoded,
-            "orcid_value": orcid,
-            "username_value": email,
-            "existing_user_name_value": existing_user_name,
-            "metaspace_api_key_value": metaspace_api_key}
+    subs = {"address_value": address, "affiliation_value": affiliation,
+            "affiliationurl_value": affiliation_url, "apitoken_value": api_token,
+            "email_value": email, "firstname_value": first_name, "lastname_value": last_name,
+            "password_value": password_encoded, "orcid_value": orcid, "username_value": email,
+            "existing_user_name_value": existing_user_name, "metaspace_api_key_value": metaspace_api_key}
+
+    for key, value in subs.items():
+        val_query_params(str(value))
+        update_user_query = update_user_query.replace(str(key), str(value))
 
     query = update_user_query
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, input_values)
+        cursor.execute(query)
         number_of_users = cursor.rowcount
         conn.commit()
         release_connection(postgresql_pool, conn)
@@ -294,7 +287,7 @@ def get_user(username):
         release_connection(postgresql_pool, conn)
 
     if data:
-        return {'user': data[0]}
+        return {'user': fixUserDictKeys(data[0])}
     else:
         # no user found by that username, abort with 404
         abort(404, 'User with username {0} not found.'.format(username))

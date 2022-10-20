@@ -1509,3 +1509,13 @@ def getFileList(studyID):
     except Exception as e:
         print(e)
         logger.info(e)
+
+
+def fixUserDictKeys(user_dict):
+    # tried to do this iteratively / in a comprehension, but it was taking too long
+    user_dict['firstName'] = user_dict.pop('firstname')
+    user_dict['lastName'] = user_dict.pop('lastname')
+    user_dict['email'] = user_dict.pop('lower')
+    user_dict['affiliation_url'] = user_dict.pop('affiliationurl')
+
+    return user_dict
