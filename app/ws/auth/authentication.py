@@ -107,7 +107,10 @@ class AuthLoginWithToken(Resource):
 
         username = content["user"]["userName"]
         api_token = content["token"]
-        UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(api_token)
+        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(api_token)
+        if user.username != username:
+            return make_response(jsonify({"content": "invalid", "message": "Authentication failed. Username or api token invalid", "err": ''}),
+                                 403)
         try:
             token = AuthenticationManager.get_instance(app).create_oauth2_token_by_api_token(api_token)
         except MetabolightsException as e:
