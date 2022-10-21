@@ -68,6 +68,12 @@ class AuthenticationManager(object):
 
     def create_oauth2_token(self, username, password, audience=None, db_session=None):
         user = self.authenticate_user(username, password, db_session=db_session)
+        return self.create_oauth2_token_by_user(user, audience, db_session)
+    def create_oauth2_token_by_api_token(self, token, audience=None, db_session=None):
+        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(token)
+        return self.create_oauth2_token_by_user(user, audience, db_session)
+
+    def create_oauth2_token_by_user(self, user, audience=None, db_session=None):
         if not user:
             abort(http_status_code=400, detail="Incorrect username or password")
         if not audience:
@@ -75,7 +81,7 @@ class AuthenticationManager(object):
         access_token_expires = timedelta(minutes=self.settings.access_token_expires_delta)
         issuer_name = self.settings.access_token_issuer_name
         token_base_data = {"sub": user.username, "scopes": [UserRole(user.role).name], "role": UserRole(user.role).name,
-                           "iss": issuer_name, "aud": audience, "Name": username}
+                           "iss": issuer_name, "aud": audience, "Name": user.username}
 
         access_token = self._create_jwt_token(data=token_base_data, expires_delta=access_token_expires)
         return access_token
