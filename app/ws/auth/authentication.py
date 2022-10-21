@@ -74,6 +74,59 @@ response_messages = [
     }]
 
 
+class AuthLoginWithToken(Resource):
+    @swagger.operation(
+        summary="Authenticate user with apitoken & user and returns authentication token for valid parameters",
+        notes="json ",
+        parameters=[
+            {
+                "name": "authdata",
+                "description": 'Registered user token and username {\"token\":\"api token here\", \"user\":{\"userName\":\"email address here\"}}',
+                "paramType": "body",
+                "type": "string",
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=response_messages
+    )
+    @metabolights_exception_handler
+    def post(self):
+        # User authentication
+        log_request(request)
+        try:
+            content = request.json
+        except:
+            content = parse_response_body(request)
+
+        if not content or "token" not in content or "user" not in content or ("user" in content and "userName" not in content["user"]):
+            return make_response(jsonify({"content": False,
+                                          "message": "Invalid request. token and user inputs are required",
+                                          "err": None}), 400)
+
+        username = content["user"]["userName"]
+        api_token = content["token"]
+        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(api_token)
+        if user.username != username:
+            return make_response(jsonify({"content": "invalid", "message": "Authentication failed. Username or api token invalid", "err": ''}),
+                                 403)
+        try:
+            token = AuthenticationManager.get_instance(app).create_oauth2_token_by_api_token(api_token)
+        except MetabolightsException as e:
+            return make_response(jsonify({"content": "invalid", "message": e.message, "err": e.exception}), e.http_code)
+        except Exception as e:
+            return make_response(jsonify({"content": "invalid", "message": "Authentication failed", "err": str(e)}), 403)
+
+        if not token:
+            return make_response(jsonify({"content": "invalid", "message": "Authentication failed", "err": None}), 403)
+
+        resp = make_response(jsonify({"content": True, "message": "Authentication successful", "err": None}), 200)
+        resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
+        resp.headers["jwt"] = token
+        resp.headers["user"] = username
+
+        return resp
 class AuthLogin(Resource):
     @swagger.operation(
         summary="Authenticate user with username and password and returns authentication token for valid parameters",
