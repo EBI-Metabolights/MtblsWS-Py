@@ -199,6 +199,7 @@ def kill_job(queue=None, job_id=None):
 
     return status, message, str(msg_out), str(msg_err)
 
+
 class LsfUtils(Resource):
     @swagger.operation(
         summary="Kill a EBI LSF cluster job (curator only)",
