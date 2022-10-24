@@ -1013,9 +1013,9 @@ def reindex_row_id(pubchem_df, pubchem_df_headers):
 def create_annotation_folder_on_remote_storage(storage: Storage, folder_loc):
     print_log("Checking for ChEBI folder " + folder_loc)
     try:
-        if not storage.remote.exists(folder_loc):
+        if not storage.remote.does_folder_exist(folder_loc):
             print_log(f"Creating ChEBI folder {folder_loc} on storage {storage.get_name()}")
-            storage.remote.create_folder(folder_loc, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        storage.remote.create_folder(folder_loc, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
     except Exception as e:
         print_log(str(e))
 
@@ -2046,7 +2046,7 @@ class SplitMaf(Resource):
 
         if not annotation_file_name:
             # Loop through all m_*_v2_maf.tsv files
-            study_files, upload_files, upload_diff, upload_location, latest_update_time = \
+            study_files, _upload_files, _upload_diff, _upload_location, latest_update_time = \
                 get_all_files_from_filesystem(
                     study_id, obfuscation_code, study_location, directory=None, include_raw_data=False,
                     assay_file_list=get_assay_file_list(study_location))  # ToDo, Overkill just loop through the folder

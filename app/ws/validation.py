@@ -26,7 +26,6 @@ from flask import request
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.ws.cluster_jobs import lsf_job
 from app.ws.db_connection import override_validations, query_comments, update_comments
 from app.ws.study import commons
 from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser, is_newer_files, \

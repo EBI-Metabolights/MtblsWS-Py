@@ -34,10 +34,8 @@ from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.folder_utils import get_basic_files, get_all_files_from_filesystem, get_all_files, write_audit_files, \
-    get_all_files_from_remote_storage
-from app.ws.utils import get_assay_file_list, remove_file, delete_asper_files, log_request, copy_files_and_folders, \
-    remove_file_from_storage, delete_asper_files_from_remote_storage, copy_files_and_folders_from_storage
+from app.ws.study.folder_utils import get_basic_files, get_all_files_from_filesystem, get_all_files, write_audit_files
+from app.ws.utils import get_assay_file_list, remove_file, delete_asper_files, log_request, copy_files_and_folders
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -46,7 +44,7 @@ iac = IsaApiClient()
 
 class StudyFiles(Resource):
     @swagger.operation(
-        summary="Get a list, with timestamps, of all files in the study and upload folder(s)",
+        summary="Get a list, with timestamps, of all files in the study folder",
         parameters=[
             {
                 "name": "study_id",
@@ -138,9 +136,9 @@ class StudyFiles(Resource):
                                           static_validation_file=False)
 
         return jsonify({'study': study_files,
-                        'latest': upload_diff,
-                        'private': upload_files,
-                        'uploadPath': upload_location[1],
+                        'latest': [],
+                        'private': [],
+                        'uploadPath': '',
                         'obfuscationCode': obfuscation_code})
 
     # 'uploadPath': upload_location[0], for local testing
@@ -272,8 +270,6 @@ without setting the "force" parameter to True''',
 
         status = False
         message = None
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
-        ftp_private_study_folder = study_id.lower() + "-" + obfuscation_code
 
         for file in files:
             try:
@@ -284,14 +280,8 @@ without setting the "force" parameter to True''',
 
                 if file_location == "study":
                     status, message = remove_file(study_location, f_name, always_remove)
-                elif file_location == "upload":
-                    status, message = remove_file_from_storage(ftp_private_storage, ftp_private_study_folder,
-                                                               f_name, always_remove)
-                elif file_location == "both":
                     s_status, s_message = remove_file(study_location, f_name, always_remove)
-                    u_status, u_message = remove_file_from_storage(ftp_private_storage, ftp_private_study_folder,
-                                                                   f_name, always_remove)
-                    if s_status or u_status:
+                    if s_status:
                         return {'Success': "File " + f_name + " deleted"}
                     else:
                         return {'Error': "Can not find and/or delete file " + f_name + " in the study or upload folder"}
@@ -915,7 +905,7 @@ class StudyRawAndDerivedDataFolder(Resource):
 
 class StudyFilesReuse(Resource):
     @swagger.operation(
-        summary="Get a list, with timestamps, of all files in the study and upload folder(s) from file-list result already created",
+        summary="Get a list, with timestamps, of all files in the study folder from file-list result already created",
         parameters=[
             {
                 "name": "study_id",
@@ -1046,7 +1036,7 @@ class CopyFilesFolders(Resource):
             }
         ]
     }
-</code></pre>
+    </code></pre>
               """,
         parameters=[
             {
@@ -1145,8 +1135,9 @@ class CopyFilesFolders(Resource):
         if request.data:
             try:
                 data_dict = json.loads(request.data.decode('utf-8'))
-                files = data_dict['files']
-                single_files_only = True
+                files = data_dict['files'] if 'files' in data_dict else {}
+                if files:
+                    single_files_only = True
             except KeyError:
                 logger.info("No 'files' parameter was provided.")
 
@@ -1165,7 +1156,7 @@ class CopyFilesFolders(Resource):
                     study_location)
         ftp_private_storage = StorageService.get_ftp_private_storage(app)
         audit_status, dest_path = write_audit_files(study_location)
-        if single_files_only and len(files) >= 1:
+        if single_files_only:
             for file in files:
                 try:
                     from_file = file["from"]
@@ -1177,7 +1168,7 @@ class CopyFilesFolders(Resource):
                         ftp_source_file = os.path.join(upload_location, from_file)
                         destination_file = os.path.join(study_location, to_file)
                         # download directly to study folder
-                        ftp_private_storage.download_file(ftp_source_file, destination_file)
+                        ftp_private_storage.sync_from_storage(ftp_source_file, destination_file)
                         continue
 
                     # continue if manual upload folder defined
@@ -1227,10 +1218,8 @@ class CopyFilesFolders(Resource):
                                                      include_raw_data=include_raw_data,
                                                      include_investigation_file=include_inv)
             else:
-                status, message = copy_files_and_folders_from_storage(ftp_private_storage,
-                                                                      upload_location, study_location,
-                                                     include_raw_data=include_raw_data,
-                                                     include_investigation_file=include_inv)
+                status, message = ftp_private_storage.sync_from_storage(upload_location, study_location)
+                ftp_private_storage.sync_from_storage(upload_location, study_location)
         message = ''
         if status:
             reindex_status, message = wsc.reindex_study(study_id, user_token)
@@ -1329,13 +1318,13 @@ class SyncFolder(Resource):
         ftp_private_storage = StorageService.get_ftp_private_storage(app)
         logger.info("syncing files from " + source + " to " + destination)
         try:
-            if not ftp_private_storage.remote.exists(destination):
+            if not ftp_private_storage.remote.does_folder_exist(destination):
                 ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
 
             ftp_private_storage.sync_from_local(source, destination, logger=logger, purge=False)
 
-            logger.info('Copied file %s to %s', source, destination)
-            return {'Success': 'Copied files from study folder to ftp folder'}
+            logger.info('Copying file %s to %s', source, destination)
+            return {'Success': 'Copying files from study folder to ftp folder is started'}
         except FileExistsError as e:
             logger.error(f'Folder already exists! Can not copy {source} to {destination} {str(e)}')
         except OSError as e:
@@ -1347,7 +1336,7 @@ class SyncFolder(Resource):
 
 class SampleStudyFiles(Resource):
     @swagger.operation(
-        summary="Get a list of all sample names, mapped to files in the study and upload folder(s)",
+        summary="Get a list of all sample names, mapped to files in the study folder",
         notes="A perfect match gives reliability score of '1.0'. Use the highest score possible for matching",
         parameters=[
             {
@@ -1402,14 +1391,7 @@ class SampleStudyFiles(Resource):
         # Get all unique file names
         all_files_in_study_location = get_all_files(study_location, include_raw_data=True,
                                                     assay_file_list=get_assay_file_list(study_location))
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
-        all_files_in_upload_location = get_all_files_from_remote_storage(ftp_private_storage, upload_location,
-                                                                         upload_location, include_raw_data=True)
         filtered_files_in_study_location = get_files(all_files_in_study_location[0])
-        filtered_files_in_upload_location = []
-        if all_files_in_upload_location:
-            filtered_files_in_upload_location = get_files(all_files_in_upload_location[0])
-        filtered_files_in_study_location.extend(filtered_files_in_upload_location)
         all_files = get_files(filtered_files_in_study_location)
 
         isa_study = None
@@ -1807,7 +1789,7 @@ class FileList(Resource):
 
 class DeleteAsperaFiles(Resource):
     @swagger.operation(
-        summary="Delete aspera incomplete transfer files such as *.aspx , *.aspera-ckpt, *.partial from study location and upload directory.",
+        summary="Delete aspera incomplete transfer files such as *.aspx , *.aspera-ckpt, *.partial from study directory.",
         parameters=[
             {
                 "name": "study_id",
@@ -1867,12 +1849,7 @@ class DeleteAsperaFiles(Resource):
             abort(401)
 
         logger.info('Deleting aspera files from study ' + study_id)
-        upload_folder = study_id.lower() + '-' + obfuscation_code
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
-        logger.info("Deleting  files from ftp dirs " + upload_folder + " & " + study_location)
         try:
-            if ftp_private_storage.remote.exists(upload_folder):
-                delete_asper_files_from_remote_storage(ftp_private_storage, upload_folder)
             delete_asper_files(study_location)
             logger.info('All aspera files deleted successfully !')
             return {'Success': 'Deleted files successfully !'}

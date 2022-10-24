@@ -130,7 +130,7 @@ class TestWebServiceClient(object):
                 if study_id:
                     user_email = get_email(user_token)
                     study_submitters(study_id, user_email, "delete")
-                    sql = "delete from study where acc = %(acc)s;"
+                    sql = "delete from STUDIES where acc = %(acc)s;"
                     params = {"acc": study_id}
                     execute_query_with_parameter(sql, params)
 

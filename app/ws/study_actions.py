@@ -19,7 +19,6 @@
 import datetime
 import json
 import logging
-import os
 
 from flask import current_app as app
 from flask import request, abort
@@ -32,7 +31,6 @@ from app.utils import metabolights_exception_handler, MetabolightsException
 from app.ws.db_connection import update_study_status, update_study_status_change_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.commons import create_ftp_folder
 from app.ws.validation import validate_study
 
 logger = logging.getLogger('wslog')
@@ -171,12 +169,12 @@ class StudyStatus(Resource):
         status, message = wsc.reindex_study(study_id, user_token)
         # Explictly changing the FTP folder permission for In Curation and Submitted state
         if db_study_status.lower() == 'submitted' and study_status.lower() == 'In Curation'.lower():
-            if ftp_private_storage.remote.exists(ftp_private_study_folder):
-                ftp_private_storage.remote.update_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ)
+            if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+                ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ)
 
         if db_study_status.lower() == 'In Curation' and study_status.lower() == 'submitted':
-            if ftp_private_storage.remote.exists(ftp_private_study_folder):
-                ftp_private_storage.remote.update_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE)
+            if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+                ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE)
 
         return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
                 "release-date": release_date}
@@ -261,13 +259,13 @@ class ToggleAccess(Resource):
         ftp_private_storage = StorageService.get_ftp_private_storage(app)
         logger.info("changing ftp folder permission")
         try:
-            if ftp_private_storage.remote.exists(ftp_study_folder):
-                permission = ftp_private_storage.remote.get_permission(ftp_study_folder)
+            if ftp_private_storage.remote.does_folder_exist(ftp_study_folder):
+                permission = ftp_private_storage.remote.get_folder_permission(ftp_study_folder)
                 if permission == Acl.AUTHORIZED_READ_WRITE:
-                    ftp_private_storage.remote.update_permission(ftp_study_folder, Acl.AUTHORIZED_READ)
+                    ftp_private_storage.remote.update_folder_permission(ftp_study_folder, Acl.AUTHORIZED_READ)
                     access = "Read"
                 elif permission == Acl.AUTHORIZED_READ or permission == Acl.READ_ONLY:
-                    ftp_private_storage.remote.update_permission(ftp_study_folder, Acl.AUTHORIZED_READ_WRITE)
+                    ftp_private_storage.remote.update_folder_permission(ftp_study_folder, Acl.AUTHORIZED_READ_WRITE)
                     access = "Write"
                 else:
                     access = "Unknown"
@@ -338,8 +336,8 @@ class ToggleAccessGet(Resource):
         logger.info("Getting ftp folder permission")
         access = ""
         try:
-            if ftp_private_storage.remote.exists(ftp_private_study_folder):
-                permission = ftp_private_storage.remote.get_permission(ftp_private_study_folder)
+            if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+                permission = ftp_private_storage.remote.get_folder_permission(ftp_private_study_folder)
                 if permission == Acl.AUTHORIZED_READ_WRITE:
                     access = "Write"
                 else:

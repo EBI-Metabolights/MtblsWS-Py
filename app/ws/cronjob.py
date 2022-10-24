@@ -329,55 +329,57 @@ def get_empty_studies():
 
 
 def file_permission(force: bool = False):
-    submit = []
-    curation = []
-    review = []
-    public = []
-    ftp_private_storage = StorageService.get_ftp_private_storage(app)
-    files = ftp_private_storage.remote.list_folder('/')
-    study_ids = [x.name.split('-')[0].upper() for x in files if x.name.upper().startswith('MTBLS')]
-    token = app.config.get('METABOLIGHTS_TOKEN')
-    UserService.get_instance(app).validate_user_has_curator_role(token)
-    study_obfuscation_code_map = {}
-    study_status_map = {}
-
-    with DBManager.get_instance(app).session_maker() as db_session:
-        result = db_session.query(Study.acc, Study.obfuscationcode, Study.status).all()
-        for item in result:
-            study_obfuscation_code_map[item.acc] = item.obfuscationcode
-            study_status_map[item.acc] = StudyStatus(item.status)
-
-    for study_id in study_ids:
-        try:
-            if study_id not in study_obfuscation_code_map:
-                logger.warning(f'Study {study_id} folder exist but is not defined in database')
-                continue
-            obfuscation_code = study_obfuscation_code_map[study_id]
-            ftp_path = study_id.lower() + '-' + obfuscation_code
-            if not ftp_private_storage.remote.exists(ftp_path):
-                create_ftp_folder(study_id, obfuscation_code, token, None, send_email=False)
-            db_study_status = study_status_map[study_id]
-            permission = ftp_private_storage.remote.get_permission(ftp_path)
-
-            if db_study_status == StudyStatus.INCURATION and (permission != Acl.AUTHORIZED_READ or force):
-                ftp_private_storage.remote.update_permission(ftp_path, Acl.AUTHORIZED_READ)
-                curation.append(study_id)
-            elif db_study_status == StudyStatus.SUBMITTED and (permission != Acl.AUTHORIZED_READ_WRITE or force):
-                ftp_private_storage.remote.update_permission(ftp_path, Acl.AUTHORIZED_READ_WRITE)
-                submit.append(study_id)
-            elif db_study_status == StudyStatus.INREVIEW and (permission != Acl.READ_ONLY or force):
-                ftp_private_storage.remote.update_permission(ftp_path, Acl.READ_ONLY)
-                review.append(study_id)
-            elif db_study_status == StudyStatus.PUBLIC and (permission != Acl.READ_ONLY or force):
-                ftp_private_storage.remote.update_permission(ftp_path, Acl.READ_ONLY)
-                public.append(study_id)
-
-        except Exception as e:
-            logger.info(e)
-            print(e)
-            continue
-
-    return submit, curation, review, public
+    raise NotImplementedError('file_permission is not implemented')
+    # submit = []
+    # curation = []
+    # review = []
+    # public = []
+    # ftp_private_storage = StorageService.get_ftp_private_storage(app)
+    # files = ftp_private_storage.remote.list_folder('/')
+    # files = []
+    # study_ids = [x.name.split('-')[0].upper() for x in files if x.name.upper().startswith('MTBLS')]
+    # token = app.config.get('METABOLIGHTS_TOKEN')
+    # UserService.get_instance(app).validate_user_has_curator_role(token)
+    # study_obfuscation_code_map = {}
+    # study_status_map = {}
+    #
+    # with DBManager.get_instance(app).session_maker() as db_session:
+    #     result = db_session.query(Study.acc, Study.obfuscationcode, Study.status).all()
+    #     for item in result:
+    #         study_obfuscation_code_map[item.acc] = item.obfuscationcode
+    #         study_status_map[item.acc] = StudyStatus(item.status)
+    #
+    # for study_id in study_ids:
+    #     try:
+    #         if study_id not in study_obfuscation_code_map:
+    #             logger.warning(f'Study {study_id} folder exist but is not defined in database')
+    #             continue
+    #         obfuscation_code = study_obfuscation_code_map[study_id]
+    #         ftp_path = study_id.lower() + '-' + obfuscation_code
+    #         if not ftp_private_storage.remote.does_folder_exist(ftp_path):
+    #             create_ftp_folder(study_id, obfuscation_code, token, None, send_email=False)
+    #         db_study_status = study_status_map[study_id]
+    #         permission = ftp_private_storage.remote.get_folder_permission(ftp_path)
+    #
+    #         if db_study_status == StudyStatus.INCURATION and (permission != Acl.AUTHORIZED_READ or force):
+    #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.AUTHORIZED_READ)
+    #             curation.append(study_id)
+    #         elif db_study_status == StudyStatus.SUBMITTED and (permission != Acl.AUTHORIZED_READ_WRITE or force):
+    #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.AUTHORIZED_READ_WRITE)
+    #             submit.append(study_id)
+    #         elif db_study_status == StudyStatus.INREVIEW and (permission != Acl.READ_ONLY or force):
+    #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.READ_ONLY)
+    #             review.append(study_id)
+    #         elif db_study_status == StudyStatus.PUBLIC and (permission != Acl.READ_ONLY or force):
+    #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.READ_ONLY)
+    #             public.append(study_id)
+    #
+    #     except Exception as e:
+    #         logger.info(e)
+    #         print(e)
+    #         continue
+    #
+    # return submit, curation, review, public
 
 
 def untarget_NMR():

@@ -44,6 +44,12 @@ class DataMoverAvailableStorage():
         target_study_folder_path = self._get_absolute_ftp_private_path(target_path)
         pass
 
+    def get_folder_permission(self, source: str) -> str:
+        pass
+
+    def does_folder_exist(self, source: str) -> bool:
+        pass
+
     def update_ftp_folder_permission(self, study_folder_name: str, chmod) -> bool:
 
         study_folder_path = self._get_absolute_ftp_private_path(study_folder_name)

@@ -115,7 +115,7 @@ class ValidateMzML(Resource):
     @swagger.operation(
         summary="Validate mzML files",
         notes='''Validating mzML file structure. 
-        This method will validate mzML files in both the study folder and the upload folder.
+        This method will validate mzML files in both the study folder.
         Validated files in the study upload location will be moved to the study location''',
         parameters=[
             {
@@ -172,7 +172,7 @@ class ValidateMzML(Resource):
         if not write_access:
             abort(403)
 
-        return validate_mzml_files(study_id, obfuscation_code, study_location)
+        return validate_mzml_files(study_id)
 
     @swagger.operation(
         summary="Validate mzML files and report results",

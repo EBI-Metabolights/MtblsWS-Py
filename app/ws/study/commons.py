@@ -123,7 +123,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service, sen
     new_folder_name = study_id.lower() + '-' + obfuscation_code
 
     new_folder = False
-    if not private_ftp_sm.remote.exists(new_folder_name):
+    if not private_ftp_sm.remote.does_folder_exist(new_folder_name):
         logger.info('Creating a new study upload folder for Study %s', study_id)
         raw_files_path = os.path.join(new_folder_name, "RAW_FILES")
         derived_files_path = os.path.join(new_folder_name, "DERIVED_FILES")

@@ -1184,22 +1184,12 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, co
     validations = []
     assay_file_list = get_assay_file_list(study_location)
     # folder_list = get_files_in_sub_folders(study_location)
-    study_files, upload_files, upload_diff, upload_location, latest_update_time = \
+    study_files, _upload_files, _upload_diff, _upload_location, latest_update_time = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
-                                      include_upload_folder=False, assay_file_list=assay_file_list,
+                                      assay_file_list=assay_file_list,
                                       short_format=True, include_sub_dir=True,
                                       static_validation_file=static_validation_file)
-    # if folder_list:
-    #     for folder in folder_list:
-    #         study_files_sub, upload_files, upload_diff, upload_location = \
-    #             get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
-    #                                           directory=folder, include_raw_data=True, validation_only=True,
-    #                                           include_upload_folder=False, assay_file_list=assay_file_list)
-    #
-    #         if study_files_sub:  # Adding files found in the first subfolder to the files in the (root) study folder
-    #             study_files.extend(study_files_sub)
-
     sample_cnt = 0
     raw_file_found = False
     derived_file_found = False

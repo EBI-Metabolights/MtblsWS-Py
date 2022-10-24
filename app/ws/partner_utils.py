@@ -113,7 +113,7 @@ class Metabolon(Resource):
         val_message = ''
         try:
             val_message = 'Could not validate all the mzML files'
-            val_status, val_message = validate_mzml_files(study_id, obfuscation_code, study_location)
+            val_status, val_message = validate_mzml_files(study_id)
         except:
             abort(417, val_message)
 

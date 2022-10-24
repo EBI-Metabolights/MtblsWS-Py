@@ -1317,8 +1317,8 @@ class DeleteStudy(Resource):
         # Remove all files in the upload folder
         ftp_private_storage = StorageService.get_ftp_private_storage(app)
         private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
-        if ftp_private_storage.remote.exists(private_ftp_study_folder):
-            ftp_private_storage.remote.delete(private_ftp_study_folder)
+        if ftp_private_storage.remote.does_folder_exist(private_ftp_study_folder):
+            ftp_private_storage.remote.delete_folder(private_ftp_study_folder)
 
         ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
         raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
