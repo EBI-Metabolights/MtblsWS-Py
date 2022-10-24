@@ -69,7 +69,7 @@ def lsf_job(job_cmd, job_param=None, send_email=True, user_email=""):
     return status, message, str(msg_out), str(msg_err)
 
 
-def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=None, submitter=None, log=False):
+def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=None, submitter=None, log=False, log_path=None):
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
     bsub_cmd = app.config.get('JOB_SUBMIT_COMMAND')
@@ -104,10 +104,13 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
         submitter = "None"
 
     if log:
-        log_file_location = app.config.get('JOB_TRACK_LOG_LOCATION')
-        now = datetime.now()
-        date_time = now.strftime("%d-%m-%Y_%H-%M-%S")
-        log_file = log_file_location + "/" + submitter + "_" + job_cmd + "_" + date_time + ".log"
+        if log_path is None:
+            log_file_location = app.config.get('JOB_TRACK_LOG_LOCATION')
+            now = datetime.now()
+            date_time = now.strftime("%d-%m-%Y_%H-%M-%S")
+            log_file = log_file_location + "/" + submitter + "_" + job_cmd + "_" + date_time + ".log"
+        else:
+            log_file = log_path + "/" + submitter + "_" + job_cmd + ".log"
         bsub_cmd = bsub_cmd + " -o " + log_file
 
     cmd = ssh_cmd + " " + bsub_cmd + " " + job_cmd1
@@ -195,7 +198,6 @@ def kill_job(queue=None, job_id=None):
         logger.error(message + ' ;  reason  :-' + str(e))
 
     return status, message, str(msg_out), str(msg_err)
-
 
 class LsfUtils(Resource):
     @swagger.operation(

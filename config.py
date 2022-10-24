@@ -650,6 +650,8 @@ LSF_BSUB_DEFAULT_Q = cluster["LSF_BSUB_DEFAULT_Q"]
 LSF_DATAMOVER_Q = cluster["LSF_DATAMOVER_Q"]
 LSF_BSUB_STANDARD_Q = cluster["LSF_BSUB_STANDARD_Q"]
 LSF_BSUB_LONG_PROCESS_Q = cluster["LSF_BSUB_LONG_PROCESS_Q"]
+LSF_DATAMOVER_STUDY_PATH = cluster["LSF_DATAMOVER_STUDY_PATH"]
+LSF_DATAMOVER_FTP_PRIVATE_HOME = cluster["LSF_DATAMOVER_FTP_PRIVATE_HOME"]
 
 ########################################################################################################################
 #   JOB
