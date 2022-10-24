@@ -24,6 +24,11 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     start_time = time.time()
     s_start_time = time.time()
+
+    log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
+    if not os.path.exists(log_path):
+        os.makedirs(log_path, mode=777, exist_ok=True)
+
     study_files, latest_update_time = get_all_files(study_location, directory=directory,
                                                     include_raw_data=include_raw_data,
                                                     assay_file_list=assay_file_list, validation_only=validation_only,
@@ -330,6 +335,9 @@ def write_audit_files(study_location):
     # dest folder name is a timestamp
     update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
     update_path = os.path.join(study_location, update_path_suffix)
+    log_path = os.path.join(update_path, 'logs')
+    if not os.path.exists(log_path):
+        os.makedirs(log_path, mode=777, exist_ok=True)
     dest_path = new_timestamped_folder(update_path)
 
     try:
