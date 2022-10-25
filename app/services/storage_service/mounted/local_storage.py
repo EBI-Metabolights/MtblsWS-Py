@@ -7,13 +7,20 @@ from typing import List
 from dirsync import sync
 
 from app.services.storage_service.exceptions import StorageServiceException
+from app.services.storage_service.models import SyncTaskResult, SyncCalculationTaskResult
 from app.services.storage_service.mounted.local_file_manager import MountedVolumeFileManager
 from app.services.storage_service.storage import Storage
+
 
 
 class LocalStorage(Storage):
 
     def __init__(self, name, remote_folder):
+        manager_name = name + '_local_file_manager'
+        local_path = f"/tmp/{name}"
+        os.makedirs(local_path)
+        local_file_manager: MountedVolumeFileManager = MountedVolumeFileManager(manager_name, local_path)
+        self.local_file_manager: MountedVolumeFileManager = local_file_manager
 
         manager_name = name + '_mounted_volume_file_manager'
         mounted_volume_file_manager: MountedVolumeFileManager = MountedVolumeFileManager(manager_name, remote_folder)
@@ -151,3 +158,11 @@ class LocalStorage(Storage):
             self.download_file(source, dir_name, base_name)
         elif os.path.isdir(source_path):
             sync(source_path, target_local_path, 'sync', **kwargs)
+
+    def calculate_sync_status(self, study_id: str) -> SyncCalculationTaskResult:
+        # TODO Implement
+        pass
+
+    def check_folder_sync_status(self, study_id: str) -> SyncTaskResult:
+        # TODO Implement
+        pass

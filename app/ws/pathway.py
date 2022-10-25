@@ -25,7 +25,7 @@ from flask import request, jsonify, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
-from app.ws.cluster_jobs import lsf_job
+from app.ws.cluster_jobs import submit_job
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request, get_connection
@@ -275,7 +275,8 @@ class fellaPathway(Resource):
         command = script + ' ' + para
 
         logger.info("Starting cluster job for FELLA pathway: " + command)
-        status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=command, send_email=True)
+        status, message, job_out, job_err, log_file = submit_job(True, account=None, job_cmd=command, job_params=None, submitter=None, log=False)
+
 
         if status:
             return {"success": message, "message": job_out, "errors": job_err}

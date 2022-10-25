@@ -15,7 +15,7 @@ class MountedVolumeFileManager(FileManager):
     def create_folder(self, target: str, acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
         try:
             path = self._get_abs_path(target)
-            os.makedirs(path, mode=acl.value, exist_ok=exist_ok)
+            os.makedirs(path, mode=acl, exist_ok=exist_ok)
         except (OSError, FileExistsError):
             return False
         return True

@@ -50,6 +50,7 @@ SQLAlchemy==1.4.35
 pytest==6.2.5
 pytest-mock==3.7.0
 pytest-cov==3.0.0
+ftputil==5.0.4
 python-jose
 passlib
 tweepy

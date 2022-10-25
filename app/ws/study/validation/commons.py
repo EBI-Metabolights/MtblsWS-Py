@@ -30,7 +30,7 @@ import pandas as pd
 import requests
 from flask import current_app as app
 
-from app.ws.cluster_jobs import lsf_job
+from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import override_validations, update_validation_status, query_comments
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study import commons
@@ -2052,7 +2052,7 @@ def job_status(job_id):
 
 def submitJobToCluser(command, section, study_location):
     logger.info("Starting cluster job for Validation : " + command)
-    status, message, job_out, job_err = lsf_job('bsub', job_param=command, send_email=True)
+    status, message, job_out, job_err, log_file = submit_job(True, account=None, job_cmd=command, job_params=None, submitter=None, log=False)
 
     if status:
         start = 'Job <'

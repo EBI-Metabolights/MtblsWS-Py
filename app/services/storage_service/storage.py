@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from app.services.storage_service.file_manager import FileManager
+from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult
 
 
 class Storage(ABC):
@@ -24,4 +25,12 @@ class Storage(ABC):
 
     @abstractmethod
     def sync_from_storage(self, source_path: str, target_local_path: str, ignore_list: List[str] = None, **kwargs):
+        pass
+
+    @abstractmethod
+    def calculate_sync_status(self, study_id: str) -> SyncCalculationTaskResult:
+        pass
+
+    @abstractmethod
+    def check_folder_sync_status(self, study_id: str) -> SyncTaskResult:
         pass
