@@ -24,7 +24,7 @@ from flask_restful_swagger import swagger
 from flask import request, abort
 from flask import current_app as app
 from datetime import datetime
-from app.ws.study import commons
+from app.ws.db_connection import check_access_rights
 
 logger = logging.getLogger('wslog')
 
@@ -69,7 +69,8 @@ def lsf_job(job_cmd, job_param=None, send_email=True, user_email=""):
     return status, message, str(msg_out), str(msg_err)
 
 
-def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=None, submitter=None, log=False, log_path=None):
+def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=None, submitter=None, log=False,
+               log_path=None):
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
     bsub_cmd = app.config.get('JOB_SUBMIT_COMMAND')
@@ -113,6 +114,8 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
             log_file = log_path + "/" + submitter + "_" + job_cmd + ".log"
         bsub_cmd = bsub_cmd + " -o " + log_file
 
+    if job_cmd == 'rsync':
+        bsub_cmd = bsub_cmd + " -J " + submitter + "_" + job_cmd
     cmd = ssh_cmd + " " + bsub_cmd + " " + job_cmd1
 
     try:
@@ -131,7 +134,7 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
     return status, message, str(msg_out), str(msg_err), log_file
 
 
-def list_jobs(queue=None):
+def list_jobs(queue=None, job_name=None):
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
     bjobs_cmd = app.config.get('JOB_RUNNING_COMMAND')
@@ -145,7 +148,9 @@ def list_jobs(queue=None):
     if queue == app.config.get('LSF_DATAMOVER_Q'):
         lsf_host_user = app.config.get('LSF_DATAMOVER_USER')
 
-    bjobs_cmd = bjobs_cmd + " -q " + queue
+    bjobs_cmd = f'{bjobs_cmd} -q {queue}'
+    if job_name:
+        bjobs_cmd = f'{bjobs_cmd} -J {job_name}'
     ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
 
     cmd = ssh_cmd + " " + bjobs_cmd
@@ -198,6 +203,40 @@ def kill_job(queue=None, job_id=None):
         logger.error(message + ' ;  reason  :-' + str(e))
 
     return status, message, str(msg_out), str(msg_err)
+
+
+def get_permissions(study_id, user_token, obfuscation_code=None):
+    """
+    Check MTBLS-WS for permissions on this Study for this user
+
+    Study       User    Submitter   Curator     Reviewer/Read-only
+    SUBMITTED   ----    Read+Write  Read+Write  Read
+    INCURATION  ----    Read        Read+Write  Read
+    INREVIEW    ----    Read        Read+Write  Read
+    PUBLIC      Read    Read        Read+Write  Read
+
+    :param obfuscation_code:
+    :param study_id:
+    :param user_token:
+    :return: study details and permission levels
+
+    """
+    if not user_token:
+        user_token = "public_access_only"
+
+    # Reviewer access will pass the study obfuscation code instead of api_key
+    if study_id and not obfuscation_code and user_token.startswith("ocode:"):
+        logger.info("Study obfuscation code passed instead of user API_CODE")
+        obfuscation_code = user_token.replace("ocode:", "")
+
+    is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+    updated_date, study_status = check_access_rights(user_token, study_id.upper(),
+                                                     study_obfuscation_code=obfuscation_code)
+
+    logger.info("Read access: " + str(read_access) + ". Write access: " + str(write_access))
+
+    return is_curator, read_access, write_access, obfuscation_code, study_location, release_date, \
+           submission_date, study_status
 
 
 class LsfUtils(Resource):
@@ -273,7 +312,7 @@ class LsfUtils(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = commons.get_permissions('MTBLS2', user_token)
+        study_status = get_permissions('MTBLS2', user_token)
         if not is_curator:
             abort(403)
 
@@ -290,6 +329,13 @@ class LsfUtils(Resource):
             {
                 "name": "queue",
                 "description": "queue on which job to be submitted",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },{
+                "name": "job_name",
+                "description": "Job name to be queried on queue",
                 "required": False,
                 "allowMultiple": False,
                 "paramType": "query",
@@ -334,17 +380,19 @@ class LsfUtils(Resource):
             abort(401)
 
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = commons.get_permissions('MTBLS2', user_token)
+        study_status = get_permissions('MTBLS2', user_token)
         if not is_curator:
             abort(403)
 
         parser = reqparse.RequestParser()
         parser.add_argument('queue', help="queue on which job to be submitted")
+        parser.add_argument('job_name', help="job name to be queried")
         if request.args:
             args = parser.parse_args(req=request)
             queue = args['queue']
+            job_name = args['job_name']
 
-        status, message, job_out, job_err = list_jobs(queue)
+        status, message, job_out, job_err = list_jobs(queue, job_name)
 
         if status:
             return {"success": message, "message": job_out, "error": job_err}
@@ -443,7 +491,7 @@ class LsfUtils(Resource):
 
         # param validation
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = commons.get_permissions('MTBLS2', user_token)
+        study_status = get_permissions('MTBLS2', user_token)
         if not is_curator:
             abort(403)
 
