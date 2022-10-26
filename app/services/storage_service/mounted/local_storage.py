@@ -1,16 +1,21 @@
+import os
 import os.path
 import random
+import re
 import shutil
+from datetime import datetime, timezone
 from distutils.dir_util import copy_tree
 from typing import List
 
+import dirsync
 from dirsync import sync
 
 from app.services.storage_service.exceptions import StorageServiceException
-from app.services.storage_service.models import SyncTaskResult, SyncCalculationTaskResult
+from app.services.storage_service.models import SyncTaskResult, SyncCalculationTaskResult, SyncCalculationStatus, \
+    SyncTaskStatus
 from app.services.storage_service.mounted.local_file_manager import MountedVolumeFileManager
 from app.services.storage_service.storage import Storage
-
+from app.utils import MetabolightsException
 
 
 class LocalStorage(Storage):
@@ -18,7 +23,7 @@ class LocalStorage(Storage):
     def __init__(self, name, remote_folder):
         manager_name = name + '_local_file_manager'
         local_path = f"/tmp/{name}"
-        os.makedirs(local_path)
+        os.makedirs(local_path, exist_ok=True)
         local_file_manager: MountedVolumeFileManager = MountedVolumeFileManager(manager_name, local_path)
         self.local_file_manager: MountedVolumeFileManager = local_file_manager
 
@@ -159,10 +164,147 @@ class LocalStorage(Storage):
         elif os.path.isdir(source_path):
             sync(source_path, target_local_path, 'sync', **kwargs)
 
-    def calculate_sync_status(self, study_id: str) -> SyncCalculationTaskResult:
-        # TODO Implement
-        pass
+    def calculate_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str) -> SyncCalculationTaskResult:
+        self.remote_file_manager.get_uri(study_id)
+        ftp_folder_name = f"{study_id.lower()}-{obfuscation_code}"
 
-    def check_folder_sync_status(self, study_id: str) -> SyncTaskResult:
-        # TODO Implement
-        pass
+        source = self.remote_file_manager.get_uri(ftp_folder_name)
+        updated_files = self.calculate_folder_sync_status(source, target_local_path)
+        last_updated_time = 0
+        new_file_count = 0
+        updated_files_count = 0
+        for file, status, modified, modified_timestamp in updated_files:
+            if modified_timestamp > last_updated_time:
+                last_updated_time = modified_timestamp
+            if status == "NEW":
+                new_file_count += 1
+            elif status == "UPDATED":
+                updated_files_count =+ 1
+
+        result = SyncCalculationTaskResult()
+        result.last_update_time = datetime.fromtimestamp(last_updated_time, tz=timezone.utc).strftime('%Y-%m-%d-%H:%M')
+        result.description = f"New File Count: {new_file_count} Updated Files: {updated_files_count}"
+        result.status = SyncCalculationStatus.SYNC_NEEDED if updated_files else SyncCalculationStatus.SYNC_NOT_NEEDED
+        return result
+
+    def check_folder_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str) -> SyncTaskResult:
+        result = SyncTaskResult()
+        result.status = SyncTaskStatus.COMPLETED_SUCCESS
+        result.description = f""
+        result.last_update_time = ''
+        return result
+
+    @staticmethod
+    def _is_update_needed(filename, dir1, dir2):
+        file1 = os.path.join(dir1, filename)
+        file2 = os.path.join(dir2, filename)
+
+        try:
+            st1 = os.stat(file1)
+            st2 = os.stat(file2)
+            is_updated = int((st1.st_mtime - st2.st_mtime) * 1000) > 0
+            modified = datetime.fromtimestamp(st1.st_mtime, tz=timezone.utc).strftime('%Y-%m-%d-%H:%M')
+            return is_updated, modified, st1.st_mtime
+        except os.error:
+            raise MetabolightsException(f'Error while comparing file {filename}')
+
+    def calculate_folder_sync_status(self, source, target, **options):
+        copier = dirsync.run.Syncer(dir1=source, dir2=target, action='diff', **options)
+
+
+        source_files = self.get_file_set(source)
+        target_files = self.get_file_set(target)
+
+        common = source_files.intersection(target_files)
+
+        data1 = sorted(source_files.difference(target_files))
+
+        updated_files = set()
+        for item in data1:
+            if item.startswith('.'):
+                continue
+            file_path = os.path.join(source, item)
+            modified = datetime.fromtimestamp(os.stat(file_path).st_mtime, tz=timezone.utc).strftime('%Y-%m-%d-%H:%M')
+            modified_timestamp = os.stat(file_path).st_mtime
+            updated_files.add((item, "NEW", modified, modified_timestamp))
+
+        data2 = sorted(common)
+
+        for item in data2:
+            is_updated, modified, modified_timestamp = self._is_update_needed(item, source, target)
+            if is_updated:
+                updated_files.add((item, 'UPDATED', modified, modified_timestamp))
+        return updated_files
+
+    def get_file_set(self, source):
+        source_files = set()
+        for cwd, dirs, files in os.walk(source):
+
+            for f in files:
+                path = os.path.relpath(os.path.join(cwd, f), source)
+                re_path = path.replace('\\', os.path.sep).strip(os.path.sep)
+                source_files.add(re_path)
+        return source_files
+
+
+    def _compare(self, dir1, dir2, exclude_list = None, ignore_list = None):
+        """ Compare contents of two directories """
+
+        left = set()
+        right = set()
+        excl_patterns = set()
+        if exclude_list:
+            excl_patterns.union(exclude_list)
+        if ignore_list:
+            excl_patterns.union(ignore_list)
+
+
+        for cwd, dirs, files in os.walk(dir1):
+
+            for f in dirs + files:
+                path = os.path.relpath(os.path.join(cwd, f), dir1)
+                re_path = path.replace('\\', '/')
+
+
+                add_path = False
+
+                # path was not in includes
+                # test if it is in excludes
+                for pattern in excl_patterns:
+                    if re.match(pattern, re_path):
+                        # path is in excludes, do not add it
+                        break
+                else:
+                    # path was not in excludes
+                    # it should be added
+                    add_path = True
+
+                if add_path:
+                    left.add(path)
+                    anc_dirs = re_path[:-1].split('/')
+                    anc_dirs_path = ''
+                    for ad in anc_dirs[1:]:
+                        anc_dirs_path = os.path.join(anc_dirs_path, ad)
+                        left.add(anc_dirs_path)
+
+        for cwd, dirs, files in os.walk(dir2):
+            for f in dirs + files:
+                path = os.path.relpath(os.path.join(cwd, f), dir2)
+                re_path = path.replace('\\', '/')
+                for pattern in self._ignore:
+                    if re.match(pattern, re_path):
+                        if f in dirs:
+                            dirs.remove(f)
+                        break
+                else:
+                    right.add(path)
+                    # no need to add the parent dirs here,
+                    # as there is no _only pattern detection
+                    if f in dirs and path not in left:
+                        self._numdirs += 1
+
+        common = left.intersection(right)
+        left.difference_update(common)
+        right.difference_update(common)
+
+        return DCMP(left, right, common)

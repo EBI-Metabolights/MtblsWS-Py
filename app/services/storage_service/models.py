@@ -4,12 +4,16 @@ from pydantic import BaseModel, Field
 
 
 class SyncCalculationStatus(str, Enum):
+    NO_TASK = 'NO_TASK'
+    UNKNOWN = 'UNKNOWN'
     SYNC_NEEDED = "SYNC_NEEDED"
     SYNC_NOT_NEEDED = "SYNC_NOT_NEEDED"
     CALCULATING = "CALCULATING"
 
 
 class SyncTaskStatus(str, Enum):
+    NO_TASK = 'NO_TASK'
+    UNKNOWN = 'UNKNOWN'
     PENDING = 'PENDING'
     RUNNING = 'RUNNING'
     START_FAILURE = 'START_FAILURE'

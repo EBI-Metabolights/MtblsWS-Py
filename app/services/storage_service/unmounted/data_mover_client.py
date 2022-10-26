@@ -2,10 +2,8 @@ import os
 import time
 from typing import List
 
-from app.services.storage_service.sync_status import JobState, SyncStatus
-
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult
-from app.ws.cluster_jobs import submit_job
+#from app.ws.cluster_jobs import submit_job
 from flask import current_app as app
 import logging
 
@@ -141,9 +139,6 @@ class DataMoverAvailableStorage():
         # TODO Implement
         return None
 
-    def get_folder_sync_status(self, study_id: str) -> JobState:
-        # TODO Implement
-        return JobState(SyncStatus.COMPLETED_SUCCESS, None)
 
     def calculate_sync_status(self, study_id: str) -> SyncCalculationTaskResult:
         # TODO Implement

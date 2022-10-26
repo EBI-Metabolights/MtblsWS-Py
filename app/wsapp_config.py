@@ -43,6 +43,7 @@ from app.ws.elasticsearch.settings import get_elasticsearch_settings
 from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
+from app.ws.ftp.ftp_operations import FtpFolderSyncStatus, SyncFromFtpFolder, SyncCalculation
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.isaAssay import StudyAssay, StudyAssayDelete
 from app.ws.isaInvestigation import IsaInvestigation
@@ -164,6 +165,11 @@ def initialize_app(flask_app):
     api.add_resource(ToggleAccessGet, res_path + "/studies/<string:study_id>/access")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")
     api.add_resource(SyncFolder, res_path + "/studies/<string:study_id>/dir_sync")
+
+    api.add_resource(SyncFromFtpFolder, res_path + "/studies/<string:study_id>/ftp/sync")
+    api.add_resource(FtpFolderSyncStatus, res_path + "/studies/<string:study_id>/ftp/sync-status")
+    api.add_resource(SyncCalculation, res_path + "/studies/<string:study_id>/ftp/sync-calculation")
+
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")
 
