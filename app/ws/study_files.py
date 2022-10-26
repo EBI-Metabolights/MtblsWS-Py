@@ -1168,7 +1168,7 @@ class CopyFilesFolders(Resource):
                         ftp_source_file = os.path.join(upload_location, from_file)
                         destination_file = os.path.join(study_location, to_file)
                         # download directly to study folder
-                        ftp_private_storage.sync_from_storage(ftp_source_file, destination_file)
+                        ftp_private_storage.sync_from_storage(ftp_source_file, destination_file, logger=logger)
                         continue
 
                     # continue if manual upload folder defined
@@ -1218,8 +1218,8 @@ class CopyFilesFolders(Resource):
                                                      include_raw_data=include_raw_data,
                                                      include_investigation_file=include_inv)
             else:
-                status, message = ftp_private_storage.sync_from_storage(upload_location, study_location)
-                ftp_private_storage.sync_from_storage(upload_location, study_location)
+                status, message = ftp_private_storage.sync_from_storage(upload_location, study_location, logger=logger)
+                ftp_private_storage.sync_from_storage(upload_location, study_location, logger=logger)
         message = ''
         if status:
             reindex_status, message = wsc.reindex_study(study_id, user_token)

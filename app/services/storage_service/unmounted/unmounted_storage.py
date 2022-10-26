@@ -10,7 +10,7 @@ from app.utils import MetabolightsException
 class UnmountedStorage(Storage):
 
     def __init__(self, name, app):
-
+        self.app = app
         manager_name = name + '_mounted_volume_file_manager'
         self.remote_file_manager: UnmountedVolumeFileManager = UnmountedVolumeFileManager(manager_name, app)
 
@@ -20,7 +20,7 @@ class UnmountedStorage(Storage):
         study_id = UnmountedVolumeFileManager.get_study_id(target_folder)
         if not study_id:
             raise MetabolightsException("Invalid study id")
-        remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id)
+        remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id, self.app)
         status = remote_job_manager.sync_from_studies_folder(target_folder, ignore_list, **kwargs)
         return status
 
@@ -28,24 +28,24 @@ class UnmountedStorage(Storage):
         study_id = UnmountedVolumeFileManager.get_study_id(source)
         if not study_id:
             raise MetabolightsException("Invalid study id")
-        remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id)
+        remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id, self.app)
 
         status = remote_job_manager.sync_from_ftp_folder(source, ignore_list, **kwargs)
         return status
 
     def calculate_sync_status(self, study_id: str, obfuscation_code: str,
-                              target_local_path: str) -> SyncCalculationTaskResult:
+                              target_local_path: str, force: bool = True) -> SyncCalculationTaskResult:
         if not study_id:
             raise MetabolightsException("Invalid study id")
-        remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id)
+        remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id, self.app)
 
-        result = remote_job_manager.calculate_sync_status(study_id)
+        result = remote_job_manager.check_calculate_sync_status(study_id, force)
         return result
 
     def check_folder_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str) -> SyncTaskResult:
         if not study_id:
             raise MetabolightsException("Invalid study id")
-        remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id)
+        remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id, self.app)
 
-        result = remote_job_manager.check_folder_sync_status(study_id)
+        result = remote_job_manager.check_folder_sync_status()
         return result

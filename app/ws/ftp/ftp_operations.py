@@ -3,10 +3,11 @@ import os.path
 
 from flask import current_app as app, jsonify
 from flask import request, abort
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
 from app.services.storage_service.storage_service import StorageService
+from app.utils import metabolights_exception_handler
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
@@ -26,6 +27,17 @@ class SyncCalculation(Resource):
                 "allowMultiple": False,
                 "paramType": "path",
                 "dataType": "string"
+            },
+            {
+                "name": "force",
+                "description": "Force to recalculate updates on upload folder.",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "default": True
             },
             {
                 "name": "user_token",
@@ -55,12 +67,20 @@ class SyncCalculation(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         # param validation
         if study_id is None:
             abort(404, 'Please provide valid parameter for study identifier')
         study_id = study_id.upper()
+        parser = reqparse.RequestParser()
+        parser.add_argument('force', help='Force to recalculate')
+        force_recalculate = False
+
+        if request.args:
+            args = parser.parse_args(req=request)
+            force_recalculate = True if args['force'].lower() == 'true' else False
 
         # User authentication
         user_token = None
@@ -73,7 +93,7 @@ class SyncCalculation(Resource):
         study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
         storage = StorageService.get_ftp_private_storage(app)
 
-        result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path)
+        result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
         return jsonify(result.dict())
 
 
@@ -118,6 +138,7 @@ class SyncFromFtpFolder(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
         # param validation
@@ -138,7 +159,7 @@ class SyncFromFtpFolder(Resource):
 
         ftp_folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
         ignore_list = app.config.get('INTERNAL_MAPPING_LIST')
-        storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list)
+        storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
 
 
 class FtpFolderSyncStatus(Resource):
@@ -181,6 +202,7 @@ class FtpFolderSyncStatus(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         # param validation

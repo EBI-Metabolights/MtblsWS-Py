@@ -1,13 +1,11 @@
 import os
 import os.path
 import random
-import re
 import shutil
 from datetime import datetime, timezone
 from distutils.dir_util import copy_tree
 from typing import List
 
-import dirsync
 from dirsync import sync
 
 from app.services.storage_service.exceptions import StorageServiceException
@@ -164,7 +162,8 @@ class LocalStorage(Storage):
         elif os.path.isdir(source_path):
             sync(source_path, target_local_path, 'sync', **kwargs)
 
-    def calculate_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str) -> SyncCalculationTaskResult:
+    def calculate_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str, force: bool = True) \
+            -> SyncCalculationTaskResult:
         self.remote_file_manager.get_uri(study_id)
         ftp_folder_name = f"{study_id.lower()}-{obfuscation_code}"
 
@@ -211,7 +210,7 @@ class LocalStorage(Storage):
         except os.error:
             raise MetabolightsException(f'Error while comparing file {filename}')
 
-    def calculate_folder_sync_status(self, source, target, **options):
+    def calculate_folder_sync_status(self, source, target):
         source_files = self.get_file_set_in_folder(source)
         target_files = self.get_file_set_in_folder(target)
 

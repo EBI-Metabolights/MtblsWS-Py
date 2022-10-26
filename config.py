@@ -581,6 +581,7 @@ RAW_FILES_LIST = file_filter_settings["RAW_FILES_LIST"]
 DERIVED_FILES_LIST = file_filter_settings["DERIVED_FILES_LIST"]
 COMPRESSED_FILES_LIST = file_filter_settings["COMPRESSED_FILES_LIST"]
 INTERNAL_MAPPING_LIST = file_filter_settings["INTERNAL_MAPPING_LIST"]
+RSYNC_EXCLUDE_LIST = file_filter_settings["RSYNC_EXCLUDE_LIST"]
 
 ########################################################################################################################
 #                                    END OF STUDY FILE SETTINGS SECTION
