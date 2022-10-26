@@ -182,14 +182,17 @@ class LocalStorage(Storage):
                 updated_files_count =+ 1
 
         result = SyncCalculationTaskResult()
-        result.last_update_time = datetime.fromtimestamp(last_updated_time, tz=timezone.utc).strftime('%Y-%m-%d-%H:%M')
-        result.description = f"New File Count: {new_file_count} Updated Files: {updated_files_count}"
+        result.description = "There is no update on upload folder"
+        if new_file_count + updated_files_count > 0:
+            result.last_update_time = datetime.fromtimestamp(last_updated_time, tz=timezone.utc).strftime('%Y-%m-%d-%H:%M')
+            result.description = f"New File Count: {new_file_count} Updated Files: {updated_files_count}"
+
         result.status = SyncCalculationStatus.SYNC_NEEDED if updated_files else SyncCalculationStatus.SYNC_NOT_NEEDED
         return result
 
     def check_folder_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str) -> SyncTaskResult:
         result = SyncTaskResult()
-        result.status = SyncTaskStatus.COMPLETED_SUCCESS
+        result.status = SyncTaskStatus.NO_TASK
         result.description = f""
         result.last_update_time = ''
         return result
@@ -209,11 +212,8 @@ class LocalStorage(Storage):
             raise MetabolightsException(f'Error while comparing file {filename}')
 
     def calculate_folder_sync_status(self, source, target, **options):
-        copier = dirsync.run.Syncer(dir1=source, dir2=target, action='diff', **options)
-
-
-        source_files = self.get_file_set(source)
-        target_files = self.get_file_set(target)
+        source_files = self.get_file_set_in_folder(source)
+        target_files = self.get_file_set_in_folder(target)
 
         common = source_files.intersection(target_files)
 
@@ -236,7 +236,7 @@ class LocalStorage(Storage):
                 updated_files.add((item, 'UPDATED', modified, modified_timestamp))
         return updated_files
 
-    def get_file_set(self, source):
+    def get_file_set_in_folder(self, source):
         source_files = set()
         for cwd, dirs, files in os.walk(source):
 
@@ -245,66 +245,3 @@ class LocalStorage(Storage):
                 re_path = path.replace('\\', os.path.sep).strip(os.path.sep)
                 source_files.add(re_path)
         return source_files
-
-
-    def _compare(self, dir1, dir2, exclude_list = None, ignore_list = None):
-        """ Compare contents of two directories """
-
-        left = set()
-        right = set()
-        excl_patterns = set()
-        if exclude_list:
-            excl_patterns.union(exclude_list)
-        if ignore_list:
-            excl_patterns.union(ignore_list)
-
-
-        for cwd, dirs, files in os.walk(dir1):
-
-            for f in dirs + files:
-                path = os.path.relpath(os.path.join(cwd, f), dir1)
-                re_path = path.replace('\\', '/')
-
-
-                add_path = False
-
-                # path was not in includes
-                # test if it is in excludes
-                for pattern in excl_patterns:
-                    if re.match(pattern, re_path):
-                        # path is in excludes, do not add it
-                        break
-                else:
-                    # path was not in excludes
-                    # it should be added
-                    add_path = True
-
-                if add_path:
-                    left.add(path)
-                    anc_dirs = re_path[:-1].split('/')
-                    anc_dirs_path = ''
-                    for ad in anc_dirs[1:]:
-                        anc_dirs_path = os.path.join(anc_dirs_path, ad)
-                        left.add(anc_dirs_path)
-
-        for cwd, dirs, files in os.walk(dir2):
-            for f in dirs + files:
-                path = os.path.relpath(os.path.join(cwd, f), dir2)
-                re_path = path.replace('\\', '/')
-                for pattern in self._ignore:
-                    if re.match(pattern, re_path):
-                        if f in dirs:
-                            dirs.remove(f)
-                        break
-                else:
-                    right.add(path)
-                    # no need to add the parent dirs here,
-                    # as there is no _only pattern detection
-                    if f in dirs and path not in left:
-                        self._numdirs += 1
-
-        common = left.intersection(right)
-        left.difference_update(common)
-        right.difference_update(common)
-
-        return DCMP(left, right, common)

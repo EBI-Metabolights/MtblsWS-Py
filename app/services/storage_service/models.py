@@ -22,13 +22,13 @@ class SyncTaskStatus(str, Enum):
 
 
 class JobResultModel(BaseModel):
-    description: str = Field(None)
-    last_update_time: str = Field(None)
+    description: str = Field('')
+    last_update_time: str = Field('')
 
 
 class SyncTaskResult(JobResultModel):
-    status: SyncTaskStatus = Field(None)
+    status: SyncTaskStatus = Field(SyncTaskStatus.NO_TASK)
 
 
 class SyncCalculationTaskResult(JobResultModel):
-    status: SyncCalculationStatus = Field(None)
+    status: SyncCalculationStatus = Field(SyncCalculationStatus.NO_TASK)
