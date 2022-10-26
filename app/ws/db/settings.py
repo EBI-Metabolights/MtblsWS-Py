@@ -24,13 +24,11 @@ class DirectorySettings(BaseSettings):
     isatab_config_folder: str = None
     studies_folder: str = None
     reference_folder: str = None
-    private_ftp_folder: str = None
 
 
 def get_directory_settings(app) -> DirectorySettings:
     settings = DirectorySettings()
     if app.config:
         settings.studies_folder = app.config.get("STUDY_PATH")
-        settings.private_ftp_folder = app.config.get("MTBLS_PRIVATE_FTP_ROOT")
 
     return settings

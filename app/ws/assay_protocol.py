@@ -111,6 +111,7 @@ class GetProtocolForAssays(Resource):
 
                 logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
                 # Get the Assay table or create a new one if it does not already exist
+                file_df = None
                 try:
                     file_df = read_tsv(file_name)
                 except FileNotFoundError:
@@ -129,7 +130,7 @@ class GetProtocolForAssays(Resource):
                     if key == 'Sample Name' or key == 'index':
                         idx += 1
                         continue  # No need for this as this is not part of an assay protocol, but links to samples
-
+                    correct_protocol = False
                     if key.startswith(prot_ref) and value == prot_name:
                         correct_protocol = True  # So, we are under the correct protocol section of the assay
                     elif key.startswith(prot_ref) and value != prot_name:

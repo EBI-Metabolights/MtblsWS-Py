@@ -37,9 +37,16 @@ from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import urllib
 
+from app.services.storage_service.acl import Acl
+from app.services.storage_service.storage_service import StorageService
+from app.ws.db.dbmanager import DBManager
+from app.ws.db.schemes import Study
+from app.ws.db.types import StudyStatus
 from app.ws.db_connection import get_study_info, get_study_by_type, get_public_studies
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.commons import create_ftp_folder
+from app.ws.study.user_service import UserService
 from app.ws.utils import log_request, writeDataToFile
 
 logger = logging.getLogger('wslog')
@@ -165,17 +172,18 @@ class cronjob(Resource):
             time_stamp = {"created_at": "2020-07-20", "updated_at": datetime.today().strftime('%Y-%m-%d')}
             res = {**time_stamp, **data}
             file_name = 'study_classify.json'
-            file_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('MARIANA_PATH')
+            file_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('MARIANA_PATH'))
             writeDataToFile(file_path + file_name, res, True)
             return jsonify(res)
         elif source == 'ftp file permission':
-            submit, curation, review = file_permission()
+            submit, curation, review, public = file_permission()
             if len(submit) + len(curation) + len(review) == 0:
                 return jsonify({'result': 'Nothing to change'})
             else:
                 res = {"Change ftp folder access permission": {'Submission studies (770)': submit,
                                                                'In curation studies (750)': curation,
-                                                               'In review studies (550)': review}}
+                                                               'In review studies (550)': review,
+                                                               'Public studies (550)': public}}
                 return jsonify(res)
         elif source == 'test cronjob':
             pass
@@ -247,7 +255,7 @@ def curation_log_database_update():
         logger.info("max_acc_short")
         logger.info(max_acc_short)
     except Exception as e:
-        logger.error("Retrieving acc from DB failed "+e)
+        logger.error("Retrieving acc from DB failed " + str(e))
     i = 1
     res = []
     for line in command_list:
@@ -320,38 +328,58 @@ def get_empty_studies():
     return empty_email, no_email
 
 
-def file_permission():
-    submit = []
-    curation = []
-    review = []
-    ftp_foldername = next(os.walk(app.config.get('MTBLS_FTP_ROOT')))[1]
-    study_IDs = [x.split('-')[0].upper() for x in ftp_foldername if x.upper().startswith('MTBLS')]
-
-    for study_id in study_IDs:
-        try:
-            is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            db_study_status = wsc.get_permissions(study_id, app.config.get('METABOLIGHTS_TOKEN'))
-
-            ftp_path = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
-            stat = oct(os.stat(ftp_path).st_mode)[-3:]
-
-            if db_study_status == 'In Curation' and stat != '750':
-                os.chmod(ftp_path, 0o750)
-                curation.append(study_id)
-            elif db_study_status == 'Submitted' and stat != '770':
-                os.chmod(ftp_path, 0o770)
-                submit.append(study_id)
-            elif db_study_status == 'In Review' and stat != '550':
-                os.chmod(ftp_path, 0o550)
-                review.append(study_id)
-            else:
-                pass
-        except Exception as e:
-            logger.info(e)
-            print(e)
-            continue
-
-    return submit, curation, review
+def file_permission(force: bool = False):
+    raise NotImplementedError('file_permission is not implemented')
+    # submit = []
+    # curation = []
+    # review = []
+    # public = []
+    # ftp_private_storage = StorageService.get_ftp_private_storage(app)
+    # files = ftp_private_storage.remote.list_folder('/')
+    # files = []
+    # study_ids = [x.name.split('-')[0].upper() for x in files if x.name.upper().startswith('MTBLS')]
+    # token = app.config.get('METABOLIGHTS_TOKEN')
+    # UserService.get_instance(app).validate_user_has_curator_role(token)
+    # study_obfuscation_code_map = {}
+    # study_status_map = {}
+    #
+    # with DBManager.get_instance(app).session_maker() as db_session:
+    #     result = db_session.query(Study.acc, Study.obfuscationcode, Study.status).all()
+    #     for item in result:
+    #         study_obfuscation_code_map[item.acc] = item.obfuscationcode
+    #         study_status_map[item.acc] = StudyStatus(item.status)
+    #
+    # for study_id in study_ids:
+    #     try:
+    #         if study_id not in study_obfuscation_code_map:
+    #             logger.warning(f'Study {study_id} folder exist but is not defined in database')
+    #             continue
+    #         obfuscation_code = study_obfuscation_code_map[study_id]
+    #         ftp_path = study_id.lower() + '-' + obfuscation_code
+    #         if not ftp_private_storage.remote.does_folder_exist(ftp_path):
+    #             create_ftp_folder(study_id, obfuscation_code, token, None, send_email=False)
+    #         db_study_status = study_status_map[study_id]
+    #         permission = ftp_private_storage.remote.get_folder_permission(ftp_path)
+    #
+    #         if db_study_status == StudyStatus.INCURATION and (permission != Acl.AUTHORIZED_READ or force):
+    #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.AUTHORIZED_READ)
+    #             curation.append(study_id)
+    #         elif db_study_status == StudyStatus.SUBMITTED and (permission != Acl.AUTHORIZED_READ_WRITE or force):
+    #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.AUTHORIZED_READ_WRITE)
+    #             submit.append(study_id)
+    #         elif db_study_status == StudyStatus.INREVIEW and (permission != Acl.READ_ONLY or force):
+    #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.READ_ONLY)
+    #             review.append(study_id)
+    #         elif db_study_status == StudyStatus.PUBLIC and (permission != Acl.READ_ONLY or force):
+    #             ftp_private_storage.remote.update_folder_permission(ftp_path, Acl.READ_ONLY)
+    #             public.append(study_id)
+    #
+    #     except Exception as e:
+    #         logger.info(e)
+    #         print(e)
+    #         continue
+    #
+    # return submit, curation, review, public
 
 
 def untarget_NMR():
@@ -712,7 +740,7 @@ def get_assay_file(studyID, assay_file_name):
     get assay file
 
     :param studyID:  study ID
-    :param sample_file_name: active assay file name
+    :param assay_file_name: active assay file name
     :return:  DataFrame
     '''
     import io

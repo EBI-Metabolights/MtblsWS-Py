@@ -109,9 +109,11 @@ class Metabolon(Resource):
 
         # Validate all mzML files, in both study and upload folders
         # This method also copy files to the study folder and adds a new extension in the upload folder.
+        val_status = ''
+        val_message = ''
         try:
             val_message = 'Could not validate all the mzML files'
-            val_status, val_message = validate_mzml_files(study_id, obfuscation_code, study_location)
+            val_status, val_message = validate_mzml_files(study_id)
         except:
             abort(417, val_message)
 

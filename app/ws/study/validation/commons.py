@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 import time
 import traceback
 
@@ -29,7 +30,7 @@ import pandas as pd
 import requests
 from flask import current_app as app
 
-from app.ws.cluster_jobs import lsf_job
+from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import override_validations, update_validation_status, query_comments
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study import commons
@@ -121,8 +122,13 @@ def extract_details(rule):
     return val, val_error, val_condition, val_type
 
 
-def return_validations(section, validations, override_list=[], comment_list=[]):
+def return_validations(section, validations, override_list=None, comment_list=None):
     # Add the validation sequence
+    if not override_list:
+        override_list = []
+
+    if not comment_list:
+        comment_list = []
 
     for val in validations:
         # idx += 1  # Set the sequence to 1, as this is the section we will override
@@ -1178,22 +1184,12 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, co
     validations = []
     assay_file_list = get_assay_file_list(study_location)
     # folder_list = get_files_in_sub_folders(study_location)
-    study_files, upload_files, upload_diff, upload_location, latest_update_time = \
+    study_files, _upload_files, _upload_diff, _upload_location, latest_update_time = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True, validation_only=True,
-                                      include_upload_folder=False, assay_file_list=assay_file_list,
+                                      assay_file_list=assay_file_list,
                                       short_format=True, include_sub_dir=True,
                                       static_validation_file=static_validation_file)
-    # if folder_list:
-    #     for folder in folder_list:
-    #         study_files_sub, upload_files, upload_diff, upload_location = \
-    #             get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
-    #                                           directory=folder, include_raw_data=True, validation_only=True,
-    #                                           include_upload_folder=False, assay_file_list=assay_file_list)
-    #
-    #         if study_files_sub:  # Adding files found in the first subfolder to the files in the (root) study folder
-    #             study_files.extend(study_files_sub)
-
     sample_cnt = 0
     raw_file_found = False
     derived_file_found = False
@@ -2056,7 +2052,7 @@ def job_status(job_id):
 
 def submitJobToCluser(command, section, study_location):
     logger.info("Starting cluster job for Validation : " + command)
-    status, message, job_out, job_err = lsf_job('bsub', job_param=command, send_email=True)
+    status, message, job_out, job_err, log_file = submit_job(True, account=None, job_cmd=command, job_params=None, submitter=None, log=False)
 
     if status:
         start = 'Job <'

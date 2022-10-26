@@ -29,7 +29,7 @@ from owlready2 import get_ontology, urllib, IRIS
 logger = logging.getLogger('wslog')
 
 
-class entity():
+class entity(object):
     def __init__(self, name, iri='', ontoName='', provenance_name='', provenance_uri='',
                  Zooma_confidence='', definition=''):
         self.name = name
@@ -40,7 +40,7 @@ class entity():
         self.definition = definition
 
 
-class factor():
+class factor(object):
     def __init__(self, studyID, name, type, iri):
         self.studyID = studyID
         self.name = name
@@ -48,7 +48,7 @@ class factor():
         self.iri = iri
 
 
-class Descriptor():
+class Descriptor(object):
     def __init__(self, studyID, design_type, iri):
         self.studyID = studyID
         self.design_type = design_type

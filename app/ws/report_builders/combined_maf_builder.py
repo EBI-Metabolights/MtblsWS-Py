@@ -35,7 +35,7 @@ class CombinedMafBuilder:
         for maf_as_dict in maf_generator:
             list_of_mafs.extend(maf_as_dict)
 
-        reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
+        reporting_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('REPORTING_PATH'), 'global')
         combined_maf = None
         try:
             combined_maf = pandas.DataFrame(list_of_mafs)

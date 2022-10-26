@@ -22,7 +22,6 @@
 # Tag:
 # Description: map metabolights_zooma.tsv terms with studies
 
-import json
 import logging
 
 import numpy as np
@@ -38,7 +37,7 @@ from app.ws.utils import log_request
 wsc = WsClient()
 
 
-class getStudyInfo():
+class getStudyInfo(object):
 
     def __init__(self, studyID, user_token):
         try:

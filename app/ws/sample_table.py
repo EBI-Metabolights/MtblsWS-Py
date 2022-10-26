@@ -194,7 +194,7 @@ class EditSampleFile(Resource):
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             new_row = data_dict['data']
-        except (KeyError):
+        except KeyError:
             abort(404, "Please provide valid data for updated new row(s). The JSON string has to have a 'data' array")
 
         try:
@@ -304,7 +304,7 @@ class EditSampleFile(Resource):
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             new_rows = data_dict['data']  # Use "index:n" element, this is the original row number
-        except (KeyError):
+        except KeyError:
             new_rows = None
 
         if new_rows is None:
@@ -314,7 +314,7 @@ class EditSampleFile(Resource):
         for row in new_rows:
             try:
                 row_index = row['index']  # Check if we have a value in the row number(s)
-            except (KeyError):
+            except KeyError:
                 row_index = None
 
             if new_rows is None or row_index is None:

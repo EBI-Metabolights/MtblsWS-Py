@@ -34,3 +34,4 @@ class StudyTaskStatus(str, Enum):
 class StudyTaskName(str, Enum):
     REINDEX = 'REINDEX'
     SEND_TWEET = 'SEND_TWEET'
+    SEND_EMAIL = 'SEND_EMAIL'

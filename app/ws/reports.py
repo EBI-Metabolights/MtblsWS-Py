@@ -146,8 +146,7 @@ class StudyAssayTypeReports(Resource):
         if is_curator is False:
             abort(413)
 
-        reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
-
+        reporting_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('REPORTING_PATH'), 'global')
         msg = AnalyticalMethodBuilder(
             original_study_location=study_location,
             studytype=studytype,
@@ -313,11 +312,10 @@ class reports(Resource):
             else:
                 abort(403)
 
-        reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
-
+        reporting_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('REPORTING_PATH'), 'global')
         if query == 'daily_stats':
             file_name = 'daily_report.json'
-            j_file = readDatafromFile(reporting_path + file_name)
+            j_file = readDatafromFile(os.path.join(reporting_path, file_name))
 
             data_res = {}
             for date, report in j_file['data'].items():
@@ -335,22 +333,22 @@ class reports(Resource):
 
         elif query == 'user_stats':
             file_name = 'user_report.json'
-            j_file = readDatafromFile(reporting_path + file_name)
+            j_file = readDatafromFile(os.path.join(reporting_path, file_name))
             return jsonify(j_file)
 
         elif query == 'global':
             file_name = 'global.json'
-            j_file = readDatafromFile(reporting_path + file_name)
+            j_file = readDatafromFile(os.path.join(reporting_path, file_name))
             return jsonify(j_file)
 
         elif query == 'file_extension':
             file_name = 'file_extension.json'
-            j_file = readDatafromFile(reporting_path + file_name)
+            j_file = readDatafromFile(os.path.join(reporting_path, file_name))
             return jsonify(j_file)
 
         elif query == 'study_status':
             file_name = 'study_report.json'
-            j_file = readDatafromFile(reporting_path + file_name)
+            j_file = readDatafromFile(os.path.join(reporting_path, file_name))
             data_res = {}
 
             for studyID, study_info in j_file['data'].items():
@@ -466,13 +464,13 @@ class reports(Resource):
         if not write_access:
             abort(403)
 
-        reporting_path = app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/'
+        reporting_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('REPORTING_PATH'), 'global')
         file_name = ''
         res = ''
 
         if query == 'daily_stats':
             try:
-                sql = open('./instance/study_report.sql', 'r').read()
+                sql = open('./resources/study_report.sql', 'r').read()
                 postgresql_pool, conn, cursor = get_connection()
                 cursor.execute(sql)
                 dates = cursor.fetchall()
@@ -496,8 +494,8 @@ class reports(Resource):
         if query == 'user_stats':
             # try:
             file_name = 'study_report.json'
-            study_data = readDatafromFile(reporting_path + file_name)
-            sql = open('./instance/user_report.sql', 'r').read()
+            study_data = readDatafromFile(os.path.join(reporting_path,  file_name))
+            sql = open('./resources/user_report.sql', 'r').read()
             postgresql_pool, conn, cursor = get_connection()
             cursor.execute(sql)
             result = cursor.fetchall()
@@ -514,10 +512,9 @@ class reports(Resource):
                     except:
                         continue
                 dict_temp = {str(dt[0]):
-                                 {"name": dt[13],
+                                 {
                                   "user_email": str(dt[1]),
                                   "country_code": dt[2],
-                                  "joindate": dt[12],
                                   "total": str(dt[5]),
                                   "submitted": str(dt[7]),
                                   "review": str(dt[9]),
@@ -549,8 +546,8 @@ class reports(Resource):
             data = {}
             for st in studies:
                 print(st[0])
-                study_files, latest_update_time = get_all_files(
-                    app.config.get('STUDY_PATH') + str(st[0]))
+                folder_path = os.path.join(app.config.get('STUDY_PATH'), str(st[0]))
+                study_files, latest_update_time = get_all_files(folder_path)
 
                 study_info = get_study(st[0])
                 name = study_info.pop('submitter').split(',')
@@ -578,7 +575,7 @@ class reports(Resource):
 
         if query == 'global':
             file_name = 'global.json'
-            j_data = readDatafromFile(reporting_path + file_name)
+            j_data = readDatafromFile(os.path.join(reporting_path,  file_name))
 
             # load global.json and update
             if studyid:
@@ -662,7 +659,7 @@ class reports(Resource):
             res = {"created_at": "2020-03-22", "updated_at": datetime.today().strftime('%Y-%m-%d'), 'data': file_ext}
 
         # j_res = json.dumps(res,indent=4)
-        writeDataToFile(reporting_path + file_name, res, True)
+        writeDataToFile(os.path.join(reporting_path, file_name), res, True)
 
         return jsonify({"POST " + file_name: True})
 

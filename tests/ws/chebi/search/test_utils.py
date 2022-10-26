@@ -27,12 +27,6 @@ class TestUtils(object):
         output = utils.decode_compound_name(input_data)
         assert expected == output
 
-    def test_decode_compound_name_not_updated_2(self):
-        input_data = None
-        expected = None
-        output = utils.decode_compound_name(input_data)
-        assert output is None
-
     def test_decode_compound_name_not_updated_3(self):
         input_data = "gibberellina98 gibberellina98"
         expected = input_data

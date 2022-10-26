@@ -19,14 +19,15 @@
 import datetime
 import json
 import logging
-import os
-import shutil
 
 from flask import current_app as app
 from flask import request, abort
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 
+from app.services.storage_service.acl import Acl
+from app.services.storage_service.storage_service import StorageService
+from app.utils import metabolights_exception_handler, MetabolightsException
 from app.ws.db_connection import update_study_status, update_study_status_change_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
@@ -94,6 +95,7 @@ class StudyStatus(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def put(self, study_id):
 
         # param validation
@@ -118,7 +120,9 @@ class StudyStatus(Resource):
             abort(403)
 
         if study_status.lower() == db_study_status.lower():
-            abort(200, "Status is already '" + str(study_status) + "' so there is nothing to change")
+            raise MetabolightsException(message=f"Status is already {str(study_status)} so there is nothing to change")
+        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        ftp_private_study_folder = study_id.lower() + '-' + obfuscation_code
 
         # Update the last status change date field
         status_date_logged = update_study_status_change_date(study_id)
@@ -140,13 +144,15 @@ class StudyStatus(Resource):
                 isa_inv.public_release_date = new_date
                 isa_study.public_release_date = new_date
                 release_date = new_date
-            self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
+            self.update_status(study_id, study_status, is_curator=is_curator,
+                               obfuscation_code=obfuscation_code, user_token=user_token)
         elif write_access:
             if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':
                 abort(403, "You can not change the study to this status")
 
             if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
-                self.update_status(study_id, study_status, is_curator=is_curator, obfuscation_code=obfuscation_code)
+                self.update_status(study_id, study_status, is_curator=is_curator,
+                                   obfuscation_code=obfuscation_code, user_token=user_token)
 
                 if release_date < new_date:  # Set the release date to a minimum of 28 days in the future
                     isa_inv.public_release_date = new_date
@@ -162,34 +168,22 @@ class StudyStatus(Resource):
 
         status, message = wsc.reindex_study(study_id, user_token)
         # Explictly changing the FTP folder permission for In Curation and Submitted state
-        ftp_path = app.config.get(
-            'MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
         if db_study_status.lower() == 'submitted' and study_status.lower() == 'In Curation'.lower():
-            if os.path.exists(ftp_path):
-                os.chmod(ftp_path, 0o750)
+            if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+                ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ)
+
         if db_study_status.lower() == 'In Curation' and study_status.lower() == 'submitted':
-            if os.path.exists(ftp_path):
-                os.chmod(ftp_path, 0o770)
+            if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+                ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE)
 
         return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
                 "release-date": release_date}
 
     @staticmethod
-    def update_status(study_id, study_status, is_curator=False, obfuscation_code=None):
+    def update_status(study_id, study_status, is_curator=False, obfuscation_code=None, user_token=None):
         study_status = study_status.lower()
         # Update database
         update_study_status(study_id, study_status, is_curator=is_curator)
-        # Move the private fto folder if the new status is Public
-        if study_status == 'public':
-            #  ./mtblight/prod/<mtbls>-<obfuscation_code> to ./mtblight/prod/old/<mtbls>-<obfuscation_code>
-            private_ftp_root = app.config.get("MTBLS_PRIVATE_FTP_ROOT")
-            study_folder = study_id.lower() + '-' + obfuscation_code
-            src = os.path.join(private_ftp_root, study_folder)
-            dst = os.path.join(os.path.join(private_ftp_root, 'old'), study_folder)
-            try:
-                shutil.move(src, dst)
-            except Exception as e:
-                logger.error('Could not move private FTP folder ' + src + '. Error: ' + str(e))
 
     @staticmethod
     def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
@@ -261,22 +255,23 @@ class ToggleAccess(Resource):
         if not is_curator:
             abort(403)
 
-        ftp_path = app.config.get(
-            'MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
+        ftp_study_folder = study_id.lower() + '-' + obfuscation_code
+        ftp_private_storage = StorageService.get_ftp_private_storage(app)
         logger.info("changing ftp folder permission")
         try:
-            if os.path.exists(ftp_path):
-                if oct(os.stat(ftp_path).st_mode)[-2:-1] == '7':
-                    os.chmod(ftp_path, 0o750)
+            if ftp_private_storage.remote.does_folder_exist(ftp_study_folder):
+                permission = ftp_private_storage.remote.get_folder_permission(ftp_study_folder)
+                if permission == Acl.AUTHORIZED_READ_WRITE:
+                    ftp_private_storage.remote.update_folder_permission(ftp_study_folder, Acl.AUTHORIZED_READ)
                     access = "Read"
+                elif permission == Acl.AUTHORIZED_READ or permission == Acl.READ_ONLY:
+                    ftp_private_storage.remote.update_folder_permission(ftp_study_folder, Acl.AUTHORIZED_READ_WRITE)
+                    access = "Write"
                 else:
-                    if oct(os.stat(ftp_path).st_mode)[-2:-1] == '5':
-                        os.chmod(ftp_path, 0o770)
-                        access = "Write"
+                    access = "Unknown"
             return {'Access': access}
         except OSError as e:
-            logger.error('Error in updating the permission for %s ',
-                         ftp_path, str(e))
+            logger.error(f'Error in updating the permission for {ftp_study_folder} Error {str(e)}')
 
 class ToggleAccessGet(Resource):
     @swagger.operation(
@@ -336,18 +331,21 @@ class ToggleAccessGet(Resource):
         if not write_access:
             abort(403)
 
-        ftp_path = app.config.get(
-            'MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
-        logger.info("changing ftp folder permission")
+        ftp_private_study_folder = study_id.lower() + '-' + obfuscation_code
+        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        logger.info("Getting ftp folder permission")
         access = ""
         try:
-            if os.path.exists(ftp_path):
-                if oct(os.stat(ftp_path).st_mode)[-2:-1] == '7':
+            if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+                permission = ftp_private_storage.remote.get_folder_permission(ftp_private_study_folder)
+                if permission == Acl.AUTHORIZED_READ_WRITE:
                     access = "Write"
                 else:
-                    if oct(os.stat(ftp_path).st_mode)[-2:-1] == '5':
+                    if permission == Acl.AUTHORIZED_READ or permission == Acl.READ_ONLY:
                         access = "Read"
-            return {'Access': access}
+            else:
+                return {'Access': access, 'status': 'error', 'message': "There is no folder"}
+            return {'Access': access, 'status': 'success'}
         except OSError as e:
-            logger.error('Error in getting the permission for %s ',
-                         ftp_path, str(e))
+            logger.error('Error in getting the permission for %s ', ftp_private_study_folder, str(e))
+            return {'Access': access, 'status': 'error', 'message': "Internal error"}

@@ -28,7 +28,6 @@ from flask_restful_swagger import swagger
 from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.utils import convert_to_isa, validate_mzml_files
 
@@ -116,7 +115,7 @@ class ValidateMzML(Resource):
     @swagger.operation(
         summary="Validate mzML files",
         notes='''Validating mzML file structure. 
-        This method will validate mzML files in both the study folder and the upload folder.
+        This method will validate mzML files in both the study folder.
         Validated files in the study upload location will be moved to the study location''',
         parameters=[
             {
@@ -173,7 +172,7 @@ class ValidateMzML(Resource):
         if not write_access:
             abort(403)
 
-        return validate_mzml_files(study_id, obfuscation_code, study_location)
+        return validate_mzml_files(study_id)
 
     @swagger.operation(
         summary="Validate mzML files and report results",
@@ -240,7 +239,10 @@ class ValidateMzML(Resource):
 
         xmlschema_doc = etree.parse(xsd_path)
         xmlschema = etree.XMLSchema(xmlschema_doc)
-        files = glob.glob(os.path.join(study_folder, '**/*.mzML'), recursive=True)
+        files = glob.glob(os.path.join(study_folder, '*.mzML'))
+        files_in_subfolders = glob.glob(os.path.join(study_folder, '**/*.mzML'), recursive=True)
+        files.extend(files_in_subfolders)
+
         files.sort()
         error_list = []
         mzml_file_count = 0

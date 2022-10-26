@@ -25,24 +25,14 @@ from flask_restful_swagger import swagger
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import IsaInvestigationSchema
 from app.ws.mtblsWSclient import WsClient
-from flask import current_app as app
 import logging
+
+from app.ws.utils import log_request
 
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
-
-
-# Allow for a more detailed logging when on DEBUG mode
-def log_request(request_obj):
-    if app.config.get('DEBUG'):
-        if app.config.get('DEBUG_LOG_HEADERS'):
-            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
-        if app.config.get('DEBUG_LOG_BODY'):
-            logger.debug('REQUEST BODY    -> %s', request_obj.data)
-        if app.config.get('DEBUG_LOG_JSON'):
-            logger.debug('REQUEST JSON    -> %s', request_obj.json)
 
 
 class IsaInvestigation(Resource):

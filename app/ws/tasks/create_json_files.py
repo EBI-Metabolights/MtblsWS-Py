@@ -5,7 +5,7 @@ import os.path
 import time
 
 from flask import request, current_app as app
-from flask_restful import Resource, abort
+from flask_restful import Resource
 from flask_restful_swagger import swagger
 
 from app.utils import metabolights_exception_handler, MetabolightsDBException

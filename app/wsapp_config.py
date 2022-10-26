@@ -15,7 +15,6 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-import logging
 
 from flask_cors import CORS
 from flask_mail import Mail
@@ -33,9 +32,10 @@ from app.ws.chebi.settings import get_chebi_ws_settings
 from app.ws.chebi.wsproxy import ChebiWsProxy
 from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
 from app.ws.chebi_ws import ChebiLiteEntity, ChebiEntity
-from app.ws.cluster_jobs import LsfUtils, LsfUtilsStatus
+from app.ws.cluster_jobs import LsfUtils
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import cronjob
+from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.curation_log import curation_log
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.settings import get_directory_settings
@@ -44,6 +44,7 @@ from app.ws.elasticsearch.settings import get_elasticsearch_settings
 from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
+from app.ws.ftp.ftp_operations import FtpFolderSyncStatus, SyncFromFtpFolder, SyncCalculation
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.isaAssay import StudyAssay, StudyAssayDelete
 from app.ws.isaInvestigation import IsaInvestigation
@@ -65,7 +66,7 @@ from app.ws.pathway import fellaPathway
 from app.ws.pathway import keggid
 from app.ws.reports import CrossReferencePublicationInformation
 from app.ws.reports import reports, StudyAssayTypeReports
-from app.ws.send_files import SendFiles
+from app.ws.send_files import SendFiles, SendFilesPrivate
 from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
 from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
@@ -149,9 +150,8 @@ def initialize_app(flask_app):
     api.add_resource(FileList, res_path + "/studies/<string:study_id>/fileslist")
     api.add_resource(StudyFilesTree, res_path + "/studies/<string:study_id>/files/tree")
     api.add_resource(SampleStudyFiles, res_path + "/studies/<string:study_id>/files/samples")
-    api.add_resource(SendFiles,
-                     res_path + "/studies/<string:study_id>/download",
-                     res_path + "/studies/<string:study_id>/download/<string:obfuscation_code>")
+    api.add_resource(SendFiles, res_path + "/studies/<string:study_id>/download")
+    api.add_resource(SendFilesPrivate, res_path + "/studies/<string:study_id>/download/<string:obfuscation_code>")
     api.add_resource(UnzipFiles, res_path + "/studies/<string:study_id>/files/unzip")
     api.add_resource(IsaTabInvestigationFile, res_path + "/studies/<string:study_id>/investigation")
     api.add_resource(IsaTabSampleFile, res_path + "/studies/<string:study_id>/sample")
@@ -167,6 +167,11 @@ def initialize_app(flask_app):
     api.add_resource(ToggleAccessGet, res_path + "/studies/<string:study_id>/access")
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")
     api.add_resource(SyncFolder, res_path + "/studies/<string:study_id>/dir_sync")
+
+    api.add_resource(SyncFromFtpFolder, res_path + "/studies/<string:study_id>/ftp/sync")
+    api.add_resource(FtpFolderSyncStatus, res_path + "/studies/<string:study_id>/ftp/sync-status")
+    api.add_resource(SyncCalculation, res_path + "/studies/<string:study_id>/ftp/sync-calculation")
+
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")
 
@@ -245,11 +250,11 @@ def initialize_app(flask_app):
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")
     api.add_resource(ChEBIPipeLineLoad, res_path + "/ebi-internal/chebi-load")
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
-    api.add_resource(LsfUtilsStatus, res_path + "/ebi-internal/cluster-jobs-status")
     api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats")
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
 
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
+    api.add_resource(FTPRemoteFileManager, res_path + "/ebi-internal/ftp-filemanager-testing")
     api.add_resource(keggid, res_path + "/ebi-internal/keggid")
     api.add_resource(fellaPathway, res_path + "/ebi-internal/fella-pathway")
     api.add_resource(PublicStudyTweet, res_path + "/ebi-internal/public-study-tweet")

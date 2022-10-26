@@ -18,7 +18,6 @@
 
 
 import glob
-import json
 import logging
 import os
 import time
@@ -28,6 +27,8 @@ from flask import request, send_file, current_app as app, jsonify
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
+from app.services.storage_service.acl import Acl
+from app.services.storage_service.storage_service import StorageService
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException, \
     MetabolightsDBException
 from app.ws import db_connection as db_proxy
@@ -47,25 +48,11 @@ from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.study_utilities import StudyUtils
 from app.ws.utils import get_year_plus_one, update_correct_sample_file_name, read_tsv, remove_file, copy_file, \
-    get_timestamp, copy_files_and_folders, write_tsv
+    get_timestamp, copy_files_and_folders, write_tsv, log_request
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
 iac = IsaApiClient()
-
-
-# Allow for a more detailed logging when on DEBUG mode
-def log_request(request_obj):
-    if app.config.get('DEBUG'):
-        if app.config.get('DEBUG_LOG_HEADERS'):
-            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
-        if app.config.get('DEBUG_LOG_BODY'):
-            logger.debug('REQUEST BODY    -> %s', request_obj.data)
-        if app.config.get('DEBUG_LOG_JSON'):
-            try:
-                logger.debug('REQUEST JSON    -> %s', request_obj.json)
-            except:
-                logger.debug('REQUEST JSON    -> EMPTY')
 
 
 class MtblsStudies(Resource):
@@ -866,73 +853,6 @@ class CreateUploadFolder(Resource):
 
         logger.info('Creating a new study upload folder for study %s', study_id)
         status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
-
-        data_dict = json.loads(status)
-        os_upload_path = data_dict["message"]
-        upload_location = os_upload_path.split('/mtblight')  # FTP/Aspera root starts here
-
-        return {'os_upload_path': os_upload_path, 'upload_location': upload_location[1]}
-
-    @swagger.operation(
-        summary="Create a new study upload folder",
-        parameters=[
-            {
-                "name": "study_id",
-                "description": "Existing Study Identifier to add an upload folder to",
-                "required": True,
-                "allowMultiple": False,
-                "paramType": "path",
-                "dataType": "string"
-            },
-            {
-                "name": "user_token",
-                "description": "User API token",
-                "paramType": "header",
-                "type": "string",
-                "required": True,
-                "allowMultiple": False
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "OK."
-            },
-            {
-                "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
-            },
-            {
-                "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
-            },
-            {
-                "code": 404,
-                "message": "Not found. The requested identifier is not valid or does not exist."
-            }
-        ]
-    )
-    def post(self, study_id):
-
-        user_token = None
-        # User authentication
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
-
-        if user_token is None or study_id is None:
-            abort(404)
-
-        study_id = study_id.upper()
-
-        # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(401)
-
-        logger.info('Creating a new study upload folder for study %s', study_id)
-        status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
         return status
 
 
@@ -1189,12 +1109,12 @@ class CreateAccession(Resource):
             try:
                 study_acc = wsc.add_empty_study(user_token)
             except Exception as e:
-                abort(501, message="Error while creating study in database")
+                raise MetabolightsException(message="Error while creating study in database", http_code=501, exception=e)
         logger.info('Creating a new MTBLS Study')
 
         if not study_acc:
             logger.error('Failed to create new study. ')
-            abort(503, message="Could not create a new study in db.")
+            raise MetabolightsException(message="Could not create a new study in db", http_code=503)
 
         study = StudyService.get_instance(app).get_study_by_acc(study_acc)
 
@@ -1272,10 +1192,7 @@ class CreateAccession(Resource):
         if not requested_study_id.startswith(study_id_prefix):
             abort(401, message="Invalid study id format. Study id must start with %s" % study_id_prefix)
         # Rule 2
-        try:
-            UserService.get_instance(app).validate_user_has_curator_role(user_token)
-        except MetabolightsException as e:
-            abort(401, message=e.message)
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
         # Rule 3
         last_stable_id = StudyService.get_instance(app).get_next_stable_study_id()
         requested_id_str = requested_study_id.upper().replace(study_id_prefix, "")
@@ -1286,15 +1203,17 @@ class CreateAccession(Resource):
             abort(400, message="Invalid study id")
         if requested_id:
             if not (last_stable_id >= requested_id > 0):
-                abort(400, message="Requested study id must be less then last study id")
+                raise MetabolightsException(message="Requested study id must be less then last study id", http_code=400)
         # Rule 4
         study_location = os.path.join(app.config.get('STUDY_PATH'), requested_study_id)
         if os.path.exists(study_location):
-            abort(400, message="Study folder is already exist")
+            files = os.listdir(study_location)
+            if files:
+                raise MetabolightsException(message="Study folder is already exist", http_code=400)
         # Rule 5
         obfuscation_code = get_obfuscation_code(requested_study_id)
         if obfuscation_code:
-            abort(400, message="Study id already used.")
+            raise MetabolightsException(message="Study id already used in DB.", http_code=400)
         else:
             return requested_study_id
 
@@ -1376,6 +1295,19 @@ class DeleteStudy(Resource):
         study_submitters(study_id, mtbls_email, 'add')
 
         # Remove all files in the study folder except the sample sheet and the investigation sheet.
+        if not os.path.exists(study_location):
+            os.makedirs(study_location, exist_ok=True)
+
+        template_folder = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'))
+        target_file = os.path.join(study_location, 's_{0}.txt'.format(study_id))
+        if not os.path.exists(target_file):
+            from_path = os.path.join(template_folder, "s_Sample.txt")
+            copy_file(from_path, target_file)
+        target_file = os.path.join(study_location, 's_{0}.txt'.format(study_id))
+        if not os.path.exists(target_file):
+            from_path = os.path.join(template_folder, "i_Investigation.txt")
+            copy_file(from_path, target_file)
+
         files = os.listdir(study_location)
         files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
 
@@ -1383,9 +1315,16 @@ class DeleteStudy(Resource):
             status, message = remove_file(study_location, file_name, True)
 
         # Remove all files in the upload folder
-        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
-        for file_name in os.listdir(upload_location):
-            status, message = remove_file(upload_location, file_name, True)
+        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
+        if ftp_private_storage.remote.does_folder_exist(private_ftp_study_folder):
+            ftp_private_storage.remote.delete_folder(private_ftp_study_folder)
+
+        ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
+        derived_files_folder = os.path.join(private_ftp_study_folder, 'DERIVED_FILES')
+        ftp_private_storage.remote.create_folder(raw_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        ftp_private_storage.remote.create_folder(derived_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
 
         # Here we want to overwrite the 2 basic files,the sample sheet and the investigation sheet
         for file_name in os.listdir(study_location):
@@ -1412,7 +1351,7 @@ class DeleteStudy(Resource):
 
         status, message = wsc.reindex_study(study_id, user_token)
         if not status:
-            abort(500, "Could not reindex the study")
+            abort(500, error="Could not reindex the study")
 
         return {"Success": "Study " + study_id + " has been removed"}
 
@@ -1646,22 +1585,22 @@ class ReindexAllPublicStudies(Resource):
             index = 0
             for study in studies:
                 index += 1
-                print(f'{index}/{total} Indexing {study[0]}')
+                logger.debug(f'{index}/{total} Indexing {study[0]}')
                 try:
                     logger.info(f'{index}/{total} Indexing {study[0]}')
                     status, message = wsc.reindex_study(study[0], user_token)
                     if not status:
                         logger.info(f'Unindexed study {study[0]}')
-                        print(f'Unindexed study {study[0]}')
+                        logger.debug(f'Unindexed study {study[0]}')
                         unindexed_studies.append(study[0])
                     else:
                         indexed_studies.append(study[0])
                         logger.info(f'Indexed study {study[0]}')
-                        print(f'Indexed study {study[0]}')
+                        logger.debug(f'Indexed study {study[0]}')
                 except Exception as e:
                     unindexed_studies.append(study[0])
                     logger.info(f'Unindexed study {study[0]}')
-                    print(f'Unindexed study {study[0]}')
+                    logger.debug(f'Unindexed study {study[0]}')
 
 
         return {"indexed_studies": indexed_studies, "unindexed_studies": unindexed_studies}
