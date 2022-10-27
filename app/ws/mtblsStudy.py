@@ -799,7 +799,8 @@ class CloneAccession(Resource):
 
 class CreateUploadFolder(Resource):
     @swagger.operation(
-        summary="Create a new study upload folder",
+        deprecated=True,
+        summary="[Deprecated] Create a new study upload folder",
         parameters=[
             {
                 "name": "study_id",
@@ -1329,11 +1330,11 @@ class DeleteStudy(Resource):
         if ftp_private_storage.remote.does_folder_exist(private_ftp_study_folder):
             ftp_private_storage.remote.delete_folder(private_ftp_study_folder)
 
-        ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
-        derived_files_folder = os.path.join(private_ftp_study_folder, 'DERIVED_FILES')
-        ftp_private_storage.remote.create_folder(raw_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        ftp_private_storage.remote.create_folder(derived_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
+        # derived_files_folder = os.path.join(private_ftp_study_folder, 'DERIVED_FILES')
+        # ftp_private_storage.remote.create_folder(raw_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # ftp_private_storage.remote.create_folder(derived_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
 
         # Here we want to overwrite the 2 basic files,the sample sheet and the investigation sheet
         for file_name in os.listdir(study_location):
@@ -1352,7 +1353,7 @@ class DeleteStudy(Resource):
                     'Updated investigation file with values for Study Identifier and Study File Name for study: {0}'
                         .format(study_id))
             else:
-                # as theres only two files in the directory this will be the sample file.
+                # as there are only two files in the directory this will be the sample file.
                 from_path = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'),
                                          "s_Sample.txt")
                 copy_file(from_path, study_location + '/s_{0}.txt'.format(study_id))

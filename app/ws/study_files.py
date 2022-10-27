@@ -137,10 +137,14 @@ class StudyFiles(Resource):
                                           assay_file_list=get_assay_file_list(study_location),
                                           static_validation_file=False)
 
+        relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+        folder_name = f'{study_id.lower()}-{obfuscation_code}'
+        upload_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
+
         return jsonify({'study': study_files,
                         'latest': [],
                         'private': [],
-                        'uploadPath': '',
+                        'uploadPath': upload_path,
                         'obfuscationCode': obfuscation_code})
 
     # 'uploadPath': upload_location[0], for local testing
@@ -1007,10 +1011,13 @@ def update_files_list_schema(study_id, obfuscation_code, study_location, files_l
                                       directory=None, include_raw_data=True,
                                       assay_file_list=get_assay_file_list(study_location),
                                       static_validation_file=False)
+    relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+    folder_name = f'{study_id.lower()}-{obfuscation_code}'
+    upload_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
     files_list_schema = {'study': study_files,
                                  'latest': upload_diff,
                                  'private': upload_files,
-                                 'uploadPath': '',
+                                 'uploadPath': upload_path,
                                  'obfuscationCode': obfuscation_code}
 
     logger.info(" Writing Files list schema to a file for studyid - %s ", study_id)
@@ -1025,7 +1032,7 @@ def update_files_list_schema(study_id, obfuscation_code, study_location, files_l
 
 class CopyFilesFolders(Resource):
     @swagger.operation(
-        summary="Copy files from upload folder to study folder",
+        summary="[Deprecated] Copy files from upload folder to study folder",
         nickname="Copy from upload folder",
         notes="""Copies files/folder from the upload directory to the study directory</p> 
         Note that MetaboLights curators will also trigger a copy of any new investigation file!</p>
@@ -1248,7 +1255,7 @@ class CopyFilesFolders(Resource):
 
 class SyncFolder(Resource):
     @swagger.operation(
-        summary="Copy files from study folder to private FTP  folder",
+        summary="[Deprecated] Copy files from study folder to private FTP  folder",
         nickname="Copy from study folder",
         parameters=[
             {
@@ -1336,8 +1343,8 @@ class SyncFolder(Resource):
         ftp_private_storage = StorageService.get_ftp_private_storage(app)
         logger.info("syncing files from " + source + " to " + destination)
         try:
-            if not ftp_private_storage.remote.does_folder_exist(destination):
-                ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+
+            # ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
 
             ftp_private_storage.sync_from_local(source, destination, logger=logger, purge=False)
 
@@ -1704,8 +1711,7 @@ class StudyFilesTree(Resource):
         upload_folder = study_id.lower() + "-" + obfuscation_code
 
         ftp_private_relative_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
-        ftp_private_relative_study_path = os.path.join(ftp_private_relative_root_path, upload_folder)
-        upload_location = [None, ftp_private_relative_study_path]
+        upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
 
         if directory:
             study_location = os.path.join(study_location, directory)
@@ -1717,7 +1723,7 @@ class StudyFilesTree(Resource):
             abort(408, error=e.args)
 
         return jsonify({'study': file_list, 'latest': [], 'private': [],
-                        'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
+                        'uploadPath': upload_path, 'obfuscationCode': obfuscation_code})
 
 
 class FileList(Resource):

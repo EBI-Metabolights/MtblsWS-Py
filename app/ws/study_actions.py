@@ -29,8 +29,10 @@ from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.utils import metabolights_exception_handler, MetabolightsException
 from app.ws.db_connection import update_study_status, update_study_status_change_date
+from app.ws.ftp.ftp_utils import get_ftp_folder_access_status, toogle_ftp_folder_permission
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.user_service import UserService
 from app.ws.validation import validate_study
 
 logger = logging.getLogger('wslog')
@@ -168,16 +170,18 @@ class StudyStatus(Resource):
 
         status, message = wsc.reindex_study(study_id, user_token)
         # Explictly changing the FTP folder permission for In Curation and Submitted state
-        if db_study_status.lower() != study_status.lower() and study_status.lower() == 'in curation':
-            if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+        if db_study_status.lower() != study_status.lower():
+            if study_status.lower() == 'in curation':
                 ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ)
 
-        if db_study_status.lower() != study_status.lower() and study_status.lower() == 'submitted':
-            if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
+            if study_status.lower() == 'submitted':
                 ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE)
 
-        return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
-                "release-date": release_date}
+            return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
+                    "release-date": release_date}
+        else:
+            return {"Success": f"Status updated to {study_status}",
+                    "release-date": release_date}
 
     @staticmethod
     def update_status(study_id, study_status, is_curator=False, obfuscation_code=None, user_token=None):
@@ -199,7 +203,7 @@ class StudyStatus(Resource):
 
 class ToggleAccess(Resource):
     @swagger.operation(
-        summary="Change FTP study folder permission",
+        summary="[Deprecated] Change FTP study folder permission",
         nickname="Change FTP study permission",
         parameters=[
             {
@@ -249,34 +253,13 @@ class ToggleAccess(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-        access = ""
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        db_study_status = wsc.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(403)
 
-        ftp_study_folder = study_id.lower() + '-' + obfuscation_code
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
-        logger.info("changing ftp folder permission")
-        try:
-            if ftp_private_storage.remote.does_folder_exist(ftp_study_folder):
-                permission = ftp_private_storage.remote.get_folder_permission(ftp_study_folder)
-                if permission == Acl.AUTHORIZED_READ_WRITE:
-                    ftp_private_storage.remote.update_folder_permission(ftp_study_folder, Acl.AUTHORIZED_READ)
-                    access = "Read"
-                elif permission == Acl.AUTHORIZED_READ or permission == Acl.READ_ONLY:
-                    ftp_private_storage.remote.update_folder_permission(ftp_study_folder, Acl.AUTHORIZED_READ_WRITE)
-                    access = "Write"
-                else:
-                    access = "Unknown"
-            return {'Access': access}
-        except OSError as e:
-            logger.error(f'Error in updating the permission for {ftp_study_folder} Error {str(e)}')
+        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        return toogle_ftp_folder_permission(app, study_id)
 
 class ToggleAccessGet(Resource):
     @swagger.operation(
-        summary="Get Study FTP folder permission",
+        summary="[Deprecated] Get Study FTP folder permission",
         nickname="Get FTP study permission",
         parameters=[
             {
@@ -327,30 +310,5 @@ class ToggleAccessGet(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        db_study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
-        ftp_private_study_folder = study_id.lower() + '-' + obfuscation_code
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
-        logger.info("Getting ftp folder permission")
-        access = ""
-        try:
-            if ftp_private_storage.remote.does_folder_exist(ftp_private_study_folder):
-                permission = ftp_private_storage.remote.get_folder_permission(ftp_private_study_folder)
-                if permission == Acl.AUTHORIZED_READ_WRITE:
-                    access = "Write"
-                else:
-                    if permission == Acl.AUTHORIZED_READ or permission == Acl.READ_ONLY:
-                        access = "Read"
-                    else:
-                        access = "Unkown"
-                        return {'Access': access, 'status': 'error', 'message': "Permission status is unknown"}
-            else:
-                return {'Access': access, 'status': 'error', 'message': "There is no folder"}
-            return {'Access': access, 'status': 'success'}
-        except OSError as e:
-            logger.error('Error in getting the permission for %s ', ftp_private_study_folder, str(e))
-            return {'Access': access, 'status': 'error', 'message': "Internal error"}
+        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        return get_ftp_folder_access_status(app, study_id)

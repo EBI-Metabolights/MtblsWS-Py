@@ -44,7 +44,8 @@ from app.ws.elasticsearch.settings import get_elasticsearch_settings
 from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
-from app.ws.ftp.ftp_operations import FtpFolderSyncStatus, SyncFromFtpFolder, SyncCalculation
+from app.ws.ftp.ftp_operations import FtpFolderSyncStatus, SyncFromFtpFolder, SyncCalculation, FtpFolderPermission, \
+    FtpFolderPermissionModification, PrivateFtpFolder, PrivateFtpFolderPath, SyncFromStudyFolder
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.isaAssay import StudyAssay, StudyAssayDelete
 from app.ws.isaInvestigation import IsaInvestigation
@@ -168,9 +169,15 @@ def initialize_app(flask_app):
     api.add_resource(CopyFilesFolders, res_path + "/studies/<string:study_id>/sync")
     api.add_resource(SyncFolder, res_path + "/studies/<string:study_id>/dir_sync")
 
+    api.add_resource(PrivateFtpFolder, res_path + "/studies/<string:study_id>/ftp")
+    api.add_resource(PrivateFtpFolderPath, res_path + "/studies/<string:study_id>/ftp/path")
+    api.add_resource(FtpFolderPermission, res_path + "/studies/<string:study_id>/ftp/permission")
+    api.add_resource(FtpFolderPermissionModification, res_path + "/studies/<string:study_id>/ftp/permission/toggle")
+    api.add_resource(SyncCalculation, res_path + "/studies/<string:study_id>/ftp/sync-calculation")
     api.add_resource(SyncFromFtpFolder, res_path + "/studies/<string:study_id>/ftp/sync")
     api.add_resource(FtpFolderSyncStatus, res_path + "/studies/<string:study_id>/ftp/sync-status")
-    api.add_resource(SyncCalculation, res_path + "/studies/<string:study_id>/ftp/sync-calculation")
+    api.add_resource(SyncFromStudyFolder, res_path + "/studies/<string:study_id>/ftp/sync-from-study-folder")
+
 
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")
