@@ -379,9 +379,9 @@ class DataMoverAvailableStorage(object):
                                                                  log_path=self._get_study_log_datamover_path())
         log_file_name = os.path.basename(log_file)
         log_file_study_path = os.path.join(study_log_folder, log_file_name)
-        status = self.check_if_job_successful(status=status, job_out=job_out, log_file_study_path=log_file_study_path)
-        logger.info("Job output -  " + str(status))
-        logger.info("Job job_err -  " + job_out)
+        status1 = self.check_if_job_successful(status=status, job_out=job_out, log_file_study_path=log_file_study_path)
+        logger.info("Job output -  " + job_out)
+        logger.info("Job error -  " + job_err)
         logger.info("Log file  -  " + log_file_study_path)
 
         if command == 'stat':
@@ -389,7 +389,7 @@ class DataMoverAvailableStorage(object):
         else:
             output = "None"
 
-        return CommandOutput(execution_status=status, execution_output=output)
+        return CommandOutput(execution_status=status1, execution_output=output)
 
     def _get_absolute_ftp_private_path(self, relative_path: str) -> str:
         return os.path.join(self.ftp_user_home_path, relative_path.lstrip('/'))
@@ -468,10 +468,13 @@ class DataMoverAvailableStorage(object):
                     if self.str_in_file(file_path=log_file_study_path, word='Exited with exit code'):
                         return False
                     time.sleep(1)
+                logger.error('Failed to read the file content in 5 seconds')
                 return False
             else:
+                logger.error('Job was not submitted to queue')
                 return False
         else:
+            logger.error('Job submission failed!')
             return False
 
     def check_for_invalid_values(self, value):
