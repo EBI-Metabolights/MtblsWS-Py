@@ -142,24 +142,18 @@ class DataMoverAvailableStorage(object):
                         if len(splitted) > 1 and splitted[0]:
                             job_id = splitted[0]
 
-                    result.status = self._check_calc_log_file_status(study_log_file, source_ftp_folder, True, force)
+                    result = self._check_calc_log_file_status(study_log_file, source_ftp_folder, True, force)
                     result.last_update_time = time.ctime(os.path.getmtime(study_log_file))
                     result.description = job_id
                     return result
                 else:
                     result.status = SyncCalculationStatus.UNKNOWN
-                    result.last_update_time = 'NONE'
-                    result.description = 'NONE'
             else:
                 result.status = SyncCalculationStatus.UNKNOWN
-                result.last_update_time = 'NONE'
-                result.description = 'NONE'
         except Exception as e:
             message = f'Could not check the job status for study sync  - {self.studyId}'
             logger.error(message + ' ;  reason  :-' + str(e))
             result.status = SyncCalculationStatus.UNKNOWN
-            result.last_update_time = 'NONE'
-            result.description = 'NONE'
         return result
 
     def _init_calculate_sync(self, source_ftp_folder: str) -> SyncCalculationTaskResult:
@@ -169,15 +163,12 @@ class DataMoverAvailableStorage(object):
             if status:
                 result.status = SyncCalculationStatus.CALCULATING
                 result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
-                result.description = "NONE"
             else:
                 result.status = SyncCalculationStatus.UNKNOWN
                 result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
-                result.description = "NONE"
         except:
             result.status = SyncCalculationStatus.UNKNOWN
             result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
-            result.description = "NONE"
         return result
 
     def _check_calc_log_file_status(self, study_log_file: str, source_ftp_folder: str, job_found: bool, force: bool) -> SyncCalculationTaskResult:
@@ -201,27 +192,21 @@ class DataMoverAvailableStorage(object):
                         read_second_line = self.read_second_line(study_log_file)
                         if len(read_second_line) == 0:
                             result.status = SyncCalculationStatus.SYNC_NOT_NEEDED
-                            result.description = 'NONE'
                         else:
                             result.status = SyncCalculationStatus.SYNC_NEEDED
                             result.description = self.read_lines(study_log_file)
                 elif self.str_in_file(file_path=study_log_file, word='Exited with exit code'):
                     logger.info("Last calculation was failure !")
                     result.status = SyncCalculationStatus.NOT_FOUND
-                    result.description = "NONE"
                 elif os.path.getsize(study_log_file) < 1:
                     result.status = SyncCalculationStatus.CALCULATION_FAILURE
-                    result.description = "NONE"
                 else:
                     result.status = SyncCalculationStatus.UNKNOWN
-                    result.description = "NONE"
         else:
             if os.path.getsize(study_log_file) > 1:
                 result.status = SyncCalculationStatus.CALCULATING
-                result.description = "NONE"
             else:
                 result.status = SyncCalculationStatus.PENDING
-                result.description = "NONE"
 
         return result
 
