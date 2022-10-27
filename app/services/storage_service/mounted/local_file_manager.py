@@ -93,8 +93,7 @@ class MountedVolumeFileManager(FileManager):
             raise StorageServiceException(StorageServiceException.ERR_CODE_FILE_NOT_EXIST, message)
         return abs_path
 
-    @staticmethod
-    def _validate_path(source: str):
+    def _validate_path(self, source: str):
         if not source or source.startswith('.') or source.startswith('..'):
             message = f'{source} is not allowed'
             raise StorageServiceException(StorageServiceException.ERR_CODE_NOT_ALLOWED_FILE, message)

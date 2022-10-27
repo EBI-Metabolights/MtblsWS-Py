@@ -6,7 +6,6 @@ from typing import List
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
     SyncTaskStatus, SyncCalculationStatus
-from app.utils import MetabolightsException
 from app.ws.cluster_jobs import submit_job, list_jobs
 import logging
 
@@ -253,7 +252,7 @@ class DataMoverAvailableStorage(object):
             params = "-lrt " + ftp_private_path
 
             output: CommandOutput = self._execute_and_get_result(command, params)
-            return True if output.execution_output else False
+            return True if output.execution_status else False
         else:
             return False
 
@@ -299,7 +298,7 @@ class DataMoverAvailableStorage(object):
             output: CommandOutput = self._execute_and_get_result(command, params)
             return output.execution_status
         else:
-            False
+            return False
 
     def get_ftp_folder_permission(self, study_ftp_folder_name: str, chmod: int = 770, exist_ok: bool = True) -> str:
         """
@@ -313,9 +312,9 @@ class DataMoverAvailableStorage(object):
             if output.execution_status:
                 return output.execution_output
             else:
-                return None
+                return ''
         else:
-            return None
+            return ''
 
     def check_folder_sync_status(self) -> SyncTaskResult:
 
