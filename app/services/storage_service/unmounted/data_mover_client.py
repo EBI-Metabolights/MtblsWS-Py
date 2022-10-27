@@ -279,13 +279,14 @@ class DataMoverAvailableStorage(object):
         else:
             return False
 
-    def update_ftp_folder_permission(self, study_ftp_folder_name: str, chmod: int = 0o770) -> bool:
+    def update_ftp_folder_permission(self, study_ftp_folder_name: str, chmod: int = 0o770, guid: bool = False) -> bool:
 
         if self.check_for_invalid_values(study_ftp_folder_name):
             study_ftp_private_path = self._get_absolute_ftp_private_path(study_ftp_folder_name)
             chmod_string = str(oct(chmod & 0o777)).replace('0o', '')
             command = "chmod"
-            params = f"-R {chmod_string} {study_ftp_private_path}"
+            guid_value = '2' if guid else ''
+            params = f"-R {guid_value}{chmod_string} {study_ftp_private_path}"
 
             output: CommandOutput = self._execute_and_get_result(command, params)
             return output.execution_status

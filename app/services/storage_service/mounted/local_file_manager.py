@@ -66,19 +66,17 @@ class MountedVolumeFileManager(FileManager):
     def update_folder_permission(self, source: str, acl: Acl = Acl.AUTHORIZED_READ_WRITE) -> bool:
         source_path = self._get_abs_path(source)
         chmod = acl.value
-
-        return self._update_chmod(source_path, chmod)
-
-        self._validate_path(source)
-        return self._get_abs_path(source)
+        guid = True if acl == Acl.AUTHORIZED_READ_WRITE else False
+        return self._update_chmod(source_path, chmod, guid)
 
     def get_base_uri(self, source):
         return self.mounted_root_folder
 
     @staticmethod
-    def _update_chmod(file, chmod):
+    def _update_chmod(file, chmod, guid: bool = False):
         previous_mask = os.umask(0)
         try:
+            chmod = int(('2' + str(oct(chmod)[-3:])), 8) if guid else chmod
             os.chmod(file, chmod)
         except (OSError, Exception):
             return False

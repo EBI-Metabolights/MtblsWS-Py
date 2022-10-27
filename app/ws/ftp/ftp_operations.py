@@ -87,7 +87,7 @@ class SyncCalculation(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance(app).get_study_by_acc(study_id)
         study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
@@ -151,7 +151,7 @@ class SyncFromFtpFolder(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance(app).get_study_by_acc(study_id)
         study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
@@ -216,7 +216,7 @@ class FtpFolderSyncStatus(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance(app).get_study_by_acc(study_id)
         study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
