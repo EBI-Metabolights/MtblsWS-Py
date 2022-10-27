@@ -405,9 +405,6 @@ class DataMoverAvailableStorage(object):
             output = self.read_first_line(log_file_study_path)
         else:
             output = "None"
-        if not status:
-            raise MetabolightsException(f"Task {self.requestor} is not started successfully for {self.studyId}",
-                                        http_code=500)
 
         return CommandOutput(execution_status=status, execution_output=output)
 
