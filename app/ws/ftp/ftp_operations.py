@@ -161,6 +161,7 @@ class SyncFromFtpFolder(Resource):
         ignore_list = app.config.get('INTERNAL_MAPPING_LIST')
         storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
 
+        return jsonify({"status": "sync task is started."})
 
 class FtpFolderSyncStatus(Resource):
     @swagger.operation(
