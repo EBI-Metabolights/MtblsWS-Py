@@ -20,6 +20,7 @@ import logging
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from flask import request, abort, jsonify
+from flask import current_app as app
 from app.services.storage_service.unmounted.data_mover_client import DataMoverAvailableStorage
 from app.ws.db_connection import check_access_rights
 
@@ -162,7 +163,7 @@ class FTPRemoteFileManager(Resource):
         if operation == 'create ftp folder':
             try:
                 logger.info('Creating ftp folder!')
-                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('create_ftp_folder', study_id)
+                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('create_ftp_folder', study_id, app)
                 status = data_mover_storage.create_ftp_folder(source_folder)
                 if status:
                     result = {'status': 'Success'}
@@ -175,7 +176,7 @@ class FTPRemoteFileManager(Resource):
         elif operation == 'move ftp folder':
             try:
                 logger.info('Moving FTP folder!')
-                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('move_ftp_folder', study_id)
+                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('move_ftp_folder', study_id, app)
                 status = data_mover_storage.move_ftp_folder(source_folder, target_folder)
                 if status:
                     result = {'status': 'Success'}
@@ -187,7 +188,7 @@ class FTPRemoteFileManager(Resource):
         elif operation == 'delete ftp folder':
             try:
                 logger.info('Deleting FTP folder!')
-                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('delete_ftp_folder', study_id)
+                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('delete_ftp_folder', study_id, app)
                 status = data_mover_storage.delete_ftp_folder(source_folder)
                 if status:
                     result = {'status': 'Success'}
@@ -199,7 +200,7 @@ class FTPRemoteFileManager(Resource):
         elif operation == 'check folder exists':
             try:
                 logger.info('Checking if FTP folder exists!')
-                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('check_ftp_folder_exists', study_id)
+                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('check_ftp_folder_exists', study_id, app)
                 status = data_mover_storage.does_folder_exist(source_folder)
                 if status:
                     result = {'status': 'Success'}
@@ -211,7 +212,7 @@ class FTPRemoteFileManager(Resource):
         elif operation == 'get ftp folder permission':
             try:
                 logger.info('Getting FTP folder permission!')
-                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('get_ftp_folder_permission', study_id)
+                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('get_ftp_folder_permission', study_id, app)
                 output = data_mover_storage.get_ftp_folder_permission(source_folder)
                 if output:
                     result = {'permission': output}
@@ -223,7 +224,7 @@ class FTPRemoteFileManager(Resource):
         elif operation == 'set ftp folder permission':
             try:
                 logger.info('Setting FTP folder permission!')
-                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('get_ftp_folder_permission', study_id)
+                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('get_ftp_folder_permission', study_id, app)
                 chmod = int(target_folder)
                 output = data_mover_storage.update_ftp_folder_permission(source_folder, chmod)
                 if output:
@@ -237,7 +238,7 @@ class FTPRemoteFileManager(Resource):
             try:
                 logger.info('Checking FTP folder status!')
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('check_ftp_status',
-                                                                                          study_id)
+                                                                                          study_id, app)
                 output = data_mover_storage.check_calculate_sync_status(source_folder, False)
                 result = {'result': output.dict()}
             except Exception as e:
@@ -247,7 +248,7 @@ class FTPRemoteFileManager(Resource):
             try:
                 logger.info('Checking Sync status!')
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('check_ftp_sync_status',
-                                                                                          study_id)
+                                                                                          study_id, app)
                 output = data_mover_storage.check_folder_sync_status()
                 result = {'result': output.dict()}
             except Exception as e:
@@ -258,7 +259,7 @@ class FTPRemoteFileManager(Resource):
             try:
                 logger.info('Syncing FTP folder !')
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage("study_id",
-                                                                                          study_id)
+                                                                                          study_id, app)
                 status = data_mover_storage.sync_from_ftp_folder(source_folder)
                 if status:
                     result = {'status': 'Success'}
@@ -271,7 +272,7 @@ class FTPRemoteFileManager(Resource):
             try:
                 logger.info('Syncing study folder !')
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage("None",
-                                                                                          study_id)
+                                                                                          study_id, app)
                 status = data_mover_storage.sync_from_studies_folder(target_folder)
                 if status:
                     result = {'status': 'Success'}
