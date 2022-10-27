@@ -93,8 +93,7 @@ class DataMoverAvailableStorage(object):
         source_study_ftp_folder_path = self._get_absolute_ftp_private_path(source_ftp_folder)
         target_study_folder = self._get_absolute_study_datamover_path(self.studyId)
 
-        if not os.path.exists(self._get_study_log_folder()):
-            os.makedirs(self._get_study_log_folder(), mode=0o777, exist_ok=True)
+        make_dir_with_chmod(self._get_study_log_folder(), 0o777)
         command = "rsync"
         if ignore_list:
             exclude = ''
