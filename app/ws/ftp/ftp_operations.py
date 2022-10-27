@@ -36,8 +36,8 @@ class SyncCalculation(Resource):
                 "allowMultiple": False,
                 "paramType": "query",
                 "type": "Boolean",
-                "defaultValue": True,
-                "default": True
+                "defaultValue": False,
+                "default": False
             },
             {
                 "name": "user_token",
