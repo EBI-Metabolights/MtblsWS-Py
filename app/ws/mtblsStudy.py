@@ -392,7 +392,7 @@ class IsaTabInvestigationFile(Resource):
         logger.info('Getting ISA-Tab Investigation file for %s', study_id)
         location = study_location
         if study_version:
-            audit = os.path.join('audit', study_version)
+            audit = os.path.join(app.config.get('UPDATE_PATH_SUFFIX'), study_version)
             location = os.path.join(study_location, audit)
 
         files = glob.glob(os.path.join(location, inv_filename))
@@ -785,6 +785,12 @@ class CloneAccession(Resource):
 
             study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
 
+        new_study_location = os.path.join(app.config.get('STUDY_PATH'), study_id)
+
+        log_path = os.path.join(new_study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
+        if not os.path.exists(log_path):
+            os.makedirs(log_path, mode=777, exist_ok=True)
+
         # Create an upload folder for all studies anyway
         status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
         upload_location = status["upload_location"]
@@ -1123,6 +1129,10 @@ class CreateAccession(Resource):
         study_location = os.path.join(study_path, study.acc)
         to_path = study_location
 
+        log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
+        if not os.path.exists(log_path):
+            os.makedirs(log_path, mode=777, exist_ok=True)
+
         result, message = copy_files_and_folders(from_path, to_path,
                                                  include_raw_data=True,
                                                  include_investigation_file=True)
@@ -1358,7 +1368,7 @@ class DeleteStudy(Resource):
 
 def get_audit_files(study_location):
     folder_list = []
-    audit_path = os.path.join(study_location, 'audit')
+    audit_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'))
 
     try:
         folder_list = os.listdir(os.path.join(audit_path))
