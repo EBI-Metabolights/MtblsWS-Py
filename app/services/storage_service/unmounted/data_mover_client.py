@@ -463,11 +463,11 @@ class DataMoverAvailableStorage(object):
             f = open(file_path)
             lines = f.readlines()
             if len(lines) > 1:
-                output = output + lines[1].rstrip()
+                output = output + lines[1].rstrip() + ","
             if len(lines) > 2:
-                output = output + lines[2].rstrip()
+                output = output + lines[2].rstrip() + ","
             if len(lines) > 3:
-                output = output + lines[3].rstrip()
+                output = output + lines[3].rstrip() + ","
             return output
         except OSError:
             logger.error('Failed to read file')
