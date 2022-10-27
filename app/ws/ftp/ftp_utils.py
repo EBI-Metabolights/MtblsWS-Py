@@ -36,7 +36,7 @@ def get_ftp_folder_access_status(app, study_id):
 
 def toogle_ftp_folder_permission(app, study_id):
     study = StudyService.get_instance(app).get_study_by_acc(study_id)
-    ftp_study_folder = study_id.lower() + '-' + study.obfuscation_code
+    ftp_study_folder = study_id.lower() + '-' + study.obfuscationcode
     ftp_private_storage = StorageService.get_ftp_private_storage(app)
     logger.info("changing ftp folder permission")
     try:
