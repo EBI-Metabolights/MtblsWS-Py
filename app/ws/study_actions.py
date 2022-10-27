@@ -345,6 +345,9 @@ class ToggleAccessGet(Resource):
                 else:
                     if permission == Acl.AUTHORIZED_READ or permission == Acl.READ_ONLY:
                         access = "Read"
+                    else:
+                        access = "Unkown"
+                        return {'Access': access, 'status': 'error', 'message': "Permission status is unknown"}
             else:
                 return {'Access': access, 'status': 'error', 'message': "There is no folder"}
             return {'Access': access, 'status': 'success'}

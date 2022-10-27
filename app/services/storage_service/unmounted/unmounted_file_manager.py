@@ -42,6 +42,7 @@ class UnmountedVolumeFileManager(FileManager):
             chmod = remote_job_manager.get_ftp_folder_permission(source)
             if len(chmod) > 3:
                 chmod = chmod[-3:]
+            chmod = chmod[:2] + '0'
             chmod_int = int(chmod, 8)
             permission = Acl(chmod_int)
         except (OSError, Exception):
