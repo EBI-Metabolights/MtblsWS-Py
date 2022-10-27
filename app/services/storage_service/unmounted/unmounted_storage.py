@@ -36,7 +36,7 @@ class UnmountedStorage(Storage):
         return success, f"Sync job for {source} is started."
 
     def calculate_sync_status(self, study_id: str, obfuscation_code: str,
-                              target_local_path: str, force: bool = True) -> SyncCalculationTaskResult:
+                              target_local_path: str, force: bool = False) -> SyncCalculationTaskResult:
         if not study_id:
             raise MetabolightsException("Invalid study id")
         remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id, self.app)
