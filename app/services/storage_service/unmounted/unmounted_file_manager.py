@@ -40,6 +40,8 @@ class UnmountedVolumeFileManager(FileManager):
                 raise MetabolightsException("Invalid study id")
             remote_job_manager = DataMoverAvailableStorage("get_folder_permission", study_id, self.app)
             chmod = remote_job_manager.get_ftp_folder_permission(source)
+            if len(chmod) > 3:
+                chmod = chmod[-3:]
             chmod_int = int(chmod, 8)
             permission = Acl(chmod_int)
         except (OSError, Exception):
