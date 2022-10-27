@@ -11,6 +11,7 @@ from operator import itemgetter
 
 from flask import current_app as app
 
+from app.file_utils import make_dir_with_chmod
 from app.ws.utils import date_format, file_date_format, map_file_type, new_timestamped_folder, copy_file
 
 logger = logging.getLogger("wslog")
@@ -27,8 +28,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
     s_start_time = time.time()
 
     log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-    if not os.path.exists(log_path):
-        os.makedirs(log_path, mode=777, exist_ok=True)
+    make_dir_with_chmod(log_path, 0o777)
 
     study_files, latest_update_time = get_all_files(study_location, directory=directory,
                                                     include_raw_data=include_raw_data,
@@ -316,8 +316,8 @@ def write_audit_files(study_location):
     update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
     update_path = os.path.join(study_location, update_path_suffix)
     log_path = os.path.join(update_path, 'logs')
-    if not os.path.exists(log_path):
-        os.makedirs(log_path, mode=777, exist_ok=True)
+    make_dir_with_chmod(log_path, 0o777)
+
     dest_path = new_timestamped_folder(update_path)
 
     try:

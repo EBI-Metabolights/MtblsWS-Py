@@ -2,6 +2,8 @@ import os
 import time
 from datetime import datetime
 from typing import List
+
+from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
     SyncTaskStatus, SyncCalculationStatus
 from app.utils import MetabolightsException
@@ -29,8 +31,8 @@ class DataMoverAvailableStorage(object):
             return False
 
         target_study_ftp_folder_path = self._get_absolute_ftp_private_path(target_ftp_folder)
-        if not os.path.exists(self._get_study_log_folder()):
-            os.makedirs(self._get_study_log_folder(), mode=777, exist_ok=True)
+
+        make_dir_with_chmod(self._get_study_log_folder(), 0o777)
         command = "rsync"
         rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
         exclude = ''
@@ -64,8 +66,7 @@ class DataMoverAvailableStorage(object):
 
         source_study_ftp_folder_path = self._get_absolute_ftp_private_path(source_ftp_folder)
         target_study_folder = self._get_absolute_study_datamover_path(self.studyId)
-        if not os.path.exists(self._get_study_log_folder()):
-            os.makedirs(self._get_study_log_folder(), mode=777, exist_ok=True)
+        make_dir_with_chmod(self._get_study_log_folder(), 0o777)
         command = "rsync"
         if ignore_list:
             exclude = ''
@@ -94,7 +95,7 @@ class DataMoverAvailableStorage(object):
         target_study_folder = self._get_absolute_study_datamover_path(self.studyId)
 
         if not os.path.exists(self._get_study_log_folder()):
-            os.makedirs(self._get_study_log_folder(), mode=777, exist_ok=True)
+            os.makedirs(self._get_study_log_folder(), mode=0o777, exist_ok=True)
         command = "rsync"
         if ignore_list:
             exclude = ''
@@ -385,9 +386,7 @@ class DataMoverAvailableStorage(object):
     def _execute_and_get_result(self, command, params) -> CommandOutput:
         study_log_folder = self._get_study_log_folder()
 
-        if not os.path.exists(study_log_folder):
-            os.makedirs(study_log_folder, mode=777, exist_ok=True)
-
+        make_dir_with_chmod(study_log_folder, 0o777)
         self.create_empty_file(file_path=self._get_study_log_file(command=command))
 
         logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + self.studyId)

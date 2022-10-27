@@ -69,7 +69,6 @@ class MountedVolumeFileManager(FileManager):
 
         return self._update_chmod(source_path, chmod)
 
-    def get_uri(self, source):
         self._validate_path(source)
         return self._get_abs_path(source)
 

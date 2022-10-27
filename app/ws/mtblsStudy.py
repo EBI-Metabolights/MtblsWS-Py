@@ -27,6 +27,7 @@ from flask import request, send_file, current_app as app, jsonify
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
+from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException, \
@@ -788,8 +789,7 @@ class CloneAccession(Resource):
         new_study_location = os.path.join(app.config.get('STUDY_PATH'), study_id)
 
         log_path = os.path.join(new_study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-        if not os.path.exists(log_path):
-            os.makedirs(log_path, mode=777, exist_ok=True)
+        make_dir_with_chmod(log_path, 0o777)
 
         # Create an upload folder for all studies anyway
         status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
@@ -1130,8 +1130,7 @@ class CreateAccession(Resource):
         to_path = study_location
 
         log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-        if not os.path.exists(log_path):
-            os.makedirs(log_path, mode=777, exist_ok=True)
+        make_dir_with_chmod(log_path, 0o777)
 
         result, message = copy_files_and_folders(from_path, to_path,
                                                  include_raw_data=True,
