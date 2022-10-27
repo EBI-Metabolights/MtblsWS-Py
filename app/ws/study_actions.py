@@ -238,6 +238,7 @@ class ToggleAccess(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def put(self, study_id):
 
         # param validation
@@ -314,6 +315,7 @@ class ToggleAccessGet(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self, study_id):
 
         # param validation

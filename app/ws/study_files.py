@@ -1008,7 +1008,7 @@ def update_files_list_schema(study_id, obfuscation_code, study_location, files_l
     files_list_schema = {'study': study_files,
                                  'latest': upload_diff,
                                  'private': upload_files,
-                                 'uploadPath': upload_location[1],
+                                 'uploadPath': '',
                                  'obfuscationCode': obfuscation_code}
 
     logger.info(" Writing Files list schema to a file for studyid - %s ", study_id)

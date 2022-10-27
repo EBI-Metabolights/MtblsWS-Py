@@ -38,5 +38,5 @@ class SyncCalculationTaskResult(JobResultModel):
 
 
 class CommandOutput(BaseModel):
-    execution_status: bool = Field(None)
+    execution_status: bool = Field(False)
     execution_output: str = Field(None)

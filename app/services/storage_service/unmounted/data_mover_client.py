@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
     SyncTaskStatus, SyncCalculationStatus
+from app.utils import MetabolightsException
 from app.ws.cluster_jobs import submit_job, list_jobs
 import logging
 
@@ -251,7 +252,7 @@ class DataMoverAvailableStorage(object):
             params = "-lrt " + ftp_private_path
 
             output: CommandOutput = self._execute_and_get_result(command, params)
-            return output.execution_status
+            return True if output.execution_output else False
         else:
             return False
 
@@ -405,6 +406,9 @@ class DataMoverAvailableStorage(object):
             output = self.read_first_line(log_file_study_path)
         else:
             output = "None"
+        if not status:
+            raise MetabolightsException(f"Task {self.requestor} is not started successfully for {self.studyId}",
+                                        http_code=500)
 
         return CommandOutput(execution_status=status, execution_output=output)
 
@@ -493,10 +497,6 @@ class DataMoverAvailableStorage(object):
 
     def check_for_invalid_values(self, value):
         if not value:
-            return False
-        if value is None:
-            return False
-        if value == "":
             return False
         if value.startswith('mtbls'):
             return True
