@@ -462,7 +462,7 @@ class DataMoverAvailableStorage(object):
     def check_if_job_successful(self, status, job_out, log_file_study_path):
         if status:
             if "is submitted to queue" in job_out:
-                for x in range(0, 5):
+                for x in range(0, 10):
                     if self.str_in_file(file_path=log_file_study_path, word='Successfully completed'):
                         return True
                     if self.str_in_file(file_path=log_file_study_path, word='Exited with exit code'):
