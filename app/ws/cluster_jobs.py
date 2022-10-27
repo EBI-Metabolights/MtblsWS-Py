@@ -117,7 +117,7 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
     if job_cmd == 'rsync':
         bsub_cmd = bsub_cmd + " -J " + submitter + "_" + job_cmd
     cmd = ssh_cmd + " " + bsub_cmd + " " + job_cmd1
-
+    status = False
     try:
         logger.info(" LSF command executing  : " + cmd)
         job_status = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)

@@ -30,8 +30,10 @@ class UnmountedStorage(Storage):
             raise MetabolightsException("Invalid study id")
         remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id, self.app)
 
-        status = remote_job_manager.sync_from_ftp_folder(source, ignore_list, **kwargs)
-        return status
+        success = remote_job_manager.sync_from_ftp_folder(source, ignore_list, **kwargs)
+        if not success:
+            raise MetabolightsException(http_code=500, message=f"Sync job for {source} was failed.")
+        return success, f"Sync job for {source} is started."
 
     def calculate_sync_status(self, study_id: str, obfuscation_code: str,
                               target_local_path: str, force: bool = True) -> SyncCalculationTaskResult:
