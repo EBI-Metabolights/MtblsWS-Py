@@ -13,7 +13,7 @@ class UnmountedVolumeFileManager(FileManager):
         super(UnmountedVolumeFileManager, self).__init__(name=name)
 
     def create_folder(self, folder_path_list: Union[str, List[str]], acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
-        if folder_path_list:
+        if not folder_path_list:
             raise MetabolightsException("Folder names are not defined")
         paths = []
         if isinstance(folder_path_list, str):
