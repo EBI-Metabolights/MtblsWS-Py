@@ -1,3 +1,5 @@
+from typing import Union, List
+
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.file_manager import FileManager
 from app.services.storage_service.unmounted.data_mover_client import DataMoverAvailableStorage
@@ -10,13 +12,20 @@ class UnmountedVolumeFileManager(FileManager):
         self.app = app
         super(UnmountedVolumeFileManager, self).__init__(name=name)
 
-    def create_folder(self, target: str, acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
-        study_id = self.get_study_id(target)
+    def create_folder(self, folder_path_list: Union[str, List[str]], acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
+        if folder_path_list:
+            raise MetabolightsException("Folder names are not defined")
+        paths = []
+        if isinstance(folder_path_list, str):
+            paths.append(folder_path_list)
+        else:
+            paths = folder_path_list
+        study_id = self.get_study_id(paths[0])
         if not study_id:
             raise MetabolightsException("Invalid study id")
         try:
             remote_job_manager = DataMoverAvailableStorage("create_folder", study_id, self.app)
-            result = remote_job_manager.create_ftp_folder(target, acl, exist_ok)
+            result = remote_job_manager.create_ftp_folder(paths, acl, exist_ok)
         except (OSError, Exception):
             return False
 
