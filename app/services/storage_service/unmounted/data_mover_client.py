@@ -218,15 +218,15 @@ class DataMoverAvailableStorage(object):
 
         return result
 
-    def create_ftp_folder(self, study_ftp_folder_name: str, chmod: int = 770, exist_ok: bool = True) -> bool:
+    def create_ftp_folder(self, study_ftp_folder_name: str, chmod: int = 0o770, exist_ok: bool = True) -> bool:
         """
         Create FTP folder and RAW_FILES and DERIVED_FILES folders
         """
         if self.check_for_invalid_values(study_ftp_folder_name):
             study_ftp_private_path = self._get_absolute_ftp_private_path(study_ftp_folder_name)
-
+            chmod_string = '2' + str(oct(chmod & 0o777)).replace('0o', '')
             command = "mkdir"
-            params = f"-p chmod={chmod} exist_ok={exist_ok} {study_ftp_private_path}"
+            params = f"-p chmod={chmod_string} exist_ok={exist_ok} {study_ftp_private_path}"
 
             output: CommandOutput = self._execute_and_get_result(command, params)
             return output.execution_status
