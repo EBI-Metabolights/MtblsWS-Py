@@ -1,7 +1,7 @@
 import os
 import time
 from datetime import datetime
-from typing import List
+from typing import List, Union
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
@@ -218,15 +218,33 @@ class DataMoverAvailableStorage(object):
 
         return result
 
-    def create_ftp_folder(self, study_ftp_folder_name: str, chmod: int = 770, exist_ok: bool = True) -> bool:
+    def create_ftp_folder(self, folder_path_list: Union[str, List[str]], chmod: int = 0o770, exist_ok: bool = True) -> bool:
         """
         Create FTP folder and RAW_FILES and DERIVED_FILES folders
         """
-        if self.check_for_invalid_values(study_ftp_folder_name):
-            study_ftp_private_path = self._get_absolute_ftp_private_path(study_ftp_folder_name)
+        paths = []
+        if isinstance(folder_path_list, str):
+            paths.append(folder_path_list)
+        else:
+            paths = folder_path_list
 
-            command = "mkdir"
-            params = f"-p chmod={chmod} exist_ok={exist_ok} {study_ftp_private_path}"
+        if paths:
+            study_ftp_private_paths = list()
+            for file in paths:
+                valid = self.check_for_invalid_values(file)
+                if valid:
+                    abs_path = self._get_absolute_ftp_private_path(file)
+                    study_ftp_private_paths.append(abs_path)
+            if not study_ftp_private_paths:
+                return False
+
+            file_string_list = [f'"{f}"' for f in study_ftp_private_paths]
+            joined_paths = " ".join(file_string_list)
+
+            command = f"new_dirs=({joined_paths}) ; for i in $(seq $#new_dirs[@]); do mkdir -p chmod={chmod} exist_ok={exist_ok} new_dirs[$i]; done"
+            params = ''
+            #command = "mkdir"
+            #params = f"-p chmod={chmod} exist_ok={exist_ok} {study_ftp_private_path}"
 
             output: CommandOutput = self._execute_and_get_result(command, params)
             return output.execution_status

@@ -171,11 +171,12 @@ class StudyStatus(Resource):
         status, message = wsc.reindex_study(study_id, user_token)
         # Explictly changing the FTP folder permission for In Curation and Submitted state
         if db_study_status.lower() != study_status.lower():
-            if study_status.lower() == 'in curation':
+            if study_status.lower() == 'in curation' and study_status.lower() == 'in review':
                 ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ)
-
-            if study_status.lower() == 'submitted':
+            elif study_status.lower() == 'submitted':
                 ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.AUTHORIZED_READ_WRITE)
+            elif study_status.lower() == 'public':
+                ftp_private_storage.remote.update_folder_permission(ftp_private_study_folder, Acl.READ_ONLY)
 
             return {"Success": "Status updated from '" + db_study_status + "' to '" + study_status + "'",
                     "release-date": release_date}

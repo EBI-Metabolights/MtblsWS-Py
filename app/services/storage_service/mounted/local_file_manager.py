@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import List, Union
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.exceptions import StorageServiceException
@@ -12,10 +13,16 @@ class MountedVolumeFileManager(FileManager):
         super(MountedVolumeFileManager, self).__init__(name=name)
         self.mounted_root_folder = mounted_root_folder
 
-    def create_folder(self, target: str, acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
+    def create_folder(self, folder_path_list: Union[str, List[str]], acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
+        paths = []
+        if isinstance(folder_path_list, str):
+            paths.append(folder_path_list)
+        else:
+            paths = folder_path_list
         try:
-            path = self._get_abs_path(target)
-            os.makedirs(path, mode=acl, exist_ok=exist_ok)
+            for file in paths:
+                path = self._get_abs_path(file)
+                os.makedirs(path, mode=acl, exist_ok=exist_ok)
         except (OSError, FileExistsError):
             return False
         return True

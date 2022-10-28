@@ -37,16 +37,9 @@ from gspread_dataframe import set_with_dataframe
 from oauth2client.service_account import ServiceAccountCredentials
 from owlready2 import urllib
 
-from app.services.storage_service.acl import Acl
-from app.services.storage_service.storage_service import StorageService
-from app.ws.db.dbmanager import DBManager
-from app.ws.db.schemes import Study
-from app.ws.db.types import StudyStatus
 from app.ws.db_connection import get_study_info, get_study_by_type, get_public_studies
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.mtblsWSclient import WsClient
-from app.ws.study.commons import create_ftp_folder
-from app.ws.study.user_service import UserService
 from app.ws.utils import log_request, writeDataToFile
 
 logger = logging.getLogger('wslog')
