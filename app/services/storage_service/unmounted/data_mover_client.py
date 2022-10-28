@@ -238,8 +238,7 @@ class DataMoverAvailableStorage(object):
             if not study_ftp_private_paths:
                 return False
 
-            file_string_list = [f'"{f}"' for f in study_ftp_private_paths]
-            joined_paths = " ".join(file_string_list)
+            joined_paths = " ".join(study_ftp_private_paths)
 
             command = f"new_dirs=({joined_paths}) ; for i in $(seq $#new_dirs[@]); do mkdir -p chmod={chmod} exist_ok={exist_ok} new_dirs[$i]; done"
             params = ''
