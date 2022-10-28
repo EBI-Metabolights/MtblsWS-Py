@@ -1,6 +1,8 @@
 import os
 import shutil
+from typing import Union, List
 
+from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.exceptions import StorageServiceException
 from app.services.storage_service.file_manager import FileManager
@@ -12,10 +14,18 @@ class MountedVolumeFileManager(FileManager):
         super(MountedVolumeFileManager, self).__init__(name=name)
         self.mounted_root_folder = mounted_root_folder
 
-    def create_folder(self, target: str, acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
+    def create_folder(self, folder_paths: Union[str, List[str]], acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
+        if not folder_paths:
+            False
+        paths = []
+        if isinstance(folder_paths, str):
+            paths.append(folder_paths)
+        else:
+            paths = folder_paths
         try:
-            path = self._get_abs_path(target)
-            os.makedirs(path, mode=acl, exist_ok=exist_ok)
+            for file in paths:
+                path = self._get_abs_path(file)
+                make_dir_with_chmod(path, acl)
         except (OSError, FileExistsError):
             return False
         return True

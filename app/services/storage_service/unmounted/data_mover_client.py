@@ -1,7 +1,7 @@
 import os
 import time
 from datetime import datetime
-from typing import List
+from typing import List, Union
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
@@ -218,15 +218,31 @@ class DataMoverAvailableStorage(object):
 
         return result
 
-    def create_ftp_folder(self, study_ftp_folder_name: str, chmod: int = 0o770, exist_ok: bool = True) -> bool:
+    def create_ftp_folder(self, folder_paths: Union[str, List[str]], chmod: int = 0o770, exist_ok: bool = True) -> bool:
         """
         Create FTP folder and RAW_FILES and DERIVED_FILES folders
         """
-        if self.check_for_invalid_values(study_ftp_folder_name):
-            study_ftp_private_path = self._get_absolute_ftp_private_path(study_ftp_folder_name)
+        paths = []
+        if isinstance(folder_paths, str):
+            paths.append(folder_paths)
+        else:
+            paths = folder_paths
+
+        if paths:
+            study_ftp_private_paths = list()
+            for file in paths:
+                valid = self.check_for_invalid_values(file)
+                if valid:
+                    abs_path = self._get_absolute_ftp_private_path(file)
+                    study_ftp_private_paths.append(abs_path)
+            if not study_ftp_private_paths:
+                return False
+
+            joined_paths = " ".join(study_ftp_private_paths)
             chmod_string = '2' + str(oct(chmod & 0o777)).replace('0o', '')
             command = "mkdir"
-            params = f"-p chmod={chmod_string} exist_ok={exist_ok} {study_ftp_private_path}"
+            exist_ok_param = "-p" if exist_ok else ''
+            params = f"{exist_ok_param} -m {chmod_string} {joined_paths}"
 
             output: CommandOutput = self._execute_and_get_result(command, params)
             return output.execution_status

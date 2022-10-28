@@ -138,9 +138,8 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service, sen
         derived_files_path = os.path.join(new_folder_name, "DERIVED_FILES")
 
         logger.info(f"Creating folder {new_folder_name}")
-        private_ftp_sm.remote.create_folder(new_folder_name, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        private_ftp_sm.remote.create_folder(raw_files_path, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        private_ftp_sm.remote.create_folder(derived_files_path, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        folders = [new_folder_name, raw_files_path, derived_files_path]
+        private_ftp_sm.remote.create_folder(folders, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
         new_folder = True
 
     relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
