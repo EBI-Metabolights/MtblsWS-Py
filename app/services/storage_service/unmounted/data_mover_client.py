@@ -241,8 +241,8 @@ class DataMoverAvailableStorage(object):
             joined_paths = " ".join(study_ftp_private_paths)
             chmod_string = '2' + str(oct(chmod & 0o777)).replace('0o', '')
             # command = "mkdir"
-            command = 'bash'
-            params = "new_dirs=(" + joined_paths + ");for i in ${!new_dirs[@]};do mkdir -p chmod=" \
+            command = 'echo'
+            params = "'';new_dirs=(" + joined_paths + ");for i in ${!new_dirs[@]};do mkdir -p chmod=" \
                      + chmod_string + " exist_ok=" + str(exist_ok) + " ${new_dirs[$i]};done"
 
             #command = "mkdir"
