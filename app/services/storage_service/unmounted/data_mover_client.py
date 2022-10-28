@@ -239,9 +239,10 @@ class DataMoverAvailableStorage(object):
                 return False
 
             joined_paths = " ".join(study_ftp_private_paths)
-
-            command = 'create_folder=1'
-            params = f";new_dirs=({joined_paths});for i in $(seq $#new_dirs[@]);do mkdir -p chmod={chmod} exist_ok={exist_ok} new_dirs[$i];done"
+            chmod_string = '2' + str(oct(chmod & 0o777)).replace('0o', '')
+            # command = "mkdir"
+            command = 'bash'
+            params = f"new_dirs=({joined_paths});for i in $(seq $#new_dirs[@]);do mkdir -p chmod={chmod_string} exist_ok={exist_ok} new_dirs[$i];done"
             #command = "mkdir"
             #params = f"-p chmod={chmod} exist_ok={exist_ok} {study_ftp_private_path}"
 
