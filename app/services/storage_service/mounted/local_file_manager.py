@@ -16,7 +16,7 @@ class MountedVolumeFileManager(FileManager):
 
     def create_folder(self, folder_paths: Union[str, List[str]], acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
         if not folder_paths:
-            False
+            return False
         paths = []
         if isinstance(folder_paths, str):
             paths.append(folder_paths)
@@ -100,6 +100,9 @@ class MountedVolumeFileManager(FileManager):
             message = f'Source  {path} does not exist'
             raise StorageServiceException(StorageServiceException.ERR_CODE_FILE_NOT_EXIST, message)
         return abs_path
+
+    def get_uri(self, source_file):
+        return self._get_abs_path(source_file)
 
     def _validate_path(self, source: str):
         if not source or source.startswith('.') or source.startswith('..'):

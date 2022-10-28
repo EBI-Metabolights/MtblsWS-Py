@@ -160,7 +160,7 @@ class LocalStorage(Storage):
             base_name = os.path.basename(target_local_path)
             self.download_file(source, dir_name, base_name)
         elif os.path.isdir(source_path):
-            sync(source_path, target_local_path, 'sync', **kwargs)
+            sync(source_path, target_local_path, 'sync', exclude='i_Investigation.txt', **kwargs)
 
     def calculate_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str, force: bool = True) \
             -> SyncCalculationTaskResult:

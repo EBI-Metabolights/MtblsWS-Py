@@ -14,7 +14,7 @@ class UnmountedVolumeFileManager(FileManager):
 
     def create_folder(self, folder_paths: Union[str, List[str]], acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
         if not folder_paths:
-            False
+            return False
         paths = []
         if isinstance(folder_paths, str):
             paths.append(folder_paths)
