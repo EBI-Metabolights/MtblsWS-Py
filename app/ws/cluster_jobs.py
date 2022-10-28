@@ -99,7 +99,7 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
     ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
 
     if job_params:
-        job_cmd1 = job_cmd1 + " " + job_params
+        job_cmd1 = f'"{job_cmd1} {job_params}"'
 
     if submitter is None:
         submitter = "None"
