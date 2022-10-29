@@ -38,7 +38,7 @@ class DataMoverAvailableStorage(object):
         ignore_set = set()
         if ignore_list:
             ignore_set.union(set(ignore_list))
-        else:
+        if rsync_exclude_list:
             ignore_set.union(set(rsync_exclude_list))
         exclude = ''
         if ignore_set:
@@ -74,7 +74,7 @@ class DataMoverAvailableStorage(object):
         ignore_set = set()
         if ignore_list:
             ignore_set.union(set(ignore_list))
-        else:
+        if rsync_exclude_list:
             ignore_set.union(set(rsync_exclude_list))
 
         if ignore_set:
@@ -109,7 +109,7 @@ class DataMoverAvailableStorage(object):
         ignore_set = set()
         if ignore_list:
             ignore_set.union(set(ignore_list))
-        else:
+        if rsync_exclude_list:
             ignore_set.union(set(rsync_exclude_list))
         exclude = ''
         if ignore_set:
