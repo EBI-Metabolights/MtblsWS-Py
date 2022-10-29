@@ -6,6 +6,7 @@ from typing import List, Union
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
     SyncTaskStatus, SyncCalculationStatus
+from app.utils import MetabolightsException
 from app.ws.cluster_jobs import submit_job, list_jobs
 import logging
 
@@ -34,12 +35,14 @@ class DataMoverAvailableStorage(object):
         make_dir_with_chmod(self._get_study_log_folder(), 0o777)
         command = "rsync"
         rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
-        exclude = ''
-        for file in rsync_exclude_list:
-            exclude = f'{exclude} --exclude {file}'
-
+        ignore_set = set()
         if ignore_list:
-            for ignore_file in ignore_list:
+            ignore_set.union(set(ignore_list))
+        else:
+            ignore_set.union(set(rsync_exclude_list))
+        exclude = ''
+        if ignore_set:
+            for ignore_file in ignore_set:
                 exclude = f'{exclude} --exclude {ignore_file}'
         data_mover_study_path = self._get_absolute_study_datamover_path(self.studyId)
         params = f"-auv {exclude} {data_mover_study_path}/* {target_study_ftp_folder_path}/."
@@ -67,9 +70,16 @@ class DataMoverAvailableStorage(object):
         target_study_folder = self._get_absolute_study_datamover_path(self.studyId)
         make_dir_with_chmod(self._get_study_log_folder(), 0o770)
         command = "rsync"
+        rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
+        ignore_set = set()
         if ignore_list:
+            ignore_set.union(set(ignore_list))
+        else:
+            ignore_set.union(set(rsync_exclude_list))
+
+        if ignore_set:
             exclude = ''
-            for ignore_file in ignore_list:
+            for ignore_file in ignore_set:
                 exclude = f'{exclude} --exclude {ignore_file}'
             params = f"-auv {exclude} {source_study_ftp_folder_path}/* {target_study_folder}/."
         else:
@@ -95,9 +105,15 @@ class DataMoverAvailableStorage(object):
 
         make_dir_with_chmod(self._get_study_log_folder(), 0o777)
         command = "rsync"
+        rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
+        ignore_set = set()
         if ignore_list:
-            exclude = ''
-            for ignore_file in ignore_list:
+            ignore_set.union(set(ignore_list))
+        else:
+            ignore_set.union(set(rsync_exclude_list))
+        exclude = ''
+        if ignore_set:
+            for ignore_file in ignore_set:
                 exclude = f'{exclude} --exclude {ignore_file}'
             params = f"-aunv {exclude} {source_study_ftp_folder_path}/* {target_study_folder}/."
         else:
@@ -117,7 +133,7 @@ class DataMoverAvailableStorage(object):
         logger.info("Log file  -  " + study_log_file)
         return status
 
-    def check_calculate_sync_status(self, source_ftp_folder: str, force: bool = False) -> SyncCalculationTaskResult:
+    def check_calculate_sync_status(self, source_ftp_folder: str, force: bool = False, ignore_list: List = None) -> SyncCalculationTaskResult:
         job_name = f'{self.studyId}_calc_rsync'
         job_no_found = 'is not found in queue'
         result: SyncCalculationTaskResult = SyncCalculationTaskResult()
@@ -128,9 +144,10 @@ class DataMoverAvailableStorage(object):
             if status:
                 if job_no_found in msg_err:
                     if not os.path.exists(study_log_file):
-                        return self._init_calculate_sync(source_ftp_folder)
+                        return self._init_calculate_sync(source_ftp_folder, ignore_list)
                     else:
-                        result = self._check_calc_log_file_status(study_log_file, source_ftp_folder, False, force)
+                        result = self._check_calc_log_file_status(study_log_file, source_ftp_folder,
+                                                                  False, force, ignore_list)
                         result.last_update_time = time.ctime(os.path.getmtime(study_log_file))
                         return result
                 if 'JOBID' in msg_out:
@@ -150,28 +167,33 @@ class DataMoverAvailableStorage(object):
                     result.status = SyncCalculationStatus.UNKNOWN
             else:
                 result.status = SyncCalculationStatus.UNKNOWN
+                raise MetabolightsException(message=message, http_code=500)
         except Exception as e:
             message = f'Could not check the job status for study sync  - {self.studyId}'
             logger.error(message + ' ;  reason  :-' + str(e))
             result.status = SyncCalculationStatus.UNKNOWN
+            raise MetabolightsException(message=message, http_code=500, exception=e)
         return result
 
-    def _init_calculate_sync(self, source_ftp_folder: str) -> SyncCalculationTaskResult:
+    def _init_calculate_sync(self, source_ftp_folder: str, ignore_list: List = None) -> SyncCalculationTaskResult:
         result: SyncCalculationTaskResult = SyncCalculationTaskResult()
         try:
-            status = self.calculate_sync(source_ftp_folder, None)
+            status = self.calculate_sync(source_ftp_folder, ignore_list)
             if status:
                 result.status = SyncCalculationStatus.CALCULATING
                 result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
             else:
                 result.status = SyncCalculationStatus.UNKNOWN
                 result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
-        except:
+        except Exception as e:
             result.status = SyncCalculationStatus.UNKNOWN
             result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+            raise MetabolightsException(message="Error while calculating ftp folder sync status", http_code=500, exception=e)
         return result
 
-    def _check_calc_log_file_status(self, study_log_file: str, source_ftp_folder: str, job_found: bool, force: bool) -> SyncCalculationTaskResult:
+    def _check_calc_log_file_status(self, study_log_file: str,
+                                    source_ftp_folder: str, job_found: bool,
+                                    force: bool, ignore_list: List = None) -> SyncCalculationTaskResult:
         result: SyncCalculationTaskResult = SyncCalculationTaskResult()
         if not job_found:
             # check for one day case
@@ -181,17 +203,17 @@ class DataMoverAvailableStorage(object):
             if difference > 86400:
                 # More than day since log updated
                 logger.info("Logfile updated since more than a day. So init calc request !")
-                return self._init_calculate_sync(source_ftp_folder)
+                return self._init_calculate_sync(source_ftp_folder, ignore_list)
 
             sync_log_file = os.path.join(self._get_study_log_folder(), f"{self.studyId}_do_rsync.log")
             sync_log_file_time = os.path.getmtime(sync_log_file)
             if sync_log_file_time > logfile_time:
                 # Sync happened after calculation
                 logger.info("Logfile outdated as sync happened recently, so init calc request !")
-                return self._init_calculate_sync(source_ftp_folder)
+                return self._init_calculate_sync(source_ftp_folder, ignore_list)
 
             if force:
-                return self._init_calculate_sync(source_ftp_folder)
+                return self._init_calculate_sync(source_ftp_folder, ignore_list)
             else:
                 if self.str_in_file(file_path=study_log_file, word='Successfully completed'):
                     # Read output

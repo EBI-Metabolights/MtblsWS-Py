@@ -28,8 +28,9 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def calculate_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str, force: bool = True) \
-            -> SyncCalculationTaskResult:
+    def calculate_sync_status(self, study_id: str, obfuscation_code: str,
+                              target_local_path: str, force: bool = True,
+                              ignore_list: List[str] = None) -> SyncCalculationTaskResult:
         pass
 
     @abstractmethod

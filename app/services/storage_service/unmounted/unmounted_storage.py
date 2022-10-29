@@ -29,23 +29,22 @@ class UnmountedStorage(Storage):
         if not study_id:
             raise MetabolightsException("Invalid study id")
         remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id, self.app)
-        ignore_file = 'i_Investigation.txt'
         if not ignore_list:
-            ignore_list = [ignore_file]
-        else:
-            ignore_list.append(ignore_file)
+            ignore_list = []
         success = remote_job_manager.sync_from_ftp_folder(source, ignore_list, **kwargs)
         if not success:
             raise MetabolightsException(http_code=500, message=f"Sync job for {source} was failed.")
         return success, f"Sync job for {source} is started."
 
     def calculate_sync_status(self, study_id: str, obfuscation_code: str,
-                              target_local_path: str, force: bool = False) -> SyncCalculationTaskResult:
+                              target_local_path: str, force: bool = False, ignore_list: List = None) -> SyncCalculationTaskResult:
         if not study_id:
             raise MetabolightsException("Invalid study id")
         remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id, self.app)
         ftp_folder_name = f"{study_id.lower()}-{obfuscation_code}"
-        result = remote_job_manager.check_calculate_sync_status(ftp_folder_name, force)
+        if not ignore_list:
+            ignore_list = []
+        result = remote_job_manager.check_calculate_sync_status(ftp_folder_name, force, ignore_list)
         return result
 
     def check_folder_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str) -> SyncTaskResult:

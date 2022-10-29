@@ -162,13 +162,14 @@ class LocalStorage(Storage):
         elif os.path.isdir(source_path):
             sync(source_path, target_local_path, 'sync', exclude='i_Investigation.txt', **kwargs)
 
-    def calculate_sync_status(self, study_id: str, obfuscation_code: str, target_local_path: str, force: bool = True) \
-            -> SyncCalculationTaskResult:
+    def calculate_sync_status(self, study_id: str, obfuscation_code: str,
+                              target_local_path: str, force: bool = True,
+                              ignore_list: List[str] = None) -> SyncCalculationTaskResult:
         self.remote_file_manager.get_uri(study_id)
         ftp_folder_name = f"{study_id.lower()}-{obfuscation_code}"
 
         source = self.remote_file_manager.get_uri(ftp_folder_name)
-        updated_files = self.calculate_folder_sync_status(source, target_local_path)
+        updated_files = self.calculate_folder_sync_status(source, target_local_path, ignore_list)
         last_updated_time = 0
         new_file_count = 0
         updated_files_count = 0
@@ -210,9 +211,9 @@ class LocalStorage(Storage):
         except os.error:
             raise MetabolightsException(f'Error while comparing file {filename}')
 
-    def calculate_folder_sync_status(self, source, target):
-        source_files = self.get_file_set_in_folder(source)
-        target_files = self.get_file_set_in_folder(target)
+    def calculate_folder_sync_status(self, source, target, ignore_list: List[str] = None):
+        source_files = self.get_file_set_in_folder(source, ignore_list)
+        target_files = self.get_file_set_in_folder(target, ignore_list)
 
         common = source_files.intersection(target_files)
 
@@ -235,12 +236,13 @@ class LocalStorage(Storage):
                 updated_files.add((item, 'UPDATED', modified, modified_timestamp))
         return updated_files
 
-    def get_file_set_in_folder(self, source):
+    def get_file_set_in_folder(self, source, ignore_list: List[str] = None):
         source_files = set()
         for cwd, dirs, files in os.walk(source):
 
             for f in files:
                 path = os.path.relpath(os.path.join(cwd, f), source)
                 re_path = path.replace('\\', os.path.sep).strip(os.path.sep)
-                source_files.add(re_path)
+                if re_path not in ignore_list:
+                    source_files.add(re_path)
         return source_files
