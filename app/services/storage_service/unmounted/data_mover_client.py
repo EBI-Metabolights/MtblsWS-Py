@@ -37,9 +37,9 @@ class DataMoverAvailableStorage(object):
         rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
         ignore_set = set()
         if ignore_list:
-            ignore_set.union(set(ignore_list))
+            ignore_set = ignore_set.union(set(ignore_list))
         if rsync_exclude_list:
-            ignore_set.union(set(rsync_exclude_list))
+            ignore_set = ignore_set.union(set(rsync_exclude_list))
         exclude = ''
         if ignore_set:
             for ignore_file in ignore_set:
@@ -73,9 +73,9 @@ class DataMoverAvailableStorage(object):
         rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
         ignore_set = set()
         if ignore_list:
-            ignore_set.union(set(ignore_list))
+            ignore_set = ignore_set.union(set(ignore_list))
         if rsync_exclude_list:
-            ignore_set.union(set(rsync_exclude_list))
+            ignore_set = ignore_set.union(set(rsync_exclude_list))
 
         if ignore_set:
             exclude = ''
@@ -108,9 +108,9 @@ class DataMoverAvailableStorage(object):
         rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
         ignore_set = set()
         if ignore_list:
-            ignore_set.union(set(ignore_list))
+            ignore_set = ignore_set.union(set(ignore_list))
         if rsync_exclude_list:
-            ignore_set.union(set(rsync_exclude_list))
+            ignore_set = ignore_set.union(set(rsync_exclude_list))
         exclude = ''
         if ignore_set:
             for ignore_file in ignore_set:
