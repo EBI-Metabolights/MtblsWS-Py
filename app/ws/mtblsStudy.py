@@ -1211,11 +1211,11 @@ class CreateAccession(Resource):
                 'Could not copy files from {0} to {1}'.format(from_path, to_path))
 
         # Create upload folder
-        try:
-            status = wsc.create_upload_folder(study.acc, study.obfuscationcode, user_token)
-        except Exception as e:
-            raise MetabolightsFileOperationException(
-                'Could not create ftp upload folder for study {0}, Error {1}'.format(study.acc, str(e)))
+        # try:
+        #     status = wsc.create_upload_folder(study.acc, study.obfuscationcode, user_token)
+        # except Exception as e:
+        #     message = 'Could not create ftp upload folder for study {0}, Error {1}'.format(study.acc, str(e))
+        #     raise MetabolightsFileOperationException(message)
 
         if os.path.isfile(os.path.join(to_path, 'i_Investigation.txt')):
             # Get the ISA documents so we can edit the investigation file
