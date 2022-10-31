@@ -167,12 +167,12 @@ class DataMoverAvailableStorage(object):
                     result.status = SyncCalculationStatus.UNKNOWN
             else:
                 result.status = SyncCalculationStatus.UNKNOWN
-                raise MetabolightsException(message=message, http_code=500)
+                # raise MetabolightsException(message=message, http_code=500)
         except Exception as e:
             message = f'Could not check the job status for study sync  - {self.studyId}'
             logger.error(message + ' ;  reason  :-' + str(e))
             result.status = SyncCalculationStatus.UNKNOWN
-            raise MetabolightsException(message=message, http_code=500, exception=e)
+            # raise MetabolightsException(message=message, http_code=500, exception=e)
         return result
 
     def _init_calculate_sync(self, source_ftp_folder: str, ignore_list: List = None) -> SyncCalculationTaskResult:
@@ -188,7 +188,7 @@ class DataMoverAvailableStorage(object):
         except Exception as e:
             result.status = SyncCalculationStatus.UNKNOWN
             result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
-            raise MetabolightsException(message="Error while calculating ftp folder sync status", http_code=500, exception=e)
+            # raise MetabolightsException(message="Error while calculating ftp folder sync status", http_code=500, exception=e)
         return result
 
     def _check_calc_log_file_status(self, study_log_file: str,
