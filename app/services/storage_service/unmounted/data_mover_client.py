@@ -206,11 +206,12 @@ class DataMoverAvailableStorage(object):
                 return self._init_calculate_sync(source_ftp_folder, ignore_list)
 
             sync_log_file = os.path.join(self._get_study_log_folder(), f"{self.studyId}_do_rsync.log")
-            sync_log_file_time = os.path.getmtime(sync_log_file)
-            if sync_log_file_time > logfile_time:
-                # Sync happened after calculation
-                logger.info("Logfile outdated as sync happened recently, so init calc request !")
-                return self._init_calculate_sync(source_ftp_folder, ignore_list)
+            if os.path.exists(sync_log_file):
+                sync_log_file_time = os.path.getmtime(sync_log_file)
+                if sync_log_file_time > logfile_time:
+                    # Sync happened after calculation
+                    logger.info("Logfile outdated as sync happened recently, so init calc request !")
+                    return self._init_calculate_sync(source_ftp_folder, ignore_list)
 
             if force:
                 return self._init_calculate_sync(source_ftp_folder, ignore_list)
