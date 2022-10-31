@@ -495,9 +495,9 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
         abort(400, "The file " + annotation_file_name + " was not found")
 
     create_annotation_folder(study_location + os.sep + anno_sub_folder)
-    if obfuscation_code:  # So the curators can FTP new files into the private upload folder for the study
-        create_annotation_folder(app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" +
-                                 obfuscation_code + os.sep + anno_sub_folder)
+    # if obfuscation_code:  # So the curators can FTP new files into the private upload folder for the study
+    #     create_annotation_folder(app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" +
+    #                              obfuscation_code + os.sep + anno_sub_folder)
 
     # First make sure the existing pubchem annotated spreadsheet is loaded
     pubchem_df = maf_df.copy()
