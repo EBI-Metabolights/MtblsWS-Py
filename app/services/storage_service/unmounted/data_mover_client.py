@@ -161,7 +161,7 @@ class DataMoverAvailableStorage(object):
 
                     result = self._check_calc_log_file_status(study_log_file, source_ftp_folder, True, force)
                     result.last_update_time = time.ctime(os.path.getmtime(study_log_file))
-                    result.description = job_id
+                    result.description = f'Request ID : {job_id}'
                     return result
                 else:
                     result.status = SyncCalculationStatus.UNKNOWN
@@ -474,6 +474,7 @@ class DataMoverAvailableStorage(object):
         except OSError:
             logger.error('Failed to read file')
             return None
+        
     def read_second_line(self, file_path):
         try:
             f = open(file_path)
@@ -489,11 +490,13 @@ class DataMoverAvailableStorage(object):
             f = open(file_path)
             lines = f.readlines()
             if len(lines) > 1:
-                output = output + lines[1].rstrip() + ","
+                output = output + lines[1].rstrip()
             if len(lines) > 2:
-                output = output + lines[2].rstrip() + ","
+                if 'sent' not in lines[2]:
+                    output = output + "," + lines[2].rstrip()
             if len(lines) > 3:
-                output = output + lines[3].rstrip() + ","
+                if 'sent' not in lines[3]:
+                    output = output + "," + lines[3].rstrip()
             return output
         except OSError:
             logger.error('Failed to read file')
