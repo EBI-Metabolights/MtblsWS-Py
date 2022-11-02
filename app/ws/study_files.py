@@ -939,6 +939,17 @@ class StudyFilesReuse(Resource):
                 "type": "Boolean",
                 "defaultValue": False,
                 "default": True
+            },
+            {
+                "name": "include_internal_files",
+                "description": "Include internal mapping files",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": False
             }
 
         ],
@@ -968,11 +979,14 @@ class StudyFilesReuse(Resource):
 
         parser = reqparse.RequestParser()
         parser.add_argument('force', help='Force writing files list schema json')
+        parser.add_argument('include_internal_files', help='Ignores internal files')
         force_write = False
-
+        include_internal_files = False
         if request.args:
             args = parser.parse_args(req=request)
             force_write = True if args['force'].lower() == 'true' else False
+            if args['include_internal_files']:
+                include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
 
         files_list_json = app.config.get('FILES_LIST_JSON')
 
@@ -986,7 +1000,7 @@ class StudyFilesReuse(Resource):
 
         if force_write:
             return update_files_list_schema(study_id, obfuscation_code, study_location,
-                                            files_list_json_file)
+                                            files_list_json_file, include_internal_files=include_internal_files)
         if os.path.isfile(files_list_json_file):
             logger.info("Files list json found for studyId - %s!", study_id)
             try:
@@ -996,21 +1010,27 @@ class StudyFilesReuse(Resource):
             except Exception as e:
                 logger.error('Error while reading file list schema file: ' + str(e))
                 files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
-                                                             files_list_json_file)
+                                                             files_list_json_file,
+                                                             include_internal_files=include_internal_files)
         else:
             logger.info(" Files list json not found! for studyId - %s!", study_id)
             files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
-                                                         files_list_json_file)
+                                                         files_list_json_file,
+                                                         include_internal_files=include_internal_files)
 
         return files_list_schema
 
 
-def update_files_list_schema(study_id, obfuscation_code, study_location, files_list_json_file):
+def update_files_list_schema(study_id, obfuscation_code, study_location, files_list_json_file,
+                             include_internal_files: bool = False):
     study_files, upload_files, upload_diff, upload_location, latest_update_time = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True,
                                       assay_file_list=get_assay_file_list(study_location),
                                       static_validation_file=False)
+    if not include_internal_files:
+        study_files = [item for item in study_files if 'type' in item and item['type'] != 'internal_mapping']
+
     relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
     folder_name = f'{study_id.lower()}-{obfuscation_code}'
     upload_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
@@ -1645,6 +1665,17 @@ class StudyFilesTree(Resource):
                 "default": True
             },
             {
+                "name": "include_internal_files",
+                "description": "Include internal mapping files",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": False
+            },
+            {
                 "name": "directory",
                 "description": "List first level of files in a sub-directory",
                 "required": False,
@@ -1691,13 +1722,17 @@ class StudyFilesTree(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('include_sub_dir', help='include files in all sub-directories')
         parser.add_argument('directory', help='List files in a specific sub-directory')
+
+        parser.add_argument('include_internal_files', help='Ignores internal files')
         include_sub_dir = False
         directory = None
-
+        include_internal_files = False
         if request.args:
             args = parser.parse_args(req=request)
             include_sub_dir = False if args['include_sub_dir'].lower() != 'true' else True
             directory = args['directory'] if args['directory'] else None
+            if args['include_internal_files']:
+                include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
 
         if directory and directory.startswith(os.sep):
             abort(401, "You can only specify folders in the current study folder")
@@ -1719,6 +1754,8 @@ class StudyFilesTree(Resource):
         file_list = []
         try:
             file_list = get_basic_files(study_location, include_sub_dir, get_assay_file_list(study_location))
+            if not include_internal_files:
+                file_list = [item for item in file_list if 'type' in item and item['type'] != 'internal_mapping']
         except Exception as e:
             abort(408, error=e.args)
 

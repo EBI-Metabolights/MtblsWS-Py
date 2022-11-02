@@ -881,8 +881,24 @@ def map_file_type(file_name, directory, assay_file_list=None):
     compressed_files_list = app.config.get('COMPRESSED_FILES_LIST')
     internal_mapping_list = app.config.get('INTERNAL_MAPPING_LIST')
 
+    full_path = os.path.join(directory, file_name)
+    if os.path.exists(full_path):
+        folder = os.path.isdir(full_path)
+        if fname in internal_mapping_list:
+            return 'internal_mapping', active_status, folder
+        else:
+            for internal_file in internal_mapping_list:
+                if os.sep in internal_file:
+                    if internal_file in full_path:
+                        return 'internal_mapping', active_status, folder
+    else:
+        return 'unknown', none_active_status, False
+
+    is_metadata = False
+    if (fname.startswith(('i_', 'a_', 's_')) and (ext == '.txt')) or fname.startswith(('m_')) and (ext == '.tsv'):
+        is_metadata = True
     # Metadata first, current is if the files are present in the investigation and assay files
-    if fname.startswith(('i_', 'a_', 's_', 'm_')) and (ext == '.txt' or ext == '.tsv'):
+    if is_metadata:
         if fname.startswith('a_'):
             if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_assay', active_status, folder
@@ -896,8 +912,16 @@ def map_file_type(file_name, directory, assay_file_list=None):
                 return 'metadata_maf', none_active_status, folder
         elif fname.startswith('i_'):
             investigation = os.path.join(directory, 'i_')
+            default_investigation = os.path.join(directory, 'i_Investigation.txt')
             if os.sep + 'audit' + os.sep in directory:
                 return 'metadata_investigation', none_active_status, folder
+            if os.path.exists(default_investigation):
+                with open(default_investigation, encoding='utf8', errors="ignore") as file:
+                    if file.read():
+                        return 'metadata_investigation', active_status, folder
+                    else:
+                        return 'metadata_investigation', none_active_status, folder
+            # try others
             for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
                 with open(invest_file, encoding='utf8', errors="ignore") as file:
                     if file.read():
@@ -941,8 +965,6 @@ def map_file_type(file_name, directory, assay_file_list=None):
             return 'compressed', active_status, folder
         else:
             return 'compressed', none_active_status, folder
-    elif fname in internal_mapping_list:
-        return 'internal_mapping', active_status, folder
     elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
         return 'chebi_pipeline_file', active_status, folder
     elif fname in empty_exclusion_list:
