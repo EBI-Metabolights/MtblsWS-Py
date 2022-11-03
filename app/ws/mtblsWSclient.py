@@ -122,12 +122,13 @@ class WsClient:
                                                                  user_email, submitters_email_list)
         return study_id
 
-    def reindex_study(self, study_id, user_token, include_validation_results: bool = False):
+    def reindex_study(self, study_id, user_token, include_validation_results: bool = False, sync: bool = False):
         # Updated to remove Java WS /study/reindexStudyOnToken dependency
 
         UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
         try:
-            self.elasticsearch_service.reindex_study(study_id, user_token, include_validation_results)
+            self.elasticsearch_service.reindex_study(study_id, user_token, include_validation_results, sync=sync)
             return True, f" {study_id} is successfully indexed"
         except MetabolightsException as e:
-            abort(501, e.message)
+            logger.error(f'{str(e)}')
+            raise e

@@ -1459,10 +1459,11 @@ class ReindexStudy(Resource):
         if not write_access:
             abort(401)
 
-        status, message = wsc.reindex_study(study_id, user_token, include_validation_results=include_validation_results)
+        status, message = wsc.reindex_study(study_id, user_token,
+                                            include_validation_results=include_validation_results, sync=True)
 
         if not status:
-            abort(417, message=message)
+            MetabolightsException(http_code=500, message=message)
 
         return {"Success": "Study " + study_id + " has been re-indexed",
                 "read_access": read_access, "write_access": write_access}

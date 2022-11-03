@@ -25,6 +25,12 @@ class MetabolightsException(Exception):
         self.exception = exception
         self.http_code = http_code
 
+    def __str__(self):
+        if self.exception:
+            return f"{str(self.__class__.__name__)}: {self.message}, http_code: {self.http_code} Cause -->: [{str(self.exception)}]"
+        else:
+            return f"{str(self.__class__.__name__)}: {self.message}, http_code: {self.http_code}"
+
 
 class MetabolightsDBException(MetabolightsException):
 

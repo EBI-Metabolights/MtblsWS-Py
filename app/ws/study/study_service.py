@@ -64,7 +64,7 @@ class StudyService(object):
                                               user_token_to_revalidate=user_token,
                                               include_maf_files=include_maf_files)
         except Exception as e:
-            raise MetabolightsFileOperationException(message=f"Error while updating study from study folder: {str(e)}",
+            raise MetabolightsFileOperationException(message=f"Error while reading study folder.",
                                                      exception=e)
 
         return m_study

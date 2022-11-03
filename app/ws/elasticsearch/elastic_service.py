@@ -61,14 +61,27 @@ class ElasticsearchService(object):
             self.initialize_client()
         return self._client
 
-    def reindex_study(self, study_id, user_token, include_validation_results: bool = False):
+    def reindex_study(self, study_id, user_token, include_validation_results: bool = False, sync: bool = False):
         # Revalidate user permission
         UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
         try:
-            self.reindex_study_async(study_id, user_token, include_validation_results)
-            return study_id
+            if not sync:
+                self.reindex_study_async(study_id, user_token, include_validation_results)
+                return study_id
+            else:
+                revalidate_study = include_validation_results
+                m_study = StudyService.get_instance().get_study_from_db_and_folder(study_id, user_token,
+                                                                                   optimize_for_es_indexing=True,
+                                                                                   revalidate_study=revalidate_study,
+                                                                                   include_maf_files=False)
+                m_study.indexTimestamp = time.time()
+                document = m_study.dict()
+                params = {"request_timeout": 120}
+                self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
+                                  id=m_study.studyIdentifier, params=params)
+                return True, ''
         except Exception as e:
-            raise MetabolightsException(f"Error while triggering reindex {str(e)}", exception=e)
+            raise MetabolightsException(f"Error while reindexing.", exception=e, http_code=500)
 
     def reindex_study_async(self, study_id, user_token, include_validation_results):
         task_name = StudyTaskName.REINDEX
