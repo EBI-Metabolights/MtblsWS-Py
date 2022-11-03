@@ -65,25 +65,12 @@ class ElasticsearchService(object):
         # Revalidate user permission
         UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
         try:
-            if not sync:
-                self.reindex_study_async(study_id, user_token, include_validation_results)
-                return study_id
-            else:
-                revalidate_study = include_validation_results
-                m_study = StudyService.get_instance().get_study_from_db_and_folder(study_id, user_token,
-                                                                                   optimize_for_es_indexing=True,
-                                                                                   revalidate_study=revalidate_study,
-                                                                                   include_maf_files=False)
-                m_study.indexTimestamp = time.time()
-                document = m_study.dict()
-                params = {"request_timeout": 120}
-                self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
-                                  id=m_study.studyIdentifier, params=params)
-                return True, ''
+            self.reindex_study_with_task(study_id, user_token, include_validation_results, sync)
+            return study_id
         except Exception as e:
             raise MetabolightsException(f"Error while reindexing.", exception=e, http_code=500)
 
-    def reindex_study_async(self, study_id, user_token, include_validation_results):
+    def reindex_study_with_task(self, study_id, user_token, include_validation_results, sync: bool):
         task_name = StudyTaskName.REINDEX
         tasks = StudyService.get_instance(app).get_study_tasks(study_id=study_id, task_name=task_name)
 
@@ -146,6 +133,8 @@ class ElasticsearchService(object):
                         db_session.add(task)
                         db_session.commit()
                 logger.error(message)
-
-        self.thread_pool_executor.submit(index_study)
+        if not sync:
+            self.thread_pool_executor.submit(index_study)
+        else:
+            index_study()
 
