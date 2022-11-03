@@ -1433,6 +1433,7 @@ class ReindexStudy(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def post(self, study_id):
 
         user_token = None
@@ -1505,6 +1506,7 @@ class UnindexedStudy(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self):
 
         user_token = None
@@ -1532,6 +1534,80 @@ class UnindexedStudy(Resource):
             raise MetabolightsDBException(message=f"Error while retreiving study tasks from database: {str(e)}",
                                           exception=e)
 
+class RetryReindexStudies(Resource):
+    @swagger.operation(
+        summary="Reindex unindexed public studies",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication. "
+                           "Please provide a study id and a valid user token"
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            },
+            {
+                "code": 417,
+                "message": "Unexpected result."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self):
+
+        user_token = None
+        # User authentication
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        try:
+            with DBManager.get_instance(app).session_maker() as db_session:
+                query = db_session.query(StudyTask)
+                filtered = query.filter(StudyTask.last_execution_status != StudyTaskStatus.EXECUTION_SUCCESSFUL,
+                                        StudyTask.task_name == StudyTaskName.REINDEX).order_by(StudyTask.study_acc)
+                tasks = filtered.all()
+                indexed_studies = []
+                unindexed_studies = []
+                total = len(tasks)
+                index = 0
+
+                for task in tasks:
+                    index += 1
+                    print(f'{index}/{total} Indexing {task.study_acc}')
+                    try:
+                        logger.info(f'{index}/{total} Indexing {task.study_acc}')
+                        wsc.reindex_study(task.study_acc, user_token)
+                        indexed_studies.append(task.study_acc)
+                        logger.info(f'Indexed study {task.study_acc}')
+                    except Exception as e:
+                        unindexed_studies.append({"study_id": task.study_acc, "message": str(e)})
+                        logger.info(f'Unindexed study {task.study_acc}')
+
+                return {"indexed_studies": indexed_studies, "unindexed_studies": unindexed_studies}
+
+        except Exception as e:
+            raise MetabolightsDBException(message=f"Error while retreiving study tasks from database: {str(e)}",
+                                          exception=e)
 
 class ReindexAllPublicStudies(Resource):
     @swagger.operation(
@@ -1571,6 +1647,7 @@ class ReindexAllPublicStudies(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def post(self):
 
         user_token = None
@@ -1611,6 +1688,5 @@ class ReindexAllPublicStudies(Resource):
                     unindexed_studies.append(study[0])
                     logger.info(f'Unindexed study {study[0]}')
                     logger.debug(f'Unindexed study {study[0]}')
-
 
         return {"indexed_studies": indexed_studies, "unindexed_studies": unindexed_studies}
