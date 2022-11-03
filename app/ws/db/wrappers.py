@@ -108,7 +108,7 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
                 investigation = isatab.load_investigation(f)
             except Exception as e:
                 logger.error(f'{investigation_file} file is not opened with latin-1 mode')
-                message = f'{m_study.studyIdentifier} indexing is not updated from study directory'
+                message = f'{m_study.studyIdentifier} investigation.txt file can not be loaded.'
                 raise MetabolightsFileOperationException(message=message, exception=e, http_code=500)
     if not investigation:
         logger.error(f'{investigation_file} is not valid.')
