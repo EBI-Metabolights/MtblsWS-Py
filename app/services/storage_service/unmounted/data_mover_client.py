@@ -19,6 +19,12 @@ class DataMoverAvailableStorage(object):
         self.app = app
         self.requestor = requestor
         self.studyId = study_id
+        timeout = app.config.get('JOB_STATUS_READ_TIMEOUT')
+        if timeout and timeout.isnumeric():
+            self.read_time_out: int = int(app.config.get('JOB_STATUS_READ_TIMEOUT'))
+        else:
+            self.read_time_out: int = 10
+        self.read_timeout = app.config.get('JOB_STATUS_READ_TIMEOUT')
         self.source_study_path = app.config.get('STUDY_PATH') + study_id
         self.ftp_user_home_path = app.config.get('LSF_DATAMOVER_FTP_PRIVATE_HOME')
         self.studies_root_path_datamover = app.config.get('LSF_DATAMOVER_STUDY_PATH')
@@ -55,9 +61,7 @@ class DataMoverAvailableStorage(object):
                                                                  job_cmd=command, job_params=params,
                                                                  submitter=submitter, log=True,
                                                                  log_path=self._get_study_log_datamover_path())
-        logger.info("Job output -  " + job_out)
-        logger.info("Job error -  " + job_err)
-        logger.info("Log file  -  " + study_log_file)
+        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
         return status
 
     def sync_from_ftp_folder(self, source_ftp_folder: str, ignore_list: List[str] = None, **kwargs) -> bool:
@@ -94,9 +98,7 @@ class DataMoverAvailableStorage(object):
                                                                  job_cmd=command, job_params=params,
                                                                  submitter=submitter, log=True,
                                                                  log_path=self._get_study_log_datamover_path())
-        logger.info("Job output -  " + job_out)
-        logger.info("Job error -  " + job_err)
-        logger.info("Log file  -  " + study_log_file)
+        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
         return status
 
     def calculate_sync(self, source_ftp_folder: str, ignore_list: List[str] = None) -> bool:
@@ -128,9 +130,7 @@ class DataMoverAvailableStorage(object):
                                                                  job_cmd=command, job_params=params,
                                                                  submitter=submitter, log=True,
                                                                  log_path=self._get_study_log_datamover_path())
-        logger.info("Job output -  " + job_out)
-        logger.info("Job error -  " + job_err)
-        logger.info("Log file  -  " + study_log_file)
+        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
         return status
 
     def check_calculate_sync_status(self, source_ftp_folder: str, force: bool = False, ignore_list: List = None) -> SyncCalculationTaskResult:
@@ -279,10 +279,7 @@ class DataMoverAvailableStorage(object):
         if ftp_folder_name:
             ftp_private_path = self._get_absolute_ftp_private_path(ftp_folder_name)
 
-            command = "ls"
-            params = "-lrt " + ftp_private_path
-
-            output: CommandOutput = self._execute_and_get_result(command, params)
+            output: CommandOutput = self.check_folder_exists(ftp_private_path)
             return True if output.execution_status else False
         else:
             return False
@@ -428,9 +425,7 @@ class DataMoverAvailableStorage(object):
         log_file_name = os.path.basename(log_file)
         log_file_study_path = os.path.join(study_log_folder, log_file_name)
         status1 = self.check_if_job_successful(status=status, job_out=job_out, log_file_study_path=log_file_study_path)
-        logger.info("Job output -  " + job_out)
-        logger.info("Job error -  " + job_err)
-        logger.info("Log file  -  " + log_file_study_path)
+        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=log_file_study_path)
 
         if command == 'stat':
             output = self.read_first_line(log_file_study_path)
@@ -438,6 +433,46 @@ class DataMoverAvailableStorage(object):
             output = "None"
 
         return CommandOutput(execution_status=status1, execution_output=output)
+
+    def check_folder_exists(self, check_folder: str) -> CommandOutput:
+
+        try:
+            study_log_folder = self._get_study_log_folder()
+            command = 'test'
+            param = f'-d {check_folder}'
+
+            make_dir_with_chmod(study_log_folder, 0o777)
+            self.create_empty_file(file_path=self._get_study_log_file(command=command))
+
+            logger.info("Sending cluster job : " + command + " ;For Study :- " + self.studyId)
+            status, message, job_out, job_err, log_file = submit_job(False, None, queue=self.app.config.get('LSF_DATAMOVER_Q'),
+                                                                     job_cmd=command, job_params=param,
+                                                                     submitter=self.requestor, log=True,
+                                                                     log_path=self._get_study_log_datamover_path())
+            log_file_name = os.path.basename(log_file)
+            log_file_study_path = os.path.join(study_log_folder, log_file_name)
+            status = self.check_if_job_successful(status=status, job_out=job_out, log_file_study_path=log_file_study_path)
+            self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=log_file_study_path)
+
+            if status:
+                return CommandOutput(execution_status=True, execution_output=None)
+            else:
+                if self.str_in_file(file_path=log_file_study_path, word='Exited with exit code'):
+                    return CommandOutput(execution_status=False, execution_output='NOT_PRESENT')
+        except Exception as e:
+            message = f'Could not check the folder existence for Study  - {self.studyId}'
+            logger.error(message + ' ;  reason  :-' + str(e))
+
+        return CommandOutput(execution_status=False, execution_output='UNKNOWN')
+
+    def _log_job_output(self, status, job_out, job_err, log_file_study_path):
+        logger.info("----------------------- ")
+        logger.info("Requestor " + self.requestor)
+        logger.info("Job execution status -  " + str(status))
+        logger.info("Job output -  " + job_out)
+        logger.info("Job error -  " + job_err)
+        logger.info("Log file  -  " + log_file_study_path)
+        logger.info("----------------------- ")
 
     def _get_absolute_ftp_private_path(self, relative_path: str) -> str:
         return os.path.join(self.ftp_user_home_path, relative_path.lstrip('/'))
@@ -513,13 +548,13 @@ class DataMoverAvailableStorage(object):
     def check_if_job_successful(self, status, job_out, log_file_study_path):
         if status:
             if "is submitted to queue" in job_out:
-                for x in range(0, 10):
+                for x in range(0, self.read_time_out):
                     if self.str_in_file(file_path=log_file_study_path, word='Successfully completed'):
                         return True
                     if self.str_in_file(file_path=log_file_study_path, word='Exited with exit code'):
                         return False
                     time.sleep(1)
-                logger.error('Failed to read the file content in 5 seconds')
+                logger.error(f'Failed to read the file content in {self.read_time_out} seconds')
                 return False
             else:
                 logger.error('Job was not submitted to queue')

@@ -666,7 +666,7 @@ JOB_RUNNING_COMMAND = JOB["JOB_RUNNING_COMMAND"]
 JOB_KILL_COMMAND = JOB["JOB_KILL_COMMAND"]
 JOB_TRACK_EMAIL = JOB["JOB_TRACK_EMAIL"]
 JOB_TRACK_LOG_LOCATION = JOB["JOB_TRACK_LOG_LOCATION"]
-
+JOB_STATUS_READ_TIMEOUT = JOB["JOB_STATUS_READ_TIMEOUT"]
 ########################################################################################################################
 
 ########################################################################################################################
