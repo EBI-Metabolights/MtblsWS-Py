@@ -1,3 +1,4 @@
+import datetime
 import glob
 import json
 import logging
@@ -18,6 +19,7 @@ from app.ws.study.validation.commons import validate_study
 logger = logging.getLogger(__file__)
 
 MB_FACTOR = 1024.0 ** 2
+GB_FACTOR = 1024.0 ** 3
 
 
 def create_study_model_from_db_study(db_study: Study):
@@ -28,9 +30,15 @@ def create_study_model_from_db_study(db_study: Study):
     )
 
     m_study.studyStatus = StudyStatus(db_study.status).name
-    m_study.studySize = float(db_study.studysize)  # This value is different in DB and www.ebi.ac.uk
-    size_in_mb = m_study.studySize / MB_FACTOR
-    m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "MB"
+
+    m_study.studySize = int(db_study.studysize)  # This value is different in DB and www.ebi.ac.uk
+    if m_study.studySize > GB_FACTOR:
+        size_in_gb = m_study.studySize / GB_FACTOR
+        m_study.studyHumanReadable = "%.2f" % round(size_in_gb, 2) + "GB"
+    else:
+        size_in_mb = m_study.studySize / MB_FACTOR
+        m_study.studyHumanReadable = "%.2f" % round(size_in_mb, 2) + "MB"
+
     m_study.publicStudy = StudyStatus(db_study.status) == StudyStatus.PUBLIC
 
     if db_study.submissiondate:
@@ -155,10 +163,14 @@ def fill_backups(m_study, path):
         directory_name = os.path.basename(directory)
         if directory_name.isnumeric():
             backup_model = BackupModel()
-            backup_model.backupId = str(id)
+            backup_model.backupId = str(directory_name)
             id = id + 1
             backup_model.folderPath = directory
-            backup_model.backupTimeStamp = int(directory_name)
+            try:
+                timestamp = int(datetime.datetime.strptime(directory_name, "%Y%m%d%H%M%S").strftime("%s"))
+                backup_model.backupTimeStamp = timestamp
+            except:
+                pass
             m_study.backups.append(backup_model)
 
 
@@ -171,9 +183,11 @@ def create_study_model(m_study, path, study):
     m_study.title = study_title
     m_study.description = study_description
     # !TODO check. this assignment overrides db data
-    m_study.studySubmissionDate = date_str_to_int(study_submission_date)
+    if study_submission_date:
+        m_study.studySubmissionDate = date_str_to_int(study_submission_date)
     # !TODO check. this assignment overrides db data
-    m_study.studyPublicReleaseDate = date_str_to_int(study_release_date)
+    if study_release_date:
+        m_study.studyPublicReleaseDate = date_str_to_int(study_release_date)
     m_study.studyLocation = path
 
 

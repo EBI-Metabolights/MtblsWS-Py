@@ -88,19 +88,19 @@ class EntityModel(BaseModel):
 
 class ValidationEntryModel(BaseModel):
     id: int = 0
-    description: str = None
-    status: str = None
-    statusExt: str = None
-    group: str = None
-    passedRequirement: bool = None
-    type: str = None
-    message: str = None
+    description: str = ''
+    status: str = 'RED'
+    statusExt: str = ''
+    group: str = 'STUDY'
+    passedRequirement: bool = True
+    type: str = 'MANDATORY'
+    message: str = "OK"
     overriden: bool = False
 
 
 class ValidationEntriesModel(BaseModel):
     entries: List[ValidationEntryModel] = []
-    status: str = 'failed'
+    status: str = 'GREEN'
     passedMinimumRequirement: bool = False
     overriden: bool = False
 
