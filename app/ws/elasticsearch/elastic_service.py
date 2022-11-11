@@ -103,7 +103,7 @@ class ElasticsearchService(object):
                                                                                    optimize_for_es_indexing=True,
                                                                                    revalidate_study=validations,
                                                                                    include_maf_files=False)
-                m_study.indexTimestamp = time.time()
+                m_study.indexTimestamp = int(time.time())
                 document = m_study.dict()
                 params = {"request_timeout": 120}
                 self.client.index(index=self.INDEX_NAME, doc_type=self.DOC_TYPE_STUDY, body=document,
@@ -134,6 +134,8 @@ class ElasticsearchService(object):
                         db_session.add(task)
                         db_session.commit()
                 logger.error(message)
+                if sync:
+                    raise e
         if not sync:
             self.thread_pool_executor.submit(index_study)
         else:
