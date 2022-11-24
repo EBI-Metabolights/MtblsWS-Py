@@ -75,6 +75,10 @@ class WsClient:
         return commons.get_private_studies_list()
 
     @staticmethod
+    def get_non_public_studies():
+        return commons.get_non_public_studies_list()
+
+    @staticmethod
     def get_study_by_type(stype, publicS=True):
         return commons.get_study_by_status(stype, publicS)
 
@@ -95,11 +99,13 @@ class WsClient:
         return commons.get_queue_folder()
 
     @staticmethod
-    def create_upload_folder(study_id, obfuscation_code, user_token):
+    def create_upload_folder(study_id, obfuscation_code, user_token, send_email=True):
         # Updated to remove Java WS /study/requestFtpFolderOnApiKey dependency
 
         UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
-        return commons.create_ftp_folder(study_id, obfuscation_code, user_token, WsClient.email_service)
+
+        return commons.create_ftp_folder(study_id, obfuscation_code, user_token,
+                                         email_service=WsClient.email_service, send_email=send_email)
 
     def add_empty_study(self, user_token):
         # Updated to remove Java WS /study/createEmptyStudy dependency

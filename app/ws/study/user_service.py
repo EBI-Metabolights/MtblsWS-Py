@@ -33,7 +33,8 @@ class UserService(object):
             with self.db_manager.session_maker() as db_session:
                 base_query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken)
                 query = base_query.join(Study, User.studies)
-                user = query.filter(Study.acc == study_id, User.apitoken == user_token).first()
+                user = query.filter(Study.acc == study_id, User.apitoken == user_token,
+                                    User.status == UserStatus.ACTIVE.value).first()
         except Exception as e:
             raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
 

@@ -1,9 +1,13 @@
+import logging
 import os.path
 
 from flask_mail import Mail, Message
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from app.ws.email.settings import EmailServiceSettings, get_email_service_settings
+
+
+logger = logging.getLogger('wslog')
 
 env = Environment(
     loader=PackageLoader("app.ws.email", 'email_templates'),
@@ -41,7 +45,11 @@ class EmailService(object):
                       cc=[curation_mail_address],
                       html=body
                       )
-        self.mail.send(msg)
+        try:
+            self.mail.send(msg)
+        except Exception as e:
+            message = f'Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}'
+            logger.error(message)
 
     def send_email_for_queued_study_submitted(self, study_id, release_date, user_email, submitters_mail_addresses):
 

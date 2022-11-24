@@ -18,7 +18,6 @@
 
 import logging.config
 import os
-import shutil
 
 from flask import Flask
 from jinja2 import Environment, select_autoescape, FileSystemLoader

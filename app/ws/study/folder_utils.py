@@ -8,63 +8,48 @@ import os.path
 import time
 from copy import deepcopy
 from operator import itemgetter
+
 from flask import current_app as app
 
+from app.file_utils import make_dir_with_chmod
 from app.ws.utils import date_format, file_date_format, map_file_type, new_timestamped_folder, copy_file
 
 logger = logging.getLogger("wslog")
 
+
 def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None,
                                   include_raw_data=None, assay_file_list=None, validation_only=False,
-                                  include_upload_folder=True, short_format=None, include_sub_dir=None,
+                                  short_format=None, include_sub_dir=None,
                                   static_validation_file=None):
-    upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
-    logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s. Upload folder: %s', study_id,
-                study_location, upload_location)
+
+    logger.info('Getting list of all files for MTBLS Study %s. Study folder: %s.', study_id, study_location)
 
     start_time = time.time()
     s_start_time = time.time()
+
+    log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
+    make_dir_with_chmod(log_path, 0o777)
+
     study_files, latest_update_time = get_all_files(study_location, directory=directory,
                                                     include_raw_data=include_raw_data,
                                                     assay_file_list=assay_file_list, validation_only=validation_only,
                                                     short_format=short_format, include_sub_dir=include_sub_dir,
                                                     static_validation_file=static_validation_file)
     logger.info("Listing study files for " + study_id + " took %s seconds" % round(time.time() - s_start_time, 2))
-    upload_files = []
-    if include_upload_folder:
-        u_start_time = time.time()
-
-        # Does the private FTP folder exist?
-        try:
-            os.stat(upload_location)
-        except:
-            os.mkdir(upload_location)
-
-        upload_files, latest_update_time = get_all_files(upload_location, directory=directory,
-                                                         include_raw_data=include_raw_data,
-                                                         validation_only=validation_only, short_format=short_format,
-                                                         static_validation_file=static_validation_file)
-        logger.info("Listing upload files for " + study_id + " took %s seconds" % round(time.time() - u_start_time, 2))
 
     # Sort the two lists
-    study_files, upload_files = [sorted(l, key=itemgetter('file')) for l in (study_files, upload_files)]
-
-    # Now, the status for each file can differ from upload and study folder as only study files are
-    # referenced in the ISA-Tab files. If they are referenced, they get status 'active'
-    u_files = deepcopy(upload_files)
-    for row in u_files:
-        row.pop('status')
+    study_files = sorted(study_files, key=itemgetter('file'))
 
     s_files = deepcopy(study_files)
     for row in s_files:
         row.pop('status')
 
-    upload_diff = [dict(i) for i in
-                   {frozenset(row.items()) for row in u_files} -
-                   {frozenset(row.items()) for row in s_files}]
-
-    upload_location = upload_location.split('/mtblight')  # FTP/Aspera root starts here
-
+    upload_diff = []
+    ftp_private_study_folder = study_id.lower() + "-" + obfuscation_code
+    ftp_private_relative_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+    ftp_private_relative_study_path = os.path.join(ftp_private_relative_root_path, ftp_private_study_folder)
+    upload_location = [None, ftp_private_relative_study_path]
+    upload_files = []
     logger.info("Listing all files for " + study_id + " took %s seconds" % round(time.time() - start_time, 2))
 
     return study_files, upload_files, upload_diff, upload_location, latest_update_time
@@ -330,6 +315,9 @@ def write_audit_files(study_location):
     # dest folder name is a timestamp
     update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
     update_path = os.path.join(study_location, update_path_suffix)
+    log_path = os.path.join(update_path, 'logs')
+    make_dir_with_chmod(log_path, 0o777)
+
     dest_path = new_timestamped_folder(update_path)
 
     try:

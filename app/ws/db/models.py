@@ -251,7 +251,7 @@ class LiteStudyModel(EntityModel):
 
 class StudyModel(LiteStudyModel):
     indexTimestamp: int = 0
-    ObjectType: str = "Study"
+    ObjectType: str = "study"
     description: Optional[str]
     studyLocation: Optional[str]  # excluded from es
     descriptors: List[StudyDesignDescriptor] = []

@@ -33,22 +33,12 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import AssaySchema, ProcessSchema, OtherMaterialSchema, DataFileSchema, SampleSchema
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protcols, write_tsv, remove_file, \
-    get_maf_name_from_assay_name, add_new_protocols_from_assay, create_maf, add_ontology_to_investigation, read_tsv
+    get_maf_name_from_assay_name, add_new_protocols_from_assay, create_maf, add_ontology_to_investigation, read_tsv, \
+    log_request
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
-
-
-# Allow for a more detailed logging when on DEBUG mode
-def log_request(request_obj):
-    if app.config.get('DEBUG'):
-        if app.config.get('DEBUG_LOG_HEADERS'):
-            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
-        if app.config.get('DEBUG_LOG_BODY'):
-            logger.debug('REQUEST BODY    -> %s', request_obj.data)
-        if app.config.get('DEBUG_LOG_JSON'):
-            logger.debug('REQUEST JSON    -> %s', request_obj.json)
 
 
 def extended_response(data=None, errs=None, warns=None):
@@ -243,9 +233,9 @@ class StudyAssayDelete(Resource):
                                     save_investigation_copy=save_audit_copy, save_assays_copy=save_audit_copy,
                                     save_samples_copy=save_audit_copy)
                 try:
-                    remove_file(study_location, a_file, allways_remove=True)  # We have to remove active metadata files
+                    remove_file(study_location, a_file, always_remove=True)  # We have to remove active metadata files
                     if maf_name is not None:
-                        remove_file(study_location, maf_name, allways_remove=True)
+                        remove_file(study_location, maf_name, always_remove=True)
                 except:
                     logger.error("Failed to remove assay file " + a_file + " from study " + study_id)
 

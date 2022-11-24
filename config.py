@@ -407,22 +407,21 @@ FTP_UPLOAD_HELP_DOC_URL = mail_service_settings["FTP_UPLOAD_HELP_DOC_URL"]
 #   FTP SERVER SETTINGS
 #
 #   Load from the following file: CONFIGS_DIR/service_settings.json with key "FTP_SERVER_SETTINGS"
-#
-#   Configuration example
+#   FTP_PRIVATE_MOUNT_TYPE options: MOUNTED|CODON|OBJECT_STORAGE
+#   PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH relative path after FTP user mtblight home path
+#   Configuration example:
 #
 #   "FTP_SERVER_SETTINGS": {
-#     "MTBLS_FTP_ROOT": "/ftp/private/root/path",
-#     "MTBLS_PRIVATE_FTP_ROOT": "/ftp/private/root/path",
-#     "MARIANA_PATH": "ACTUAL-MARIANA-PATH/",
-#     "REPORTING_PATH": "REPORTING-PATH/"
+#     "FTP_PRIVATE_MOUNT_TYPE": "MOUNTED",
+#     "MOUNTED_FTP_PRIVATE_ROOT_PATH": "/ftp/private/root/path",
+#     "PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH": "/metabolights/prod/studies",
 #   }
 ########################################################################################################################
 ftp_server_settings = service_settings["FTP_SERVER_SETTINGS"]
 
-MTBLS_FTP_ROOT = ftp_server_settings["MTBLS_FTP_ROOT"]
-MTBLS_PRIVATE_FTP_ROOT = ftp_server_settings["MTBLS_PRIVATE_FTP_ROOT"]
-MARIANA_PATH = ftp_server_settings["MARIANA_PATH"]
-REPORTING_PATH = ftp_server_settings["REPORTING_PATH"]
+FTP_PRIVATE_MOUNT_TYPE = ftp_server_settings["FTP_PRIVATE_MOUNT_TYPE"]
+MOUNTED_FTP_PRIVATE_ROOT_PATH = ftp_server_settings["MOUNTED_FTP_PRIVATE_ROOT_PATH"]
+PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH = ftp_server_settings["PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH"]
 
 ########################################################################################################################
 #   GOOGLE SERVICE SETTINGS
@@ -541,6 +540,9 @@ FILE_LIST_TIMEOUT = study_files_settings["FILE_LIST_TIMEOUT"]
 STUDY_QUEUE_FOLDER = study_files_settings["STUDY_QUEUE_FOLDER"]
 STUDY_TREE_BLACKLIST = study_files_settings["STUDY_TREE_BLACKLIST"]
 study_files_settings = study_file_settings["STUDY_FILES"]
+REPORTING_ROOT_PATH = study_files_settings["REPORTING_ROOT_PATH"]
+MARIANA_PATH = study_files_settings["MARIANA_PATH"]
+REPORTING_PATH = study_files_settings["REPORTING_PATH"]
 
 ########################################################################################################################
 #   ONTOLOGY
@@ -579,6 +581,7 @@ RAW_FILES_LIST = file_filter_settings["RAW_FILES_LIST"]
 DERIVED_FILES_LIST = file_filter_settings["DERIVED_FILES_LIST"]
 COMPRESSED_FILES_LIST = file_filter_settings["COMPRESSED_FILES_LIST"]
 INTERNAL_MAPPING_LIST = file_filter_settings["INTERNAL_MAPPING_LIST"]
+RSYNC_EXCLUDE_LIST = file_filter_settings["RSYNC_EXCLUDE_LIST"]
 
 ########################################################################################################################
 #                                    END OF STUDY FILE SETTINGS SECTION
@@ -619,7 +622,52 @@ METASPACE_APP_DESCRIPTION = unused_settings["METASPACE"]["METASPACE_APP_DESCRIPT
 ########################################################################################################################
 #                                    END OF STUDY FILE SETTINGS SECTION
 ########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+#
+#                                           CLUSTER JOB SETTINGS SECTION
+#
+#                       This section is ordered by key names in CONFIGS_DIR/cluster_settings.json file
+#
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
 
+cluster_settings = utils.load_json_config_file("cluster_settings.json", configs_dir=CONFIGS_DIR)
+
+########################################################################################################################
+#   CLUSTER
+#
+#   Load from the following file: CONFIGS_DIR/cluster_settings.json with key "CLUSTER"
+########################################################################################################################
+cluster = cluster_settings["CLUSTER"]
+
+LSF_HOST = cluster["LSF_HOST"]
+LSF_HOST_USER = cluster["LSF_HOST_USER"]
+LSF_DATAMOVER_USER = cluster["LSF_DATAMOVER_USER"]
+LSF_HOST_SSH_CMD = cluster["LSF_HOST_SSH_CMD"]
+LSF_BSUB_DEFAULT_Q = cluster["LSF_BSUB_DEFAULT_Q"]
+LSF_DATAMOVER_Q = cluster["LSF_DATAMOVER_Q"]
+LSF_BSUB_STANDARD_Q = cluster["LSF_BSUB_STANDARD_Q"]
+LSF_BSUB_LONG_PROCESS_Q = cluster["LSF_BSUB_LONG_PROCESS_Q"]
+LSF_DATAMOVER_STUDY_PATH = cluster["LSF_DATAMOVER_STUDY_PATH"]
+LSF_DATAMOVER_FTP_PRIVATE_HOME = cluster["LSF_DATAMOVER_FTP_PRIVATE_HOME"]
+
+########################################################################################################################
+#   JOB
+#
+#   Load from the following file: CONFIGS_DIR/server_settings.json with key "JOB"
+########################################################################################################################
+JOB = cluster_settings["JOB"]
+
+JOB_SUBMIT_COMMAND = JOB["JOB_SUBMIT_COMMAND"]
+JOB_RUNNING_COMMAND = JOB["JOB_RUNNING_COMMAND"]
+JOB_KILL_COMMAND = JOB["JOB_KILL_COMMAND"]
+JOB_TRACK_EMAIL = JOB["JOB_TRACK_EMAIL"]
+JOB_TRACK_LOG_LOCATION = JOB["JOB_TRACK_LOG_LOCATION"]
+JOB_STATUS_READ_TIMEOUT = JOB["JOB_STATUS_READ_TIMEOUT"]
+########################################################################################################################
 
 ########################################################################################################################
 ########################################################################################################################

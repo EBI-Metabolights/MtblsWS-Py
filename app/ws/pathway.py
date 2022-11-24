@@ -17,7 +17,7 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 import json
 import logging
-import urllib
+from urllib import request as urllib_request
 
 import pandas as pd
 import requests
@@ -25,7 +25,7 @@ from flask import request, jsonify, current_app as app
 from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
-from app.ws.cluster_jobs import lsf_job
+from app.ws.cluster_jobs import submit_job
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request, get_connection
@@ -33,20 +33,6 @@ from app.ws.utils import log_request, get_connection
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
 wsc = WsClient()
-
-
-# Allow for a more detailed logging when on DEBUG mode
-def log_request(request_obj):
-    if app.config.get('DEBUG'):
-        if app.config.get('DEBUG_LOG_HEADERS'):
-            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
-        if app.config.get('DEBUG_LOG_BODY'):
-            logger.debug('REQUEST BODY    -> %s', request_obj.data)
-        if app.config.get('DEBUG_LOG_JSON'):
-            try:
-                logger.debug('REQUEST JSON    -> %s', request_obj.json)
-            except:
-                logger.debug('REQUEST JSON    -> EMPTY')
 
 
 class keggid(Resource):
@@ -289,7 +275,8 @@ class fellaPathway(Resource):
         command = script + ' ' + para
 
         logger.info("Starting cluster job for FELLA pathway: " + command)
-        status, message, job_out, job_err = lsf_job(app.config.get('LSF_COMMAND_BSUB'), job_param=command, send_email=True)
+        status, message, job_out, job_err, log_file = submit_job(True, account=None, job_cmd=command, job_params=None, submitter=None, log=False)
+
 
         if status:
             return {"success": message, "message": job_out, "errors": job_err}
@@ -388,9 +375,9 @@ def get_sample_file(studyID, sample_file_name):
 def getFileList(studyID):
     url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(
         study_id=studyID)
-    request = urllib.request.Request(url)
-    request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
-    response = urllib.request.urlopen(request)
+    request_obj = urllib_request.Request(url)
+    request_obj.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+    response = urllib_request.urlopen(request_obj)
     content = response.read().decode('utf-8')
     j_content = json.loads(content)
 

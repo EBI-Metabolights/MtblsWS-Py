@@ -236,9 +236,10 @@ class ZipSpectraFiles(Resource):
         if not is_curator:
             abort(403)
 
+        reporting_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('REPORTING_PATH'), 'global')
         sz = SpectraZipper(
             study_type='NMR',
-            reporting_path=app.config.get('MTBLS_FTP_ROOT') + app.config.get('REPORTING_PATH') + 'global/',
+            reporting_path=reporting_path,
             private_studies_dir=app.config.get('STUDY_PATH'),
             spectra_dir=f'NMR_spectra_files_{str(datetime.datetime.now())}',
             study_location=study_location
@@ -329,7 +330,7 @@ class SpectraZipper:
                          f'it already exists: {str(e)}')
             abort(500)
 
-        if os.path.exists(f'{self.private_studies_dir}{self.spectra_dir}'):
+        if os.path.exists(os.path.join(self.private_studies_dir, self.spectra_dir)):
             pass
         else:
             raise FileNotFoundError(f'Couldnt create spectra directory at {self.private_studies_dir}{self.spectra_dir}')

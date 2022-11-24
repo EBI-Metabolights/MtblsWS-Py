@@ -19,14 +19,12 @@
 import logging
 import os
 
-from flask import current_app as app
 from flask import request
 from flask_restful import Resource, fields, marshal_with
 from flask_restful_swagger import swagger
 
 from app.utils import metabolights_exception_handler
 from app.ws.isaAssay import log_request
-from app.ws.study.user_service import UserService
 
 """
 MtblsWS-Py About

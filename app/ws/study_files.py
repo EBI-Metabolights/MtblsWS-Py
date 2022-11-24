@@ -23,7 +23,6 @@ import shutil
 import time
 import zipfile
 
-from dirsync import sync
 from flask import current_app as app
 from flask import request, abort
 from flask.json import jsonify
@@ -31,9 +30,13 @@ from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 from jsonschema.exceptions import ValidationError
 
+from app.services.storage_service.acl import Acl
+from app.services.storage_service.storage_service import StorageService
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.folder_utils import get_basic_files, get_all_files_from_filesystem, get_all_files, write_audit_files
+from app.ws.study.study_service import StudyService
+from app.ws.study.user_service import UserService
 from app.ws.utils import get_assay_file_list, remove_file, delete_asper_files, log_request, copy_files_and_folders
 
 logger = logging.getLogger('wslog')
@@ -43,7 +46,7 @@ iac = IsaApiClient()
 
 class StudyFiles(Resource):
     @swagger.operation(
-        summary="Get a list, with timestamps, of all files in the study and upload folder(s)",
+        summary="Get a list, with timestamps, of all files in the study folder",
         parameters=[
             {
                 "name": "study_id",
@@ -134,10 +137,14 @@ class StudyFiles(Resource):
                                           assay_file_list=get_assay_file_list(study_location),
                                           static_validation_file=False)
 
+        relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+        folder_name = f'{study_id.lower()}-{obfuscation_code}'
+        upload_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
+
         return jsonify({'study': study_files,
-                        'latest': upload_diff,
-                        'private': upload_files,
-                        'uploadPath': upload_location[1],
+                        'latest': [],
+                        'private': [],
+                        'uploadPath': upload_path,
                         'obfuscationCode': obfuscation_code})
 
     # 'uploadPath': upload_location[0], for local testing
@@ -240,14 +247,14 @@ without setting the "force" parameter to True''',
         parser.add_argument('force', help='Remove active metadata files')
         file_location = 'study'
         files = None
-        allways_remove = False
+        always_remove = False
 
         # If false, only sync ISA-Tab metadata files
         if request.args:
             args = parser.parse_args(req=request)
             files = args['files'] if args['files'] else None
             file_location = args['location'] if args['location'] else 'study'
-            allways_remove = False if args['force'].lower() != 'true' else True
+            always_remove = False if args['force'].lower() != 'true' else True
 
         # body content validation
         try:
@@ -265,11 +272,10 @@ without setting the "force" parameter to True''',
         if not write_access:
             abort(403, error='Not authorized')
 
+        audit_status, dest_path = write_audit_files(study_location)
+
         status = False
         message = None
-        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
-
-        audit_status, dest_path = write_audit_files(study_location)
 
         for file in files:
             try:
@@ -279,13 +285,9 @@ without setting the "force" parameter to True''',
                     return {'Error': "Only MetaboLights curators can remove the investigation file"}
 
                 if file_location == "study":
-                    status, message = remove_file(study_location, f_name, allways_remove)
-                elif file_location == "upload":
-                    status, message = remove_file(upload_location, f_name, allways_remove)
-                elif file_location == "both":
-                    s_status, s_message = remove_file(study_location, f_name, allways_remove)
-                    u_status, u_message = remove_file(upload_location, f_name, allways_remove)
-                    if s_status or u_status:
+                    status, message = remove_file(study_location, f_name, always_remove)
+                    s_status, s_message = remove_file(study_location, f_name, always_remove)
+                    if s_status:
                         return {'Success': "File " + f_name + " deleted"}
                     else:
                         return {'Error': "Can not find and/or delete file " + f_name + " in the study or upload folder"}
@@ -909,7 +911,7 @@ class StudyRawAndDerivedDataFolder(Resource):
 
 class StudyFilesReuse(Resource):
     @swagger.operation(
-        summary="Get a list, with timestamps, of all files in the study and upload folder(s) from file-list result already created",
+        summary="Get a list, with timestamps, of all files in the study folder from file-list result already created",
         parameters=[
             {
                 "name": "study_id",
@@ -937,6 +939,17 @@ class StudyFilesReuse(Resource):
                 "type": "Boolean",
                 "defaultValue": False,
                 "default": True
+            },
+            {
+                "name": "include_internal_files",
+                "description": "Include internal mapping files",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": False
             }
 
         ],
@@ -966,11 +979,14 @@ class StudyFilesReuse(Resource):
 
         parser = reqparse.RequestParser()
         parser.add_argument('force', help='Force writing files list schema json')
+        parser.add_argument('include_internal_files', help='Ignores internal files')
         force_write = False
-
+        include_internal_files = False
         if request.args:
             args = parser.parse_args(req=request)
             force_write = True if args['force'].lower() == 'true' else False
+            if args['include_internal_files']:
+                include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
 
         files_list_json = app.config.get('FILES_LIST_JSON')
 
@@ -984,7 +1000,7 @@ class StudyFilesReuse(Resource):
 
         if force_write:
             return update_files_list_schema(study_id, obfuscation_code, study_location,
-                                            files_list_json_file)
+                                            files_list_json_file, include_internal_files=include_internal_files)
         if os.path.isfile(files_list_json_file):
             logger.info("Files list json found for studyId - %s!", study_id)
             try:
@@ -994,25 +1010,34 @@ class StudyFilesReuse(Resource):
             except Exception as e:
                 logger.error('Error while reading file list schema file: ' + str(e))
                 files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
-                                                             files_list_json_file)
+                                                             files_list_json_file,
+                                                             include_internal_files=include_internal_files)
         else:
             logger.info(" Files list json not found! for studyId - %s!", study_id)
             files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
-                                                         files_list_json_file)
+                                                         files_list_json_file,
+                                                         include_internal_files=include_internal_files)
 
         return files_list_schema
 
 
-def update_files_list_schema(study_id, obfuscation_code, study_location, files_list_json_file):
+def update_files_list_schema(study_id, obfuscation_code, study_location, files_list_json_file,
+                             include_internal_files: bool = False):
     study_files, upload_files, upload_diff, upload_location, latest_update_time = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True,
                                       assay_file_list=get_assay_file_list(study_location),
                                       static_validation_file=False)
+    if not include_internal_files:
+        study_files = [item for item in study_files if 'type' in item and item['type'] != 'internal_mapping']
+
+    relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+    folder_name = f'{study_id.lower()}-{obfuscation_code}'
+    upload_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
     files_list_schema = {'study': study_files,
                                  'latest': upload_diff,
                                  'private': upload_files,
-                                 'uploadPath': upload_location[1],
+                                 'uploadPath': upload_path,
                                  'obfuscationCode': obfuscation_code}
 
     logger.info(" Writing Files list schema to a file for studyid - %s ", study_id)
@@ -1027,7 +1052,7 @@ def update_files_list_schema(study_id, obfuscation_code, study_location, files_l
 
 class CopyFilesFolders(Resource):
     @swagger.operation(
-        summary="Copy files from upload folder to study folder",
+        summary="[Deprecated] Copy files from upload folder to study folder",
         nickname="Copy from upload folder",
         notes="""Copies files/folder from the upload directory to the study directory</p> 
         Note that MetaboLights curators will also trigger a copy of any new investigation file!</p>
@@ -1040,7 +1065,7 @@ class CopyFilesFolders(Resource):
             }
         ]
     }
-</code></pre>
+    </code></pre>
               """,
         parameters=[
             {
@@ -1107,120 +1132,150 @@ class CopyFilesFolders(Resource):
             }
         ]
     )
+
     def post(self, study_id):
-        log_request(request)
-        # param validation
-        if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
-        study_id = study_id.upper()
 
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('include_raw_data', help='Include raw data')
-        parser.add_argument('file_location', help='Alternative file location')
-        include_raw_data = False
-        file_location = None
+        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
 
-        # If false, only sync ISA-Tab metadata files
-        if request.args:
-            args = parser.parse_args(req=request)
-            include_raw_data = False if args['include_raw_data'].lower() != 'true' else True
-            file_location = args['file_location']
+        study = StudyService.get_instance(app).get_study_by_acc(study_id)
+        study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
+        storage = StorageService.get_ftp_private_storage(app)
 
-        # body content validation
-        files = {}
-        single_files_only = False
-        status = False
-        if request.data:
-            try:
-                data_dict = json.loads(request.data.decode('utf-8'))
-                files = data_dict['files']
-                single_files_only = True
-            except KeyError:
-                logger.info("No 'files' parameter was provided.")
+        result = storage.check_folder_sync_status(study_id, study.obfuscationcode, study_path)
+        return jsonify(result.dict())
 
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
-        status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
-        upload_location = status["os_upload_path"]
-        if file_location:
-            upload_location = file_location
-
-        logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location,
-                    study_location)
-
-        audit_status, dest_path = write_audit_files(study_location)
-        if single_files_only and len(files) >= 1:
-            for file in files:
-                try:
-                    from_file = file["from"]
-                    to_file = file["to"]
-                    source_file = os.path.join(upload_location, to_file)
-                    destination_file = os.path.join(study_location, to_file)
-
-                    logger.info("Copying specific file %s to %s", from_file, to_file)
-
-                    if not from_file or not to_file:
-                        abort(417, "Please provide both 'from' and 'to' file parameters")
-
-                    if from_file != to_file:
-                        if os.path.isfile(source_file):
-                            logger.info(
-                                "The filename/folder you are copying to (%s) already exists in the upload folder, deleting first",
-                                to_file)
-                            os.remove(source_file, source_file)
-                        else:
-                            logger.info("Renaming file %s to %s", from_file, to_file)
-                            os.rename(os.path.join(upload_location, from_file), source_file)
-
-                    if os.path.isdir(source_file):
-                        logger.info(source_file + ' is a directory')
-                        try:
-                            if os.path.exists(destination_file) and os.path.isdir(destination_file):
-                                logger.info('Removing directory ' + destination_file)
-                                shutil.rmtree(destination_file)  # Remove the destination file/folder first
-
-                            logger.info("Copying folder '%s' to study folder '%s'", source_file, destination_file)
-                            shutil.copytree(source_file, destination_file)
-                            status = True
-                        except OSError as e:
-                            logger.error('Folder already exists? Can not copy %s to %s',
-                                         source_file, destination_file, str(e))
-                    else:
-                        logger.info("Copying file %s to study folder %s", to_file, study_location)
-                        shutil.copy2(source_file, destination_file)
-                        status = True
-                except Exception as e:
-                    logger.error('File copy failed with error ' + str(e))
-
-        else:
-            logger.info("Copying all newer files from '%s' to '%s'", upload_location, study_location)
-            include_inv = False
-            if is_curator:
-                include_inv = True
-            status, message = copy_files_and_folders(upload_location, study_location,
-                                                     include_raw_data=include_raw_data,
-                                                     include_investigation_file=include_inv)
-
-        if status:
-            reindex_status, message = wsc.reindex_study(study_id, user_token)
-            return {'Success': 'Copied files from ' + upload_location}
-        else:
-            return {'Warning': message}
+    #     log_request(request)
+    #     # param validation
+    #     if study_id is None:
+    #         abort(404, 'Please provide valid parameter for study identifier')
+    #     study_id = study_id.upper()
+    #
+    #     # User authentication
+    #     user_token = None
+    #     if "user_token" in request.headers:
+    #         user_token = request.headers["user_token"]
+    #
+    #     # query validation
+    #     parser = reqparse.RequestParser()
+    #     parser.add_argument('include_raw_data', help='Include raw data')
+    #     parser.add_argument('file_location', help='Alternative file location')
+    #     include_raw_data = False
+    #     file_location = None
+    #
+    #     # If false, only sync ISA-Tab metadata files
+    #     if request.args:
+    #         args = parser.parse_args(req=request)
+    #         include_raw_data = False if args['include_raw_data'].lower() != 'true' else True
+    #         file_location = args['file_location']
+    #
+    #     # body content validation
+    #     files = {}
+    #     single_files_only = False
+    #     status = False
+    #     if request.data:
+    #         try:
+    #             data_dict = json.loads(request.data.decode('utf-8'))
+    #             files = data_dict['files'] if 'files' in data_dict else {}
+    #             if files:
+    #                 single_files_only = True
+    #         except KeyError:
+    #             logger.info("No 'files' parameter was provided.")
+    #
+    #     # check for access rights
+    #     is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+    #     study_status = wsc.get_permissions(study_id, user_token)
+    #     if not write_access:
+    #         abort(403)
+    #
+    #     status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
+    #     upload_location = status["os_upload_path"]
+    #     if file_location:
+    #         upload_location = file_location
+    #
+    #     logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location,
+    #                 study_location)
+    #     ftp_private_storage = StorageService.get_ftp_private_storage(app)
+    #     audit_status, dest_path = write_audit_files(study_location)
+    #     if single_files_only:
+    #         for file in files:
+    #             try:
+    #                 from_file = file["from"]
+    #                 to_file = file["to"]
+    #                 if not from_file or not to_file:
+    #                     abort(417, "Please provide both 'from' and 'to' file parameters")
+    #
+    #                 if not file_location:
+    #                     ftp_source_file = os.path.join(upload_location, from_file)
+    #                     destination_file = os.path.join(study_location, to_file)
+    #                     # download directly to study folder
+    #                     ftp_private_storage.sync_from_storage(ftp_source_file, destination_file, logger=logger)
+    #                     continue
+    #
+    #                 # continue if manual upload folder defined
+    #                 source_file = os.path.join(upload_location, to_file)
+    #                 destination_file = os.path.join(study_location, to_file)
+    #
+    #                 logger.info("Copying specific file %s to %s", from_file, to_file)
+    #
+    #
+    #                 if from_file != to_file:
+    #                     if os.path.isfile(source_file):
+    #                         logger.info(
+    #                             "The filename/folder you are copying to (%s) already exists in the upload folder, deleting first",
+    #                             to_file)
+    #                         os.remove(source_file)
+    #                     else:
+    #                         logger.info("Renaming file %s to %s", from_file, to_file)
+    #                         os.rename(os.path.join(upload_location, from_file), source_file)
+    #
+    #                 if os.path.isdir(source_file):
+    #                     logger.info(source_file + ' is a directory')
+    #                     try:
+    #                         if os.path.exists(destination_file) and os.path.isdir(destination_file):
+    #                             logger.info('Removing directory ' + destination_file)
+    #                             shutil.rmtree(destination_file)  # Remove the destination file/folder first
+    #
+    #                         logger.info("Copying folder '%s' to study folder '%s'", source_file, destination_file)
+    #                         shutil.copytree(source_file, destination_file)
+    #                         status = True
+    #                     except OSError as e:
+    #                         logger.error('Folder already exists? Can not copy %s to %s',
+    #                                      source_file, destination_file, str(e))
+    #                 else:
+    #                     logger.info("Copying file %s to study folder %s", to_file, study_location)
+    #                     shutil.copy2(source_file, destination_file)
+    #                     status = True
+    #             except Exception as e:
+    #                 logger.error('File copy failed with error ' + str(e))
+    #
+    #     else:
+    #         logger.info("Copying all newer files from '%s' to '%s'", upload_location, study_location)
+    #         include_inv = False
+    #         if is_curator:
+    #             include_inv = True
+    #         if file_location:
+    #             status, message = copy_files_and_folders(upload_location, study_location,
+    #                                                  include_raw_data=include_raw_data,
+    #                                                  include_investigation_file=include_inv)
+    #         else:
+    #             status, message = ftp_private_storage.sync_from_storage(upload_location, study_location, logger=logger)
+    #             ftp_private_storage.sync_from_storage(upload_location, study_location, logger=logger)
+    #     message = ''
+    #     if status:
+    #         reindex_status, message = wsc.reindex_study(study_id, user_token)
+    #         return {'Success': 'Copied files from ' + upload_location}
+    #     else:
+    #         return {'Warning': message}
 
 
 class SyncFolder(Resource):
     @swagger.operation(
-        summary="Copy files from study folder to private FTP  folder",
+        summary="[Deprecated] Copy files from study folder to private FTP  folder",
         nickname="Copy from study folder",
         parameters=[
             {
@@ -1282,7 +1337,7 @@ class SyncFolder(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('directory_name', help='Alternative file location')
-
+        directory_name = ''
         # If false, only sync ISA-Tab metadata files
         if request.args:
             args = parser.parse_args(req=request)
@@ -1294,31 +1349,39 @@ class SyncFolder(Resource):
         if not write_access:
             abort(403)
 
-        destination = app.config.get(
-            'MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code + "/" + directory_name
-        source = study_location + "/" + directory_name
+        if directory_name:
+            if directory_name == os.sep:
+                destination = study_id.lower() + '-' + obfuscation_code
+                source = study_location
+            else:
+                destination = os.path.join(study_id.lower() + '-' + obfuscation_code, directory_name)
+                source = os.path.join(study_location, directory_name)
+        else:
+            destination = study_id.lower() + '-' + obfuscation_code
+            source = study_location
+
+        ftp_private_storage = StorageService.get_ftp_private_storage(app)
         logger.info("syncing files from " + source + " to " + destination)
         try:
-            if not os.path.exists(destination):
-                os.makedirs(destination)
-                os.chmod(destination, 0o777)
-            sync(source, destination, 'sync', purge=False, logger=logger)
-            logger.info('Copied file %s to %s', source, destination)
-            return {'Success': 'Copied files from study folder to  ftp folder'}
+
+            # ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+
+            ftp_private_storage.sync_from_local(source, destination, logger=logger, purge=False)
+
+            logger.info('Copying file %s to %s', source, destination)
+            return {'Success': 'Copying files from study folder to ftp folder is started'}
         except FileExistsError as e:
-            logger.error('Folder already exists! Can not copy %s to %s', source, destination,
-                         str(e))
+            logger.error(f'Folder already exists! Can not copy {source} to {destination} {str(e)}')
         except OSError as e:
-            logger.error('Does the folder already exists? Can not copy %s to %s', source,
-                         destination, str(e))
+            logger.error(f'Does the folder already exists? Can not copy {source} to {destination} {str(e)}')
 
         except Exception as e:
-            logger.error('Other error! Can not copy %s to %s', source, destination, str(e))
+            logger.error(f'Other error! Can not copy {source} to {destination} {str(e)}')
 
 
 class SampleStudyFiles(Resource):
     @swagger.operation(
-        summary="Get a list of all sample names, mapped to files in the study and upload folder(s)",
+        summary="Get a list of all sample names, mapped to files in the study folder",
         notes="A perfect match gives reliability score of '1.0'. Use the highest score possible for matching",
         parameters=[
             {
@@ -1368,25 +1431,21 @@ class SampleStudyFiles(Resource):
         if not read_access:
             abort(403)
 
-        upload_location = os.path.join(app.config.get('MTBLS_FTP_ROOT'), study_id.lower() + "-" + obfuscation_code)
+        upload_location = study_id.lower() + "-" + obfuscation_code
 
         # Get all unique file names
         all_files_in_study_location = get_all_files(study_location, include_raw_data=True,
                                                     assay_file_list=get_assay_file_list(study_location))
-        all_files_in_upload_location = get_all_files(upload_location, include_raw_data=True)
         filtered_files_in_study_location = get_files(all_files_in_study_location[0])
-        filtered_files_in_upload_location = []
-        if all_files_in_upload_location:
-            filtered_files_in_upload_location = get_files(all_files_in_upload_location[0])
-        filtered_files_in_study_location.extend(filtered_files_in_upload_location)
         all_files = get_files(filtered_files_in_study_location)
 
+        isa_study = None
         try:
             isa_study, isa_inv, std_path = iac.get_isa_study(study_id, user_token,
                                                              skip_load_tables=False,
                                                              study_location=study_location)
         except:
-            abort(500, "Could not load the study metadata files")
+            abort(500, error="Could not load the study metadata files")
 
         samples_and_files = []
         for sample in isa_study.samples:
@@ -1549,7 +1608,7 @@ class UnzipFiles(Resource):
 
             try:
                 if remove_zip:
-                    remove_file(study_location, f_name, allways_remove=True)
+                    remove_file(study_location, f_name, always_remove=True)
             except:
                 msg = 'Could not remove zip file ' + f_name
                 logger.error(msg)
@@ -1606,6 +1665,17 @@ class StudyFilesTree(Resource):
                 "default": True
             },
             {
+                "name": "include_internal_files",
+                "description": "Include internal mapping files",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": False,
+                "default": False
+            },
+            {
                 "name": "directory",
                 "description": "List first level of files in a sub-directory",
                 "required": False,
@@ -1652,13 +1722,17 @@ class StudyFilesTree(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('include_sub_dir', help='include files in all sub-directories')
         parser.add_argument('directory', help='List files in a specific sub-directory')
+
+        parser.add_argument('include_internal_files', help='Ignores internal files')
         include_sub_dir = False
         directory = None
-
+        include_internal_files = False
         if request.args:
             args = parser.parse_args(req=request)
             include_sub_dir = False if args['include_sub_dir'].lower() != 'true' else True
             directory = args['directory'] if args['directory'] else None
+            if args['include_internal_files']:
+                include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
 
         if directory and directory.startswith(os.sep):
             abort(401, "You can only specify folders in the current study folder")
@@ -1669,19 +1743,24 @@ class StudyFilesTree(Resource):
         if not read_access:
             abort(403)
 
-        upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
-        upload_location = upload_location.split('/mtblight')
+        upload_folder = study_id.lower() + "-" + obfuscation_code
+
+        ftp_private_relative_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+        upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
 
         if directory:
             study_location = os.path.join(study_location, directory)
 
+        file_list = []
         try:
             file_list = get_basic_files(study_location, include_sub_dir, get_assay_file_list(study_location))
-        except MemoryError:
-            abort(408)
+            if not include_internal_files:
+                file_list = [item for item in file_list if 'type' in item and item['type'] != 'internal_mapping']
+        except Exception as e:
+            abort(408, error=e.args)
 
         return jsonify({'study': file_list, 'latest': [], 'private': [],
-                        'uploadPath': upload_location[1], 'obfuscationCode': obfuscation_code})
+                        'uploadPath': upload_path, 'obfuscationCode': obfuscation_code})
 
 
 class FileList(Resource):
@@ -1751,8 +1830,9 @@ class FileList(Resource):
             wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
-
-        source = study_location + "/" + directory_name
+        source = study_location
+        if directory_name:
+            source = os.path.join(study_location, directory_name)
         files_list = []
         dir_list = []
         for root, dirs, files in os.walk(source):
@@ -1770,7 +1850,7 @@ class FileList(Resource):
 
 class DeleteAsperaFiles(Resource):
     @swagger.operation(
-        summary="Delete aspera incomplete transfer files such as *.aspx , *.aspera-ckpt, *.partial from study location and upload directory.",
+        summary="Delete aspera incomplete transfer files such as *.aspx , *.aspera-ckpt, *.partial from study directory.",
         parameters=[
             {
                 "name": "study_id",
@@ -1830,12 +1910,7 @@ class DeleteAsperaFiles(Resource):
             abort(401)
 
         logger.info('Deleting aspera files from study ' + study_id)
-        upload_dir = app.config.get(
-            'MTBLS_FTP_ROOT') + study_id.lower() + '-' + obfuscation_code
-        logger.info("Deleting  files from dirs " + upload_dir + " & " + study_location)
         try:
-            if os.path.exists(upload_dir):
-                delete_asper_files(upload_dir)
             delete_asper_files(study_location)
             logger.info('All aspera files deleted successfully !')
             return {'Success': 'Deleted files successfully !'}

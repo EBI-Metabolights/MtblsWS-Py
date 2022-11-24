@@ -46,20 +46,6 @@ iac = IsaApiClient()
 wsc = WsClient()
 
 
-# Allow for a more detailed logging when on DEBUG mode
-def log_request(request_obj):
-    if app.config.get('DEBUG'):
-        if app.config.get('DEBUG_LOG_HEADERS'):
-            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
-        if app.config.get('DEBUG_LOG_BODY'):
-            logger.debug('REQUEST BODY    -> %s', request_obj.data)
-        if app.config.get('DEBUG_LOG_JSON'):
-            try:
-                logger.debug('REQUEST JSON    -> %s', request_obj.json)
-            except:
-                logger.debug('REQUEST JSON    -> EMPTY')
-
-
 class Ontology(Resource):
 
     @swagger.operation(
@@ -1375,7 +1361,7 @@ def addEntity(new_term, supclass, definition=None):
     '''
     add new term to the ontology and save it
 
-    :param ontoPath: Ontology Path
+    :param new_term: New term
     :param supclass:  superclass/branch name or iri of new term
     :param definition (optional): definition of the new term
     '''

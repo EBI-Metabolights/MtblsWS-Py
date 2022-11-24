@@ -28,7 +28,6 @@ import re
 import shutil
 import string
 import time
-import urllib
 import uuid
 from os.path import normpath, basename
 
@@ -36,6 +35,8 @@ import numpy as np
 import pandas as pd
 import psycopg2
 import requests
+
+from urllib import request as urllib_request
 from flask import current_app as app
 from flask import request, abort
 from flask_restful import abort
@@ -45,6 +46,7 @@ from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
 from psycopg2 import pool
 from dirsync import sync
+
 from app.ws.mm_models import OntologyAnnotation
 
 """
@@ -119,7 +121,6 @@ def copy_file(source, destination):
     except Exception as e:
         logger.error('Could not copy file for study: ' + str(e))
         raise
-
 
 def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, include_investigation_file=True):
     try:
@@ -198,6 +199,7 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
         logger.error(str(e))
         raise
 
+
 def scandir_get_aspera(dir):
     subfolders, files = [], []
 
@@ -214,6 +216,7 @@ def scandir_get_aspera(dir):
         files.extend(f)
     return subfolders, files
 
+
 def delete_asper_files(directory):
     subs, files = scandir_get_aspera(directory)
     for file_to_delete in files:
@@ -221,6 +224,7 @@ def delete_asper_files(directory):
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
             if os.path.isfile(file_to_delete):  # is it a file?
                 os.remove(file_to_delete)
+
 
 def copy_files_and_folders(source, destination, include_raw_data=True, include_investigation_file=True):
     """
@@ -428,15 +432,19 @@ def totuples(df, text):
 
 # Allow for a more detailed logging when on DEBUG mode
 def log_request(request_obj):
+
     if app.config.get('DEBUG'):
+        if not request_obj:
+            logger.error('REQUEST OBJECT is NONE')
+            return
         if app.config.get('DEBUG_LOG_HEADERS'):
             logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
         if app.config.get('DEBUG_LOG_BODY'):
             logger.debug('REQUEST BODY    -> %s', request_obj.data)
         if app.config.get('DEBUG_LOG_JSON'):
-            try:
+            if request_obj.is_json:
                 logger.debug('REQUEST JSON    -> %s', request_obj.json)
-            except:
+            else:
                 logger.debug('REQUEST JSON    -> EMPTY')
 
 
@@ -606,8 +614,7 @@ def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, s
     return isa_study
 
 
-def validate_mzml_files(study_id, obfuscation_code, study_location):
-    upload_location = app.config.get('MTBLS_FTP_ROOT') + study_id.lower() + "-" + obfuscation_code
+def validate_mzml_files(study_id):
 
     status, result = True, "All mzML files validated in both study and upload folder"
 
@@ -615,11 +622,11 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
     items = app.config.get('MZML_XSD_SCHEMA')
     xsd_name = items[0]
     script_loc = items[1]
-
+    study_location = os.path.join(app.config.get("STUDY_PATH"), study_id)
     xmlschema_doc = etree.parse(os.path.join(script_loc, xsd_name))
     xmlschema = etree.XMLSchema(xmlschema_doc)
 
-    for file_loc in [study_location, upload_location]:  # Check both study and upload location. Study first!!!!
+    for file_loc in [study_location]:
         if os.path.isdir(file_loc):  # Only check if the folder exists
             files = glob.iglob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
             if files.gi_yieldfrom is None:  # No files, check sub-folders
@@ -632,18 +639,8 @@ def validate_mzml_files(study_id, obfuscation_code, study_location):
                     status, result = validate_xml(xml=file, xmlschema=xmlschema)
                     if not status:
                         return status, result
-                    # Ok, the file validated, so we now copy it file to the study folder
-                    if file_loc == upload_location:
-                        shutil.copy(file, study_location)
-                        # copy_file(file, study_location)
-                        try:
-                            logger.info('Moving mzML file "' + file + '" into study location ' + study_location)
-                            # Rename the file so that we don't have to validate/copy it again
-                            shutil.move(file, file + ".MOVED")
-                        except Exception:
-                            return False, "Could not copy the mzML file " + file
-                except Exception:
-                    return status
+                except Exception as e:
+                    return False, f'Error while validating file {file}: {str(e)}'
 
     return status, result
 
@@ -721,7 +718,7 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
         elif ontology_type.lower() == 'characteristics':
             prefix = 'Characteristics['
 
-        file_names = []
+        file_names = list()
         # Sample sheet
         file_names.append(os.path.join(study_location, isa_study.filename))
         #  assay_sheet(s)
@@ -846,7 +843,7 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
     return isa_inv, onto
 
 
-def remove_file(file_location, file_name, allways_remove=False):
+def remove_file(file_location, file_name, always_remove=False):
     # Raw files are sometimes actually folders, so need to check if file or folder before removing
     file_to_delete = os.path.join(file_location, file_name)
     # file_status == 'active' of a file is actively used as metadata
@@ -854,7 +851,7 @@ def remove_file(file_location, file_name, allways_remove=False):
 
     try:
         if file_type == 'metadata_investigation' or file_type == 'metadata_assay' or file_type == 'metadata_sample' or file_type == 'metadata_maf':
-            if file_status == 'active' and not allways_remove:  # If active metadata and "remove anyway" flag if not set
+            if file_status == 'active' and not always_remove:  # If active metadata and "remove anyway" flag if not set
                 return False, "Can not delete any active metadata files " + file_name
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
             if os.path.isfile(file_to_delete):  # is it a file?
@@ -884,8 +881,24 @@ def map_file_type(file_name, directory, assay_file_list=None):
     compressed_files_list = app.config.get('COMPRESSED_FILES_LIST')
     internal_mapping_list = app.config.get('INTERNAL_MAPPING_LIST')
 
+    full_path = os.path.join(directory, file_name)
+    if os.path.exists(full_path):
+        folder = os.path.isdir(full_path)
+        if fname in internal_mapping_list:
+            return 'internal_mapping', active_status, folder
+        else:
+            for internal_file in internal_mapping_list:
+                if os.sep in internal_file:
+                    if internal_file in full_path:
+                        return 'internal_mapping', active_status, folder
+    else:
+        return 'unknown', none_active_status, False
+
+    is_metadata = False
+    if (fname.startswith(('i_', 'a_', 's_')) and (ext == '.txt')) or fname.startswith(('m_')) and (ext == '.tsv'):
+        is_metadata = True
     # Metadata first, current is if the files are present in the investigation and assay files
-    if fname.startswith(('i_', 'a_', 's_', 'm_')) and (ext == '.txt' or ext == '.tsv'):
+    if is_metadata:
         if fname.startswith('a_'):
             if is_file_referenced(file_name, directory, 'i_'):
                 return 'metadata_assay', active_status, folder
@@ -899,8 +912,16 @@ def map_file_type(file_name, directory, assay_file_list=None):
                 return 'metadata_maf', none_active_status, folder
         elif fname.startswith('i_'):
             investigation = os.path.join(directory, 'i_')
+            default_investigation = os.path.join(directory, 'i_Investigation.txt')
             if os.sep + 'audit' + os.sep in directory:
                 return 'metadata_investigation', none_active_status, folder
+            if os.path.exists(default_investigation):
+                with open(default_investigation, encoding='utf8', errors="ignore") as file:
+                    if file.read():
+                        return 'metadata_investigation', active_status, folder
+                    else:
+                        return 'metadata_investigation', none_active_status, folder
+            # try others
             for invest_file in glob.glob(investigation + '*'):  # Default investigation file pattern
                 with open(invest_file, encoding='utf8', errors="ignore") as file:
                     if file.read():
@@ -944,8 +965,6 @@ def map_file_type(file_name, directory, assay_file_list=None):
             return 'compressed', active_status, folder
         else:
             return 'compressed', none_active_status, folder
-    elif fname in internal_mapping_list:
-        return 'internal_mapping', active_status, folder
     elif fname.endswith(('.tsv.split', '_pubchem.tsv', '_annotated.tsv')):
         return 'chebi_pipeline_file', active_status, folder
     elif fname in empty_exclusion_list:
@@ -1354,7 +1373,7 @@ def get_studytype(studyID=None):
                 term = str(descriptor['annotationValue'])
                 if term.startswith(('untargeted', 'Untargeted', 'non-targeted')):
                     untarget = True
-                elif term.startswith(('targeted')):
+                elif term.startswith('targeted'):
                     target = True
 
             if target and untarget:
@@ -1479,9 +1498,9 @@ def getFileList(studyID):
     try:
         source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
         url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
-        request = urllib.request.Request(url)
-        request.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
-        response = urllib.request.urlopen(request)
+        request_obj = urllib_request.Request(url)
+        request_obj.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        response = urllib_request.urlopen(request_obj)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)
 
@@ -1500,12 +1519,26 @@ def getFileList(studyID):
                 maf_file.append(files['file'])
                 continue
 
-        if assay_file == []: print('Fail to load assay file from ', studyID)
-        if sample_file == '': print('Fail to load sample file from ', studyID)
-        if investigation_file == '': print('Fail to load investigation file from ', studyID)
-        if maf_file == []: print('Fail to load maf file from ', studyID)
+        if not assay_file:
+            print('Fail to load assay file from ', studyID)
+        if not sample_file:
+            print('Fail to load sample file from ', studyID)
+        if not investigation_file:
+            print('Fail to load investigation file from ', studyID)
+        if not maf_file:
+            print('Fail to load maf file from ', studyID)
 
         return assay_file, investigation_file, sample_file, maf_file
     except Exception as e:
         print(e)
         logger.info(e)
+
+
+def fixUserDictKeys(user_dict):
+    # tried to do this iteratively / in a comprehension, but it was taking too long
+    user_dict['firstName'] = user_dict.pop('firstname')
+    user_dict['lastName'] = user_dict.pop('lastname')
+    user_dict['email'] = user_dict.pop('lower')
+    user_dict['affiliation_url'] = user_dict.pop('affiliationurl')
+
+    return user_dict

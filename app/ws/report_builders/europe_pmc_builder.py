@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 
 import pandas
@@ -26,7 +27,6 @@ class EuropePmcReportBuilder:
         Sets up a headers register (as we are hitting the same endpoint twice, but with different formats) and a set of
         base parameters for requests to the europePMC API.
 
-        :param priv_list: A list of studies to iterate over, throwing each at europePMC.
         :param user_token: User token for use with javawebservice, must be curator or will have failed prior.
         :param wsc: WsClient that interfaces with the java webservice.
         :param iac: IsaApiClient, used to get study information.
@@ -60,7 +60,8 @@ class EuropePmcReportBuilder:
         :return: A message as a string indicating success or failure.
         """
         list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
-        path = app.config.get('MTBLS_PRIVATE_FTP_ROOT') + '/' + app.config.get('REPORTING_PATH') + 'global/europepmc.csv'
+        root_path = app.config.get('REPORTING_ROOT_PATH')
+        path = os.path.join(root_path, app.config.get('REPORTING_PATH'), 'global', 'europepmc.csv')
         try:
 
             report_dataframe = pandas.DataFrame(list_of_result_dicts,
@@ -146,12 +147,11 @@ class EuropePmcReportBuilder:
         ]
         if len(culled_results) > 0:
             for pub in publications:
-                logger.info(pub)
+
                 result = self.has_mapping(pub, culled_results)
                 if result:
-                    logger.info('hit ' + str(result))
                     temp_dict = base_return_dict.cascade({
-                        'Title': title, 'PubmedId': result['pmid'], 'DOI': pub.doi, 'Author List': pub.author_list,
+                        'Title': title, 'PubmedId': self.check_pubmed_id(result), 'DOI': pub.doi, 'Author List': pub.author_list,
                         'Publication Date': result['journalInfo']['printPublicationDate'],
                         'Citation Reference': self.get_citation_reference(title), 'Publication in MTBLS': pub.title,
                         'Journal in EuropePMC': result['journalInfo']['journal']['title'],
@@ -217,3 +217,15 @@ class EuropePmcReportBuilder:
         else:
             return response_xmldict['responseWrapper']['rdf:RDF']['rdf:Description']['dcterms:bibliographicCitation']
 
+    @staticmethod
+    def check_pubmed_id(europepmc_result):
+        """
+        Occasionally a result will not have a pubmed ID, and so previously we were getting a KeyError. Here we perform a
+        simple check to see if the key exists in the object, and return its value if it does.
+
+        :param europepmc_result: an individual result from a set of results from europepmc, as a dict.
+        :return: Either the pubmed id or a message indicating it could not be found, as a string.
+        """
+        if 'pmid' in europepmc_result:
+            return europepmc_result['pmid']
+        return 'no pubmed id'

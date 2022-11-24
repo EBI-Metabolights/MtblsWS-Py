@@ -1,7 +1,5 @@
 import json
 import os
-import pathlib
-import shutil
 
 import pytest
 from flask import Flask
@@ -14,16 +12,6 @@ from tests.ws.test_data.utils import delete_test_study_from_db
 
 
 class TestWebServiceClient(object):
-
-    def test_get_study_location_not_authorized_1(self, flask_app: Flask,
-                                                 email_service_isolated_ws_client: WsClient,
-                                                 sensitive_data: SensitiveDatastorage):
-        with flask_app.app_context():
-            ws_client = email_service_isolated_ws_client
-            with pytest.raises(Exception) as context:
-                ws_client.get_study_location("MTBLS9999", sensitive_data.invalid_user_token_001)
-        exception_info = context.value
-        assert exception_info.code == 403
 
     def test_get_study_location_public_1(self, flask_app: Flask, email_service_isolated_ws_client: WsClient,
                                          sensitive_data: SensitiveDatastorage):
@@ -125,51 +113,6 @@ class TestWebServiceClient(object):
             expected = flask_app.config.get('STUDY_QUEUE_FOLDER')
             assert expected == actual
 
-    def test_create_upload_folder_valid_study_01(self, flask_app: Flask,
-                                                 email_service_isolated_ws_client: WsClient,
-                                                 sensitive_data: SensitiveDatastorage):
-        with flask_app.app_context():
-            ws_client = email_service_isolated_ws_client
-            input_study_id = "MTBLS1"
-            input_obfusucation_code = "XYZTaamss"
-            expected_path = os.path.join(flask_app.config.get('MTBLS_FTP_ROOT'),
-                                         input_study_id.lower() + "-" + input_obfusucation_code)
-            if os.path.exists(expected_path):
-                created_path = pathlib.Path(expected_path)
-                shutil.rmtree(created_path)
-            try:
-                actual = ws_client.create_upload_folder(input_study_id, input_obfusucation_code,
-                                                        sensitive_data.super_user_token_001)
-
-                assert actual is not None
-                assert expected_path == actual['os_upload_path']
-                ws_client.email_service.send_email.assert_called()
-
-            finally:
-                if os.path.exists(expected_path):
-                    created_path = pathlib.Path(expected_path)
-                    shutil.rmtree(created_path)
-
-    def test_create_upload_folder_invalid_study_01(self, flask_app: Flask,
-                                                   email_service_isolated_ws_client: WsClient,
-                                                   sensitive_data: SensitiveDatastorage):
-        with flask_app.app_context():
-            ws_client = email_service_isolated_ws_client
-            input_study_id = "MTBLS999991"
-            input_obfusucation_code = "XYZTaamss"
-            expected_path = os.path.join(flask_app.config.get('MTBLS_FTP_ROOT'),
-                                         input_study_id.lower() + "-" + input_obfusucation_code)
-
-            try:
-                with pytest.raises(MetabolightsException):
-                    ws_client.create_upload_folder(input_study_id, input_obfusucation_code,
-                                                   sensitive_data.super_user_token_001)
-                    ws_client.email_service.send_email.assert_not_called()
-            finally:
-                if os.path.exists(expected_path):
-                    created_path = pathlib.Path(expected_path)
-                    shutil.rmtree(created_path)
-
     def test_add_empty_study_1(self, flask_app: Flask,
                                email_service_isolated_ws_client: WsClient,
                                sensitive_data: SensitiveDatastorage):
@@ -187,7 +130,7 @@ class TestWebServiceClient(object):
                 if study_id:
                     user_email = get_email(user_token)
                     study_submitters(study_id, user_email, "delete")
-                    sql = "delete from study where acc = %(acc)s;"
+                    sql = "delete from STUDIES where acc = %(acc)s;"
                     params = {"acc": study_id}
                     execute_query_with_parameter(sql, params)
 
