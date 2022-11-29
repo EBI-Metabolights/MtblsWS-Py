@@ -70,8 +70,8 @@ class DataMoverAvailableStorage(object):
         if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
             return False
 
-        source_study_ftp_folder_path = self._get_absolute_ftp_private_path(source_ftp_folder)
-        target_study_folder = self._get_absolute_study_datamover_path(self.studyId)
+        source_study_ftp_folder_path = self._get_absolute_ftp_private_path(source_ftp_folder).rstrip(os.sep)
+        target_study_folder = self._get_absolute_study_datamover_path(self.studyId).rstrip(os.sep)
         make_dir_with_chmod(self._get_study_log_folder(), 0o770)
         command = "rsync"
         rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
@@ -84,10 +84,10 @@ class DataMoverAvailableStorage(object):
         if ignore_set:
             exclude = ''
             for ignore_file in ignore_set:
-                exclude = f'{exclude} --exclude {ignore_file}'
-            params = f"-auv {exclude} {source_study_ftp_folder_path}/* {target_study_folder}/."
+                exclude = f"{exclude} --exclude '{ignore_file}'"
+            params = f"-auv {exclude} {source_study_ftp_folder_path}/. {target_study_folder}/"
         else:
-            params = f"-auv {source_study_ftp_folder_path}/* {target_study_folder}/."
+            params = f"-auv {source_study_ftp_folder_path}/. {target_study_folder}/"
 
         submitter = f"{self.studyId}_do"
         study_log_file = os.path.join(self._get_study_log_folder(), f"{submitter}_{command}.log")
@@ -102,8 +102,8 @@ class DataMoverAvailableStorage(object):
         return status
 
     def calculate_sync(self, source_ftp_folder: str, ignore_list: List[str] = None) -> bool:
-        source_study_ftp_folder_path = self._get_absolute_ftp_private_path(source_ftp_folder)
-        target_study_folder = self._get_absolute_study_datamover_path(self.studyId)
+        source_study_ftp_folder_path = self._get_absolute_ftp_private_path(source_ftp_folder).rstrip(os.sep)
+        target_study_folder = self._get_absolute_study_datamover_path(self.studyId).rstrip(os.sep)
 
         make_dir_with_chmod(self._get_study_log_folder(), 0o777)
         command = "rsync"
@@ -116,10 +116,10 @@ class DataMoverAvailableStorage(object):
         exclude = ''
         if ignore_set:
             for ignore_file in ignore_set:
-                exclude = f'{exclude} --exclude {ignore_file}'
-            params = f"-aunv {exclude} {source_study_ftp_folder_path}/* {target_study_folder}/."
+                exclude = f"{exclude} --exclude '{ignore_file}'"
+            params = f"-aunv {exclude} {source_study_ftp_folder_path}/. {target_study_folder}/"
         else:
-            params = f"-aunv {source_study_ftp_folder_path}/* {target_study_folder}/."
+            params = f"-aunv {source_study_ftp_folder_path}/. {target_study_folder}/"
 
         submitter = f"{self.studyId}_calc"
         study_log_file = os.path.join(self._get_study_log_folder(), f"{submitter}_{command}.log")
