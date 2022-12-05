@@ -495,12 +495,12 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     except FileNotFoundError:
         abort(400, "The file " + annotation_file_name + " was not found")
 
-    # CHEBI-PIPELINE FTP Folder dependency is removed
-    # create_annotation_folder(study_location + os.sep + anno_sub_folder)
-    # if obfuscation_code:  # So the curators can FTP new files into the private upload folder for the study
-    #     ftp_private_annotation_folder = os.path.join(study_id.lower() + "-" + obfuscation_code, anno_sub_folder)
-    #     ftp_private_storage = StorageService.get_ftp_private_storage(app)
-    #     create_annotation_folder_on_remote_storage(ftp_private_storage, ftp_private_annotation_folder)
+    # CHEBI-PIPELINE annotation folder creation remotely
+    create_annotation_folder(study_location + os.sep + anno_sub_folder)
+    if obfuscation_code:  # So the curators can FTP new files into the private upload folder for the study
+         ftp_private_annotation_folder = os.path.join(study_id.lower() + "-" + obfuscation_code, anno_sub_folder)
+         ftp_private_storage = StorageService.get_ftp_private_storage(app)
+         create_annotation_folder_on_remote_storage(ftp_private_storage, ftp_private_annotation_folder)
 
     # First make sure the existing pubchem annotated spreadsheet is loaded
     pubchem_df = maf_df.copy()
@@ -1012,7 +1012,7 @@ def reindex_row_id(pubchem_df, pubchem_df_headers):
 
 
 def create_annotation_folder_on_remote_storage(storage: Storage, folder_loc):
-    print_log("Checking for ChEBI folder " + folder_loc)
+    print_log("Checking for ChEBI folder in FTP " + folder_loc)
     try:
         if not storage.remote.does_folder_exist(folder_loc):
             print_log(f"Creating ChEBI folder {folder_loc} on storage {storage.get_name()}")
@@ -1022,7 +1022,7 @@ def create_annotation_folder_on_remote_storage(storage: Storage, folder_loc):
 
 
 def create_annotation_folder(folder_loc):
-    print_log("Checking for ChEBI folder " + folder_loc)
+    print_log("Checking for ChEBI folder in study folder" + folder_loc)
     try:
         if not os.path.exists(folder_loc):
             print_log("Creating ChEBI folder " + folder_loc)
