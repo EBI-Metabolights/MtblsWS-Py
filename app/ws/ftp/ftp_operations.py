@@ -564,7 +564,7 @@ class SyncFromStudyFolder(Resource):
 
         ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
 
-        ftp_private_storage.sync_from_local(study_id, destination, logger=logger, purge=False, sync_chebi_annotation=sync_only_chebi_results)
+        ftp_private_storage.sync_from_local(source_local_folder=None, target_folder=destination, ignore_list=None, sync_chebi_annotation=sync_only_chebi_results)
 
         logger.info('Copying file %s to FTP %s', study_id, destination)
         return {'Success': 'Copying files from study folder to ftp folder is started'}

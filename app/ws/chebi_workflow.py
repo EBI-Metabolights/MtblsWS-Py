@@ -880,7 +880,6 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
             pubchem_df.iloc[row_idx, get_idx('DATABASE_ACCESSION', pubchem_df_headers)] = db_acc.rstrip(
                 ';')
 
-
         final_inchi_key = pubchem_df.iloc[idx, get_idx('final_inchi_key', pubchem_df_headers)]
         if final_inchi_key and len(final_inchi_key) > 0:
             unichem_id = pubchem_df.iloc[row_idx, get_idx('unichem_id', pubchem_df_headers)]
@@ -964,6 +963,10 @@ def search_and_update_maf(study_id, study_location, annotation_file_name, classy
     pubchem_df_len = str(len(pubchem_df))
 
     print_log("ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
+    if obfuscation_code:
+        ftp_private_folder = os.path.join(study_id.lower() + "-" + obfuscation_code)
+        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        sync_annotation_folder_with_remote_storage(ftp_private_storage, ftp_private_folder)
     return maf_len, pubchem_df_len, pubchem_file
 
 
@@ -1020,6 +1023,13 @@ def create_annotation_folder_on_remote_storage(storage: Storage, folder_loc):
     except Exception as e:
         print_log(str(e))
 
+
+def sync_annotation_folder_with_remote_storage(storage: Storage, ftp_folder):
+    print_log("Syncing ChEBI annotation folder with FTP " + ftp_folder)
+    try:
+        storage.sync_from_local(source_local_folder=None, target_folder=ftp_folder, ignore_list=None, sync_chebi_annotation=True)
+    except Exception as e:
+        print_log(str(e))
 
 def create_annotation_folder(folder_loc):
     print_log("Checking for ChEBI folder in study folder" + folder_loc)
@@ -2138,8 +2148,8 @@ def get_dime_db(inchi_key):
             if 'KEGG Compound' in response_dict and response_dict['KEGG Compound']:
                 dime_db_ids = dime_db_ids + 'KEGG COMPOUND:' + response_dict['KEGG Compound'] + ";"
             # Discussed with Chebi Team - No need to add this but add Wikipedia
-            #if 'Wikidata' in response_dict and response_dict['Wikidata']:
-                #dime_db_ids = dime_db_ids + 'Wikidata:' + response_dict['Wikidata'] + ";"
+            # if 'Wikidata' in response_dict and response_dict['Wikidata']:
+            # dime_db_ids = dime_db_ids + 'Wikidata:' + response_dict['Wikidata'] + ";"
             if 'Wikipedia' in response_dict and response_dict['Wikipedia']:
                 dime_db_ids = dime_db_ids + 'Wikipedia:' + response_dict['Wikipedia'] + ";"
             if 'Chemspider' in response_dict and response_dict['Chemspider']:
@@ -2335,7 +2345,8 @@ class ChEBIPipeLine(Resource):
                             cmd = cmd.replace(old_file_name, file_name)
                         old_file_name = file_name
                         print_log("Starting cluster job for ChEBI pipeline: " + cmd)
-                        status, message, job_out, job_err = submit_job(True, account=user_email, job_cmd=cmd, job_params=None, submitter=user_email, log=False)
+                        status, message, job_out, job_err = submit_job(True, account=user_email, job_cmd=cmd,
+                                                                       job_params=None, submitter=user_email, log=False)
 
                         if status:
                             return {"success": message, "message": job_out, "errors": job_err}
@@ -2354,7 +2365,9 @@ class ChEBIPipeLine(Resource):
             if run_on_cluster:
                 # create param file
                 print_log("Starting cluster job for ChEBI pipeline: " + cmd)
-                status, message, job_out, job_err, log_file = submit_job(True, account=user_email, job_cmd=cmd, job_params=None, submitter=user_email, log=False)
+                status, message, job_out, job_err, log_file = submit_job(True, account=user_email, job_cmd=cmd,
+                                                                         job_params=None, submitter=user_email,
+                                                                         log=False)
                 print_log("job submitted")
                 if status:
                     return {"success": message, "message": job_out, "errors": job_err}
