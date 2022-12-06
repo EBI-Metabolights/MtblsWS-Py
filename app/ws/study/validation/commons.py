@@ -1204,7 +1204,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, co
         full_file_name = os.path.join(study_location, file_name)
 
         # Don't check our internal folders
-        if 'audit' not in file_name and not file_name.startswith('chebi_pipeline_annotations'):
+        if 'audit' not in file_name and not file_name.startswith(app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')):
             if os.path.isdir(os.path.join(full_file_name)):
                 for sub_file_name in os.listdir(full_file_name):
                     if is_empty_file(os.path.join(full_file_name, sub_file_name), study_location=study_location):

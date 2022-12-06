@@ -6,7 +6,6 @@ from typing import List, Union
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
     SyncTaskStatus, SyncCalculationStatus
-from app.utils import MetabolightsException
 from app.ws.cluster_jobs import submit_job, list_jobs
 import logging
 
@@ -29,6 +28,7 @@ class DataMoverAvailableStorage(object):
         self.ftp_user_home_path = app.config.get('LSF_DATAMOVER_FTP_PRIVATE_HOME')
         self.studies_root_path_datamover = app.config.get('LSF_DATAMOVER_STUDY_PATH')
         self.datamover_absolute_studies_path = os.path.join(self.ftp_user_home_path, self.studyId)
+        self.chebi_annotation_sub_folder = app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')
 
     def sync_from_studies_folder(self, target_ftp_folder: str, ignore_list: List[str] = None,
                                  **kwargs):
@@ -37,7 +37,6 @@ class DataMoverAvailableStorage(object):
             return False
 
         sync_chebi_annotation = True
-        chebi_annotation_sub_folder = "chebi_pipeline_annotations"
         if 'sync_chebi_annotation' in kwargs:
             sync_chebi_annotation = kwargs['sync_chebi_annotation']
 
@@ -58,7 +57,7 @@ class DataMoverAvailableStorage(object):
                 exclude = f"{exclude} --exclude '{ignore_file}'"
         data_mover_study_path = self._get_absolute_study_datamover_path(self.studyId).rstrip(os.sep)
         if sync_chebi_annotation:
-            params = f"-auv {data_mover_study_path}/{chebi_annotation_sub_folder}/. {target_study_ftp_folder_path}/{chebi_annotation_sub_folder}/"
+            params = f"-auv {data_mover_study_path}/{self.chebi_annotation_sub_folder}/. {target_study_ftp_folder_path}/{self.chebi_annotation_sub_folder}/"
         else:
             params = f"-auv {exclude} {data_mover_study_path}/. {target_study_ftp_folder_path}/"
         submitter = f"{self.studyId}_do"

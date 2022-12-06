@@ -59,7 +59,7 @@ pubchem_end = "_pubchem.tsv"
 complete_end = "_complete.sdf"
 pubchem_sdf_extension = '_pubchem.sdf'
 classyfire_end = "_classyfire"
-anno_sub_folder = "chebi_pipeline_annotations"
+anno_sub_folder = app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')
 final_cid_column_name = "final_external_id"
 unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
                "not identified", "unmatched"
