@@ -494,6 +494,7 @@ chebi_pipeline_settings = chebi_settings["CEHBI_PIPELINE"]
 
 CHEBI_UPLOAD_SCRIPT = chebi_pipeline_settings["CHEBI_UPLOAD_SCRIPT"]
 CHEBI_PIPELINE_URL = chebi_pipeline_settings["CHEBI_PIPELINE_URL"]
+CHEBI_PIPELINE_ANNOTATION_FOLDER = chebi_pipeline_settings["CHEBI_PIPELINE_ANNOTATION_FOLDER"]
 OBO_FILE = chebi_pipeline_settings["OBO_FILE"]
 CHEBI_URL = chebi_pipeline_settings["CHEBI_URL"]
 CHEBI_URL_WAIT = chebi_pipeline_settings["CHEBI_URL_WAIT"]

@@ -6,7 +6,6 @@ from typing import List, Union
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
     SyncTaskStatus, SyncCalculationStatus
-from app.utils import MetabolightsException
 from app.ws.cluster_jobs import submit_job, list_jobs
 import logging
 
@@ -29,6 +28,7 @@ class DataMoverAvailableStorage(object):
         self.ftp_user_home_path = app.config.get('LSF_DATAMOVER_FTP_PRIVATE_HOME')
         self.studies_root_path_datamover = app.config.get('LSF_DATAMOVER_STUDY_PATH')
         self.datamover_absolute_studies_path = os.path.join(self.ftp_user_home_path, self.studyId)
+        self.chebi_annotation_sub_folder = app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')
 
     def sync_from_studies_folder(self, target_ftp_folder: str, ignore_list: List[str] = None,
                                  **kwargs):
@@ -36,6 +36,11 @@ class DataMoverAvailableStorage(object):
         if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
             return False
 
+        sync_chebi_annotation = True
+        if 'sync_chebi_annotation' in kwargs:
+            sync_chebi_annotation = kwargs['sync_chebi_annotation']
+
+        logger.info("sync_from_studies_folder sync_chebi_annotation only : " + str(sync_chebi_annotation))
         target_study_ftp_folder_path = self._get_absolute_ftp_private_path(target_ftp_folder).rstrip(os.sep)
 
         make_dir_with_chmod(self._get_study_log_folder(), 0o777)
@@ -51,7 +56,10 @@ class DataMoverAvailableStorage(object):
             for ignore_file in ignore_set:
                 exclude = f"{exclude} --exclude '{ignore_file}'"
         data_mover_study_path = self._get_absolute_study_datamover_path(self.studyId).rstrip(os.sep)
-        params = f"-auv {exclude} {data_mover_study_path}/. {target_study_ftp_folder_path}/"
+        if sync_chebi_annotation:
+            params = f"-auv {data_mover_study_path}/{self.chebi_annotation_sub_folder}/. {target_study_ftp_folder_path}/{self.chebi_annotation_sub_folder}/"
+        else:
+            params = f"-auv {exclude} {data_mover_study_path}/. {target_study_ftp_folder_path}/"
         submitter = f"{self.studyId}_do"
         study_log_file = os.path.join(self._get_study_log_folder(), f"{submitter}_{command}.log")
         self.create_empty_file(file_path=study_log_file)

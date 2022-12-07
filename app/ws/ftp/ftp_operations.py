@@ -503,6 +503,17 @@ class SyncFromStudyFolder(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
+            },
+            {
+                "name": "sync_only_chebi_pipeline_results",
+                "description": "Option to choose whether to sync only chebi annotation results or whole folder",
+                "required": False,
+                "allowEmptyValue": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "default": True
             }
         ],
         responseMessages=[
@@ -537,6 +548,13 @@ class SyncFromStudyFolder(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        parser = reqparse.RequestParser()
+        parser.add_argument('sync_only_chebi_pipeline_results', help='Sync only CHEBI pipeline')
+        sync_only_chebi_results = True
+        if request.args:
+            args = parser.parse_args(req=request)
+            sync_only_chebi_results = False if args['sync_only_chebi_pipeline_results'].lower() == 'false' else True
+
         UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
         study = StudyService.get_instance(app).get_study_by_acc(study_id)
         destination = study_id.lower() + '-' + study.obfuscationcode
@@ -546,7 +564,7 @@ class SyncFromStudyFolder(Resource):
 
         ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
 
-        ftp_private_storage.sync_from_local(study_id, destination, logger=logger, purge=False)
+        ftp_private_storage.sync_from_local(source_local_folder=None, target_folder=destination, ignore_list=None, sync_chebi_annotation=sync_only_chebi_results)
 
         logger.info('Copying file %s to FTP %s', study_id, destination)
         return {'Success': 'Copying files from study folder to ftp folder is started'}
