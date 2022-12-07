@@ -880,6 +880,7 @@ def map_file_type(file_name, directory, assay_file_list=None):
     derived_files_list = app.config.get('DERIVED_FILES_LIST')
     compressed_files_list = app.config.get('COMPRESSED_FILES_LIST')
     internal_mapping_list = app.config.get('INTERNAL_MAPPING_LIST')
+    derived_data_folder_list = app.config.get('DERIVED_DATA_FOLDER_LST')
 
     full_path = os.path.join(directory, file_name)
     if os.path.exists(full_path):
@@ -987,7 +988,10 @@ def map_file_type(file_name, directory, assay_file_list=None):
                     return 'raw', none_active_status, folder
 
             if os.path.isdir(os.path.join(directory, file_name)):
-                return 'directory', none_active_status, True
+                if file_name in derived_data_folder_list:
+                    return 'derived_data', none_active_status, True
+                else:
+                    return 'directory', none_active_status, True
 
         return 'unknown', none_active_status, folder
 
