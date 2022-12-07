@@ -33,7 +33,7 @@ import pronto
 import pubchempy as pcp
 import requests
 import subprocess
-from flask import request, abort, current_app as app
+from flask import request, abort, current_app as app, Flask
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
@@ -55,11 +55,14 @@ logger = logging.getLogger('wslog_chebi')
 wsc = WsClient()
 iac = IsaApiClient()
 
+instance_dir = os.path.join(os.getcwd(), "instance")
+flask_app = Flask(__name__, instance_relative_config=True, instance_path=instance_dir)
+
 pubchem_end = "_pubchem.tsv"
 complete_end = "_complete.sdf"
 pubchem_sdf_extension = '_pubchem.sdf'
 classyfire_end = "_classyfire"
-anno_sub_folder = app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')
+anno_sub_folder = flask_app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')
 final_cid_column_name = "final_external_id"
 unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
                "not identified", "unmatched"
