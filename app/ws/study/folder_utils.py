@@ -196,6 +196,49 @@ def get_file_times(directory, file_name, assay_file_list=None, validation_only=F
     return file_time, raw_time, file_type, status, folder
 
 
+SEARCH_FOLDER_STOP_LIST = [".d", ".raw"]
+
+
+def is_in_search_stop_list(entry: os.DirEntry, is_folder: bool) -> bool:
+    in_stop_list = False
+    if is_folder:
+        for ignore_folder_name_suffix in SEARCH_FOLDER_STOP_LIST:
+            if entry.name.lower().endswith(ignore_folder_name_suffix):
+                in_stop_list = True
+                break
+    return in_stop_list
+
+
+def is_in_seearch_ignore_list(entry: os.DirEntry, is_folder: bool) -> bool:
+    ignore_file_list = app.config.get('IGNORE_FILE_LIST')
+    if entry.name.lower() in ignore_file_list:
+        return True
+    if entry.name.startswith("."):
+        return True
+    return False
+
+def get_file_descriptors(study_location, include_sub_dir, assay_file_list=None, metadata_only=False):
+    file_list = []
+    for entry in os.scandir(study_location):
+        is_folder = os.path.isdir(entry.path)
+        in_stop_list = is_in_search_stop_list(entry, is_folder)
+        if in_stop_list:
+            is_folder = False
+
+        if not entry.name.startswith("."):
+            file_name = entry.name
+
+            file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
+            file_list.append({"file": file_name, "createdAt": "", "timestamp": "", "type": file_type,
+                              "status": status, "directory": is_folder})
+
+            if include_sub_dir:
+                sub_files = get_file_descriptors(entry.path, True, assay_file_list=assay_file_list,
+                                                 metadata_only=metadata_only)
+                file_list.extend(sub_files)
+
+    return file_list
+
 def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metadata_only=False):
     file_list = []
     start_time = time.time()
@@ -207,16 +250,9 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
         for entry in os.scandir(study_location):
             if not entry.name.startswith("."):
                 file_name = entry.name
-                fname, ext = os.path.splitext(file_name)
-                if metadata_only and fname.startswith(('i_', 'a_', 's_', 'm_')) and (ext == '.txt' or ext == '.tsv'):
-                    file_type, status, folder = map_file_type(file_name, study_location,
-                                                              assay_file_list=assay_file_list)
-                else:
-                    file_type, status, folder = map_file_type(file_name, study_location,
-                                                              assay_file_list=assay_file_list)
-                name = entry.path.replace(study_location + os.sep, '')
 
-                file_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
+                file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
+                file_list.append({"file": file_name, "createdAt": "", "timestamp": "", "type": file_type,
                                   "status": status, "directory": folder})
 
     logger.info("Basic tree listing for all files for "

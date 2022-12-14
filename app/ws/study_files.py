@@ -1709,7 +1709,7 @@ class StudyFilesTree(Resource):
         # param validation
         if study_id is None:
             abort(404)
-
+        start_time = time.time()
         study_id = study_id.upper()
 
         # User authentication
@@ -1747,18 +1747,22 @@ class StudyFilesTree(Resource):
 
         ftp_private_relative_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
         upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
-
+        assay_file_list = None
         if directory:
             study_location = os.path.join(study_location, directory)
+        else:
+            assay_file_list = get_assay_file_list(study_location)
 
         file_list = []
         try:
-            file_list = get_basic_files(study_location, include_sub_dir, get_assay_file_list(study_location))
+
+            file_list = get_basic_files(study_location, include_sub_dir, assay_file_list=assay_file_list)
             if not include_internal_files:
                 file_list = [item for item in file_list if 'type' in item and item['type'] != 'internal_mapping']
         except Exception as e:
             abort(408, error=e.args)
-
+        elapse_time = round(time.time() - start_time, 2)
+        logger.info(f"Basic tree listing for all files for {study_location} took {str(elapse_time)} seconds")
         return jsonify({'study': file_list, 'latest': [], 'private': [],
                         'uploadPath': upload_path, 'obfuscationCode': obfuscation_code})
 

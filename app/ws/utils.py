@@ -864,6 +864,8 @@ def remove_file(file_location, file_name, always_remove=False):
         return False, "Can not delete file " + file_name
     return True, "File " + file_name + " deleted"
 
+def clasify_file(file_name, path, ):
+    pass
 
 def map_file_type(file_name, directory, assay_file_list=None):
     active_status = 'active'
