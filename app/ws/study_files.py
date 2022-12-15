@@ -989,7 +989,7 @@ class StudyFilesReuse(Resource):
                 include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
 
         files_list_json = app.config.get('FILES_LIST_JSON')
-
+        study_id, obfuscation_code = identify_study_id(study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
