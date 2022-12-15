@@ -1322,7 +1322,8 @@ class DeleteStudy(Resource):
         files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
 
         for file_name in files_to_delete:
-            status, message = remove_file(study_location, file_name, True)
+            status, message = remove_file(study_location, file_name,
+                                          study_id=study_id, study_path=study_location, always_remove=True)
 
         # Remove all files in the upload folder
         ftp_private_storage = StorageService.get_ftp_private_storage(app)

@@ -17,6 +17,7 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import base64
+import csv
 import datetime
 import glob
 import io
@@ -30,6 +31,7 @@ import string
 import time
 import uuid
 from os.path import normpath, basename
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -47,6 +49,8 @@ from pandas import Series
 from psycopg2 import pool
 from dirsync import sync
 
+from app.ws.df_utils import read_tsv_columns
+from app.ws.file_mapper import get_file_classifier, get_file_reference_evaluator
 from app.ws.mm_models import OntologyAnnotation
 
 """
@@ -449,25 +453,7 @@ def log_request(request_obj):
 
 
 def read_tsv(file_name):
-    table_df = pd.DataFrame()  # Empty file
-    try:
-        # Enforce str datatype for all columns we read from ISA-Tab tables
-        col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
-        types_dict = {col: str for col in col_names}
-        try:
-            if os.path.getsize(file_name) == 0:  # Empty file
-                logger.error("Could not read file " + file_name)
-            else:
-                table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='utf-8', dtype=types_dict)
-        except Exception as e:  # Todo, should check if the file format is Excel. ie. not in the exception handler
-            if os.path.getsize(file_name) > 0:
-                table_df = pd.read_csv(file_name, sep="\t", header=0, encoding='ISO-8859-1', dtype=types_dict)  # Excel format
-                logger.info("Tried to open as Excel tsv file 'ISO-8859-1' file " + file_name + ". " + str(e))
-    except Exception as e:
-        logger.error("Could not read file " + file_name + ". " + str(e))
-
-    table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
-    return table_df
+    return read_tsv_columns(file_name)
 
 
 def tidy_template_row(df):
@@ -843,11 +829,11 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
     return isa_inv, onto
 
 
-def remove_file(file_location, file_name, always_remove=False):
+def remove_file(file_location, file_name, study_id, study_path, always_remove=False):
     # Raw files are sometimes actually folders, so need to check if file or folder before removing
     file_to_delete = os.path.join(file_location, file_name)
     # file_status == 'active' of a file is actively used as metadata
-    file_type, file_status, folder = map_file_type(file_name, file_location)
+    file_type, file_status, folder = map_file_type(file_name, file_location, study_id=study_id, study_path=study_path)
 
     try:
         if file_type == 'metadata_investigation' or file_type == 'metadata_assay' or file_type == 'metadata_sample' or file_type == 'metadata_maf':
@@ -864,10 +850,81 @@ def remove_file(file_location, file_name, always_remove=False):
         return False, "Can not delete file " + file_name
     return True, "File " + file_name + " deleted"
 
-def clasify_file(file_name, path, ):
-    pass
 
-def map_file_type(file_name, directory, assay_file_list=None):
+class FileClassifier(object):
+    UNKNOWN: str = "unknown"
+
+    def __init__(self):
+        self.extension_mapper = {}
+        self.basename_mapper = {}
+        self.name_without_ext_mapper = {}
+        self.prefix_mapper = {}
+        self.suffix_mapper = {}
+
+        self.load_standard_extension_mappings()
+        self.load_configured_extension_mappings()
+
+    def load_standard_extension_mappings(self):
+        with open('./resources/load_standard_extension_mapping.txt', "r", encoding="utf8") as f:
+            tsv_reader = csv.reader(f, delimiter="\t")
+            for row in tsv_reader:
+                (extension, classification) = row
+                if extension in self.extension_mapper:
+                    logger.warning(f"{extension} extension is already loaded!")
+                self.extension_mapper[extension] = classification
+
+    def _add_to_mapper(self, file_extension_list: List, category: str):
+        for item in file_extension_list:
+            self.extension_mapper[item] = category
+
+    def load_configured_extension_mappings(self):
+        self._add_to_mapper(app.config.get('RAW_FILES_LIST'), "raw")
+        self._add_to_mapper(app.config.get('DERIVED_FILES_LIST'), "derived")
+        self._add_to_mapper(app.config.get('COMPRESSED_FILES_LIST'), "compressed")
+
+    def classify_by_extension(self, path):
+        base_name = os.path.basename(path)
+        name_parts = base_name.split('.')
+        part_count = len(name_parts)
+        if part_count > 2:
+            designation_1 = '.'.join(name_parts[:part_count-2])
+            ext_1 = '.'.join(name_parts[part_count-2:])
+            classification = self.classify_designation_and_ext(designation_1, ext_1)
+            # priority is on double extension
+            if classification != FileClassifier.UNKNOWN:
+                return classification
+            designation_2 = '.'.join(name_parts[:part_count-1])
+            ext_2 = name_parts[-1]
+            classification2 = self.classify_designation_and_ext(designation_2, ext_2)
+            if classification2 != FileClassifier.UNKNOWN:
+                classification = classification2
+            return classification
+        elif part_count == 2:
+            designation = name_parts[0]
+            ext = name_parts[1]
+            classification = self.classify_designation_and_ext(designation, ext)
+            return classification
+        else:
+            return FileClassifier.UNKNOWN
+
+    def classify_designation_and_ext(self, designation, extension) -> str:
+        if not extension:
+            return FileClassifier.UNKNOWN
+
+        if extension in self.extension_mapper:
+            return self.extension_mapper[extension]
+        return FileClassifier.UNKNOWN
+
+def map_file_type(file_name, directory, assay_file_list=None, study_id=None, study_path=None):
+    full_path = os.path.join(directory, file_name)
+    file_classifier = get_file_classifier(app)
+    file_reference_evaluator = get_file_reference_evaluator()
+    is_folder = os.path.exists(full_path) and os.path.isdir(full_path)
+    classification = file_classifier.classify(full_path)
+    status = file_reference_evaluator.get_file_status(classification, study_id=study_id, study_path=study_path, file_path=full_path)
+
+    return classification, status, is_folder
+def map_file_type_old(file_name, directory, assay_file_list=None):
     active_status = 'active'
     none_active_status = 'unreferenced'
     folder = False
@@ -1114,6 +1171,13 @@ def find_text_in_isatab_file(study_folder, text_to_find):
 
 
 def get_assay_file_list(study_location):
+    study_id = os.path.basename(study_location)
+    evaluator = get_file_reference_evaluator()
+    file_list = evaluator.get_referenced_file_list(study_id, study_location)
+    return file_list
+
+
+def get_assay_file_list_old(study_location):
     assay_files = os.path.join(study_location, 'a_*.txt')
     all_files = []
 

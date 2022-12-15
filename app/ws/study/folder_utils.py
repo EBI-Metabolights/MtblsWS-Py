@@ -124,15 +124,18 @@ def get_file_information(study_location=None, path=None, directory=None, include
             if time.time() > end_time:
                 logger.error('Listing files in folder %s, timed out after %s seconds', path, timeout_secs)
                 return file_list  # Return after xx seconds regardless
-
+            study_id = os.path.basename(study_location)
             if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX:
                 if not include_raw_data:  # Only return metadata files
                     if file_name.startswith(('i_', 'a_', 's_', 'm_')):
                         file_time, raw_time, file_type, status, folder = \
-                            get_file_times(path, file_name, validation_only=validation_only)
+                            get_file_times(path, file_name,
+                                           study_id=study_id, study_path=study_location,
+                                           validation_only=validation_only)
                 else:
                     file_time, raw_time, file_type, status, folder = \
                         get_file_times(path, file_name, assay_file_list=assay_file_list,
+                                       study_id=study_id, study_path=study_location,
                                        validation_only=validation_only)
 
                 if directory:
@@ -176,7 +179,7 @@ def flatten_list(list_name, flat_list=None):
     return flat_list
 
 
-def get_file_times(directory, file_name, assay_file_list=None, validation_only=False):
+def get_file_times(directory, file_name, assay_file_list=None, study_id=None, study_path=None, validation_only=False):
     file_time = ""
     raw_time = ""
     file_type = ""
@@ -188,7 +191,8 @@ def get_file_times(directory, file_name, assay_file_list=None, validation_only=F
             raw_time = time.strftime(date_format, dt)  # 20180724092134
             file_time = time.strftime(file_date_format, dt)  # 20180724092134
 
-        file_type, status, folder = map_file_type(file_name, directory, assay_file_list)
+        file_type, status, folder = map_file_type(file_name, directory, assay_file_list=assay_file_list,
+                                                  study_id=study_id, study_path=study_path)
     except Exception as e:
         logger.error(str(e))
         print(str(e))
@@ -217,6 +221,7 @@ def is_in_seearch_ignore_list(entry: os.DirEntry, is_folder: bool) -> bool:
         return True
     return False
 
+
 def get_file_descriptors(study_location, include_sub_dir, assay_file_list=None, metadata_only=False):
     file_list = []
     for entry in os.scandir(study_location):
@@ -227,8 +232,9 @@ def get_file_descriptors(study_location, include_sub_dir, assay_file_list=None, 
 
         if not entry.name.startswith("."):
             file_name = entry.name
-
-            file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
+            study_id = os.path.basename(study_location)
+            file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list,
+                                                      study_id=study_id, study_path=study_location)
             file_list.append({"file": file_name, "createdAt": "", "timestamp": "", "type": file_type,
                               "status": status, "directory": is_folder})
 
@@ -250,20 +256,23 @@ def get_basic_files(study_location, include_sub_dir, assay_file_list=None, metad
         for entry in os.scandir(study_location):
             if not entry.name.startswith("."):
                 file_name = entry.name
-
-                file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
+                study_id = os.path.basename(study_location)
+                file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list,
+                                                          study_id=study_id, study_path=study_location)
                 file_list.append({"file": file_name, "createdAt": "", "timestamp": "", "type": file_type,
                                   "status": status, "directory": folder})
 
-    logger.info("Basic tree listing for all files for "
+    logger.info("Tree listing for all files for "
                 + study_location + " took %s seconds" % round(time.time() - start_time, 2))
     return file_list
 
 
 def list_directories_full(file_location, dir_list, base_study_location, assay_file_list=None):
+    study_id = os.path.basename(base_study_location)
     for entry in os.scandir(file_location):
         name = entry.path.replace(base_study_location + os.sep, '')
-        file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
+        file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list,
+                                                  study_id=study_id, study_path=base_study_location)
         dir_list.append({"file": name, "createdAt": "", "timestamp": "", "type": file_type,
                          "status": status, "directory": folder})
         if entry.is_dir():
@@ -307,8 +316,9 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                 # Only map/check metadata files if include_raw_data is False
                 if not include_raw_data and not name.startswith(('i_', 'a_', 's_', 'm_')):
                     continue
-
-                file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list)
+                study_id = os.path.basename(base_study_location)
+                file_type, status, folder = map_file_type(entry.name, file_location, assay_file_list=assay_file_list,
+                                                          study_id=study_id, study_path=base_study_location)
 
                 if short_format:
                     if name not in folder_exclusion_list:

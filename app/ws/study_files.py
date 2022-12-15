@@ -285,8 +285,9 @@ without setting the "force" parameter to True''',
                     return {'Error': "Only MetaboLights curators can remove the investigation file"}
 
                 if file_location == "study":
-                    status, message = remove_file(study_location, f_name, always_remove)
-                    s_status, s_message = remove_file(study_location, f_name, always_remove)
+                    s_status, s_message = remove_file(study_location, f_name,
+                                                      study_id=study_id, study_path=study_location,
+                                                      always_remove=always_remove)
                     if s_status:
                         return {'Success': "File " + f_name + " deleted"}
                     else:
@@ -1608,7 +1609,7 @@ class UnzipFiles(Resource):
 
             try:
                 if remove_zip:
-                    remove_file(study_location, f_name, always_remove=True)
+                    remove_file(study_location, f_name, study_id=study_id, study_path=study_location, always_remove=True)
             except:
                 msg = 'Could not remove zip file ' + f_name
                 logger.error(msg)
@@ -1760,7 +1761,7 @@ class StudyFilesTree(Resource):
             if not include_internal_files:
                 file_list = [item for item in file_list if 'type' in item and item['type'] != 'internal_mapping']
         except Exception as e:
-            abort(408, error=e.args)
+            abort(408, error=str(e))
         elapse_time = round(time.time() - start_time, 2)
         logger.info(f"Basic tree listing for all files for {study_location} took {str(elapse_time)} seconds")
         return jsonify({'study': file_list, 'latest': [], 'private': [],

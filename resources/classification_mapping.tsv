@@ -1,0 +1,15 @@
+classification_mapping	unknown	unreferenced
+classification_mapping	fid	active
+classification_mapping	acqus	active
+classification_mapping	spreadsheet	active
+classification_mapping	chemical_structure	active
+classification_mapping	image	active
+classification_mapping	text	active
+classification_mapping	image	active
+classification_mapping	temp	unreferenced
+classification_mapping	programmatic	unreferenced
+classification_mapping	aspera-control	unreferenced
+classification_mapping	audit	unreferenced
+classification_mapping	macos_special_file	unreferenced
+classification_mapping	ignored	unreferenced
+classification_mapping	metadata	unreferenced

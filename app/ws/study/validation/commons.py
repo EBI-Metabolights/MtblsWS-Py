@@ -263,8 +263,9 @@ def check_file(
 
     if os.path.isdir(full_file) and ext not in ('.raw', '.d'):
         return False, 'folder', file_name + " is a sub-folder, please reference a file" + assay_file_name
-
-    file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list)
+    study_id = os.path.basename(study_location)
+    file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list,
+                                              study_id=study_id, study_path=study_location)
 
     # define some generic return validation messages
     valid_message = True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
