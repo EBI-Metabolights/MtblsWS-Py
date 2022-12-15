@@ -30,8 +30,8 @@ from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 from jsonschema.exceptions import ValidationError
 
-from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
+from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.folder_utils import get_basic_files, get_all_files_from_filesystem, get_all_files, write_audit_files
@@ -992,7 +992,7 @@ class StudyFilesReuse(Resource):
         study_id, obfuscation_code = identify_study_id(study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403)
 
@@ -1704,6 +1704,7 @@ class StudyFilesTree(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self, study_id):
 
         # param validation
@@ -1740,7 +1741,7 @@ class StudyFilesTree(Resource):
         study_id, obfuscation_code = identify_study_id(study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
+            wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403)
 
