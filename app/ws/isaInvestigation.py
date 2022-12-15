@@ -22,11 +22,13 @@ from flask_restful import Resource, abort, reqparse
 from isatools.model import Investigation
 from marshmallow import ValidationError
 from flask_restful_swagger import swagger
+from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import IsaInvestigationSchema
 from app.ws.mtblsWSclient import WsClient
 import logging
 
+from app.ws.study.study_service import identify_study_id
 from app.ws.utils import log_request
 
 
@@ -102,6 +104,7 @@ class IsaInvestigation(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         log_request(request)
         # param validation
@@ -132,6 +135,7 @@ class IsaInvestigation(Resource):
         if investigation_only == 'false':
             skip_load_tables = False
 
+        study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         logger.info('Getting Investigation %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \

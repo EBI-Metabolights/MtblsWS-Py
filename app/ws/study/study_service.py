@@ -1,12 +1,22 @@
 from flask import current_app as app
 
-from app.utils import MetabolightsDBException, MetabolightsFileOperationException
+from app.utils import MetabolightsDBException, MetabolightsFileOperationException, MetabolightsException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User, Stableid, StudyTask
 from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import UserStatus, UserRole, StudyStatus
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 
+
+def identify_study_id(study_id, obfuscation_code=None):
+    if study_id.lower().startswith("reviewer"):
+        obfuscation_code = study_id.lower().replace("reviewer", "")
+        study = StudyService.get_instance(app).get_study_by_obfuscation_code(obfuscation_code)
+        if study and study.status == StudyStatus.INREVIEW.value:
+            study_id = study.acc
+        else:
+            raise MetabolightsException(http_code=404, message="Requested study is not valid")
+    return study_id, obfuscation_code
 
 class StudyService(object):
     instance = None
@@ -34,6 +44,16 @@ class StudyService(object):
         except Exception as e:
             raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
 
+    def get_study_by_obfuscation_code(self, obfuscationcode):
+        try:
+            with self.db_manager.session_maker() as db_session:
+                query = db_session.query(Study)
+                result = query.filter(Study.obfuscationcode == obfuscationcode).first()
+                if result:
+                    return result
+                raise MetabolightsDBException("DB error while retrieving stable id")
+        except Exception as e:
+            raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
     def get_next_stable_study_id(self):
         try:
             with self.db_manager.session_maker() as db_session:
