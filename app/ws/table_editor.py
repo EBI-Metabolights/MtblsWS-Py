@@ -26,8 +26,10 @@ from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
+from app.utils import metabolights_exception_handler
 from app.ws.study import commons
 from app.ws.study.folder_utils import write_audit_files
+from app.ws.study.study_service import identify_study_id
 from app.ws.utils import get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv
 
 """
@@ -1070,6 +1072,7 @@ class GetTsvFile(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self, study_id, file_name):
         # param validation
         if study_id is None or file_name is None:
@@ -1089,10 +1092,11 @@ class GetTsvFile(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
+        study_id, obfuscation_code = identify_study_id(study_id)
         logger.info('Assay Table: Getting ISA-JSON Study Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = commons.get_permissions(study_id, user_token)
+            study_status = commons.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403)
 

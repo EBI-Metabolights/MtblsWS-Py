@@ -290,9 +290,11 @@ def get_pubchem_substance(comp_name, res_type):
 
     resp = requests.get(url)
     if resp.status_code == 200:
-        json_resp = resp.json()
-        results = json_resp
-
+        try:
+            json_resp = resp.json()
+            results = json_resp
+        except Exception as ex:
+            logger.warning(f"Invalid result from {url}  {str(ex)}")
     if resp.status_code == 404:
         print_log("    -- No PubChem Substance found for '" + comp_name + "'")
 
@@ -1712,8 +1714,12 @@ def opsin_search(comp_name, req_type):
     url = opsin_url + comp_name + '.json'
     resp = requests.get(url)
     if resp.status_code == 200:
-        json_resp = resp.json()
-        result = json_resp[req_type]
+        try:
+            json_resp = resp.json()
+            result = json_resp[req_type]
+        except Exception as ex:
+            logger.warning(f"Invalid result from {url}  {str(ex)}")
+
     return result
 
 
@@ -2127,9 +2133,13 @@ def get_cas_id(inchi_key):
     cas_id = ''
     resp = requests.get(chem_plus_url)
     if resp.status_code == 200:
-        json_resp = resp.json()
-        if 'rn' in json_resp['results'][0]['summary']:
-            cas_id = json_resp['results'][0]['summary']['rn']
+        try:
+            json_resp = resp.json()
+            if 'rn' in json_resp['results'][0]['summary']:
+                cas_id = json_resp['results'][0]['summary']['rn']
+        except Exception as ex:
+            logger.warning(f"Invalid result from {chem_plus_url} for input: {inchi_key}  {str(ex)}")
+
     return cas_id
 
 
@@ -2140,8 +2150,8 @@ def get_dime_db(inchi_key):
     dime_db_ids = ''
     resp = requests.get(dime_url)
     if resp.status_code == 200:
-        json_resp = resp.json()
         try:
+            json_resp = resp.json()
             response_dict = json_resp['_items'][0]['External Sources']
 
             if 'BioCyc' in response_dict and response_dict['BioCyc']:
@@ -2166,8 +2176,9 @@ def get_dime_db(inchi_key):
                 dime_db_ids = dime_db_ids + 'HMDB:HMDB' + hmdb + ";"
 
             dime_db_ids = dime_db_ids.rstrip(';')
-        except:
-            pass
+        except Exception as ex:
+            logger.warning(f"Invalid result from {dime_url} for input: {inchi_key}  {str(ex)}")
+
     return dime_db_ids
 
 
