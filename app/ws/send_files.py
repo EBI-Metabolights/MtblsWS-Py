@@ -26,6 +26,7 @@ from flask_restful_swagger import swagger
 
 from app.ws.db_connection import get_obfuscation_code
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.study_service import identify_study_id
 from app.ws.study_files import get_basic_files
 
 logger = logging.getLogger('wslog')
@@ -275,10 +276,10 @@ class SendFilesPrivate(Resource):
         if file_name is None:
             logger.info('No file name given')
             abort(404)
-
+        study_id, obfuscation_code = identify_study_id(study_id)
         # check for access rights
         is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
+            study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
 
         files = ""
         if file_name == 'metadata':
