@@ -265,7 +265,7 @@ class FileReferenceEvaluator(object):
                     logger.warning(f'{file} file is not opened with {encoding} mode {str(e)}')
         return lines
 
-    def get_file_status(self, classification, study_id, study_path, file_path: str):
+    def get_file_status_by_study_id(self, classification, study_id, study_path, file_path: str):
         if classification in self.default_mapper:
             return self.default_mapper[classification]
 
@@ -275,6 +275,14 @@ class FileReferenceEvaluator(object):
             return FileReferenceEvaluator.ACTIVE
         return FileReferenceEvaluator.NON_ACTIVE
 
+    def get_file_status(self, classification, referenced_file_list, study_path, file_path: str):
+        if classification in self.default_mapper:
+            return self.default_mapper[classification]
+
+        file_name = file_path.replace(study_path, '').lstrip(os.sep)
+        if file_name in referenced_file_list:
+            return FileReferenceEvaluator.ACTIVE
+        return FileReferenceEvaluator.NON_ACTIVE
 
 @lru_cache(1)
 def get_file_classifier(app) -> FileClassifier:

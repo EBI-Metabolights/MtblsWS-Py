@@ -921,7 +921,10 @@ def map_file_type(file_name, directory, assay_file_list=None, study_id=None, stu
     file_reference_evaluator = get_file_reference_evaluator()
     is_folder = os.path.exists(full_path) and os.path.isdir(full_path)
     classification = file_classifier.classify(full_path)
-    status = file_reference_evaluator.get_file_status(classification, study_id=study_id, study_path=study_path, file_path=full_path)
+    if not assay_file_list:
+        assay_file_list = file_reference_evaluator.get_referenced_file_list(study_id=study_id, path=study_path)
+    status = file_reference_evaluator.get_file_status(classification, referenced_file_list=assay_file_list,
+                                                      study_path=study_path, file_path=full_path)
 
     return classification, status, is_folder
 def map_file_type_old(file_name, directory, assay_file_list=None):
