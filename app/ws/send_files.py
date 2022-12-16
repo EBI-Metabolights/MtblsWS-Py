@@ -276,7 +276,7 @@ class SendFilesPrivate(Resource):
         if file_name is None:
             logger.info('No file name given')
             abort(404)
-        study_id, obfuscation_code = identify_study_id(study_id)
+        study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         # check for access rights
         is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
