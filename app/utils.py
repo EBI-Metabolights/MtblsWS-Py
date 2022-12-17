@@ -1,5 +1,7 @@
 from flask import make_response
-
+import cProfile, pstats
+import datetime
+import os
 
 def metabolights_exception_handler(func):
     def exception_handler(*args, **kwargs):
@@ -16,7 +18,19 @@ def metabolights_exception_handler(func):
 
     return exception_handler
 
-
+def metabolights_profiler(func):
+    def profiler_handler(*args, **kwargs):
+        profiler = cProfile.Profile()
+        profiler.enable()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            profiler.disable()
+            stats = pstats.Stats(profiler)
+            os.makedirs(f"./.profile/{func.__module__}", exist_ok=True)
+            stats.dump_stats(f'./.profile/{func.__module__}/{func.__qualname__}_profile_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.prof')
+        
+    return profiler_handler
 class MetabolightsException(Exception):
 
     def __init__(self, message: str, exception: Exception = None, http_code=400):
