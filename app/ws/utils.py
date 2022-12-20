@@ -915,10 +915,10 @@ class FileClassifier(object):
             return self.extension_mapper[extension]
         return FileClassifier.UNKNOWN
 
-def map_file_type(file_name, directory, assay_file_list=None, study_id=None, study_path=None):
+def map_file_type(file_name, directory, assay_file_list=None, study_id=None, study_path=None, file_classifier=None, file_reference_evaluator=None):
     full_path = os.path.join(directory, file_name)
-    file_classifier = get_file_classifier(app)
-    file_reference_evaluator = get_file_reference_evaluator()
+    file_classifier = file_classifier if file_classifier else get_file_classifier(app)
+    file_reference_evaluator = file_reference_evaluator if file_reference_evaluator else get_file_reference_evaluator()
     is_folder = os.path.exists(full_path) and os.path.isdir(full_path)
     classification = file_classifier.classify(full_path)
     if not assay_file_list:
@@ -1179,6 +1179,12 @@ def get_assay_file_list(study_location):
     file_list = evaluator.get_referenced_file_list(study_id, study_location)
     return file_list
 
+def get_assay_file_list(study_location, evaluator=None):
+    study_id = os.path.basename(study_location)
+    
+    evaluator = evaluator if evaluator else get_file_reference_evaluator()
+    file_list = evaluator.get_referenced_file_list(study_id, study_location)
+    return file_list
 
 def get_assay_file_list_old(study_location):
     assay_files = os.path.join(study_location, 'a_*.txt')

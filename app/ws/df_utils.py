@@ -8,6 +8,18 @@ import pandas as pd
 
 logger = logging.getLogger('wslog')
 
+def write_tsv(dataframe, file_name):
+    try:
+        # Remove all ".n" numbers at the end of duplicated column names
+        dataframe.rename(columns=lambda x: re.sub(r'\.[0-9]+$', '', x), inplace=True)
+
+        # Write the new row back in the file
+        dataframe.to_csv(file_name, sep="\t", encoding='utf-8', index=False)
+    except:
+        return 'Error: Could not write/update the file ' + file_name
+
+    return 'Success. Update file ' + file_name
+
 
 def read_tsv_columns(file_name, column_name_pattern=None):
     table_df = pd.DataFrame()  # Empty file
@@ -34,7 +46,7 @@ def read_tsv_columns(file_name, column_name_pattern=None):
                                        usecols=selected_columns, dtype=types_dict)  # Excel format
                 logger.info("Tried to open as Excel tsv file 'ISO-8859-1' file " + file_name + ". " + str(e))
     except Exception as e:
-        logger.error("Could not read file " + file_name + ". " + str(e))
+        logger.error("Could not read file " + file_name + " " + str(e))
 
     table_df = table_df.replace(np.nan, '', regex=True)  # Remove NaN
     return table_df

@@ -200,18 +200,6 @@ def get_file_times(directory, file_name, assay_file_list=None, study_id=None, st
     return file_time, raw_time, file_type, status, folder
 
 
-SEARCH_FOLDER_STOP_LIST = [".d", ".raw"]
-
-
-def is_in_search_stop_list(entry: os.DirEntry, is_folder: bool) -> bool:
-    in_stop_list = False
-    if is_folder:
-        for ignore_folder_name_suffix in SEARCH_FOLDER_STOP_LIST:
-            if entry.name.lower().endswith(ignore_folder_name_suffix):
-                in_stop_list = True
-                break
-    return in_stop_list
-
 
 def is_in_seearch_ignore_list(entry: os.DirEntry, is_folder: bool) -> bool:
     ignore_file_list = app.config.get('IGNORE_FILE_LIST')
@@ -226,10 +214,7 @@ def get_file_descriptors(study_location, include_sub_dir, assay_file_list=None, 
     file_list = []
     for entry in os.scandir(study_location):
         is_folder = os.path.isdir(entry.path)
-        in_stop_list = is_in_search_stop_list(entry, is_folder)
-        if in_stop_list:
-            is_folder = False
-
+        
         if not entry.name.startswith("."):
             file_name = entry.name
             study_id = os.path.basename(study_location)

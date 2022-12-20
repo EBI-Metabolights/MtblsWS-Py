@@ -9,6 +9,7 @@ from functools import lru_cache
 from typing import List
 
 from app.ws.df_utils import read_tsv_columns
+from app.ws.file_reference_evaluator import FileReferenceEvaluator
 
 logger = logging.getLogger('wslog')
 
@@ -103,9 +104,6 @@ class FileClassifier(object):
 
     def apply_exceptions(self, classification, designation, extension):
 
-        basename = f"{designation}.{extension}" if extension else designation
-        if basename.startswith("~") or basename.endswith("~"):
-            return "temp"
         if classification == "text":
             new_classification = self._lookup_for_designation(designation)
             if new_classification == "part_of_raw":
@@ -116,6 +114,10 @@ class FileClassifier(object):
             if ignore in designation:
                 return 'part_of_raw'
 
+        basename = f"{designation}.{extension}" if extension else designation
+        if designation.startswith("~") or basename.endswith("~"):
+            return "temp"
+        
         return classification
 
     def classify_by_designation_extension(self, path):
@@ -165,124 +167,6 @@ class FileClassifier(object):
         if designation and designation in self.name_without_ext_mapper:
             return self.name_without_ext_mapper[designation]
         return FileClassifier.UNKNOWN
-
-
-class FileReferenceEvaluator(object):
-    ACTIVE = 'active'
-    NON_ACTIVE = 'unreferenced'
-
-    def __init__(self):
-        self.default_mapper = {}
-        self.study_reference_cache_map = {}
-        self.load_standard_extension_mappings()
-    def load_standard_extension_mappings(self):
-        file = './resources/classification_mapping.tsv'
-        FileClassifier.load_mapping_from_file(file, self.default_mapper, file=file)
-
-    def get_referenced_file_list(self, study_id, path):
-        if study_id not in self.study_reference_cache_map:
-            self.study_reference_cache_map[study_id] = {"metadata_hash": "", "reference_file_list": set(),
-                                                        'build_time': 0}
-
-        metadata_hash = self.calculate_metadata_hash_for_study(study_id, path)
-        cached_data = self.study_reference_cache_map[study_id]
-        if "metadata_hash" in cached_data:
-            old_hash = cached_data["metadata_hash"]
-            if metadata_hash == old_hash:
-                return cached_data["reference_file_list"]
-
-        file_list = self.calculate_referenced_files(path)
-        cached_data["metadata_hash"] = metadata_hash
-        cached_data["reference_file_list"] = file_list
-        cached_data["build_time"] = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-        return file_list
-
-    def calculate_metadata_hash_for_study(self, study_id, path):
-        files = glob.glob(os.path.join(path, "i_Investigation.txt"))
-        files.extend(glob.glob(os.path.join(path, "s_*.txt")))
-        files.extend(glob.glob(os.path.join(path, "a_*.txt")))
-        files.extend(glob.glob(os.path.join(path, "m_*.tsv")))
-        files.sort()
-        file_hashes = []  # concatenation of name, last modification time, and size
-        for file in files:
-            modified = os.path.getmtime(file)
-            basename = os.path.basename(file)
-            size = os.path.getsize(file)
-            file_hashes.append(f"{basename}:{str(modified)}:{size}")
-        hash_string = ";".join(file_hashes)
-        hash_value = hashlib.md5(str(hash_string).encode('utf-8')).hexdigest()
-        logger.debug(f"metadata_hash of {study_id}: {hash_string}")
-        return hash_value
-
-    def calculate_referenced_files(self, path):
-        file_set = set()
-        investigation_file_name = "i_Investigation.txt"
-        investigation = os.path.join(path, investigation_file_name)
-        if os.path.exists(investigation):
-            file_set.add(investigation_file_name)
-
-            sample_pattern = "^Study File Name\ts_.*$"
-            lines: List[str] = self.search_lines_in_a_file(investigation, sample_pattern)
-            if lines:
-                samples = lines[0].split("\t")[1:]
-                for sample in samples:
-                    file_set.add(sample)
-
-            assays_pattern = "^Study Assay File Name.*$"
-            lines: List[str] = self.search_lines_in_a_file(investigation, assays_pattern)
-            if lines:
-                assays = lines[0].split("\t")[1:]
-                for assay in assays:
-                    file_set.add(assay)
-                    assay_path = os.path.join(path, assay)
-                    column_name_pattern = r'^.+ Data File(.\d+)?'
-                    df = read_tsv_columns(assay_path, column_name_pattern=column_name_pattern)
-                    for col in df:
-                        files = df[col].unique()
-                        for file in files:
-                            if file:
-                                file_set.add(file)
-                    column_name_pattern = r'^.+ Assignment File(.\d+)?'
-                    df = read_tsv_columns(assay_path, column_name_pattern=column_name_pattern)
-                    for col in df:
-                        files = df[col].unique()
-                        for file in files:
-                            if file:
-                                file_set.add(file)
-        return list(file_set)
-
-    @staticmethod
-    def search_lines_in_a_file(file, pattern) -> List[str]:
-        lines: List[str] = []
-        for encoding in ("unicode_escape", "latin-1"):
-            with open(file, encoding=encoding) as f:
-                try:
-                    for line in f:
-                        if re.search(pattern, line):
-                            lines.append(line.strip())
-                    break
-                except Exception as e:
-                    logger.warning(f'{file} file is not opened with {encoding} mode {str(e)}')
-        return lines
-
-    def get_file_status_by_study_id(self, classification, study_id, study_path, file_path: str):
-        if classification in self.default_mapper:
-            return self.default_mapper[classification]
-
-        referenced_file_list = self.get_referenced_file_list(study_id, study_path)
-        file_name = file_path.replace(study_path, '').lstrip(os.sep)
-        if file_name in referenced_file_list:
-            return FileReferenceEvaluator.ACTIVE
-        return FileReferenceEvaluator.NON_ACTIVE
-
-    def get_file_status(self, classification, referenced_file_list, study_path, file_path: str):
-        if classification in self.default_mapper:
-            return self.default_mapper[classification]
-
-        file_name = file_path.replace(study_path, '').lstrip(os.sep)
-        if file_name in referenced_file_list:
-            return FileReferenceEvaluator.ACTIVE
-        return FileReferenceEvaluator.NON_ACTIVE
 
 @lru_cache(1)
 def get_file_classifier(app) -> FileClassifier:

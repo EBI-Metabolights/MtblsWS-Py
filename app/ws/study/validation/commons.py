@@ -29,9 +29,11 @@ import numpy as np
 import pandas as pd
 import requests
 from flask import current_app as app
+from app.utils import metabolights_profiler
 
 from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import override_validations, update_validation_status, query_comments
+from app.ws.file_mapper import get_file_classifier, get_file_reference_evaluator
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.study import commons
 from app.ws.study.folder_utils import get_all_files_from_filesystem, list_directories_full
@@ -233,7 +235,7 @@ def get_sample_names(isa_samples):
 
 
 def check_file(
-        file_name_and_column, study_location, file_name_list, validations, assay_file_list=None, assay_file_name=None):
+        file_name_and_column, study_location, file_name_list, validations, assay_file_list=None, assay_file_name=None, file_classifier=None, evaluator=None):
     """
     Check an individual file. Performs various checks in sequence:
     1 Whether the given filename is a directory or a file
@@ -249,6 +251,10 @@ def check_file(
     :param assay_file_name: The filename of the parent assay sheet we're checking the file for.
     :return: Status indicating validity as a boolean, the type of file it is, the description of the given file.
     """
+    file_classifier = file_classifier if file_classifier else get_file_classifier(app)
+    evaluator = evaluator if evaluator else get_file_reference_evaluator()
+    assay_file_list = assay_file_list if assay_file_list else get_assay_file_list(study_location, evaluator=evaluator)
+    
     file_name = file_name_and_column.split('|')[0]
     column_name = file_name_and_column.split('|')[1]
     full_file = os.path.join(study_location, file_name)
@@ -265,7 +271,7 @@ def check_file(
         return False, 'folder', file_name + " is a sub-folder, please reference a file" + assay_file_name
     study_id = os.path.basename(study_location)
     file_type, status, folder = map_file_type(file_name, study_location, assay_file_list=assay_file_list,
-                                              study_id=study_id, study_path=study_location)
+                                              study_id=study_id, study_path=study_location, file_classifier=file_classifier, file_reference_evaluator=evaluator)
 
     # define some generic return validation messages
     valid_message = True, file_type, 'Correct file ' + file_name + ' for column ' + column_name
@@ -279,8 +285,8 @@ def check_file(
             msg = msg + ". Trailing space in file name?"
         return False, unknown_file, msg
 
-    if is_empty_file(full_file, study_location=study_location):
-        return False, file_type, "File '" + file_name + "' is empty or incorrect" + assay_file_name
+    # if is_empty_file(full_file, study_location=study_location):
+    #     return False, file_type, "File '" + file_name + "' is empty or incorrect" + assay_file_name
 
     if file_type == 'metadata_maf' and column_name == 'Metabolite Assignment File':
         if file_name.startswith('m_') and file_name.endswith('_v2_maf.tsv'):
@@ -523,7 +529,7 @@ def is_newer_files(study_location):
         need_validation_update = False  # No files modified since the validation schema files
     return need_validation_update
 
-
+@metabolights_profiler
 def validate_study(study_id, study_location, user_token, obfuscation_code,
                    validation_section='all', log_category='all', static_validation_file=None):
     """
@@ -659,14 +665,19 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
         error_found = True
     if amber_warning:
         warning_found = True
-
+    file_classifier = get_file_classifier(app)
+    evaluator = get_file_reference_evaluator()
+    assay_file_list = get_assay_file_list(study_location, evaluator=evaluator)
+    hierarchy = evaluator.get_reference_hierarchy(study_id=study_id, study_path=study_location)
+    
     # Validate files
     val_section = "files"
     file_name_list = []
     if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, files_validation = validate_files(
             study_id, study_location, obfuscation_code, override_list, comment_list,
-            file_name_list, val_section, log_category=log_category, static_validation_file=static_validation_file)
+            file_name_list, val_section, log_category=log_category, 
+            static_validation_file=static_validation_file, file_classifier=file_classifier, evaluator=evaluator, assay_file_list=assay_file_list, hierarchy=hierarchy)
         all_validations.append(files_validation)
 
     if not status:
@@ -679,7 +690,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     if isa_study and validation_section == 'all' or val_section in validation_section or 'maf' in validation_section:
         status, amber_warning, assay_validation = \
             validate_assays(isa_study, study_location, validation_schema, override_list, comment_list, sample_name_list,
-                            file_name_list, val_section, log_category=log_category)
+                            file_name_list, val_section, log_category=log_category, file_classifier=file_classifier, evaluator=evaluator, assay_file_list=assay_file_list, hierarchy=hierarchy)
         all_validations.append(assay_validation)
 
     if not status:
@@ -941,7 +952,7 @@ def is_valid_derived_column_entry(value: str) -> dict:
 
 
 def validate_assays(isa_study, study_location, validation_schema, override_list, comment_list, sample_name_list,
-                    file_name_list, val_section="assays", log_category=error):
+                    file_name_list, val_section="assays", log_category=error, file_classifier=None, evaluator=None, assay_file_list=None, hierarchy=None):
     validations = []
     all_assay_samples = []
     unique_file_names = []
@@ -957,7 +968,11 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                 val_sequence=2, log_category=log_category)
 
     total_assay_rows = 0
-
+    file_classifier = file_classifier if file_classifier else get_file_classifier(app)
+    evaluator = evaluator if evaluator else get_file_reference_evaluator()
+    assay_file_list = assay_file_list if assay_file_list else get_assay_file_list(study_location, evaluator=evaluator)
+    hierarchy = hierarchy if hierarchy else evaluator.get_reference_hierarchy(study_id=study_id, study_path=study_location)
+    
     for assay in isa_study.assays:
         is_ms = False
         assays = []
@@ -1113,7 +1128,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         add_msg(validations, val_section, "There are more unique sample rows (" + str(sample_len)
                 + ") than unique assay rows (" + str(total_assay_rows) + "), must be the same or more",
                 error, val_sequence=8, log_category=log_category)
-
+    
     for files in unique_file_names:
         # Validate each file referenced in the assay sheet individually to make sure it is the correct type /
         # has the correct content.
@@ -1125,8 +1140,8 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
             logger.warning('Unable to find assay file name in string {0} : {1}'.format(files, e))
             a_file_name = None
         valid, file_type, file_description = check_file(files, study_location, file_name_list, validations,
-                                                        assay_file_list=all_assay_raw_files,
-                                                        assay_file_name=a_file_name)
+                                                        assay_file_list=assay_file_list,
+                                                        assay_file_name=a_file_name, file_classifier=file_classifier, evaluator=evaluator)
         if not valid:
             missing_or_incorrect_files.append(file_name + ' ({0}) [{1}]'
                                               .format(column_name, (a_file_name if a_file_name is not None else '')))
@@ -1179,22 +1194,58 @@ def get_files_in_sub_folders(study_location):
 
     return folder_list
 
+def get_study_folder_files_to_validate(study_id, study_path, referenced_paths, assay_file_list, evaluator=None, file_classifier=None):
+    file_list = []
+    file_classifier = file_classifier if file_classifier else get_file_classifier(app)
+    evaluator = evaluator if evaluator else get_file_reference_evaluator()
+    assay_file_list = assay_file_list if assay_file_list else get_assay_file_list(study_path, evaluator=evaluator)
+    for path in referenced_paths:
+        if not os.path.exists(path):
+            continue
+        for file in os.listdir(path):
+            file_type, status, folder = map_file_type(file, path, assay_file_list=assay_file_list,
+                                                    study_id=study_id, study_path=study_path)
+            if folder:
+                pass
+            relative_path = os.path.join(path, file).replace(study_path, "").lstrip(os.sep)
+            file_list.append({"file": relative_path, "createdAt": "", "timestamp": "", "type": file_type,
+                                "status": status, "directory": folder})
+    return file_list
 
 def validate_files(study_id, study_location, obfuscation_code, override_list, comment_list, file_name_list,
-                   val_section="files", log_category=error, static_validation_file=None):
+                   val_section="files", log_category=error, static_validation_file=None, file_classifier=None, evaluator=None, assay_file_list=[], hierarchy=None):
     validations = []
-    assay_file_list = get_assay_file_list(study_location)
+    file_classifier = file_classifier if file_classifier else get_file_classifier(app)
+    evaluator = evaluator if evaluator else get_file_reference_evaluator()
+    assay_file_list = assay_file_list if assay_file_list else get_assay_file_list(study_location, evaluator=evaluator)
+    hierarchy = hierarchy if hierarchy else evaluator.get_reference_hierarchy(study_id=study_id, study_path=study_location)
+    ignored_folder_list = ["audit", "chebi_pipeline_annotations"]
+    referenced_folder_extensions=[".raw", "RAW", ".D", "d"]
+    referenced_folders_contain_files=["acqus", "acqu", "fid"]
+    referenced_paths = evaluator.get_referenced_paths(study_location, hierarchy, 
+                                                      ignored_folder_list=ignored_folder_list, 
+                                                      referenced_folder_extensions=referenced_folder_extensions,
+                                                      referenced_folders_contain_files=referenced_folders_contain_files)
     # folder_list = get_files_in_sub_folders(study_location)
-    study_files, _upload_files, _upload_diff, _upload_location, latest_update_time = \
-        get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
-                                      directory=None, include_raw_data=True, validation_only=True,
-                                      assay_file_list=assay_file_list,
-                                      short_format=True, include_sub_dir=True,
-                                      static_validation_file=static_validation_file)
+    study_files = get_study_folder_files_to_validate(study_id, study_location, referenced_paths, assay_file_list, file_classifier=file_classifier, evaluator=evaluator)
+    
     sample_cnt = 0
     raw_file_found = False
     derived_file_found = False
     compressed_found = False
+    
+    
+    # cmd = f"find {study_location} -follow -size 0"
+    # result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, check=True)
+    # result_out = result.stdout.decode("utf-8")
+    # result_err = result.stderr.decode("utf-8")
+
+    # for line in result_out.split("\n"):
+    #     file_name = line.replace(study_location, "").lstrip(os.sep)
+    #     add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
+    #             error, val_section,
+    #             value=file_name, val_sequence=6, log_category=log_category)
+        
     for file in study_files:
         file_name = file['file']
         file_name = str(file_name)
@@ -1208,9 +1259,9 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, co
         if 'audit' not in file_name and not file_name.startswith(app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')):
             if os.path.isdir(os.path.join(full_file_name)):
                 for sub_file_name in os.listdir(full_file_name):
-                    if is_empty_file(os.path.join(full_file_name, sub_file_name), study_location=study_location):
-                        add_msg(validations, val_section, "Empty file found in a sub-directory", info, val_section,
-                                value=os.path.join(file_name, sub_file_name), val_sequence=1, log_category=log_category)
+                    # if is_empty_file(os.path.join(full_file_name, sub_file_name), study_location=study_location):
+                    #     add_msg(validations, val_section, "Empty file found in a sub-directory", info, val_section,
+                    #             value=os.path.join(file_name, sub_file_name), val_sequence=1, log_category=log_category)
 
                     # warning for sub folders with ISA tab
                     if sub_file_name.startswith(('i_', 'a_', 's_', 'm_')) and not isa_tab_warning:
@@ -1219,11 +1270,11 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, co
                                 warning, val_section, value=file_name, val_sequence=2, log_category=log_category)
                         isa_tab_warning = True
 
-            if is_empty_file(full_file_name, study_location=study_location):
-                # if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclusion_list:  # In case the file is in a folder
-                add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
-                        error, val_section,
-                        value=file_name, val_sequence=6, log_category=log_category)
+            # if is_empty_file(full_file_name, study_location=study_location):
+            #     # if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclusion_list:  # In case the file is in a folder
+            #     add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
+            #             error, val_section,
+            #             value=file_name, val_sequence=6, log_category=log_category)
 
             if file_name.startswith('Icon') or file_name.lower() == 'desktop.ini' or file_name.lower() == '.ds_store' \
                     or '~' in file_name or file_name.startswith('.'):  # "or '+' in file_name" taken out
