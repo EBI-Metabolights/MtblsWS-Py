@@ -42,7 +42,7 @@ SEARCH_PATTERNS = {"raw_files": [r'^Raw.+ Data File(.\d+)?'],
                     "derived_files": [r'^Derived.+ Data File(.\d+)?'], 
                     "derived_data_files": [r'^Normalization.+ File(.\d+)?', r'^.+ Decay Data File(.\d+)?', r'^.+ Parameter Data File(.\d+)?'],
                     "metabolites_files": [r'^.+ Assignment File(.\d+)?']}
-PAIRED_EXTENSIONS = {".wiff": [".wiff.scan"]}
+REQUIRED_PAIRED_EXTENSIONS = {".wiff": [".wiff.scan"]}
 OPTIONAL_PAIRED_EXTENSIONS = {"": [".peg"]}
 
 
@@ -236,8 +236,8 @@ class FileReferenceEvaluator(object):
                 file = File(name=basename, path=path)
                 file_list.append(file)
                 extensions = []
-                if ext in PAIRED_EXTENSIONS:
-                    extensions = PAIRED_EXTENSIONS[ext]
+                if ext in REQUIRED_PAIRED_EXTENSIONS:
+                    extensions = REQUIRED_PAIRED_EXTENSIONS[ext]
                     
                 extensions.append(ext)
                 # add all pairs
@@ -270,18 +270,21 @@ class FileReferenceEvaluator(object):
     @staticmethod
     def get_referenced_paths(study_path, hierarchy, ignored_folder_list=[], referenced_folder_extensions=[], referenced_folders_contain_files=[]):
         referenced_paths = set()
+        skiped_folders = set()
         referenced_paths.add(study_path)
         for referenced_folder in hierarchy.referenced_folders:
-            if referenced_folder in ignored_folder_list:
+            if not referenced_folder or referenced_folder in ignored_folder_list:
                 continue
             skip_folder = False
+            relative_path = ""
             for sub_file in referenced_folders_contain_files:
                 file_path = os.path.join(referenced_folder, sub_file)
                 relative_path = file_path.replace(study_path, "").lstrip(os.sep)
                 if relative_path in hierarchy.file_index_map:
                     skip_folder = True
                     break
-            if skip_folder or not referenced_folder:
+            if skip_folder:
+                skiped_folders.add(relative_path)
                 continue   
                 
             sub_folders = referenced_folder.split(os.sep)
@@ -296,7 +299,7 @@ class FileReferenceEvaluator(object):
                         break
         ordered_referenced_paths = list(referenced_paths)
         ordered_referenced_paths.sort()
-        return ordered_referenced_paths
+        return ordered_referenced_paths, skiped_folders
                        
     def get_files_in_assay_columns(self, assay_path, column_name_pattern):
         file_name_list = []

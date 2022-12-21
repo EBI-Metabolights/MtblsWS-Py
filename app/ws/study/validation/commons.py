@@ -529,7 +529,6 @@ def is_newer_files(study_location):
         need_validation_update = False  # No files modified since the validation schema files
     return need_validation_update
 
-@metabolights_profiler
 def validate_study(study_id, study_location, user_token, obfuscation_code,
                    validation_section='all', log_category='all', static_validation_file=None):
     """
@@ -1222,7 +1221,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, co
     ignored_folder_list = ["audit", "chebi_pipeline_annotations"]
     referenced_folder_extensions=[".raw", "RAW", ".D", "d"]
     referenced_folders_contain_files=["acqus", "acqu", "fid"]
-    referenced_paths = evaluator.get_referenced_paths(study_location, hierarchy, 
+    referenced_paths, _ = evaluator.get_referenced_paths(study_location, hierarchy, 
                                                       ignored_folder_list=ignored_folder_list, 
                                                       referenced_folder_extensions=referenced_folder_extensions,
                                                       referenced_folders_contain_files=referenced_folders_contain_files)
