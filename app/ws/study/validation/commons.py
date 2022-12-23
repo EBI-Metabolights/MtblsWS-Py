@@ -1221,7 +1221,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, co
     ignored_folder_list = ["audit", "chebi_pipeline_annotations"]
     referenced_folder_extensions=[".raw", "RAW", ".D", "d"]
     referenced_folders_contain_files=["acqus", "acqu", "fid"]
-    referenced_paths, _ = evaluator.get_referenced_paths(study_location, hierarchy, 
+    referenced_paths = evaluator.get_referenced_paths(study_location, hierarchy, 
                                                       ignored_folder_list=ignored_folder_list, 
                                                       referenced_folder_extensions=referenced_folder_extensions,
                                                       referenced_folders_contain_files=referenced_folders_contain_files)

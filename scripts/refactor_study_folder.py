@@ -1,14 +1,17 @@
+from typing import Dict, List, Tuple
 import cProfile
 import datetime
+import enum
 import glob
 import os
 import pstats
 import re
 import time
-import yaml
-from app.ws.file_reference_evaluator import FileReferenceEvaluator, StudyFolder
-FOLDER_SEARCH_SKIP_FILE_NAMES = ["fid", "acqu", "acqus"]
+from pydantic import BaseModel
+from app.ws.file_reference_evaluator import File, FileReferenceEvaluator, StudyFolder
 
+VALID_FILENAME_PATTERN = re.compile(r'^[\w]([\w \.-]*[\w])?$') 
+VALID_DIR_PATTERN = re.compile(r'^([\w]([\w \.-]*[\w])?)(/[\w]([\w \.-]*[\w])?)*$') 
 def profiler(func):
     def profiler_handler(*args, **kwargs):
         profiler = cProfile.Profile()
@@ -23,6 +26,38 @@ def profiler(func):
         
     return profiler_handler
 
+class OperationType(str, enum.Enum):
+    RENAME = "RENAME",
+    MOVE = "MOVE",
+    NO_ACTION = "NO_ACTION",
+    COMPRESS = "COMPRESS",
+    FIND_CANDIDATE = "FIND_CANDIDATE"
+     
+class RefactorOperation(BaseModel):
+    name: str = ""
+    source: File = None
+    operation: OperationType = OperationType.NO_ACTION
+    target: str = None
+    
+class RefactorSuggessions(BaseModel):
+    operations: Dict[str, List[RefactorOperation]] = {}
+
+class ReportItem(BaseModel):
+    study_id: str = ""
+    is_summary: bool = False
+    level: str = ""
+    source: str = ""
+    status: str = "WARNING"
+    category: str = ""
+    description: str = ""
+
+class Report(BaseModel):
+    start_time: int = 0
+    end_time: int = 0
+    report_items: Dict[str, List[ReportItem]] = {}
+    hierarchy: StudyFolder = None
+    suggessions: RefactorSuggessions = None
+    
 class PathEvaluator(object):
         
     def exist(self, root_path, relative_path):
@@ -37,38 +72,62 @@ class PathEvaluator(object):
         full_path = os.path.join(root_path.rstrip(os.sep), relative_path)
         return os.path.exists(full_path) and os.path.isdir(full_path)    
         
-class StudyFolderRefactorManager(object):
-    
-    def __init__(self, study_root_path, path_evaluator=None, ignore_file_list=None, 
+class StudyFolderAuditor(object):
+    def __init__(self, path_evaluator=None, 
+                 ignore_file_list=None, 
                  ignore_folder_list=None, 
                  allowed_reference_folders=None, 
-                 referenced_folders_contain_files=None) -> None:
-        self.study_root_path = study_root_path
+                 referenced_folders_contain_files=None,
+                 managed_data_folders=None,
+                 metadata_folder=None) -> None:
+        
         self.reference_evaluator = FileReferenceEvaluator()
         self.path_evaluator = path_evaluator if path_evaluator else PathEvaluator()
-        self.ignore_file_list = ignore_file_list if ignore_file_list else []
-        self.ignore_folder_list = ignore_folder_list if ignore_folder_list else []
+        self.ignore_file_list = ignore_file_list if ignore_file_list else ["files-all.json", 
+                                                                           "validation_files.json", 
+                                                                           "validation_report.json", 
+                                                                           "metexplore_mapping.json", 
+                                                                           "missing_files.txt"]
+        self.ignore_folder_list = ignore_folder_list if ignore_folder_list else ["chebi_pipeline_annotations", "audit"]
         self.allowed_reference_folders = allowed_reference_folders if allowed_reference_folders else [".raw", ".RAW", ".D", ".d"]
-        self.referenced_folders_contain_files = referenced_folders_contain_files if referenced_folders_contain_files else ["fid", "acqu", "acqus"]
-        self.managed_folders = ["RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES"]
-    def update(self, study_id, path):
-        reference_files = self.reference_evaluator.get_referenced_file_list(study_id=study_id, path=path)
-        for file in reference_files:
-            print(file)
+        self.referenced_folders_contain_files = referenced_folders_contain_files if referenced_folders_contain_files else ["acqus", "fid", "acqu"]
+        self.metadata_folder = metadata_folder if metadata_folder else ""
+        self.managed_data_folders = managed_data_folders if managed_data_folders else ["RAW_FILES", "DERIVED_FILES", "SUPPLEMENTARY_FILES"]
+    
+    def get_reference_hierarchy(self, study_id: str, study_path: str) -> StudyFolder:
+        return self.reference_evaluator.get_reference_hierarchy(study_id, study_path) 
         
-    def evaluate_reference_hierarchy(self, study_path, hierarchy):
-        
-        non_exist_files = [path for path in hierarchy.file_index_map if not self.path_evaluator.exist(study_path, path)]
-        need_compression_folders = [path for path in hierarchy.file_index_map if self.path_evaluator.exist(study_path, path) and self.path_evaluator.isdir(study_path, path)]            
-        return non_exist_files, need_compression_folders
-        
+    def find_non_existent_files(self, study_path: str, hierarchy: StudyFolder) -> List[str]:
+        non_existenent_files = [path for path in hierarchy.file_index_map if not self.path_evaluator.exist(study_path, path)]
+        return non_existenent_files
+
+    def find_folders_need_compression(self, study_path: str, hierarchy: StudyFolder) -> List[str]:
+        folders_need_compression = [path for path in hierarchy.file_index_map if self.path_evaluator.exist(study_path, path) and self.path_evaluator.isdir(study_path, path)]            
+        return folders_need_compression
+    
+    def find_referenced_folders_contain_special_files(self, study_path, hierarchy: StudyFolder):
+        referenced_folders_contain_special_files = []
+        for folder in hierarchy.search_path:
+            if folder:
+                folder_path = os.path.join(study_path, folder)
+                if os.path.exists(folder_path):
+                    files = os.listdir(folder_path)
+                    for file in files:
+                        for special_file in self.referenced_folders_contain_files:
+                            path = os.path.join(folder_path, file, special_file).replace(study_path, "").lstrip()
+                            if path in hierarchy.file_index_map:
+                                reference_path = os.path.join(folder, file).replace(study_path, "").lstrip()
+                                referenced_folders_contain_special_files.append(reference_path)
+            
+        return referenced_folders_contain_special_files
+    
     def find_unreferenced_files(self, study_path, hierarchy: StudyFolder):
-        unreferenced_files = { "files":[], "folders": [], "uncategorized": [], "need_reference_update": []}
-        ordered_referenced_paths, skiped_folders = self.reference_evaluator.get_referenced_paths(study_path, hierarchy, 
+        unreferenced_files = { "files":[], "folders": [], "uncategorized": []}
+        ordered_referenced_paths = self.reference_evaluator.get_referenced_paths(study_path, hierarchy, 
                                                              ignored_folder_list=self.ignore_folder_list,                                                 
                                                              referenced_folder_extensions=self.allowed_reference_folders,
                                                              referenced_folders_contain_files=self.referenced_folders_contain_files)
-        unreferenced_files["need_reference_update"] = skiped_folders
+
         for referenced_path in ordered_referenced_paths:
             if self.path_evaluator.exist(study_path, referenced_path) and self.path_evaluator.isdir(study_path, referenced_path):
                 folder_files = list(os.listdir(referenced_path))
@@ -87,107 +146,270 @@ class StudyFolderRefactorManager(object):
                     else:
                         unreferenced_files["uncategorized"].append(relative_path)
                             
-                        
-            
         return unreferenced_files
+
+    def find_invalid_referenced_file_names(self, hierarchy: StudyFolder) -> List[str]:
+        invalid_file_names = []
+        for file_name in hierarchy.file_index_map.keys():
+            basename = os.path.basename(file_name)
+            if not VALID_FILENAME_PATTERN.match(basename):   
+                invalid_file_names.append(file_name)
+        return invalid_file_names
+
+    def find_invalid_referenced_folder_names(self, hierarchy: StudyFolder) -> List[str]:
+        invalid_folder_names = []
+        for folder in hierarchy.search_path:
+            if folder and folder not in hierarchy.file_index_map:
+                if not VALID_DIR_PATTERN.match(folder):   
+                    invalid_folder_names.append(folder)
+        return invalid_folder_names
+        
+    def evaluate_invalid_referenced_file_names(self, hierarchy: StudyFolder, report: Report, suggessions: RefactorSuggessions) -> None:
+        category = "invalid_file_name"
+        operation_name =  "rename_file" 
+        invalid_file_names = self.find_invalid_referenced_file_names(hierarchy)
+        description="Action: Rename it and update references in assay file (File must start without . and contain only space, alpha numberic chars and . _ -  )."
+        self.add_report_items_to_report(invalid_file_names, report, category=category, description=description)
+             
+        for invalid_file_name in invalid_file_names:
+            refactor = RefactorOperation(name=operation_name, operation=OperationType.RENAME, source=hierarchy.file_index_map[invalid_file_name])
+            refactor.target = self.rename_file_name(refactor.source.name)
+            self.add_operation_to_file(refactor.source, refactor)
+            self.add_operation_to_suggession(suggessions, operation_name, refactor)
     
-def print_list_items_with_action(file, study_id, item_list, category, action, status="WARNING"):
-    for item in item_list:
-        file.write(f"{study_id}\t\"{item}\"\t{status}\t{category}\tAction: {action}\n")
+    def evaluate_invalid_referenced_folder_names(self, hierarchy: StudyFolder, report: Report, suggessions: RefactorSuggessions) -> None:
+        category = "invalid_folder_name"
+        operation_name = "rename_folder"      
+        description="Invalid folder name characters\tAction: Rename it and update references in assay file(Folder must start without . and contain only space, alpha numberic chars and . _ -  )."
+        invalid_folder_names = self.find_invalid_referenced_folder_names(hierarchy)
+        
+        self.add_report_items_to_report(invalid_folder_names, report, category=category, description=description)
 
-VALID_FILENAME_PATTERN = re.compile(r'^[a-zA-Z0-9_][a-zA-Z0-9_\. -]*[a-zA-Z0-9_]$')
-VALID_DIR_PATTERN = re.compile(r'^[a-zA-Z0-9_][a-zA-Z0-9_\. -/]*[a-zA-Z0-9_]$')
+        for invalid_folder_name in invalid_folder_names:
+            new_folder_path = self.rename_file_name(invalid_folder_name)
+            for file_name in hierarchy.file_index_map.keys():
+                file_item = hierarchy.file_index_map[file_name]
+                if file_item.path != invalid_folder_name and file_item.path.startswith(invalid_folder_name):
+                    refactor = RefactorOperation(name=operation_name, operation=OperationType.MOVE, source=file_item)
+                    refactor.target = refactor.source.path.replace(invalid_folder_name, new_folder_path)
+                    self.add_operation_to_file(file_item, refactor)
+                    self.add_operation_to_suggession(suggessions, operation_name, refactor)
 
-def evaluate_referenced_folder_names(folders, file, study_id):
-    for folder in folders:
-        if folder and not VALID_DIR_PATTERN.match(folder):
-                file.write(f"{study_id}\t\"{folder}\"\tWARNING\tInvalid folder name characters\tAction: Rename it and update references in assay file(Folder must start without . and contain only space, alpha numberic chars and . _ -  ).\n")
+    def evaluate_nonexistent_files(self, hierarchy: StudyFolder, report: Report, suggessions: RefactorSuggessions) -> None:
+        category = "non_existent_file_or_folder"
+        operation_name = "find_candidate"
+        description="Options: 1) Upload this file / folder, 2) If it exists, move to correct folder and/or rename it, 3) Contact with Metabolights team"
+        results = self.find_non_existent_files(hierarchy.study_path, hierarchy)
+        self.add_report_items_to_report(results, report, category=category, description=description)
 
+        for result_item in results:
+            file_item = hierarchy.file_index_map[result_item]
+            refactor = RefactorOperation(name=operation_name, operation=OperationType.FIND_CANDIDATE, source=file_item)
+            refactor.target = ""
+            self.add_operation_to_file(file_item, refactor)
+            self.add_operation_to_suggession(suggessions, operation_name, refactor)
 
-def evaluate_referenced_file_names(file_names, file, study_id):
-    for file_name in file_names:
-        basename = os.path.basename(file_name)
-        if not VALID_FILENAME_PATTERN.match(basename):
-            file.write(f"{study_id}\t\"{file_name}\"\tWARNING\tInvalid filename characters\tAction: Rename it and update references in assay file (File must start without . and contain only space, alpha numberic chars and . _ -  ).\n")
+    def evaluate_referenced_folders_need_compression(self, hierarchy: StudyFolder, report: Report, suggessions: RefactorSuggessions) -> None:
+        category = "need_compression"
+        operation_name = "compress"
+        description ="Options: 1) Compress folder (with zip extension) after content validation and update reference"
+        results = self.find_folders_need_compression(hierarchy.study_path, hierarchy)
+        self.add_report_items_to_report(results, report, category=category, description=description)
 
-def evaluate_study(file, study_root_path, study_id, study_path):
-    ignore_folder_list = ["chebi_pipeline_annotations", "audit"]
-    ignore_file_list = ["files-all.json", "validation_files.json", "validation_report.json", "metexplore_mapping.json", "missing_files.txt"]
-    refactor_manager = StudyFolderRefactorManager(study_root_path,ignore_folder_list=ignore_folder_list, ignore_file_list=ignore_file_list)
+        for result_item in results:
+            file_item = hierarchy.file_index_map[result_item]
+            refactor = RefactorOperation(name=operation_name, operation=OperationType.COMPRESS, source=file_item)
+            refactor.target = f"{result_item}.zip"
+            self.add_operation_to_file(file_item, refactor)
+            self.add_operation_to_suggession(suggessions, operation_name, refactor)
+            
+    def evaluate_folders_contain_referenced_special_files(self, hierarchy: StudyFolder, report: Report, suggessions: RefactorSuggessions) -> None:
+        category = "need_parent_folder_compression"
+        operation_name = "compress"
+        
+        results = hierarchy.referenced_folders_contain_special_files
+        target = ""
+        for folder in results:
+            result_items = results[folder]
+            names = []
+            for result_item in result_items:
+                file_item = hierarchy.file_index_map[result_item]
+                names.append(result_item)
+                refactor = RefactorOperation(name=operation_name, operation=OperationType.COMPRESS, source=file_item)
+                refactor.target = f"{os.path.dirname(result_item)}.zip"
+                target = refactor.target
+                self.add_operation_to_suggession(suggessions, operation_name, refactor)
+                self.add_operation_to_file(file_item, refactor)
+                
+            if names:
+                target = target.replace(hierarchy.study_path, '').lstrip()
+                
+                description = f"Options: Compress parent folder  and reference the compressed file in assay. Use {target} instead of {', '.join(names)}"
+                report_item = ReportItem(study_id=hierarchy.study_id, source=os.path.join(file_item.path, file_item.name) , category=category, description=description)
+                self.add_report_item_to_report(report_item, report)
+                        
 
-    hierarchy = refactor_manager.reference_evaluator.get_reference_hierarchy(study_id, study_path)
+    def evaluate_unreferenced_files(self, hierarchy: StudyFolder, report: Report, suggessions: RefactorSuggessions) -> None:
+        category = "unreferenced_file"
+        results = self.find_unreferenced_files(hierarchy.study_path, hierarchy)
+
+        description="Options: 1) Reference it in ISA METADATA files, 2) Move it to correct folder and/or rename it 3) Delete it 4) Contact with Metabolights team"
+        self.add_report_items_to_report(results["files"], report, category=category, description=description)
+        
+        description = "Options: 1) Reference containing files in ISA METADATA files, 2) Move it to correct folder and/or rename it 3) Delete it 4) Contact with Metabolights team"
+        self.add_report_items_to_report(results["folders"], report, category=category, description=description)
+        
+        description = "Options: 1) Delete this uncategorized file or folder, 2) Contact with Metabolights team"
+        self.add_report_items_to_report(results["uncategorized"], report, category=category, description=description)
     
-    evaluate_referenced_folder_names(hierarchy.referenced_folders,file, study_id)
-    evaluate_referenced_file_names(hierarchy.file_index_map.keys() ,file, study_id)
-    
-    if not hierarchy.sample_file:
-        file.write(f"{study_id}\tStep 0.1\tWARNING\tInvestigation file check\tInvestigation file in reference hierarchy does not exist\n")
+    ISA_METADATA_FILE_PATTERN = re.compile(r'([as]_.+\.txt|i_Investigation.txt|m_.+\.tsv)')
+    def evaluate_study_folder_structure(self, hierarchy: StudyFolder, report: Report, suggessions: RefactorSuggessions) -> None:
+        category = "refactor_file_directory"
+        report_items = []       
+        new_structure_actions = self.create_new_study_structure_actions(hierarchy, report, suggessions)
+        for result_item in new_structure_actions:
+            target_path = os.path.join(result_item.target, result_item.source.name)
+            description = f"Move file to {target_path}" 
+            source = os.path.join(result_item.source.path, result_item.source.name)
+            report_item = ReportItem(study_id=hierarchy.study_id, source=source, category=category, description=description)
+            report_items.append(report_item)
+        self.add_list_items_to_report(report_items, report=report, category=category)
         
-    if not hierarchy.sample_file:
-        file.write(f"{study_id}\tStep 0.2\tWARNING\tSample file check\tSample file in reference hierarchy does not exist\n")
+    def create_new_study_structure_actions(self, hierarchy: StudyFolder, report: Report, suggessions: RefactorSuggessions) -> None:
+        operation_name = 'move_file'
+        new_structure_actions = []
+        for file_name, item in hierarchy.file_index_map.items():
+            if os.path.exists(os.path.join(hierarchy.study_path, file_name)):
+                if not self.ISA_METADATA_FILE_PATTERN.match(item.name):
+                    target = None
+                    if file_name in hierarchy.raw_files and not item.path.startswith(hierarchy.raw_file_folder):
+                        target = os.path.join(hierarchy.raw_file_folder, item.path) if item.path else hierarchy.raw_file_folder
+                    elif file_name in hierarchy.derived_files and not item.path.startswith(hierarchy.derived_file_folder):
+                        target = os.path.join(hierarchy.derived_file_folder, item.path) if item.path else hierarchy.derived_file_folder
+                    elif file_name in hierarchy.supplementary_data_files and not item.path.startswith(hierarchy.supplementary_data_folder):
+                        target = os.path.join(hierarchy.supplementary_data_folder, item.path) if item.path else hierarchy.supplementary_data_folder
+                    if target:
+                        refactor = RefactorOperation(name=operation_name, operation=OperationType.MOVE, source=item)
+                        refactor.target = target
+                        self.add_operation_to_file(item, refactor)
+                        self.add_operation_to_suggession(suggessions, operation_name, refactor) 
+                        new_structure_actions.append(refactor)                       
+        return new_structure_actions
         
-    if not hierarchy.assay_files:
-        file.write(f"{study_id}\tStep 0.3\tWARNING\tAssay file check\tAssay file in reference hierarchy does not exist\n")
-    
-    non_exist_files, need_compression_folders = refactor_manager.evaluate_reference_hierarchy(study_path, hierarchy)
+    @staticmethod
+    def add_operation_to_file(file: File, operation: RefactorOperation):
+        if "refactor" not in file.metadata:
+            file.metadata["refactor"] = []
+        file.metadata["refactor"].append(operation)
+        
+    @staticmethod
+    def add_operation_to_suggession(suggessions: RefactorSuggessions, operation_name: str, operation: RefactorOperation):
+        if operation_name not in suggessions.operations:
+            suggessions.operations[operation_name] = []
+            
+        suggessions.operations[operation_name].append(operation)
+               
+    @staticmethod
+    def add_report_items_to_report(items: List[str], report: StudyFolder, category: str, description: str):
+        if items:
+            if category not in report.report_items:
+                report.report_items[category] = []
+            report_item_list = report.report_items[category]
+            for item in items:
+                report_item = ReportItem(study_id=study_id, source=item, category=category, description=description)
+                report_item_list.append(report_item)
 
-    if not non_exist_files:
-        file.write(f"{study_id}\tStep 1\tOK\tNonexistent file/folder check\tAll files in reference hierarchy exist\n")
-    else:
-        file.write(f"{study_id}\tStep 1\tWARNING\tNonexistent file check\tSome files in reference hierarchy do not exist.\n")
-        action="Options: 1) Upload this file / folder, 2) If it exists, move to correct folder and/or rename it, 3) Contact with Metabolights team"
-        print_list_items_with_action(file, study_id=study_id, 
-                                                item_list=non_exist_files, 
-                                                category="Nonexistent file", 
-                                                action=action)
-        
-    action="Options: 1) Compress (with zip extension) folder after content validation and update reference, 2) Contact with Metabolights team"
-    print_list_items_with_action(file, study_id=study_id, 
-                                            item_list=need_compression_folders, 
-                                            category="Uncompressed referenced folder", 
-                                            action=action)       
-        
-    unreferenced_files = refactor_manager.find_unreferenced_files(study_path, hierarchy)
+    @staticmethod
+    def add_report_item_to_report(item: ReportItem, report: StudyFolder):
+        if item:
+            if item.category not in report.report_items:
+                report.report_items[item.category] = []
+            report_item_list = report.report_items[item.category]
+            report_item_list.append(item)
 
-    if unreferenced_files and "uncategorized" in unreferenced_files and unreferenced_files["uncategorized"]:
-        file.write(f"{study_id}\tStep 2.1\tWARNING\tUncategorized file check\tSome existing files/folders are not uncategorized\n")
-        action="Options: 1) Delete this uncategorized file, 2) Contact with Metabolights team"
-        print_list_items_with_action(file, study_id=study_id, 
-                                                item_list=unreferenced_files["uncategorized"], 
-                                                category="Uncategorized file", 
-                                                action=action)
-    else:
-        file.write(f"{study_id}\tStep 2.1\tOK\tUncategorized file check\tAll existing files and folders in study folder are categorized\n")
+    @staticmethod
+    def add_list_items_to_report(items: List[ReportItem], report: StudyFolder, category: str):
+        if category not in report.report_items:
+            report.report_items[category] = []
+        for item in items:
+            report_item_list = report.report_items[category]
+            report_item_list.append(item)
+            
+    @staticmethod
+    def rename_file_name(name: str) -> str:
+        value = re.sub(r'[^a-zA-Z0-9 _\-\.]', "___", name)
+        return value.strip().lstrip(".")
+ 
+
+    def evaluate_study(self, study_id, study_path) -> Report:
+        study_folder_auditor = StudyFolderAuditor()
+        hierarchy = study_folder_auditor.get_reference_hierarchy(study_id, study_path)
+        suggessions = RefactorSuggessions()
+        report = Report(hierarchy=hierarchy, suggessions=suggessions)
+        report.start_time = time.time()
         
-    if unreferenced_files and "files" in unreferenced_files and unreferenced_files["files"]:
-        file.write(f"{study_id}\tStep 2.2\tWARNING\tUnreferenced file check\tSome existing files are not in reference hierarchy\n")
-        action="Options: 1) Reference it in ISA METADATA files, 2) Check assay file and move it to correct folder and/or rename it 3) Delete it 4) Contact with Metabolights team"
-        print_list_items_with_action(file, study_id=study_id, 
-                                                    item_list=unreferenced_files["files"], 
-                                                    category="Unreferenced file", 
-                                                    action=action)
-    else:
-        file.write(f"{study_id}\tStep 2.2\tOK\tUnreferenced file check\tAll existing files are in reference hierarchy\n")
+        study_folder_auditor.evaluate_invalid_referenced_file_names(hierarchy, report, suggessions)
         
-    if unreferenced_files and "folders" in unreferenced_files and unreferenced_files["folders"]:
-        file.write(f"{study_id}\tStep 2.3\tWARNING\tUnreferenced folder check\tSome existing folders are not in reference hierarchy\n")
-        action="Options: 1) Reference it in ISA METADATA files, 2) Check assay file and move it to correct folder and/or rename it 3) Delete it 4) Contact with Metabolights team"
-        print_list_items_with_action(file, study_id=study_id, 
-                                                item_list=unreferenced_files["folders"], 
-                                                category="Unreferenced folder", 
-                                                action=action)
-    else:
-        file.write(f"{study_id}\tStep 2.3\tOK\tUnreferenced folder check\tAll existing folders are in reference hierarchy\n")
+        study_folder_auditor.evaluate_invalid_referenced_folder_names(hierarchy, report, suggessions)
         
+        study_folder_auditor.evaluate_nonexistent_files(hierarchy, report, suggessions)
         
-    file.write(f"{study_id}\tStep 2.4\tWARNING\tReference to a file in uncompressed folder\tSome reference hierarchy files are in uncompresses folders. Compress parent folder \n")
-    action="Options: 1) Compress parent folder and reference this compressed file in assay, 2) Contact with Metabolights team"
-    print_list_items_with_action(file, study_id=study_id, 
-                                            item_list=unreferenced_files["need_reference_update"], 
-                                            category="File reference in Uncompressed folder", 
-                                            action=action) 
+        study_folder_auditor.evaluate_referenced_folders_need_compression(hierarchy, report, suggessions)
         
-    return hierarchy
+        study_folder_auditor.evaluate_folders_contain_referenced_special_files(hierarchy, report, suggessions)
+
+        study_folder_auditor.evaluate_unreferenced_files(hierarchy, report, suggessions)
+        
+        study_folder_auditor.evaluate_study_folder_structure(hierarchy, report, suggessions) 
+        
+        report.end_time = time.time()
+        return report
+
+class ReportWriter(object):
+    
+    def __init__(self, file) -> None:
+        self.file = file
+        self._write_report_header()
+    
+    def print_report_to_file(self, report: Report):
+        for _, item_list in report.report_items.items():
+            for item in item_list:
+                self.write_report_item_to_file(item)
+        self.write_profile_to_file(report)
+        self.write_statistics_to_file(report)
+
+    def _write_report_header(self):
+        self.file.write(f"STUDY_ID\tIS_SUMMARY\tSOURCE\tCATEGORY\tSTATUS\tDESCRIPTION\n")
+            
+    def write_report_item_to_file(self, item: ReportItem):
+        summary = "Y" if item.is_summary else "N"
+        category = item.category.replace("_", " ").title()
+        source = item.study_id if item.is_summary else f'"{item.source}"'
+        self.file.write(f"{item.study_id}\t{summary}\t{source}\t{category}\t{item.status}\t{item.description}\n")
+        
+    def write_profile_to_file(self, report: Report):
+        study_id = report.hierarchy.study_id
+        description = round(report.end_time - report.start_time, 4)
+        profile = ReportItem(study_id=study_id, is_summary=True, status="INFO", category="profile", description=description)
+        self.write_report_item_to_file(profile)
+                         
+    def write_statistics_to_file(self, report: Report):
+        study_id = report.hierarchy.study_id
+        statistics = []
+        total = 0
+        for category in report.report_items:
+            item_count = len(report.report_items[category])
+            total += item_count
+            if item_count > 0:
+                statistics.append(f"{category}: {item_count}")
+        if statistics:
+            description = f"Reported issue statistics: Total: {total}, {' '.join(statistics)}"
+            status = "WARNING"
+        else:
+            description = f"There is no issue reported."
+            status = "INFO"
+        statistics_item = ReportItem(study_id=study_id, is_summary=True, status=status, category="statistics", description=description)
+        self.write_report_item_to_file(statistics_item)
 
 def study_id_compare(key: str):
     if key:
@@ -208,12 +430,11 @@ if __name__ == "__main__":
             public_studies.add(line.strip())
     study_folders = [f for f in studies if os.path.isdir(f) and os.path.basename(f) in public_studies]
     # study_folders = ["MTBLS1", "MTBLS2", "MTBLS3", "MTBLS4", "MTBLS5", "MTBLS6", "MTBLS7", "MTBLS8", "MTBLS9", "MTBLS10"]
-    # study_folders = ["MTBLS4065"]
+    # study_folders = ["MTBLS2870"]
     start_time = time.time()
     study_folders.sort(key=study_id_compare, reverse=False)
     print(f"Evaluation is started")
     page = 0
-    
     page_size = 30000
     first = page * page_size
     last = (page + 1) * page_size
@@ -223,8 +444,10 @@ if __name__ == "__main__":
         selected_study_folders = study_folders[first:]
     else:
         selected_study_folders = study_folders[first:last]
+    auditor = StudyFolderAuditor()
+    study_reports = {}
     with open('./_refactor-report.tsv', 'w') as file:
-        file.write(f"STUDY ID\tFILE/STEP\tSTATUS\tCATEGORY\tDESCRIPTION\n")
+        writer = ReportWriter(file)
         block_study_eval_start_time = time.time()
         previous_count = 1  
         count = 0
@@ -234,10 +457,12 @@ if __name__ == "__main__":
             study_id = os.path.basename(study)
             study_id_list.append(study_id)
             study_path = os.path.join(study_root_path, study_id)
-            study_eval_start_time = time.time()
-            # categories = set(["isa_metadata", "invalid_file_names", "need_compression", "nonexist_files", "unreferenced_files"])
-            hierarchy = evaluate_study(file, study_root_path, study_id, study_path)
-            file.write(f"{study_id}\tProfile\tOK\tElapse Time\t%s\n" % round(time.time() - study_eval_start_time, 4))
+            
+            report = auditor.evaluate_study(study_id, study_path)
+            
+            study_reports[study_id] = report
+            writer.print_report_to_file(report)
+            
             if count % 10 == 0:
                 print(f"{previous_count:04}-{count:04} {', '.join(study_id_list)} evaluation took %s seconds" % round(time.time() - block_study_eval_start_time, 4))
                 block_study_eval_start_time  = time.time()
