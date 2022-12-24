@@ -75,7 +75,7 @@ from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, Unz
     FileList, StudyFilesReuse, DeleteAsperaFiles, StudyRawAndDerivedDataFile, StudyRawAndDerivedDataFolder
 from app.ws.table_editor import GetTsvFile, AddRows, ColumnsRows, ComplexColumns, SimpleColumns
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
-from app.ws.tasks.create_json_files import PublicStudyJsonExporter
+from app.ws.tasks.create_json_files import PublicStudyJsonExporter, StudyJsonExporter
 from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation, ValidationComment
@@ -141,6 +141,7 @@ def initialize_app(flask_app):
     api.add_resource(MyMtblsStudiesDetailed, res_path + "/studies/user")
     api.add_resource(MyMtblsStudies, res_path + "/studies/user/lite")
     api.add_resource(PublicStudyJsonExporter, res_path + "/studies/public/export-as-json")
+    api.add_resource(StudyJsonExporter, res_path + "/studies/export-all-as-json")
     api.add_resource(PublicStudyDetail, res_path + "/studies/public/study/<string:study_id>")
     api.add_resource(StudyRawAndDerivedDataFile, res_path + "/studies/<string:study_id>/files/raw-and-derived-data")
     api.add_resource(StudyRawAndDerivedDataFolder, res_path + "/studies/<string:study_id>/folders/raw-and-derived-data")

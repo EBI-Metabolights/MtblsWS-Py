@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Dict, Set, Union
 
 from pydantic import BaseModel, Field, validator
 
@@ -223,8 +223,18 @@ class StudySummaryModel(BaseModel):
     id: str = Field(None, description="Study accession number")
     title: str = Field(None, description="Title of study")
     description: str = Field(None, description="Description of study")
-
-
+    
+    
+class StudyDerivedData(BaseModel):
+    submissionMonth: str = ""
+    releaseMonth: str = ""
+    submissionYear: str = 1970
+    releaseYear: str = 1970
+    country: str = ""
+    organismNames: str = ""
+    organismParts: str = ""
+    
+    
 class LiteStudyModel(EntityModel):
     id: int = Field(...)
     studyIdentifier: str = Field(...)  # assigned as not_analyzed in es
@@ -243,7 +253,7 @@ class LiteStudyModel(EntityModel):
     studyHumanReadable: str = None
     users: Union[List[UserModel], List[IndexedUserModel]] = []
     publicStudy: bool = False
-
+    derivedData: StudyDerivedData = None
     class Config:
         orm_mode = True
         allow_population_by_field_name = True

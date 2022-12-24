@@ -116,8 +116,8 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
                 investigation = isatab.load_investigation(f)
             except Exception as e:
                 logger.error(f'{investigation_file} file is not opened with latin-1 mode')
-                message = f'{m_study.studyIdentifier} investigation.txt file can not be loaded.'
-                raise MetabolightsFileOperationException(message=message, exception=e, http_code=500)
+                message = f'{m_study.studyIdentifier} i_Investigation.txt file can not be loaded.'
+                
     if not investigation:
         logger.error(f'{investigation_file} is not valid.')
     elif "studies" not in investigation:
@@ -142,7 +142,10 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
 
             if not optimize_for_es_indexing:
                 fill_protocols(m_study, investigation)
-                fill_contacts(m_study, investigation)
+                try:
+                    fill_contacts(m_study, investigation)
+                except Exception as ex:
+                    logger.error(f'{m_study.studyIdentifier} contacts are not parsed successfully!')
             else:
 
                 #del m_study.sampleTable  # delete sample table data from model for indexing.
@@ -152,8 +155,23 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
 
                 update_users_for_indexing(m_study)
                 update_assays_for_indexing(m_study)
+            fill_derived_data(m_study)
 
 
+def fill_derived_data(m_study: models.StudyModel):
+    data = models.StudyDerivedData()
+    m_study.derivedData = data
+    data.organismNames = "::".join(set(organism.organismName for organism in m_study.organism if organism and organism.organismName)) if m_study.organism else ''
+    data.organismParts = "::".join(set(organism.organismPart for organism in m_study.organism if organism and organism.organismPart)) if m_study.organism else ''
+    data.country = m_study.users[0].address if m_study.users and m_study.users[0] else ""
+    submission_date = datetime.datetime.fromtimestamp(m_study.studySubmissionDate / 1000)
+    data.submissionMonth = submission_date.strftime("%Y-%m")
+    data.submissionYear = submission_date.year
+    release_date = datetime.datetime.fromtimestamp(m_study.studyPublicReleaseDate / 1000)
+    data.releaseMonth = release_date.strftime("%Y-%m")
+    data.releaseYear = release_date.year
+    
+    
 def fill_backups(m_study, path):
     backup_path = os.path.join(path, "audit")
     os.makedirs(backup_path, exist_ok=True)
@@ -255,7 +273,7 @@ def fill_organism(m_study):
                     model.organismPart = data[organism_part_index]
                 ind = model.organismName if model.organismName else ''
                 ind += model.organismPart if model.organismPart else ''
-                if ind not in organism_dic:
+                if ind not in organism_dic and ind:
                     organism_dic[ind] = model
                     m_study.organism.append(model)
 
@@ -273,7 +291,7 @@ def fill_sample_table(m_study, path):
 
     file_path = selected
 
-    if file_path and os.path.isfile(file_path):
+    if file_path and os.path.exists(file_path) and os.path.isfile(file_path):
         sample = None
         try:
             with open(file_path, encoding="unicode_escape") as f:
@@ -283,7 +301,11 @@ def fill_sample_table(m_study, path):
 
         if sample is None:
             with open(file_path, encoding="latin-1") as f:
-                sample = isatab.load_table(f)
+                try:
+                    sample = isatab.load_table(f)
+                except Exception as e:
+                    logger.warning(f"{file_path} is not opened with latin-1 mode")
+                    return
 
         m_sample = models.TableModel()
         m_study.sampleTable = m_sample
@@ -296,54 +318,71 @@ def fill_sample_table(m_study, path):
 
 
 def fill_assays(m_study, investigation, path, include_maf_files):
-    if "s_assays" in investigation and investigation['s_assays']:
+    if "s_assays" in investigation and investigation['s_assays'] and investigation['s_assays'][0] is not None:
         items = investigation['s_assays'][0]
+        assays = []
+        for ind in range(len(items.index)):
+            assay = items.iloc[ind]
+            assays.append(assay)
         index = 0
-        for item in items.iterrows():
-            model = models.AssayModel()
-            index = index + 1
-            model.assayNumber = index
-            model.fileName = get_value_from_dict(item[1], "Study Assay File Name")
-            technology = get_value_from_dict(item[1], "Study Assay Technology Type")
-            model.technology = remove_ontology(technology)
-            model.measurement = get_value_from_dict(item[1], "Study Assay Measurement Type")
-            platform = get_value_from_dict(item[1], "Study Assay Technology Platform")
-            model.platform = remove_ontology(platform)
+        for item in assays:
+            try:
+                model = models.AssayModel()
+                index = index + 1
+                model.assayNumber = index
+                model.fileName = get_value_from_dict(item, "Study Assay File Name")
+                
+                
+                technology = get_value_from_dict(item, "Study Assay Technology Type")
+                model.technology = remove_ontology(technology)
+                model.measurement = get_value_from_dict(item, "Study Assay Measurement Type")
+                platform = get_value_from_dict(item, "Study Assay Technology Platform")
+                model.platform = remove_ontology(platform)
+                m_study.assays.append(model)
+                file = os.path.join(path, model.fileName)
+                if os.path.exists(file) and os.path.isfile(file):      
+                    
+                    table = None
+                    try:
+                        with open(file, encoding="unicode_escape", ) as f:
+                            table = isatab.load_table(f)
+                    except Exception as ex:
+                        logger.warning(f'{file} is not parsed with unicode_escape mode')
 
-            m_study.assays.append(model)
-            file = os.path.join(path, model.fileName)
-            if os.path.isfile(file):
-                table = None
-                try:
-                    with open(file, encoding="unicode_escape", ) as f:
-                        table = isatab.load_table(f)
-                except Exception as e:
-                    logger.warning(f'{file} is not open with unicode_escape mode')
+                    if table is None:
+                        with open(file, encoding="latin-1", ) as f:
+                            try:
+                                table = isatab.load_table(f)
+                            except Exception as ex:
+                                logger.error(f'{file} is not parsed with latin-1 mode {str(ex)}')
+                    if table is None:
+                        continue
 
-                if table is None:
-                    with open(file, encoding="latin-1", ) as f:
-                        table = isatab.load_table(f)
+                    m_table = models.TableModel()
+                    model.assayTable = m_table
+                    maf_file_index, valid_indices = set_table_fields(m_table.fields, table,
+                                                                    "metabolite assignment file")
 
-                m_table = models.TableModel()
-                model.assayTable = m_table
-                maf_file_index, valid_indices = set_table_fields(m_table.fields, table,
-                                                                 "metabolite assignment file")
-
-                for i in range(table.index.size):
-                    row = table.iloc[i].to_list()
-                    trimmed_row = [row[valid_ind] for valid_ind in valid_indices]
-                    m_table.data.append(trimmed_row)
-                    if maf_file_index >= 0:
-                        # Get MAF file name from first row
-                        if not model.metaboliteAssignment:
-                            maf_file_path = os.path.join(path, row[maf_file_index])
-                            if os.path.exists(maf_file_path):
-                                assignment_model = models.MetaboliteAssignmentModel()
-                                model.metaboliteAssignment = assignment_model
-                                model.metaboliteAssignment.metaboliteAssignmentFileName = maf_file_path
-                                if include_maf_files:
-                                    pass  # TODO fill metabolite alignment lines if needed (not needed now)
-                # end of method
+                    for i in range(table.index.size):
+                        try:
+                            row = table.iloc[i].to_list()
+                            trimmed_row = [row[valid_ind] for valid_ind in valid_indices]
+                            m_table.data.append(trimmed_row)
+                            if maf_file_index >= 0:
+                                # Get MAF file name from first row
+                                if not model.metaboliteAssignment:
+                                    maf_file_path = os.path.join(path, row[maf_file_index])
+                                    if os.path.exists(maf_file_path):
+                                        assignment_model = models.MetaboliteAssignmentModel()
+                                        model.metaboliteAssignment = assignment_model
+                                        model.metaboliteAssignment.metaboliteAssignmentFileName = maf_file_path
+                                        if include_maf_files:
+                                            pass  # TODO fill metabolite alignment lines if needed (not needed now)
+                        except Exception as ex:
+                            logger.error(f"{model.fileName} row {str(i + 1)} can not not parsed!")
+                    # end of method
+            except Exception as ex:
+                logger.error(f"{model.fileName} can not be processed successfully!")
 
 
 def set_table_fields(fields, table, requested_field_name=None):
@@ -433,18 +472,26 @@ def fill_publications(m_study, investigation):
 
 def fill_contacts(m_study, investigation):
     if "s_contacts" in investigation and investigation['s_contacts']:
-        contacts = investigation['s_contacts'][0]
-        for item in contacts.iterrows():
-            model = models.ContactModel()
+        items = investigation['s_contacts'][0]
+        contacts = []
+        for ind in range(len(items.index)):
+            contact = items.iloc[ind]
+            contacts.append(contact)
+            
+        for item in contacts:
+            try:
+                model = models.ContactModel()
 
-            model.lastName = get_value_from_dict(item[1], "Study Person Last Name")
-            model.firstName = get_value_from_dict(item[1], "Study Person First Name")
-            model.midInitial = get_value_from_dict(item[1], "Study Person Mid Initials")
-            model.email = get_value_from_dict(item[1], "Study Person Email")
-            model.phone = get_value_from_dict(item[1], "Study Person Phone")
-            model.address = get_value_from_dict(item[1], "Study Person Address")
-            model.fax = get_value_from_dict(item[1], "Study Person Fax")
-            model.role = get_value_from_dict(item[1], "Study Person Roles")
-            model.affiliation = get_value_from_dict(item[1], "Study Person Affiliation")
+                model.lastName = get_value_from_dict(item, "Study Person Last Name")
+                model.firstName = get_value_from_dict(item, "Study Person First Name")
+                model.midInitial = get_value_from_dict(item, "Study Person Mid Initials")
+                model.email = get_value_from_dict(item, "Study Person Email")
+                model.phone = get_value_from_dict(item, "Study Person Phone")
+                model.address = get_value_from_dict(item, "Study Person Address")
+                model.fax = get_value_from_dict(item, "Study Person Fax")
+                model.role = get_value_from_dict(item, "Study Person Roles")
+                model.affiliation = get_value_from_dict(item, "Study Person Affiliation")
 
-            m_study.contacts.append(model)
+                m_study.contacts.append(model)
+            except Exception as ex:
+                logger.error(f'{m_study.studyIdentifier} contact is not parsed successfully!')
