@@ -26,12 +26,16 @@ from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.utils import metabolights_exception_handler
+from app.utils import metabolights_exception_handler, MetabolightsDBException
+from app.ws.db.dbmanager import DBManager
 from app.ws.study import commons
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import identify_study_id
-from app.ws.utils import get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv
-
+from app.ws.utils import get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv, \
+    read_tsv_with_filter
+from app.ws.db.schemes import Study
+from app.ws.db.types import StudyStatus
+import glob
 """
 MTBLS Table Columns manipulator
 
@@ -1120,3 +1124,89 @@ class GetTsvFile(Resource):
         df_header = get_table_header(file_df, study_id, file_name_param)
 
         return {'header': df_header, 'data': df_data_dict}
+
+
+class GetAssayMaf(Resource):
+    @swagger.operation(
+        summary="Get MAF data for a given public study and MAF sheet number",
+        nickname="Get MAF data for a given study",
+        notes="Get a Database Identifier and Metabolite identification. This API is used by EB EYE search cronjob script",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "sheet_number",
+                "description": "Sheet order number",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "int"
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The MAF data is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self, study_id, sheet_number):
+        # param validation
+        if study_id is None or sheet_number is None:
+            logger.info('No study_id and/or sheet_number given')
+            abort(404)
+
+        study_id = study_id.upper()
+
+        with DBManager.get_instance(app).session_maker() as db_session:
+            query = db_session.query(Study)
+            query = query.filter(Study.status == StudyStatus.PUBLIC.value,
+                                 Study.acc == study_id)
+            study = query.first()
+
+            if not study:
+                raise MetabolightsDBException(f"{study_id} does not exist or is not public")
+
+        logger.info('Trying to load MAF for Study %s, Sheet number %d', study_id, sheet_number)
+
+        study_path = app.config.get('STUDY_PATH')
+        study_location = os.path.join(study_path, study_id)
+        maflist = []
+
+        for maf in glob.glob(os.path.join(study_location, "m_*.tsv")):
+            maf_file_name = os.path.basename(maf)
+            logger.info(' Adding MAF file :- %s', maf_file_name)
+            maflist.append(maf_file_name)
+
+        logger.info(' Requested Sheet number :- %d', sheet_number)
+
+        maf_file = maflist[sheet_number-1]
+        logger.info(' maf_file path :- %s', maf_file)
+        maf_file_path = os.path.join(study_location, maf_file)
+        try:
+            file_df = read_tsv_with_filter(maf_file_path)
+        except FileNotFoundError:
+            abort(400, "The file " + maf_file_path + " was not found")
+
+        df_data_dict = totuples(file_df.reset_index(), 'rows')
+        result = {'content': {'metaboliteAssignmentFileName': maf_file, 'data': df_data_dict}, 'message': None, "err": None}
+        return result
