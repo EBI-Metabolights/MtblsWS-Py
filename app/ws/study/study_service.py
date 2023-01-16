@@ -14,6 +14,7 @@ def identify_study_id(study_id, obfuscation_code=None):
         study = StudyService.get_instance(app).get_study_by_obfuscation_code(obfuscation_code)
         if study and study.status == StudyStatus.INREVIEW.value:
             study_id = study.acc
+            return study_id, obfuscation_code
         else:
             raise MetabolightsException(http_code=404, message="Requested study is not valid")
     return study_id, obfuscation_code

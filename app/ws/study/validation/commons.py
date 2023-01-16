@@ -819,7 +819,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
             all_file_columns.remove(raw_file)
             missing_all_rows.remove(raw_file)
             add_msg(validations, val_section,
-                    "All Raw and Derived Spectral Data Files are missing from assay",
+                    f"'{filename}': All Raw and Derived Spectral Data Files are missing from assay",
                     error, filename, val_sequence=7.6, log_category=log_category)
         if fid_file in missing_all_rows:
             if acq_file in missing_all_rows:
@@ -828,7 +828,7 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                 all_file_columns.remove(fid_file)
                 missing_all_rows.remove(fid_file)
                 add_msg(validations, val_section,
-                        "All " + derived_file + "s, " + fid_file
+                        f"'{filename}': All " + derived_file + "s, " + fid_file
                         + "s and " + acq_file + "s are missing from assay",
                         error, filename, val_sequence=7.7, log_category=log_category)
 
@@ -857,8 +857,6 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                         raw_found = True
                         raw_valid = is_valid_raw_file_column_entry(value)
                         raw_value = value
-
-
                 elif header == derived_file:
                     derived_tested = True
                     if value:
@@ -871,13 +869,13 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                         if acq_file in header or fid_file in header:
                             val_type = warning
 
-                        add_msg(validations, val_section, header + " was not referenced in assay row " + row_idx,
+                        add_msg(validations, val_section, header + f" was not referenced in {filename} assay row {str(row_idx)}",
                                 val_type, filename, val_sequence=7.5, log_category=log_category)
 
             if derived_tested and raw_tested:
                 if not raw_found and not derived_found:
                     add_msg(validations, val_section,
-                            "Both Raw and Derived Spectral Data Files are missing from assay row " + row_idx,
+                            f"'{filename}': Both Raw and Derived Spectral Data Files are missing from assay row {str(row_idx)}",
                             error, filename, val_sequence=7.1, log_category=log_category)
                 if not raw_valid and derived_valid['is_text_file'] is True:
                     add_msg(validations, val_section,
@@ -885,12 +883,11 @@ def check_all_file_rows(assays, assay_dataframe, validations, val_section, filen
                             .format(row_idx), error, filename, val_sequence=7.8, log_category=log_category)
                 if raw_valid and derived_found and not derived_valid['valid'] is True:
                     add_msg(validations, val_section,
-                            "Derived Spectral Data Column entry missing or invalid for row {0}".format(row_idx),
+                            f"'{filename}': Derived Spectral Data Column entry missing or invalid for row {str(row_idx)}",
                             error, filename, val_sequence=7.9, log_category=log_category)
                 if raw_value and derived_valid['value'] and derived_valid['is_text_file']:
                     add_msg(validations, val_section,
-                            "Raw Spectral Data File {0} has a corresponding text file entry in the Derived Spectral Data"
-                            " Column: {1}".format(raw_value, derived_valid['value']), success, filename,
+                           f"'{filename}' Raw Spectral Data File {str(raw_value)} has a corresponding text file entry in the Derived Spectral Data Column: {derived_valid['value']}", success, filename,
                             val_sequence=7.11,
                             log_category=log_category)
 
@@ -1925,7 +1922,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
                     add_msg(validations, val_section,
                             "The public release date in the investigation file " +
                             public_release_date + " is not the same as the database release date " +
-                            release_date, warning, file_name, val_sequence=19.2, log_category=log_category)
+                            release_date if release_date else "", warning, file_name, val_sequence=19.2, log_category=log_category)
             else:
                 add_msg(validations, val_section, "Could not find the public release date in the investigation file",
                         warning, file_name, val_sequence=19.1, log_category=log_category)
