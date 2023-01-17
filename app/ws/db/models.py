@@ -12,6 +12,7 @@ class IndexedUserModel(BaseModel):
     lastName: str = Field(None)
     orcid: str = Field(None)
     userName: str = Field(None)  # assigned as not_analyzed in es
+    address: str = Field(None)
 
     class Config:
         orm_mode = True

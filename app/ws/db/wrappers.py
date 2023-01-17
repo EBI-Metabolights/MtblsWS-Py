@@ -75,6 +75,7 @@ def update_users_for_indexing(m_study):
     new_indexed_user_list = []
     for user in m_study.users:
         indexed_user = IndexedUserModel.from_orm(user)
+
         new_indexed_user_list.append(indexed_user)
 
     m_study.users.clear()
