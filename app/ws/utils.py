@@ -19,10 +19,12 @@
 import base64
 import datetime
 import glob
+import hashlib
 import io
 import json
 import logging
 import os
+import pathlib
 import random
 import re
 import shutil
@@ -694,12 +696,50 @@ def to_isa_tab(study_id, input_folder, output_folder):
 
     return True, "ISA-Tab files generated for study " + study_id
 
+def create_temp_dir_in_study_folder(study_location: str) -> str:
+    date = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    rand = random.randint(1000, 9999999)
+    folder_name = f"{date}-{str(rand)}"
+    random_folder_name = hashlib.sha256(bytes(folder_name, 'utf-8')).hexdigest()
+    path = os.path.join(study_location, "audit", "logs", "temp", random_folder_name)
+    os.makedirs(path, exist_ok=True)
+    
+    return path
 
+def collect_all_mzml_files(study_location):
+    folder_name = create_temp_dir_in_study_folder(study_location=study_location)
+    mzml_files = {}
+    if os.path.exists(study_location) and os.path.isdir(study_location):  # Only check if the folder exists
+        files = glob.iglob(os.path.join(study_location, '*.mzML'))  # Are there mzML files there?
+        for file in files:
+            base_name = os.path.basename(file)
+            if base_name not in mzml_files:
+                mzml_files[base_name] = file
+        files = glob.iglob(os.path.join(study_location, '**/*.mzML'), recursive=True)  # Are there mzML files there?
+        for file in files:
+            base_name = os.path.basename(file)
+            if base_name not in mzml_files:
+                mzml_files[base_name] = file
+    
+    for file in mzml_files:
+        target = os.path.join(folder_name, file)
+        source = mzml_files[file]
+        
+        os.symlink(source, target, target_is_directory=False)
+    
+    return folder_name + "/"
 def convert_to_isa(study_location, study_id):
-    input_folder = study_location + "/"
-    output_folder = study_location + "/"
-    status, message = to_isa_tab(study_id, input_folder, output_folder)
-    return status, message
+    input_folder = ""
+    try:
+        input_folder = collect_all_mzml_files(study_location=study_location)
+        output_folder = study_location + "/"
+        status, message = to_isa_tab(study_id, input_folder, output_folder)
+        return status, message
+    finally:
+        if input_folder:
+            dirpath = pathlib.Path(input_folder)
+            if dirpath.exists() and dirpath.is_dir():
+                shutil.rmtree(dirpath)
 
 
 def update_correct_sample_file_name(isa_study, study_location, study_id):
