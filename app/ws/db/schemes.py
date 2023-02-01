@@ -162,6 +162,14 @@ class RefMetabolite(Base):
     has_literature = Column(BigInteger, server_default=text("0"))
     inchikey = Column(String(2000))
 
+    metSpecies = relationship('RefSpecy', secondary='ref_met_to_species')
+
+class RefMetSpecies(Base):
+    __tablename__ = 'ref_met_to_species'
+
+    id = Column(BigInteger, primary_key=True)
+    met_id = Column(ForeignKey('ref_metabolite.id', ondelete='CASCADE'), nullable=False)
+    species_id = Column(ForeignKey('ref_species.id', ondelete='CASCADE'), nullable=False)
 
 class RefSpeciesGroup(Base):
     __tablename__ = 'ref_species_group'
