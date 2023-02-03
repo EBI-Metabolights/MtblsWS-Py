@@ -289,10 +289,10 @@ class StudyModel(LiteStudyModel):
         json_encoders = {
             datetime.datetime: lambda v: v.timestamp()
         }
+        
 class SpeciesGroupModel(BaseModel):
     id: int = None
     name: str = None
-
     class Config:
         orm_mode = True
 
@@ -311,7 +311,20 @@ class MetSpeciesModel(BaseModel):
     species: str = None
     taxon: str = None
     speciesMember: SpeciesMembersModel = Field(None, alias="ref_species_member")
+    class Config:
+        orm_mode = True
 
+class MetDbModel(BaseModel):
+    id: int = None
+    name: str = Field(None, alias="db_name")
+    class Config:
+        orm_mode = True
+
+
+class MetCrossReferenceModel(BaseModel):
+    id: int = None
+    accession: str = Field(None, alias="acc")
+    db: MetDbModel = None
     class Config:
         orm_mode = True
 
@@ -333,6 +346,7 @@ class MetaboLightsModel(BaseModel):
     hasNMR: bool = Field(None, alias="has_nmr")
     hasMS: bool = Field(None, alias="has_ms")
     updatedDate: str = None
-    metSpecies: List[MetSpeciesModel] = []
+    metSpecies: List[MetSpeciesModel] = Field([], alias="met_species")
+    crossReference: List[MetCrossReferenceModel] = Field([], alias="ref_xref")
     class Config:
         orm_mode = True

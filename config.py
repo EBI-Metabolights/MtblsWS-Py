@@ -532,6 +532,7 @@ study_files_settings = study_file_settings["STUDY_FILES"]
 
 STUDY_PATH = study_files_settings["STUDY_PATH"]
 MTBLS_STABLE_ID_PREFIX = study_files_settings["MTBLS_STABLE_ID_PREFIX"]
+MTBLS_COMPOUND_ID_PREFIX = study_files_settings["MTBLS_COMPOUND_ID_PREFIX"]
 DEFAULT_TEMPLATE = study_files_settings["DEFAULT_TEMPLATE"]
 PARTNER_TEMPLATE_METABOLON = study_files_settings["PARTNER_TEMPLATE_METABOLON"]
 UPDATE_PATH_SUFFIX = study_files_settings["UPDATE_PATH_SUFFIX"]
