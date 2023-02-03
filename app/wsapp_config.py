@@ -53,6 +53,7 @@ from app.ws.isaStudy import StudyMetaInfo, StudyPublications, StudyDescriptors, 
     StudySubmitters, StudyContacts, StudyDescription, StudyTitle, StudyReleaseDate
 from app.ws.jira_update import Jira
 from app.ws.metaspace_pipeline import MetaspacePipeLine
+from app.ws.mtblsCompound import MtblsCompoundsDetails, MtblsCompounds
 from app.ws.mtblsStudy import MtblsStudies, MtblsPrivateStudies, MtblsStudiesWithMethods, MyMtblsStudiesDetailed, \
     MyMtblsStudies, IsaTabInvestigationFile, IsaTabSampleFile, IsaTabAssayFile, CreateAccession, CloneAccession, \
     DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies, MtblsStudyValidationStatus, \
@@ -197,6 +198,9 @@ def initialize_app(flask_app):
     api.add_resource(StudyDescriptors, res_path + "/studies/<string:study_id>/descriptors")
     api.add_resource(StudyPublications, res_path + "/studies/<string:study_id>/publications")
     api.add_resource(Organism, res_path + "/studies/<string:study_id>/organisms")
+
+    api.add_resource(MtblsCompounds, res_path + "/compounds/list")
+    api.add_resource(MtblsCompoundsDetails, res_path + "/compounds/<string:accession>")
 
     # Metabolite Annotation File (MAF)
     api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validate")

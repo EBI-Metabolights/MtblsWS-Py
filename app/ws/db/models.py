@@ -289,3 +289,64 @@ class StudyModel(LiteStudyModel):
         json_encoders = {
             datetime.datetime: lambda v: v.timestamp()
         }
+        
+class SpeciesGroupModel(BaseModel):
+    id: int = None
+    name: str = None
+    class Config:
+        orm_mode = True
+
+class SpeciesMembersModel(BaseModel):
+    id: int = None
+    taxon: str = None
+    taxonDesc: Optional[str] = Field("", alias="taxon_desc")
+    parentMemberId: int = Field(None, alias="parent_id")
+    speciesGroup: SpeciesGroupModel = Field(None, alias="group")
+
+    class Config:
+        orm_mode = True
+class MetSpeciesModel(BaseModel):
+    id: int = None
+    description: str = None
+    species: str = None
+    taxon: str = None
+    speciesMember: SpeciesMembersModel = Field(None, alias="ref_species_member")
+    class Config:
+        orm_mode = True
+
+class MetDbModel(BaseModel):
+    id: int = None
+    name: str = Field(None, alias="db_name")
+    class Config:
+        orm_mode = True
+
+
+class MetCrossReferenceModel(BaseModel):
+    id: int = None
+    accession: str = Field(None, alias="acc")
+    db: MetDbModel = None
+    class Config:
+        orm_mode = True
+
+class MetaboLightsModel(BaseModel):
+    id: int
+    accession: str = Field(None, alias="acc")
+    name: str = None
+    description: str = None
+    inchi: str = None
+    inchikey: str = None
+    chebiId: str = Field(None, alias="temp_id")
+    formula: str = None
+    iupacNames: str = Field(None, alias="iupac_names")
+    studyStatus: str = 'PUBLIC'
+    hasLiterature: bool = Field(None, alias="has_literature")
+    hasReactions: bool = Field(None, alias="has_reactions")
+    hasSpecies: bool = Field(None, alias="has_species")
+    hasPathways: bool = Field(None, alias="has_pathways")
+    hasNMR: bool = Field(None, alias="has_nmr")
+    hasMS: bool = Field(None, alias="has_ms")
+    updatedDate: str = None
+    metSpecies: List[MetSpeciesModel] = Field([], alias="met_species")
+    crossReference: List[MetCrossReferenceModel] = Field([], alias="ref_xref")
+    class Config:
+        orm_mode = True

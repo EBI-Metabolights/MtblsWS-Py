@@ -162,6 +162,16 @@ class RefMetabolite(Base):
     has_literature = Column(BigInteger, server_default=text("0"))
     inchikey = Column(String(2000))
 
+    met_species = relationship('RefSpecy', secondary='ref_met_to_species')
+    ref_xref = relationship('RefXref', secondary='ref_met_to_species', overlaps="met_species")
+
+class RefMetSpecies(Base):
+    __tablename__ = 'ref_met_to_species'
+
+    id = Column(BigInteger, primary_key=True)
+    met_id = Column(ForeignKey('ref_metabolite.id', ondelete='CASCADE'), nullable=False)
+    species_id = Column(ForeignKey('ref_species.id', ondelete='CASCADE'), nullable=False)
+    ref_xref_id = Column(ForeignKey('ref_xref.id', ondelete='CASCADE'), nullable=False)
 
 class RefSpeciesGroup(Base):
     __tablename__ = 'ref_species_group'
@@ -247,16 +257,14 @@ class RefSpeciesMember(Base):
 
     group = relationship('RefSpeciesGroup')
 
+class RefXref(Base):
+    __tablename__ = 'ref_xref'
 
-t_ref_xref = Table(
-    'ref_xref', metadata,
-    Column('id', BigInteger, unique=True),
-    Column('acc', String(20), nullable=False),
-    Column('db_id', ForeignKey('ref_db.id'), nullable=False),
-    UniqueConstraint('acc', 'db_id'),
-    Index('ref_xref_uk1', 'acc', 'db_id', unique=True)
-)
+    id = Column(BigInteger, primary_key=True)
+    acc = Column(String(512), nullable=False)
+    db_id = Column(ForeignKey('ref_db.id'), nullable=False)
 
+    db = relationship('RefDb')
 
 class RefSpecy(Base):
     __tablename__ = 'ref_species'
@@ -268,7 +276,6 @@ class RefSpecy(Base):
     final_id = Column(ForeignKey('ref_species.id'), index=True)
     species_member = Column(ForeignKey('ref_species_members.id'))
 
-    final = relationship('RefSpecy', remote_side=[id])
     ref_species_member = relationship('RefSpeciesMember')
 
 
