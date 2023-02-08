@@ -345,8 +345,17 @@ class MetaboLightsModel(BaseModel):
     hasPathways: bool = Field(None, alias="has_pathways")
     hasNMR: bool = Field(None, alias="has_nmr")
     hasMS: bool = Field(None, alias="has_ms")
-    updatedDate: str = None
+    updatedDate: datetime.datetime = Field(None, alias="updated_date")
     metSpecies: List[MetSpeciesModel] = Field([], alias="met_species")
     crossReference: List[MetCrossReferenceModel] = Field([], alias="ref_xref")
+
+    @validator('updatedDate')
+    def datetime_validation(cls, value):
+        if not value:
+            return None
+        if isinstance(value, datetime.datetime):
+            return value.strftime("%d-%b-%Y %H:%M:%S")
+        return value
+
     class Config:
         orm_mode = True
