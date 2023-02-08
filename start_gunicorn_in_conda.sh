@@ -30,4 +30,4 @@ source .env
 #export $(cat .env | xargs)
 export $(cat .env | grep -v '#' | xargs)
 #launch WS
-gunicorn --workers 3 --threads 2 -b 0.0.0.0:5000 --worker-class gevent --pid ./app_$HOST.pid --preload wsapp:app --access-logfile $LOG --error-logfile $LOG --log-level info --capture-output --daemon > $LOG 2>&1 & echo $! > app_$HOST.pid
+gunicorn --workers 3 --threads 2 -b 0.0.0.0:5000 --worker-class gevent --pid ./app_$HOST.pid --preload wsapp:app --access-logfile $LOG --error-logfile $LOG --log-level info --capture-output --daemon > $LOG 3>&1 & echo $! > app_$HOST.pid
