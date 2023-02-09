@@ -2131,14 +2131,14 @@ def get_cas_id(inchi_key):
     chem_plus_url = app.config.get('CHEM_PLUS_URL')
     chem_plus_url = chem_plus_url.replace("INCHI_KEY", inchi_key)
     cas_id = ''
-    resp = requests.get(chem_plus_url)
-    if resp.status_code == 200:
-        try:
-            json_resp = resp.json()
-            if 'rn' in json_resp['results'][0]['summary']:
-                cas_id = json_resp['results'][0]['summary']['rn']
-        except Exception as ex:
-            logger.warning(f"Invalid result from {chem_plus_url} for input: {inchi_key}  {str(ex)}")
+    # resp = requests.get(chem_plus_url)
+    # if resp.status_code == 200:
+    #     try:
+    #         json_resp = resp.json()
+    #         if 'rn' in json_resp['results'][0]['summary']:
+    #             cas_id = json_resp['results'][0]['summary']['rn']
+    #     except Exception as ex:
+    #         logger.warning(f"Invalid result from {chem_plus_url} for input: {inchi_key}  {str(ex)}")
 
     return cas_id
 
