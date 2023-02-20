@@ -1,12 +1,11 @@
 #!/bin/bash
-. ../../functions.inc
+. ~/metabolights/scripts/functions.inc
 HOST=$(hostname)
 echo $HOST
 check_host .
 echo "Host $HOST approved, starting Green Unicorn server"
 
 APPDIR=$PWD
-#VENVDIR=$APPDIR/venv368
 
 PATH=~/opt/sqlite/bin:$PATH
 LD_LIBRARY_PATH=~/opt/sqlite/lib:$LD_LIBRARY_PATH
@@ -19,8 +18,6 @@ PYTHONPATH=$APPDIR
 LOG=$APPDIR/logs/gunicorn_$HOST
 cd $APPDIR
 
-# activate Python virtual environment
-#source $VENVDIR/bin/activate
 eval "$(conda shell.bash hook)"
 conda activate python38-MtblsWS
 # kill all processes, just in case
