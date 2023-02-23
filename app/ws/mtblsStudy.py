@@ -17,6 +17,7 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 
+from datetime import datetime
 import glob
 import logging
 import os
@@ -28,7 +29,6 @@ from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 
 from app.file_utils import make_dir_with_chmod
-from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException, \
     MetabolightsDBException
@@ -37,13 +37,14 @@ from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyTaskModel
 from app.ws.db.schemes import Study, StudyTask
 from app.ws.db.settings import get_directory_settings
-from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus
+from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
 from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
     query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user, get_obfuscation_code, \
     create_empty_study
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.study_settings import get_study_settings
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
@@ -1099,10 +1100,23 @@ class CreateAccession(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        try:
-            user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
-        except MetabolightsException as e:
-            abort(401, message=e.message)
+        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+        studies = UserService.get_instance(app).get_user_studies(user.apitoken)
+        submitted_studies = []
+        last_study_datetime = datetime.fromtimestamp(0)
+        for study in studies:
+            if study.status == StudyStatus.SUBMITTED.value:
+                submitted_studies.append(study)
+            if study.submissiondate.timestamp() > last_study_datetime.timestamp():
+                last_study_datetime = study.submissiondate
+        study_settings = get_study_settings(app)
+        if (datetime.now() - last_study_datetime).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
+            print('Too early') 
+            raise MetabolightsException(message="Submitter can create only one study in five minutes.", http_code=429)
+        
+        if len(submitted_studies) >= study_settings.max_study_in_submitted_status and user.role != UserRole.ROLE_SUPER_USER.value and user.role != UserRole.SYSTEM_ADMIN.value:
+            raise MetabolightsException(message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.", http_code=400)
+            
 
         study_acc = None
         if "study_id" in request.headers:
