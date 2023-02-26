@@ -19,7 +19,7 @@ def metabolights_exception_handler(func):
 
 class MetabolightsException(Exception):
 
-    def __init__(self, message: str, exception: Exception = None, http_code=400):
+    def __init__(self, message: str = "", exception: Exception = None, http_code=400):
         super(MetabolightsException, self).__init__()
         self.message = message
         self.exception = exception

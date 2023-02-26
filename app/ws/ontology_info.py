@@ -16,6 +16,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+from functools import lru_cache
 import json
 import logging
 import ssl
@@ -54,10 +55,19 @@ class Descriptor(object):
         self.design_type = design_type
         self.iri = iri
 
-
+@lru_cache(1)
+def load_ontology_file(filepath):
+    try:
+        return get_ontology(filepath).load()
+    except:
+        logger.info("Fail to load ontology from {path}".format(path=app.config.get('MTBLS_ONTOLOGY_FILE')))
+        return []
+    
 def getMetaboTerm(keyword, branch, mapping=''):
     try:
-        onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
+        onto = load_ontology_file(app.config.get('MTBLS_ONTOLOGY_FILE'))
+        if not onto:
+            return []
     except:
         logger.info("Fail to load ontology from {path}".format(path=app.config.get('MTBLS_ONTOLOGY_FILE')))
         return []
@@ -65,7 +75,7 @@ def getMetaboTerm(keyword, branch, mapping=''):
     result = []
     cls = []
 
-    if keyword not in [None, '']:
+    if keyword:
         # exact match
         if keyword.startswith('http'):
             try:
