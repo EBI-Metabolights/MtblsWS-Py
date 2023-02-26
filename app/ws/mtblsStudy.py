@@ -23,6 +23,7 @@ import logging
 import os
 import time
 from distutils.dir_util import copy_tree
+import uuid
 
 from flask import request, send_file, current_app as app, jsonify
 from flask_restful import Resource, reqparse, abort
@@ -44,11 +45,14 @@ from app.ws.db_connection import get_all_studies_for_user, study_submitters, add
     create_empty_study
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.settings.study_settings import get_study_settings
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from app.ws.study_utilities import StudyUtils
+from app.tasks.common.elasticsearch import reindex_study
+from app.tasks.common.email import send_email_for_study_submitted, send_technical_issue_email
+from app.tasks.common.ftp_operations import create_private_ftp_folder
 from app.ws.utils import get_year_plus_one, update_correct_sample_file_name, read_tsv, remove_file, copy_file, \
     get_timestamp, copy_files_and_folders, write_tsv, log_request
 
@@ -1111,102 +1115,83 @@ class CreateAccession(Resource):
                 last_study_datetime = study.submissiondate
         study_settings = get_study_settings(app)
         if (datetime.now() - last_study_datetime).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
-            print('Too early') 
+            logger.warning(f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins")
             raise MetabolightsException(message="Submitter can create only one study in five minutes.", http_code=429)
         
         if len(submitted_studies) >= study_settings.max_study_in_submitted_status and user.role != UserRole.ROLE_SUPER_USER.value and user.role != UserRole.SYSTEM_ADMIN.value:
+            logger.warning(f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status.")
             raise MetabolightsException(message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.", http_code=400)
-            
 
+        new_accession_number = True
         study_acc = None
         if "study_id" in request.headers:
             requested_study_id = request.headers["study_id"]
             study_acc = self.validate_requested_study_id(requested_study_id, user_token)
+            if study_acc:
+                new_accession_number = False
+                logger.warning(f"A previous study creation request from the user {user.username}. The study {study_acc} will be created.")
 
-        if study_acc:
-            # Only create dababase row without sending e-mail
-            study_acc = create_empty_study(user_token, study_id=study_acc)
-        else:
-            try:
-                study_acc = wsc.add_empty_study(user_token)
-            except Exception as e:
-                raise MetabolightsException(message="Error while creating study in database", http_code=501, exception=e)
-        logger.info('Creating a new MTBLS Study')
-
-        if not study_acc:
-            logger.error('Failed to create new study. ')
-            raise MetabolightsException(message="Could not create a new study in db", http_code=503)
-
-        study = StudyService.get_instance(app).get_study_by_acc(study_acc)
-
-        study_path = app.config.get('STUDY_PATH')
-        from_path = os.path.join(study_path, app.config.get('DEFAULT_TEMPLATE'))  # 'DUMMY'
-        study_location = os.path.join(study_path, study.acc)
-        to_path = study_location
-
-        log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-        make_dir_with_chmod(log_path, 0o777)
-
-        result, message = copy_files_and_folders(from_path, to_path,
-                                                 include_raw_data=True,
-                                                 include_investigation_file=True)
-        if not result:
-            raise MetabolightsFileOperationException(
-                'Could not copy files from {0} to {1}'.format(from_path, to_path))
-
-        # Create upload folder
+        folder_name = f"temp_study_{uuid.uuid4()}" if new_accession_number else study_acc
+        study_path = None
         try:
-            status = wsc.create_upload_folder(study.acc, study.obfuscationcode, user_token)
-        except Exception as e:
-            raise MetabolightsFileOperationException(
-                'Could not create ftp upload folder for study {0}, Error {1}'.format(study.acc, str(e)))
-
-        if os.path.isfile(os.path.join(to_path, 'i_Investigation.txt')):
-            # Get the ISA documents so we can edit the investigation file
-            isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
-                                                             skip_load_tables=True, study_location=study_location)
-
-            # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
-            isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_acc)
-
-            # Set publication date to one year in the future
-            study_date = get_year_plus_one(isa_format=True)
-            isa_study.public_release_date = study_date
-
-            # Updated the files with the study accession
-            iac.write_isa_study(
-                inv_obj=isa_inv, api_key=user_token, std_path=to_path,
-                save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
-            )
-
-            try:
-                wsc.reindex_study(study_acc, user_token)
-            except:
-                logger.info("Could not index study " + study_acc)
-
-            # For ISA-API to correctly save a set of ISA documents, we need to have one dummy sample row
-            file_name = os.path.join(study_location, sample_file_name)
-            try:
-                sample_df = read_tsv(file_name)
-
-                try:
-                    sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row, if there is one
-                except IndexError:
-                    logger.info("No empty rows in the default sample sheet template, so nothing to remove")
-
-                write_tsv(sample_df, file_name)
-            except FileNotFoundError:
-                abort(400, message="The file " + file_name + " was not found")
-        else:
-            abort(409, message="Could not find ISA-Tab investigation template for study {0}".format(study_acc))
-
+            study_path = self.create_study_folder(folder_name)
+        except Exception as exc:
+            inputs = {"subject": "Study folder creation was failed.",
+                      "body":f"Study folder creation was failed: {folder_name}, user: {user.username} <p> {str(exc)}"}
+            send_technical_issue_email.apply_async(kwargs=inputs)
+            raise MetabolightsException(message="Study folder creation was failed.", http_code=501)
+        
+        study_acc = create_empty_study(user_token, study_id=study_acc)
+        
+        if not study_acc:
+            inputs = {"subject": "Failed to create new study on database", 
+                      "body":f"Study creation was failed on database, user: {user.username}"}
+            send_technical_issue_email.apply_async(kwargs=inputs)
+            logger.error('Failed to create new study.')
+            raise MetabolightsException(message="Could not create a new study in db", http_code=503)
+        
+        try:
+            # Update and rename template files
+            self.update_study_template_files(study_path, study_acc, user_token)
+        except Exception as exc:
+            inputs = {"subject": "Failed to update study initial files", 
+                      "body":f"Study file update task was failed on study folder for study {study_acc}, user: {user.username} <p> {str(exc)}"}
+            send_technical_issue_email.apply_async(kwargs=inputs)
+        
+        try:
+            # All required steps are completed. RENAME temp study folder to study accession number
+            if new_accession_number:
+                root_study_path = app.config.get('STUDY_PATH')
+                last_study_path = os.path.join(root_study_path, study_acc)
+                os.rename(study_path, last_study_path)
+        except Exception as exc:
+            inputs = {"subject": "Failed to rename new study folder", 
+                      "body":f"Study folder rename task was failed. Rename from {folder_name} to {study_acc}, user: {user.username} <p> {str(exc)}"}
+            send_technical_issue_email.apply_async(kwargs=inputs)
+                                                    
+        # Send email if it is new study
+        if new_accession_number:
+            inputs = {"user_token": user_token, "study_id": study_acc}
+            new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
+            logger.info(f"Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
+        
+        # Start ftp folder creation task
+        inputs = {"user_token": user_token, "study_id": study_acc, "send_email": new_accession_number}
+        create_ftp_folder_task = create_private_ftp_folder.apply_async(kwargs=inputs)
+        logger.info(f"Create ftp folder task started for study {study_acc} with task id: {create_ftp_folder_task.id}")
+        
+        # Start reindex task
+        inputs = {"user_token": user_token, "study_id": study_acc}
+        reindex_task = reindex_study.apply_async(kwargs=inputs)
+        logger.info(f"Reindex task started for study {study_acc} with task id: {reindex_task.id}")
+            
         return {"new_study": study_acc}
 
     def validate_requested_study_id(self, requested_study_id, user_token):
         """
         If study_id is set, check the rules below:
         Rule 1- study_id must start with  MTBLS_STABLE_ID_PREFIX
-        Rule 2- user must be superuser role
+        Rule 2- user must have superuser role
         Rule 3- study_id must be equal or less than last study id, and greater than 0
         Rule 4- study folder does not exist or is empty
         Rule 5- study_id must not be in database
@@ -1241,6 +1226,59 @@ class CreateAccession(Resource):
         else:
             return requested_study_id
 
+    def create_study_folder(self, folder_name):
+        study_path = app.config.get('STUDY_PATH')
+        from_path = os.path.join(study_path, app.config.get('DEFAULT_TEMPLATE'))  # 'DUMMY'
+        study_location = os.path.join(study_path, folder_name)
+        to_path = study_location
+        if os.path.exists(to_path):
+            raise MetabolightsFileOperationException(f'Study folder {folder_name} already exists.')
+        
+        log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
+        make_dir_with_chmod(log_path, 0o777)
+
+        result, message = copy_files_and_folders(from_path, to_path,
+                                                 include_raw_data=True,
+                                                 include_investigation_file=True)
+        if not result:
+            raise MetabolightsFileOperationException(
+                'Could not copy files from {0} to {1}'.format(from_path, to_path))
+        return to_path
+
+    def update_study_template_files(self, study_folder_path, study_acc, user_token):
+        if os.path.isfile(os.path.join(study_folder_path, 'i_Investigation.txt')):
+            # Get the ISA documents so we can edit the investigation file
+            isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
+                                                             skip_load_tables=True, study_location=study_folder_path)
+
+            # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
+            isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_folder_path, study_acc)
+
+            # Set publication date to one year in the future
+            study_date = get_year_plus_one(isa_format=True)
+            isa_study.public_release_date = study_date
+
+            # Updated the files with the study accession
+            iac.write_isa_study(
+                inv_obj=isa_inv, api_key=user_token, std_path=study_folder_path,
+                save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
+            )
+
+            # For ISA-API to correctly save a set of ISA documents, we need to have one dummy sample row
+            file_name = os.path.join(study_folder_path, sample_file_name)
+            try:
+                sample_df = read_tsv(file_name)
+
+                try:
+                    sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row, if there is one
+                except IndexError:
+                    logger.info("No empty rows in the default sample sheet template, so nothing to remove")
+
+                write_tsv(sample_df, file_name)
+            except FileNotFoundError:
+                abort(400, message="The file " + file_name + " was not found")
+        else:
+            abort(409, message="Could not find ISA-Tab investigation template for study {0}".format(study_acc))
 
 class DeleteStudy(Resource):
     @swagger.operation(

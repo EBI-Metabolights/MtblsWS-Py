@@ -1,8 +1,11 @@
 #configurations
 .secrets/
 .test_data
+.old/
 configs
-
+celerybeat-*
+.RData
+.Rhistory
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
