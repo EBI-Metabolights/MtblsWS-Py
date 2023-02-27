@@ -127,7 +127,7 @@ def get_study_location(study_id, user_token):
     return location
 
 
-def create_ftp_folder(study_id, obfuscation_code, user_token, email_service, send_email=True):
+def create_ftp_folder(study_id, obfuscation_code, user_token, email_service=None, send_email=True):
     private_ftp_sm = StorageService.get_ftp_private_storage(app)
     new_folder_name = study_id.lower() + '-' + obfuscation_code
 
