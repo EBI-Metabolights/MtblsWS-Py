@@ -76,6 +76,24 @@ class cronjob(Resource):
                 "dataType": "string",
                 "enum": ["curation log-Database Query", "curation log-Database update", "MTBLS statistics",
                          "empty studies", "MARIANA study_classify", "ftp file permission", "test cronjob"]
+            },
+            {
+                "name": "starting_index",
+                "description": "Starting index in the study list",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "int"
+            },
+            {
+                "name": "ending_index",
+                "description": "Ending index in the study list",
+                "required": False,
+                "allowEmptyValue": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "int"
             }
 
         ],
@@ -115,6 +133,15 @@ class cronjob(Resource):
             if source:
                 source = source.strip()
 
+        parser.add_argument('starting_index', help='Starting index from the study list')
+        parser.add_argument('ending_index', help='Ending index from the study list')
+        starting_index = None
+        ending_index = None
+        if request.args:
+            args = parser.parse_args(req=request)
+            starting_index = args['starting_index']
+            ending_index = args['ending_index']
+
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -139,8 +166,8 @@ class cronjob(Resource):
         elif source == 'curation log-Database update':
             try:
                 logger.info('Updating curation log-Database update')
-                curation_log_database_update()
-                return jsonify({'Database update': True})
+                res = curation_log_database_update(starting_index, ending_index)
+                return jsonify(res)
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -218,7 +245,7 @@ def curation_log_database_query():
         logger.error(e)
 
 
-def curation_log_database_update():
+def curation_log_database_update(starting_index, ending_index):
     def execute_query(query):
         try:
             params = app.config.get('DB_PARAMS')
@@ -243,7 +270,7 @@ def curation_log_database_update():
     # empty_study = "update studies set studytype ='', species ='', placeholder ='', curator =''"
     # command_list = [x for x in command_list if empty_study not in x]
 
-    #Find the maximum number of Metlite ID
+    # Find the maximum number of Metlite ID
     try:
         params = app.config.get('DB_PARAMS')
         connection = psycopg2.connect(**params)
@@ -252,22 +279,68 @@ def curation_log_database_update():
         cursor.execute(select_Query)
         result = cursor.fetchone()
         max_acc_short = int(result[0])
-        logger.info("max_acc_short")
-        logger.info(max_acc_short)
+        logger.info(f'max_acc_short - {max_acc_short}')
     except Exception as e:
         logger.error("Retrieving acc from DB failed " + str(e))
-    i = 1
     res = []
-    for line in command_list:
-        i = i + 1
-        res.append(update_species(line))
-        if i == max_acc_short:
+    e = 0
+    length_of_list = len(command_list)
+    logger.info(f'Length of  command_list- {length_of_list}')
+    # starting_index = 7300
+    # ending_index = 7316
+    logger.info(f'starting_index from request - {starting_index}')
+    logger.info(f'ending_index from request - {ending_index}')
+
+    if starting_index is None or starting_index.isnumeric() is False:
+        start_index = 0
+    else:
+        start_index = int(starting_index)
+
+    if ending_index is None or ending_index.isnumeric() is False:
+        end_index = length_of_list-1
+    else:
+        end_index = int(ending_index)
+
+    if start_index > end_index or start_index >= length_of_list:
+        start_index = 0
+
+    if end_index >= length_of_list:
+        max_of_itr = length_of_list - start_index - 1
+        end_index = length_of_list - 1
+    else:
+        max_of_itr = end_index - start_index
+
+    logger.info(f'starting_index for processing - {start_index}')
+    logger.info(f'ending_index for processing - {end_index}')
+    logger.info(f'maximum of iteration count- {max_of_itr}')
+
+    start_line = command_list[start_index]
+    end_line = command_list[end_index]
+    starting_study_acc = re.search("acc = '(.*?)'", start_line)[1]
+    ending_study_acc = re.search("acc = '(.*?)'", end_line)[1]
+    logger.info(f'starting_study_acc - {starting_study_acc}')
+    logger.info(f'ending_study_acc - {ending_study_acc}')
+
+    for x in range(length_of_list):
+        get_index = x + start_index
+        #logger.info(f' Get item- {get_index}')
+        line = command_list[get_index]
+        #logger.info(f'Line - {line}')
+        if line != '':
+            organism = update_species(line)
+            if organism != '':
+                res.append(organism)
+        else:
+            e = e + 1
+        if x == max_of_itr:
             break
 
     res += ['commit;']
     sql = ''.join(res)
     execute_query(sql)
-    print('Done')
+    logger.info("Query executed successfully!!")
+    response = {"number_studies_updated": len(res), "empty_rows": e}
+    return response
 
 
 def get_empty_studies():
