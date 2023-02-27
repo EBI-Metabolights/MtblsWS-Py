@@ -24,7 +24,7 @@ gunicorn
 gspread==3.4.2
 isatools==0.11.0
 jira==2.0.0
-lxml==4.9.1
+lxml==4.5.0
 marshmallow==2.21.0
 metaspace2020==1.7.2
 mzml2isa==1.0.3
@@ -35,10 +35,10 @@ pandas==0.25.3
 psycopg2-binary==2.8.6
 pubchempy==1.0.4
 pronto==0.12.2
-pyopenms==2.6.0
+pyopenms==2.4.0
 python-Levenshtein==0.12.2
 plotly==4.6.0
-pillow==9.0.1
+pillow==7.1.1
 requests==2.24.0
 recommonmark==0.6.0
 xmltodict==0.12.0
@@ -50,7 +50,6 @@ SQLAlchemy==1.4.35
 pytest==6.2.5
 pytest-mock==3.7.0
 pytest-cov==3.0.0
-ftputil==5.0.4
 python-jose
 passlib
 tweepy
