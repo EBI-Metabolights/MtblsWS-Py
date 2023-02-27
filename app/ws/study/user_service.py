@@ -26,7 +26,17 @@ class UserService(object):
             cls.db_manager = DBManager.get_instance(application)
             cls.directory_settings = get_directory_settings(application)
         return cls.instance
-
+    
+    def get_user_studies(self, user_token):
+        try:
+            with self.db_manager.session_maker() as db_session:
+                base_query = db_session.query(Study)
+                query = base_query.join(User, Study.users)
+                studies = query.filter(User.apitoken == user_token).all()
+                return studies
+        except Exception as e:
+            raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
+                
     def validate_user_has_write_access(self, user_token, study_id):
 
         try:

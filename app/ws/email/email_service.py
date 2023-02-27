@@ -27,8 +27,32 @@ class EmailService(object):
     def get_instance(cls, app=None, mail=None):
         if app and not cls.email_service:
             settings = get_email_service_settings(app)
+            if not mail:
+                mail = Mail(app)
             cls.email_service = EmailService(settings, mail)
         return cls.email_service
+    
+    def send_generic_email(self, subject_name, body, from_mail_address, to_mail_addresses, cc_mail_addresses=None):
+        if not from_mail_address:
+            from_mail_address = self.settings.email_no_reply_address
+        if not cc_mail_addresses:
+            cc_mail_addresses = []
+        if not isinstance(cc_mail_addresses, list):
+            cc_mail_addresses = to_mail_addresses.split(",")
+        if not isinstance(to_mail_addresses, list):
+            recipients = to_mail_addresses.split(",")
+        msg = Message(subject=subject_name,
+                      sender=from_mail_address,
+                      recipients=recipients,
+                      cc=cc_mail_addresses,
+                      html=body
+                      )
+        try:
+            self.mail.send(msg)
+        except Exception as exc:
+            message = f'Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}\nError {str(exc)}'
+            logger.error(message)
+
 
     def send_email(self, subject_name, body, submitters_mail_addresses, user_email,
                    from_mail_address=None, curation_mail_address=None):
@@ -48,7 +72,7 @@ class EmailService(object):
         try:
             self.mail.send(msg)
         except Exception as e:
-            message = f'Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}'
+            message = f'Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}\nError {str(e)}'
             logger.error(message)
 
     def send_email_for_queued_study_submitted(self, study_id, release_date, user_email, submitters_mail_addresses):
