@@ -323,10 +323,8 @@ def curation_log_database_update(starting_index, ending_index):
 
     for x in range(length_of_list):
         get_index = x + start_index
-        #logger.info(f' Get item- {get_index}')
         line = command_list[get_index]
-        #logger.info(f'Line - {line}')
-        if line != '':
+        if line and line.strip() != '':
             organism = update_species(line)
             if organism != '':
                 res.append(organism)
