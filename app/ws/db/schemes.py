@@ -120,10 +120,12 @@ class RefAttribute(Base):
     __tablename__ = 'ref_attribute'
 
     id = Column(BigInteger, primary_key=True)
-    attribute_def_id = Column(BigInteger, nullable=False)
-    spectra_id = Column(BigInteger)
+    attribute_def_id = Column(ForeignKey('ref_attribute_def.id'), nullable=True)
+    spectra_id = Column(ForeignKey('ref_met_spectra.id'), nullable=True)
     value = Column(String(4000))
-    pathway_id = Column(Numeric(38, 0))
+    pathway_id = Column(ForeignKey('ref_met_pathways.id'), nullable=True)
+
+    attribute_definition = relationship('RefAttributeDef')
 
 
 class RefAttributeDef(Base):
@@ -161,9 +163,12 @@ class RefMetabolite(Base):
     has_ms = Column(BigInteger, server_default=text("0"))
     has_literature = Column(BigInteger, server_default=text("0"))
     inchikey = Column(String(2000))
-
-    met_species = relationship('RefSpecy', secondary='ref_met_to_species')
+    met_species_index = relationship('RefMetSpecies', viewonly=True)
+    met_species = relationship('RefSpecy', secondary='ref_met_to_species', overlaps="met_species_index")
     ref_xref = relationship('RefXref', secondary='ref_met_to_species', overlaps="met_species")
+    
+    met_spectras = relationship('RefMetSpectra', backref='met')
+    met_pathways = relationship('RefMetPathway', backref='met')
 
 class RefMetSpecies(Base):
     __tablename__ = 'ref_met_to_species'
@@ -172,6 +177,9 @@ class RefMetSpecies(Base):
     met_id = Column(ForeignKey('ref_metabolite.id', ondelete='CASCADE'), nullable=False)
     species_id = Column(ForeignKey('ref_species.id', ondelete='CASCADE'), nullable=False)
     ref_xref_id = Column(ForeignKey('ref_xref.id', ondelete='CASCADE'), nullable=False)
+
+    species = relationship('RefSpecy', backref="met_species", overlaps="met_species", viewonly=True)
+    cross_reference = relationship('RefXref', overlaps="ref_xref")
 
 class RefSpeciesGroup(Base):
     __tablename__ = 'ref_species_group'
@@ -242,8 +250,8 @@ class RefMetSpectra(Base):
     path_to_json = Column(String(150), nullable=False, unique=True)
     spectra_type = Column(String(10), nullable=False)
     met_id = Column(ForeignKey('ref_metabolite.id', ondelete='CASCADE'), nullable=False)
-
-    met = relationship('RefMetabolite')
+    attributes = relationship('RefAttribute', backref='spectra')
+    # met = relationship('RefMetabolite')
 
 
 class RefSpeciesMember(Base):
@@ -288,9 +296,9 @@ class RefMetPathway(Base):
     name = Column(String(512), nullable=False)
     path_to_pathway_file = Column(String(4000))
     species_id = Column(ForeignKey('ref_species.id'), nullable=False)
-
-    met = relationship('RefMetabolite')
-    pathway_db = relationship('RefDb')
+    attributes = relationship('RefAttribute', backref='pathway')
+    # met = relationship('RefMetabolite')
+    database = relationship('RefDb')
     species = relationship('RefSpecy')
 
 

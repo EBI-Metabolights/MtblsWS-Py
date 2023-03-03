@@ -1,0 +1,407 @@
+
+{  
+    "_timestamp": {
+        "enabled": true,
+        "store": true,
+        "format": "dateOptionalTime||YYYY-MM-dd HH:mm:ss"
+    },
+    "_source": {
+        "excludes": [
+            "protocols",
+            "sampleTable",
+            "contacts",
+            "studyLocation",
+            "assays.assayTable",
+            "assays.assayNumber",
+            "assays.metaboliteAssignment",
+            "assays.fileName",
+            "backups",
+            "validations",
+            "isatabErrorMessages",
+            "obfuscationCode",
+            "users.apiToken",
+            "users.studies",
+            "users.userVerifyDbPassword",
+            "users.dbPassword",
+            "users.listOfAllStatus",
+            "users.affiliationUrl",
+            "users.status",
+            "users.listOfAllStatus",
+            "users.studies",
+            "users.joinDate",
+            "users.email",
+            "users.address",
+            "users.userId",
+            "users.role",
+            "users.affiliation",
+            "users.curator",
+            "users.reviewer"
+        ]
+    },
+    "properties": {
+        "ObjectType": {
+            "type": "string"
+        },
+        "assays": {
+            "properties": {
+                "assayNumber": {
+                    "type": "long"
+                },
+                "fileName": {
+                    "type": "string"
+                },
+                "measurement": {
+                    "type": "string",
+                    "index": "not_analyzed"
+                },
+                "metaboliteAssignment": {
+                    "properties": {
+                        "metaboliteAssignmentFileName": {
+                            "type": "string"
+                        },
+                        "metaboliteAssignmentLines": {
+                            "properties": {
+                                "charge": {
+                                    "type": "string"
+                                },
+                                "chemicalFormula": {
+                                    "type": "string"
+                                },
+                                "database": {
+                                    "type": "string"
+                                },
+                                "databaseIdentifier": {
+                                    "type": "string"
+                                },
+                                "fragmentation": {
+                                    "type": "string"
+                                },
+                                "inchi": {
+                                    "type": "string"
+                                },
+                                "massToCharge": {
+                                    "type": "string"
+                                },
+                                "metaboliteIdentification": {
+                                    "type": "string"
+                                },
+                                "modifications": {
+                                    "type": "string"
+                                },
+                                "reliability": {
+                                    "type": "string"
+                                },
+                                "retentionTime": {
+                                    "type": "string"
+                                },
+                                "sampleMeasurements": {
+                                    "properties": {
+                                        "sampleName": {
+                                            "type": "string"
+                                        },
+                                        "value": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "smiles": {
+                                    "type": "string"
+                                },
+                                "species": {
+                                    "type": "string"
+                                },
+                                "taxid": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "technology": {
+                    "type": "string",
+                    "index": "not_analyzed"
+                }
+            }
+        },
+        "backups": {
+            "properties": {
+                "backupId": {
+                    "type": "string"
+                },
+                "backupTimeStamp": {
+                    "type": "long"
+                },
+                "folderPath": {
+                    "type": "string"
+                }
+            }
+        },
+        "contacts": {
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "affiliation": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "fax": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "midInitial": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "derivedData": {
+            "properties": {
+                "country": {
+                    "type": "string"
+                },
+                "organismNames": {
+                    "type": "string"
+                },
+                "organismParts": {
+                    "type": "string"
+                },
+                "releaseMonth": {
+                    "type": "string"
+                },
+                "releaseYear": {
+                    "type": "long"
+                },
+                "submissionMonth": {
+                    "type": "string"
+                },
+                "submissionYear": {
+                    "type": "long"
+                }
+            }
+        },
+        "description": {
+            "type": "string"
+        },
+        "descriptors": {
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "index": "not_analyzed"
+                }
+            }
+        },
+        "factors": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "index": "not_analyzed"
+                }
+            }
+        },
+        "id": {
+            "type": "long"
+        },
+        "indexTimestamp": {
+            "type": "double"
+        },
+        "isatabErrorMessages": {
+            "type": "string"
+        },
+        "obfuscationCode": {
+            "type": "string",
+            "index": "not_analyzed"
+        },
+        "organism": {
+            "properties": {
+                "organismName": {
+                    "type": "string",
+                    "index": "not_analyzed"
+                },
+                "organismPart": {
+                    "type": "string",
+                    "index": "not_analyzed"
+                }
+            }
+        },
+        "protocols": {
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "publicStudy": {
+            "type": "boolean"
+        },
+        "publications": {
+            "properties": {
+                "authorList": {
+                    "type": "string"
+                },
+                "doi": {
+                    "type": "string"
+                },
+                "pubmedId": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "sampleTable": {
+            "properties": {
+                "fields": {
+                    "type": "object"
+                }
+            }
+        },
+        "studyHumanReadable": {
+            "type": "string"
+        },
+        "studyIdentifier": {
+            "type": "string",
+            "index": "not_analyzed"
+        },
+        "studyLocation": {
+            "type": "string"
+        },
+        "studyPublicReleaseDate": {
+            "type": "date",
+            "store": true,
+            "format": "dateOptionalTime"
+        },
+        "studySize": {
+            "type": "long"
+        },
+        "studyStatus": {
+            "type": "string",
+            "index": "not_analyzed"
+        },
+        "studySubmissionDate": {
+            "type": "date",
+            "format": "dateOptionalTime"
+        },
+        "title": {
+            "type": "string"
+        },
+        "updateDate": {
+            "type": "long"
+        },
+        "users": {
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "affiliation": {
+                    "type": "string"
+                },
+                "affiliationUrl": {
+                    "type": "string"
+                },
+                "curator": {
+                    "type": "boolean"
+                },
+                "dbPassword": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "fullName": {
+                    "type": "string",
+                    "index": "not_analyzed"
+                },
+                "joinDate": {
+                    "type": "long"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "orcid": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "long"
+                },
+                "userName": {
+                    "type": "string",
+                    "index": "not_analyzed"
+                }
+            }
+        },
+        "validations": {
+            "properties": {
+                "entries": {
+                    "properties": {
+                        "description": {
+                            "type": "string"
+                        },
+                        "group": {
+                            "type": "string"
+                        },
+                        "id": {
+                            "type": "long"
+                        },
+                        "message": {
+                            "type": "string"
+                        },
+                        "overriden": {
+                            "type": "boolean"
+                        },
+                        "passedRequirement": {
+                            "type": "boolean"
+                        },
+                        "status": {
+                            "type": "string"
+                        },
+                        "statusExt": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        },
+                        "type": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "overriden": {
+                    "type": "boolean"
+                },
+                "passedMinimumRequirement": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
