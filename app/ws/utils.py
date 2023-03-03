@@ -46,7 +46,6 @@ from isatools.model import Protocol, ProtocolParameter, OntologySource
 from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
-from psycopg2 import pool
 from dirsync import sync
 
 from app.ws.mm_models import OntologyAnnotation
@@ -445,7 +444,10 @@ def log_request(request_obj):
             logger.debug('REQUEST BODY    -> %s', request_obj.data)
         if app.config.get('DEBUG_LOG_JSON'):
             if request_obj.is_json:
-                logger.debug('REQUEST JSON    -> %s', request_obj.json)
+                try:
+                    logger.debug('REQUEST JSON    -> %s', request_obj.json)
+                except Exception as ex:
+                    logger.debug('REQUEST JSON    -> Not Correct format')
             else:
                 logger.debug('REQUEST JSON    -> EMPTY')
 

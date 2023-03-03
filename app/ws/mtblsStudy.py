@@ -31,6 +31,8 @@ from flask_restful_swagger import swagger
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.storage_service import StorageService
+from app.tasks.periodic_tasks.study import sync_studies_on_es_and_db
+from app.tasks.periodic_tasks.study_folder import maintain_study_folders
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException, \
     MetabolightsDBException
 from app.ws import db_connection as db_proxy
@@ -49,8 +51,9 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
+from app.ws.study_folder_utils import create_initial_study_folder, update_initial_study_files
 from app.ws.study_utilities import StudyUtils
-from app.tasks.common.elasticsearch import reindex_study
+from app.tasks.common.elasticsearch import delete_study_index, reindex_all_public_studies, reindex_all_studies, reindex_study
 from app.tasks.common.email import send_email_for_study_submitted, send_technical_issue_email
 from app.tasks.common.ftp_operations import create_private_ftp_folder
 from app.ws.utils import get_year_plus_one, update_correct_sample_file_name, read_tsv, remove_file, copy_file, \
@@ -1226,60 +1229,12 @@ class CreateAccession(Resource):
         else:
             return requested_study_id
 
-    def create_study_folder(self, folder_name):
-        study_path = app.config.get('STUDY_PATH')
-        from_path = os.path.join(study_path, app.config.get('DEFAULT_TEMPLATE'))  # 'DUMMY'
-        study_location = os.path.join(study_path, folder_name)
-        to_path = study_location
-        if os.path.exists(to_path):
-            raise MetabolightsFileOperationException(f'Study folder {folder_name} already exists.')
-        
-        log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-        make_dir_with_chmod(log_path, 0o777)
-
-        result, message = copy_files_and_folders(from_path, to_path,
-                                                 include_raw_data=True,
-                                                 include_investigation_file=True)
-        if not result:
-            raise MetabolightsFileOperationException(
-                'Could not copy files from {0} to {1}'.format(from_path, to_path))
-        return to_path
-
     def update_study_template_files(self, study_folder_path, study_acc, user_token):
-        if os.path.isfile(os.path.join(study_folder_path, 'i_Investigation.txt')):
-            # Get the ISA documents so we can edit the investigation file
-            isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
-                                                             skip_load_tables=True, study_location=study_folder_path)
-
-            # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
-            isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_folder_path, study_acc)
-
-            # Set publication date to one year in the future
-            study_date = get_year_plus_one(isa_format=True)
-            isa_study.public_release_date = study_date
-
-            # Updated the files with the study accession
-            iac.write_isa_study(
-                inv_obj=isa_inv, api_key=user_token, std_path=study_folder_path,
-                save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
-            )
-
-            # For ISA-API to correctly save a set of ISA documents, we need to have one dummy sample row
-            file_name = os.path.join(study_folder_path, sample_file_name)
-            try:
-                sample_df = read_tsv(file_name)
-
-                try:
-                    sample_df = sample_df.drop(sample_df.index[0])  # Drop the first dummy row, if there is one
-                except IndexError:
-                    logger.info("No empty rows in the default sample sheet template, so nothing to remove")
-
-                write_tsv(sample_df, file_name)
-            except FileNotFoundError:
-                abort(400, message="The file " + file_name + " was not found")
-        else:
-            abort(409, message="Could not find ISA-Tab investigation template for study {0}".format(study_acc))
-
+        update_initial_study_files(study_folder_path, study_acc, user_token)
+        
+    def create_study_folder(self, folder_name):
+        create_initial_study_folder(folder_name, app)
+        
 class DeleteStudy(Resource):
     @swagger.operation(
         summary="Delete an existing study (curator only)",
@@ -1521,6 +1476,66 @@ class ReindexStudy(Resource):
                 "read_access": read_access, "write_access": write_access}
 
 
+    @swagger.operation(
+        summary="Delete a study index ",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "Compound Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def delete(self, study_id):
+        log_request(request)
+        if not study_id:
+            logger.info('No study_id given')
+            abort(404)
+        compound_id = study_id.upper()
+
+        # User authentication
+        user_token = ''
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+            
+        logger.info('Deleting a compound')
+
+        result = delete_study_index(user_token, compound_id)
+
+        result = {'content': result, 'message': None, "err": None}
+        return result
+
+
 class UnindexedStudy(Resource):
     @swagger.operation(
         summary="Gets unindexed studies from database (curator only)",
@@ -1662,10 +1677,10 @@ class RetryReindexStudies(Resource):
             raise MetabolightsDBException(message=f"Error while retreiving study tasks from database: {str(e)}",
                                           exception=e)
 
-class ReindexAllPublicStudies(Resource):
+class MtblsPublicStudiesIndexAll(Resource):
     @swagger.operation(
-        summary="Reindex a MetaboLights study (curator only)",
-        notes='''Reindexing a MetaboLights study to ensure the search index is up to date''',
+        summary="Index all public studies ",
+        notes="Start a task to index all public studies and return task id. Result will be sent by email.",
         parameters=[
             {
                 "name": "user_token",
@@ -1679,67 +1694,205 @@ class ReindexAllPublicStudies(Resource):
         responseMessages=[
             {
                 "code": 200,
-                "message": "OK."
+                "message": "OK. The compound is returned"
             },
             {
                 "code": 401,
-                "message": "Unauthorized. Access to the resource requires user authentication. "
-                           "Please provide a study id and a valid user token"
+                "message": "Unauthorized. Access to the resource requires user authentication."
             },
             {
                 "code": 403,
-                "message": "Forbidden. Access to the study is not allowed. Please provide a valid user token"
+                "message": "Forbidden. Access to the study is not allowed for this user."
             },
             {
                 "code": 404,
                 "message": "Not found. The requested identifier is not valid or does not exist."
-            },
-            {
-                "code": 417,
-                "message": "Unexpected result."
             }
         ]
     )
     @metabolights_exception_handler
     def post(self):
+        log_request(request)
+        
 
-        user_token = None
         # User authentication
+        user_token = ''
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+            
+        logger.info('Indexing a compound')
+        inputs = {"user_token": user_token, "send_email_to_submitter": True}
+        try: 
+            result = reindex_all_public_studies.apply_async(kwargs=inputs, expires=60*5)
 
-        if user_token is None:
-            abort(404)
+            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+            return result
+        except Exception as ex:
+            raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+class MtblsStudiesIndexAll(Resource):
+    @swagger.operation(
+        summary="Index all studies ",
+        notes="Start a task to index all studies and return task id. Result will be sent by email.",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The compound is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self):
+        log_request(request)
+        
 
-            query = db_session.query(Study.acc)
-            query = query.filter(Study.status == StudyStatus.PUBLIC.value).order_by(Study.acc.desc())
-            studies = query.all()
+        # User authentication
+        user_token = ''
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+            
+        logger.info('Indexing a compound')
+        inputs = {"user_token": user_token, "send_email_to_submitter": True}
+        try: 
+            result = reindex_all_studies.apply_async(kwargs=inputs, expires=60*5)
 
-            indexed_studies = []
-            unindexed_studies = []
-            total = len(studies)
-            index = 0
-            for study in studies:
-                index += 1
-                logger.debug(f'{index}/{total} Indexing {study[0]}')
-                try:
-                    logger.info(f'{index}/{total} Indexing {study[0]}')
-                    status, message = wsc.reindex_study(study[0], user_token)
-                    if not status:
-                        logger.info(f'Unindexed study {study[0]}')
-                        logger.debug(f'Unindexed study {study[0]}')
-                        unindexed_studies.append(study[0])
-                    else:
-                        indexed_studies.append(study[0])
-                        logger.info(f'Indexed study {study[0]}')
-                        logger.debug(f'Indexed study {study[0]}')
-                except Exception as e:
-                    unindexed_studies.append(study[0])
-                    logger.info(f'Unindexed study {study[0]}')
-                    logger.debug(f'Unindexed study {study[0]}')
+            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+            return result
+        except Exception as ex:
+            raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
+        
+        
 
-        return {"indexed_studies": indexed_studies, "unindexed_studies": unindexed_studies}
+
+
+class MtblsStudiesIndexSync(Resource):
+    @swagger.operation(
+        summary="Sync all studies on database and elasticsearch",
+        notes="Start a task to sync all studies on database and elasticsearch, and return task id. Result will be sent by email.",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The compound is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self):
+        log_request(request)
+        
+
+        # User authentication
+        user_token = ''
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+            
+        logger.info('Indexing a compound')
+        inputs = {"user_token": user_token, "send_email_to_submitter": True }
+        try: 
+            result = sync_studies_on_es_and_db.apply_async(kwargs=inputs, expires=60*5)
+
+            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+            return result
+        except Exception as ex:
+            raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
+        
+        
+
+
+class MtblsStudyFolders(Resource):
+    @swagger.operation(
+        summary="Maintain study folders",
+        notes="Start a task to sync all study folders, and return task id. Result will be sent by email.",
+        parameters=[
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The compound is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self):
+        log_request(request)
+        
+
+        # User authentication
+        user_token = ''
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+            
+        logger.info('Searching study folders')
+        inputs = {"user_token": user_token, "send_email_to_submitter": True }
+        try: 
+            result = maintain_study_folders.apply_async(kwargs=inputs, expires=60*5)
+
+            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+            return result
+        except Exception as ex:
+            raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)

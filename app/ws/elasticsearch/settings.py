@@ -7,6 +7,9 @@ class ElasticsearchSettings(BaseSettings):
     elasticsearch_use_tls: bool = True
     elasticsearch_user_name: str = ""
     elasticsearch_user_password: str = ""
+    elasticsearch_all_mappings_json: str = "./resources/es_all_mappings.json"
+    elasticsearch_study_mappings_json: str = "./resources/es_study_mappings.json"
+    elasticsearch_compound_mappings_json: str = "./resources/es_compound_mappings.json"
 
 
 def get_elasticsearch_settings(app) -> ElasticsearchSettings:
