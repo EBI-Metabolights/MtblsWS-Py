@@ -9,7 +9,7 @@ from isatools import isatab
 
 from app.utils import MetabolightsFileOperationException
 from app.ws.db import models
-from app.ws.db.models import ValidationEntriesModel, ValidationEntryModel, BackupModel, IndexedUserModel, \
+from app.ws.db.models import StudyDerivedData, TableModel, ValidationEntriesModel, ValidationEntryModel, BackupModel, IndexedUserModel, \
     IndexedAssayModel
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
@@ -106,17 +106,17 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
         if not os.path.exists(investigation_file) or not os.path.isfile(investigation_file):
             return
     investigation = None
-    with open(investigation_file, encoding="unicode_escape") as f:
+    with open(investigation_file, encoding="utf-8") as f:
         try:
             investigation = isatab.load_investigation(f)
         except Exception as e:
-            logger.warning(f'{investigation_file} file is not opened with unicode_escape mode')
+            logger.warning(f'{investigation_file} file is not opened with utf-8 encoding')
     if investigation is None:
         with open(investigation_file, encoding="latin-1") as f:
             try:
                 investigation = isatab.load_investigation(f)
             except Exception as e:
-                logger.error(f'{investigation_file} file is not opened with latin-1 mode')
+                logger.error(f'{investigation_file} file is not opened with latin-1 encoding')
                 message = f'{m_study.studyIdentifier} i_Investigation.txt file can not be loaded.'
                 
     if not investigation:
@@ -137,7 +137,7 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
             fill_assays(m_study, investigation, path, include_maf_files)
             fill_sample_table(m_study, path)  # required for fill organism, later remove from model
             fill_organism(m_study)
-            fill_backups(m_study, path)
+            # fill_backups(m_study, path)
 
             fill_validations(m_study, path, revalidate_study, user_token_to_revalidate)
 
@@ -149,11 +149,11 @@ def update_study_model_from_directory(m_study: models.StudyModel, studies_root_p
                     logger.error(f'{m_study.studyIdentifier} contacts are not parsed successfully!')
             else:
 
-                #del m_study.sampleTable  # delete sample table data from model for indexing.
-                #del m_study.contacts
-                del m_study.studyLocation
-                #del m_study.protocols
-
+                m_study.sampleTable = TableModel() # delete sample table data from model for indexing.
+                m_study.contacts = []
+                m_study.studyLocation = ""
+                m_study.protocols = []
+                m_study.obfuscationCode = ""
                 update_users_for_indexing(m_study)
                 update_assays_for_indexing(m_study)
             fill_derived_data(m_study)
@@ -295,17 +295,17 @@ def fill_sample_table(m_study, path):
     if file_path and os.path.exists(file_path) and os.path.isfile(file_path):
         sample = None
         try:
-            with open(file_path, encoding="unicode_escape") as f:
+            with open(file_path, encoding="utf-8") as f:
                 sample = isatab.load_table(f)
         except Exception as e:
-            logger.warning(f"{file_path} is not opened with unicode_escape mode")
+            logger.warning(f"{file_path} is not opened with unicode encoding")
 
         if sample is None:
             with open(file_path, encoding="latin-1") as f:
                 try:
                     sample = isatab.load_table(f)
                 except Exception as e:
-                    logger.warning(f"{file_path} is not opened with latin-1 mode")
+                    logger.warning(f"{file_path} is not opened with latin-1 encoding")
                     return
 
         m_sample = models.TableModel()
@@ -345,17 +345,17 @@ def fill_assays(m_study, investigation, path, include_maf_files):
                     
                     table = None
                     try:
-                        with open(file, encoding="unicode_escape", ) as f:
+                        with open(file, encoding="utf-8") as f:
                             table = isatab.load_table(f)
                     except Exception as ex:
-                        logger.warning(f'{file} is not parsed with unicode_escape mode')
+                        logger.warning(f'{file} is not parsed with utf-8 encoding')
 
                     if table is None:
                         with open(file, encoding="latin-1", ) as f:
                             try:
                                 table = isatab.load_table(f)
                             except Exception as ex:
-                                logger.error(f'{file} is not parsed with latin-1 mode {str(ex)}')
+                                logger.error(f'{file} is not parsed with latin-1 encoding. {str(ex)}')
                     if table is None:
                         continue
 

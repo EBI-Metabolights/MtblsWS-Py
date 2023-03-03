@@ -291,12 +291,14 @@ class StudyModel(LiteStudyModel):
         }
         
 class SpeciesGroupModel(BaseModel):
+    ObjectType: str = "SpeciesGroup"
     id: int = None
     name: str = None
     class Config:
         orm_mode = True
 
 class SpeciesMembersModel(BaseModel):
+    ObjectType: str = "SpeciesMembers"
     id: int = None
     taxon: str = None
     taxonDesc: Optional[str] = Field("", alias="taxon_desc")
@@ -306,6 +308,7 @@ class SpeciesMembersModel(BaseModel):
     class Config:
         orm_mode = True
 class MetSpeciesModel(BaseModel):
+    ObjectType: str = "Species"
     id: int = None
     description: str = None
     species: str = None
@@ -315,6 +318,7 @@ class MetSpeciesModel(BaseModel):
         orm_mode = True
 
 class MetDbModel(BaseModel):
+    ObjectType: str = "Database"
     id: int = None
     name: str = Field(None, alias="db_name")
     class Config:
@@ -322,14 +326,23 @@ class MetDbModel(BaseModel):
 
 
 class MetCrossReferenceModel(BaseModel):
+    ObjectType: str = "CrossReference"
     id: int = None
     accession: str = Field(None, alias="acc")
     db: MetDbModel = None
     class Config:
         orm_mode = True
 
-class MetaboLightsModel(BaseModel):
-    id: int
+
+class MetSpeciesIndexModel(EntityModel):
+    ObjectType: str = "MetSpecies"
+    species: MetSpeciesModel = Field(None, alias="species")
+    crossReference: MetCrossReferenceModel = Field(None, alias="cross_reference")
+    class Config:
+        orm_mode = True
+
+class MetaboLightsCompoundModel(EntityModel):
+    ObjectType: str = "compound"
     accession: str = Field(None, alias="acc")
     name: str = None
     description: str = None
@@ -357,5 +370,77 @@ class MetaboLightsModel(BaseModel):
             return value.strftime("%d-%b-%Y %H:%M:%S")
         return value
 
+class MetAttributeDefinitionModel(EntityModel):
+    ObjectType: str = "AttributeDefinition"
+    value: str = None
+    description: str = None
+    
+    class Config:
+        orm_mode = True
+        
+class MetAttributeModel(EntityModel):
+    ObjectType: str = "Attribute"
+    value: str = None
+    attributeDefinition: MetAttributeDefinitionModel = Field([], alias="attribute_definition")
+    class Config:
+        orm_mode = True
+        
+class MetSpectraModel(EntityModel):
+    ObjectType: str = "Spectra"
+    name: str = None
+    pathToJsonSpectra: str = Field(None, alias="path_to_json")
+    spectraType: str = Field(None, alias="spectra_type")
+    attributes: List[MetAttributeModel] = Field([], alias="attributes")
+    class Config:
+        orm_mode = True
+
+class MetDb(EntityModel):
+    db_name: str 
+    class Config:
+        orm_mode = True
+        
+class MetPathwayModel(EntityModel):
+    ObjectType: str = "Pathway"
+    name: str = None
+    pathToPathwayFile: str = Field(None, alias="path_to_pathway_file")
+    attributes: List[MetAttributeModel] = Field([], alias="attributes")
+    database: MetDb = Field([], alias="database")
+    speciesAssociated: MetSpeciesModel = Field([], alias="species")
+    class Config:
+        orm_mode = True
+
+  
+    
+class MetaboLightsCompoundIndexModel(EntityModel):
+    ObjectType: str = "compound"
+    accession: str = Field(None, alias="acc")
+    name: str = None
+    description: str = None
+    inchi: str = None
+    inchikey: str = None
+    chebiId: str = Field(None, alias="temp_id")
+    formula: str = None
+    iupacNames: str = Field(None, alias="iupac_names")
+    studyStatus: str = 'PUBLIC'
+    hasLiterature: bool = Field(None, alias="has_literature")
+    hasReactions: bool = Field(None, alias="has_reactions")
+    hasSpecies: bool = Field(None, alias="has_species")
+    hasPathways: bool = Field(None, alias="has_pathways")
+    hasNMR: bool = Field(None, alias="has_nmr")
+    hasMS: bool = Field(None, alias="has_ms")
+    updatedDate: datetime.datetime = Field(None, alias="updated_date")
+    metSpecies: List[MetSpeciesIndexModel] = Field([], alias="met_species_index")
+    crossReference: List[MetCrossReferenceModel] = Field([], alias="ref_xref")
+    
+    metSpectras: List[MetSpectraModel] = Field([], alias="met_spectras")
+    metPathways: List[MetPathwayModel] = Field([], alias="met_pathways")
+    @validator('updatedDate')
+    def datetime_validation(cls, value):
+        if not value:
+            return None 
+        if isinstance(value, datetime.datetime):
+            return value.strftime("%Y-%m-%d")
+        return value
+    
     class Config:
         orm_mode = True
