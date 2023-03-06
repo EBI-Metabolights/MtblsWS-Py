@@ -45,7 +45,8 @@ class ElasticsearchService(object):
         with open(settings.elasticsearch_all_mappings_json) as f:
             mappings = json.load(f)
         body = json.dumps(mappings)
-        self._client.indices.create(index=self.INDEX_NAME, ignore=400, body=body)
+        if not self._client.indices.exists():
+            self._client.indices.create(index=self.INDEX_NAME, ignore=400, body=body)
         
         with open(settings.elasticsearch_compound_mappings_json) as f:
             mappings = json.load(f)
