@@ -395,6 +395,7 @@ class MetSpectraModel(EntityModel):
         orm_mode = True
 
 class MetDb(EntityModel):
+    ObjectType: str = "Database"
     db_name: str 
     class Config:
         orm_mode = True
