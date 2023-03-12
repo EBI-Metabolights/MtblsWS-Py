@@ -5,7 +5,19 @@ from pydantic import BaseModel, Field, validator
 
 from app.ws.db.utils import datetime_to_int
 
-
+    
+class StudyAccessPermission(BaseModel):
+    userName: str = ""
+    userRole: str = ""
+    submitterOfStudy: bool = False
+    obfuscationCode: str = ""
+    studyId: str = ""
+    studyStatus: str = ""
+    view: bool = False
+    edit: bool = False
+    delete: bool = False
+    
+    
 class IndexedUserModel(BaseModel):
     firstName: str = Field(None)
     fullName: str = Field(None)  # assigned as not_analyzed in es
@@ -237,6 +249,7 @@ class StudyDerivedData(BaseModel):
     
     
 class LiteStudyModel(EntityModel):
+    ObjectType: str = "Study"
     id: int = Field(...)
     studyIdentifier: str = Field(...)  # assigned as not_analyzed in es
     title: Optional[str] = None
@@ -262,7 +275,6 @@ class LiteStudyModel(EntityModel):
 
 class StudyModel(LiteStudyModel):
     indexTimestamp: int = 0
-    ObjectType: str = "study"
     description: Optional[str]
     studyLocation: Optional[str]  # excluded from es
     descriptors: List[StudyDesignDescriptor] = []

@@ -35,6 +35,7 @@ class SecuritySettings(BaseSettings):
     access_token_expires_delta: int = 300
     access_token_allowed_audience: str = None
     access_token_issuer_name: str = "Metabolights PythonWS"
+    one_time_token_expires_in_seconds: int = 300
 
 
 @lru_cache(1)

@@ -54,7 +54,7 @@ class UserService(object):
             study = db_session.query(Study.acc).filter(Study.acc == study_id).first()
             if study:
                 return self.validate_user_has_curator_role(user_token)
-            raise MetabolightsException(message=f"Not a valid study id")
+            raise MetabolightsAuthorizationException(message=f"Not a valid study id")
 
     def validate_user_has_curator_role(self, user_token):
         return self.validate_user_by_token(user_token, [UserRole.ROLE_SUPER_USER.value])
@@ -130,7 +130,7 @@ class UserService(object):
         try:
             with self.db_manager.session_maker() as db_session:
                 query = db_session.query(User)
-                db_user = filter_clause(query).first()
+                db_user: User = filter_clause(query).first()
         except Exception as e:
             raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
 

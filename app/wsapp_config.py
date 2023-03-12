@@ -24,7 +24,7 @@ from flask_restful_swagger import swagger
 from app.ws.about import About, AboutServer
 from app.ws.assay_protocol import GetProtocolForAssays
 from app.ws.auth.authentication import (AuthLogin, AuthLoginWithToken,
-                                        AuthUser, AuthValidation)
+                                        AuthUser, AuthUserStudyPermissions, AuthUserStudyPermissions2, AuthValidation, OneTimeTokenCreation, OneTimeTokenValidation)
 from app.ws.biostudies import BioStudies, BioStudiesFromMTBLS
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
@@ -99,6 +99,7 @@ from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
                                             StudyJsonExporter)
 from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
+from app.ws.v1.studies import V1StudyDetail
 from app.ws.validation import (NewValidation, OverrideValidation,
                                UpdateValidationFile, Validation,
                                ValidationComment)
@@ -155,9 +156,17 @@ def initialize_app(flask_app):
     api.add_resource(AuthLoginWithToken, res_path + "/auth/login-with-token")
     api.add_resource(AuthValidation, res_path + "/auth/validate-token")
     api.add_resource(AuthUser, res_path + "/auth/user")
+    api.add_resource(AuthUserStudyPermissions, res_path + "/auth/permissions/accession-number/<string:study_id>")
+    api.add_resource(AuthUserStudyPermissions2, res_path + "/auth/permissions/obfuscationcode/<string:obfuscation_code>")
+    api.add_resource(OneTimeTokenCreation, res_path + "/auth/create-onetime-token")
+    api.add_resource(OneTimeTokenValidation, res_path + "/auth/login-with-onetime-token")
+
     api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query_type>")
 
     # MTBLS studies
+    api.add_resource(V1StudyDetail, res_path + "/v1/study/<string:study_id>")
+    # api.add_resource(V1StudyDetail, res_path + "/v1/security/studies/obfuscationcode/<string:obfuscationcode>/view")
+    
     api.add_resource(MtblsStudies, res_path + "/studies")
     api.add_resource(MtblsPrivateStudies, res_path + "/studies/private")
     api.add_resource(MtblsStudiesWithMethods, res_path + "/studies/technology")

@@ -1055,7 +1055,15 @@ class GetTsvFile(Resource):
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
-            }
+            },
+            {
+                "name": "obfuscation_code",
+                "description": "obfuscation code of study",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
         ],
         responseMessages=[
             {
@@ -1095,8 +1103,12 @@ class GetTsvFile(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        study_id, obfuscation_code = identify_study_id(study_id)
+            
+        obfuscation_code = None
+        if "obfuscation_code" in request.headers:
+            obfuscation_code = request.headers["obfuscation_code"]
+            
+        study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         logger.info('Assay Table: Getting ISA-JSON Study Assay Table: Getting ISA-JSON Study %s', study_id)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \

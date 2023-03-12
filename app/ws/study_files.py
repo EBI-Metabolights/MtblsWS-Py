@@ -930,6 +930,14 @@ class StudyFilesReuse(Resource):
                 "allowMultiple": False
             },
             {
+                "name": "obfuscation_code",
+                "description": "obfuscation code of study",
+                "paramType": "header",
+                "type": "string",
+                "required": False,
+                "allowMultiple": False
+            },
+            {
                 "name": "force",
                 "description": "Force writing Files list json to file",
                 "required": False,
@@ -976,7 +984,11 @@ class StudyFilesReuse(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
+            
+        obfuscation_code = None
+        if "obfuscation_code" in request.headers:
+            obfuscation_code = request.headers["obfuscation_code"]
+            
         parser = reqparse.RequestParser()
         parser.add_argument('force', help='Force writing files list schema json')
         parser.add_argument('include_internal_files', help='Ignores internal files')
@@ -989,7 +1001,7 @@ class StudyFilesReuse(Resource):
                 include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
 
         files_list_json = app.config.get('FILES_LIST_JSON')
-        study_id, obfuscation_code = identify_study_id(study_id)
+        study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token, obfuscation_code)
