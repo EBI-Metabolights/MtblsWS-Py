@@ -1,12 +1,15 @@
 import logging
+import os
 from flask import request, current_app as app, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 from app.tasks.common.elasticsearch import delete_compound_index, reindex_all_compounds, reindex_compound
 from app.tasks.periodic_tasks.compound import sync_compound_on_es_and_db
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
+from flask import send_file, make_response
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite
+from app.ws.db.settings import get_directory_settings
 from app.ws.utils import log_request
 from app.ws.db import models
 
@@ -95,7 +98,121 @@ class MtblsCompoundsDetails(Resource):
         compound_id_prefix = app.config.get("MTBLS_COMPOUND_ID_PREFIX")
         if not requested_acc.startswith(compound_id_prefix):
             raise MetabolightsException(f"Passed accession :- {requested_acc} is invalid. Accession must start with %s" % compound_id_prefix)
-        
+
+
+class MtblsCompoundFile(Resource):
+    @swagger.operation(
+        summary="Get compound details file",
+        notes="Get compound details file",
+        parameters=[
+            {
+                "name": "accession",
+                "description": "Compound Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The compound is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self, accession):
+        log_request(request)
+        if not accession:
+            logger.info('No compound_id given')
+            abort(404)
+        compound_id = accession.upper()
+
+        settings = get_directory_settings(app)
+        compound_file_path = os.path.join(settings.reference_folder, compound_id, compound_id + "_data.json")
+    
+        if os.path.exists(compound_file_path):
+            resp = make_response(send_file(compound_file_path))
+            resp.headers['Content-Type'] = 'application/json'
+            return resp
+        else:
+            raise MetabolightsException(http_code=400, message="invalid compound file")
+
+
+
+class MtblsCompoundSpectraFile(Resource):
+    @swagger.operation(
+        summary="Get compound spectra file",
+        notes="Get compound spectra file",
+        parameters=[
+            {
+                "name": "accession",
+                "description": "Compound Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+                        
+            {
+                "name": "spectra_id",
+                "description": "Spectra id",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The compound is returned"
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self, accession, spectra_id):
+        log_request(request)
+        if not accession or not spectra_id:
+            logger.info('No compound_id or spectra_id given')
+            abort(404)
+        compound_id = accession.upper()
+
+        settings = get_directory_settings(app)
+        spectrum_path = os.path.join(settings.reference_folder, compound_id, compound_id + "_spectrum")
+        specra_file_path = os.path.join(spectrum_path, spectra_id, spectra_id + ".json")
+    
+        if os.path.exists(specra_file_path):
+            resp = make_response(send_file(specra_file_path))
+            resp.headers['Content-Type'] = 'application/json'
+            return resp
+        else:
+            raise MetabolightsException(http_code=400, message="invalid spectra file")
         
 class MtblsCompoundIndex(Resource):
     @swagger.operation(

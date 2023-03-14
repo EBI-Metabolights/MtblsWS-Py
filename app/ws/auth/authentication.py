@@ -115,9 +115,14 @@ class AuthLoginWithToken(Resource):
 
         api_token = content["token"]
         user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(api_token)
-
+        settings = get_security_settings(app)
+        if UserRole(user['role']) == UserRole.ROLE_SUPER_USER:
+            exp = settings.admin_jwt_token_expires_in_mins
+        else:
+            exp = settings.access_token_expires_delta
+            
         try:
-            token = AuthenticationManager.get_instance(app).create_oauth2_token_by_api_token(api_token)
+            token = AuthenticationManager.get_instance(app).create_oauth2_token_by_api_token(api_token, exp_period_in_mins=exp)
         except MetabolightsException as e:
             return make_response(jsonify({"content": "invalid", "message": e.message, "err": e.exception}), e.http_code)
         except Exception as e:
@@ -239,6 +244,7 @@ class OneTimeTokenValidation(Resource):
             one_time_token = request.headers["one_time_token"]
         if not one_time_token:
             raise MetabolightsAuthorizationException(message="invalid token", http_code=400)
+
         try:
             redis: RedisStorage = get_redis_server()
             token_key = f"one-time-token-request:token:{one_time_token}"
@@ -254,7 +260,6 @@ class OneTimeTokenValidation(Resource):
             return jsonify({"jwt":  jwt })
         except Exception as ex:
             raise ex
-        raise MetabolightsAuthorizationException(message="invalid token", http_code=401)
 
 class OneTimeTokenCreation(Resource):
     @swagger.operation(
@@ -283,7 +288,8 @@ class OneTimeTokenCreation(Resource):
             raise MetabolightsAuthorizationException(message="invalid token", http_code=400)
         jwt = str(jwt).replace("Bearer ", "")
         
-        user_in_token = AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt)
+        user = AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt)
+        
         jwt_key = f"one-time-token-request:jwt:{jwt}"
         
         redis: RedisStorage = get_redis_server()

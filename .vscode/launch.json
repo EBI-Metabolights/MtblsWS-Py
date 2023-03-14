@@ -1,0 +1,89 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Gunicorn run",
+            "type": "python",
+            "request": "launch",
+            "program": "~/miniconda3/envs/python38-MtblsWS/bin/gunicorn",
+            "args": [ "--bind=0.0.0.0:5001", "--worker-class=gevent", "--preload", "wsapp:app"],
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false,
+            "postDebugTask": "killdebugger"
+        },
+        {
+            "name": "Guvicorn profile",
+            "type": "python",
+            "request": "launch",
+            "module": "cProfile",
+            "args": ["-o", "${workspaceFolder}/tmp.prof", "gunicorn", "--worker-class", "gevent", "--preload", "-w", "3", "wsapp:app"],
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false,
+            "postDebugTask": "killdebugger"
+        },
+        {
+            "name": "Celery Worker",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "args": [
+                "-A",
+                "app.tasks.worker:celery",
+                "worker",
+                "--loglevel",
+                "info",
+                "-Q",
+                "mtbls-tasks"
+            ],
+            "jinja": true,
+            "justMyCode": false
+        },
+        {
+            "name": "Python: Current File (Integrated Terminal)",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Refactor",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/refactor_study_folder.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Celery Worker",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "args": [
+                "-A",
+                "app.tasks.worker:celery",
+                "worker",
+                "--loglevel",
+                "info",
+                "-Q",
+                "mtbls-tasks"
+            ],
+            "jinja": true,
+            "justMyCode": false
+        },      
+        {
+            "name": "Celery Beat",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "args": [
+                "-A",
+                "app.tasks.worker:celery",
+                "beat",
+                "--loglevel",
+                "info"
+            ],
+            "jinja": true,
+            "justMyCode": false
+        },      
+
+	]
+}

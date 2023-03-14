@@ -61,8 +61,8 @@ from app.ws.MapStudies import MapStudies
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtbls_maf import (CombineMetaboliteAnnotationFiles,
                               MetaboliteAnnotationFile, MtblsMAFSearch)
-from app.ws.mtblsCompound import (MtblsCompoundIndex, MtblsCompoundIndexAll,
-                                  MtblsCompoundIndexSync, MtblsCompounds,
+from app.ws.mtblsCompound import (MtblsCompoundFile, MtblsCompoundIndex, MtblsCompoundIndexAll,
+                                  MtblsCompoundIndexSync, MtblsCompoundSpectraFile, MtblsCompounds,
                                   MtblsCompoundsDetails)
 from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
                                CreateUploadFolder, DeleteStudy,
@@ -231,7 +231,13 @@ def initialize_app(flask_app):
     api.add_resource(Organism, res_path + "/studies/<string:study_id>/organisms")
 
     api.add_resource(MtblsCompounds, res_path + "/compounds/list")
+    
+    
     api.add_resource(MtblsCompoundsDetails, res_path + "/compounds/<string:accession>")
+    
+    api.add_resource(MtblsCompoundFile, res_path + "/compounds/<string:accession>/file")
+    api.add_resource(MtblsCompoundSpectraFile, res_path + "/compounds/<string:accession>/<string:spectra_id>/file")
+    
     api.add_resource(MtblsCompoundIndex, res_path + "/compounds/<string:accession>/es-index")
     api.add_resource(MtblsCompoundIndexAll, res_path + "/compounds/es-indexes/reindex-all")
     api.add_resource(MtblsCompoundIndexSync, res_path + "/compounds/es-indexes/sync-all")
