@@ -986,7 +986,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         if len(assay_dataframe) <= 1:
             add_msg(validations, val_section, "Assay sheet '" + str(
                 assay.filename) + " contains Only 1 sample, please ensure you have included all samples and any control, QC, standards etc. If no further samples were used in the study please contact MetaboLights-help.",
-                    error, val_sequence=1, log_category=log_category)
+                    error, val_sequence=2.12, log_category=log_category)
 
         # Are the template headers present in the assay
         assay_type = get_assay_type_from_file_name(study_id, assay.filename)
@@ -1321,7 +1321,7 @@ def validate_samples(isa_study, isa_samples, validation_schema, file_name, overr
             if sample_val_name == 'Protocol REF':  # Don't need to output this column name
                 continue
             add_msg(validations, val_section, "Sample column '" + sample_val_name + "' found in the sample file",
-                    success, file_name, val_sequence=1, log_category=log_category)
+                    success, file_name, val_sequence=1.1, log_category=log_category)
         else:
             if sample_val_name == 'Characteristics[Variant]' or sample_val_name == 'Characteristics[Sample type]':  # Not all studies have these present
                 add_msg(validations, val_section, "Sample column '" + sample_val_name + "' was not found", info,
