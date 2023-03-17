@@ -165,7 +165,8 @@ class Ontology(Resource):
                     try:
                         queryFields = queryFields.split(',')
                     except Exception as e:
-                        print(e.args)
+                        # print(e.args)
+                        pass
 
         parser.add_argument('ontology', help='ontology')
         ontology = None
@@ -218,11 +219,11 @@ class Ontology(Resource):
                     term = 'http:' + term
 
                 logger.info('Search %s from resources one by one' % term)
-                print('Search %s from resources one by one' % term)
+                # print('Search %s from resources one by one' % term)
                 result = getMetaboTerm(term, branch, mapping)
 
                 if not result and not is_url:
-                    print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
+                    # print("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                     logger.info("Can't find query in MTBLS ontology, search metabolights-zooma.tsv")
                     try:
                         result = getMetaboZoomaTerm(term, mapping)
@@ -231,7 +232,7 @@ class Ontology(Resource):
                         logger.info(e.args)
 
                 if not result:
-                    print("Can't query it in Zooma.tsv, requesting OLS")
+                    # print("Can't query it in Zooma.tsv, requesting OLS")
                     logger.info("Can't query it in Zooma.tsv, requesting OLS")
                     try:
                         result = getOLSTerm(term, mapping, ontology=ontology)
@@ -240,7 +241,7 @@ class Ontology(Resource):
                         logger.info(e.args)
 
                 if not result and not is_url:
-                    print("Can't find query in OLS, requesting Zooma")
+                    # print("Can't find query in OLS, requesting Zooma")
                     logger.info("Can't find query in OLS, requesting Zooma")
                     try:
                         result = getZoomaTerm(term)
@@ -249,12 +250,12 @@ class Ontology(Resource):
                         logger.info(e.args)
 
                 if not result:
-                    print("Can't query it in Zooma, request Bioportal")
+                    # print("Can't query it in Zooma, request Bioportal")
                     logger.info("Can't query it in Zooma, request Bioportal")
                     try:
                         result = getBioportalTerm(term)
                     except Exception as e:
-                        print(e.args)
+                        # print(e.args)
                         logger.info(e.args)
 
             else:
@@ -357,7 +358,7 @@ class Ontology(Resource):
             response.append(d)
 
         # response = [{'SubClass': x} for x in res]
-        print('--' * 30)
+        # print('--' * 30)
         return jsonify({"OntologyTerm": response})
 
     # =========================== put =============================================
@@ -442,7 +443,7 @@ class Ontology(Resource):
             abort(400)
 
         logger.info('Add %s to Metabolights ontology' % data_dict['termName'])
-        print('Add %s to Metabolights ontology' % data_dict['termName'])
+        # print('Add %s to Metabolights ontology' % data_dict['termName'])
 
         description = None
         if len(data_dict['definition']) > 0:
@@ -450,7 +451,7 @@ class Ontology(Resource):
         try:
             addEntity(new_term=data_dict['termName'], supclass=data_dict['superclass'], definition=description)
         except Exception as e:
-            print(e)
+            # print(e)
             logger.info(e)
             abort(400)
 
@@ -529,7 +530,7 @@ class Placeholder(Resource):
 
         except Exception as e:
             google_df = pd.DataFrame(columns=col)
-            print(e.args)
+            # print(e.args)
             logger.info('Fail to load spreadsheet from Google')
             logger.info(e.args)
 
@@ -681,7 +682,7 @@ class Placeholder(Resource):
                             response = requests.put(ws_url, params={'name': old_term},
                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
                                                              'save_audit_copy': 'true'}, data=data)
-                            print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.format(
+                            logger.info('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.format(
                                 old_term=old_term, matchterm=annotationValue, matchiri=termAccession, studyID=studyID))
 
                         else:  # Add factor
@@ -689,7 +690,7 @@ class Placeholder(Resource):
                                                      headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
                                                               'save_audit_copy': 'true'}, data=data)
 
-                            print('Add {old_term} ({matchiri}) in {studyID}'.format(old_term=old_term,
+                            logger.info('Add {old_term} ({matchiri}) in {studyID}'.format(old_term=old_term,
                                                                                     matchiri=termAccession,
                                                                                     studyID=studyID))
                         if response.status_code == 200:
@@ -709,7 +710,7 @@ class Placeholder(Resource):
                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
                                                             'save_audit_copy': 'true'})
 
-                        print('delete {old_term} from {studyID}'.format(old_term=old_term, studyID=studyID))
+                        logger.info('delete {old_term} from {studyID}'.format(old_term=old_term, studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -743,7 +744,7 @@ class Placeholder(Resource):
 
                         response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                 data=data)
-                        print('add term {newterm} to {superclass} branch'.format(newterm=annotationValue,
+                        logger.info('add term {newterm} to {superclass} branch'.format(newterm=annotationValue,
                                                                                  superclass=superclass))
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -816,14 +817,14 @@ class Placeholder(Resource):
                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
                                                              'save_audit_copy': 'true'},
                                                     data=data)
-                            print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
+                            logger.info('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
                                   format(old_term=old_term, matchterm=old_term, matchiri=matched_iri, studyID=studyID))
                         else:  # Add descriptor
                             response = requests.post(ws_url,
                                                      headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
                                                               'save_audit_copy': 'true'},
                                                      data=data)
-                            print('Add {old_term} to ({matchiri}) in {studyID}'.
+                            logger.info('Add {old_term} to ({matchiri}) in {studyID}'.
                                   format(old_term=old_term, matchiri=matched_iri, studyID=studyID))
 
                         if response.status_code == 200:
@@ -843,7 +844,7 @@ class Placeholder(Resource):
                         response = requests.delete(ws_url, params={'term': old_term},
                                                    headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
                                                             'save_audit_copy': 'true'})
-                        print('delete {old_term} from in {studyID}'.format(old_term=old_term, studyID=studyID))
+                        logger.info('delete {old_term} from in {studyID}'.format(old_term=old_term, studyID=studyID))
 
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -877,7 +878,7 @@ class Placeholder(Resource):
 
                         response = requests.put(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                 data=data)
-                        print('add term {newterm} to {superclass} branch'.format(newterm=term,
+                        logger.info('add term {newterm} to {superclass} branch'.format(newterm=term,
                                                                                  superclass=superclass))
                         if response.status_code == 200:
                             google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -961,7 +962,7 @@ class Placeholder(Resource):
                                 onto_iri, onto_version, onto_description = getOnto_info(change['onto_name'])
                             except Exception as e:
                                 logger.info(e)
-                                print('Fail to load information about ontology {onto_name}'.format(
+                                logger.info('Fail to load information about ontology {onto_name}'.format(
                                     onto_name=change['onto_name']))
                                 onto_iri, onto_version, onto_description = '', '', ''
 
@@ -982,7 +983,7 @@ class Placeholder(Resource):
                                                      headers={'user_token': app.config.get('METABOLIGHTS_TOKEN'),
                                                               'save_audit_copy': 'true'},
                                                      data=data)
-                            print('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
+                            logger.info('Made correction from {old_term} to {matchterm}({matchiri}) in {studyID}'.
                                   format(old_term=change['old_term'], matchterm=change['new_term'],
                                          matchiri=change['term_url'], studyID=studyID))
 
@@ -1021,7 +1022,7 @@ class Placeholder(Resource):
                             response = requests.put(ws_url,
                                                     headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
                                                     data=data)
-                            print('add term {newterm} to {superclass} branch'.format(newterm=change['new_term'],
+                            logger.info('add term {newterm} to {superclass} branch'.format(newterm=change['new_term'],
                                                                                      superclass=change['superclass']))
                             if response.status_code == 200:
                                 google_df.loc[index, 'status (Done/Error)'] = 'Done'
@@ -1114,8 +1115,8 @@ class Cellosaurus(Resource):
                     links.append(prefix + cell_name + '.txt')
                 return links
             except Exception as e:
-                print(e.args)
-                logger.info(e)
+                #(e.args)
+                logger.info(str(e))
 
         def getSynonyms(url):
             try:
@@ -1140,7 +1141,7 @@ class Cellosaurus(Resource):
                         synonyms = [x.strip() for x in synonyms]
                 return ID, term, synonyms
             except Exception as e:
-                print(e.args)
+                # print(e.args)
                 logger.info(e)
 
         links = getlink(query)
@@ -1185,7 +1186,7 @@ def get_metainfo(query):
 
 
     for studyID in studyIDs:
-        print(f'get {query} from {studyID}.')
+        # print(f'get {query} from {studyID}.')
         if query.lower() == "factor":
             url = 'http://wp-p3s-15.ebi.ac.uk:5000/metabolights/ws/studies/{study_id}/factors'.format(study_id=studyID)
 
@@ -1274,7 +1275,7 @@ def insertGoogleSheet(data, url, worksheetName):
         wks = gc.open_by_url(url).worksheet(worksheetName)
         wks.append_row(data, value_input_option='RAW')
     except Exception as e:
-        print(e.args)
+        # print(e.args)
         logger.info(e.args)
 
 
@@ -1291,7 +1292,7 @@ def setGoogleSheet(df, url, worksheetName):
     gc = gspread.authorize(credentials)
     try:
         wks = gc.open_by_url(url).worksheet(worksheetName)
-        print(worksheetName + ' existed... create a new one')
+        # print(worksheetName + ' existed... create a new one')
         wks = gc.open_by_url(url).add_worksheet(title=worksheetName + '_1', rows=df.shape[0], cols=df.shape[1])
     except Exception as e:
         wks = gc.open_by_url(url).add_worksheet(title=worksheetName, rows=df.shape[0], cols=df.shape[1])
@@ -1315,7 +1316,7 @@ def getGoogleSheet(url, worksheetName):
         df = pd.DataFrame(content)
         return df
     except Exception as e:
-        print(e.args)
+        # print(e.args)
         logger.info(e.args)
 
 
@@ -1387,7 +1388,7 @@ def addEntity(new_term, supclass, definition=None):
         onto = get_ontology(app.config.get('MTBLS_ONTOLOGY_FILE')).load()
 
     except Exception as e:
-        print('fail to load MTBLS ontoloty from ' + app.config.get('MTBLS_ONTOLOGY_FILE'))
+        # print('fail to load MTBLS ontoloty from ' + app.config.get('MTBLS_ONTOLOGY_FILE'))
         logger.info(e.args)
         abort(400)
         return []
@@ -1399,7 +1400,7 @@ def addEntity(new_term, supclass, definition=None):
 
     if new_term.lower() in [x.lower() for x in all_class]:
         logger.info('Operation rejected, term exciting')
-        print('Operation rejected, term exciting')
+        # print('Operation rejected, term exciting')
         abort(400)
         return []
     
@@ -1414,7 +1415,7 @@ def addEntity(new_term, supclass, definition=None):
                 cls = onto.search_one(iri=supclass)
             if cls is None:
                 logger.info(f"Can't find superclass named {supclass}")
-                print(f"Can't find superclass named {supclass}")
+                # print(f"Can't find superclass named {supclass}")
                 abort(400)
                 return []
 
@@ -1422,7 +1423,7 @@ def addEntity(new_term, supclass, definition=None):
             subs = cls.descendants()
             for sub in subs:
                 if sub.label[0].lower() == new_term.lower():
-                    print('adding rejected, duplicated term: ' + new_term)
+                    # print('adding rejected, duplicated term: ' + new_term)
                     logger.info('adding rejected, duplicated term: ' + new_term)
                     return []
 
@@ -1433,7 +1434,7 @@ def addEntity(new_term, supclass, definition=None):
             else:
                 pass
         except Exception as e:
-            print(e)
+            # print(e)
             logger.info(e.args)
             abort(400)
             return []
