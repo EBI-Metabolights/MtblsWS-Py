@@ -146,6 +146,7 @@ def maintain_study_folders(user_token: str, send_email_to_submitter=False):
         
         result = {"time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
                 "status": f'{status}',
+                "executed_on":  os.uname().nodename,
                 "created_folders": str(nonexist_study_folders),
                 "updated_folders": str(updated_study_folders),
                 "failures": str(failures),

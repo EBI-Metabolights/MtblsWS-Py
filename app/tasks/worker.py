@@ -1,5 +1,6 @@
 from functools import lru_cache
 import json
+import os
 
 from celery import Celery
 from celery.signals import after_task_publish
@@ -9,6 +10,7 @@ from flask_mail import Mail
 from app.ws.email.email_service import EmailService
 from app.ws.settings.utils import get_celery_settings, get_redis_settings, get_system_settings
 from app.tasks.utils import ValueMaskUtility
+from app.ws.study.user_service import UserService
 
 celery_settings = get_celery_settings()
 
@@ -26,7 +28,8 @@ celery = Celery(
         "app.tasks.common.ftp_operations",
         "app.tasks.periodic_tasks.compound",
         "app.tasks.periodic_tasks.study",
-        "app.tasks.periodic_tasks.study_folder"
+        "app.tasks.periodic_tasks.study_folder",
+        "app.tasks.curation.metabolon"
     ],
 )
 
@@ -72,6 +75,12 @@ celery.conf.update(
 )
 
 
+@after_task_publish.connect
+def update_task_was_sent_state(sender=None, headers=None, **kwargs):
+    task = celery.tasks.get(sender)
+    backend = task.backend if task else celery.backend
+    backend.store_result(headers["id"], None, "INITIATED")
+    
 @after_task_publish.connect
 def update_task_was_sent_state(sender=None, headers=None, **kwargs):
     task = celery.tasks.get(sender)
@@ -126,16 +135,25 @@ def report_internal_technical_issue(subject, body):
     
 class MetabolightsTask(celery.Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
+        flask_app = get_flask_app()
+        with flask_app.app_context():
+            subject_name = f"Task {self.name} with {task_id} failed"
+            username = ""
+            if "email" in kwargs:
+                username = kwargs["email"]
+            if not username and "user_token" in kwargs and kwargs["user_token"]:
+                user = UserService.get_instance(flask_app).get_simplified_user_by_token(kwargs["user_token"])
+                if user:
+                    username = user.userName
+                
+            new_kwargs = {}
+            if kwargs:
 
-        subject_name = f"Task {self.name} with {task_id} failed"
-        new_kwargs = {}
-        if kwargs:
+                for key in kwargs:
+                    new_kwargs[key] = ValueMaskUtility.mask_value(key, kwargs[key])
 
-            for key in kwargs:
-                new_kwargs[key] = ValueMaskUtility.mask_value(key, kwargs[key])
-
-        kwargs_str = str(new_kwargs) if new_kwargs else ""
-        traceback = str(einfo.traceback).replace("\n", "<p>")
-        args_str = str(args) if args else ""
-        body = f"Task <b>{self.name}</b> with <b>{str(task_id)}</b> failed. <p> {str(exc)}<p>Args: {args_str}<p>kwargs: {kwargs_str}<p>{traceback}"
-        report_internal_technical_issue(subject_name, body)
+            kwargs_str = str(new_kwargs) if new_kwargs else ""
+            traceback = str(einfo.traceback).replace("\n", "<p>")
+            args_str = str(args) if args else ""
+            body = f"Task <b>{self.name}</b> with <b>{str(task_id)}</b> failed. <p>Submitter: {username} <p> Executed on: {os.uname().nodename} <p>  {str(exc)}<p>Args: {args_str}<p>kwargs: {kwargs_str}<p>{traceback}"
+            report_internal_technical_issue(subject_name, body)

@@ -288,8 +288,10 @@ class OneTimeTokenCreation(Resource):
             raise MetabolightsAuthorizationException(message="invalid token", http_code=400)
         jwt = str(jwt).replace("Bearer ", "")
         
-        user = AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt)
-        
+        try:
+            AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt)
+        except Exception as ex:
+            raise MetabolightsAuthorizationException(http_code=401, message="User token is not valid or expired", exception=ex)
         jwt_key = f"one-time-token-request:jwt:{jwt}"
         
         redis: RedisStorage = get_redis_server()

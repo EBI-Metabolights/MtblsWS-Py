@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import os
 
 from app.tasks.worker import (MetabolightsTask, celery, get_flask_app,
                               send_email)
@@ -106,6 +107,7 @@ def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
         if not out_of_date_studies and not unindexed_studies and not studies_not_in_db:
             updated = False
         result = {"time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                  "executed_on":  os.uname().nodename,
                 "status": f'{"UPDATED" if updated else "NO CHANGE"}',
                 "reindexed_studies": str(out_of_date_studies),
                 "added_studies": str(unindexed_studies),

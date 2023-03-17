@@ -6,8 +6,13 @@
       {
         "label": "killdebugger",
         "type": "shell",
+        "presentation": {
+          "reveal": "silent",
+          "revealProblems": "onProblem",
+          "showReuseMessage": false,
+          "close": true
+        },
         "command": "ps -aux | grep '/bin/gunicorn --bind=0.0.0.0:5001 --worker-class gevent --preload -w 3 wsapp:app' | awk -v start=1 -v end=1 'NR==start, NR==end' | awk '{print $2}' | xargs kill -9"
-        
       }
     ]
   }

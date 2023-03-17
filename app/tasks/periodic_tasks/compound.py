@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import os
 
 from app.tasks.worker import (MetabolightsTask, celery, get_flask_app,
                               send_email)
@@ -99,6 +100,7 @@ def sync_compound_on_es_and_db(user_token: str, send_email_to_submitter=False):
         status = "UPDATED" if out_of_date_compounds or unindexed_compounds or compounds_not_in_db else "NO CHANGE"
         result = {"time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                   "status": status,
+                  "executed_on":  os.uname().nodename,
                   "reindexed_compounds": str(out_of_date_compounds),
                   "added_compounds": str(unindexed_compounds),
                   "deleted_compounds": str(compounds_not_in_db)}

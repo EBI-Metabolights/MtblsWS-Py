@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 from app.utils import MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite, Study, User
@@ -107,6 +108,7 @@ def reindex_studies_in_list(user_token, flask_app, studies):
     except Exception as exc:
         raise exc
     return {"time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+            "executed_on":  os.uname().nodename,
             "total_studies": len(studies),
             "indexed_studies": len(indexed_studies),
             "failed_indexed_studies": failed_indexed_studies
@@ -163,6 +165,7 @@ def reindex_all_compounds(user_token, send_email_to_submitter=False):
                 raise exc
             
         result =  {"time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                   "executed_on":  os.uname().nodename,
                 "total_compounds": len(compounds),
                 "indexed_compounds": len(indexed_compounds),
                 "failed_index_compounds": failed_indexed_compounds

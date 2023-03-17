@@ -82,14 +82,12 @@ def getMetaboTerm(keyword, branch, mapping=''):
                 cls += onto.search(iri=keyword)
             except:
                 logger.info("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
-                print("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
                 pass
 
         try:
             cls += onto.search(label=keyword, _case_sensitive=False)
         except:
             logger.info("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
-            print("Can't find {term} in MTBLS ontology, continue...".format(term=keyword))
             pass
 
         if mapping != 'exact':
@@ -108,10 +106,8 @@ def getMetaboTerm(keyword, branch, mapping=''):
             try:
                 sup = onto.search_one(label=branch, _case_sensitive=False)
                 logger.info("Search {term} in MTBLS ontology {branch}".format(term=keyword, branch=branch))
-                print("Search {term} in MTBLS ontology {branch}".format(term=keyword, branch=branch))
             except:
                 logger.info("Can't find a branch called " + branch)
-                print("Can't find a branch called " + branch)
                 return []
 
             subs = sup.descendants()
@@ -138,7 +134,6 @@ def getMetaboTerm(keyword, branch, mapping=''):
     else:  # term = None
         if branch not in [None, '']:  # term = 0, branch = 1, return whole ontology branch
             logger.info("Search Metabolights ontology whole {branch} branch ... ".format(branch=branch))
-            print("Search Metabolights ontology whole {branch} branch ... ".format(branch=branch))
 
             try:
                 sup = onto.search_one(label=branch, _case_sensitive=False)

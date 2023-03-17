@@ -24,10 +24,13 @@ from flask import current_app as app, request, abort
 from flask.json import jsonify
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from app.tasks.curation.metabolon import metabolon_confirm
+from app.utils import MetabolightsException
 
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.user_service import UserService
 from app.ws.utils import validate_mzml_files, convert_to_isa, copy_file, read_tsv, write_tsv, \
     update_correct_sample_file_name, get_year_plus_one
 
@@ -100,160 +103,16 @@ class Metabolon(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
-        message = {'Success': 'All conversion steps completed successfully'}
-
-        # Validate all mzML files, in both study and upload folders
-        # This method also copy files to the study folder and adds a new extension in the upload folder.
-        val_status = ''
-        val_message = ''
+        user = UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        email = user['username']
+        study_location = os.path.join(app.config.get('STUDY_PATH'), study_id)
+        
         try:
-            val_message = 'Could not validate all the mzML files'
-            val_status, val_message = validate_mzml_files(study_id)
-        except:
-            abort(417, val_message)
+            inputs = {"study_id": study_id, "study_location": study_location, "user_token": user_token, "email": email}
+            
+            result = metabolon_confirm.apply_async(kwargs=inputs, expires=60*5)
 
-        # Adding the success to the final message we will return
-        if val_status:
-            message.update({'mzML validation': 'Successful'})
-        else:
-            abort(417, val_message)
-
-        # Create ISA-Tab files using mzml2isa
-        try:
-            conv_message = 'Could not convert all the mzML files to ISA-Tab'
-            conv_status, conv_message = convert_to_isa(study_location, '')
-        except:
-            abort(417, conv_message)
-
-        if conv_status:
-            message.update({'mzML2ISA conversion': 'Successful'})
-        else:
-            abort(417, conv_message)
-
-        # Split the two pos/neg assays from Metabolon into 4
-        try:
-            split_message = 'Could not correctly split the assays'
-            split_status, split_message = split_metabolon_assays(study_location, study_id)
-        except:
-            abort(417, split_message)
-
-        if split_status:
-            message.update({'Assay splitting': 'Successful'})
-        else:
-            abort(417, split_message)
-
-        # copy Metabolon investigation file into the study folder
-        try:
-            copy_status, copy_message = copy_metabolon_template(study_id, user_token, study_location)
-        except:
-            abort(417, 'Could not copy the Metabolon template, the investigation file still needs replacing')
-
-        if copy_status:
-            message.update({'Investigation template replacement': 'Successful'})
-        else:
-            abort(417, copy_message)
-
-        return jsonify(message)
-
-
-def copy_metabolon_template(study_id, user_token, study_location):
-    status, message = True, "Copied Metabolon template into study " + study_id
-    template_study_id = app.config.get('PARTNER_TEMPLATE_METABOLON')
-    invest_file = 'i_Investigation.txt'
-
-    # Get the correct location of the Metabolon template study
-    template_study_location = study_location.replace(study_id.upper(), template_study_id)
-    template_study_location = os.path.join(template_study_location, invest_file)
-    dest_file = os.path.join(study_location, invest_file)
-
-    try:
-        copy_file(template_study_location, dest_file)
-    except:
-        return False, "Could not copy Metabolon template into study " + study_id
-
-    try:
-
-        api_version = 'MOE API ' + str(app.config.get('API_VERSION'))
-        mzml2isa_version = 'mzml2isa ' + str(app.config.get('MZML2ISA_VERSION'))
-        # Updating the ISA-Tab investigation file with the correct study id
-        isa_study, isa_inv, std_path = iac.get_isa_study(
-            study_id=study_id, api_key=user_token, skip_load_tables=True, study_location=study_location)
-
-        # Adding the study identifier
-        isa_study.identifier = study_id
-        isa_inv.identifier = study_id
-
-        # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
-        isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_id)
-
-        # Set publication date to one year in the future
-        plus_one_year = get_year_plus_one(isa_format=True)
-        date_now = get_year_plus_one(todays_date=True, isa_format=True)
-
-        isa_inv.public_release_date = plus_one_year
-        isa_inv.submission_date = date_now
-        isa_study.public_release_date = plus_one_year
-        isa_study.submission_date = date_now
-
-        # Updated the files with the study accession
-        try:
-            iac.write_isa_study(
-                inv_obj=isa_inv, api_key=user_token, std_path=study_location,
-                save_investigation_copy=False, save_samples_copy=False, save_assays_copy=False
-            )
-        except Exception as e:
-            logger.info("Could not write the study: " + study_id + ". Error: " + str(e))
-
-        try:
-            update_release_date(study_id, plus_one_year)
-            wsc.reindex_study(study_id, user_token)
-            message = message + '. ' + api_version + '. ' + mzml2isa_version
-        except Exception as e:
-            logger.info("Could not updated database and re-index study: " + study_id + ". Error: " + str(e))
-    except Exception as e:
-        return False, "Could not update Metabolon template for study " + study_id + ". Error: " + str(e)
-
-    return status, message
-
-
-def split_metabolon_assays(study_location, study_id):
-    p_start = 'a__POS'
-    n_start = 'a__NEG'
-    end = '_m'
-    pos = p_start + end
-    neg = n_start + end
-    sample_col = 'Sample Name'
-
-    for a_files in glob.glob(os.path.join(study_location, 'a__*_metabolite_profiling_mass_spectrometry.txt')):
-        if pos in a_files:
-            p_assay = read_tsv(a_files)
-            p_filename = a_files
-            try:
-                # split based on 'POSEAR' and 'POSLAT'
-                write_tsv(p_assay.loc[p_assay[sample_col].str.contains('POSEAR')],
-                          p_filename.replace(pos, p_start + '_1' + end))
-                write_tsv(p_assay.loc[p_assay[sample_col].str.contains('POSLAT')],
-                          p_filename.replace(pos, p_start + '_2' + end))
-            except:
-                return False, "Failed to generate 2 POSITIVE ISA-Tab assay files for study " + study_id
-
-        elif neg in a_files:
-            n_assay = read_tsv(a_files)
-            n_filename = a_files
-            try:
-                # split based on 'NEG' and 'POL'
-                write_tsv(n_assay.loc[n_assay[sample_col].str.contains('NEG')],
-                          n_filename.replace(neg, n_start + '_1' + end))
-                write_tsv(n_assay.loc[n_assay[sample_col].str.contains('POL')],
-                          n_filename.replace(neg, n_start + '_2' + end))
-            except:
-                return False, "Failed to generate 2 NEGATIVE ISA-Tab assay files for study " + study_id
-
-    status, message = True, "Generated 4 ISA-Tab assay files for study " + study_id
-
-    return status, message
+            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+            return result
+        except Exception as ex:
+            raise MetabolightsException(http_code=500, message=f"Sync all compounds task submission was failed", exception=ex)
