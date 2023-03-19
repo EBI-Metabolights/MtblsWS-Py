@@ -84,6 +84,7 @@ from app.ws.pathway import fellaPathway, keggid
 from app.ws.reports import (CrossReferencePublicationInformation,
                             StudyAssayTypeReports, reports)
 from app.ws.send_files import SendFiles, SendFilesPrivate
+from app.ws.species import SpeciesTree
 from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
 from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
@@ -329,3 +330,8 @@ def initialize_app(flask_app):
 
     api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/study-folders/maintain-folders")
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
+    
+    
+    
+    api.add_resource(SpeciesTree, res_path + "/species/tree")
+    
