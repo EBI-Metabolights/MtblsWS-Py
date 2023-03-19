@@ -2,10 +2,11 @@ import datetime
 from typing import Optional, List, Dict, Set, Union
 
 from pydantic import BaseModel, Field, validator
+from app.ws.db.types import UserStatus
 
 from app.ws.db.utils import datetime_to_int
 
-    
+
 class StudyAccessPermission(BaseModel):
     userName: str = ""
     userRole: str = ""
@@ -65,7 +66,7 @@ class UserModel(BaseModel):
     userVerifyDbPassword: str = None  # not in es index mapping
     mobilePhoneNumber: str = None  # not in es index mapping
     officePhoneNumber: str = None  # not in es index mapping
-    apiToken: str = None  # excluded from es
+    apiToken: str = Field(None, alias="apitoken")
 
     class Config:
         orm_mode = True

@@ -9,10 +9,10 @@ from flask_restful import Resource
 from flask_restful_swagger import swagger
 from pydantic import BaseModel
 
-from app.utils import MetabolightsAuthorizationException, metabolights_exception_handler, MetabolightsException
+from app.utils import MetabolightsAuthorizationException, MetabolightsDBException, metabolights_exception_handler, MetabolightsException
 from app.ws.auth.auth_manager import AuthenticationManager, get_security_settings
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import StudyAccessPermission
+from app.ws.db.models import StudyAccessPermission, UserModel
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.redis.redis import RedisStorage, get_redis_server
@@ -35,11 +35,15 @@ def validate_token_in_request_body(content):
 
     try:
         user_in_token = AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt_token)
+    except MetabolightsAuthorizationException as e:
+        return make_response(jsonify({"content": "invalid", "message": e.message, "err": e}), 401)
+    except MetabolightsException as e:
+        return make_response(jsonify({"content": "invalid", "message": e.message, "err": e}), 401)
     except Exception as e:
-        return make_response(jsonify({"content": "invalid", "message": "Invalid token", "err": None}), 403)
+        return make_response(jsonify({"content": "invalid", "message": "Authenticaion Failed", "err": e}), 401)
 
     if not user_in_token or user_in_token.userName != username:
-        return make_response(jsonify({"content": "invalid", "message": "Not a valid token for user", "err": None}), 403)
+        return make_response(jsonify({"content": "invalid", "message": "Not a valid token for user", "err": None}), 401)
 
     response = make_response(jsonify({"content": "true", "message": "Authentication successful", "err": None}), 200)
     response.headers["Access-Control-Expose-Headers"] = "Jwt, User"
@@ -124,7 +128,7 @@ class AuthLoginWithToken(Resource):
         try:
             token = AuthenticationManager.get_instance(app).create_oauth2_token_by_api_token(api_token, exp_period_in_mins=exp)
         except MetabolightsException as e:
-            return make_response(jsonify({"content": "invalid", "message": e.message, "err": e.exception}), e.http_code)
+            return make_response(jsonify({"content": "invalid", "message": e.message, "err": e}), e.http_code)
         except Exception as e:
             return make_response(jsonify({"content": "invalid", "message": "Authentication failed", "err": str(e)}), 403)
 
@@ -173,15 +177,19 @@ class AuthLogin(Resource):
 
         try:
             token = AuthenticationManager.get_instance(app).create_oauth2_token(username, password)
+        except MetabolightsAuthorizationException as e:
+            return make_response(jsonify({"content": "invalid", "message": e.message, "err": str(e)}), e.http_code)
         except MetabolightsException as e:
-            return make_response(jsonify({"content": "invalid", "message": e.message, "err": e.exception}), e.http_code)
+            return make_response(jsonify({"content": "invalid", "message": e.message, "err": str(e)}), e.http_code)
         except Exception as e:
-            return make_response(jsonify({"content": "invalid", "message": "Authentication failed", "err": str(e)}), 403)
-
+            return make_response(jsonify({"content": "invalid", "message": "Authenticaion Failed", "err": str(e)}), 401)
+        
         if not token:
             return make_response(jsonify({"content": "invalid", "message": "Authentication failed", "err": None}), 403)
 
-        resp = make_response(jsonify({"content": True, "message": "Authentication successful", "err": None}), 200)
+        user: UserModel = UserService.get_instance(app).get_db_user_by_user_name(username)
+        
+        resp = make_response(jsonify({"content": user.dict(), "message": "Authentication successful", "err": None}), 200)
         resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
         resp.headers["jwt"] = token
         resp.headers["user"] = username
@@ -243,7 +251,7 @@ class OneTimeTokenValidation(Resource):
         if "one_time_token" in request.headers:
             one_time_token = request.headers["one_time_token"]
         if not one_time_token:
-            raise MetabolightsAuthorizationException(message="invalid token", http_code=400)
+            raise MetabolightsAuthorizationException(message="invalid token")
 
         try:
             redis: RedisStorage = get_redis_server()
@@ -251,7 +259,7 @@ class OneTimeTokenValidation(Resource):
             
             jwt = redis.get_value(token_key)
             if not jwt:
-                raise MetabolightsAuthorizationException(message="invalid token", http_code=401)
+                raise MetabolightsAuthorizationException(message="invalid token")
             jwt = jwt.decode("utf-8")
             jwt_key = f"one-time-token-request:jwt:{jwt}"
             redis.delete_value(token_key)
@@ -285,13 +293,13 @@ class OneTimeTokenCreation(Resource):
         if "Authorization" in request.headers:
             jwt = request.headers["Authorization"]
         if not jwt:
-            raise MetabolightsAuthorizationException(message="invalid token", http_code=400)
+            raise MetabolightsAuthorizationException(message="invalid token")
         jwt = str(jwt).replace("Bearer ", "")
         
         try:
             AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt)
         except Exception as ex:
-            raise MetabolightsAuthorizationException(http_code=401, message="User token is not valid or expired", exception=ex)
+            raise MetabolightsAuthorizationException(message="User token is not valid or expired")
         jwt_key = f"one-time-token-request:jwt:{jwt}"
         
         redis: RedisStorage = get_redis_server()

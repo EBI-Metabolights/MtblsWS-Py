@@ -80,7 +80,7 @@ class AuthenticationManager(object):
 
     def create_oauth2_token_by_user(self, user, audience=None, db_session=None,scopes: List[str]=[], exp_period_in_mins: int=-1):
         if not user:
-            abort(http_status_code=400, detail="Incorrect username or password")
+            raise MetabolightsAuthorizationException(http_code=400, message="Invalid user or credential")
         if not audience:
             audience = self.settings.access_token_allowed_audience
         if exp_period_in_mins > 0:
@@ -140,7 +140,7 @@ class AuthenticationManager(object):
     def authenticate_user(self, username: str, password: str, db_session=None):
         user = UserService.get_instance(app).validate_username_with_submitter_or_super_user_role(username)
         if not self._verify_password(password, user.password):
-            return False
+            raise MetabolightsAuthorizationException(message="Invalid user or credential")
         return user
 
     def _create_jwt_token(self, data: dict, expires_delta: Optional[timedelta] = None):
