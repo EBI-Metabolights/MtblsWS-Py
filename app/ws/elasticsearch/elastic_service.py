@@ -3,6 +3,7 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from typing import Any, Dict
 
 from app.utils import MetabolightsDBException, MetabolightsException
 from app.ws.db import models
@@ -10,6 +11,7 @@ from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite, StudyTask
 from app.ws.db.settings import DirectorySettings, get_directory_settings
 from app.ws.db.types import StudyTaskName, StudyTaskStatus
+from app.ws.elasticsearch.schemes import Booster, Facet, FacetLine, SearchQuery, SearchResult
 from app.ws.elasticsearch.settings import (ElasticsearchSettings,
                                            get_elasticsearch_settings)
 from app.ws.study.study_service import StudyService
@@ -72,6 +74,141 @@ class ElasticsearchService(object):
                                                 directory_settings=directory_settings)
         return cls.instance
 
+    def search(self, query: SearchQuery):
+        if not query:
+            query = self.get_empty_query()
+        search_body = self.build_search_body(query)
+        result = self.client.search(index=self.INDEX_NAME, body=search_body)
+        search_result = SearchResult()
+        facets: Dict[str, Dict[str, Any]] = {}
+        for facet in query.facets:
+            facets[facet.name] = {}
+            facets[facet.name]["lines"] = {}
+            facets[facet.name]["facet"] = facet
+            for line in facet.lines:
+                facets[facet.name]["lines"][line.value] = line
+                
+            
+            
+        search_result.query = query
+        if result and "hits" in result and result["hits"]:
+            search_result.query.pagination.itemsCount = result["hits"]["total"]
+            if "hits" in result["hits"] and result["hits"]["hits"]:
+                for item in result["hits"]["hits"]:
+                    result_item = None
+                    if item["_type"] and "_source" in item and item["_source"]:
+                        if item["_type"].lower() == "study":
+                            result_item = models.StudyModel.parse_obj(item["_source"])
+                        elif item["_type"].lower() == "compound":
+                            result_item = models.ESMetaboLightsCompound.parse_obj(item["_source"])
+                    if result_item:
+                        search_result.results.append(result_item)
+
+            if result and "aggregations" in result and result["aggregations"]:
+                for facet_name in result["aggregations"]:
+                    if facet_name in facets:
+                        current_facet = facets[facet_name]
+                        if "buckets" in result["aggregations"][facet_name] and result["aggregations"][facet_name]["buckets"]:
+                            buckets = result["aggregations"][facet_name]["buckets"]
+                            for bucket in buckets:
+                                if "key" in bucket and "doc_count" in bucket:
+                                    if bucket['key'] not in current_facet["lines"]:
+                                        new_facet_line = FacetLine(value=bucket['key'])
+                                        current_facet["lines"][bucket['key']] = new_facet_line
+                                        current_facet["facet"].lines.append(new_facet_line)
+                                    current_facet["lines"][bucket['key']].count = bucket["doc_count"]
+                                
+                    # search_result.reportLines.append(facet_item)
+            
+        return {"content": search_result.dict(), "message": "result successfull", "error": None}
+    
+    def build_search_body(self, query: SearchQuery) -> str:
+        search_text = query.text.replace("'", "") if query.text else ""
+        body = {}
+        page = query.pagination.page if query.pagination.page > 0 else 1
+        body["from"] = (page - 1) * query.pagination.pageSize
+        body["size"] = query.pagination.pageSize
+        
+        filtered = True
+        if query.searchUser.isAdmin:
+            filtered = False
+        
+        if not search_text:
+            if filtered:
+                body["query"] = {"filtered": {"query": {"match_all": {}}}}
+            else:
+                body["query"] = {"match_all": {}}
+            body["sort"] = [{"studyPublicReleaseDate": {"order": "desc"}}]
+        else:
+            if filtered:
+                body["query"] = {"filtered": {"query": {"bool": {"must": { "query_string": {"query": search_text}}}}}}
+            else:
+                body["query"] = {"bool": {"must": { "query_string": {"query": search_text}}}}
+            
+            boosters = []
+            for boost in query.boosters:
+                boosters.append({"term": { boost.fieldName: {"value": search_text, "boost": boost.boost}}})
+            if boosters:
+                if filtered:
+                    body["query"]["filtered"]["query"]["bool"]["should"] = boosters
+                else:
+                    body["query"]["bool"]["should"] = boosters
+                
+       
+        post_filters = []
+        aggregations = {}
+        for item in query.facets:
+            aggregations[item.name] = { "terms": { "field": item.name, "size": 0 }}
+            lines = []
+            for line in item.lines:
+                if line.checked:
+                    lines.append({"term": { item.name: line.value}})
+            filter_item = None
+            if len(lines) > 1:
+                filter_item = {"or": {"filters": lines}}
+            elif len(lines) == 1:
+                filter_item = lines[0]
+            if filter_item:
+                post_filters.append(filter_item)
+            
+                
+        if post_filters:
+            body["post_filter"] = {"and": { "filters": post_filters }}
+        
+        if not query.searchUser.isAdmin:
+            if "filtered" not in body["query"]:
+                body["query"]["filtered"] = {}
+            filter = {"or": { "filters": [ {"term": {"studyStatus": "PUBLIC"}}, {"term": {"users.userName": query.searchUser.id}}]}}
+            body["query"]["filtered"]["filter"] = filter
+        
+        if aggregations:
+            body["aggregations"] = aggregations
+        value = json.dumps(body, indent=4)
+        return body
+            
+    def get_empty_query(self) -> SearchQuery:
+        query = SearchQuery()
+        query.facets.append(Facet(name="ObjectType"))
+        query.facets.append(Facet(name="assays.technology"))
+        query.facets.append(Facet(name="compound.hasSpecies"))
+        query.facets.append(Facet(name="compound.hasPathways"))
+        query.facets.append(Facet(name="compound.hasReactions"))
+        query.facets.append(Facet(name="compound.hasNMR"))
+        query.facets.append(Facet(name="compound.hasMS"))
+        query.facets.append(Facet(name="studyStatus"))
+        query.facets.append(Facet(name="organism.organismName"))
+        query.facets.append(Facet(name="organism.organismPart"))
+        query.facets.append(Facet(name="factors.name"))
+        # query.facets.append(Facet(name="users.fullName"))
+        query.facets.append(Facet(name="descriptors.description"))
+        query.facets.append(Facet(name="validations.status"))
+        query.facets.append(Facet(name="validations.entries.statusExt"))
+        query.boosters.append(Booster(fieldName="_id",boost=2))
+        query.boosters.append(Booster(fieldName="title",boost=1))
+        query.boosters.append(Booster(fieldName="name",boost=1))
+        
+        return query
+        
     def get_all_compound_ids(self):
         query = '{  "query": {  "match_all": {} }, "fields": ["_id", "updatedDate"]}'
 

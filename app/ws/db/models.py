@@ -260,7 +260,7 @@ class LiteStudyModel(EntityModel):
     studyPublicReleaseDate: int = Field(0)
     updateDate: int = Field(0)
     studySubmissionDate: int = Field(0)
-    obfuscationCode: str = Field(...)  # assigned as not_analyzed in es
+    obfuscationCode: str = Field('')  # assigned as not_analyzed in es
     studySize: int = Field(0)
     validations: ValidationEntriesModel = None
     factors: List[StudyFactorModel] = []
@@ -442,13 +442,13 @@ class MetaboLightsCompoundIndexModel(EntityModel):
     hasPathways: bool = Field(None, alias="has_pathways")
     hasNMR: bool = Field(None, alias="has_nmr")
     hasMS: bool = Field(None, alias="has_ms")
-    updatedDate: datetime.datetime = Field(None, alias="updated_date")
+    updatedDate: Union[datetime.datetime, str] = Field(None, alias="updated_date")
     metSpecies: List[MetSpeciesIndexModel] = Field([], alias="met_species_index")
     crossReference: List[MetCrossReferenceModel] = Field([], alias="ref_xref")
     
     metSpectras: List[MetSpectraModel] = Field([], alias="met_spectras")
     metPathways: List[MetPathwayModel] = Field([], alias="met_pathways")
-    @validator('updatedDate')
+    @validator('updatedDate', check_fields=False)
     def datetime_validation(cls, value):
         if not value:
             return None 
@@ -458,3 +458,10 @@ class MetaboLightsCompoundIndexModel(EntityModel):
     
     class Config:
         orm_mode = True
+        
+
+class ESMetaboLightsCompound(MetaboLightsCompoundIndexModel):
+    
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True

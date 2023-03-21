@@ -39,6 +39,7 @@ from app.ws.curation_log import curation_log
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.settings import get_directory_settings
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
+from app.ws.elasticsearch.search import ElasticSearchQuery
 from app.ws.elasticsearch.settings import get_elasticsearch_settings
 from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings
@@ -335,3 +336,4 @@ def initialize_app(flask_app):
     
     api.add_resource(SpeciesTree, res_path + "/species/tree")
     
+    api.add_resource(ElasticSearchQuery, res_path + "/es-index/search")
