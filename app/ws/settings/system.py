@@ -9,4 +9,5 @@ class SystemSettings(MetabolightsBaseSettings):
     es_compound_sync_task_period_in_secs: int = 60 * 60
     es_study_sync_task_period_in_secs: int = 60 * 10
     study_folder_maintenance_task_period_in_secs: int = 60 * 10
+    banner_message_key: str = "metabolights:banner:message"
     

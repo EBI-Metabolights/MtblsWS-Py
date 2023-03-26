@@ -51,6 +51,7 @@ from app.ws.ftp.ftp_operations import (FtpFolderPermission,
                                        SyncFromFtpFolder, SyncFromStudyFolder)
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
+from app.ws.internal import BannerMessage
 from app.ws.isaAssay import StudyAssay, StudyAssayDelete
 from app.ws.isaInvestigation import IsaInvestigation
 from app.ws.isaStudy import (StudyContacts, StudyDescription, StudyDescriptors,
@@ -337,3 +338,6 @@ def initialize_app(flask_app):
     api.add_resource(SpeciesTree, res_path + "/species/tree")
     
     api.add_resource(ElasticSearchQuery, res_path + "/es-index/search")
+    
+    api.add_resource(BannerMessage, res_path + "/ebi-internal/banner")
+    

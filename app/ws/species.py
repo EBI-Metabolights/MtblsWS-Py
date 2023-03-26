@@ -114,7 +114,7 @@ class SpeciesTree(Resource):
         
         result_dict = tree.dict()
         result_str = json.dumps(result_dict)
-        redis.set_value("metabolights:species:tree", result_str)
+        redis.set_value("metabolights:species:tree", result_str, ex=60*10)
         return jsonify(result_dict)
     
     def update_tree(self, tree: SpeciesTreeParent, level: int = 0):

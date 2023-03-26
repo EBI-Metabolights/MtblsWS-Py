@@ -1460,12 +1460,6 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
     return all_ancestors
 
 
-def load_chebi_classyfire_mapping():
-    mapping_file = app.config.get('CLASSYFIRE_MAPPING')
-    print_log('loading ChEBI mapping file ' + mapping_file)
-    return read_tsv(mapping_file)
-
-
 def get_ancestors(classyfire_file_name, classyfire_df):
     lines = []
     direct_parents = []
@@ -1510,13 +1504,6 @@ def get_chebi_obo_file():
     obo_file = app.config.get('OBO_FILE')
     onto = pronto.Ontology(obo_file)
     return onto
-
-
-def get_chebi_mapping():
-    print_log('Reading ClassyFire to ChEBI mapping file')
-    mapping_file = load_chebi_classyfire_mapping()
-
-    return mapping_file
 
 
 def get_is_a(onto, chebi_compound):
