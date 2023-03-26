@@ -5,7 +5,7 @@ from sqlalchemy import func
 
 from app.utils import MetabolightsException, MetabolightsAuthorizationException
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import SimplifiedUserModel
+from app.ws.db.models import SimplifiedUserModel, UserModel
 from app.ws.db.schemes import Study, User
 from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import UserStatus, UserRole
@@ -54,7 +54,7 @@ class UserService(object):
             study = db_session.query(Study.acc).filter(Study.acc == study_id).first()
             if study:
                 return self.validate_user_has_curator_role(user_token)
-            raise MetabolightsException(message=f"Not a valid study id")
+            raise MetabolightsAuthorizationException(message=f"Not a valid study id")
 
     def validate_user_has_curator_role(self, user_token):
         return self.validate_user_by_token(user_token, [UserRole.ROLE_SUPER_USER.value])
@@ -71,7 +71,7 @@ class UserService(object):
 
     def validate_user_by_username(self, user_name, allowed_role_list, allowed_status_list=None):
         if not user_name:
-            raise MetabolightsException(message=f"User token is not valid")
+            raise MetabolightsException(message=f"Invalid user or credential")
 
         filter_clause = lambda query: query.filter(func.lower(User.username) == user_name.lower())
 
@@ -98,17 +98,17 @@ class UserService(object):
                 query = db_session.query(User.id, User.username, User.role, User.status, User.apitoken, User.password)
                 db_user = filter_clause(query).first()
         except Exception as e:
-            raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
+            raise MetabolightsAuthorizationException(message=f"Invalid user or credential", exception=e)
 
         if db_user:
             if int(db_user.status) not in allowed_status_list:
-                raise MetabolightsAuthorizationException(message=f"User status is not accepted")
+                raise MetabolightsAuthorizationException(message=f"Invalid user status")
 
             if db_user.role not in allowed_role_list:
-                raise MetabolightsAuthorizationException(message=f"User role is not accepted")
+                raise MetabolightsAuthorizationException(message=f"Invalid user role")
             return db_user
         else:
-            raise MetabolightsAuthorizationException(message=f"User not in database")
+            raise MetabolightsAuthorizationException(message=f"Invalid user or credential")
 
     def get_simplified_user_by_username(self, user_name) -> Optional[SimplifiedUserModel]:
         if not user_name:
@@ -130,7 +130,7 @@ class UserService(object):
         try:
             with self.db_manager.session_maker() as db_session:
                 query = db_session.query(User)
-                db_user = filter_clause(query).first()
+                db_user: User = filter_clause(query).first()
         except Exception as e:
             raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
 
@@ -140,6 +140,29 @@ class UserService(object):
             m_user.userName = m_user.userName.lower()
             m_user.fullName = m_user.firstName + " " + m_user.lastName
             m_user.role = UserRole(m_user.role).name
+            m_user.status = UserStatus(m_user.status).name
+            m_user.joinDate = datetime_to_int(m_user.joinDate)
+            return m_user
+        else:
+            raise MetabolightsAuthorizationException(message=f"User not in database")
+
+
+    def get_db_user_by_user_name(self, user_name: str) -> Optional[UserModel]:
+        filter_clause = lambda query: query.filter(User.username == user_name)
+        try:
+            with self.db_manager.session_maker() as db_session:
+                query = db_session.query(User)
+                db_user: User = filter_clause(query).first()
+        except Exception as e:
+            raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
+
+        if db_user:
+            m_user = UserModel.from_orm(db_user)
+            m_user.email = m_user.email.lower()
+            m_user.apiToken = db_user.apitoken
+            m_user.userName = m_user.userName.lower()
+            m_user.fullName = m_user.firstName + " " + m_user.lastName
+            # m_user.role = UserRole(m_user.role).name
             m_user.status = UserStatus(m_user.status).name
             m_user.joinDate = datetime_to_int(m_user.joinDate)
             return m_user

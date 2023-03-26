@@ -164,14 +164,14 @@ class IsaApiClient:
             if failing_gracefully:
                 return None, None, None
             else:
-                abort(417)
+                abort(417, message=f"Error: {str(e)}")
         except Exception as e:
             logger.exception("Failed to find Investigation file %s from %s", study_id, std_path)
             logger.error(str(e))
             if failing_gracefully:
                 return None, None, None
             else:
-                abort(417)
+                abort(417, message=f"Error: {str(e)}")
         else:
             return isa_study, isa_inv, std_path
 

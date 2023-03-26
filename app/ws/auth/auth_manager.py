@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Optional, List
+import uuid
 
 from flask import current_app as app
 from flask_restful import abort
@@ -11,6 +12,7 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from pydantic import ValidationError, BaseModel, BaseSettings
 from sqlalchemy import func
+from app.utils import MetabolightsAuthorizationException
 
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import SimplifiedUserModel
@@ -32,9 +34,12 @@ if "SECRETS_DIR" in os.environ and os.environ["SECRETS_DIR"]:
 class SecuritySettings(BaseSettings):
     application_secret_key: str = ""
     access_token_hash_algorithm: str = "HS256"
-    access_token_expires_delta: int = 300
+    access_token_expires_delta: int = 4 * 60
+    admin_jwt_token_expires_in_mins: int = 8 * 60    
+
     access_token_allowed_audience: str = None
     access_token_issuer_name: str = "Metabolights PythonWS"
+    one_time_token_expires_in_seconds: int = 300
 
 
 @lru_cache(1)
@@ -66,22 +71,29 @@ class AuthenticationManager(object):
             cls.instance = AuthenticationManager(app=app)
         return cls.instance
 
-    def create_oauth2_token(self, username, password, audience=None, db_session=None):
+    def create_oauth2_token(self, username, password, audience=None, db_session=None, scopes: List[str]=[], exp_period_in_mins: int=-1):
         user = self.authenticate_user(username, password, db_session=db_session)
-        return self.create_oauth2_token_by_user(user, audience, db_session)
-    def create_oauth2_token_by_api_token(self, token, audience=None, db_session=None):
+        return self.create_oauth2_token_by_user(user, audience, db_session, scopes=scopes, exp_period_in_mins=exp_period_in_mins)
+    def create_oauth2_token_by_api_token(self, token, audience=None, db_session=None, scopes: List[str]=[], exp_period_in_mins: int=-1):
         user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(token)
-        return self.create_oauth2_token_by_user(user, audience, db_session)
+        return self.create_oauth2_token_by_user(user, audience, db_session, scopes=scopes, exp_period_in_mins=exp_period_in_mins)
 
-    def create_oauth2_token_by_user(self, user, audience=None, db_session=None):
+    def create_oauth2_token_by_user(self, user, audience=None, db_session=None,scopes: List[str]=[], exp_period_in_mins: int=-1):
         if not user:
-            abort(http_status_code=400, detail="Incorrect username or password")
+            raise MetabolightsAuthorizationException(http_code=400, message="Invalid user or credential")
         if not audience:
             audience = self.settings.access_token_allowed_audience
-        access_token_expires = timedelta(minutes=self.settings.access_token_expires_delta)
+        if exp_period_in_mins > 0:
+            access_token_expires = timedelta(minutes=exp_period_in_mins)
+        else:
+            access_token_expires = timedelta(minutes=self.settings.access_token_expires_delta)
+        
         issuer_name = self.settings.access_token_issuer_name
-        token_base_data = {"sub": user.username, "scopes": [UserRole(user.role).name], "role": UserRole(user.role).name,
-                           "iss": issuer_name, "aud": audience, "Name": user.username}
+        jti = str(uuid.uuid4())
+        if not scopes:
+            scopes = ["login"]
+        token_base_data = {"sub": user.username, "scopes": scopes, "role": UserRole(user.role).name,
+                           "iss": issuer_name, "aud": audience, "name": user.username, "jti": jti}
 
         access_token = self._create_jwt_token(data=token_base_data, expires_delta=access_token_expires)
         return access_token
@@ -94,11 +106,20 @@ class AuthenticationManager(object):
                 audience = self.settings.access_token_allowed_audience
             if not issuer_name:
                 issuer_name = self.settings.access_token_issuer_name
-            payload = jwt.decode(token, self.settings.application_secret_key, audience=audience, issuer=issuer_name,
+            
+            options = {"verify_signature": False, "verify_exp": True, "verify_jti": True, "verify_sub": True}
+            payload = jwt.decode(token, self.settings.application_secret_key, audience=audience, issuer=issuer_name, options=options)
+            exp = payload.get("exp")
+            now = int(datetime.utcnow().timestamp())
+            if now > exp:
+                raise MetabolightsAuthorizationException(message="Autantication token is expired")
+            jti = payload.get("jti")
+            key = hashlib.sha256(bytes(f"{self.settings.application_secret_key}-{jti}", 'utf-8')).hexdigest()
+            payload = jwt.decode(token, key, audience=audience, issuer=issuer_name,
                                  algorithms=[self.settings.access_token_hash_algorithm])
             username: str = payload.get("sub")
             if username is None:
-                abort(http_status_code=401, detail="Could not validate credentials, no username")
+                raise MetabolightsAuthorizationException(message="Could not validate credentials or no username")
             if not db_session:
                 db_session = DBManager.get_instance(app).session_maker()
 
@@ -106,20 +127,20 @@ class AuthenticationManager(object):
                 query = db_session.query(User)
                 db_user = query.filter(func.lower(User.username) == username.lower()).first()
             if not db_user:
-                abort(401, detail="Could not validate credentials, username is not in db", )
+                raise MetabolightsAuthorizationException(message="Could not validate credentials or no username")
             user = SimplifiedUserModel.from_orm(db_user)
         except (JWTError, ValidationError) as e:
-            abort(http_status_code=401, detail="Could not validate credentials")
+            raise e
 
         if UserStatus(user.status) != UserStatus.ACTIVE:
-            abort(http_status_code=401, detail="Not active user")
+            raise MetabolightsAuthorizationException(message="Not an active user")
 
         return user
 
     def authenticate_user(self, username: str, password: str, db_session=None):
         user = UserService.get_instance(app).validate_username_with_submitter_or_super_user_role(username)
         if not self._verify_password(password, user.password):
-            return False
+            raise MetabolightsAuthorizationException(message="Invalid user or credential")
         return user
 
     def _create_jwt_token(self, data: dict, expires_delta: Optional[timedelta] = None):
@@ -129,8 +150,9 @@ class AuthenticationManager(object):
         else:
             expire = datetime.utcnow() + timedelta(minutes=self.settings.access_token_expires_delta)
         to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, self.settings.application_secret_key,
-                                 algorithm=self.settings.access_token_hash_algorithm)
+        jti = to_encode.get("jti")
+        key = hashlib.sha256(bytes(f"{self.settings.application_secret_key}-{jti}", 'utf-8')).hexdigest()
+        encoded_jwt = jwt.encode(to_encode, key, algorithm=self.settings.access_token_hash_algorithm)
         return encoded_jwt
 
     def _verify_password(self, plain_password, hashed_password):

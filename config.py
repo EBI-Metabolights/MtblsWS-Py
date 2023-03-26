@@ -1,5 +1,6 @@
 import logging
 import os
+import socket
 from app import file_utils as utils
 
 
@@ -683,6 +684,9 @@ print(f"ELASTICSEARCH_HOST:\t{ELASTICSEARCH_HOST}")
 print(f"LSF_HOST:\t\t{LSF_HOST}")
 print(f"FTP_PRIVATE_MOUNT_TYPE:\t{FTP_PRIVATE_MOUNT_TYPE}")
 print(f"REPORTING_ROOT_PATH:\t{REPORTING_ROOT_PATH}")
+print(f"MAIL_SERVER:\t\t{MAIL_SERVER}:{MAIL_PORT}")
+print(f"SERVER HOST NAME:\t{socket.gethostname()}")
+print(f"SERVER PORT:\t\t{PORT}")
 print("................................................................................................................")
 
 

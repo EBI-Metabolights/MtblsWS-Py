@@ -21,65 +21,90 @@ from flask_mail import Mail
 from flask_restful import Api
 from flask_restful_swagger import swagger
 
-from app.ws.MapStudies import MapStudies
 from app.ws.about import About, AboutServer
 from app.ws.assay_protocol import GetProtocolForAssays
-from app.ws.auth.authentication import AuthLogin, AuthValidation, AuthUser, AuthLoginWithToken
-from app.ws.biostudies import BioStudiesFromMTBLS, BioStudies
+from app.ws.auth.authentication import (AuthLogin, AuthLoginWithToken,
+                                        AuthUser, AuthUserStudyPermissions, AuthUserStudyPermissions2, AuthValidation, OneTimeTokenCreation, OneTimeTokenValidation)
+from app.ws.biostudies import BioStudies, BioStudiesFromMTBLS
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.settings import get_chebi_ws_settings
 from app.ws.chebi.wsproxy import ChebiWsProxy
-from app.ws.chebi_workflow import SplitMaf, ChEBIPipeLine, ChEBIPipeLineLoad
-from app.ws.chebi_ws import ChebiLiteEntity, ChebiEntity
+from app.ws.chebi_workflow import ChEBIPipeLine, ChEBIPipeLineLoad, SplitMaf
+from app.ws.chebi_ws import ChebiEntity, ChebiLiteEntity
 from app.ws.cluster_jobs import LsfUtils
 from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import cronjob
-from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.curation_log import curation_log
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.settings import get_directory_settings
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
+from app.ws.elasticsearch.search import ElasticSearchQuery
 from app.ws.elasticsearch.settings import get_elasticsearch_settings
 from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
-from app.ws.ftp.ftp_operations import FtpFolderSyncStatus, SyncFromFtpFolder, SyncCalculation, FtpFolderPermission, \
-    FtpFolderPermissionModification, PrivateFtpFolder, PrivateFtpFolderPath, SyncFromStudyFolder
+from app.ws.ftp.ftp_operations import (FtpFolderPermission,
+                                       FtpFolderPermissionModification,
+                                       FtpFolderSyncStatus, PrivateFtpFolder,
+                                       PrivateFtpFolderPath, SyncCalculation,
+                                       SyncFromFtpFolder, SyncFromStudyFolder)
+from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.isaAssay import StudyAssay, StudyAssayDelete
 from app.ws.isaInvestigation import IsaInvestigation
-from app.ws.isaStudy import StudyMetaInfo, StudyPublications, StudyDescriptors, StudyFactors, StudyProtocols, \
-    StudySubmitters, StudyContacts, StudyDescription, StudyTitle, StudyReleaseDate
+from app.ws.isaStudy import (StudyContacts, StudyDescription, StudyDescriptors,
+                             StudyFactors, StudyMetaInfo, StudyProtocols,
+                             StudyPublications, StudyReleaseDate,
+                             StudySubmitters, StudyTitle)
 from app.ws.jira_update import Jira
+from app.ws.MapStudies import MapStudies
 from app.ws.metaspace_pipeline import MetaspacePipeLine
-from app.ws.mtblsCompound import MtblsCompoundsDetails, MtblsCompounds
-from app.ws.mtblsStudy import MtblsStudies, MtblsPrivateStudies, MtblsStudiesWithMethods, MyMtblsStudiesDetailed, \
-    MyMtblsStudies, IsaTabInvestigationFile, IsaTabSampleFile, IsaTabAssayFile, CreateAccession, CloneAccession, \
-    DeleteStudy, CreateUploadFolder, AuditFiles, ReindexStudy, ReindexAllPublicStudies, MtblsStudyValidationStatus, \
-    UnindexedStudy, PublicStudyDetail, RetryReindexStudies
+from app.ws.mtbls_maf import (CombineMetaboliteAnnotationFiles,
+                              MetaboliteAnnotationFile, MtblsMAFSearch)
+from app.ws.mtblsCompound import (MtblsCompoundFile, MtblsCompoundIndex, MtblsCompoundIndexAll,
+                                  MtblsCompoundIndexSync, MtblsCompoundSpectraFile, MtblsCompounds,
+                                  MtblsCompoundsDetails)
+from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
+                               CreateUploadFolder, DeleteStudy,
+                               IsaTabAssayFile, IsaTabInvestigationFile,
+                               IsaTabSampleFile, MtblsPrivateStudies,
+                               MtblsPublicStudiesIndexAll, MtblsStudies,
+                               MtblsStudiesIndexAll, MtblsStudiesIndexSync,
+                               MtblsStudiesWithMethods, MtblsStudyFolders,
+                               MtblsStudyValidationStatus, MyMtblsStudies,
+                               MyMtblsStudiesDetailed, PublicStudyDetail,
+                               ReindexStudy, RetryReindexStudies,
+                               UnindexedStudy)
 from app.ws.mtblsWSclient import WsClient
-from app.ws.mtbls_maf import MtblsMAFSearch, CombineMetaboliteAnnotationFiles, MetaboliteAnnotationFile
-from app.ws.mzML2ISA import ValidateMzML, Convert2ISAtab
-from app.ws.ontology import Cellosaurus, Placeholder, Ontology
+from app.ws.mzML2ISA import Convert2ISAtab, ValidateMzML
+from app.ws.ontology import Cellosaurus, Ontology, Placeholder
 from app.ws.organism import Organism
 from app.ws.partner_utils import Metabolon
-from app.ws.pathway import fellaPathway
-from app.ws.pathway import keggid
-from app.ws.reports import CrossReferencePublicationInformation
-from app.ws.reports import reports, StudyAssayTypeReports
+from app.ws.pathway import fellaPathway, keggid
+from app.ws.reports import (CrossReferencePublicationInformation,
+                            StudyAssayTypeReports, reports)
 from app.ws.send_files import SendFiles, SendFilesPrivate
+from app.ws.species import SpeciesTree
 from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
 from app.ws.study_actions import StudyStatus, ToggleAccess, ToggleAccessGet
-from app.ws.study_files import StudyFiles, StudyFilesTree, SampleStudyFiles, UnzipFiles, CopyFilesFolders, SyncFolder, \
-    FileList, StudyFilesReuse, DeleteAsperaFiles, StudyRawAndDerivedDataFile, StudyRawAndDerivedDataFolder
-from app.ws.table_editor import GetTsvFile, AddRows, ColumnsRows, ComplexColumns, SimpleColumns, GetAssayMaf
+from app.ws.study_files import (CopyFilesFolders, DeleteAsperaFiles, FileList,
+                                SampleStudyFiles, StudyFiles, StudyFilesReuse,
+                                StudyFilesTree, StudyRawAndDerivedDataFile,
+                                StudyRawAndDerivedDataFolder, SyncFolder,
+                                UnzipFiles)
+from app.ws.table_editor import (AddRows, ColumnsRows, ComplexColumns,
+                                 GetAssayMaf, GetTsvFile, SimpleColumns)
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
-from app.ws.tasks.create_json_files import PublicStudyJsonExporter, StudyJsonExporter
+from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
+                                            StudyJsonExporter)
 from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
-from app.ws.validation import Validation, OverrideValidation, UpdateValidationFile, NewValidation, ValidationComment
+from app.ws.v1.studies import V1StudyDetail
+from app.ws.validation import (NewValidation, OverrideValidation,
+                               UpdateValidationFile, Validation,
+                               ValidationComment)
 
 
 def configure_app(flask_app):
@@ -133,9 +158,17 @@ def initialize_app(flask_app):
     api.add_resource(AuthLoginWithToken, res_path + "/auth/login-with-token")
     api.add_resource(AuthValidation, res_path + "/auth/validate-token")
     api.add_resource(AuthUser, res_path + "/auth/user")
+    api.add_resource(AuthUserStudyPermissions, res_path + "/auth/permissions/accession-number/<string:study_id>")
+    api.add_resource(AuthUserStudyPermissions2, res_path + "/auth/permissions/obfuscationcode/<string:obfuscation_code>")
+    api.add_resource(OneTimeTokenCreation, res_path + "/auth/create-onetime-token")
+    api.add_resource(OneTimeTokenValidation, res_path + "/auth/login-with-onetime-token")
+
     api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query_type>")
 
     # MTBLS studies
+    api.add_resource(V1StudyDetail, res_path + "/v1/study/<string:study_id>")
+    # api.add_resource(V1StudyDetail, res_path + "/v1/security/studies/obfuscationcode/<string:obfuscationcode>/view")
+    
     api.add_resource(MtblsStudies, res_path + "/studies")
     api.add_resource(MtblsPrivateStudies, res_path + "/studies/private")
     api.add_resource(MtblsStudiesWithMethods, res_path + "/studies/technology")
@@ -200,7 +233,16 @@ def initialize_app(flask_app):
     api.add_resource(Organism, res_path + "/studies/<string:study_id>/organisms")
 
     api.add_resource(MtblsCompounds, res_path + "/compounds/list")
+    
+    
     api.add_resource(MtblsCompoundsDetails, res_path + "/compounds/<string:accession>")
+    
+    api.add_resource(MtblsCompoundFile, res_path + "/compounds/<string:accession>/file")
+    api.add_resource(MtblsCompoundSpectraFile, res_path + "/compounds/<string:accession>/<string:spectra_id>/file")
+    
+    api.add_resource(MtblsCompoundIndex, res_path + "/compounds/<string:accession>/es-index")
+    api.add_resource(MtblsCompoundIndexAll, res_path + "/compounds/es-indexes/reindex-all")
+    api.add_resource(MtblsCompoundIndexSync, res_path + "/compounds/es-indexes/sync-all")
 
     # Metabolite Annotation File (MAF)
     api.add_resource(MetaboliteAnnotationFile, res_path + "/studies/<string:study_id>/maf/validate")
@@ -248,10 +290,13 @@ def initialize_app(flask_app):
     api.add_resource(ValidateMzML, res_path + "/ebi-internal/<string:study_id>/validate-mzml")
     api.add_resource(UserManagement, res_path + "/ebi-internal/users")
     api.add_resource(ExtractMSSpectra, res_path + "/ebi-internal/<string:study_id>/extract-peak-list")
-    api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/reindex")
-    api.add_resource(UnindexedStudy, res_path + "/ebi-internal/studies/reindex/failed-tasks")
-    api.add_resource(RetryReindexStudies, res_path + "/ebi-internal/studies/reindex/failed-tasks/retry")
-    api.add_resource(ReindexAllPublicStudies, res_path + "/ebi-internal/studies/public/reindex-all")
+    api.add_resource(ReindexStudy, res_path + "/ebi-internal/<string:study_id>/es-index")
+    api.add_resource(RetryReindexStudies, res_path + "/ebi-internal/studies/es-indexes/failed-indexes/retry")
+
+    api.add_resource(UnindexedStudy, res_path + "/ebi-internal/studies/es-indexes/failed-indexes")
+    api.add_resource(MtblsStudiesIndexSync, res_path + "/ebi-internal/studies/es-indexes/sync-all")
+    api.add_resource(MtblsStudiesIndexAll, res_path + "/ebi-internal/studies/es-indexes/reindex-all")
+    api.add_resource(MtblsPublicStudiesIndexAll, res_path + "/ebi-internal/public-studies/es-indexes/reindex-all")
     # api.add_resource(FileEncodingChecker, res_path + "/ebi-internal/studies/encoding-check")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
 
@@ -284,4 +329,11 @@ def initialize_app(flask_app):
     api.add_resource(ChebiLiteEntity, res_path + "/chebi/chebi-ids/<string:compound_name>")
     api.add_resource(ChebiEntity, res_path + "/chebi/entities/<string:chebi_id>")
 
+    api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/study-folders/maintain-folders")
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
+    
+    
+    
+    api.add_resource(SpeciesTree, res_path + "/species/tree")
+    
+    api.add_resource(ElasticSearchQuery, res_path + "/es-index/search")

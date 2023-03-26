@@ -52,8 +52,7 @@ class EmailService(object):
         except Exception as exc:
             message = f'Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}\nError {str(exc)}'
             logger.error(message)
-
-
+            
     def send_email(self, subject_name, body, submitters_mail_addresses, user_email,
                    from_mail_address=None, curation_mail_address=None):
         if not from_mail_address:
@@ -74,24 +73,25 @@ class EmailService(object):
         except Exception as e:
             message = f'Sending email failed: subject= {subject_name} receipents:{str(recipients)} body={str(body)}\nError {str(e)}'
             logger.error(message)
-
+    
+    def get_rendered_body(self, template_name: str, content):
+        template = env.get_template(template_name)
+        body = template.render(content)
+        return body
+        
     def send_email_for_queued_study_submitted(self, study_id, release_date, user_email, submitters_mail_addresses):
 
-        template = env.get_template('send_queued_study_submitted.html')
-
         file_name = " * Online submission * "
-        study_url = os.path.join(self.settings.metabolights_host_url, study_id)
+        public_study_url = os.path.join(self.settings.metabolights_host_url, study_id)
+        private_study_url = os.path.join(self.settings.metabolights_host_url, "editor", "study", study_id)
         subject_name = f"Congratulations! Your study {study_id} has been successfully processed!"
 
         content = {"study_id": study_id, "release_date": release_date,
-                   "file_name": file_name, "study_url": study_url}
-        body = template.render(content)
+                   "file_name": file_name, "public_study_url": public_study_url, "private_study_url": private_study_url }
+        body = self.get_rendered_body('send_queued_study_submitted.html', content)
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
 
     def send_email_for_requested_ftp_folder_created(self, study_id, ftp_folder, user_email, submitters_mail_addresses):
-
-        template = env.get_template('requested_ftp_folder_created.html')
-
         user_name = self.settings.private_ftp_server_user
         user_password = self.settings.private_ftp_server_password
         server = self.settings.private_ftp_server
@@ -99,8 +99,15 @@ class EmailService(object):
 
         content = {"user_name": user_name, "user_password": user_password, "server": server,
                    "ftp_folder": ftp_folder, "ftp_upload_doc_link": ftp_upload_doc_link}
-        body = template.render(content)
-
+        
+        body = self.get_rendered_body('requested_ftp_folder_created.html', content)
         subject_name = f"Requested Study upload folder for {study_id}"
 
         self.send_email(subject_name, body, submitters_mail_addresses, user_email)
+
+    def send_email_for_task_completed(self, subject_name, task_id, task_result, to):
+
+        content = {"task_id": task_id, "task_result": task_result}
+        body = self.get_rendered_body('curation_tasks/worker_task_completed.html', content)
+
+        self.send_generic_email(subject_name, body, from_mail_address=None, to_mail_addresses=to)

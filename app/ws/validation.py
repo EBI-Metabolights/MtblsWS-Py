@@ -377,7 +377,7 @@ class OverrideValidation(Resource):
         # First, get all existing validations from the database
         try:
             query_list = override_validations(study_id, 'query')
-            if query_list:
+            if query_list and query_list[0]:
                 for val in query_list[0].split('|'):
                     override_list.append(val)
         except Exception as e:
@@ -399,11 +399,7 @@ class OverrideValidation(Resource):
                 override_list.append(val + ':' + val_message)
                 val_feedback = "Validation '" + val + "' stored in the database"
 
-        db_update_string = ""
-        for existing_val in override_list:
-            db_update_string = db_update_string + existing_val + '|'
-        db_update_string = db_update_string[:-1]  # Remove trailing pipeline
-
+        db_update_string = "|".join(override_list)
         try:
             query_list = override_validations(study_id, 'update', override=db_update_string)
         except Exception as e:

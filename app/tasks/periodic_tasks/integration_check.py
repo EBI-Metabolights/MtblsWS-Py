@@ -1,4 +1,5 @@
 import datetime
+import os
 from smtplib import SMTP
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.common.email import send_technical_issue_email
@@ -88,4 +89,4 @@ def check_integrations():
                 # send_technical_issue_email("Integration Check Failure", str(test_results))
                 break
         
-        return {"status": status, "time": int(datetime.datetime.now().timestamp()) , "test_results": test_results}
+        return {"status": status, "executed_on":  os.uname().nodename, "time": int(datetime.datetime.now().timestamp()) , "test_results": test_results}

@@ -46,5 +46,11 @@ class MetabolightsFileOperationException(MetabolightsException):
 
 class MetabolightsAuthorizationException(MetabolightsException):
 
-    def __init__(self, message: str, exception: Exception = None, http_code=401):
+    def __init__(self, message: str="", exception: Exception = None, http_code=401):
         super(MetabolightsAuthorizationException, self).__init__(message, exception, http_code)
+
+    def __str__(self):
+        if self.exception:
+            return f"{str(self.__class__.__name__)}: {self.message}, http_code: {self.http_code} Cause -->: [{str(self.exception)}]"
+        else:
+            return f"{str(self.__class__.__name__)}: {self.message}, http_code: {self.http_code}"
