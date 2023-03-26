@@ -97,7 +97,7 @@ class OrganismModel(BaseModel):
 
 class EntityModel(BaseModel):
     id: int
-    organism: List[OrganismModel] = []
+    organism: Optional[List[OrganismModel]] = []
 
 
 class ValidationEntryModel(BaseModel):
@@ -349,8 +349,8 @@ class MetCrossReferenceModel(BaseModel):
 
 class MetSpeciesIndexModel(EntityModel):
     ObjectType: str = "MetSpecies"
-    species: MetSpeciesModel = Field(None, alias="species")
-    crossReference: MetCrossReferenceModel = Field(None, alias="cross_reference")
+    species: Optional[MetSpeciesModel] = Field(None, alias="species")
+    crossReference: Optional[MetCrossReferenceModel] = Field(None, alias="cross_reference")
     class Config:
         orm_mode = True
 
@@ -443,8 +443,8 @@ class MetaboLightsCompoundIndexModel(EntityModel):
     hasNMR: bool = Field(None, alias="has_nmr")
     hasMS: bool = Field(None, alias="has_ms")
     updatedDate: Union[datetime.datetime, str] = Field(None, alias="updated_date")
-    metSpecies: List[MetSpeciesIndexModel] = Field([], alias="met_species_index")
-    crossReference: List[MetCrossReferenceModel] = Field([], alias="ref_xref")
+    metSpecies: Union[List[MetSpeciesIndexModel], None] = Field([], alias="met_species_index")
+    crossReference: Union[List[MetCrossReferenceModel], None] = Field([], alias="ref_xref")
     
     metSpectras: List[MetSpectraModel] = Field([], alias="met_spectras")
     metPathways: List[MetPathwayModel] = Field([], alias="met_pathways")

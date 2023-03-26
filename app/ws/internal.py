@@ -1,32 +1,14 @@
-import json
-from typing import List
 
 from flask import current_app as app
-from flask import jsonify, make_response, request
+from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from pydantic import BaseModel
 
-from app.utils import (MetabolightsAuthorizationException,
-                       MetabolightsException, metabolights_exception_handler)
-from app.ws.auth.auth_manager import AuthenticationManager
-from app.ws.db.models import UserModel
+from app.utils import (MetabolightsException,
+                       metabolights_exception_handler)
 from app.ws.redis.redis import get_redis_server
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
-
-
-class SpeciesTreeNode(BaseModel):
-    name: str = ""
-    level: int = 0
-    
-class SpeciesTreeLeaf(SpeciesTreeNode):
-    size: int = 1
-    
-class SpeciesTreeParent(SpeciesTreeNode):
-    children: List[SpeciesTreeNode] = []
-    
-
     
 class BannerMessage(Resource):
     @swagger.operation(

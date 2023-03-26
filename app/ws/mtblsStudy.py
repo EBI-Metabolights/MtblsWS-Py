@@ -33,8 +33,7 @@ from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.periodic_tasks.study import sync_studies_on_es_and_db
 from app.tasks.periodic_tasks.study_folder import maintain_study_folders
-from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException, \
-    MetabolightsDBException
+from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyTaskModel
@@ -1233,7 +1232,7 @@ class CreateAccession(Resource):
         update_initial_study_files(study_folder_path, study_acc, user_token)
         
     def create_study_folder(self, folder_name):
-        create_initial_study_folder(folder_name, app)
+        return create_initial_study_folder(folder_name, app)
         
 class DeleteStudy(Resource):
     @swagger.operation(
@@ -1847,7 +1846,7 @@ class MtblsStudiesIndexSync(Resource):
 class MtblsStudyFolders(Resource):
     @swagger.operation(
         summary="Maintain study folders",
-        notes="Start a task to sync all study folders, and return task id. Result will be sent by email.",
+        notes="Start a task to maintain all study folders, and return task id. Result will be sent by email.",
         parameters=[
             {
                 "name": "user_token",
