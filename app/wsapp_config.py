@@ -23,6 +23,7 @@ from flask_restful_swagger import swagger
 
 from app.ws.about import About, AboutServer
 from app.ws.assay_protocol import GetProtocolForAssays
+from app.ws.auth.accounts import UserAccounts
 from app.ws.auth.authentication import (AuthLogin, AuthLoginWithToken,
                                         AuthUser, AuthUserStudyPermissions, AuthUserStudyPermissions2, AuthValidation, OneTimeTokenCreation, OneTimeTokenValidation)
 from app.ws.biostudies import BioStudies, BioStudiesFromMTBLS
@@ -60,6 +61,8 @@ from app.ws.isaStudy import (StudyContacts, StudyDescription, StudyDescriptors,
                              StudySubmitters, StudyTitle)
 from app.ws.jira_update import Jira
 from app.ws.MapStudies import MapStudies
+from app.ws.metabolight_parameters import MetabolightsParameters
+from app.ws.metabolight_statistics import MetabolightsStatistics
 from app.ws.metaspace_pipeline import MetaspacePipeLine
 from app.ws.mtbls_maf import (CombineMetaboliteAnnotationFiles,
                               MetaboliteAnnotationFile, MtblsMAFSearch)
@@ -139,10 +142,9 @@ def configure_app(flask_app):
 def initialize_app(flask_app):
     configure_app(flask_app)
 
-    CORS(flask_app, resources={flask_app.config.get("CORS_RESOURCES_PATH")},
-         origins={flask_app.config.get('CORS_HOSTS')},
-         methods={"GET, HEAD, POST, OPTIONS, PUT, DELETE"}
-         )
+    CORS(flask_app, resources={flask_app.config.get("CORS_RESOURCES_PATH"): 
+                               {"origins": flask_app.config.get('CORS_HOSTS'), 
+                                "methods": {"GET, HEAD, POST, OPTIONS, PUT, DELETE"}}})
 
     res_path = flask_app.config.get('RESOURCES_PATH')
     api = swagger.docs(Api(flask_app),
@@ -163,6 +165,8 @@ def initialize_app(flask_app):
     api.add_resource(AuthUserStudyPermissions2, res_path + "/auth/permissions/obfuscationcode/<string:obfuscation_code>")
     api.add_resource(OneTimeTokenCreation, res_path + "/auth/create-onetime-token")
     api.add_resource(OneTimeTokenValidation, res_path + "/auth/login-with-onetime-token")
+    api.add_resource(UserAccounts, res_path + "/auth/accounts")
+    
 
     api.add_resource(MtblsMAFSearch, res_path + "/search/<string:query_type>")
 
@@ -312,6 +316,8 @@ def initialize_app(flask_app):
     api.add_resource(LsfUtils, res_path + "/ebi-internal/cluster-jobs")
     api.add_resource(StudyStats, res_path + "/ebi-internal/study-stats")
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
+    api.add_resource(MetabolightsParameters, res_path + "/ebi-internal/system/parameters")
+    api.add_resource(MetabolightsStatistics, res_path + "/ebi-internal/system/statistics")
 
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
     api.add_resource(FTPRemoteFileManager, res_path + "/ebi-internal/ftp-filemanager-testing")

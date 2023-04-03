@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, List, Dict, Set, Union
+from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field, validator
 from app.ws.db.types import UserStatus
@@ -56,7 +56,7 @@ class UserModel(BaseModel):
     email: str = Field(..., alias="email")  # excluded from es
     firstName: str = Field(None, alias="firstname")
     fullName: str = Field(None)  # assigned as not_analyzed in es
-    joinDate: datetime.datetime = Field(None, alias="joindate")  # excluded from es
+    joinDate: Union[str, datetime.datetime] = Field(None, alias="joindate")  # excluded from es
     lastName: str = Field(None, alias="lastname")
     orcid: str = Field(None, alias="orcid")
     role: Union[int, str] = Field(..., alias="role")  # excluded from es
@@ -70,7 +70,58 @@ class UserModel(BaseModel):
 
     class Config:
         orm_mode = True
+        
+    @validator('joinDate', check_fields=False)
+    def datetime_validation(cls, value):
+        if not value:
+            return None 
+        if isinstance(value, datetime.datetime):
+            return value.isoformat()
+        return value
 
+
+class NewUserModel(BaseModel):
+    
+    userId: Optional[int] = Field(None, alias="id")  # excluded from es
+    email: str = Field(..., alias="email")  # excluded from es
+    userName: str = Field(..., alias="username")  # assigned as not_analyzed in es
+    dbPassword: str = Field(..., alias="password")  # excluded from es
+    joinDate: datetime.datetime = Field(..., alias="joindate")  # excluded from es
+    firstName: str = Field(..., alias="firstname")
+    fullName: str = Field(None)  # assigned as not_analyzed in es
+    lastName: str = Field(..., alias="lastname")
+    address: str = Field(..., alias="address")  # excluded from es
+    affiliation: str = Field(..., alias="affiliation")  # excluded from es
+    affiliationUrl: str = Field(..., alias="affiliationurl")  # excluded from es
+    status: Union[int, str] = Field(..., alias="status")  # excluded from es
+    role: Union[int, str] = Field(..., alias="role")  # excluded from es
+    apiToken: str = Field(..., alias="apitoken")
+    orcid: str = Field(None, alias="orcid")
+    userVerifyDbPassword: str = None  # not in es index mapping
+    curator: bool = False  # excluded from es
+    mobilePhoneNumber: str = None  # not in es index mapping
+    officePhoneNumber: str = None  # not in es index mapping
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+
+class MetabolightsParameterModel(BaseModel):
+    name:   Optional[str] = Field(..., alias="name")
+    value:  Optional[str] = Field(..., alias="value")
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+
+class MetabolightsStatisticsModel(BaseModel):
+    id:   Optional[int] = Field(..., alias="id")
+    page_section:   Optional[str] = Field(..., alias="page_section")
+    str_name:   Optional[str] = Field(..., alias="str_name")
+    str_value:   Optional[str] = Field(..., alias="str_value")
+    sort_order:   Optional[int] = Field(..., alias="sort_order")
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
 
 class SimplifiedUserModel(BaseModel):
     address: str = Field(None, alias="address")  # excluded from es

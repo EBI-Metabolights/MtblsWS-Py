@@ -22,6 +22,7 @@ from elasticsearch import Elasticsearch
 
 logger = logging.getLogger('wslog')
 
+compound_boolean_field_names = {"hasLiterature", "hasReactions", "hasSpecies", "hasPathways", "hasNMR", "hasMS"}
 
 class ElasticsearchService(object):
     INDEX_NAME = "metabolights"
@@ -162,7 +163,13 @@ class ElasticsearchService(object):
             lines = []
             for line in item.lines:
                 if line.checked:
-                    lines.append({"term": { item.name: line.value}})
+                    if item.name in compound_boolean_field_names:
+                        if line.value.lower() == "t":
+                            lines.append({"term": { item.name: True}})
+                        else:
+                            lines.append({"term": { item.name: False}})
+                    else:
+                        lines.append({"term": { item.name: line.value}})
             filter_item = None
             if len(lines) > 1:
                 filter_item = {"or": {"filters": lines}}
@@ -198,11 +205,11 @@ class ElasticsearchService(object):
         query.facets.append(Facet(name="studyStatus"))
         query.facets.append(Facet(name="organism.organismName"))
         query.facets.append(Facet(name="organism.organismPart"))
-        query.facets.append(Facet(name="factors.name"))
+        # query.facets.append(Facet(name="factors.name"))
         # query.facets.append(Facet(name="users.fullName"))
-        query.facets.append(Facet(name="descriptors.description"))
-        query.facets.append(Facet(name="validations.status"))
-        query.facets.append(Facet(name="validations.entries.statusExt"))
+        # query.facets.append(Facet(name="descriptors.description"))
+        # query.facets.append(Facet(name="validations.status"))
+        # query.facets.append(Facet(name="validations.entries.statusExt"))
         query.boosters.append(Booster(fieldName="_id",boost=2))
         query.boosters.append(Booster(fieldName="title",boost=1))
         query.boosters.append(Booster(fieldName="name",boost=1))

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from flask import current_app as app
 from sqlalchemy import func
@@ -149,6 +149,15 @@ class UserService(object):
 
     def get_db_user_by_user_name(self, user_name: str) -> Optional[UserModel]:
         filter_clause = lambda query: query.filter(User.username == user_name)
+        m_user =  self.get_db_user_by_filter_clause(filter_clause=filter_clause)
+        m_user.email = m_user.email.lower()
+        m_user.userName = m_user.userName.lower()
+        m_user.fullName = m_user.firstName + " " + m_user.lastName
+        m_user.status = UserStatus(m_user.status).name
+        m_user.joinDate = datetime_to_int(m_user.joinDate)
+        return m_user
+
+    def get_db_user_by_filter_clause(self, filter_clause) -> Optional[UserModel]:
         try:
             with self.db_manager.session_maker() as db_session:
                 query = db_session.query(User)
@@ -158,13 +167,25 @@ class UserService(object):
 
         if db_user:
             m_user = UserModel.from_orm(db_user)
-            m_user.email = m_user.email.lower()
-            m_user.apiToken = db_user.apitoken
-            m_user.userName = m_user.userName.lower()
-            m_user.fullName = m_user.firstName + " " + m_user.lastName
-            # m_user.role = UserRole(m_user.role).name
-            m_user.status = UserStatus(m_user.status).name
-            m_user.joinDate = datetime_to_int(m_user.joinDate)
             return m_user
         else:
             raise MetabolightsAuthorizationException(message=f"User not in database")
+        
+
+    def get_db_users_by_filter_clause(self, filter_clause=None) -> List[UserModel]:
+        try:
+            with self.db_manager.session_maker() as db_session:
+                query = db_session.query(User)
+                if filter_clause:
+                    db_users = filter_clause(query).all()
+                else:
+                    db_users = query.all()
+        except Exception as e:
+            raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)
+        users: List[UserModel] = []
+        if db_users:
+            for db_user in db_users:
+                m_user = UserModel.from_orm(db_user)
+                users.append(m_user)
+            
+        return users
