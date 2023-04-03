@@ -59,7 +59,7 @@ class StudyService(object):
         try:
             with self.db_manager.session_maker() as db_session:
                 query = db_session.query(Stableid.seq)
-                result = query.filter(Stableid.prefix == app.config.get("MTBLS_STABLE_ID_PREFIX")).first()
+                result = query.filter(Stableid.prefix == "MTBLS").first()
                 if result:
                     return result.seq
                 raise MetabolightsDBException("DB error while retrieving stable id")

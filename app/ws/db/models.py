@@ -332,7 +332,7 @@ class StudyModel(LiteStudyModel):
     descriptors: List[StudyDesignDescriptor] = []
     publications: List[PublicationModel] = []
     protocols: List[ProtocolModel] = []
-    assays: Union[List[AssayModel], List[IndexedAssayModel]] = []
+    assays: Union[List[AssayModel], List[IndexedAssayModel], None] = []
     contacts: List[ContactModel] = []  # excluded from es
     backups: List[BackupModel] = []
     sampleTable: TableModel = None  # excluded from es

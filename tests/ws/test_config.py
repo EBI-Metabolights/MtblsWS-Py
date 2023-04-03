@@ -33,13 +33,12 @@ class TestConfig(object):
         with flask_app.app_context():
             with DBManager.get_instance(flask_app).session_maker() as db_session:
                 query = db_session.query(Stableid.prefix)
-                result = query.filter(Stableid.prefix == flask_app.config.get("MTBLS_STABLE_ID_PREFIX")).first()
+                result = query.filter(Stableid.prefix == "MTBLS").first()
                 assert result is not None
 
     def test_folder_configuration_01(self, flask_app):
         with flask_app.app_context():
             assert flask_app.config.get("STUDY_QUEUE_FOLDER") is not None
-            assert flask_app.config.get("MTBLS_STABLE_ID_PREFIX") is not None
             assert flask_app.config.get("PRIVATE_FTP_SERVER") is not None
             assert flask_app.config.get("PRIVATE_FTP_SERVER_USER") is not None
             assert flask_app.config.get("PRIVATE_FTP_SERVER_PASSWORD") is not None

@@ -1123,7 +1123,8 @@ class CreateAccession(Resource):
         if len(submitted_studies) >= study_settings.max_study_in_submitted_status and user.role != UserRole.ROLE_SUPER_USER.value and user.role != UserRole.SYSTEM_ADMIN.value:
             logger.warning(f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status.")
             raise MetabolightsException(message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.", http_code=400)
-
+        
+        logger.info(f"Step 1: New study creation request is received from user {user.username}")
         new_accession_number = True
         study_acc = None
         if "study_id" in request.headers:
@@ -1137,27 +1138,41 @@ class CreateAccession(Resource):
         study_path = None
         try:
             study_path = self.create_study_folder(folder_name)
+            logger.info(f"Step 2: Study folder {folder_name} is created on folder.")
         except Exception as exc:
             inputs = {"subject": "Study folder creation was failed.",
                       "body":f"Study folder creation was failed: {folder_name}, user: {user.username} <p> {str(exc)}"}
             send_technical_issue_email.apply_async(kwargs=inputs)
-            raise MetabolightsException(message="Study folder creation was failed.", http_code=501)
+            logger.error(f"Study folder creation was failed. User name: {user.username}. {str(inputs)}")
+            raise MetabolightsException(message="Study folder creation was failed.", http_code=501, exception=exc)
         
-        study_acc = create_empty_study(user_token, study_id=study_acc)
+        try:
+            study_acc = create_empty_study(user_token, study_id=study_acc)
+            
+        except Exception as exc:
+            inputs = {"subject": "Study id creation on DB was failed.",
+                      "body":f"Study id on db creation was failed: folder: {folder_name}, user: {user.username} <p> {str(exc)}"}
+            send_technical_issue_email.apply_async(kwargs=inputs)
+            logger.error(f"Study id creation on DB was failed. Temp folder: {folder_name}. {str(inputs)}")
+            raise MetabolightsException(message="Study id creation on db was failed.", http_code=501, exception=exc)
         
-        if not study_acc:
+        if study_acc:
+            logger.info(f"Step 3: Study id {study_acc} is created on DB.")
+        else:
             inputs = {"subject": "Failed to create new study on database", 
                       "body":f"Study creation was failed on database, user: {user.username}"}
             send_technical_issue_email.apply_async(kwargs=inputs)
-            logger.error('Failed to create new study.')
+            logger.error('Failed to create new study. Temp folder is {folder_name}')
             raise MetabolightsException(message="Could not create a new study in db", http_code=503)
         
         try:
             # Update and rename template files
             self.update_study_template_files(study_path, study_acc, user_token)
+            logger.info(f"Step 4: Study folder {folder_name} content is updated. Investigation and sample file templates are copied.")
         except Exception as exc:
             inputs = {"subject": "Failed to update study initial files", 
                       "body":f"Study file update task was failed on study folder for study {study_acc}, user: {user.username} <p> {str(exc)}"}
+            logger.error(f"Failed to update study initial files for {folder_name}. {str(inputs)}")
             send_technical_issue_email.apply_async(kwargs=inputs)
         
         try:
@@ -1166,40 +1181,46 @@ class CreateAccession(Resource):
                 root_study_path = app.config.get('STUDY_PATH')
                 last_study_path = os.path.join(root_study_path, study_acc)
                 os.rename(study_path, last_study_path)
+                logger.info(f"Step 5: Study folder {folder_name} is renamed to {study_acc}.")
+            else:
+                logger.info(f"Step 5: Renaming {study_acc} study folder task is skipped.")
         except Exception as exc:
             inputs = {"subject": "Failed to rename new study folder", 
                       "body":f"Study folder rename task was failed. Rename from {folder_name} to {study_acc}, user: {user.username} <p> {str(exc)}"}
+            logger.error(f"Failed to rename new study folder {str(inputs)}")
             send_technical_issue_email.apply_async(kwargs=inputs)
                                                     
         # Send email if it is new study
         if new_accession_number:
             inputs = {"user_token": user_token, "study_id": study_acc}
             new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
-            logger.info(f"Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
+            logger.info(f"Step 6: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
+        else:
+            logger.info(f"Step 6: Skipping email. No email will be sent for the study {study_acc}")
         
         # Start ftp folder creation task
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email": new_accession_number}
         create_ftp_folder_task = create_private_ftp_folder.apply_async(kwargs=inputs)
-        logger.info(f"Create ftp folder task started for study {study_acc} with task id: {create_ftp_folder_task.id}")
+        logger.info(f"Step 7: Create ftp folder task is started for study {study_acc} with task id: {create_ftp_folder_task.id}")
         
         # Start reindex task
         inputs = {"user_token": user_token, "study_id": study_acc}
         reindex_task = reindex_study.apply_async(kwargs=inputs)
-        logger.info(f"Reindex task started for study {study_acc} with task id: {reindex_task.id}")
+        logger.info(f"Step 8: Reindex task is started for study {study_acc} with task id: {reindex_task.id}")
             
         return {"new_study": study_acc}
 
     def validate_requested_study_id(self, requested_study_id, user_token):
         """
         If study_id is set, check the rules below:
-        Rule 1- study_id must start with  MTBLS_STABLE_ID_PREFIX
+        Rule 1- study_id must start with  MTBLS
         Rule 2- user must have superuser role
         Rule 3- study_id must be equal or less than last study id, and greater than 0
         Rule 4- study folder does not exist or is empty
         Rule 5- study_id must not be in database
         """
         # Rule 1
-        study_id_prefix = app.config.get("MTBLS_STABLE_ID_PREFIX")
+        study_id_prefix = "MTBLS"
         if not requested_study_id.startswith(study_id_prefix):
             abort(401, message="Invalid study id format. Study id must start with %s" % study_id_prefix)
         # Rule 2

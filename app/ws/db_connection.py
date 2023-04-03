@@ -27,6 +27,7 @@ import psycopg2
 import psycopg2.extras
 from flask import current_app as app, abort
 from psycopg2 import pool
+from app.utils import MetabolightsDBException
 
 from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
 
@@ -787,7 +788,7 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
     try:
         postgresql_pool, conn, cursor = get_connection()
         acc = study_id
-        stable_id_input = {"stable_id_prefix": app.config.get("MTBLS_STABLE_ID_PREFIX")}
+        stable_id_input = {"stable_id_prefix": "MTBLS"}
         if not study_id:
             cursor.execute(get_next_mtbls_id, stable_id_input)
             result = cursor.fetchone()
@@ -795,7 +796,7 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
                 logger.error("There is not data prefix with MTBLS in stableid table")
                 raise ValueError()
             data = result[0]
-            acc = f"{app.config.get('MTBLS_STABLE_ID_PREFIX')}{data}"
+            acc = f"MTBLS{data}"
         if not obfuscationcode:
             obfuscationcode = str(uuid.uuid4())
         releasedate = (datetime.datetime.today() + datetime.timedelta(days=365))
@@ -808,10 +809,10 @@ def create_empty_study(user_token, study_id=None, obfuscationcode=None):
         cursor.execute(link_study_with_user, content)
         conn.commit()
         return acc
-    except Exception as e:
+    except Exception as ex:
         if conn:
             conn.rollback()
-        return None
+        raise MetabolightsDBException(http_code=501, message="Error while creating DB", exception=ex)
     finally:
         if postgresql_pool and conn:
             release_connection(postgresql_pool, conn)
@@ -1221,7 +1222,7 @@ def add_maf_info_data(acc, database_identifier, metabolite_identification, datab
 
 def val_acc(study_id=None):
     if study_id:
-        if not study_id.startswith(tuple(app.config.get("MTBLS_STABLE_ID_PREFIX"))) or study_id.lower() in stop_words:
+        if not study_id.startswith("MTBLS") or study_id.lower() in stop_words:
             logger.error("Incorrect accession number string pattern")
             abort(406, "'%s' incorrect accession number string pattern" % study_id)
 
