@@ -1232,7 +1232,7 @@ class CreateAccession(Resource):
         update_initial_study_files(study_folder_path, study_acc, user_token)
         
     def create_study_folder(self, folder_name):
-        create_initial_study_folder(folder_name, app)
+        return create_initial_study_folder(folder_name, app)
         
 class DeleteStudy(Resource):
     @swagger.operation(
@@ -1846,7 +1846,7 @@ class MtblsStudiesIndexSync(Resource):
 class MtblsStudyFolders(Resource):
     @swagger.operation(
         summary="Maintain study folders",
-        notes="Start a task to sync all study folders, and return task id. Result will be sent by email.",
+        notes="Start a task to maintain all study folders, and return task id. Result will be sent by email.",
         parameters=[
             {
                 "name": "user_token",

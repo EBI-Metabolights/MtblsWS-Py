@@ -24,7 +24,7 @@ class DataMoverAvailableStorage(object):
         else:
             self.read_time_out: int = 10
         self.read_timeout = app.config.get('JOB_STATUS_READ_TIMEOUT')
-        self.source_study_path = app.config.get('STUDY_PATH') + study_id
+        self.source_study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
         self.ftp_user_home_path = app.config.get('LSF_DATAMOVER_FTP_PRIVATE_HOME')
         self.studies_root_path_datamover = app.config.get('LSF_DATAMOVER_STUDY_PATH')
         self.datamover_absolute_studies_path = os.path.join(self.ftp_user_home_path, self.studyId)
