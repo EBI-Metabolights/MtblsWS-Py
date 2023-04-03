@@ -1,3 +1,4 @@
+import datetime
 import os
 
 from app.ws.db_connection import (
@@ -39,6 +40,23 @@ def send_email_for_study_submitted(user_token, study_id):
             "submitters_email_list": submitters_email_list,
         }
 
+@celery.task(
+    base=MetabolightsTask, name="app.tasks.common.email.send_test_email"
+)
+def send_test_email(user_token):
+    flask_app = get_flask_app()
+    with flask_app.app_context():
+        user = UserService.get_instance(
+            flask_app
+        ).validate_user_has_curator_role(user_token)
+        email_service = get_email_service(flask_app)
+        user_email = user.username
+        time = datetime.datetime.now().isoformat()
+        email_service.send_generic_email("Test Email", f"This email was sent at {time} from metabolights ws", "no-reply@ebi.ac.uk", user_email)
+        return {
+            "user_email": user_email,
+            "time": time
+        }
 
 @celery.task(
     base=MetabolightsTask,

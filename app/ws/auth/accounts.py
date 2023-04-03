@@ -1,24 +1,16 @@
 from ast import List
 import json
-import logging
-import re
-from uuid import uuid4
-import uuid
 
-from flask import request, jsonify, make_response, current_app as app
+from flask import current_app as app, jsonify, request
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from pydantic import BaseModel
 
-from app.utils import MetabolightsAuthorizationException, MetabolightsDBException, metabolights_exception_handler, MetabolightsException
-from app.ws.auth.auth_manager import AuthenticationManager, get_security_settings
+from app.utils import MetabolightsDBException, MetabolightsException, metabolights_exception_handler
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import NewUserModel, StudyAccessPermission, UserModel
-from app.ws.db.schemes import Study, User
-from app.ws.db.types import StudyStatus, UserRole, UserStatus
-from app.ws.redis.redis import RedisStorage, get_redis_server
+from app.ws.db.models import NewUserModel, UserModel
+from app.ws.db.schemes import User
+from app.ws.db.types import UserRole, UserStatus
 from app.ws.study.user_service import UserService
-from app.ws.utils import log_request
 
 class UserAccounts(Resource):
     @swagger.operation(

@@ -98,6 +98,7 @@ from app.ws.study_files import (CopyFilesFolders, DeleteAsperaFiles, FileList,
                                 StudyFilesTree, StudyRawAndDerivedDataFile,
                                 StudyRawAndDerivedDataFolder, SyncFolder,
                                 UnzipFiles)
+from app.ws.system import SystemTestEmail
 from app.ws.table_editor import (AddRows, ColumnsRows, ComplexColumns,
                                  GetAssayMaf, GetTsvFile, SimpleColumns)
 # from app.ws.tasks.study_file_encoding import FileEncodingChecker
@@ -318,6 +319,7 @@ def initialize_app(flask_app):
     api.add_resource(GoogleCalendar, res_path + "/ebi-internal/google-calendar-update")
     api.add_resource(MetabolightsParameters, res_path + "/ebi-internal/system/parameters")
     api.add_resource(MetabolightsStatistics, res_path + "/ebi-internal/system/statistics")
+    api.add_resource(SystemTestEmail, res_path + "/ebi-internal/system/test-email")
 
     api.add_resource(cronjob, res_path + "/ebi-internal/cronjob")
     api.add_resource(FTPRemoteFileManager, res_path + "/ebi-internal/ftp-filemanager-testing")

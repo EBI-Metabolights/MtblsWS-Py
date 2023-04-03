@@ -1,45 +1,18 @@
 
-from datetime import datetime
-import glob
 import logging
-import os
-import time
-from distutils.dir_util import copy_tree
-import uuid
 
-from flask import request, send_file, current_app as app, jsonify
-from flask_restful import Resource, reqparse, abort
+from flask import current_app as app, request
+from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
 
-from app.file_utils import make_dir_with_chmod
-from app.services.storage_service.storage_service import StorageService
-from app.tasks.periodic_tasks.study import sync_studies_on_es_and_db
-from app.tasks.periodic_tasks.study_folder import maintain_study_folders
-from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsFileOperationException, \
-    MetabolightsDBException
-from app.ws import db_connection as db_proxy
+from app.utils import metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.models import StudyTaskModel
-from app.ws.db.schemes import Study, StudyTask
+from app.ws.db.schemes import Study
 from app.ws.db.settings import get_directory_settings
-from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
+from app.ws.db.types import StudyStatus
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
-from app.ws.db_connection import get_all_studies_for_user, study_submitters, add_placeholder_flag, \
-    query_study_submitters, get_public_studies_with_methods, get_all_private_studies_for_user, get_obfuscation_code, \
-    create_empty_study
-from app.ws.isaApiClient import IsaApiClient
-from app.ws.mtblsWSclient import WsClient
-from app.ws.settings.utils import get_study_settings
-from app.ws.study.folder_utils import write_audit_files
-from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-from app.ws.study_folder_utils import create_initial_study_folder, update_initial_study_files
-from app.ws.study_utilities import StudyUtils
-from app.tasks.common.elasticsearch import delete_study_index, reindex_all_public_studies, reindex_all_studies, reindex_study
-from app.tasks.common.email import send_email_for_study_submitted, send_technical_issue_email
-from app.tasks.common.ftp_operations import create_private_ftp_folder
-from app.ws.utils import get_year_plus_one, update_correct_sample_file_name, read_tsv, remove_file, copy_file, \
-    get_timestamp, copy_files_and_folders, write_tsv, log_request
+from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
 
