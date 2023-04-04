@@ -333,8 +333,8 @@ class StudyModel(LiteStudyModel):
     publications: List[PublicationModel] = []
     protocols: List[ProtocolModel] = []
     assays: Union[List[AssayModel], List[IndexedAssayModel], None] = []
-    contacts: List[ContactModel] = []  # excluded from es
-    backups: List[BackupModel] = []
+    contacts: Optional[List[ContactModel]] = []  # excluded from es
+    backups: Optional[List[BackupModel]] = []
     sampleTable: TableModel = None  # excluded from es
 
     @validator('updateDate', 'studySubmissionDate', 'studyPublicReleaseDate')

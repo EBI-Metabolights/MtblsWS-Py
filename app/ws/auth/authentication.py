@@ -17,7 +17,6 @@ from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.redis.redis import RedisStorage, get_redis_server
 from app.ws.study.user_service import UserService
-from app.ws.utils import log_request
 
 logger = logging.getLogger('wslog')
 
@@ -105,8 +104,6 @@ class AuthLoginWithToken(Resource):
     )
     @metabolights_exception_handler
     def post(self):
-        # User authentication
-        log_request(request)
         try:
             content = request.json
         except:
@@ -160,8 +157,6 @@ class AuthLogin(Resource):
     )
     @metabolights_exception_handler
     def post(self):
-        # User authentication
-        log_request(request)
         try:
             content = request.json
         except:
@@ -218,7 +213,6 @@ class AuthValidation(Resource):
     )
     @metabolights_exception_handler
     def post(self):
-        log_request(request)
         try:
             content = request.json
         except:
@@ -245,8 +239,6 @@ class OneTimeTokenValidation(Resource):
     )
     @metabolights_exception_handler
     def get(self):
-        log_request(request)
-        # User authentication
         one_time_token = None
         if "one_time_token" in request.headers:
             one_time_token = request.headers["one_time_token"]
@@ -287,8 +279,6 @@ class OneTimeTokenCreation(Resource):
     )
     @metabolights_exception_handler
     def get(self):
-        log_request(request)
-        # User authentication
         jwt = None
         if "Authorization" in request.headers:
             jwt = request.headers["Authorization"]
@@ -333,7 +323,7 @@ class AuthUser(Resource):
     )
     @metabolights_exception_handler
     def post(self):
-        log_request(request)
+        
         try:
             content = request.json
         except:
@@ -396,7 +386,7 @@ class AuthUserStudyPermissions(Resource):
     )
     @metabolights_exception_handler
     def get(self, study_id):
-        log_request(request)
+        
         # User authentication
         user_token = None
         if "user_token" in request.headers:
@@ -450,7 +440,7 @@ class AuthUserStudyPermissions2(Resource):
     )
     @metabolights_exception_handler
     def get(self, obfuscation_code):
-        log_request(request)
+        
         # User authentication
         user_token = None
         if "user_token" in request.headers:
