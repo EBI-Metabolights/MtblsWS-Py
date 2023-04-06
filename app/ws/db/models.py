@@ -433,7 +433,9 @@ class MetaboLightsCompoundModel(EntityModel):
         if isinstance(value, datetime.datetime):
             return value.strftime("%d-%b-%Y %H:%M:%S")
         return value
-
+    class Config:
+        orm_mode = True
+        
 class MetAttributeDefinitionModel(EntityModel):
     ObjectType: str = "AttributeDefinition"
     value: str = None
