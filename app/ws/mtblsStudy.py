@@ -1115,7 +1115,7 @@ class CreateAccession(Resource):
                 submitted_studies.append(study)
             if study.submissiondate.timestamp() > last_study_datetime.timestamp():
                 last_study_datetime = study.submissiondate
-        study_settings = get_study_settings(app)
+        study_settings = get_study_settings()
         if (datetime.now() - last_study_datetime).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
             logger.warning(f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins")
             raise MetabolightsException(message="Submitter can create only one study in five minutes.", http_code=429)
@@ -1739,8 +1739,8 @@ class MtblsPublicStudiesIndexAll(Resource):
         user_token = ''
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-            
-        logger.info('Indexing a compound')
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        logger.info('Indexing public studies')
         inputs = {"user_token": user_token, "send_email_to_submitter": True}
         try: 
             result = reindex_all_public_studies.apply_async(kwargs=inputs, expires=60*5)

@@ -16,7 +16,7 @@ def get_redis_settings() -> RedisSettings:
     return RedisSettings()
 
 @lru_cache(1)
-def get_study_settings(app) -> StudySettings:
+def get_study_settings() -> StudySettings:
     settings = StudySettings()
 
     return settings
