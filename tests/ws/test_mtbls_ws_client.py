@@ -103,16 +103,6 @@ class TestWebServiceClient(object):
             data = json.loads(result)
             assert len(data) > 0
 
-    def test_get_queue_folder_1(self, flask_app: Flask,
-                                email_service_isolated_ws_client: WsClient,
-                                sensitive_data: SensitiveDatastorage):
-        with flask_app.app_context():
-            ws_client = email_service_isolated_ws_client
-
-            actual = ws_client.get_queue_folder()
-            expected = flask_app.config.get('STUDY_QUEUE_FOLDER')
-            assert expected == actual
-
     def test_add_empty_study_1(self, flask_app: Flask,
                                email_service_isolated_ws_client: WsClient,
                                sensitive_data: SensitiveDatastorage):

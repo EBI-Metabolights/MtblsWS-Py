@@ -10,7 +10,7 @@ celerybeat-*
 __pycache__/
 *.py[cod]
 *$py.class
-
+.ignore
 # C extensions
 *.so
 

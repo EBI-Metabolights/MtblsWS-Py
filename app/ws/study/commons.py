@@ -120,7 +120,6 @@ def get_study_location(study_id, user_token):
         abort(403)
 
     location = os.path.join(app.config.get('STUDY_PATH'), study_id.upper())
-    location = os.path.join(app.config.get('DEBUG_STUDIES_PATH'), location.strip('/'))
     if not os.path.isdir(location):
         abort(404, 'There is no path for %s' % (study_id,))
     logger.info('... found study folder %s', location)

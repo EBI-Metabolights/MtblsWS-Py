@@ -95,7 +95,7 @@ class MtblsCompoundsDetails(Resource):
         return result
 
     def validate_requested_accession(self, requested_acc):
-        compound_id_prefix = app.config.get("MTBLS_COMPOUND_ID_PREFIX")
+        compound_id_prefix = "MTBLC"
         if not requested_acc.startswith(compound_id_prefix):
             raise MetabolightsException(f"Passed accession :- {requested_acc} is invalid. Accession must start with %s" % compound_id_prefix)
 
