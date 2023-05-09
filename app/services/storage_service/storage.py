@@ -22,6 +22,10 @@ class Storage(ABC):
     @abstractmethod
     def sync_from_local(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):
         pass
+    
+    @abstractmethod
+    def sync_to_public_ftp(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):
+        pass
 
     @abstractmethod
     def sync_from_storage(self, source_path: str, target_local_path: str, ignore_list: List[str] = None, **kwargs):

@@ -152,6 +152,10 @@ class LocalStorage(Storage):
     def sync_from_local(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):
         target_path = self.remote_file_manager.get_uri(target_folder)
         sync(source_local_folder, target_path, 'sync', **kwargs)
+        
+    def sync_to_public_ftp(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):
+        target_path = self.remote_file_manager.get_uri(target_folder)
+        sync(source_local_folder, target_path, 'sync', **kwargs)
 
     def sync_from_storage(self, source: str, target_local_path: str, ignore_list: List[str] = None, **kwargs):
         source_path = self.remote_file_manager.get_uri(source)
