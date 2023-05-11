@@ -24,6 +24,15 @@ class StorageService(object):
         raise NotImplementedError(f"Mounted type {mount_type} is not defined.")
 
     @staticmethod
+    def get_ftp_public_storage(app=None) -> Storage:
+        mount_type = app.config.get("FTP_PUBLIC_MOUNT_TYPE")
+        if mount_type and mount_type.lower() == "mounted":
+            return StorageService._get_local_storage('ftp_public_storage', "MOUNTED_FTP_PUBLIC_ROOT_PATH", app=app)
+        if mount_type and mount_type.lower() == "unmounted":
+            return UnmountedStorage('ftp_public_storage', app=app)
+        raise NotImplementedError(f"Mounted type {mount_type} is not defined.")
+
+    @staticmethod
     def get_report_storage(app=None) -> Storage:
         return StorageService._get_local_storage('report_storage', "REPORTING_ROOT_PATH", app=app)
 

@@ -26,13 +26,14 @@ class DataMoverAvailableStorage(object):
         self.read_timeout = app.config.get('JOB_STATUS_READ_TIMEOUT')
         self.source_study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
         self.ftp_user_home_path = app.config.get('LSF_DATAMOVER_FTP_PRIVATE_HOME')
+        self.ftp_public_root_path = app.config.get('LSF_DATAMOVER_FTP_PUBLIC_STUDY_ROOT_PATH')
         self.studies_root_path_datamover = app.config.get('LSF_DATAMOVER_STUDY_PATH')
         self.datamover_absolute_studies_path = os.path.join(self.ftp_user_home_path, self.studyId)
         self.chebi_annotation_sub_folder = app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')
 
     def sync_from_studies_folder(self, target_ftp_folder: str, ignore_list: List[str] = None,
                                  **kwargs):
-        result: SyncTaskResult = self.check_folder_sync_status()
+        result: SyncTaskResult = self.check_folder_sync_status('do_rsync')
         if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
             return False
 
@@ -71,10 +72,47 @@ class DataMoverAvailableStorage(object):
                                                                  log_path=self._get_study_log_datamover_path())
         self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
         return status
+    
+    
+    def sync_public_study_to_ftp(self, source_study_folder:str, target_ftp_folder:str , ignore_list: List[str] = None,
+                                 **kwargs):
+        result: SyncTaskResult = self.check_folder_sync_status('public_rsync')
+        if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
+            return False
+        
+        source_study_folder_path = self._get_absolute_study_datamover_path(self.studyId).rstrip(os.sep)
+
+        make_dir_with_chmod(self._get_study_log_folder(), 0o777)
+        command = "rsync"
+        rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
+        ignore_set = set()
+        if ignore_list:
+            ignore_set = ignore_set.union(set(ignore_list))
+        if rsync_exclude_list:
+            ignore_set = ignore_set.union(set(rsync_exclude_list))
+        exclude = ''
+        if ignore_set:
+            for ignore_file in ignore_set:
+                exclude = f"{exclude} --exclude '{ignore_file}'"
+
+        params = f"-auv -P {exclude} --delete {source_study_folder_path} {self.ftp_public_root_path}/"
+        
+        submitter = f"{self.studyId}_public"
+        study_log_file = os.path.join(self._get_study_log_folder(), f"{submitter}_{command}.log")
+        self.create_empty_file(file_path=study_log_file)
+        logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + self.studyId)
+
+        status, message, job_out, job_err, log_file = submit_job(False, None, queue=self.app.config.get('LSF_DATAMOVER_Q'),
+                                                                 job_cmd=command, job_params=params,
+                                                                 submitter=submitter, log=True,
+                                                                 log_path=self._get_study_log_datamover_path())
+        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+        return status
+
 
     def sync_from_ftp_folder(self, source_ftp_folder: str, ignore_list: List[str] = None, **kwargs) -> bool:
 
-        result: SyncTaskResult = self.check_folder_sync_status()
+        result: SyncTaskResult = self.check_folder_sync_status('do_rsync')
         if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
             return False
 
@@ -353,12 +391,12 @@ class DataMoverAvailableStorage(object):
         else:
             return ''
 
-    def check_folder_sync_status(self) -> SyncTaskResult:
+    def check_folder_sync_status(self, sync_name) -> SyncTaskResult:
 
-        job_name = f'{self.studyId}_do_rsync'
+        job_name = f'{self.studyId}_{sync_name}'
         job_no_found = 'is not found in queue'
         result: SyncTaskResult = SyncTaskResult()
-        study_log_file = os.path.join(self._get_study_log_folder(), f"{self.studyId}_do_rsync.log")
+        study_log_file = os.path.join(self._get_study_log_folder(), f"{self.studyId}_{sync_name}.log")
 
         status, message, msg_out, msg_err = list_jobs(self.app.config.get('LSF_DATAMOVER_Q'), job_name)
         try:
@@ -484,6 +522,9 @@ class DataMoverAvailableStorage(object):
 
     def _get_absolute_ftp_private_path(self, relative_path: str) -> str:
         return os.path.join(self.ftp_user_home_path, relative_path.lstrip('/'))
+    
+    def _get_absolute_ftp_public_study_path(self, relative_path: str) -> str:
+        return os.path.join(self.ftp_public_root_path, relative_path.lstrip('/'))
 
     def _get_absolute_study_datamover_path(self, relative_path: str) -> str:
         return os.path.join(self.studies_root_path_datamover, relative_path.lstrip('/'))
