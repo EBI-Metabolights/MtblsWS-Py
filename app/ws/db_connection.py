@@ -299,7 +299,7 @@ def get_all_private_studies_for_user(user_token):
     val_query_params(user_token)
 
     study_list = execute_select_query(query=query_studies_user, user_token=user_token)
-    study_location = app.config.get('STUDY_PATH')
+    study_location = get_study_settings().study_metadata_files_root_path
     file_name = 'i_Investigation.txt'
     isa_title = 'Study Title'
     isa_descr = 'Study Description'
