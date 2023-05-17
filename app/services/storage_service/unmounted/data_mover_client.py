@@ -33,7 +33,7 @@ class DataMoverAvailableStorage(object):
 
     def sync_from_studies_folder(self, target_ftp_folder: str, ignore_list: List[str] = None,
                                  **kwargs):
-        result: SyncTaskResult = self.check_folder_sync_status('do_rsync')
+        result: SyncTaskResult = self.check_folder_sync_status()
         if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
             return False
 
@@ -76,7 +76,7 @@ class DataMoverAvailableStorage(object):
     
     def sync_public_study_to_ftp(self, source_study_folder:str, target_ftp_folder:str , ignore_list: List[str] = None,
                                  **kwargs):
-        result: SyncTaskResult = self.check_folder_sync_status('public_rsync')
+        result: SyncTaskResult = self.check_folder_sync_status(sync_name='public_rsync')
         if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
             return False
         
@@ -112,7 +112,7 @@ class DataMoverAvailableStorage(object):
 
     def sync_from_ftp_folder(self, source_ftp_folder: str, ignore_list: List[str] = None, **kwargs) -> bool:
 
-        result: SyncTaskResult = self.check_folder_sync_status('do_rsync')
+        result: SyncTaskResult = self.check_folder_sync_status()
         if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
             return False
 
@@ -391,7 +391,7 @@ class DataMoverAvailableStorage(object):
         else:
             return ''
 
-    def check_folder_sync_status(self, sync_name) -> SyncTaskResult:
+    def check_folder_sync_status(self, sync_name='do_rsync') -> SyncTaskResult:
 
         job_name = f'{self.studyId}_{sync_name}'
         job_no_found = 'is not found in queue'
