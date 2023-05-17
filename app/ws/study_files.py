@@ -34,6 +34,7 @@ from app.services.storage_service.storage_service import StorageService
 from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_basic_files, get_all_files_from_filesystem, get_all_files, write_audit_files
 from app.ws.study.study_service import StudyService, identify_study_id
 from app.ws.study.user_service import UserService
@@ -381,7 +382,7 @@ class StudyRawAndDerivedDataFile(Resource):
         if not is_curator:
             abort(403, error="User has no curator role")
 
-        studies_folder = app.config.get("STUDY_PATH")
+        studies_folder = get_study_settings().study_metadata_files_root_path
         study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
         search_path = os.path.abspath(os.path.join(studies_folder, study_id))
         ignore_list = self.get_ignore_list(search_path)
