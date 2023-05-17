@@ -1,5 +1,7 @@
 from pydantic import BaseSettings
 
+from app.ws.settings.utils import get_study_settings
+
 
 class DatabaseSettings(BaseSettings):
     database_name: str = None
@@ -28,7 +30,8 @@ class DirectorySettings(BaseSettings):
 
 def get_directory_settings(app) -> DirectorySettings:
     settings = DirectorySettings()
+
     if app.config:
-        settings.studies_folder = app.config.get("STUDY_PATH")
+        settings.studies_folder = get_study_settings().study_metadata_files_root_path
 
     return settings
