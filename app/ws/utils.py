@@ -49,6 +49,7 @@ from pandas import Series
 from dirsync import sync
 
 from app.ws.mm_models import OntologyAnnotation
+from app.ws.settings.utils import get_study_settings
 
 """
 Utils
@@ -643,16 +644,15 @@ def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, s
 def validate_mzml_files(study_id):
 
     status, result = True, "All mzML files validated in both study and upload folder"
-
+    study_settings = get_study_settings()
+    studies_folder = study_settings.study_readonly_files_root_path
+    study_folder = os.path.join(studies_folder, study_id)
+    xsd_path = study_settings.mzml_xsd_schema_file_path
+    xmlschema_doc = etree.parse(xsd_path)
+    xmlschema = etree.XMLSchema(xmlschema_doc)  
     # Getting xsd schema for validation
-    items = app.config.get('MZML_XSD_SCHEMA')
-    xsd_name = items[0]
-    script_loc = items[1]
-    study_location = os.path.join(app.config.get("STUDY_PATH"), study_id)
-    xmlschema_doc = etree.parse(os.path.join(script_loc, xsd_name))
-    xmlschema = etree.XMLSchema(xmlschema_doc)
 
-    for file_loc in [study_location]:
+    for file_loc in [study_folder]:
         if os.path.isdir(file_loc):  # Only check if the folder exists
             files = glob.iglob(os.path.join(file_loc, '*.mzML'))  # Are there mzML files there?
             if files.gi_yieldfrom is None:  # No files, check sub-folders

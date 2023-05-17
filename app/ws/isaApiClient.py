@@ -26,6 +26,7 @@ from flask_restful import abort
 from isatools.convert import isatab2json
 from isatools.isatab import load, dump
 from isatools.model import Investigation, Study, Protocol, Assay
+from app.ws.settings.utils import get_study_settings
 
 from app.ws.study import commons
 from app.ws.utils import copy_file, new_timestamped_folder
@@ -42,7 +43,7 @@ logger = logging.getLogger('wslog')
 class IsaApiClient:
 
     def __init__(self):
-        self.inv_filename = "i_Investigation.txt"
+        self.settings = get_study_settings()
 
     @staticmethod
     def get_isa_json(study_id, api_key, study_location=None):
@@ -79,56 +80,6 @@ class IsaApiClient:
         else:
             logger.info('... get_isa_json() processing (II): %s sec.', time.time() - start)
             return isa_json
-
-    @staticmethod
-    def create_new_study(title, description, sub_date, pub_rel_date, mtbls_accession, technology):
-        """
-        Create a new MTBLS Study
-        :param title: 
-        :param description: 
-        :param sub_date: Submission date (now)
-        :param pub_rel_date: Public release date
-        :param mtbls_accession: MTBLS id
-        :param technology: MS or NMR
-        :return: an ISA-JSON representation of the Study
-        """
-        inv_file_name = 'i_investigation.txt'
-        study_file_name = 's_study.txt'
-        assay_file_name = 'a_assay.txt'
-
-        if mtbls_accession is not None:
-            study_file_name = 's_' + mtbls_accession + '_' + technology + '.txt'
-            assay_file_name = 'a_' + mtbls_accession + '_' + technology + '.txt'
-
-        # investigation file
-        investigation = Investigation(filename=inv_file_name)
-        investigation.title = title
-        investigation.description = description
-        investigation.submission_date = sub_date
-        investigation.public_release_date = pub_rel_date
-        # study file
-        study = Study(filename=study_file_name)
-        study.identifier = mtbls_accession
-        study.title = title
-        study.description = description
-        study.submission_date = sub_date
-        study.public_release_date = pub_rel_date
-
-        # investigation.studies.append(study)
-
-        protocol = Protocol()
-
-        # assay file
-        assay = Assay(filename=assay_file_name)
-        assay.technology_platform = technology
-        # TODO, ontology term
-        # assay.technology_type = technology
-        study.assays.append(assay)
-
-        # Add it all together
-        investigation.studies.append(study)
-
-        return investigation
 
     def get_isa_study(self, study_id, api_key, skip_load_tables=True, study_location=None, failing_gracefully=False):
         """
@@ -188,15 +139,18 @@ class IsaApiClient:
         :return:
         """
         # dest folder name is a timestamp
-        update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
-        update_path = os.path.join(std_path, update_path_suffix)
+        study_id = os.path.basename(std_path)
+        settings = self.settings
+        
         if save_investigation_copy or save_samples_copy or save_assays_copy:  # Only create audit folder when requested
+            update_path = os.path.join(settings.study_audit_files_root_path, study_id, settings.audit_folder_name)
+
             dest_path = new_timestamped_folder(update_path)
 
             # make a copy before applying changes
             if save_investigation_copy:
-                src_file = os.path.join(std_path, self.inv_filename)
-                dest_file = os.path.join(dest_path, self.inv_filename)
+                src_file = os.path.join(std_path, settings.investigation_file_name)
+                dest_file = os.path.join(dest_path, settings.investigation_file_name)
                 logger.info("Copying %s to %s", src_file, dest_file)
                 copy_file(src_file, dest_file)
 
@@ -223,8 +177,8 @@ class IsaApiClient:
                     logger.info("Copying %s to %s", src_file, dest_file)
                     copy_file(src_file, dest_file)
 
-        logger.info("Writing %s to %s", self.inv_filename, std_path)
-        i_file_name = self.inv_filename
+        logger.info("Writing %s to %s", settings.investigation_file_name, std_path)
+        i_file_name = settings.investigation_file_name
         dump(inv_obj, std_path, i_file_name=i_file_name, skip_dump_tables=False)
 
         return

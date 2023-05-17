@@ -8,6 +8,7 @@ from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
 from app.ws.db_connection import check_access_rights, get_submitted_study_ids_for_user, get_email, \
     query_study_submitters, get_public_studies, get_private_studies, get_study_by_type, get_all_non_public_studies
+from app.ws.settings.utils import get_study_settings
 
 logger = logging.getLogger('wslog')
 
@@ -118,8 +119,8 @@ def get_study_location(study_id, user_token):
         get_permissions(study_id, user_token)
     if not read_access:
         abort(403)
-
-    location = os.path.join(app.config.get('STUDY_PATH'), study_id.upper())
+    settings = get_study_settings()
+    location = os.path.join(settings.study_metadata_files_root_path, study_id.upper())
     if not os.path.isdir(location):
         abort(404, 'There is no path for %s' % (study_id,))
     logger.info('... found study folder %s', location)
