@@ -49,7 +49,7 @@ from app.ws.ftp.ftp_operations import (FtpFolderPermission,
                                        FtpFolderPermissionModification,
                                        FtpFolderSyncStatus, PrivateFtpFolder,
                                        PrivateFtpFolderPath, SyncCalculation,
-                                       SyncFromFtpFolder, SyncFromStudyFolder)
+                                       SyncFromFtpFolder, SyncFromStudyFolder, SyncPublicStudyToFTP)
 from app.ws.ftp_filemanager_testing import FTPRemoteFileManager
 from app.ws.google_calendar import GoogleCalendar
 from app.ws.internal import BannerMessage
@@ -219,7 +219,7 @@ def initialize_app(flask_app):
     api.add_resource(SyncFromFtpFolder, res_path + "/studies/<string:study_id>/ftp/sync")
     api.add_resource(FtpFolderSyncStatus, res_path + "/studies/<string:study_id>/ftp/sync-status")
     api.add_resource(SyncFromStudyFolder, res_path + "/studies/<string:study_id>/ftp/sync-from-study-folder")
-
+    api.add_resource(SyncPublicStudyToFTP, res_path + "/studies/<string:study_id>/ftp/sync-public-study-ftp")
 
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")

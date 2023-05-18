@@ -569,3 +569,68 @@ class SyncFromStudyFolder(Resource):
         logger.info('Copying file %s to FTP %s', study_id, destination)
         return {'Success': 'Copying files from study folder to ftp folder is started'}
 
+
+class SyncPublicStudyToFTP(Resource):
+    @swagger.operation(
+        summary="Sync study files from public study folder to public FTP",
+        nickname="Sync from public study to FTP",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. Files/Folders were copied across."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            abort(404, 'Please provide valid parameter for study identifier')
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        study = StudyService.get_instance(app).get_study_by_acc(study_id)
+        if study.status != 0:
+           return {'Error': 'Given study is not public yet!'} 
+        study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
+
+        ftp_public_storage = StorageService.get_ftp_private_storage(app)
+        logger.info(f"Syncing files from public study folder to FTP folder for {study_id}")
+        ftp_public_storage.sync_to_public_ftp(source_local_folder=study_path, target_folder=study_id, ignore_list=None)
+        return {'Success': 'Syncing files from study folder to ftp folder is started'}

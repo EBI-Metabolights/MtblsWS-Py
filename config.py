@@ -424,6 +424,10 @@ FTP_PRIVATE_MOUNT_TYPE = ftp_server_settings["FTP_PRIVATE_MOUNT_TYPE"]
 MOUNTED_FTP_PRIVATE_ROOT_PATH = ftp_server_settings["MOUNTED_FTP_PRIVATE_ROOT_PATH"]
 PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH = ftp_server_settings["PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH"]
 
+FTP_PUBLIC_MOUNT_TYPE = ftp_server_settings["FTP_PUBLIC_MOUNT_TYPE"]
+MOUNTED_FTP_PUBLIC_ROOT_PATH = ftp_server_settings["MOUNTED_FTP_PUBLIC_ROOT_PATH"]
+PUBLIC_FTP_RELATIVE_STUDIES_ROOT_PATH = ftp_server_settings["PUBLIC_FTP_RELATIVE_STUDIES_ROOT_PATH"]
+
 ########################################################################################################################
 #   GOOGLE SERVICE SETTINGS
 #
@@ -651,6 +655,7 @@ LSF_BSUB_STANDARD_Q = cluster["LSF_BSUB_STANDARD_Q"]
 LSF_BSUB_LONG_PROCESS_Q = cluster["LSF_BSUB_LONG_PROCESS_Q"]
 LSF_DATAMOVER_STUDY_PATH = cluster["LSF_DATAMOVER_STUDY_PATH"]
 LSF_DATAMOVER_FTP_PRIVATE_HOME = cluster["LSF_DATAMOVER_FTP_PRIVATE_HOME"]
+LSF_DATAMOVER_FTP_PUBLIC_STUDY_ROOT_PATH = cluster["LSF_DATAMOVER_FTP_PUBLIC_STUDY_ROOT_PATH"]
 
 ########################################################################################################################
 #   JOB
