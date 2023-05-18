@@ -26,8 +26,9 @@ from flask import request
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 from app.ws.db_connection import override_validations, query_comments, update_comments
+from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
-from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser, is_newer_files, \
+from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser, get_last_update_on_folder, \
     update_val_schema_files, validate_study
 
 logger = logging.getLogger('wslog')
@@ -121,11 +122,15 @@ class Validation(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        settings = get_study_settings()
+            
+        internal_files_folder = os.path.join(settings.study_internal_files_root_path, study_id)
+        readonly_files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
+        metadata_files_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('section', help="Validation section", location="args")
@@ -148,11 +153,11 @@ class Validation(Resource):
             section = 'all'
 
         try:
-            number_of_files = sum([len(files) for r, d, files in os.walk(study_location)])
+            number_of_files = sum([len(files) for r, d, files in os.walk(readonly_files_folder)])
         except:
             number_of_files = 0
-
-        validation_files_limit = app.config.get('VALIDATION_FILES_LIMIT')
+        
+        validation_files_limit = settings.validation_files_limit
         force_static_validation = False
 
         # We can only use the static validation file when all values are used. MOE uses 'all' as default
@@ -160,7 +165,7 @@ class Validation(Resource):
             static_validation_file = False
 
         if section == 'all' or log_category == 'all':
-            validation_file = os.path.join(study_location, 'validation_report.json')
+            validation_file = os.path.join(internal_files_folder, settings.validation_report_file_name)
             if os.path.isfile(validation_file):
                 with open(validation_file, 'r', encoding='utf-8') as f:
                     validation_schema = json.load(f)
@@ -174,11 +179,15 @@ class Validation(Resource):
 
         if (static_validation_file and study_status in ('in review', 'public')) or force_static_validation:
 
-            validation_file = os.path.join(study_location, 'validation_report.json')
-
+            validation_file =  os.path.join(internal_files_folder, settings.validation_report_file_name)
             # Some file in the filesystem is newer than the validation reports, so we need to re-generate
-            if is_newer_files(study_location):
-                return update_val_schema_files(validation_file, study_id, study_location, user_token,
+            validation_file_mtime = 0
+            if os.path.exists(validation_file):
+                validation_file_mtime = os.path.getmtime(validation_file)
+            
+                
+            if get_last_update_on_folder(readonly_files_folder) > validation_file_mtime or get_last_update_on_folder(metadata_files_folder) > validation_file_mtime:
+                return update_val_schema_files(validation_file, study_id, user_token,
                                                obfuscation_code, log_category=log_category, return_schema=True)
 
             if os.path.isfile(validation_file):
@@ -187,7 +196,7 @@ class Validation(Resource):
                         validation_schema = json.load(f)
                 except Exception as e:
                     logger.error(str(e))
-                    validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
+                    validation_schema = update_val_schema_files(validation_file, study_id, user_token,
                                                                 obfuscation_code, log_category=log_category,
                                                                 return_schema=True)
                     # validation_schema = \
@@ -195,7 +204,7 @@ class Validation(Resource):
                     #                    validation_section=section,
                     #                    log_category=log_category, static_validation_file=False)
             else:
-                validation_schema = update_val_schema_files(validation_file, study_id, study_location, user_token,
+                validation_schema = update_val_schema_files(validation_file, study_id, user_token,
                                                             obfuscation_code, log_category=log_category,
                                                             return_schema=True)
                 # validation_schema = \
@@ -216,9 +225,10 @@ class Validation(Resource):
             #     except Exception as e:
             #         logger.error(str(e))
         else:
+            static_validation_file_path = os.path.join(internal_files_folder, settings.validation_files_json_name)
             validation_schema = \
-                validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
-                               log_category=log_category, static_validation_file=static_validation_file)
+                validate_study(study_id, metadata_files_folder, user_token, obfuscation_code, validation_section=section,
+                               log_category=log_category, static_validation_file=static_validation_file_path)
 
         return validation_schema
 
@@ -282,11 +292,13 @@ class UpdateValidationFile(Resource):
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
-        validation_file = os.path.join(study_location, 'validation_report.json')
+        settings = get_study_settings()
+        file_path = os.path.join(settings.study_internal_files_root_path, study_id)
+        validation_report_file_name = settings.validation_report_file_name
+        validation_file = os.path.join(file_path, validation_report_file_name)
         """ Background thread to update the validations file """
         threading.Thread(
-            target=update_val_schema_files(validation_file, study_id, study_location, user_token, obfuscation_code),
+            target=update_val_schema_files(validation_file, study_id, user_token, obfuscation_code),
             daemon=True).start()
 
         return {"success": "Validation schema file updated"}
@@ -606,7 +618,7 @@ class NewValidation(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -632,17 +644,21 @@ class NewValidation(Resource):
             log_category = 'all'
 
         val_sections = "all", "isa-tab", "publication", "protocols", "people", "samples", "assays", "maf", "files"
-
-        script = app.config.get('VALIDATION_SCRIPT')
+        settings = get_study_settings()
+        script = settings.validation_script
         para = ' -l {level} -i {study_id} -u {token} -s {section}'.format(level=log_category, study_id=study_id,
                                                                           token=user_token, section=section)
         file_name = None
         logger.info("Validation params are - " + str(log_category) + " " + str(section))
         pattern = re.compile(".validation_" + section + "\S+.json")
-
-        for filepath in os.listdir(study_location):
-            if pattern.match(filepath):
-                file_name = filepath
+        
+        internal_files_folder = os.path.join(settings.study_internal_files_root_path, study_id)
+        readonly_files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
+        metadata_files_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
+    
+        for file_item in os.listdir(internal_files_folder):
+            if pattern.match(file_item):
+                file_name = file_item
                 break
 
         if file_name:
@@ -656,21 +672,21 @@ class NewValidation(Resource):
                 return {
                     "message": "Validation is already in progress. Job " + sub_job_id + " is in running or pending state"}
 
-            file_name = study_location + "/" + file_name
-            if os.path.isfile(file_name) and status == "DONE":
+            file_path = os.path.join(internal_files_folder, file_name)
+            if os.path.isfile(file_path) and status == "DONE":
                 if not force_run:
                     try:
-                        with open(file_name, 'r', encoding='utf-8') as f:
+                        with open(file_path, 'r', encoding='utf-8') as f:
                             validation_schema = json.load(f)
                             return validation_schema
                     except Exception as e:
                         logger.error(str(e))
                         return {"message": "Error in reading the Validation"}
                 else:
-                    if is_newer_timestamp(study_location, file_name):
-                        os.remove(file_name)
+                    if is_newer_timestamp(metadata_files_folder, file_path) or is_newer_timestamp(readonly_files_folder, file_path):
+                        os.remove(file_path)
                         command = script + ' ' + para
-                        return submitJobToCluser(command, section, study_location)
+                        return submitJobToCluser(command, section, internal_files_folder)
                     else:
                         try:
                             with open(file_name, 'r', encoding='utf-8') as f:
@@ -680,27 +696,22 @@ class NewValidation(Resource):
                             logger.error(str(e))
                             return {"message": "Error in reading the Validation file"}
 
-            elif os.path.isfile(file_name) and os.path.getsize(file_name) > 0:
-                if is_newer_timestamp(study_location, file_name):
+            elif os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
+                if is_newer_timestamp(metadata_files_folder, file_path) or is_newer_timestamp(readonly_files_folder, file_path):
                     logger.info(" job status is not present, creating new job")
                     os.remove(file_name)
                     command = script + ' ' + para
-                    return submitJobToCluser(command, section, study_location)
+                    return submitJobToCluser(command, section, internal_files_folder)
                 else:
                     try:
                         logger.info(" job status is not present and no update, returning validation")
-                        with open(file_name, 'r', encoding='utf-8') as f:
+                        with open(file_path, 'r', encoding='utf-8') as f:
                             validation_schema = json.load(f)
                             return validation_schema
                     except Exception as e:
                         logger.error(str(e))
                         return {"message": "Error in reading the Validation"}
         else:
-            try:
-                os.remove(file_name)
-            except Exception as e:
-                pass
-                # submit a new job return job id
-                logger.info(" no file present , creating new job")
-                command = script + ' ' + para
-                return submitJobToCluser(command, section, study_location)
+            logger.info(" no file present , creating new job")
+            command = script + ' ' + para
+            return submitJobToCluser(command, section, internal_files_folder)

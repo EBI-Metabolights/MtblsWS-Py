@@ -12,6 +12,8 @@ from operator import itemgetter
 from flask import current_app as app
 
 from app.file_utils import make_dir_with_chmod
+from app.ws.settings.study import StudySettings
+from app.ws.settings.utils import get_study_settings
 from app.ws.utils import date_format, file_date_format, map_file_type, new_timestamped_folder, copy_file
 
 logger = logging.getLogger("wslog")
@@ -27,8 +29,8 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
     start_time = time.time()
     s_start_time = time.time()
 
-    log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-    make_dir_with_chmod(log_path, 0o777)
+    # log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
+    # make_dir_with_chmod(log_path, 0o777)
 
     study_files, latest_update_time = get_all_files(study_location, directory=directory,
                                                     include_raw_data=include_raw_data,
@@ -80,8 +82,9 @@ def get_file_information(study_location=None, path=None, directory=None, include
     file_name = ""
     ignore_file_list = app.config.get('IGNORE_FILE_LIST')
     latest_update_time = ""
+    settings = get_study_settings()
     try:
-        timeout_secs = app.config.get('FILE_LIST_TIMEOUT')
+        timeout_secs = settings.files_list_json_file_creation_timeout
         end_time = time.time() + timeout_secs
 
         if directory:
@@ -123,7 +126,7 @@ def get_file_information(study_location=None, path=None, directory=None, include
 
             if time.time() > end_time:
                 logger.error('Listing files in folder %s, timed out after %s seconds', path, timeout_secs)
-                return file_list  # Return after xx seconds regardless
+                return file_list, 0  # Return after xx seconds regardless
 
             if not file_name.startswith('.'):  # ignore hidden files on Linux/UNIX:
                 if not include_raw_data:  # Only return metadata files
@@ -239,12 +242,12 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                      short_format=None, include_sub_dir=None, validation_only=None,
                      static_validation_file=None, include_raw_data=None, ignore_file_list=None):
     static_file_found = False
-    validation_files_list = os.path.join(file_location, 'validation_files.json')
+    
     folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
 
-    if os.path.isfile(validation_files_list) and static_validation_file:
+    if static_validation_file and os.path.isfile(static_validation_file):
         try:
-            with open(validation_files_list, 'r', encoding='utf-8') as f:
+            with open(static_validation_file, 'r', encoding='utf-8') as f:
                 validation_files = json.load(f)
                 static_file_found = True
         except Exception as e:

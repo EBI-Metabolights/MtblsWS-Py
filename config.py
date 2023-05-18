@@ -557,11 +557,11 @@ MTBLS_ZOOMA_FILE = ontology_settings["MTBLS_ZOOMA_FILE"]
 #
 #   Load from the following file: CONFIGS_DIR/study_file_settings.json with key "VALIDATION"
 ########################################################################################################################
-validation_settings = study_file_settings["VALIDATION"]
+# validation_settings = study_file_settings["VALIDATION"]
 
-VALIDATIONS_FILE = validation_settings["VALIDATIONS_FILE"]
-VALIDATION_SCRIPT = validation_settings["VALIDATION_SCRIPT"]
-VALIDATION_FILES_LIMIT = validation_settings["VALIDATION_FILES_LIMIT"]
+# VALIDATIONS_FILE = validation_settings["VALIDATIONS_FILE"]
+# VALIDATION_SCRIPT = validation_settings["VALIDATION_SCRIPT"]
+# VALIDATION_FILES_LIMIT = validation_settings["VALIDATION_FILES_LIMIT"]
 
 ########################################################################################################################
 #   FILE FILTERS

@@ -28,6 +28,7 @@ import psycopg2.extras
 from flask import current_app as app, abort
 from psycopg2 import pool
 from app.utils import MetabolightsDBException
+from app.ws.settings.utils import get_study_settings
 
 from app.ws.utils import get_single_file_information, check_user_token, val_email, fixUserDictKeys
 
@@ -298,8 +299,9 @@ def get_all_private_studies_for_user(user_token):
     val_query_params(user_token)
 
     study_list = execute_select_query(query=query_studies_user, user_token=user_token)
-    study_location = app.config.get('STUDY_PATH')
-    file_name = 'i_Investigation.txt'
+    settings = get_study_settings()
+    study_location = settings.study_metadata_files_root_path
+    file_name = settings.investigation_file_name
     isa_title = 'Study Title'
     isa_descr = 'Study Description'
 
@@ -653,10 +655,11 @@ def check_access_rights(user_token, study_id, study_obfuscation_code=None):
 
     if study_list is None or not check_user_token(user_token):
         return False, False, False, 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR', 'ERROR'
-
-    study_location = app.config.get('STUDY_PATH')
+    settings = get_study_settings()
+    study_location = settings.study_metadata_files_root_path
+    investigation_file_name = settings.investigation_file_name
     complete_study_location = os.path.join(study_location, study_id)
-    complete_file_name = os.path.join(complete_study_location, 'i_Investigation.txt')
+    complete_file_name = os.path.join(complete_study_location, investigation_file_name)
     isa_date_format = "%Y-%m-%d"
     is_curator = False
     read_access = False

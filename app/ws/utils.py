@@ -698,44 +698,50 @@ def to_isa_tab(study_id, input_folder, output_folder):
 
     return True, "ISA-Tab files generated for study " + study_id
 
-def create_temp_dir_in_study_folder(study_location: str) -> str:
+def create_temp_dir_in_study_folder(parent_folder: str) -> str:
+    
+    
+    
     date = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     rand = random.randint(1000, 9999999)
     folder_name = f"{date}-{str(rand)}"
     random_folder_name = hashlib.sha256(bytes(folder_name, 'utf-8')).hexdigest()
-    path = os.path.join(study_location, "audit", "logs", "temp", random_folder_name)
+    path = os.path.join(parent_folder, "temp", random_folder_name)
     os.makedirs(path, exist_ok=True)
     
     return path
 
-def collect_all_mzml_files(study_location):
-    folder_name = create_temp_dir_in_study_folder(study_location=study_location)
+def collect_all_mzml_files(study_id, study_metadata_files_folder):
+    settings = get_study_settings()
+    temp_folder = os.path.join(settings.study_internal_files_root_path, study_id, "temp")
+    folder_path = create_temp_dir_in_study_folder(parent_folder=temp_folder)
+    files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
     mzml_files = {}
-    if os.path.exists(study_location) and os.path.isdir(study_location):  # Only check if the folder exists
-        files = glob.iglob(os.path.join(study_location, '*.mzML'))  # Are there mzML files there?
+    if os.path.exists(files_folder) and os.path.isdir(files_folder):  # Only check if the folder exists
+        files = glob.iglob(os.path.join(files_folder, '*.mzML'))  # Are there mzML files there?
         for file in files:
             base_name = os.path.basename(file)
             if base_name not in mzml_files:
                 mzml_files[base_name] = file
-        files = glob.iglob(os.path.join(study_location, '**/*.mzML'), recursive=True)  # Are there mzML files there?
+        files = glob.iglob(os.path.join(files_folder, '**/*.mzML'), recursive=True)  # Are there mzML files there?
         for file in files:
             base_name = os.path.basename(file)
             if base_name not in mzml_files:
                 mzml_files[base_name] = file
     
     for file in mzml_files:
-        target = os.path.join(folder_name, file)
+        target = os.path.join(folder_path, file)
         source = mzml_files[file]
         
         os.symlink(source, target, target_is_directory=False)
     
-    return folder_name + "/"
+    return folder_path + "/"
 def convert_to_isa(study_location, study_id):
     input_folder = ""
     try:
-        input_folder = collect_all_mzml_files(study_location=study_location)
+        input_folder = collect_all_mzml_files(study_id, study_metadata_files_folder=study_location)
         output_folder = study_location + "/"
-        status, message = to_isa_tab(study_id, input_folder, output_folder)
+        status, message = to_isa_tab("", input_folder, output_folder)
         return status, message
     finally:
         if input_folder:

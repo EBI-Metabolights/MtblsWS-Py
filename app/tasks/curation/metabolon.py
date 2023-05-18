@@ -14,6 +14,7 @@ from app.utils import MetabolightsException
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.utils import validate_mzml_files, convert_to_isa, copy_file, read_tsv, write_tsv, \
     update_correct_sample_file_name, get_year_plus_one
 
@@ -55,7 +56,7 @@ def metabolon_confirm(self, study_id: str, study_location: str, user_token, emai
             conv_message = ''
             try:
                 conv_message = 'Could not convert all the mzML files to ISA-Tab'
-                conv_status, conv_message = convert_to_isa(study_location, '')
+                conv_status, conv_message = convert_to_isa(study_location, study_id)
             except:
                 message.update({'mzML2ISA conversion': 'Failed', "result": conv_message})
                 success = False
@@ -124,13 +125,13 @@ def metabolon_confirm(self, study_id: str, study_location: str, user_token, emai
 
 
 def copy_metabolon_template(study_id, user_token, study_location):
-    flask_app = get_flask_app()
+    # flask_app = get_flask_app()
+    settings = get_study_settings()
     status, message = True, "Copied Metabolon template into study " + study_id
-    template_study_id = flask_app.config.get('PARTNER_TEMPLATE_METABOLON')
-    invest_file = 'i_Investigation.txt'
+    invest_file = settings.investigation_file_name
 
     # Get the correct location of the Metabolon template study
-    template_study_location = study_location.replace(study_id.upper(), template_study_id)
+    template_study_location = settings.study_partner_metabolon_template_path
     template_study_location = os.path.join(template_study_location, invest_file)
     dest_file = os.path.join(study_location, invest_file)
 
@@ -141,8 +142,8 @@ def copy_metabolon_template(study_id, user_token, study_location):
 
     try:
         
-        api_version = 'MOE API ' + str(flask_app.config.get('API_VERSION'))
-        mzml2isa_version = 'mzml2isa ' + str(flask_app.config.get('MZML2ISA_VERSION'))
+        # api_version = 'MOE API ' + str(flask_app.config.get('API_VERSION'))
+        # mzml2isa_version = 'mzml2isa ' + str(flask_app.config.get('MZML2ISA_VERSION'))
         # Updating the ISA-Tab investigation file with the correct study id
         isa_study, isa_inv, std_path = iac.get_isa_study(
             study_id=study_id, api_key=user_token, skip_load_tables=True, study_location=study_location)
@@ -175,7 +176,7 @@ def copy_metabolon_template(study_id, user_token, study_location):
         try:
             update_release_date(study_id, plus_one_year)
             wsc.reindex_study(study_id, user_token)
-            message = message + '. ' + api_version + '. ' + mzml2isa_version
+            # message = message + '. ' + api_version + '. ' + mzml2isa_version
         except Exception as e:
             logger.info("Could not updated database and re-index study: " + study_id + ". Error: " + str(e))
     except Exception as e:

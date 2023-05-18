@@ -30,6 +30,7 @@ from app.utils import MetabolightsException
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.ws.utils import validate_mzml_files, convert_to_isa, copy_file, read_tsv, write_tsv, \
     update_correct_sample_file_name, get_year_plus_one
@@ -105,7 +106,8 @@ class Metabolon(Resource):
         # check for access rights
         user = UserService.get_instance(app).validate_user_has_curator_role(user_token)
         email = user['username']
-        study_location = os.path.join(app.config.get('STUDY_PATH'), study_id)
+        settings = get_study_settings()
+        study_location = os.path.join(settings.study_metadata_files_root_path, study_id)
         
         try:
             inputs = {"study_id": study_id, "study_location": study_location, "user_token": user_token, "email": email}
