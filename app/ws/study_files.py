@@ -384,6 +384,8 @@ class StudyRawAndDerivedDataFile(Resource):
 
         studies_folder = get_study_settings().study_metadata_files_root_path
         study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
+        """The below line may need to be changed if the assumption that derived files can be found in
+         studies/<study_id>/<readonly_path> is wrong"""
         search_path = os.path.abspath(os.path.join(studies_folder, study_id, get_study_settings().study_readonly_files_root_path))
         ignore_list = self.get_ignore_list(search_path)
 
@@ -683,9 +685,12 @@ class StudyRawAndDerivedDataFolder(Resource):
         if not is_curator:
             abort(403, error="User has no curator role")
 
-        studies_folder = app.config.get("STUDY_PATH")
+        studies_folder = get_study_settings().study_metadata_files_root_path
+
         study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
-        search_path = os.path.abspath(os.path.join(studies_folder, study_id))
+        """The below line may need to be changed if the assumption that derived files can be found in
+         studies/<study_id>/<readonly_path> is wrong"""
+        search_path = os.path.abspath(os.path.join(studies_folder, study_id, get_study_settings().study_readonly_files_root_path))
 
         glob_search_result = glob.glob(os.path.join(search_path, search_pattern))
         search_results = [os.path.abspath(file) for file in glob_search_result if os.path.isdir(file)]
