@@ -386,10 +386,7 @@ class StudyRawAndDerivedDataFile(Resource):
         study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
         """The below line may need to be changed if the assumption that derived files can be found in
          studies/<study_id>/<readonly_path> is wrong"""
-        search_path = os.path.abspath(os.path.join(studies_folder, study_id, get_study_settings().study_readonly_files_root_path))
-
-        what_is_this_path = os.path.join(get_study_settings().study_readonly_files_root_path, study_id)
-        what_result = glob.glob(os.path.join(what_is_this_path, search_pattern))
+        search_path = os.path.abspath(os.path.join(get_study_settings().study_readonly_files_root_path, study_id))
         ignore_list = self.get_ignore_list(search_path)
 
         glob_search_result = glob.glob(os.path.join(search_path, search_pattern), recursive=True)
@@ -693,10 +690,8 @@ class StudyRawAndDerivedDataFolder(Resource):
         study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
         """The below line may need to be changed if the assumption that derived files can be found in
          studies/<study_id>/<readonly_path> is wrong"""
-        what_is_this_path = os.path.join(get_study_settings().study_readonly_files_root_path, study_id)
-        search_path = os.path.abspath(os.path.join(studies_folder, study_id, get_study_settings().study_readonly_files_root_path))
+        search_path = os.path.abspath(os.path.join(get_study_settings().study_readonly_files_root_path, study_id))
 
-        what_result = glob.glob(os.path.join(what_is_this_path, search_pattern))
 
         glob_search_result = glob.glob(os.path.join(search_path, search_pattern))
         search_results = [os.path.abspath(file) for file in glob_search_result if os.path.isdir(file)]
