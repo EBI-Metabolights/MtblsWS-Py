@@ -559,7 +559,6 @@ MTBLS_ZOOMA_FILE = ontology_settings["MTBLS_ZOOMA_FILE"]
 ########################################################################################################################
 validation_settings = study_file_settings["VALIDATION"]
 
-MZML_XSD_SCHEMA = validation_settings["MZML_XSD_SCHEMA"]
 VALIDATIONS_FILE = validation_settings["VALIDATIONS_FILE"]
 VALIDATION_SCRIPT = validation_settings["VALIDATION_SCRIPT"]
 VALIDATION_FILES_LIMIT = validation_settings["VALIDATION_FILES_LIMIT"]

@@ -26,6 +26,7 @@ celery = Celery(
         "app.tasks.common.email",
         "app.tasks.common.elasticsearch",
         "app.tasks.common.ftp_operations",
+        "app.tasks.common.remote_folder_operations",
         "app.tasks.periodic_tasks.compound",
         "app.tasks.periodic_tasks.study",
         "app.tasks.periodic_tasks.study_folder",

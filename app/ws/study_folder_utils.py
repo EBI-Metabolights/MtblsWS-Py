@@ -4,22 +4,22 @@ import os
 from app.file_utils import make_dir_with_chmod
 from app.utils import MetabolightsFileOperationException
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.utils import (copy_files_and_folders, get_year_plus_one, read_tsv,
                           update_correct_sample_file_name, write_tsv)
 
 iac = IsaApiClient()
 
 def create_initial_study_folder(folder_name, app):
-    study_path = app.config.get('STUDY_PATH')
-    from_path = os.path.join(study_path, app.config.get('DEFAULT_TEMPLATE'))  # 'DUMMY'
-    study_location = os.path.join(study_path, folder_name)
-    to_path = study_location
+    settings = get_study_settings()
+    study_metadata_root_path = settings.study_metadata_files_root_path
+    
+    from_path = settings.study_default_template_path
+    study_metadata_location = os.path.join(study_metadata_root_path, folder_name)
+    to_path = study_metadata_location
     if os.path.exists(to_path):
         raise MetabolightsFileOperationException(f'Study folder {folder_name} already exists.')
     
-    log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-    make_dir_with_chmod(log_path, 0o777)
-
     result, message = copy_files_and_folders(from_path, to_path,
                                                 include_raw_data=True,
                                                 include_investigation_file=True)
@@ -30,15 +30,16 @@ def create_initial_study_folder(folder_name, app):
 
 
 
-def copy_initial_study_files(folder_name, app):
-    study_path = app.config.get('STUDY_PATH')
-    from_path = os.path.join(study_path, app.config.get('DEFAULT_TEMPLATE'))  # 'DUMMY'
-    study_location = os.path.join(study_path, folder_name)
-    to_path = study_location
+def copy_initial_study_files(folder_name, app):    
+    settings = get_study_settings()
+    study_metadata_root_path = settings.study_metadata_files_root_path
+    from_path = settings.study_default_template_path
+    study_metadata_location = os.path.join(study_metadata_root_path, folder_name)
+    to_path = study_metadata_location
     if not os.path.exists(to_path):
         raise MetabolightsFileOperationException(f'Study folder {folder_name} does not exist.')
     
-    log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
+    log_path = os.path.join(settings.study_internal_files_root_path, folder_name, 'logs')
     make_dir_with_chmod(log_path, 0o777)
 
     result, message = copy_files_and_folders(from_path, to_path,

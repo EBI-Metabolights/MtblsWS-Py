@@ -5,11 +5,12 @@
             "name": "Gunicorn run",
             "type": "python",
             "request": "launch",
-            "program": "~/miniconda3/envs/python38-MtblsWS/bin/gunicorn",
+            "program": "/nfs/public/rw/homes/tc_cm01/miniconda3/envs/python38-MtblsWS/bin/gunicorn",
             "args": [ "--bind=0.0.0.0:5001", "--worker-class=gevent", "--preload", "wsapp:app"],
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
-            "postDebugTask": "killdebugger"
+            "postDebugTask": "killdebugger",
+            "env": {"PYTHONPATH": "${cwd}"}
         },
         {
             "name": "Guvicorn profile",
@@ -19,7 +20,8 @@
             "args": ["-o", "${workspaceFolder}/tmp.prof", "gunicorn", "--worker-class", "gevent", "--preload", "-w", "3", "wsapp:app"],
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
-            "postDebugTask": "killdebugger"
+            "postDebugTask": "killdebugger",
+            "env": {"PYTHONPATH": "${cwd}"}
         },
         {
             "name": "Celery Worker",
@@ -36,7 +38,8 @@
                 "mtbls-tasks"
             ],
             "jinja": true,
-            "justMyCode": false
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}"}
         },
         {
             "name": "Python: Current File (Integrated Terminal)",

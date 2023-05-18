@@ -31,6 +31,7 @@ from flask_restful_swagger import swagger
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.storage_service import StorageService
+from app.tasks.common.remote_folder_operations import create_study_folders
 from app.tasks.periodic_tasks.study import sync_studies_on_es_and_db
 from app.tasks.periodic_tasks.study_folder import maintain_study_folders
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
@@ -1178,7 +1179,7 @@ class CreateAccession(Resource):
         try:
             # All required steps are completed. RENAME temp study folder to study accession number
             if new_accession_number:
-                root_study_path = app.config.get('STUDY_PATH')
+                root_study_path = study_settings.study_metadata_files_root_path
                 last_study_path = os.path.join(root_study_path, study_acc)
                 os.rename(study_path, last_study_path)
                 logger.info(f"Step 5: Study folder {folder_name} is renamed to {study_acc}.")
@@ -1189,7 +1190,32 @@ class CreateAccession(Resource):
                       "body":f"Study folder rename task was failed. Rename from {folder_name} to {study_acc}, user: {user.username} <p> {str(exc)}"}
             logger.error(f"Failed to rename new study folder {str(inputs)}")
             send_technical_issue_email.apply_async(kwargs=inputs)
-                                                    
+        
+        try:
+            internal_file_path = os.path.join(study_settings.study_internal_files_root_path, study_acc)
+            make_dir_with_chmod(internal_file_path, 0o755)
+            
+            log_path = os.path.join(internal_file_path, study_settings.internal_logs_folder_name)
+            make_dir_with_chmod(log_path, 0o777)
+            
+            audit_path = os.path.join(study_settings.study_audit_files_root_path, study_acc, study_settings.audit_folder_name)
+            make_dir_with_chmod(audit_path, 0o755)
+        
+            read_only_files_path =  os.path.join(study_settings.study_readonly_files_root_path, study_acc)
+            
+            readonly_files_symbolic_link_path =  os.path.join(study_settings.study_metadata_files_root_path, study_acc, study_settings.readonly_files_symbolic_link_name)
+            audit_folder_symbolic_link_path:str = os.path.join(study_settings.study_metadata_files_root_path, study_acc, study_settings.audit_files_symbolic_link_name)
+            internal_file_symbolic_link_path:str = os.path.join(study_settings.study_metadata_files_root_path, study_acc, study_settings.internal_files_symbolic_link_name)
+            
+            os.symlink(read_only_files_path, readonly_files_symbolic_link_path)
+            os.symlink(audit_path, audit_folder_symbolic_link_path)
+            os.symlink(internal_file_path, internal_file_symbolic_link_path)
+        
+        except Exception as exc:
+            inputs = {"subject": "Failed to create audit/internal folders for new study folder", 
+                      "body":f"Failed to create audit/internal folders for new study folder {study_acc}, user: {user.username} <p> {str(exc)}"}
+            logger.error(f"Failed to create audit/internal folders for new study folder {str(inputs)}")
+            send_technical_issue_email.apply_async(kwargs=inputs)
         # Send email if it is new study
         if new_accession_number:
             inputs = {"user_token": user_token, "study_id": study_acc}
@@ -1202,6 +1228,11 @@ class CreateAccession(Resource):
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email": new_accession_number}
         create_ftp_folder_task = create_private_ftp_folder.apply_async(kwargs=inputs)
         logger.info(f"Step 7: Create ftp folder task is started for study {study_acc} with task id: {create_ftp_folder_task.id}")
+
+        # Start read only study folder creation task
+        inputs = {"study_id": study_acc}
+        create_study_folders_task = create_study_folders.apply_async(kwargs=inputs)
+        logger.info(f"Step 7: Create read only study folders task is started for study {study_acc} with task id: {create_study_folders_task.id}")
         
         # Start reindex task
         inputs = {"user_token": user_token, "study_id": study_acc}
@@ -1237,7 +1268,7 @@ class CreateAccession(Resource):
             if not (last_stable_id >= requested_id > 0):
                 raise MetabolightsException(message="Requested study id must be less then last study id", http_code=400)
         # Rule 4
-        study_location = os.path.join(app.config.get('STUDY_PATH'), requested_study_id)
+        study_location = os.path.join(get_study_settings().study_metadata_files_root_path, requested_study_id)
         if os.path.exists(study_location):
             files = os.listdir(study_location)
             if files:
