@@ -690,6 +690,7 @@ class StudyRawAndDerivedDataFolder(Resource):
         study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
         """The below line may need to be changed if the assumption that derived files can be found in
          studies/<study_id>/<readonly_path> is wrong"""
+        what_is_this_path = get_study_settings().study_readonly_files_root_path
         search_path = os.path.abspath(os.path.join(studies_folder, study_id, get_study_settings().study_readonly_files_root_path))
 
         glob_search_result = glob.glob(os.path.join(search_path, search_pattern))
