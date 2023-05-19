@@ -23,6 +23,15 @@ class UnmountedStorage(Storage):
         remote_job_manager = DataMoverAvailableStorage("sync_from_storage", study_id, self.app)
         status = remote_job_manager.sync_from_studies_folder(target_folder, ignore_list, **kwargs)
         return status
+    
+    def sync_to_public_ftp(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):
+        study_id = target_folder
+        if not study_id:
+            raise MetabolightsException("Invalid study id")
+        remote_job_manager = DataMoverAvailableStorage("sync_to_public_ftp", study_id, self.app)
+        status = remote_job_manager.sync_public_study_to_ftp(source_study_folder=source_local_folder, target_ftp_folder=target_folder, ignore_list=ignore_list, **kwargs)
+        return status
+    
 
     def sync_from_storage(self, source: str, target_local_path: str, ignore_list: List[str] = None, **kwargs):
         study_id = UnmountedVolumeFileManager.get_study_id(source)
