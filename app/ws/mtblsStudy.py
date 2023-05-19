@@ -600,6 +600,7 @@ class IsaTabAssayFile(Resource):
         logger.info('Getting ISA-Tab Assay file for %s', study_id)
         location = study_location
 
+        loc=os.path.join(location, assay_filename)
         files = glob.glob(os.path.join(location, assay_filename))
         if files:
             file_path = files[0]
