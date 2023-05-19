@@ -33,6 +33,8 @@ from flask import current_app as app
 from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import override_validations, update_validation_status, query_comments
 from app.ws.isaApiClient import IsaApiClient
+from app.ws.settings.study import StudySettings
+from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
 from app.ws.study.folder_utils import get_all_files_from_filesystem, list_directories_full
 from app.ws.utils import read_tsv, map_file_type, get_assay_file_list, find_text_in_isatab_file, get_table_header, \
@@ -478,20 +480,29 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
                     info, val_sequence=11, log_category=log_category)
 
 
-def update_val_schema_files(validation_file, study_id, study_location, user_token, obfuscation_code,
-                            log_category='all', return_schema=False):
+def update_val_schema_files(validation_file, study_id, user_token, obfuscation_code,
+                            log_category='all', return_schema: bool=False, settings: StudySettings=None):
+    if not settings:
+        settings = get_study_settings()
+        
+    internal_files_folder = os.path.join(settings.study_internal_files_root_path, study_id)
+    readonly_files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
+    metadata_files_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
     # Tidy up old files first
-    if os.path.isfile(os.path.join(study_location, 'validation_files.json')):
-        os.remove(os.path.join(study_location, 'validation_files.json'))
+    validation_files_path = os.path.join(internal_files_folder, settings.validation_files_json_name)
+    if os.path.isfile(validation_files_path):
+        os.remove(validation_files_path)
 
     if os.path.isfile(validation_file):
         os.remove(validation_file)
 
     f_start_time = time.time()
     file_list = []
-    file_list = list_directories_full(study_location, file_list, base_study_location=study_location)
+    
+    file_list = list_directories_full(metadata_files_folder, file_list, base_study_location=metadata_files_folder)    
+    
     try:
-        with open(os.path.join(study_location, 'validation_files.json'), 'w', encoding='utf-8') as f1:
+        with open(validation_files_path, 'w', encoding='utf-8') as f1:
             json.dump(file_list, f1, ensure_ascii=False)
     except Exception as e1:
         logger.error('Error Writing validation file list: ' + str(e1))
@@ -499,8 +510,8 @@ def update_val_schema_files(validation_file, study_id, study_location, user_toke
     logger.info(study_id + " - Generating validations file list took %s seconds" % round(time.time() - f_start_time, 2))
 
     v_start_time = time.time()
-    validation_schema = validate_study(study_id, study_location, user_token, obfuscation_code,
-                                       log_category=log_category, static_validation_file=True)
+    validation_schema = validate_study(study_id, metadata_files_folder, user_token, obfuscation_code,
+                                       log_category=log_category, static_validation_file=validation_files_path)
     if log_category == 'all':  # Only write the complete file, not when we have a sub-section only query
         try:
             with open(validation_file, 'w', encoding='utf-8') as f:
@@ -514,17 +525,18 @@ def update_val_schema_files(validation_file, study_id, study_location, user_toke
         return validation_schema
 
 
-def is_newer_files(study_location):
+def get_last_update_on_folder(study_location):
     need_validation_update = True
     list_of_files = glob.glob(os.path.join(study_location, '*'))
-    latest_file = max(list_of_files, key=os.path.getctime)
+    latest_file = max(list_of_files, key=os.path.getmtime)
+    return os.path.getmtime(latest_file)
     if 'validation_' in latest_file:
         need_validation_update = False  # No files modified since the validation schema files
     return need_validation_update
 
 
-def validate_study(study_id, study_location, user_token, obfuscation_code,
-                   validation_section='all', log_category='all', static_validation_file=None):
+def validate_study(study_id, study_location_old, user_token, obfuscation_code,
+                   validation_section='all', log_category='all', static_validation_file=None, settings: StudySettings = None):
     """
     Entry point method for validating an entire study. Each section is validated in turn, unless a validation section is
     specified in the request parameters.
@@ -547,13 +559,17 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     error_found = False
     warning_found = False
     validation_section = validation_section.lower()
-
+    if not settings:
+        settings = get_study_settings()
+    internal_files_folder = os.path.join(settings.study_internal_files_root_path, study_id)
+    readonly_files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
+    metadata_files_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
     # Ensuring we have the latest database values
     is_curator, read_access, write_access, db_obfuscation_code, db_study_location, db_release_date, \
     db_submission_date, db_study_status = commons.get_permissions(study_id, user_token)
 
     try:
-        validation_schema_file = app.config.get('VALIDATIONS_FILE')
+        validation_schema_file = settings.validations_file
 
         if validation_schema_file.startswith('http'):
             response = requests.get(validation_schema_file)
@@ -588,7 +604,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     # Validate basic ISA-Tab structure
     isa_study, isa_inv, isa_samples, std_path, status, amber_warning, isa_validation, inv_file, s_file, assay_files = \
         validate_basic_isa_tab(
-            study_id, user_token, study_location, db_release_date, override_list, comment_list, log_category=log_category)
+            study_id, user_token, metadata_files_folder, db_release_date, override_list, comment_list, log_category=log_category)
     all_validations.append(isa_validation)
     if not status:
         error_found = True
@@ -664,7 +680,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     file_name_list = []
     if isa_study and validation_section == 'all' or val_section in validation_section:
         status, amber_warning, files_validation = validate_files(
-            study_id, study_location, obfuscation_code, override_list, comment_list,
+            study_id, readonly_files_folder, metadata_files_folder, obfuscation_code, override_list, comment_list,
             file_name_list, val_section, log_category=log_category, static_validation_file=static_validation_file)
         all_validations.append(files_validation)
 
@@ -677,7 +693,7 @@ def validate_study(study_id, study_location, user_token, obfuscation_code,
     val_section = "assays"
     if isa_study and validation_section == 'all' or val_section in validation_section or 'maf' in validation_section:
         status, amber_warning, assay_validation = \
-            validate_assays(isa_study, study_location, validation_schema, override_list, comment_list, sample_name_list,
+            validate_assays(isa_study, readonly_files_folder, metadata_files_folder, internal_files_folder, validation_schema, override_list, comment_list, sample_name_list,
                             file_name_list, val_section, log_category=log_category)
         all_validations.append(assay_validation)
 
@@ -936,7 +952,7 @@ def is_valid_derived_column_entry(value: str) -> dict:
     return result_dict
 
 
-def validate_assays(isa_study, study_location, validation_schema, override_list, comment_list, sample_name_list,
+def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, internal_files_folder, validation_schema, override_list, comment_list, sample_name_list,
                     file_name_list, val_section="assays", log_category=error):
     validations = []
     all_assay_samples = []
@@ -944,7 +960,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
     missing_or_incorrect_files = []
 
     study_id = isa_study.identifier
-
+    settings = get_study_settings()
     if isa_study.assays:
         add_msg(validations, val_section, "Found assay(s) for this study", success, val_section,
                 val_sequence=1, log_category=log_category)
@@ -959,7 +975,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         assays = []
         all_assay_names = []
         all_assay_raw_files = []
-        assay_file_name = os.path.join(study_location, assay.filename)
+        assay_file_name = os.path.join(metadata_files_folder, assay.filename)
         assay_dataframe = None
         try:
             assay_dataframe = read_tsv(assay_file_name)
@@ -1037,7 +1053,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                 check_assay_columns(a_header, all_assay_samples, row, validations, val_section,
                                                     assay, unique_file_names, all_assay_names,
                                                     sample_name_list, log_category=log_category,
-                                                    assay_file_name=assay_file_name.replace(study_location + '/', ''))
+                                                    assay_file_name=assay_file_name.replace(metadata_files_folder + '/', ''))
 
                         if col_rows > len(all_assay_samples):
                             add_msg(validations, val_section,
@@ -1073,7 +1089,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                                 break  # We only need one row
 
                             if maf_file_name:
-                                validate_maf(validations, maf_file_name, all_assay_names, study_location,
+                                validate_maf(validations, maf_file_name, all_assay_names, metadata_files_folder,
                                              isa_study.identifier,
                                              sample_name_list, is_ms=is_ms, log_category=log_category)
                             else:
@@ -1120,7 +1136,7 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
         except IndexError as e:
             logger.warning('Unable to find assay file name in string {0} : {1}'.format(files, e))
             a_file_name = None
-        valid, file_type, file_description = check_file(files, study_location, file_name_list, validations,
+        valid, file_type, file_description = check_file(files, metadata_files_folder, file_name_list, validations,
                                                         assay_file_list=all_assay_raw_files,
                                                         assay_file_name=a_file_name)
         if not valid:
@@ -1140,10 +1156,15 @@ def validate_assays(isa_study, study_location, validation_schema, override_list,
                     + column_name + "'", success, descr=file_description, val_sequence=8.1, log_category=log_category)
     if len(missing_or_incorrect_files) > 0:
         try:
-            with open(study_location + '/missing_files.txt', 'w', encoding='utf-8') as file:
+            with open( os.path.join(internal_files_folder, settings.missing_files_name), 'w', encoding='utf-8') as file:
                 file.write("\n".join(missing_or_incorrect_files))
         except Exception as e:
             logger.error(f'Error writing missing file {str(e)}')
+    else:
+        missing_file_path = os.path.join(internal_files_folder, settings.missing_files_name)
+        
+        if os.path.exists(missing_file_path):
+            os.remove(missing_file_path)
     return return_validations(val_section, validations, override_list, comment_list)
 
 
@@ -1176,13 +1197,15 @@ def get_files_in_sub_folders(study_location):
     return folder_list
 
 
-def validate_files(study_id, study_location, obfuscation_code, override_list, comment_list, file_name_list,
+def validate_files(study_id, readonly_files_folder, metadata_files_folder, obfuscation_code, override_list, comment_list, file_name_list,
                    val_section="files", log_category=error, static_validation_file=None):
     validations = []
-    assay_file_list = get_assay_file_list(study_location)
+    
+    assay_file_list = get_assay_file_list(metadata_files_folder)
+    settings = get_study_settings()
     # folder_list = get_files_in_sub_folders(study_location)
     study_files, _upload_files, _upload_diff, _upload_location, latest_update_time = \
-        get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
+        get_all_files_from_filesystem(study_id, obfuscation_code, metadata_files_folder,
                                       directory=None, include_raw_data=True, validation_only=True,
                                       assay_file_list=assay_file_list,
                                       short_format=True, include_sub_dir=True,
@@ -1198,13 +1221,13 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, co
         file_status = file['status']
         isa_tab_warning = False
 
-        full_file_name = os.path.join(study_location, file_name)
+        full_file_name = os.path.join(metadata_files_folder, file_name)
 
         # Don't check our internal folders
-        if 'audit' not in file_name and not file_name.startswith(app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')):
+        if not file_name.startswith(settings.internal_files_symbolic_link_name) and not file_name.startswith(settings.audit_files_symbolic_link_name):
             if os.path.isdir(os.path.join(full_file_name)):
                 for sub_file_name in os.listdir(full_file_name):
-                    if is_empty_file(os.path.join(full_file_name, sub_file_name), study_location=study_location):
+                    if is_empty_file(os.path.join(full_file_name, sub_file_name), study_location=metadata_files_folder):
                         add_msg(validations, val_section, "Empty file found in a sub-directory", info, val_section,
                                 value=os.path.join(file_name, sub_file_name), val_sequence=1, log_category=log_category)
 
@@ -1215,7 +1238,7 @@ def validate_files(study_id, study_location, obfuscation_code, override_list, co
                                 warning, val_section, value=file_name, val_sequence=2, log_category=log_category)
                         isa_tab_warning = True
 
-            if is_empty_file(full_file_name, study_location=study_location):
+            if is_empty_file(full_file_name, study_location=metadata_files_folder):
                 # if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclusion_list:  # In case the file is in a folder
                 add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
                         error, val_section,
@@ -1793,7 +1816,6 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
     amber_warning = False
     validations = []
     val_section = "basic"
-    inv_file_name = 'i_Investigation.txt'
     # inv_file_format = re.compile(r'i_(.*?)\.txt')
     isa_inv = None
     isa_study = None
@@ -1801,7 +1823,8 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
     std_path = None
     s_file = None
     assay_files = None
-
+    settings = get_study_settings()
+    inv_file_name = settings.investigation_file_name
     try:
 
         if os.path.isfile(os.path.join(study_location, inv_file_name)):
@@ -1832,7 +1855,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
 
     if isa_inv:
         add_msg(validations, val_section, "Successfully read the investigation file", success,
-                'i_Investigation.txt', val_sequence=2, log_category=log_category)
+                inv_file_name, val_sequence=2, log_category=log_category)
 
         study_num = 0
         if isa_inv.studies:
@@ -1841,20 +1864,20 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
                 add_msg(validations, val_section,
                         "You can only submit one study per submission, this submission has " + str(
                             study_num) + " studies",
-                        error, 'i_Investigation.txt', val_sequence=2.1, log_category=log_category)
+                        error, inv_file_name, val_sequence=2.1, log_category=log_category)
 
         if isa_study and study_num == 1:
             add_msg(validations, val_section, "Successfully read the study section of the investigation file", success,
-                    'i_Investigation.txt', val_sequence=3, log_category=log_category)
+                    inv_file_name, val_sequence=3, log_category=log_category)
         else:
             add_msg(validations, val_section, "Could not correctly read the study section of the investigation file",
                     error,
-                    'i_Investigation.txt', val_sequence=4, log_category=log_category)
+                    inv_file_name, val_sequence=4, log_category=log_category)
             validates = False
 
         if isa_study.filename:
             add_msg(validations, val_section, "Successfully found the reference to the sample sheet filename", success,
-                    'i_Investigation.txt', val_sequence=5, log_category=log_category)
+                    inv_file_name, val_sequence=5, log_category=log_category)
         else:
             add_msg(validations, val_section, "Could not find the reference to the sample sheet filename", error,
                     file_name, val_sequence=6, log_category=log_category)
@@ -1914,7 +1937,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
                 # The hash in an ontology URL will cause problems for the ISA-API
                 add_msg(validations, val_section,
                         "URL's containing # will not load properly, please change to '%23'",
-                        warning, 'i_Investigation.txt', val_sequence=17.1, log_category=log_category)
+                        warning, inv_file_name, val_sequence=17.1, log_category=log_category)
 
             if isa_study.public_release_date:
                 public_release_date = isa_study.public_release_date
@@ -1932,7 +1955,6 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
 
     validates, amber_warning, ret_list = return_validations(val_section, validations, override_list, comment_list)
 
-    inv_file = 'i_Investigation.txt'
 
     if isa_study:
         s_file = isa_study.filename
@@ -1942,7 +1964,7 @@ def validate_basic_isa_tab(study_id, user_token, study_location, release_date, o
             assay_files.append(assay.filename)
 
     return isa_study, isa_inv, isa_sample_df, std_path, validates, amber_warning, \
-           ret_list, inv_file, s_file, assay_files
+           ret_list, inv_file_name, s_file, assay_files
 
 
 def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, override_list, comment_list,
@@ -2047,7 +2069,7 @@ def job_status(job_id):
     return result[0]
 
 
-def submitJobToCluser(command, section, study_location):
+def submitJobToCluser(command, section, study_internal_files_folder):
     logger.info("Starting cluster job for Validation : " + command)
     status, message, job_out, job_err, log_file = submit_job(True, account=None, job_cmd=command, job_params=None, submitter=None, log=False)
 
@@ -2055,7 +2077,7 @@ def submitJobToCluser(command, section, study_location):
         start = 'Job <'
         end = '> is'
         cron_job_id = (job_out[job_out.find("Job <") + len(start):job_out.rfind(end)])
-        cron_job_file = study_location + "/validation_" + section + "_" + cron_job_id + '.json'
+        cron_job_file = os.path.join(study_internal_files_folder, "validation_" + section + "_" + cron_job_id + '.json')
         with open(cron_job_file, 'w') as fp:
             pass
         os.chmod(cron_job_file, 0o777)
@@ -2072,6 +2094,6 @@ def is_newer_timestamp(location, fileToCompare):
     except:
         return need_validation_update
     updateTime = os.path.getctime(latest_file)
-    if os.path.getctime(fileToCompare) < updateTime:
+    if os.path.getctime(fileToCompare) > updateTime:
         need_validation_update = True  # No files modified since the validation schema files
     return need_validation_update

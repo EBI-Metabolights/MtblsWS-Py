@@ -95,9 +95,8 @@ class About(Resource):
 class AboutServer(Resource):
     """Basic description of the Web Service host"""
     @swagger.operation(
-        summary="About this Web Service host",
-        notes="Basic description of the Web Service service",
-        nickname="about service",
+        summary="Name of the Web Service host.",
+        nickname="Web server host name",
         parameters=[
         ],
         responseMessages=[

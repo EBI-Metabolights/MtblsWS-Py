@@ -213,6 +213,28 @@ class UserAccounts(Resource):
     
     @swagger.operation(
         summary="Add new Metabolights user account",
+        notes="""
+        Example request body
+            {
+                "address": "GB",
+                "affiliation": "EBI",
+                "affiliationUrl": "www.ebi.ac.uk",
+                "apiToken": "",
+                "curator": false,
+                "dbPassword": "",
+                "email": "",
+                "firstName": "",
+                "fullName": "",
+                "joinDate": "2023-03-24T14:55:04.881000",
+                "lastName": "",
+                "mobilePhoneNumber": null,
+                "officePhoneNumber": null,
+                "orcid": "",
+                "role": 0,
+                "status": "ACTIVE",
+                "userName": ""
+            }
+        """,
         parameters=[
             {
                 "name": "user_data",
