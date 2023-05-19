@@ -1365,8 +1365,8 @@ class DeleteStudy(Resource):
         # Remove all files in the study folder except the sample sheet and the investigation sheet.
         if not os.path.exists(study_location):
             os.makedirs(study_location, exist_ok=True)
-
-        template_folder = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'))
+        study_settings = get_study_settings()
+        template_folder = os.path.join(study_settings.study_metadata_files_root_path, study_settings.study_default_template_path)
         target_file = os.path.join(study_location, 's_{0}.txt'.format(study_id))
         if not os.path.exists(target_file):
             from_path = os.path.join(template_folder, "s_Sample.txt")
@@ -1398,7 +1398,8 @@ class DeleteStudy(Resource):
         for file_name in os.listdir(study_location):
 
             if file_name.startswith("i_Investigation"):
-                from_path = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'),
+                from_path = os.path.join(study_settings.study_metadata_files_root_path,
+                                         study_settings.study_default_template_path,
                                          "i_Investigation.txt")
 
                 logger.info('Attempting to copy {0} to {1}'.format(from_path, study_location))
@@ -1412,7 +1413,8 @@ class DeleteStudy(Resource):
                         .format(study_id))
             else:
                 # as there are only two files in the directory this will be the sample file.
-                from_path = os.path.join(app.config.get('STUDY_PATH'), app.config.get('DEFAULT_TEMPLATE'),
+                from_path = os.path.join(study_settings.study_metadata_files_root_path,
+                                         study_settings.study_default_template_path,
                                          "s_Sample.txt")
                 copy_file(from_path, study_location + '/s_{0}.txt'.format(study_id))
                 logger.info('Restored sample.txt file for {0} to template state.'.format(study_id))
