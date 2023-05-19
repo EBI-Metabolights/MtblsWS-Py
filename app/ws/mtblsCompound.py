@@ -9,7 +9,7 @@ from app.utils import MetabolightsException, metabolights_exception_handler, Met
 from flask import send_file, make_response
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite
-from app.ws.db.settings import get_directory_settings
+from app.ws.settings.utils import get_study_settings
 from app.ws.utils import log_request
 from app.ws.db import models
 
@@ -141,8 +141,8 @@ class MtblsCompoundFile(Resource):
             abort(404)
         compound_id = accession.upper()
 
-        settings = get_directory_settings(app)
-        compound_file_path = os.path.join(settings.reference_folder, compound_id, compound_id + "_data.json")
+        study_settings = get_study_settings()
+        compound_file_path = os.path.join(study_settings.reference_folder, compound_id, compound_id + "_data.json")
     
         if os.path.exists(compound_file_path):
             resp = make_response(send_file(compound_file_path))
@@ -203,7 +203,7 @@ class MtblsCompoundSpectraFile(Resource):
             abort(404)
         compound_id = accession.upper()
 
-        settings = get_directory_settings(app)
+        settings = get_study_settings()
         spectrum_path = os.path.join(settings.reference_folder, compound_id, compound_id + "_spectrum")
         specra_file_path = os.path.join(spectrum_path, spectra_id, spectra_id + ".json")
     

@@ -47,7 +47,7 @@ class UserManagement(Resource):
                 "email": "joe.blogs@cam.ac.uk",
                 "affiliation": "University of Cambridge",
                 "affiliation_url": "https://www.bioc.cam.ac.uk",
-                "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
+                "address": "GB",
                 "orcid" : "0000-0003-3168-4149",
                 "metaspace_api_key": "adfasd-123123-dfsdf-sasdfa"
             }
@@ -162,7 +162,7 @@ class UserManagement(Resource):
                 "email": "new.job.blogs@somewhere.org",
                 "affiliation": "University of Cambridge",
                 "affiliation_url": "https://www.bioc.cam.ac.uk",
-                "address": "The Department of Biochemistry, The Sanger Building, 80 Tennis Court Road, Cambridge, CB2 1GA, UK.",
+                "address": "GB",
                 "orcid" : "0000-0003-3168-4149",
                 "metaspace_api_key": "adfasd-123123-dfsdf-sasdfa"
 

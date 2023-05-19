@@ -10,11 +10,11 @@ from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
 from app.ws.chebi.settings import get_chebi_ws_settings
 from app.ws.chebi.wsproxy import ChebiWsProxy
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.settings import get_directory_settings
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.elasticsearch.settings import get_elasticsearch_settings
 from app.ws.email.email_service import EmailService
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.wsapp_config import initialize_app
 
 
@@ -44,10 +44,10 @@ def flask_app_client(flask_app):
 def elasticsearch_service(flask_app):
     with flask_app.app_context():
         db_manager = DBManager.get_instance(flask_app)
-        directory_settings = get_directory_settings(flask_app)
+        study_settings = get_study_settings().study_metadata_files_root_path
         elasticsearch_settings = get_elasticsearch_settings(flask_app)
         service = ElasticsearchService(settings=elasticsearch_settings,
-                                       db_manager=db_manager, directory_settings=directory_settings)
+                                       db_manager=db_manager, study_settings=study_settings)
     return service
 
 

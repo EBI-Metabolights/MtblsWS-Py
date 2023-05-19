@@ -38,7 +38,6 @@ from app.ws.compare_files import CompareTsvFiles
 from app.ws.cronjob import cronjob
 from app.ws.curation_log import curation_log
 from app.ws.db.dbmanager import DBManager
-from app.ws.db.settings import get_directory_settings
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.elasticsearch.search import ElasticSearchQuery
 from app.ws.elasticsearch.settings import get_elasticsearch_settings
@@ -89,6 +88,7 @@ from app.ws.pathway import fellaPathway, keggid
 from app.ws.reports import (CrossReferencePublicationInformation,
                             StudyAssayTypeReports, reports)
 from app.ws.send_files import SendFiles, SendFilesPrivate
+from app.ws.settings.utils import get_study_settings
 from app.ws.species import SpeciesTree
 from app.ws.spectra import ExtractMSSpectra, ZipSpectraFiles
 from app.ws.stats import StudyStats
@@ -133,10 +133,10 @@ def configure_app(flask_app):
 
     if not WsClient.elasticsearch_service:
         db_manager = DBManager.get_instance(flask_app)
-        directory_settings = get_directory_settings(flask_app)
+        study_settings = get_study_settings()
         elasticsearch_settings = get_elasticsearch_settings(flask_app)
         elasticsearch_service = ElasticsearchService(settings=elasticsearch_settings,
-                                                     db_manager=db_manager, directory_settings=directory_settings)
+                                                     db_manager=db_manager, study_settings=study_settings)
         WsClient.elasticsearch_service = elasticsearch_service
 
 
@@ -219,7 +219,7 @@ def initialize_app(flask_app):
     api.add_resource(SyncFromFtpFolder, res_path + "/studies/<string:study_id>/ftp/sync")
     api.add_resource(FtpFolderSyncStatus, res_path + "/studies/<string:study_id>/ftp/sync-status")
     api.add_resource(SyncFromStudyFolder, res_path + "/studies/<string:study_id>/ftp/sync-from-study-folder")
-    api.add_resource(SyncPublicStudyToFTP, res_path + "/studies/<string:study_id>/ftp/sync-public-study-ftp")
+
 
     api.add_resource(AuditFiles, res_path + "/studies/<string:study_id>/audit")
     api.add_resource(StudyMetaInfo, res_path + "/studies/<string:study_id>/meta-info")

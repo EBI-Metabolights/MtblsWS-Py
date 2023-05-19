@@ -215,6 +215,7 @@ class UserAccounts(Resource):
         summary="Add new Metabolights user account",
         notes="""
         Example request body
+        <pre><code>
             {
                 "address": "GB",
                 "affiliation": "EBI",
@@ -234,6 +235,7 @@ class UserAccounts(Resource):
                 "status": "ACTIVE",
                 "userName": ""
             }
+            </code></pre>
         """,
         parameters=[
             {

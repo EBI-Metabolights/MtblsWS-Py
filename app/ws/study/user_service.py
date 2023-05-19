@@ -7,15 +7,15 @@ from app.utils import MetabolightsException, MetabolightsAuthorizationException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import SimplifiedUserModel, UserModel
 from app.ws.db.schemes import Study, User
-from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import UserStatus, UserRole
 from app.ws.db.utils import datetime_to_int
+from app.ws.settings.utils import get_study_settings
 
 
 class UserService(object):
     instance = None
     db_manager = None
-    directory_settings = None
+    study_settings = None
 
     @classmethod
     def get_instance(cls, application=None):
@@ -24,7 +24,7 @@ class UserService(object):
             if not application:
                 application = app
             cls.db_manager = DBManager.get_instance(application)
-            cls.directory_settings = get_directory_settings(application)
+            cls.study_settings = get_study_settings()
         return cls.instance
     
     def get_user_studies(self, user_token):

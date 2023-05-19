@@ -2,6 +2,7 @@ import logging
 import os
 import socket
 from app import file_utils as utils
+from app.ws.settings.utils import get_cluster_settings, get_study_settings
 
 
 def get_path_from_environment(name, default_value):
@@ -675,17 +676,22 @@ JOB_STATUS_READ_TIMEOUT = JOB["JOB_STATUS_READ_TIMEOUT"]
 ########################################################################################################################
 #  Print important parameters to show on startup
 ########################################################################################################################
+study_settings = get_study_settings()
+cluster_settings = get_cluster_settings()
 print("Configuration parameters are loaded...")
 print("................................................................................................................")
-print(f"DB_PARAMS['host']:\t{DB_PARAMS['host']}")
-print(f"STUDY_PATH:\t\t{STUDY_PATH}")
-print(f"ELASTICSEARCH_HOST:\t{ELASTICSEARCH_HOST}")
-print(f"LSF_HOST:\t\t{LSF_HOST}")
-print(f"FTP_PRIVATE_MOUNT_TYPE:\t{FTP_PRIVATE_MOUNT_TYPE}")
-print(f"REPORTING_ROOT_PATH:\t{REPORTING_ROOT_PATH}")
-print(f"MAIL_SERVER:\t\t{MAIL_SERVER}:{MAIL_PORT}")
-print(f"SERVER HOST NAME:\t{socket.gethostname()}")
-print(f"SERVER PORT:\t\t{PORT}")
+print(f"DB HOST:\t\t\t{DB_PARAMS['host']}")
+print(f"STUDY_METADATA_ROOT_PATH:\t{study_settings.study_metadata_files_root_path}")
+print(f"STUDY_AUDIT_FILES_ROOT_PATH:\t{study_settings.study_audit_files_root_path}")
+print(f"STUDY_INTERNAL_FILES_ROOT_PATH:\t{study_settings.study_internal_files_root_path}")
+print(f"STUDY_READONLY_FILES_ROOT_PATH:\t{study_settings.study_readonly_files_root_path}")
+print(f"ELASTICSEARCH_HOST:\t\t{ELASTICSEARCH_HOST}")
+print(f"LSF_HOST:\t\t\t{cluster_settings.cluster_lsf_host}")
+print(f"REPORTING_ROOT_PATH:\t\t{study_settings.report_root_path}")
+print(f"COMPOUND_FILES_ROOT_PATH:\t{study_settings.reference_folder}")
+print(f"MAIL_SERVER:\t\t\t{MAIL_SERVER}:{MAIL_PORT}")
+print(f"SERVER HOST NAME:\t\t{socket.gethostname()}")
+print(f"SERVER PORT:\t\t\t{PORT}")
 print("................................................................................................................")
 
 

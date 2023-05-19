@@ -27,8 +27,10 @@ class StudySettings(MetabolightsBaseSettings):
     study_default_template_path:str = "./resources/templates/study/default"
     study_partner_metabolon_template_path:str = "./resources/templates/study/metabolon"
 
+    report_root_path:str
     report_mariana_folder_name: str
     report_base_folder_name: str
+    report_global_folder_name: str = "global"
     files_list_json_file_name: str = "files-all.json"
     files_list_json_file_creation_timeout: int = 900
     
@@ -43,3 +45,5 @@ class StudySettings(MetabolightsBaseSettings):
     validations_file:str = "./resources/validation_schema.json"
     validation_script: str = "/nfs/www-prod/web_hx2/cm/metabolights/scripts/cluster_scripts/val/validation.sh"
     missing_files_name: str = "missing_files.txt"
+    
+    reference_folder: str

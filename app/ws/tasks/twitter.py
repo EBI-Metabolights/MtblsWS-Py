@@ -9,9 +9,9 @@ from flask_restful_swagger import swagger
 from app.utils import metabolights_exception_handler
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study
-from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import StudyStatus
 from app.ws.db.wrappers import update_study_model_from_directory, create_study_model_from_db_study
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.ws.utils import log_request
 
@@ -119,8 +119,8 @@ class PublicStudyTweet(Resource):
             query = query.filter(Study.status == StudyStatus.PUBLIC.value,
                                  Study.releasedate >= start, Study.releasedate < end)
             new_public_studies = query.all()
-            directory_settings = get_directory_settings(app)
-            study_folders = directory_settings.studies_folder
+            settings = get_study_settings()
+            study_folders = settings.study_metadata_files_root_path
             url = app.config.get("WS_APP_BASE_LINK")
 
             public_study_messages = []

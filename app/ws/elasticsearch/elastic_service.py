@@ -9,11 +9,12 @@ from app.utils import MetabolightsDBException, MetabolightsException
 from app.ws.db import models
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import RefMetabolite, StudyTask
-from app.ws.db.settings import DirectorySettings, get_directory_settings
 from app.ws.db.types import StudyTaskName, StudyTaskStatus
 from app.ws.elasticsearch.schemes import Booster, Facet, FacetLine, SearchQuery, SearchResult
 from app.ws.elasticsearch.settings import (ElasticsearchSettings,
                                            get_elasticsearch_settings)
+from app.ws.settings.study import StudySettings
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
 from flask import current_app as app
@@ -29,10 +30,10 @@ class ElasticsearchService(object):
     DOC_TYPE_STUDY = "study"
     DOC_TYPE_COMPOUND = "compound"
 
-    def __init__(self, settings: ElasticsearchSettings, db_manager: DBManager, directory_settings: DirectorySettings):
+    def __init__(self, settings: ElasticsearchSettings, db_manager: DBManager, study_settings: StudySettings):
         self.settings = settings
         self.db_manager = db_manager
-        self.directory_settings = directory_settings
+        self.study_settings = study_settings
         self._client = None  # lazy load
         self.thread_pool_executor = ThreadPoolExecutor(max_workers=5)
 
@@ -69,10 +70,10 @@ class ElasticsearchService(object):
             application = app
         if not cls.instance:
             settings = get_elasticsearch_settings(application)
-            directory_settings = get_directory_settings(application)
+            study_settings = get_study_settings()
             db_mananager = DBManager.get_instance(application)
             cls.instance = ElasticsearchService(settings=settings, db_manager=db_mananager,
-                                                directory_settings=directory_settings)
+                                                study_settings=study_settings)
         return cls.instance
 
     def search(self, query: SearchQuery):

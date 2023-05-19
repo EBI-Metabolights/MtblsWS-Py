@@ -3,9 +3,9 @@ from flask import current_app as app
 from app.utils import MetabolightsDBException, MetabolightsFileOperationException, MetabolightsException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User, Stableid, StudyTask
-from app.ws.db.settings import get_directory_settings
 from app.ws.db.types import UserStatus, UserRole, StudyStatus
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
+from app.ws.settings.utils import get_study_settings
 
 
 def identify_study_id(study_id, obfuscation_code=None):
@@ -22,7 +22,7 @@ def identify_study_id(study_id, obfuscation_code=None):
 class StudyService(object):
     instance = None
     db_manager = None
-    directory_settings = None
+    study_settings = None
 
     @classmethod
     def get_instance(cls, application=None):
@@ -31,7 +31,7 @@ class StudyService(object):
             if not application:
                 application = app
             cls.db_manager = DBManager.get_instance(application)
-            cls.directory_settings = get_directory_settings(application)
+            cls.study_settings = get_study_settings()
         return cls.instance
 
     def get_study_by_acc(self, study_id):
@@ -79,7 +79,7 @@ class StudyService(object):
             raise MetabolightsDBException(message=f"Error while retreiving study from database: {str(e)}", exception=e)
 
         try:
-            update_study_model_from_directory(m_study, self.directory_settings.studies_folder,
+            update_study_model_from_directory(m_study, self.study_settings.study_metadata_files_root_path,
                                               optimize_for_es_indexing=optimize_for_es_indexing,
                                               revalidate_study=revalidate_study,
                                               user_token_to_revalidate=user_token,
