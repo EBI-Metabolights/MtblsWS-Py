@@ -1160,6 +1160,11 @@ def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, int
                 file.write("\n".join(missing_or_incorrect_files))
         except Exception as e:
             logger.error(f'Error writing missing file {str(e)}')
+    else:
+        missing_file_path = os.path.join(internal_files_folder, settings.missing_files_name)
+        
+        if os.path.exists(missing_file_path):
+            os.remove(missing_file_path)
     return return_validations(val_section, validations, override_list, comment_list)
 
 

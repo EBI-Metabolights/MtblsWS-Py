@@ -706,7 +706,7 @@ def create_temp_dir_in_study_folder(parent_folder: str) -> str:
     rand = random.randint(1000, 9999999)
     folder_name = f"{date}-{str(rand)}"
     random_folder_name = hashlib.sha256(bytes(folder_name, 'utf-8')).hexdigest()
-    path = os.path.join(parent_folder, "temp", random_folder_name)
+    path = os.path.join(parent_folder, random_folder_name)
     os.makedirs(path, exist_ok=True)
     
     return path

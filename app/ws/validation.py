@@ -497,29 +497,41 @@ class ValidationComment(Resource):
             abort(403)
 
         feedback = ""
-        comment_list = []
+        comment_list = {}
         # query_comments is a db_connection.py method
         query_list = query_comments(study_id)
         if query_list and query_list[0] is not None:
             for val in query_list[0].split('|'):
-                comment_list.append(val)
+                key_value = val.split(':')
+                if len(key_value) > 1:
+                    comment_list[key_value[0].strip()] = key_value[1]
+                # else:
+                #     comment_list[""] = key_value[0]
 
         # Get the new validations submitted
         data_dict = json.loads(request.data.decode('utf-8'))
         new_comments = data_dict['comments']
 
         for val_sequence, comment in new_comments.items():
-            val_found = False
-            for i, existing_comment in enumerate(comment_list):
-                if val_sequence + ":" in existing_comment:  # Do we already have this comment in the database
-                    comment_list[i] = f' {comment}'
-                    feedback += f"Comment for {val_sequence} has been updated."
-
-            if not val_found:
-                comment_list.append(val_sequence + ':' + comment)
-                feedback += f"Comment for {val_sequence} has been stored in the database."
-
-        db_update_string = f' {"|".join(comment_list)}'
+            key = val_sequence.strip()
+            if key in comment_list:
+                if comment:
+                    feedback += f"Comment for {key} has been updated."
+                    comment_list[key] = comment
+                else:
+                    feedback += f"Comment for {key} has been deleted."
+                    del comment_list[key]
+            else:
+                if comment:
+                    feedback += f"Comment for {key} has been stored in the database."
+                    comment_list[key] = comment
+                else:
+                    feedback += f"Empty comment for {key} has been ignored."
+                
+        updated_comments = []
+        for key in comment_list:
+            updated_comments.append(f"{key}:{comment_list[key]}")
+        db_update_string = "|".join(updated_comments)
 
         try:
             __ = update_comments(study_id, db_update_string)

@@ -28,10 +28,14 @@ def validate_token_in_request_body(content):
         return make_response(jsonify({"content": False,
                                       "message": "Invalid request. token and user inputs are required",
                                       "err": None}), 400)
-
-    username = content["user"] if "user" in content else content["user"]
-    jwt_token = content["jwt"] if "jwt" in content else content["jwt"]
-
+    jwt_token = ""
+    username = ""
+    for key in content:
+        if key.lower() == "jwt":
+            jwt_token = content[key]
+        elif key.lower() == "user":
+            username = content[key]
+        
     try:
         user_in_token = AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt_token)
     except MetabolightsAuthorizationException as e:
@@ -87,12 +91,11 @@ response_messages = [
 
 class AuthLoginWithToken(Resource):
     @swagger.operation(
-        summary="Authenticate user with apitoken & user and returns authentication token for valid parameters",
-        notes="json ",
+        summary="Authenticate user with apitoken and returns JWT token in response header and user content in response body.",
         parameters=[
             {
                 "name": "authdata",
-                "description": 'Registered user token and username {\"token\":\"api token here\", \"user\":{\"userName\":\"email address here\"}}',
+                "description": 'User MetaboLights API token {\"token\":\"api token here\"}',
                 "paramType": "body",
                 "type": "string",
                 "format": "application/json",
@@ -140,8 +143,7 @@ class AuthLoginWithToken(Resource):
         return resp
 class AuthLogin(Resource):
     @swagger.operation(
-        summary="Authenticate user with username and password and returns authentication token for valid parameters",
-        notes="json ",
+        summary="Authenticate user with username and password and returns authentication token in response header.",
         parameters=[
             {
                 "name": "authdata",
@@ -346,7 +348,21 @@ class AuthUser(Resource):
 
 class AuthUserStudyPermissions(Resource):
     @swagger.operation(
-        summary="Get permissions for a study",
+        summary="Return study permissions of user.",
+        notes="""
+        If user has read permision for study, response contains obfuscation code as well. Example response format: 
+        {
+            "delete": false,
+            "edit": false,
+            "obfuscationCode": "",
+            "studyId": "MTBLS10",
+            "studyStatus": "",
+            "submitterOfStudy": false,
+            "userName": "",
+            "userRole": "",
+            "view": false
+            }
+        """,
         parameters=[
             {
                 "name": "user_token",
@@ -400,7 +416,7 @@ class AuthUserStudyPermissions(Resource):
 
 class AuthUserStudyPermissions2(Resource):
     @swagger.operation(
-        summary="Get permissions for a study",
+        summary="Return study permissions of user with study obfuscation code.",
         parameters=[
             {
                 "name": "user_token",
