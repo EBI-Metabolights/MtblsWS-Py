@@ -1927,12 +1927,19 @@ class DeleteAsperaFiles(Resource):
         # Need to check that the user is actually an active user, ie the user_token exists
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
+        st_s = get_study_settings()
+        directories_to_check = [os.path.join(path_var, study_id) for path_var in [
+            st_s.study_metadata_files_root_path,
+            st_s.study_readonly_files_root_path,
+            st_s.study_audit_files_root_path
+        ]]
         if not is_curator:
             abort(401)
 
         logger.info('Deleting aspera files from study ' + study_id)
         try:
-            delete_asper_files(study_location)
+            for dir in directories_to_check:
+                delete_asper_files(dir)
             logger.info('All aspera files deleted successfully !')
             return {'Success': 'Deleted files successfully !'}
 
