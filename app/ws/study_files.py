@@ -34,6 +34,7 @@ from app.services.storage_service.storage_service import StorageService
 from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_basic_files, get_all_files_from_filesystem, get_all_files, write_audit_files
 from app.ws.study.study_service import StudyService, identify_study_id
 from app.ws.study.user_service import UserService
@@ -380,13 +381,13 @@ class StudyRawAndDerivedDataFile(Resource):
             wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403, error="User has no curator role")
-
-        studies_folder = app.config.get("STUDY_PATH")
-        study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
-        search_path = os.path.abspath(os.path.join(studies_folder, study_id))
+        settings = get_study_settings()
+        
+        study_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
+        search_path = os.path.join(settings.study_readonly_files_root_path, study_id)
         ignore_list = self.get_ignore_list(search_path)
 
-        glob_search_result = glob.glob(os.path.join(search_path, search_pattern))
+        glob_search_result = glob.glob(os.path.join(search_path, search_pattern), recursive=True)
         search_results = [os.path.abspath(file) for file in glob_search_result if not os.path.isdir(file)]
         excluded_folders = app.config.get("FOLDER_EXCLUSION_LIST")
 
@@ -395,9 +396,9 @@ class StudyRawAndDerivedDataFile(Resource):
         filtered_result = []
         warning_occurred = False
         for item in search_results:
-            is_in_study_folder = item.startswith(study_folder + os.path.sep) and ".." + os.path.sep not in item
+            is_in_study_folder = item.startswith(search_path + os.path.sep) and ".." + os.path.sep not in item
             if is_in_study_folder:
-                relative_path = item.replace(study_folder + os.path.sep, '')
+                relative_path = item.replace(search_path + os.path.sep, '')
                 sub_path = relative_path.split(os.path.sep)
                 if sub_path and sub_path[0] not in excluded_folder_set:
                     filtered_result.append(item)
@@ -548,14 +549,16 @@ class StudyRawAndDerivedDataFile(Resource):
         study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-        studies_folder = app.config.get("STUDY_PATH")
+        
+        settings = get_study_settings()
+        studies_folder = settings.study_metadata_files_root_path
         study_path = os.path.abspath(os.path.join(studies_folder, study_id))
-
+        files_path = os.path.join(studies_folder, study_id, settings.readonly_files_symbolic_link_name)
         ignore_list = self.get_ignore_list(study_path)
 
-        raw_data_dir = os.path.abspath(os.path.join(study_path, "RAW_FILES"))
-        derived_data_dir = os.path.abspath(os.path.join(study_path, "DERIVED_FILES"))
-        recycle_bin_dir = os.path.abspath(os.path.join(studies_folder, "DELETED_FILES", study_id))
+        raw_data_dir = os.path.abspath(os.path.join(files_path, "RAW_FILES"))
+        derived_data_dir = os.path.abspath(os.path.join(files_path, "DERIVED_FILES"))
+        recycle_bin_dir = os.path.abspath(os.path.join(settings.study_readonly_integrity_check_files_root_path , study_id))
         if target_location == 'RAW_FILES':
             os.makedirs(raw_data_dir, exist_ok=True)
         elif target_location == 'DERIVED_FILES':
@@ -681,10 +684,11 @@ class StudyRawAndDerivedDataFolder(Resource):
             wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403, error="User has no curator role")
+        study_settings = get_study_settings()
 
-        studies_folder = app.config.get("STUDY_PATH")
-        study_folder = os.path.abspath(os.path.join(studies_folder, study_id))
-        search_path = os.path.abspath(os.path.join(studies_folder, study_id))
+        study_folder = os.path.join(study_settings.study_metadata_files_root_path, study_id)
+        search_path = os.path.join(study_settings.study_readonly_files_root_path, study_id)
+
 
         glob_search_result = glob.glob(os.path.join(search_path, search_pattern))
         search_results = [os.path.abspath(file) for file in glob_search_result if os.path.isdir(file)]
@@ -697,9 +701,9 @@ class StudyRawAndDerivedDataFolder(Resource):
         filtered_result = []
         warning_occurred = False
         for item in search_results:
-            is_in_study_folder = item.startswith(study_folder + os.path.sep) and ".." + os.path.sep not in item
+            is_in_study_folder = item.startswith(search_path + os.path.sep) and ".." + os.path.sep not in item
             if is_in_study_folder:
-                relative_path = item.replace(study_folder + os.path.sep, '')
+                relative_path = item.replace(search_path + os.path.sep, '')
                 sub_path = relative_path.split(os.path.sep)
                 if sub_path and sub_path[0] not in excluded_folder_set:
                     filtered_result.append(item)
@@ -1920,12 +1924,19 @@ class DeleteAsperaFiles(Resource):
         # Need to check that the user is actually an active user, ie the user_token exists
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
+        st_s = get_study_settings()
+        directories_to_check = [os.path.join(path_var, study_id) for path_var in [
+            st_s.study_metadata_files_root_path,
+            st_s.study_readonly_files_root_path,
+            st_s.study_audit_files_root_path
+        ]]
         if not is_curator:
             abort(401)
 
         logger.info('Deleting aspera files from study ' + study_id)
         try:
-            delete_asper_files(study_location)
+            for dir in directories_to_check:
+                delete_asper_files(dir)
             logger.info('All aspera files deleted successfully !')
             return {'Success': 'Deleted files successfully !'}
 

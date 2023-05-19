@@ -28,6 +28,7 @@ from flask_restful_swagger import swagger
 
 from app.utils import metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
+from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import identify_study_id
@@ -1200,7 +1201,7 @@ class GetAssayMaf(Resource):
 
         logger.info('Trying to load MAF for Study %s, Sheet number %d', study_id, sheet_number)
 
-        study_path = app.config.get('STUDY_PATH')
+        study_path = get_study_settings().study_metadata_files_root_path
         study_location = os.path.join(study_path, study_id)
         maflist = []
 

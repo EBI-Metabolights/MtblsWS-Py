@@ -1,5 +1,7 @@
 from pydantic import BaseSettings
 
+from app.ws.settings.utils import get_study_settings
+
 
 class DatabaseSettings(BaseSettings):
     database_name: str = None

@@ -17,6 +17,8 @@ class StudySettings(MetabolightsBaseSettings):
     study_readonly_public_metadata_versions_root_path:str
     study_readonly_integrity_check_files_root_path:str
     
+    study_readonly_files_recycle_bin_root_path: str
+    
     
     audit_files_symbolic_link_name:str = "AUDIT_FILES" 
     internal_files_symbolic_link_name:str = "INTERNAL_FILES"

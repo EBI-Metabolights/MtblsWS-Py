@@ -263,6 +263,9 @@ class SendFilesPrivate(Resource):
         else:
             user_token = "public_access_only"
 
+        if 'obfuscation_code' in request.headers:
+            obfuscation_code = request.headers["obfuscation_code"]
+
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('file', help='The file or sub-directory to download')
