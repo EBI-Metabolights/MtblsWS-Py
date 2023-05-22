@@ -28,7 +28,8 @@ class StudySettings(MetabolightsBaseSettings):
     
     study_default_template_path:str = "./resources/templates/study/default"
     study_partner_metabolon_template_path:str = "./resources/templates/study/metabolon"
-
+    study_mass_spectrometry_maf_file_template_path = "./resources/m_metabolite_profiling_mass_spectrometry_v2_maf.tsv"
+    study_nmr_spectroscopy_maf_file_template_path = "./resources/m_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv"
     report_root_path:str
     report_mariana_folder_name: str
     report_base_folder_name: str

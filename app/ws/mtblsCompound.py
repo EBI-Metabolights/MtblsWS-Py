@@ -52,7 +52,7 @@ class MtblsCompoundsDetails(Resource):
         parameters=[
             {
                 "name": "accession",
-                "description": "Study Identifier",
+                "description": "Compound Identifier",
                 "required": True,
                 "allowMultiple": False,
                 "paramType": "path",

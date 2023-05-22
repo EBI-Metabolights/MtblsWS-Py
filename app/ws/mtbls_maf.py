@@ -28,6 +28,7 @@ from flask_restful_swagger import swagger
 
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.combined_maf_builder import CombinedMafBuilder
+from app.ws.settings.utils import get_study_settings
 from app.ws.utils import create_maf, read_tsv, write_tsv
 
 logger = logging.getLogger('wslog')
@@ -202,13 +203,13 @@ class MetaboliteAnnotationFile(Resource):
 
         logger.info('MAF: Getting ISA-JSON Study %s', study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403)
 
         maf_feedback = ""
-
+        study_location = os.path.join(get_study_settings().study_metadata_files_root_path, study_id)
         for assay_file_name in assay_file_names:
             annotation_file_name = None
             assay_file = assay_file_name['assay_file_name']

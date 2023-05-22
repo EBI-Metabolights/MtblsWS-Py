@@ -32,6 +32,7 @@ from marshmallow import ValidationError
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import AssaySchema, ProcessSchema, OtherMaterialSchema, DataFileSchema, SampleSchema
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.utils import get_assay_type_from_file_name, get_assay_headers_and_protcols, write_tsv, remove_file, \
     get_maf_name_from_assay_name, add_new_protocols_from_assay, create_maf, add_ontology_to_investigation, read_tsv, \
     log_request
@@ -468,7 +469,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
             abort(401)
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
@@ -497,9 +498,9 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
 
         except (ValidationError, Exception):
             abort(400, 'Incorrect JSON provided')
-
+        study_metadata_location = os.path.join(get_study_settings().study_metadata_files_root_path, study_id)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
-                                                         skip_load_tables=True, study_location=study_location)
+                                                         skip_load_tables=True, study_location=study_metadata_location)
 
         # Also make sure the sample file is in the standard format of 's_MTBLSnnnn.txt'
         # isa_study, sample_file_name = update_correct_sample_file_name(isa_study, study_location, study_id)
@@ -516,7 +517,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
         maf_name = ""
         try:
             maf_name = get_maf_name_from_assay_name(assay_file_name)
-            maf_df, annotation_file_name, new_column_counter = create_maf(overall_technology, study_location, assay_file_name, maf_name)
+            maf_df, annotation_file_name, new_column_counter = create_maf(overall_technology, study_metadata_location, assay_file_name, maf_name)
         except:
             logger.error('Could not create MAF for study ' + study_id + ' under assay ' + assay_file_name)
 

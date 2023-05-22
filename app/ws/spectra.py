@@ -29,6 +29,7 @@ from pyopenms import MSExperiment, FileHandler
 
 from app.ws.misc_utilities.response_messages import HTTP_200, HTTP_404, HTTP_403, HTTP_401
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 
 logger = logging.getLogger('wslog')
 
@@ -117,7 +118,7 @@ class ExtractMSSpectra(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403)
@@ -134,14 +135,16 @@ class ExtractMSSpectra(Resource):
         if retention_time:
             retention_time = retention_time.strip()
         full_mzml_file_name = None
+        settings = get_study_settings()
+        study_metadata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
         if mzml_file_name:
-            full_mzml_file_name = os.path.join(study_location, mzml_file_name)
+            full_mzml_file_name = os.path.join(study_metadata_location, mzml_file_name)
 
         peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list = \
             self.create_mtblc_peak_list(full_mzml_file_name, retention_time)
         base_file_name = os.path.basename(full_mzml_file_name)
-        parent_folder = os.path.dirname(full_mzml_file_name)
-
+        parent_folder = os.path.dirname(os.path.join(settings.study_internal_files_root_path, study_id, "spectra", mzml_file_name))
+        os.makedirs(parent_folder, exist_ok=True)
         short_name = base_file_name.replace(".mzML", "")
         json_file_name = base_file_name.replace(".mzML", ".json")
         new_file_path = os.path.join(parent_folder, mtbls_compound_id + '-' + json_file_name)
@@ -198,8 +201,14 @@ class ExtractMSSpectra(Resource):
         return peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list
 
     def write_json(self, filename, data):
-        with open(filename, 'w') as outfile:
-            json.dump(data, outfile)
+        try:
+            json_object = json.dumps(data, indent=4)
+ 
+            # Writing to sample.json
+            with open(filename, "w") as outfile:
+                outfile.write(json_object)
+        except Exception as e:
+            print(f"{str(e)}")
 
 
 class ZipSpectraFiles(Resource):

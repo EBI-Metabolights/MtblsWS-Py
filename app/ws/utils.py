@@ -813,8 +813,9 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
         logger.error("Could not update the ontology value " + old_value + " in all sheets")
 
 
-def create_maf(technology, study_location, assay_file_name, annotation_file_name):
-    resource_folder = os.path.join(os.getcwd(), "resources")
+def create_maf(technology, study_metadata_location, assay_file_name, annotation_file_name):
+    study_settings = get_study_settings()
+    
     update_maf = False
 
     if technology is None:
@@ -824,18 +825,18 @@ def create_maf(technology, study_location, assay_file_name, annotation_file_name
     # Fixed column headers to look for in the MAF, defaults to MS
     sample_name = 'Sample Name'
     assay_name = 'MS Assay Name'
-    annotation_file_template = os.path.join(resource_folder, 'm_metabolite_profiling_mass_spectrometry_v2_maf.tsv')
+    annotation_file_template = study_settings.study_mass_spectrometry_maf_file_template_path
 
     # NMR MAF and assay name
     if technology == "NMR":
-        annotation_file_template = os.path.join(resource_folder, 'm_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv')
+        annotation_file_template = study_settings.study_nmr_spectroscopy_maf_file_template_path
         assay_name = 'NMR Assay Name'
 
     if annotation_file_name is None or len(annotation_file_name) == 0:
         annotation_file_name = get_maf_name_from_assay_name(assay_file_name)
 
-    full_annotation_file_name = os.path.join(study_location, annotation_file_name)
-    assay_file_name = os.path.join(study_location, assay_file_name)
+    full_annotation_file_name = os.path.join(study_metadata_location, annotation_file_name)
+    assay_file_name = os.path.join(study_metadata_location, assay_file_name)
 
     # Get the MAF table or create a new one if it does not already exist
     try:
