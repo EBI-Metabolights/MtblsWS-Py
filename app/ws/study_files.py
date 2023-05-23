@@ -1003,20 +1003,20 @@ class StudyFilesReuse(Resource):
             force_write = True if args['force'].lower() == 'true' else False
             if args['include_internal_files']:
                 include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
-
-        files_list_json = app.config.get('FILES_LIST_JSON')
+        settings = get_study_settings()
+        files_list_json = settings.files_list_json_file_name
         study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
+        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, study_status = \
             wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403)
-
-        files_list_json_file = os.path.join(study_location, files_list_json)
+        study_metadata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
+        files_list_json_file = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, files_list_json)
 
         if force_write:
-            return update_files_list_schema(study_id, obfuscation_code, study_location,
-                                            files_list_json_file, include_internal_files=include_internal_files)
+            return update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
+                                            files_list_json_file, include_internal_files=include_internal_files, include_sub_dir=True)
         if os.path.isfile(files_list_json_file):
             logger.info("Files list json found for studyId - %s!", study_id)
             try:
@@ -1025,12 +1025,12 @@ class StudyFilesReuse(Resource):
                     logger.info("Listing files list from files-list json file!")
             except Exception as e:
                 logger.error('Error while reading file list schema file: ' + str(e))
-                files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
+                files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
                                                              files_list_json_file,
                                                              include_internal_files=include_internal_files)
         else:
             logger.info(" Files list json not found! for studyId - %s!", study_id)
-            files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_location,
+            files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
                                                          files_list_json_file,
                                                          include_internal_files=include_internal_files)
 
@@ -1926,9 +1926,7 @@ class DeleteAsperaFiles(Resource):
             study_status = wsc.get_permissions(study_id, user_token)
         st_s = get_study_settings()
         directories_to_check = [os.path.join(path_var, study_id) for path_var in [
-            st_s.study_metadata_files_root_path,
-            st_s.study_readonly_files_root_path,
-            st_s.study_audit_files_root_path
+            st_s.study_readonly_files_root_path
         ]]
         if not is_curator:
             abort(401)

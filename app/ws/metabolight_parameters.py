@@ -96,6 +96,15 @@ class MetabolightsParameters(Resource):
     
     @swagger.operation(
         summary="Update Metabolights parameter ",
+        notes="""
+        Example parameter data input
+        <code>
+        {
+            "name": "test-param",
+            "value": "test-data"
+        }
+        </code>
+        """,
         parameters=[
             {
                 "name": "name",
@@ -172,6 +181,15 @@ class MetabolightsParameters(Resource):
     
     @swagger.operation(
         summary="Add new Metabolights parameter",
+        notes="""
+        Example parameter data input
+        <code>
+        {
+            "name": "test-param",
+            "value": "test-data"
+        }
+        </code>
+        """,
         parameters=[
             {
                 "name": "parameter_data",

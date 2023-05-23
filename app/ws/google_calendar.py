@@ -29,6 +29,7 @@ from googleapiclient.discovery import build
 
 from app.ws.db_connection import get_all_studies
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.user_service import UserService
 from app.ws.utils import safe_str
 
 logger = logging.getLogger('wslog')
@@ -168,12 +169,8 @@ class GoogleCalendar(Resource):
 
         if user_token is None:
             abort(401)
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
 
-        # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions('MTBLS4', user_token)
-        if not is_curator:
-            abort(403)
 
         status, message = update_or_create_calendar_entries(user_token=user_token)
 

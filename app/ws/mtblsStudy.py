@@ -31,7 +31,7 @@ from flask_restful_swagger import swagger
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.storage_service import StorageService
-from app.tasks.common.remote_folder_operations import create_study_folders
+from app.tasks.common.remote_folder_operations import create_readonly_study_folders
 from app.tasks.periodic_tasks.study import sync_studies_on_es_and_db
 from app.tasks.periodic_tasks.study_folder import maintain_study_folders
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
@@ -50,7 +50,7 @@ from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
-from app.ws.study_folder_utils import create_initial_study_folder, update_initial_study_files
+from app.ws.study_folder_utils import create_initial_study_folder, prepare_rw_study_folder_structure, update_initial_study_files
 from app.ws.study_utilities import StudyUtils
 from app.tasks.common.elasticsearch import delete_study_index, reindex_all_public_studies, reindex_all_studies, reindex_study
 from app.tasks.common.email import send_email_for_study_submitted, send_technical_issue_email
@@ -1191,25 +1191,7 @@ class CreateAccession(Resource):
             send_technical_issue_email.apply_async(kwargs=inputs)
         
         try:
-            internal_file_path = os.path.join(study_settings.study_internal_files_root_path, study_acc)
-            make_dir_with_chmod(internal_file_path, 0o755)
-            
-            log_path = os.path.join(internal_file_path, study_settings.internal_logs_folder_name)
-            make_dir_with_chmod(log_path, 0o777)
-            
-            audit_path = os.path.join(study_settings.study_audit_files_root_path, study_acc, study_settings.audit_folder_name)
-            make_dir_with_chmod(audit_path, 0o755)
-        
-            read_only_files_path =  os.path.join(study_settings.study_readonly_files_root_path, study_acc)
-            
-            readonly_files_symbolic_link_path =  os.path.join(study_settings.study_metadata_files_root_path, study_acc, study_settings.readonly_files_symbolic_link_name)
-            audit_folder_symbolic_link_path:str = os.path.join(study_settings.study_metadata_files_root_path, study_acc, study_settings.audit_files_symbolic_link_name)
-            internal_file_symbolic_link_path:str = os.path.join(study_settings.study_metadata_files_root_path, study_acc, study_settings.internal_files_symbolic_link_name)
-            
-            os.symlink(read_only_files_path, readonly_files_symbolic_link_path)
-            os.symlink(audit_path, audit_folder_symbolic_link_path)
-            os.symlink(internal_file_path, internal_file_symbolic_link_path)
-        
+            prepare_rw_study_folder_structure(study_acc)
         except Exception as exc:
             inputs = {"subject": "Failed to create audit/internal folders for new study folder", 
                       "body":f"Failed to create audit/internal folders for new study folder {study_acc}, user: {user.username} <p> {str(exc)}"}
@@ -1230,7 +1212,7 @@ class CreateAccession(Resource):
 
         # Start read only study folder creation task
         inputs = {"study_id": study_acc}
-        create_study_folders_task = create_study_folders.apply_async(kwargs=inputs)
+        create_study_folders_task = create_readonly_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 7: Create read only study folders task is started for study {study_acc} with task id: {create_study_folders_task.id}")
         
         # Start reindex task

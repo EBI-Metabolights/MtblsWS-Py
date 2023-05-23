@@ -605,7 +605,7 @@ def biostudies_accession(study_id, biostudies_id, method):
 
     try:
         postgresql_pool, conn, cursor = get_connection()
-        cursor.execute(query, {'study_id': study_id, 'biostudies_acc': biostudies_id})
+        cursor.execute(query, {'study_id': study_id, 'biostudies_id': biostudies_id})
 
         if method == 'add' or method == 'delete':
             conn.commit()

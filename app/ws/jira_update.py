@@ -29,6 +29,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 from app.ws.db_connection import get_all_studies
 from app.ws.mtblsWSclient import WsClient
+from app.ws.study.user_service import UserService
 from app.ws.utils import safe_str
 
 # https://jira.readthedocs.io
@@ -84,12 +85,11 @@ class Jira(Resource):
             abort(401)
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions('MTBLS3', user_token)
-        if not is_curator:
-            abort(403)
 
-        status, message, updated_studies_list = update_or_create_jira_issue(user_token, is_curator)
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+
+
+        status, message, updated_studies_list = update_or_create_jira_issue(user_token, True)
 
         if status:
             return {'Success': message}
@@ -185,7 +185,7 @@ def update_or_create_jira_issue(user_token, is_curator):
                     valid_curator = True
                 elif curator.lower() == 'pamela':
                     jira_curator = 'ppruski'
-                    valid_curator = True
+                    valid_curator = False
                 elif curator.lower() == 'xuefei' or curator.lower() == 'reza' or curator.lower() == 'keeva':
                     jira_curator = default_curator  # We do not have a current curation listed in the log
                     valid_curator = True

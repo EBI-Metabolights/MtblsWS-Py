@@ -25,6 +25,7 @@ from flask import request, abort
 from flask import current_app as app
 from datetime import datetime
 from app.ws.db_connection import check_access_rights
+from app.ws.study.user_service import UserService
 
 logger = logging.getLogger('wslog')
 
@@ -311,10 +312,7 @@ class LsfUtils(Resource):
             abort(404)
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = get_permissions('MTBLS2', user_token)
-        if not is_curator:
-            abort(403)
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
 
         status, message, job_out, job_err = kill_job(queue, lsf_job_id)
 

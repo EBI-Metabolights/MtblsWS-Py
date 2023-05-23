@@ -1,22 +1,20 @@
 import os
 from app.services.storage_service.unmounted.readonly_volume_manager import ReadOnlyFileVolumeManager
-from app.tasks.common.email import send_email_for_private_ftp_folder
 from app.tasks.worker import MetabolightsTask, celery, get_flask_app
 from app.ws.settings.utils import get_cluster_settings
-from app.ws.study.commons import create_ftp_folder
 from app.ws.study.study_service import StudyService
 
 @celery.task(
     base=MetabolightsTask,
     bind=True,
-    name="app.tasks.common.remote_folder_operations.create_study_folders",
+    name="app.tasks.common.remote_folder_operations.create_readonly_study_folders",
     soft_time_limit=110,
     time_limit=120,
     autoretry_for={Exception},
     default_retry_delay=10,
     max_retries=2,
 )
-def create_study_folders(self, study_id=None):
+def create_readonly_study_folders(self, study_id=None):
 
     flask_app = get_flask_app()
     with flask_app.app_context():

@@ -4,15 +4,18 @@ import json
 import logging
 import os
 import shutil
+from app.tasks.common.elasticsearch import reindex_study
+from app.tasks.common.remote_folder_operations import create_readonly_study_folders
 
 from app.tasks.worker import (MetabolightsTask, celery, get_flask_app,
                               send_email)
 from app.utils import MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.schemes import Study, User
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.ws.study_folder_utils import (copy_initial_study_files,
-                                       create_initial_study_folder,
+                                       create_initial_study_folder, prepare_rw_study_folder_structure,
                                        update_initial_study_files)
 
 logger = logging.getLogger(__name__)
@@ -51,8 +54,9 @@ def maintain_study_folders(user_token: str, send_email_to_submitter=False):
             nonexist_study_folders = []
             uncompleted_studies = {}
             studies_not_in_db = []
+            settings = get_study_settings()
             
-            root_path = flask_app.config.get('STUDY_PATH') 
+            root_path = settings.study_metadata_files_root_path
             search_pattern = "MTBLS*"
             files_found = glob.glob(os.path.join(root_path, search_pattern))
             study_folders = [f for f in files_found if os.path.isdir(f)]
@@ -61,12 +65,12 @@ def maintain_study_folders(user_token: str, send_email_to_submitter=False):
             
             for folder in study_folders:
                 study_id = os.path.basename(folder)
-                current_study_folders[study_id] = {"investigation_file": "i_Investigation.txt", "sample_file": ""}
+                current_study_folders[study_id] = {"investigation_file": settings.investigation_file_name, "sample_file": ""}
                 if study_id not in studies_dict:
                     studies_not_in_db.append(study_id)
                     continue
                 sample_file = ''
-                investigation_file_path = os.path.join(folder, "i_Investigation.txt")
+                investigation_file_path = os.path.join(folder, settings.investigation_file_name)
                 if not os.path.exists(investigation_file_path):
                     current_study_folders[study_id]["investigation_file"] = ""
                     uncompleted_studies[study_id] = current_study_folders[study_id]
@@ -101,12 +105,19 @@ def maintain_study_folders(user_token: str, send_email_to_submitter=False):
                         study_folder = os.path.join(root_path, item)
                         update_initial_study_files(study_folder, item, user_token)
                         created_study_folders.add(item)
+                        
+                        prepare_rw_study_folder_structure(item)
+                        study_acc = item
+                        inputs = {"study_id": study_acc}
+                        create_study_folders_task = create_readonly_study_folders.apply_async(kwargs=inputs)
+                        logger.info(f"Create read only study folders task is started for study {study_acc} with task id: {create_study_folders_task.id}")
+
                     except Exception as ex:
                         failures[item] = str(ex)
 
                 for item in uncompleted_studies:
                     try:
-                        from_path = os.path.join(root_path, flask_app.config.get('DEFAULT_TEMPLATE'))
+                        from_path = settings.study_default_template_path
                         study_folder = os.path.join(root_path, item)
                         files_updated = False
                         if not uncompleted_studies[item]["investigation_file"] and not uncompleted_studies[item]["sample_file"]: 
@@ -118,8 +129,8 @@ def maintain_study_folders(user_token: str, send_email_to_submitter=False):
                             shutil.copy(source, target)
                             files_updated = True
                         elif not uncompleted_studies[item]["investigation_file"]:
-                            target = os.path.join(study_folder, f"i_Investigation.txt")
-                            source = os.path.join(from_path, "i_Investigation.txt")
+                            target = os.path.join(study_folder, settings.investigation_file_name)
+                            source = os.path.join(from_path, settings.investigation_file_name)
                             shutil.copy(source, target)
                             files_updated = True
                             

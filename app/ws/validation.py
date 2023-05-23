@@ -28,6 +28,7 @@ from flask_restful_swagger import swagger
 from app.ws.db_connection import override_validations, query_comments, update_comments
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
+from app.ws.study.user_service import UserService
 from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser, get_last_update_on_folder, \
     update_val_schema_files, validate_study
 
@@ -373,45 +374,44 @@ class OverrideValidation(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        if user_token is None or study_id is None:
-            abort(401)
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
 
         study_id = study_id.upper()
-
-        # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = commons.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(403)
-
-        val_feedback = ""
-        override_list = []
+        override_list = {}
         # First, get all existing validations from the database
         try:
             query_list = override_validations(study_id, 'query')
             if query_list and query_list[0]:
                 for val in query_list[0].split('|'):
-                    override_list.append(val)
+                    if val and len(val.split(':')) > 1:
+                        key_value = val.split(':')
+                        if key_value[0].strip():
+                            override_list[key_value[0].strip()] = key_value[1].strip()
         except Exception as e:
             logger.error('Could not query existing overridden validations from the database')
 
         # Get the new validations submitted
         data_dict = json.loads(request.data.decode('utf-8'))
         validation_data = data_dict['validations']
-
+        val_feedback = ""
         # only add unique validations to the update statement
         for val, val_message in validation_data[0].items():
-            val_found = False
-            for existing_val in override_list:
-                if val + ":" in existing_val:  # Do we already have this validation rule in the database
-                    val_found = True
-                    val_feedback = val_feedback + "Validation '" + val + "' was already stored in the database. "
+            if val and val.strip():
+                if not val_message or not val_message.strip():
+                    if val.strip() in override_list:
+                        val_feedback += "Validation key '" + 'val' + "' was deleted. "
+                        del override_list[val.strip()]
+                    else:
+                        val_feedback += "Validation key '" + val + "' is skipped (No value in  database). "
+                else:
+                    if val.strip() in override_list:
+                        val_feedback += "Validation key '" + val + "' was updated in the database. "
+                    else:
+                        val_feedback += "Validation key '" + val + "' stored in the database. "
+                    override_list[val.strip()] = val_message.strip()
 
-            if not val_found:
-                override_list.append(val + ':' + val_message)
-                val_feedback = "Validation '" + val + "' stored in the database"
-
-        db_update_string = "|".join(override_list)
+        
+        db_update_string = "|".join([f"{x}:{override_list[x]}" for x in override_list])
         try:
             query_list = override_validations(study_id, 'update', override=db_update_string)
         except Exception as e:

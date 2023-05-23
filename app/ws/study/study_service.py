@@ -93,7 +93,7 @@ class StudyService(object):
     def get_all_authorized_study_ids(self, user_token):
 
         with self.db_manager.session_maker() as db_session:
-            db_user = db_session.query(User).filter(Study.apitoken == user_token).first()
+            db_user = db_session.query(User).filter(User.apitoken == user_token).first()
 
             if db_user and int(db_user.status) == UserStatus.ACTIVE.value:
                 if UserRole(db_user.role) == UserRole.ROLE_SUPER_USER:

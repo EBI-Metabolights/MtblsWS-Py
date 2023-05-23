@@ -50,8 +50,32 @@ def copy_initial_study_files(folder_name, app):
             'Could not copy files from {0} to {1}'.format(from_path, to_path))
     return to_path
 
+
+def prepare_rw_study_folder_structure(study_id: str):
+    study_acc = study_id
+    study_settings = get_study_settings()
+    internal_file_path = os.path.join(study_settings.study_internal_files_root_path, study_acc)
+    make_dir_with_chmod(internal_file_path, 0o755)
+    
+    log_path = os.path.join(internal_file_path, study_settings.internal_logs_folder_name)
+    make_dir_with_chmod(log_path, 0o777)
+    
+    audit_path = os.path.join(study_settings.study_audit_files_root_path, study_acc, study_settings.audit_folder_name)
+    make_dir_with_chmod(audit_path, 0o755)
+
+    read_only_files_path =  os.path.join(study_settings.study_readonly_files_root_path, study_acc)
+    
+    readonly_files_symbolic_link_path =  os.path.join(study_settings.study_metadata_files_root_path, study_acc, study_settings.readonly_files_symbolic_link_name)
+    audit_folder_symbolic_link_path:str = os.path.join(study_settings.study_metadata_files_root_path, study_acc, study_settings.audit_files_symbolic_link_name)
+    internal_file_symbolic_link_path:str = os.path.join(study_settings.study_metadata_files_root_path, study_acc, study_settings.internal_files_symbolic_link_name)
+    
+    os.symlink(read_only_files_path, readonly_files_symbolic_link_path)
+    os.symlink(audit_path, audit_folder_symbolic_link_path)
+    os.symlink(internal_file_path, internal_file_symbolic_link_path)
+
 def update_initial_study_files(study_folder_path, study_acc, user_token):
-    if os.path.isfile(os.path.join(study_folder_path, 'i_Investigation.txt')):
+    settings = get_study_settings()
+    if os.path.isfile(os.path.join(study_folder_path, settings.investigation_file_name)):
         # Get the ISA documents so we can edit the investigation file
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_acc, api_key=user_token,
                                                             skip_load_tables=True, study_location=study_folder_path)

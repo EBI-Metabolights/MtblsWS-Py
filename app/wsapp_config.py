@@ -59,7 +59,6 @@ from app.ws.isaStudy import (StudyContacts, StudyDescription, StudyDescriptors,
                              StudyPublications, StudyReleaseDate,
                              StudySubmitters, StudyTitle)
 from app.ws.jira_update import Jira
-from app.ws.MapStudies import MapStudies
 from app.ws.metabolight_parameters import MetabolightsParameters
 from app.ws.metabolight_statistics import MetabolightsStatistics
 from app.ws.metaspace_pipeline import MetaspacePipeLine
@@ -288,7 +287,6 @@ def initialize_app(flask_app):
     api.add_resource(MetaspacePipeLine, res_path + "/partners/metaspace/<string:study_id>/import")
 
     # EBI utils
-    api.add_resource(MapStudies, res_path + "/ebi-internal/zooma")
     api.add_resource(Ontology, res_path + "/ebi-internal/ontology")  # Add ontology resources
     api.add_resource(Placeholder, res_path + "/ebi-internal/placeholder")  # Add placeholder
     api.add_resource(Cellosaurus, res_path + "/ebi-internal/cellosaurus")  # Cellosaurus

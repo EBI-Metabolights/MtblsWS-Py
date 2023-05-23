@@ -315,10 +315,11 @@ def write_audit_files(study_location):
     :param study_location: the filesystem where the study is located
     :return:
     """
+    settings = get_study_settings()
     # dest folder name is a timestamp
-    update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
-    update_path = os.path.join(study_location, update_path_suffix)
-    log_path = os.path.join(update_path, 'logs')
+    update_path = os.path.join(study_location, settings.audit_files_symbolic_link_name, settings.audit_folder_name)
+    os.makedirs(update_path, exist_ok=True)
+    log_path = os.path.join(study_location, settings.internal_files_symbolic_link_name, settings.internal_logs_folder_name)
     make_dir_with_chmod(log_path, 0o777)
 
     dest_path = new_timestamped_folder(update_path)
