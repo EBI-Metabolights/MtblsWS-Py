@@ -396,12 +396,12 @@ class IsaTabInvestigationFile(Resource):
         study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(403, message="Study does not exist or your do not have access to this study")
-
+        settings = get_study_settings()
+        
         logger.info('Getting ISA-Tab Investigation file for %s', study_id)
         location = study_location
         if study_version:
-            audit = os.path.join(app.config.get('UPDATE_PATH_SUFFIX'), study_version)
-            location = os.path.join(study_location, audit)
+            location = os.path.join(settings.study_audit_files_root_path, study_id, settings.audit_folder_name, study_version)
 
         files = glob.glob(os.path.join(location, inv_filename))
         if files:
@@ -1344,11 +1344,11 @@ class DeleteStudy(Resource):
         study_submitters(study_id, mtbls_email, 'add')
         
         study_settings = get_study_settings()
-        study_location = os.pah.join(study_settings.study_metadata_files_root_path, study_id)
+        study_location = os.path.join(study_settings.study_metadata_files_root_path, study_id)
         # Remove all files in the study folder except the sample sheet and the investigation sheet.
         if not os.path.exists(study_location):
             os.makedirs(study_location, exist_ok=True)
-        template_folder = os.path.join(study_settings.study_default_template_path)
+        template_folder = study_settings.study_default_template_path
         target_file = os.path.join(study_location, 's_{0}.txt'.format(study_id))
         if not os.path.exists(target_file):
             from_path = os.path.join(template_folder, "s_Sample.txt")
@@ -1380,8 +1380,7 @@ class DeleteStudy(Resource):
         for file_name in os.listdir(study_location):
 
             if file_name.startswith("i_Investigation"):
-                from_path = os.path.join(study_settings.study_metadata_files_root_path,
-                                         study_settings.study_default_template_path,
+                from_path = os.path.join(study_settings.study_default_template_path,
                                          "i_Investigation.txt")
 
                 logger.info('Attempting to copy {0} to {1}'.format(from_path, study_location))
@@ -1410,7 +1409,8 @@ class DeleteStudy(Resource):
 
 def get_audit_files(study_location):
     folder_list = []
-    audit_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'))
+    settings = get_study_settings()
+    audit_path = os.path.join(study_location, settings.audit_files_symbolic_link_name)
 
     try:
         folder_list = os.listdir(os.path.join(audit_path))

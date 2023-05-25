@@ -18,15 +18,20 @@
 
 import logging
 import os
+import random
 from zipfile import ZipFile
 
 from flask import request, send_file, safe_join, abort, make_response
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from flask import current_app as app, jsonify
+from app.utils import metabolights_exception_handler
 
 from app.ws.db_connection import get_obfuscation_code
 from app.ws.mtblsWSclient import WsClient
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_service import identify_study_id
+from app.ws.study.user_service import UserService
 from app.ws.study_files import get_basic_files
 
 logger = logging.getLogger('wslog')
@@ -116,15 +121,16 @@ class SendFiles(Resource):
             abort(404)
 
         # check for access rights
-        is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \
+        is_curator, read_access, write_access, db_obfuscation_code, study_location_deprecated, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
 
         if not read_access:
             abort(403)
-
+        settings = get_study_settings()
+        study_metadata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
         files = ""
         if file_name == 'metadata':
-            file_list = get_basic_files(study_location, include_sub_dir=False, assay_file_list=None)
+            file_list = get_basic_files(study_metadata_location, include_sub_dir=False, assay_file_list=None)
             for _file in file_list:
                 f_type = _file['type']
                 f_name = _file['file']
@@ -133,11 +139,13 @@ class SendFiles(Resource):
             file_name = files.rstrip(",")
 
         remove_file = False
-        safe_path = safe_join(study_location, file_name)
+        safe_path = safe_join(study_metadata_location, file_name)
         zip_name = None
         try:
-            short_zip = study_id + "_compressed_files.zip"
-            zip_name = os.path.join(study_location, short_zip)
+            download_folder_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, "temp")
+            os.makedirs(download_folder_path, exist_ok=True)
+            short_zip = study_id + "_" + str(random.randint(100000, 200000)) + "_compressed_files.zip"
+            zip_name = os.path.join(download_folder_path, short_zip)
             if os.path.isfile(zip_name):
                 os.remove(zip_name)
             if ',' in file_name and not os.path.exists(safe_path):
@@ -145,10 +153,10 @@ class SendFiles(Resource):
                 remove_file = True
                 files = file_name.split(',')
                 for file in files:
-                    safe_path = safe_join(study_location, file)
+                    safe_path = safe_join(study_metadata_location, file)
                     if os.path.isdir(safe_path):
                         for sub_file in recursively_get_files(safe_path):
-                            f_name = sub_file.path.replace(study_location, '')
+                            f_name = sub_file.path.replace(study_metadata_location, '')
                             zipfile.write(sub_file.path, arcname=f_name)
                     else:
                         zipfile.write(safe_path, arcname=file)
@@ -160,7 +168,7 @@ class SendFiles(Resource):
                 if os.path.isdir(safe_path):
                     zipfile = ZipFile(zip_name, mode='a')
                     for sub_file in recursively_get_files(safe_path):
-                        zipfile.write(sub_file.path.replace(os.path.join(study_location, study_id), ''),
+                        zipfile.write(sub_file.path.replace(study_metadata_location, ''),
                                       arcname=sub_file.name)
                     zipfile.close()
                     remove_file = True
@@ -247,6 +255,7 @@ class SendFilesPrivate(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self, study_id, obfuscation_code):
         # param validation
         if study_id is None:
@@ -279,14 +288,18 @@ class SendFilesPrivate(Resource):
         if file_name is None:
             logger.info('No file name given')
             abort(404)
+        settings = get_study_settings()
+        study_metadata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
         study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         # check for access rights
-        is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
-
+        # is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \
+        #     study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
+        if not obfuscation_code:
+            abort(403)
+        UserService.get_instance(app).validate_user_has_read_access(user_token, study_id, obfuscation_code)
         files = ""
         if file_name == 'metadata':
-            file_list = get_basic_files(study_location, include_sub_dir=False, assay_file_list=None)
+            file_list = get_basic_files(study_metadata_location, include_sub_dir=False, assay_file_list=None)
             for _file in file_list:
                 f_type = _file['type']
                 f_name = _file['file']
@@ -294,32 +307,25 @@ class SendFilesPrivate(Resource):
                     files = files + f_name + ','
             file_name = files.rstrip(",")
 
-        if not read_access:
-            if obfuscation_code:
-                db_obfuscation_code_list = get_obfuscation_code(study_id)
-                db_obfuscation_code = db_obfuscation_code_list[0][0]
-
-                if db_obfuscation_code != obfuscation_code:
-                    abort(403)
-            else:
-                abort(403)
+        remove_file = False
+        safe_path = safe_join(study_metadata_location, file_name)
+        zip_name = None
         try:
-            remove_file = False
-
-            short_zip = study_id + "_compressed_files.zip"
-            zip_name = os.path.join(study_location, short_zip)
+            download_folder_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, "temp")
+            os.makedirs(download_folder_path, exist_ok=True)
+            short_zip = study_id + "_" + str(random.randint(100000, 200000)) + "_compressed_files.zip"
+            zip_name = os.path.join(download_folder_path, short_zip)
             if os.path.isfile(zip_name):
                 os.remove(zip_name)
-
-            if ',' in file_name:
+            if ',' in file_name and not os.path.exists(safe_path):
                 zipfile = ZipFile(zip_name, mode='a')
                 remove_file = True
                 files = file_name.split(',')
                 for file in files:
-                    safe_path = safe_join(study_location, file)
+                    safe_path = safe_join(study_metadata_location, file)
                     if os.path.isdir(safe_path):
                         for sub_file in recursively_get_files(safe_path):
-                            f_name = sub_file.path.replace(study_location, '')
+                            f_name = sub_file.path.replace(study_metadata_location, '')
                             zipfile.write(sub_file.path, arcname=f_name)
                     else:
                         zipfile.write(safe_path, arcname=file)
@@ -328,11 +334,10 @@ class SendFilesPrivate(Resource):
                 safe_path = zip_name
                 file_name = short_zip
             else:
-                safe_path = safe_join(study_location, file_name)
                 if os.path.isdir(safe_path):
                     zipfile = ZipFile(zip_name, mode='a')
                     for sub_file in recursively_get_files(safe_path):
-                        zipfile.write(sub_file.path.replace(os.path.join(study_location, study_id), ''),
+                        zipfile.write(sub_file.path.replace(study_metadata_location, ''),
                                       arcname=sub_file.name)
                     zipfile.close()
                     remove_file = True

@@ -30,7 +30,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import *
 from app.ws.models import Investigation_api_model, serialize_investigation
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import log_request, add_ontology_to_investigation, read_tsv, update_ontolgies_in_isa_tab_sheets
+from app.ws.utils import delete_column_from_tsv_file, log_request, add_ontology_to_investigation, read_tsv, update_ontolgies_in_isa_tab_sheets, write_tsv
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
@@ -2069,6 +2069,9 @@ class StudyFactors(Resource):
         # add obj
 
         if new_obj.name:
+            for current in isa_study.factors:
+                if current.name.strip() == new_obj.name:
+                    abort(401, message=f"Factor name '{new_obj.name}' already exists.")
             isa_study.factors.append(new_obj)
             logger.info("A copy of the previous files will %s saved", save_msg_str)
 
@@ -2081,7 +2084,7 @@ class StudyFactors(Resource):
             iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
             logger.info('Added %s', new_obj.name)
         else:
-            abort(406, "Please provide a name (factorName) for the factor")
+            abort(406, message="Please provide a name (factorName) for the factor")
 
         return StudyFactorSchema().dump(new_obj)
 
@@ -2261,7 +2264,7 @@ class StudyFactors(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', help="Factor name", location="args")
         args = parser.parse_args()
-        obj_name = args['name'].lower() if args['name'] else None
+        obj_name = args['name'] if args['name'] else None
         if not obj_name:
             abort(404)
         # User authentication
@@ -2304,6 +2307,16 @@ class StudyFactors(Resource):
         sch.context['factor'] = StudyFactor()
         try:
             resp = sch.dump(obj)
+            sample_file = os.path.join(study_location, isa_study.filename)
+            file_df = read_tsv(sample_file)
+            factor_name = f"Factor Value[{obj_name}]"
+            try:
+                delete_column_from_tsv_file(file_df, factor_name)
+                write_tsv(file_df, sample_file)
+            except Exception as e:
+                logger.error("Could not remove column '" + factor_name + "' from sample file " )
+                logger.error(str(e))
+                return {"Success": "Failed to remove column(s) from sample file"} 
         except (ValidationError, Exception) as err:
             logger.warning("Bad Study Factor format", err)
         return extended_response(data=resp.data, errs=resp.errors)
@@ -2627,9 +2640,9 @@ class StudyDescriptors(Resource):
                                                          study_location=study_location)
 
         # check for Study Descriptor added already
-        for index, obj in enumerate(isa_study.design_descriptors):
+        for obj in isa_study.design_descriptors:
             if obj.term == new_obj.term:
-                abort(409)
+                abort(409,  message=f"Descriptor name '{new_obj.term}' already exists.")
 
         # Check that the ontology is referenced in the investigation
         term_source = new_obj.term_source
@@ -3398,7 +3411,7 @@ class StudyPublications(Resource):
                 del isa_study.publications[index]
                 break
         if not found:
-            abort(404)
+            abort(404, message="Requested publication title does not exist.")
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Deleted %s', publication.title)
@@ -3450,7 +3463,7 @@ class StudyPublications(Resource):
                 "dataType": "string"
             },
             {
-                "name": "protocol",
+                "name": "publication",
                 "description": 'Publication in ISA-JSON format.',
                 "paramType": "body",
                 "type": "string",
@@ -3546,9 +3559,7 @@ class StudyPublications(Resource):
         # Check that the ontology is referenced in the investigation
         new_status = updated_publication.status
         term_source = new_status.term_source
-        if term_source:
-            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
-                                          term_source.file, term_source.description)
+
         found = False
         for index, publication in enumerate(isa_study.publications):
             if publication.title.strip().rstrip('\n') == publication_title.strip().rstrip('\n'):
@@ -3557,7 +3568,10 @@ class StudyPublications(Resource):
                 isa_study.publications[index] = updated_publication
                 break
         if not found:
-            abort(404, 'Could not find the publication title you tried to update')
+            abort(404, message='Could not find the publication title you tried to update')
+        if term_source:
+            add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
+                                          term_source.file, term_source.description)
         logger.info("A copy of the previous files will %s saved", save_msg_str)
         iac.write_isa_study(isa_inv, user_token, std_path, save_investigation_copy=save_audit_copy)
         logger.info('Updated %s', updated_publication.title)

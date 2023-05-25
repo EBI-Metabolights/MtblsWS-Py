@@ -29,6 +29,7 @@ from flask_restful_swagger import swagger
 from app.ws.mtblsWSclient import WsClient
 from app.ws.report_builders.combined_maf_builder import CombinedMafBuilder
 from app.ws.settings.utils import get_study_settings
+from app.ws.study.user_service import UserService
 from app.ws.utils import create_maf, read_tsv, write_tsv
 
 logger = logging.getLogger('wslog')
@@ -303,14 +304,10 @@ class CombineMetaboliteAnnotationFiles(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-
-        is_curator, __, __, __, study_location, __, __, __ = wsc.get_permissions('MTBLS1', user_token)
-        if is_curator is False:
-            abort(403)
-
+        
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
         combiBuilder = CombinedMafBuilder(
             studies_to_combine=studies_to_combine,
-            original_study_location=study_location,
             method=method
         )
 

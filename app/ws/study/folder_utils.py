@@ -317,7 +317,7 @@ def write_audit_files(study_location):
     """
     settings = get_study_settings()
     # dest folder name is a timestamp
-    update_path = os.path.join(study_location, settings.audit_files_symbolic_link_name, settings.audit_folder_name)
+    update_path = os.path.join(study_location, settings.audit_files_symbolic_link_name)
     os.makedirs(update_path, exist_ok=True)
     log_path = os.path.join(study_location, settings.internal_files_symbolic_link_name, settings.internal_logs_folder_name)
     make_dir_with_chmod(log_path, 0o777)

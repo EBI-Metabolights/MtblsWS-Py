@@ -26,13 +26,13 @@ from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 
-from app.utils import metabolights_exception_handler, MetabolightsDBException
+from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import identify_study_id
-from app.ws.utils import get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv, \
+from app.ws.utils import delete_column_from_tsv_file, get_table_header, totuples, validate_row, log_request, read_tsv, write_tsv, \
     read_tsv_with_filter
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
@@ -435,27 +435,49 @@ class ComplexColumns(Resource):
 
         audit_status, dest_path = write_audit_files(study_location)
 
-        for column in columns:
-            tsv_file = os.path.join(study_location, file_name)
-            if not os.path.isfile(tsv_file):
-                abort(406, "File " + file_name + " does not exist")
-            else:
-                file_df = read_tsv(tsv_file)
-                try:
-                    file_df.drop(column, axis=1, inplace=True)
-                    write_tsv(file_df, tsv_file)
-                except Exception as e:
-                    logger.error("Could not remove column '" + column + "' from file " + file_name)
-                    logger.error(str(e))
+        
+        tsv_file = os.path.join(study_location, file_name)
+        if not os.path.isfile(tsv_file):
+            abort(406, "File " + file_name + " does not exist")
+        else:
+            file_df = read_tsv(tsv_file)
+            try:
+                for column in columns:
+                    delete_column_from_tsv_file(file_df, column)
+                write_tsv(file_df, tsv_file)
+            except Exception as e:
+                logger.error("Could not remove column '" + column + "' from file " + file_name)
+                logger.error(str(e))
+                return {"Success": "Failed to remove column(s) from " + file_name} 
 
         return {"Success": "Removed column(s) from " + file_name}
 
 
+            
 class ColumnsRows(Resource):
     @swagger.operation(
         summary="Update a given cell, based on row and column index",
-        nickname="Add table columns",
-        notes="Update an TSV table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.",
+        nickname="Update table columns",
+        notes="""Update an TSV table for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed.
+        
+        <code><pre>
+        {
+        "data": [
+            {
+                "row": 1,
+                "column": 0,
+                "value": "test"
+            },
+            {
+                "row": 1,
+                "column": 1,
+                "value": "test2"
+            }
+            ]
+        }
+        </pre>
+        </code>
+        """,
         parameters=[
             {
                 "name": "study_id",
@@ -1026,6 +1048,115 @@ class AddRows(Resource):
 
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
+    @swagger.operation(
+        summary="Get a row of the given TSV file",
+        nickname="Get TSV row",
+        notes="Get TSV file for a given Study. Only '.tsv', '.csv' or '.txt' files are allowed",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "file_name",
+                "description": "TSV File name",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "row_num",
+                "description": "The row number(s) to get, comma separated if more than one",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string"
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK. The TSV file has been updated."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    def get(self, study_id, file_name):
+        # query validation
+        parser = reqparse.RequestParser()
+        parser.add_argument('row_num', help="The row number of the cell(s) to get (exclude header)", location="args")
+        args = parser.parse_args()
+        row_num = args['row_num']
+
+        # param validation
+        if study_id is None or file_name is None or row_num is None:
+            abort(404)
+
+        fname, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        if ext not in ('.tsv', '.csv', '.txt'):
+            abort(400, "The file " + file_name + " is not a valid TSV or CSV file")
+
+        study_id = study_id.upper()
+
+        # User authentication
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+
+        # check for access rights
+        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+            study_status = commons.get_permissions(study_id, user_token)
+        if not write_access:
+            abort(403)
+
+        file_name = os.path.join(study_location, file_name)
+        try:
+            file_df = read_tsv(file_name)
+        except FileNotFoundError:
+            abort(400, "The file " + file_name + " was not found")
+
+        row_nums = row_num.split(",")
+            
+        # result_df.columns = file_df.columns
+        # Need to remove the highest row number first as the DataFrame dynamically re-orders when one row is removed
+        sorted_num_rows = [int(x) for x in row_nums]
+        sorted_num_rows.sort(reverse=False)
+        count = 0
+        result_df = file_df.filter(items=sorted_num_rows, axis=0)
+
+
+
+        df_data_dict = totuples(result_df, 'rows')
+
+        # Get an indexed header row
+        df_header = get_table_header(file_df)
+
+        return {'header': df_header, 'data': df_data_dict, 'message': ""}
 
 class GetTsvFile(Resource):
     @swagger.operation(

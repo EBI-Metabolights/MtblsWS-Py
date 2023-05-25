@@ -28,6 +28,7 @@ from flask_restful import Resource, reqparse, abort
 from flask_restful_swagger import swagger
 from isatools.model import Extract, Sample, OntologyAnnotation, Assay
 from marshmallow import ValidationError
+from app.utils import metabolights_exception_handler
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import AssaySchema, ProcessSchema, OtherMaterialSchema, DataFileSchema, SampleSchema
@@ -176,8 +177,9 @@ class StudyAssayDelete(Resource):
 
         # query validation
         parser = reqparse.RequestParser()
-        parser.add_argument('force', help='Remove related protocols')
+        parser.add_argument('force', help='Remove related protocols', location="args")
 
+        
         # check for access rights
         is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
             study_status = wsc.get_permissions(study_id, user_token)
@@ -196,8 +198,8 @@ class StudyAssayDelete(Resource):
                 save_msg_str = "NOT be"
 
         remove_protocols = False
-        if request.args:
-            args = parser.parse_args(req=request)
+        args = parser.parse_args()
+        if args and "force" in args:
             remove_protocols = False if args['force'].lower() != 'true' else True
 
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
@@ -308,6 +310,7 @@ class StudyAssay(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self, study_id):
         # param validation
         if study_id is None:
@@ -572,7 +575,8 @@ def get_all_unique_protocols_from_study_assays(study_id, assays):
 
 def create_assay(assay_type, columns, study_id, ontology, output_folder=None):
     profiling = 'metabolite_profiling'
-    studies_path = app.config.get('STUDY_PATH')  # Root folder for all studies
+    settings = get_study_settings()
+    studies_path = settings.study_metadata_files_root_path  # Root folder for all studies
     study_path = os.path.join(studies_path, study_id)  # This particular study
     polarity = ''
     column = ''
