@@ -60,15 +60,23 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: Maintain Folder",
+            "name": "Python: Maintain Metadata",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/scripts/maintain_folders.py",
+            "program": "${workspaceFolder}/scripts/maintain_study_metadata_files.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}"}
         },
-        
+        {
+            "name": "Python: Maintain Data Files",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/maintain_study_data_files.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}"}
+        },
         {
             "name": "Guvicorn profile",
             "type": "python",

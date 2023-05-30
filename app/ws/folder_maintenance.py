@@ -71,7 +71,8 @@ class StudyFolderMaintenanceTask(object):
         fix_sample_file_column_values=True,
         fix_assignment_file_column_values=True,
         force_to_maintain=False,
-        minimum_investigation_file_line=91
+        minimum_investigation_file_line=91,
+        create_subfolders_actions_for_data_files=True
     ) -> None:
         self.study_id = study_id
         self.study_status = study_status
@@ -118,13 +119,9 @@ class StudyFolderMaintenanceTask(object):
         self.fix_assignment_file_column_values = fix_assignment_file_column_values
         self.force_to_maintain = force_to_maintain
         self.minimum_investigation_file_line = minimum_investigation_file_line
-
-    def maintain_study_data_files(self) -> List[MaintenanceActionLog]:
-        referenced_files_map = self.calculate_referenced_data_files()
-        referenced_files_path = os.path.join(self.study_internal_files_path, self.settings.data_files_maintenance_file_name)
-        data_files = []
-        has_directory_reference = False
-        one_sample_directory_name = None
+        self.create_subfolders_actions_for_data_files = create_subfolders_actions_for_data_files
+    
+    def create_subfolder_actions(self, referenced_files_map: Dict[str, str]):
         referenced_directories = {}
         for file in referenced_files_map:
             if file:
@@ -134,36 +131,81 @@ class StudyFolderMaintenanceTask(object):
                     referenced_directories[dirname] = set()
                 referenced_directories[dirname].add(file)
         max_referenced_files_in_folder = 100
-        # refactored_referenced_files_map = {}
-        
-        # for referenced_folder in referenced_directories:
-        #     if len(referenced_directories[referenced_folder]) > max_referenced_files_in_folder:
+        subfolders_map = {}
+
+        for referenced_folder in referenced_directories:
+            if len(referenced_directories[referenced_folder]) > max_referenced_files_in_folder:
                 
-        #         file_count = len(referenced_directories[referenced_folder]) 
-        #         files = list(referenced_directories[referenced_folder])
-        #         files.sort()
-        #         folder_count = int(file_count / max_referenced_files_in_folder)
-        #         if file_count % max_referenced_files_in_folder > 0:
-        #             folder_count += 1
+                # file_count = len(referenced_directories[referenced_folder]) 
+                files = list(referenced_directories[referenced_folder])
                     
-        #         for i in range(folder_count):
-        #             new_folder = os.path.join(referenced_folder, f"{i:02}")
-        #             action_log = MaintenanceActionLog(
-        #                 item=new_folder,
-        #                 action=MaintenanceAction.CREATE,
-        #                 parameters={},
-        #                 message=f"{self.study_id}: New folder '{new_folder}' will be created to split data files.",
-        #             )
-        #             self.future_actions.append(action_log)  
-        #             last =  min(file_count,  (i + 1)* max_referenced_files_in_folder)
-        #             for j in range(i * max_referenced_files_in_folder, last):
-        #                 current_file = files[j]
-        #                 basename = os.path.basename(current_file)
-        #                 new_file_path = os.path.join(new_folder, basename)
-        #                 new_file = new_file_path.replace(f"{self.study_metadata_files_path}/", "")
-        #                 refactored_referenced_files_map[current_file] = new_file 
-            
+                extensions_map = {}
+
+                for ref_file in files:
+                    val = os.path.basename(ref_file).lower()
+                    base, ext = os.path.splitext(val)
+                    if ext not in extensions_map:
+                        extensions_map[ext] = []
+                    extensions_map[ext].append(ref_file)
+                for extension in extensions_map:
+                    if len(extensions_map[extension]) > int(max_referenced_files_in_folder/2):
+                        extension_file_count = len(extensions_map[extension])
+                        folder_count = int(len(extensions_map[extension]) / max_referenced_files_in_folder)
+                        if extension_file_count % max_referenced_files_in_folder > 0:
+                            folder_count += 1
+                        cleared_extension = extension.replace(".", "").upper()
+                        prefix = f"{cleared_extension}_" if cleared_extension else ""
+                        
+                        for i in range(folder_count):
+                            subfolder_name = f"{prefix}{(i + 1):03}"
+                            new_folder = os.path.join(referenced_folder, subfolder_name)
+                            action_log = MaintenanceActionLog(
+                                item=new_folder,
+                                action=MaintenanceAction.CREATE,
+                                parameters={},
+                                message=f"{subfolder_name} folder will be created to split data files on {referenced_folder}.",
+                            )
+                            self.future_actions.append(action_log)  
+                            last =  min(extension_file_count,  (i + 1)* max_referenced_files_in_folder)
+                            for j in range(i * max_referenced_files_in_folder, last):
+                                current_file = extensions_map[extension][j]
+                                subfolders_map[current_file] = subfolder_name 
+        for file in subfolders_map:
+            file_path = os.path.join(self.study_metadata_files_path, file)
+            dirname = os.path.dirname(file)
+            basename = os.path.basename(file)
+            subfolder = subfolders_map[file]
+            current_dir_name = os.path.join(dirname,  subfolder, basename).replace(f"{self.study_metadata_files_path}/","")
+            new_value = referenced_files_map[file]
+            del referenced_files_map[file]
+            if new_value:
+                new_dir_name = os.path.dirname(new_value)
+                new_basename = os.path.basename(new_value)
+                new_rename_path = os.path.join(new_dir_name,  subfolder, new_basename)
+                referenced_files_map[current_dir_name] = new_rename_path
                 
+            else:
+                referenced_files_map[current_dir_name] = ""
+                
+            target_path = os.path.join(self.study_metadata_files_path, current_dir_name)
+            action_log = MaintenanceActionLog(
+                item=file,
+                action=MaintenanceAction.MOVE,
+                parameters={"target": target_path},
+                message=f"{current_dir_name} will be moved to a subfolder",
+            )
+            self.future_actions.append(action_log)
+        
+    def calculate_maintenace_actions_for_study_data_files(self) -> List[MaintenanceActionLog]:
+        referenced_files_map = self.calculate_referenced_data_files()
+        # referenced_files_path = os.path.join(self.study_internal_files_path, self.settings.data_files_maintenance_file_name)
+        data_files = []
+        # has_directory_reference = False
+        # one_sample_directory_name = None
+        
+        if self.create_subfolders_actions_for_data_files:
+            self.create_subfolder_actions(referenced_files_map)
+                            
         for file in referenced_files_map:
             file_path = os.path.join(self.study_metadata_files_path, file)
             status = "NOT EXIST"
@@ -174,34 +216,14 @@ class StudyFolderMaintenanceTask(object):
                 modified = os.path.getmtime(file_path)
             if os.path.isdir(file_path):
                 type = "DIRECTORY"
-                if not has_directory_reference:
-                    one_sample_directory_name = file
-                has_directory_reference = True
+                # if not has_directory_reference:
+                #     one_sample_directory_name = file
+                # has_directory_reference = True
             modified_str = datetime.fromtimestamp(modified).isoformat()
             data_files.append(f"{type}\t{status}\t{modified_str}\t{file}\t{referenced_files_map[file]}\n")
             intermediate_file_name = file
             new_file_name = referenced_files_map[file]
-            # if file in refactored_referenced_files_map:
-            #     target_file_name = refactored_referenced_files_map[file]
-            #     target_path = os.path.join(self.study_metadata_files_path, refactored_referenced_files_map[file])
-            #     action_log = MaintenanceActionLog(
-            #         item=file,
-            #         action=MaintenanceAction.MOVE,
-            #         parameters={"target": target_path},
-            #         message=f"{self.study_id}: data file {file}  will be moved to {target_path}",
-            #     )
-            #     self.future_actions.append(action_log)
-                                
-            #     if new_file_name:
-            #         new_basename =  os.path.basename(new_file_name)
-            #         new_dirname = os.path.dirname(new_file_name)
-            #         dirpath = os.path.dirname(target_file_name)
-            #         new_subfolder = os.path.basename(dirpath)
-            #         new_file_name = os.path.join(new_dirname, new_subfolder , new_basename).replace(f"{self.study_metadata_files_path}/", "")
-                
-            #     intermediate_file_name = target_file_name
-            
-            
+
             if new_file_name:
                 intermediate_file_path = os.path.join(self.study_metadata_files_path, intermediate_file_name)
                 target_path = os.path.join(self.study_metadata_files_path, referenced_files_map[intermediate_file_name])
@@ -210,7 +232,7 @@ class StudyFolderMaintenanceTask(object):
                     item=intermediate_file_path,
                     action=MaintenanceAction.RENAME,
                     parameters={"target": target_path},
-                    message=f"{self.study_id}: data file {intermediate_file_name}  will be renamed to {referenced_files_map[intermediate_file_name]}",
+                    message=f"",
                 )
                 self.future_actions.append(action_log)
                 intermediate_file_name = referenced_files_map[intermediate_file_name]
@@ -226,18 +248,16 @@ class StudyFolderMaintenanceTask(object):
                     item=intermediate_file_path,
                     action=MaintenanceAction.COMPRESS,
                     parameters={"target": target_path},
-                    message=f"{self.study_id}: data file {intermediate_file_name}  will be compressed to {new_file_name}",
+                    message=f"",
                 )
                 self.future_actions.append(action_log)     
                 intermediate_file_name = new_file_name
-                    
-        
-        # referenced_files = list([f"{x}\t{referenced_files_map[x]}\n" for x in referenced_files_map])
-        with open(referenced_files_path, "w") as f:
-            f.writelines(["TYPE\tSTATUS\tMODIFIED TIME\tREFERENCED FILE PATH\tRENAME TASK\n"])
-            f.writelines(data_files)
-        if has_directory_reference:
-            print(f"\n{self.study_id}: has data file reference points to a directory. Example: {one_sample_directory_name}")
+
+        # with open(referenced_files_path, "w") as f:
+        #     f.writelines(["TYPE\tSTATUS\tMODIFIED TIME\tREFERENCED FILE PATH\tRENAME TASK\n"])
+        #     f.writelines(data_files)
+        # if has_directory_reference:
+        #     print(f"\n{self.study_id}: has data file reference points to a directory. Example: {one_sample_directory_name}")
             
         return self.future_actions
     
@@ -1551,10 +1571,11 @@ class StudyFolderMaintenanceTask(object):
                 data = b''  
                 with open(i_filename, 'rb') as fp:
                     data = fp.read()
-                if b'\x00' in data:
+                if b'\x00' in data or b'\xff' in data:
                     self.backup_file(i_filename, reason='Remove null bytes from file')
                     with open(i_filename, 'wb') as fp:
                         new_data_bytes = data.replace(b'\x00', b'')
+                        new_data_bytes = new_data_bytes.replace(b'\xff', b'')
                         fp.write(new_data_bytes)
                     action_log = MaintenanceActionLog(
                         item=investigation_file_path,

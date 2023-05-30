@@ -35,7 +35,7 @@ def maintain_study_folders(
             with open(future_action_log_file_path, "w") as fa:
                 header = f"STUDY_ID\tSTUDY STATUS\tSUCCESS\tACTION\tITEM\tMESSAGE\tPARAMETERS\n"
                 f.writelines([header])
-                f.writelines([header])
+                fa.writelines([header])
                 for study_id in study_id_list:
                     study: Study = StudyService.get_instance(flask_app).get_study_by_acc(study_id=study_id)
                     study_status = StudyStatus(study.status)
@@ -79,26 +79,6 @@ def write_actions(f, actions: List[MaintenanceActionLog], study_id, study_status
     f.writelines(rows)                      
     f.flush()  
 
-# if __name__ == "__main__":
-#     flask_app = get_flask_app()
-
-#     def sort_by_study_id(key: str):
-#         if key:
-#             val = os.path.basename(key).upper().replace("MTBLS", "")
-#             if val.isnumeric():
-#                 return int(val)
-#         return -1
-
-#     with flask_app.app_context():
-#         # studies = StudyService.get_instance(flask_app).get_all_study_ids()
-#         study_ids = ["MTBLS2"]
-#         # study_ids = [study[0] for study in studies if study[0]]
-#         study_ids.sort(key=sort_by_study_id)
-#         results = maintain_study_folders(study_ids, flask_app=flask_app)
-        
-#     print("end")
-
-
 if __name__ == "__main__":
     flask_app = get_flask_app()
 
@@ -110,9 +90,31 @@ if __name__ == "__main__":
         return -1
 
     with flask_app.app_context():
-        studies = StudyService.get_instance(flask_app).get_all_study_ids()
-        skip_study_ids = [f"MTBLS{(i + 1)}" for i in range(501)]
-        study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
+        # studies = StudyService.get_instance(flask_app).get_all_study_ids()
+        study_ids = []
+        for i in range(519):
+            study_ids.append(f"MTBLS{(i+1)}")
+        # study_ids = [study[0] for study in studies if study[0]]
         study_ids.sort(key=sort_by_study_id)
         results = maintain_study_folders(study_ids, flask_app=flask_app)
+        
     print("end")
+
+
+# if __name__ == "__main__":
+#     flask_app = get_flask_app()
+
+#     def sort_by_study_id(key: str):
+#         if key:
+#             val = os.path.basename(key).upper().replace("MTBLS", "")
+#             if val.isnumeric():
+#                 return int(val)
+#         return -1
+
+#     with flask_app.app_context():
+#         studies = StudyService.get_instance(flask_app).get_all_study_ids()
+#         skip_study_ids = [f"MTBLS{(i + 1)}" for i in range(501)]
+#         study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
+#         study_ids.sort(key=sort_by_study_id)
+#         results = maintain_study_folders(study_ids, flask_app=flask_app)
+#     print("end")
