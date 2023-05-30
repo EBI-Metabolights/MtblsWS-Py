@@ -60,6 +60,16 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python: Maintain Folder",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/maintain_folders.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}"}
+        },
+        
+        {
             "name": "Guvicorn profile",
             "type": "python",
             "request": "launch",

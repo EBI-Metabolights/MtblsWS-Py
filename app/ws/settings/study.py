@@ -17,8 +17,8 @@ class StudySettings(MetabolightsBaseSettings):
     study_readonly_public_metadata_versions_root_path:str
     study_readonly_integrity_check_files_root_path:str
     
-    study_readonly_files_recycle_bin_root_path: str
-    
+    readonly_storage_recycle_bin_root_path: str
+    rw_storage_recycle_bin_root_path: str
     
     audit_files_symbolic_link_name:str = "AUDIT_FILES" 
     internal_files_symbolic_link_name:str = "INTERNAL_FILES"
@@ -26,7 +26,14 @@ class StudySettings(MetabolightsBaseSettings):
     
     audit_folder_name:str = "audit"
     
+    metadata_summary_file_name: str = "metadata_summary.tsv"
+    data_files_summary_file_name: str = "data_files_summary.tsv"
+    study_folder_maintenance_log_file_name: str = "maintenance_log.tsv"
+    metadata_files_signature_file_name: str = "metadata_files_signature.txt"
+    data_files_maintenance_file_name: str = "data_files_summary.txt"
+    
     study_default_template_path:str = "./resources/templates/study/default"
+    template_sample_file_name:str = "s_Sample.txt"
     study_partner_metabolon_template_path:str = "./resources/templates/study/metabolon"
     study_mass_spectrometry_maf_file_template_path = "./resources/m_metabolite_profiling_mass_spectrometry_v2_maf.tsv"
     study_nmr_spectroscopy_maf_file_template_path = "./resources/m_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv"
@@ -39,7 +46,7 @@ class StudySettings(MetabolightsBaseSettings):
     
     investigation_file_name:str = "i_Investigation.txt"
     internal_logs_folder_name:str = "logs"
-    
+    internal_backup_folder_name: str = "internal-backup"
     mzml_xsd_schema_file_path: str = "./resources/mzML1.1.1_idx.xsd"
     
     validation_report_file_name: str = "validation_report.json"

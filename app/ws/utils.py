@@ -754,6 +754,7 @@ def collect_all_mzml_files(study_id, study_metadata_files_folder):
         os.symlink(source, target, target_is_directory=False)
     
     return folder_path + "/"
+
 def convert_to_isa(study_location, study_id):
     input_folder = ""
     try:
@@ -769,14 +770,12 @@ def convert_to_isa(study_location, study_id):
 
 
 def update_correct_sample_file_name(isa_study, study_location, study_id):
-    sample_file_name = isa_study.filename
-    sample_file_name = os.path.join(study_location, sample_file_name)
+    sample_file_path = os.path.join(study_location, isa_study.filename)
     short_sample_file_name = 's_' + study_id.upper() + '.txt'
-    default_sample_file_name = os.path.join(study_location, short_sample_file_name)
-    if os.path.isfile(sample_file_name):
-        if sample_file_name != default_sample_file_name:
-            isa_study.identifier = study_id  # Adding the study identifier
-            os.rename(sample_file_name, default_sample_file_name)  # Rename the sample file
+    default_sample_file_path = os.path.join(study_location, short_sample_file_name)
+    if os.path.isfile(sample_file_path):
+        if sample_file_path != default_sample_file_path:
+            os.rename(sample_file_path, default_sample_file_path)  # Rename the sample file
             isa_study.filename = short_sample_file_name  # Add the new filename to the investigation
 
     return isa_study, short_sample_file_name
