@@ -7,7 +7,7 @@ import shutil
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Set
 import numpy as np
 import pandas as pd
 
@@ -22,7 +22,7 @@ from app.ws.settings.utils import get_study_settings
 logger = logging.getLogger("wslog")
 
 
-RAW_FILE_EXTENSIONS = {".d", ".raw", ".d.zip", ".raw.zip", ".wiff"}
+RAW_FILE_EXTENSIONS = {".d", ".raw", ".d.zip", ".raw.zip", ".wiff", ".wiff.scan"}
 DERIVED_FILE_EXTENSIONS = {".mzml", ".mzdata", ".mzxml"}
 
 class MaintenanceException(Exception):
@@ -43,6 +43,7 @@ class MaintenanceAction(str, Enum):
     RENAME = "RENAME"
     DELETE = "DELETE"
     COMPRESS = "COMPRESS"
+    RECOMPRESS = "RECOMPRESS"
 
     UPDATE_CONTENT = "UPDATE_CONTENT"
     UPDATE_FILE_PERMISSION = "UPDATE_FILE_PERMISSION"
@@ -54,6 +55,7 @@ class MaintenanceActionLog(BaseModel):
     parameters: Dict[str, str] = {}
     message: str = ""
     successful: bool = True
+    command: str = ""
 
 
 class StudyFolderMaintenanceTask(object):
@@ -72,7 +74,13 @@ class StudyFolderMaintenanceTask(object):
         fix_assignment_file_column_values=True,
         force_to_maintain=False,
         minimum_investigation_file_line=91,
-        create_subfolders_actions_for_data_files=True
+        future_actions_sanitise_referenced_files=False,
+        future_actions_create_subfolders=False,
+        future_actions_compress_folders=False,
+        future_actions_recompress_unexpected_acrhive_files=False,
+        apply_future_actions=False,
+        max_referenced_files_in_folder=200,
+        create_data_files_maintenance_file=True
     ) -> None:
         self.study_id = study_id
         self.study_status = study_status
@@ -85,7 +93,7 @@ class StudyFolderMaintenanceTask(object):
 
         self.recycle_bin_folder_name = recycle_bin_folder_name
         if not self.recycle_bin_folder_name:
-            date_format = "%Y%m%d%H%M%S"
+            date_format = "%Y-%m-%d_%H-%M-%S"
             self.recycle_bin_folder_name = time.strftime(date_format)
         self.study_recycle_bin_path = os.path.join(
             self.settings.study_audit_files_root_path,
@@ -93,14 +101,12 @@ class StudyFolderMaintenanceTask(object):
             self.settings.internal_backup_folder_name,
             self.recycle_bin_folder_name,
         )
-        self.readonly_storage_recycle_bin_path = os.path.join(
-            self.settings.readonly_storage_recycle_bin_root_path, self.recycle_bin_folder_name
+        self.cluster_readonly_storage_recycle_bin_path = os.path.join(
+            self.settings.cluster_readonly_storage_recycle_bin_root_path, self.recycle_bin_folder_name
         )
         self.rw_storage_recycle_bin_path = os.path.join(
             self.settings.rw_storage_recycle_bin_root_path, self.recycle_bin_folder_name
         )
-        os.makedirs(self.study_recycle_bin_path, exist_ok=True)
-        os.makedirs(self.rw_storage_recycle_bin_path, exist_ok=True)
 
         self.study_metadata_files_path = os.path.join(self.settings.study_metadata_files_root_path, study_id)
         self.study_readonly_files_path = os.path.join(self.settings.study_readonly_files_root_path, study_id)
@@ -119,39 +125,127 @@ class StudyFolderMaintenanceTask(object):
         self.fix_assignment_file_column_values = fix_assignment_file_column_values
         self.force_to_maintain = force_to_maintain
         self.minimum_investigation_file_line = minimum_investigation_file_line
-        self.create_subfolders_actions_for_data_files = create_subfolders_actions_for_data_files
-    
-    def create_subfolder_actions(self, referenced_files_map: Dict[str, str]):
+        self.future_actions_create_subfolders = future_actions_create_subfolders
+        self.future_actions_sanitise_referenced_files=future_actions_sanitise_referenced_files
+        self.future_actions_create_subfolders=future_actions_create_subfolders
+        self.future_actions_compress_folders=future_actions_compress_folders
+        self.future_actions_recompress_unexpected_acrhive_files=future_actions_recompress_unexpected_acrhive_files
+        self.max_referenced_files_in_folder = max_referenced_files_in_folder
+        self.create_data_files_maintenance_file=create_data_files_maintenance_file
+        self.apply_future_actions = apply_future_actions
+
+
+    def _create_sanitise_file_name_actions(self,  updated_file_names: Dict[str, str]) -> Dict[str, str]:
+        for key in updated_file_names:
+            file = updated_file_names[key]
+            if file:
+                new_basename = self.sanitise_filename(file)
+                if new_basename != file:
+                    
+                    current_path = os.path.join(self.study_metadata_files_path, file)
+                    target_path = os.path.join(self.study_metadata_files_path, new_basename)
+                    
+                    if os.path.exists(target_path):
+                        renamed_path  = f"{target_path}_{self.recycle_bin_folder_name}"
+                        action_log = MaintenanceActionLog(
+                            item=target_path,
+                            action=MaintenanceAction.RENAME,
+                            parameters={"target": target_path},
+                            message=f"",
+                            command=f"mv '{target_path}' '{renamed_path}'"
+                        )
+                        self.future_actions.append(action_log)
+                        if self.apply_future_actions:
+                            shutil.move(target_path, renamed_path)
+                    if self.apply_future_actions:
+                        shutil.move(target_path, renamed_path)
+                    action_log = MaintenanceActionLog(
+                        item=current_path,
+                        action=MaintenanceAction.RENAME,
+                        parameters={"target": target_path},
+                        message=f"",
+                        command=f"mv '{current_path}' '{target_path}'"
+                    )
+                    self.future_actions.append(action_log)
+                    updated_file_names[key] = new_basename
+        if self.create_data_files_maintenance_file:
+            self._update_data_files_maintenance_file(updated_file_names)
+        return updated_file_names
+                
+
+    def _create_compress_folder_actions(self,  updated_file_names: Dict[str, str]) -> Dict[str, str]:
+        for key in updated_file_names:
+            file = updated_file_names[key]
+            if file:
+                current_path = os.path.join(self.study_metadata_files_path, file)
+                if os.path.exists(current_path) and os.path.isdir(current_path):
+                    new_basename = f"{file}.zip"
+                    target_path = os.path.join(self.study_metadata_files_path, new_basename)
+                    current_dirname = os.path.dirname(current_path)
+                    current_basename = os.path.dirname(current_path)
+                    action_log = MaintenanceActionLog(
+                        item=current_path,
+                        action=MaintenanceAction.COMPRESS,
+                        parameters={"target": target_path},
+                        message=f"",
+                        command=f"cd '{current_dirname}' && zip -r '{target_path}' '{current_basename}' && cd -"
+                    )
+                    self.future_actions.append(action_log)
+                    updated_file_names[key] = new_basename
+        return updated_file_names
+
+    def _create_recompress_folder_actions(self,  updated_file_names: Dict[str, str]) -> Dict[str, str]:
+        non_standard_compressed_file_extensions = {".rar", ".7z", ".z", ".g7z", ".arj", ".rar", ".bz2", ".war"}
+        for key in updated_file_names:
+            file = updated_file_names[key]
+            if file:
+                base = os.path.basename(file)
+                basename, ext = os.path.splitext(base)
+                if ext in non_standard_compressed_file_extensions:
+                    current_path = os.path.join(self.study_metadata_files_path, file)
+                    new_basename = f"{basename}.zip"
+                    target_path = os.path.join(self.study_metadata_files_path, new_basename)
+                    action_log = MaintenanceActionLog(
+                        item=current_path,
+                        action=MaintenanceAction.RECOMPRESS,
+                        parameters={"target": target_path},
+                        message=f"",
+                    )
+                    self.future_actions.append(action_log)
+                    updated_file_names[key] = new_basename
+        return updated_file_names
+                        
+    def _create_subfolder_actions(self, updated_file_names: Dict[str, str]) -> Dict[str, str]:
+
         referenced_directories = {}
-        for file in referenced_files_map:
+        for key in updated_file_names:
+            file = updated_file_names[key]
             if file:
                 file_path = os.path.join(self.study_metadata_files_path, file)
                 dirname = os.path.dirname(file_path)
                 if dirname not in referenced_directories:
                     referenced_directories[dirname] = set()
-                referenced_directories[dirname].add(file)
-        max_referenced_files_in_folder = 100
+                referenced_directories[dirname].add(key)
         subfolders_map = {}
-
+        maximum = self.max_referenced_files_in_folder
         for referenced_folder in referenced_directories:
-            if len(referenced_directories[referenced_folder]) > max_referenced_files_in_folder:
-                
-                # file_count = len(referenced_directories[referenced_folder]) 
+            if len(referenced_directories[referenced_folder]) > maximum:
                 files = list(referenced_directories[referenced_folder])
                     
                 extensions_map = {}
 
-                for ref_file in files:
+                for key in files:
+                    ref_file = updated_file_names[key]
                     val = os.path.basename(ref_file).lower()
                     base, ext = os.path.splitext(val)
                     if ext not in extensions_map:
                         extensions_map[ext] = []
-                    extensions_map[ext].append(ref_file)
+                    extensions_map[ext].append(key)
                 for extension in extensions_map:
-                    if len(extensions_map[extension]) > int(max_referenced_files_in_folder/2):
+                    if len(extensions_map[extension]) > int(maximum/2):
                         extension_file_count = len(extensions_map[extension])
-                        folder_count = int(len(extensions_map[extension]) / max_referenced_files_in_folder)
-                        if extension_file_count % max_referenced_files_in_folder > 0:
+                        folder_count = int(len(extensions_map[extension]) / maximum)
+                        if extension_file_count % maximum > 0:
                             folder_count += 1
                         cleared_extension = extension.replace(".", "").upper()
                         prefix = f"{cleared_extension}_" if cleared_extension else ""
@@ -159,54 +253,58 @@ class StudyFolderMaintenanceTask(object):
                         for i in range(folder_count):
                             subfolder_name = f"{prefix}{(i + 1):03}"
                             new_folder = os.path.join(referenced_folder, subfolder_name)
+                            if os.path.exists(new_folder):
+                                renamed_path = f"{new_folder}_{self.recycle_bin_folder_name}"
+                                action_log = MaintenanceActionLog(
+                                    item=new_folder,
+                                    action=MaintenanceAction.RENAME,
+                                    parameters={"target": renamed_path},
+                                    message=f"{subfolder_name} folder will be renamed.",
+                                    command=f"mv '{new_folder}' '{renamed_path}'"
+                                )
+                                self.future_actions.append(action_log)  
+                                if self.apply_future_actions:
+                                    shutil.move(new_folder, renamed_path)                           
+                            if self.apply_future_actions:
+                                os.makedirs(new_folder, exist_ok=True)    
                             action_log = MaintenanceActionLog(
                                 item=new_folder,
                                 action=MaintenanceAction.CREATE,
                                 parameters={},
                                 message=f"{subfolder_name} folder will be created to split data files on {referenced_folder}.",
+                                command=f"mkdir -p '{new_folder}'"
                             )
+                
                             self.future_actions.append(action_log)  
-                            last =  min(extension_file_count,  (i + 1)* max_referenced_files_in_folder)
-                            for j in range(i * max_referenced_files_in_folder, last):
-                                current_file = extensions_map[extension][j]
-                                subfolders_map[current_file] = subfolder_name 
-        for file in subfolders_map:
-            file_path = os.path.join(self.study_metadata_files_path, file)
-            dirname = os.path.dirname(file)
-            basename = os.path.basename(file)
-            subfolder = subfolders_map[file]
-            current_dir_name = os.path.join(dirname,  subfolder, basename).replace(f"{self.study_metadata_files_path}/","")
-            new_value = referenced_files_map[file]
-            del referenced_files_map[file]
-            if new_value:
-                new_dir_name = os.path.dirname(new_value)
-                new_basename = os.path.basename(new_value)
-                new_rename_path = os.path.join(new_dir_name,  subfolder, new_basename)
-                referenced_files_map[current_dir_name] = new_rename_path
-                
-            else:
-                referenced_files_map[current_dir_name] = ""
-                
-            target_path = os.path.join(self.study_metadata_files_path, current_dir_name)
-            action_log = MaintenanceActionLog(
-                item=file,
-                action=MaintenanceAction.MOVE,
-                parameters={"target": target_path},
-                message=f"{current_dir_name} will be moved to a subfolder",
-            )
-            self.future_actions.append(action_log)
-        
-    def calculate_maintenace_actions_for_study_data_files(self) -> List[MaintenanceActionLog]:
-        referenced_files_map = self.calculate_referenced_data_files()
-        # referenced_files_path = os.path.join(self.study_internal_files_path, self.settings.data_files_maintenance_file_name)
-        data_files = []
-        # has_directory_reference = False
-        # one_sample_directory_name = None
-        
-        if self.create_subfolders_actions_for_data_files:
-            self.create_subfolder_actions(referenced_files_map)
-                            
-        for file in referenced_files_map:
+                            last =  min(extension_file_count,  (i + 1)* maximum)
+                            for j in range(i * maximum, last):
+                                key = extensions_map[extension][j]
+                                subfolders_map[key] = subfolder_name 
+        for key in updated_file_names:
+            file = updated_file_names[key]
+            if key in subfolders_map:
+                file_path = os.path.join(self.study_metadata_files_path, file)
+                dirname = os.path.dirname(file)
+                basename = os.path.basename(file)
+                subfolder = subfolders_map[key]
+                current_dir_name = os.path.join(dirname,  subfolder, basename).replace(f"{self.study_metadata_files_path}/","")                
+                target_path = os.path.join(self.study_metadata_files_path, current_dir_name)
+                action_log = MaintenanceActionLog(
+                    item=file_path,
+                    action=MaintenanceAction.MOVE,
+                    parameters={"target": target_path},
+                    message=f"{file_path} will be moved to a subfolder",
+                    command=f"mv '{file_path}' '{target_path}'"
+                )
+                if self.apply_future_actions:
+                    shutil.move(file_path, target_path)    
+                self.future_actions.append(action_log)
+                updated_file_names[key] = current_dir_name
+    
+    def _update_data_files_maintenance_file(self, updated_file_names: Dict[str, str]):
+        referenced_files_path = os.path.join(self.study_internal_files_path, self.settings.data_files_maintenance_file_name)  
+        data_files = []                
+        for file in updated_file_names:
             file_path = os.path.join(self.study_metadata_files_path, file)
             status = "NOT EXIST"
             type = "FILE"
@@ -216,54 +314,53 @@ class StudyFolderMaintenanceTask(object):
                 modified = os.path.getmtime(file_path)
             if os.path.isdir(file_path):
                 type = "DIRECTORY"
-                # if not has_directory_reference:
-                #     one_sample_directory_name = file
-                # has_directory_reference = True
+            updated_file_name = updated_file_names[file]
             modified_str = datetime.fromtimestamp(modified).isoformat()
-            data_files.append(f"{type}\t{status}\t{modified_str}\t{file}\t{referenced_files_map[file]}\n")
-            intermediate_file_name = file
-            new_file_name = referenced_files_map[file]
+            if updated_file_name != file:
+                data_files.append(f"{type}\t{status}\t{modified_str}\t{file}\t{updated_file_names[file]}\n")
+            else:
+                data_files.append(f"{type}\t{status}\t{modified_str}\t{file}\t\n")
 
-            if new_file_name:
-                intermediate_file_path = os.path.join(self.study_metadata_files_path, intermediate_file_name)
-                target_path = os.path.join(self.study_metadata_files_path, referenced_files_map[intermediate_file_name])
-                
-                action_log = MaintenanceActionLog(
-                    item=intermediate_file_path,
-                    action=MaintenanceAction.RENAME,
-                    parameters={"target": target_path},
-                    message=f"",
-                )
-                self.future_actions.append(action_log)
-                intermediate_file_name = referenced_files_map[intermediate_file_name]
-            
-            if not intermediate_file_name:
-                intermediate_file_name = file
-                
-            if type == "DIRECTORY":
-                intermediate_file_path = os.path.join(self.study_metadata_files_path, intermediate_file_name)
-                new_file_name = f"{intermediate_file_name}.zip"
-                target_path = os.path.join(self.study_metadata_files_path, new_file_name)
-                action_log = MaintenanceActionLog(
-                    item=intermediate_file_path,
-                    action=MaintenanceAction.COMPRESS,
-                    parameters={"target": target_path},
-                    message=f"",
-                )
-                self.future_actions.append(action_log)     
-                intermediate_file_name = new_file_name
-
-        # with open(referenced_files_path, "w") as f:
-        #     f.writelines(["TYPE\tSTATUS\tMODIFIED TIME\tREFERENCED FILE PATH\tRENAME TASK\n"])
-        #     f.writelines(data_files)
-        # if has_directory_reference:
-        #     print(f"\n{self.study_id}: has data file reference points to a directory. Example: {one_sample_directory_name}")
-            
-        return self.future_actions
-    
-    def calculate_referenced_data_files(self):
+        with open(referenced_files_path, "w") as f:
+            f.writelines(["TYPE\tSTATUS\tMODIFIED TIME\tREFERENCED FILE PATH\tRENAME TASK\n"])
+            f.writelines(data_files)
         
-        referenced_files = {}
+    def create_maintenace_actions_for_study_data_files(self) -> List[MaintenanceActionLog]:
+        referenced_file_set = self.get_all_referenced_data_files()
+        updated_file_names = {}
+        for item in referenced_file_set:
+            updated_file_names[item] = item
+        
+        
+        self.calculate_readonly_study_folders_future_actions()
+        if self.future_actions_sanitise_referenced_files:
+            self._create_sanitise_file_name_actions(updated_file_names)
+        if self.future_actions_create_subfolders:
+            self._create_subfolder_actions(updated_file_names) 
+        if self.future_actions_compress_folders:
+            self._create_compress_folder_actions(updated_file_names)
+        if self.future_actions_recompress_unexpected_acrhive_files:
+            self._create_recompress_folder_actions(updated_file_names)
+        
+        return self.future_actions
+
+
+    def create_maintenace_actions_for_study_private_ftp_folder(self) -> List[MaintenanceActionLog]:
+
+        self.calculate_readonly_study_folders_future_actions()
+
+        
+        return self.future_actions
+
+    def sanitise(obj):
+        message = str(obj)
+        if message:
+           return " ".join(message.splitlines())
+        return ""
+   
+    def get_all_referenced_data_files(self) -> Set[str]:
+        
+        referenced_files_set = set()
         investigation = None
         investigation_file_path = os.path.join(self.study_metadata_files_path, self.settings.investigation_file_name)
         try:
@@ -275,7 +372,7 @@ class StudyFolderMaintenanceTask(object):
                 item=investigation_file_path,
                 action=MaintenanceAction.ERROR_MESSAGE,
                 parameters={},
-                message=f"{self.study_id}: {self.settings.investigation_file_name} could not be loaded. Error: {str(ex)}",
+                message=f"{self.study_id}: {self.settings.investigation_file_name} could not be loaded. Error: {self.sanitise(ex)}",
                 successful=False,
             )
             self.actions.append(action_log)
@@ -302,27 +399,23 @@ class StudyFolderMaintenanceTask(object):
 
                                     for i in range(len(all_data_columns)):
                                         file_name = row[all_data_columns[i]]
-                                        if file_name and file_name.strip() and file_name not in referenced_files:
+                                        if file_name and file_name.strip() and file_name not in referenced_files_set:
                                             current_file_name = file_name.strip()
-                                            new_file_name = self.sanitise_filename(row[all_data_columns[i]])
-                                            if current_file_name != new_file_name:
-                                                referenced_files[current_file_name] = new_file_name
-                                            else:
-                                                referenced_files[current_file_name] = ""
+                                            referenced_files_set.add(current_file_name)
                                             
                         except Exception as ex:
-                            raise MaintenanceException(message=f"{assay_file_path} could not be loaded. {str(ex)}")    
+                            raise MaintenanceException(message=f"{assay_file_path} could not be loaded. {self.sanitise(ex)}")    
         except Exception as ex:
             action_log = MaintenanceActionLog(
                 item=investigation_file_path,
                 action=MaintenanceAction.ERROR_MESSAGE,
                 parameters={},
-                message=f"{self.study_id}: {assay_file_path} could not be processed. Error: {str(ex)}",
+                message=f"{self.study_id}: {assay_file_path} could not be processed. Error: {self.sanitise(ex)}",
                 successful=False,
             )
             self.actions.append(action_log)
             raise ex
-        return referenced_files
+        return referenced_files_set
 
         
                             
@@ -357,7 +450,7 @@ class StudyFolderMaintenanceTask(object):
                                     item=investigation_file_path,
                                     action=MaintenanceAction.ERROR_MESSAGE,
                                     parameters={},
-                                    message=f"{self.study_id}: ERROR: investigation file save error {str(ex)}.",
+                                    message=f"{self.study_id}: ERROR: investigation file save error {self.sanitise(ex)}.",
                                     successful=False,
                                 )
                                 self.actions.append(action_log)
@@ -509,13 +602,8 @@ class StudyFolderMaintenanceTask(object):
             else:
                 sha256_hash = self.sha256sum(file_path)
             
-
-
-
             modified = datetime.fromtimestamp(m_time).isoformat()
             rows.append(f"{sha256_hash}\t{type}\t{existence}\t{status}\t{modified}\t{file}\n")
-
-
 
         if os.path.exists(metadata_summary_file_path):
             self.backup_file(metadata_summary_file_path, prefix="before")
@@ -583,10 +671,98 @@ class StudyFolderMaintenanceTask(object):
             )
             self.actions.append(action_log)
 
+    def _create_folder_future_actions(self, file_path: str, mode: int, backup_path: str, created_folders: Dict[str, int], deleted_folders: Set[str], backup_path_permission = "750"):
+        study_id = self.study_id
+        chmod_str = oct(mode).replace("0o", "")
+        if os.path.exists(file_path) and not os.path.isdir(file_path):
+            file_basename = os.path.basename(file_path)
+            if not os.path.exists(backup_path) and backup_path not in created_folders:
+                action_log = MaintenanceActionLog(
+                    item=backup_path,
+                    action=MaintenanceAction.CREATE,
+                    parameters={"chmod": backup_path_permission},
+                    message=f"{study_id}: {backup_path} folder will be created.",
+                    command=f"mkdir -p -m {backup_path_permission} '{backup_path}'"
+                )
+                self.future_actions.append(action_log)
+                created_folders[backup_path] = backup_path_permission
+                
+            target_path = os.path.join(backup_path, file_basename)
+            # shutil.move(file_path, target_path)
+
+            action_log = MaintenanceActionLog(
+                item=file_path,
+                action=MaintenanceAction.MOVE,
+                parameters={"target": target_path},
+                message=f"{study_id}: {file_path} is not folder. Existing will be moved to {target_path}",
+                command=f"mv '{file_path}' '{target_path}'"
+            )
+            if self.apply_future_actions:
+                shutil.move(file_path, target_path)   
+            self.future_actions.append(action_log)
+            created_folders[target_path] = chmod_str
+            deleted_folders.add(file_path)
+        elif os.path.exists(file_path) and os.path.isdir(file_path):
+            if file_path not in created_folders:
+                octal_value = oct(os.stat(file_path).st_mode & 0o777)
+            else:
+                octal_value = created_folders[file_path]
+            
+            current_chmod = int(octal_value, 8)
+            if current_chmod != int(mode):
+                octal_value_str = octal_value.replace("0o", "")
+                # os.chmod(file_path, mode=mode)
+                action_log = MaintenanceActionLog(
+                    item=file_path,
+                    action=MaintenanceAction.UPDATE_FILE_PERMISSION,
+                    parameters={"chmod": chmod_str},
+                    message=f"{self.study_id}: {file_path} file permission will be updated from {octal_value_str} to {chmod_str}.",
+                    command=f"chmod {chmod_str} '{file_path}'"
+                )
+                if self.apply_future_actions:
+                    self.update_permission(file_path, mode)
+                self.future_actions.append(action_log)
+                
+        if (not os.path.exists(file_path) or file_path in deleted_folders) and file_path not in created_folders:
+            action_log = MaintenanceActionLog(
+                item=file_path,
+                action=MaintenanceAction.CREATE,
+                parameters={"chmod": chmod_str},
+                message=f"{study_id}: {file_path} folder will be created.",
+                command=f"mkdir -p -m {chmod_str} '{file_path}'"
+            )
+            if self.apply_future_actions:
+                os.makedirs(file_path, mode)
+            self.future_actions.append(action_log)
+            created_folders[file_path] = chmod_str
+        
+                
+    def calculate_readonly_study_folders_future_actions(self):
+            settings = self.settings
+            study_id = self.study_id
+            readonly_storage_recycle_bin_path = self.cluster_readonly_storage_recycle_bin_path
+            created_folders = {}
+            deleted_folders = set()
+            readonly_files_path = os.path.join(settings.cluster_study_readonly_files_root_path, study_id)
+            self._create_folder_future_actions(readonly_files_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders)
+            
+            readonly_metadata_path = os.path.join(settings.cluster_study_readonly_metadata_files_root_path, study_id)
+            self._create_folder_future_actions(readonly_metadata_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders)
+
+            readonly_audit_path = os.path.join(settings.cluster_study_readonly_audit_files_root_path, study_id)
+            self._create_folder_future_actions(readonly_audit_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders)
+
+            readonly_public_metadata_versions_path = os.path.join(settings.cluster_study_readonly_public_metadata_versions_root_path, study_id)
+            self._create_folder_future_actions(readonly_public_metadata_versions_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders)
+
+            readonly_integrity_check_files_path = os.path.join(settings.cluster_study_readonly_integrity_check_files_root_path, study_id)
+            self._create_folder_future_actions(readonly_integrity_check_files_path, 0o750, readonly_storage_recycle_bin_path, created_folders, deleted_folders)
+        
+
     def maintain_rw_storage_folders(self):
         settings = self.settings
         study_id = self.study_id
-        rw_storage_recycle_bin_path = self.rw_storage_recycle_bin_path
+        rw_storage_recycle_bin_path = os.path.join(self.rw_storage_recycle_bin_path, self.study_id)
         study_recycle_bin_path = self.study_recycle_bin_path
 
         audit_path = os.path.join(settings.study_audit_files_root_path, study_id)
@@ -625,9 +801,6 @@ class StudyFolderMaintenanceTask(object):
     def maintain_study_symlinks(self, target_path, link_path):
         study_id = self.study_id
         if os.path.exists(link_path):
-            file_name = os.path.basename(link_path)
-            move_target = os.path.join(self.study_recycle_bin_path, file_name)
-
             if os.path.islink(link_path):
                 current_target = os.readlink(link_path)
                 if current_target == target_path:
@@ -663,6 +836,16 @@ class StudyFolderMaintenanceTask(object):
 
         if os.path.exists(file_path) and not os.path.isdir(file_path):
             file_basename = os.path.basename(file_path)
+            if not os.path.exists(backup_path):
+                os.makedirs(backup_path, exist_ok=True)
+                action_log = MaintenanceActionLog(
+                    item=backup_path,
+                    action=MaintenanceAction.CREATE,
+                    parameters={},
+                    message=f"{study_id}: {backup_path} folder was created.",
+                )
+                self.actions.append(action_log)
+            
             target_path = os.path.join(backup_path, file_basename)
             shutil.move(file_path, target_path)
 
@@ -745,7 +928,7 @@ class StudyFolderMaintenanceTask(object):
                 item=investigation_file_path,
                 action=MaintenanceAction.ERROR_MESSAGE,
                 parameters={},
-                message=f"{study_id}: {settings.investigation_file_name} could not be loaded. Error: {str(ex)}",
+                message=f"{study_id}: {settings.investigation_file_name} could not be loaded. Error: {self.sanitise(ex)}",
                 successful=False,
             )
             self.actions.append(action_log)
@@ -1057,12 +1240,12 @@ class StudyFolderMaintenanceTask(object):
             # Write the new row back in the file
             dataframe.to_csv(file_name, sep="\t", encoding="utf-8", index=False)
         except Exception as ex:
-            logger.error(f"Error: Could not write/update the file {file_name}. {str(ex)}")
+            logger.error(f"Error: Could not write/update the file {file_name}. {self.sanitise(ex)}")
             action_log = MaintenanceActionLog(
                 item=file_name,
                 action=MaintenanceAction.ERROR_MESSAGE,
                 parameters={},
-                message=f"{self.study_id}: {file_name} could not saved. {str(ex)}",
+                message=f"{self.study_id}: {file_name} could not saved. {self.sanitise(ex)}",
                 successful=False,
             )
             self.actions.append(action_log)
@@ -1307,8 +1490,8 @@ class StudyFolderMaintenanceTask(object):
                 else:
                     raise e
         except Exception as ex:
-            logger.error("Could not read file " + file_path + ". " + str(ex))
-            message = str(ex)
+            logger.error("Could not read file " + file_path + ". " + self.sanitise(ex))
+            message = self.sanitise(ex)
 
         if df is None:
             action_log = MaintenanceActionLog(
@@ -1639,7 +1822,7 @@ class StudyFolderMaintenanceTask(object):
                 item=investigation_file_path,
                 action=MaintenanceAction.ERROR_MESSAGE,
                 parameters={},
-                message=f"{self.study_id}: ERROR: investigation file could not saved {str(ex)}.",
+                message=f"{self.study_id}: ERROR: investigation file could not saved {self.sanitise(ex)}.",
                 successful=False,
             )
             self.actions.append(action_log)

@@ -60,22 +60,14 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: Maintain Metadata",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/scripts/maintain_study_metadata_files.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"PYTHONPATH": "${cwd}"}
-        },
-        {
             "name": "Python: Maintain Data Files",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/scripts/maintain_study_data_files.py",
+            "program": "${workspaceFolder}/scripts/maintain_study_folders.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "env": {"PYTHONPATH": "${cwd}"}
+            "env": {"PYTHONPATH": "${cwd}"},
+            "args": ["MTBLS20", "data", "sample_report.txt", "PRE_RELEASE", "not-apply"]
         },
         {
             "name": "Guvicorn profile",

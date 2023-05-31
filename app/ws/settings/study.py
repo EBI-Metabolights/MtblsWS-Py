@@ -20,6 +20,19 @@ class StudySettings(MetabolightsBaseSettings):
     readonly_storage_recycle_bin_root_path: str
     rw_storage_recycle_bin_root_path: str
     
+    cluster_study_metadata_files_root_path:str
+    cluster_study_internal_files_root_path:str
+    cluster_study_audit_files_root_path:str
+    
+    cluster_study_readonly_files_root_path:str
+    cluster_study_readonly_audit_files_root_path:str
+    cluster_study_readonly_metadata_files_root_path:str
+    cluster_study_readonly_public_metadata_versions_root_path:str
+    cluster_study_readonly_integrity_check_files_root_path:str
+    
+    cluster_readonly_storage_recycle_bin_root_path: str
+    cluster_rw_storage_recycle_bin_root_path: str
+    
     audit_files_symbolic_link_name:str = "AUDIT_FILES" 
     internal_files_symbolic_link_name:str = "INTERNAL_FILES"
     readonly_files_symbolic_link_name:str = "FILES"
