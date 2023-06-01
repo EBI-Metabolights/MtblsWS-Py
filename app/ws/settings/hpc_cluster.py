@@ -24,6 +24,9 @@ class HpcClusterSettings(MetabolightsBaseSettings):
     cluster_study_readonly_public_metadata_versions_root_path:str
     cluster_study_readonly_integrity_check_files_root_path:str
     
+    cluster_ftp_private_root_path: str
+    cluster_ftp_public_root_path:str
+    
     job_submit_command:str = "bsub"
     job_running_command:str = "bjobs"
     job_kill_command:str = "bjobs"

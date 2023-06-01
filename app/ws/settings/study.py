@@ -23,6 +23,7 @@ class StudySettings(MetabolightsBaseSettings):
     readonly_files_symbolic_link_name:str = "FILES"
     
     audit_folder_name:str = "audit"
+    chebi_annotation_sub_folder:str = "chebi_pipeline_annotations"
     
     study_default_template_path:str = "./resources/templates/study/default"
     study_partner_metabolon_template_path:str = "./resources/templates/study/metabolon"

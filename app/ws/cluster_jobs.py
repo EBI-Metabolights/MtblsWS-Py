@@ -25,64 +25,26 @@ from flask import request, abort
 from flask import current_app as app
 from datetime import datetime
 from app.ws.db_connection import check_access_rights
+from app.ws.settings.utils import get_cluster_settings
 
 logger = logging.getLogger('wslog')
 
 
-# Deprecated use submit job instead
-def lsf_job(job_cmd, job_param=None, send_email=True, user_email=""):
-    no_jobs = "rm", "mv", "cat", "more", "ln", "ls", "mount", "kill", "who", "hostname", "ifconfig"
-    status = True
-    job_status = ""
-    msg_out = "No LSF job output"
-    msg_err = "No LSF job error"
-    email = app.config.get('LSF_COMMAND_EMAIL') + "," + user_email
-    message = "Successfully submitted LSF cluster job: '" + job_cmd
-    if job_param:
-        message = message + " " + job_param
-    message = message + "'. Please see LSF cluster email sent to " + email
-
-    for no_cmd in no_jobs:
-        if job_param.startswith(no_cmd):
-            abort(403, 'Nope, you cannot do that! ' + job_param)
-
-    cmd = os.path.join(app.config.get('LSF_COMMAND_PATH'), job_cmd)
-    if send_email:
-        cmd = cmd + " -u " + email + " " + job_param
-    else:
-        cmd = cmd + " " + job_param
-        logger.info('LSF job triggered with no email: ' + cmd)
-    try:
-        job_status = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
-        if job_status.stdout:
-            msg_out = job_status.stdout.decode("utf-8")
-        if job_status.stderr:
-            msg_err = job_status.stderr.decode("utf-8")
-    except Exception as e:
-        status = False
-        message = 'Could not execute or list LSF jobs, try to Log into the EBI cluster and run "bjobs" to see all ' \
-                  'running jobs '
-        if e.returncode == 255:
-            msg_err = "LSF Job " + job_param + " was not found. Check if the process still exists"
-        logger.error(message + '. ' + str(e))
-
-    return status, message, str(msg_out), str(msg_err)
-
-
-def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=None, submitter=None, log=False,
+def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=None, identifier=None, taskname=None , log=False,
                log_path=None):
+    cluster_settings = get_cluster_settings()
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
-    bsub_cmd = app.config.get('JOB_SUBMIT_COMMAND')
-    lsf_host = app.config.get('LSF_HOST')
-    lsf_host_user = app.config.get('LSF_HOST_USER')
-    ssh_cmd = app.config.get('LSF_HOST_SSH_CMD')
-    log_file = None
+    bsub_cmd = cluster_settings.job_submit_command
+    lsf_host = cluster_settings.cluster_lsf_host
+    lsf_host_user = cluster_settings.cluster_lsf_host_user
+    ssh_cmd = cluster_settings.cluster_lsf_host_ssh_command
+    log_file_path = None
     job_cmd1 = job_cmd
-
+    
     if email:
         if account is None:
-            account = app.config.get('JOB_TRACK_EMAIL')
+            account = cluster_settings.job_track_email
 
         bsub_cmd = bsub_cmd + " -u " + account
 
@@ -90,10 +52,10 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
         return False, "JOB command should not be empty!", str(msg_out), str(msg_err)
 
     if queue is None:
-        queue = app.config.get('LSF_BSUB_DEFAULT_Q')
+        queue = cluster_settings.cluster_lsf_bsub_default_queue
 
-    if queue == app.config.get('LSF_DATAMOVER_Q'):
-        lsf_host_user = app.config.get('LSF_DATAMOVER_USER')
+    if queue == cluster_settings.cluster_lsf_bsub_datamover_queue:
+        lsf_host_user = cluster_settings.cluster_lsf_datamover_user
 
     bsub_cmd = bsub_cmd + " -q " + queue
     ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
@@ -101,21 +63,21 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
     if job_params:
         job_cmd1 = job_cmd1 + " " + job_params
 
-    if submitter is None:
-        submitter = "None"
+    if identifier is None:
+        identifier = "None"
 
     if log:
         if log_path is None:
-            log_file_location = app.config.get('JOB_TRACK_LOG_LOCATION')
+            log_file_location = cluster_settings.job_track_log_location
             now = datetime.now()
             date_time = now.strftime("%d-%m-%Y_%H-%M-%S")
-            log_file = log_file_location + "/" + submitter + "_" + job_cmd + "_" + date_time + ".log"
+            log_file_path = log_file_location + "/" + identifier + "_" + taskname + "_" + date_time + ".log"
         else:
-            log_file = log_path + "/" + submitter + "_" + job_cmd + ".log"
-        bsub_cmd = bsub_cmd + " -o " + log_file
+            log_file_path = log_path
+        bsub_cmd = bsub_cmd + " -o " + log_file_path
 
     if job_cmd == 'rsync':
-        bsub_cmd = bsub_cmd + " -J " + submitter + "_" + job_cmd
+        bsub_cmd = bsub_cmd + " -J " + identifier + "_" + taskname
     cmd = ssh_cmd + " " + bsub_cmd + " " + job_cmd1
     status = False
     try:
@@ -131,22 +93,23 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
         message = 'Could not execute job ' + cmd + ' on LSF '
         logger.error(message + '. ' + str(e))
 
-    return status, message, str(msg_out), str(msg_err), log_file
+    return status, message, str(msg_out), str(msg_err), log_file_path
 
 
 def list_jobs(queue=None, job_name=None):
+    cluster_settings = get_cluster_settings()
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
-    bjobs_cmd = app.config.get('JOB_RUNNING_COMMAND')
-    lsf_host = app.config.get('LSF_HOST')
-    lsf_host_user = app.config.get('LSF_HOST_USER')
-    ssh_cmd = app.config.get('LSF_HOST_SSH_CMD')
+    bjobs_cmd = cluster_settings.job_running_command
+    lsf_host = cluster_settings.cluster_lsf_host
+    lsf_host_user = cluster_settings.cluster_lsf_host_user
+    ssh_cmd = cluster_settings.cluster_lsf_host_ssh_command
 
     if queue is None:
-        queue = app.config.get('LSF_BSUB_DEFAULT_Q')
+        queue = cluster_settings.cluster_lsf_bsub_default_queue
 
-    if queue == app.config.get('LSF_DATAMOVER_Q'):
-        lsf_host_user = app.config.get('LSF_DATAMOVER_USER')
+    if queue == cluster_settings.cluster_lsf_bsub_datamover_queue:
+        lsf_host_user = cluster_settings.cluster_lsf_datamover_user
 
     bjobs_cmd = f'{bjobs_cmd} -q {queue}'
     if job_name:
@@ -173,15 +136,16 @@ def list_jobs(queue=None, job_name=None):
 
 
 def kill_job(queue=None, job_id=None):
+    cluster_settings = get_cluster_settings()
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
-    bkill_cmd = app.config.get('JOB_KILL_COMMAND')
-    lsf_host = app.config.get('LSF_HOST')
-    lsf_host_user = app.config.get('LSF_HOST_USER')
-    ssh_cmd = app.config.get('LSF_HOST_SSH_CMD')
+    bkill_cmd = cluster_settings.job_kill_command
+    lsf_host = cluster_settings.cluster_lsf_host
+    lsf_host_user = cluster_settings.cluster_lsf_host_user
+    ssh_cmd = cluster_settings.cluster_lsf_host_ssh_command
 
-    if queue == app.config.get('LSF_DATAMOVER_Q'):
-        lsf_host_user = app.config.get('LSF_DATAMOVER_USER')
+    if queue == cluster_settings.cluster_lsf_bsub_datamover_queue:
+        lsf_host_user = cluster_settings.cluster_lsf_datamover_user
 
     bkill_cmd = bkill_cmd + " " + job_id
     ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host

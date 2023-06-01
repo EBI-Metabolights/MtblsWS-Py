@@ -24,7 +24,7 @@ class UnmountedVolumeFileManager(FileManager):
         if not study_id:
             raise MetabolightsException("Invalid study id")
         try:
-            remote_job_manager = DataMoverAvailableStorage("create_folder", study_id, self.app)
+            remote_job_manager = DataMoverAvailableStorage("unmounted_file_manager", study_id, self.app)
             result = remote_job_manager.create_ftp_folder(paths, acl, exist_ok)
         except (OSError, Exception):
             return False
@@ -36,7 +36,7 @@ class UnmountedVolumeFileManager(FileManager):
         if not study_id:
             raise MetabolightsException("Invalid study id")
         try:
-            remote_job_manager = DataMoverAvailableStorage("delete_folder", study_id, self.app)
+            remote_job_manager = DataMoverAvailableStorage("unmounted_file_manager", study_id, self.app)
             result = remote_job_manager.delete_ftp_folder(target)
         except (OSError, Exception):
             return False
@@ -47,7 +47,7 @@ class UnmountedVolumeFileManager(FileManager):
             study_id = self.get_study_id(source)
             if not study_id:
                 raise MetabolightsException("Invalid study id")
-            remote_job_manager = DataMoverAvailableStorage("get_folder_permission", study_id, self.app)
+            remote_job_manager = DataMoverAvailableStorage("unmounted_file_manager", study_id, self.app)
             chmod = remote_job_manager.get_ftp_folder_permission(source)
             if len(chmod) > 3:
                 chmod = chmod[-3:]
@@ -64,7 +64,7 @@ class UnmountedVolumeFileManager(FileManager):
             study_id = self.get_study_id(source)
             if not study_id:
                 raise MetabolightsException("Invalid study id")
-            remote_job_manager = DataMoverAvailableStorage("update_folder_permission", study_id, self.app)
+            remote_job_manager = DataMoverAvailableStorage("unmounted_file_manager", study_id, self.app)
             guid = True if acl == Acl.AUTHORIZED_READ_WRITE else False
             result = remote_job_manager.update_ftp_folder_permission(source, chmod=acl, guid=guid)
         except (OSError, Exception):
@@ -76,7 +76,7 @@ class UnmountedVolumeFileManager(FileManager):
             study_id = self.get_study_id(source)
             if not study_id:
                 raise MetabolightsException("Invalid study id")
-            remote_job_manager = DataMoverAvailableStorage("does_folder_exist", study_id, self.app)
+            remote_job_manager = DataMoverAvailableStorage("unmounted_file_manager", study_id, self.app)
             result = remote_job_manager.does_folder_exist(source)
         except OSError:
             return False

@@ -8,6 +8,7 @@ from app.services.storage_service.models import SyncCalculationTaskResult, SyncT
     SyncTaskStatus, SyncCalculationStatus
 from app.ws.cluster_jobs import submit_job, list_jobs
 import logging
+from app.ws.settings.utils import get_cluster_settings,get_study_settings
 
 logger = logging.getLogger('wslog_datamover')
 
@@ -18,141 +19,255 @@ class DataMoverAvailableStorage(object):
         self.app = app
         self.requestor = requestor
         self.studyId = study_id
-        timeout = app.config.get('JOB_STATUS_READ_TIMEOUT')
-        if timeout and timeout.isnumeric():
-            self.read_time_out: int = int(app.config.get('JOB_STATUS_READ_TIMEOUT'))
-        else:
-            self.read_time_out: int = 10
-        self.read_timeout = app.config.get('JOB_STATUS_READ_TIMEOUT')
-        self.source_study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
-        self.ftp_user_home_path = app.config.get('LSF_DATAMOVER_FTP_PRIVATE_HOME')
-        self.ftp_public_root_path = app.config.get('LSF_DATAMOVER_FTP_PUBLIC_STUDY_ROOT_PATH')
-        self.studies_root_path_datamover = app.config.get('LSF_DATAMOVER_STUDY_PATH')
-        self.datamover_absolute_studies_path = os.path.join(self.ftp_user_home_path, self.studyId)
-        self.chebi_annotation_sub_folder = app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')
+        self.cluster_settings = get_cluster_settings()
+        self.study_settings = get_study_settings()
+        self.meta_folder_type = 'metadata'
+        self.rdfiles_folder_type = 'rawderived'
+        self.calc_metedata_task = 'calc_meta_study'
+        self.calc_rdfiles_task = 'calc_rdfiles_study'
+        self.sync_meta_task = 'rsync_meta_study'
+        self.sync_rdfiles_task = 'rsync_rdfiles_study'
+        
+        #self.read_timeout = app.config.get('JOB_STATUS_READ_TIMEOUT')
+        #self.source_study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
+        #self.ftp_user_home_path = app.config.get('LSF_DATAMOVER_FTP_PRIVATE_HOME')
+        #self.ftp_public_root_path = app.config.get('LSF_DATAMOVER_FTP_PUBLIC_STUDY_ROOT_PATH')
+        #self.studies_root_path_datamover = app.config.get('LSF_DATAMOVER_STUDY_PATH')
+        #self.datamover_absolute_studies_path = os.path.join(self.ftp_user_home_path, self.studyId)
+        #self.chebi_annotation_sub_folder = app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')
+        self.datamover_queue = self.cluster_settings.cluster_lsf_bsub_datamover_queue
+        self.read_timeout = self.cluster_settings.job_status_read_timeout
+        self.study_metadata_files_path = self.study_settings.study_metadata_files_root_path
+        self.study_readonly_files_path = self.study_settings.study_readonly_files_root_path
+        self.study_internal_files_path = self.study_settings.study_internal_files_root_path
+        self.study_logs_folder_name = self.study_settings.internal_logs_folder_name
+        self.ftp_private_root_path = self.cluster_settings.cluster_ftp_private_root_path
+        self.ftp_public_root_path = self.cluster_settings.cluster_ftp_public_root_path
+        self.cluster_study_metadata_files_root_path = self.cluster_settings.cluster_study_metadata_files_root_path
+        self.cluster_study_readonly_files_root_path = self.cluster_settings.cluster_study_readonly_files_root_path
+        self.cluster_study_internal_files_root_path = self.cluster_settings.cluster_study_internal_files_root_path
+        self.cluster_study_readonly_audit_files_root_path = self.cluster_settings.cluster_study_readonly_audit_files_root_path
+        self.chebi_annotation_sub_folder = self.study_settings.chebi_annotation_sub_folder
 
     def sync_from_studies_folder(self, target_ftp_folder: str, ignore_list: List[str] = None,
                                  **kwargs):
-        result: SyncTaskResult = self.check_folder_sync_status()
-        if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
-            return False
-
+        command = 'rsync'
+        meta_sync_task = 'rsync_meta_prv_ftp'
+        files_sync_task = 'rsync_rdfiles_prv_ftp'
+        chebi_sync_task = 'rsync_chebi_subs_only'
+        meta_sync_status = None
+        files_sync_status = None
+        chebi_sync_status = None
+        
+        study_id = self.studyId
+        target_folder = self._get_absolute_ftp_private_path(target_ftp_folder).rstrip(os.sep)
+        exclude = self.build_exclusion_list(ignore_list=ignore_list)
         sync_chebi_annotation = True
         if 'sync_chebi_annotation' in kwargs:
             sync_chebi_annotation = kwargs['sync_chebi_annotation']
-
-        logger.info("sync_from_studies_folder sync_chebi_annotation only : " + str(sync_chebi_annotation))
-        target_study_ftp_folder_path = self._get_absolute_ftp_private_path(target_ftp_folder).rstrip(os.sep)
-
-        make_dir_with_chmod(self._get_study_log_folder(), 0o777)
-        command = "rsync"
-        rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
-        ignore_set = set()
-        if ignore_list:
-            ignore_set = ignore_set.union(set(ignore_list))
-        if rsync_exclude_list:
-            ignore_set = ignore_set.union(set(rsync_exclude_list))
-        exclude = ''
-        if ignore_set:
-            for ignore_file in ignore_set:
-                exclude = f"{exclude} --exclude '{ignore_file}'"
-        data_mover_study_path = self._get_absolute_study_datamover_path(self.studyId).rstrip(os.sep)
-        if sync_chebi_annotation:
-            params = f"-auv {data_mover_study_path}/{self.chebi_annotation_sub_folder}/. {target_study_ftp_folder_path}/{self.chebi_annotation_sub_folder}/"
-        else:
-            params = f"-auv {exclude} {data_mover_study_path}/. {target_study_ftp_folder_path}/"
-        submitter = f"{self.studyId}_do"
-        study_log_file = os.path.join(self._get_study_log_folder(), f"{submitter}_{command}.log")
-        self.create_empty_file(file_path=study_log_file)
-        logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + self.studyId)
-
-        status, message, job_out, job_err, log_file = submit_job(False, None, queue=self.app.config.get('LSF_DATAMOVER_Q'),
-                                                                 job_cmd=command, job_params=params,
-                                                                 submitter=submitter, log=True,
-                                                                 log_path=self._get_study_log_datamover_path())
-        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
-        return status
-    
-    
+            
+        make_dir_with_chmod(self._get_study_log_folder(study_id=study_id), 0o777)
+        if sync_chebi_annotation:    
+            chebi_sync_result: SyncTaskResult = self._check_folder_sync_result(task_name=chebi_sync_task)
+            if chebi_sync_result.status != SyncTaskStatus.RUNNING and chebi_sync_result.status != SyncTaskStatus.PENDING:
+                source_folder = self._get_chebi_sub_folder(study_id).rstrip(os.sep)
+                params = f"-aurv {source_folder} {target_folder}/"
+                study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=chebi_sync_task)
+                datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=chebi_sync_task)
+                
+                logger.info("sync_from_studies_folder: Syncing chebi-annotation sub folder only. Study [{study_id}]")
+                self.create_empty_file(file_path=study_log_file)
+                logger.info(f'Sending cluster job by requestor - {self.requestor}')
+                logger.info(f" Task - [{chebi_sync_task}]; Command -[{command}]; params - [{params}]")
+                chebi_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                            job_params=params, identifier=study_id, taskname=chebi_sync_task,
+                                                                            log=True, log_path=datamover_log_file)
+                self._log_job_output(status=chebi_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+                if chebi_sync_status:
+                    chebi_sync_status = SyncTaskStatus.JOB_SUBMITTED
+                else:
+                    chebi_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED   
+            else:
+                chebi_sync_status = chebi_sync_result.status
+        else:      
+            meta_sync_result: SyncTaskResult = self._check_folder_sync_result(task_name=meta_sync_task)
+            if meta_sync_result.status != SyncTaskStatus.RUNNING and meta_sync_result.status != SyncTaskStatus.PENDING:
+                
+                source_folder = self._get_absolute_cluster_study_metadata_files_path(study_id).rstrip(os.sep)
+                params = f"-auv {source_folder}/. {target_folder}/"
+                study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=meta_sync_task)
+                datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=meta_sync_task)
+                
+                logger.info(f"sync_from_studies_folder : Syncing  Metadata files for study[{study_id}]")
+                self.create_empty_file(file_path=study_log_file)
+                logger.info(f'Sending cluster job by requestor - {self.requestor}')
+                logger.info(f" Task - [{meta_sync_task}]; Command -[{command}]; params - [{params}]")
+                meta_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                            job_params=params, identifier=study_id, taskname=meta_sync_task,
+                                                                            log=True, log_path=datamover_log_file)
+                self._log_job_output(status=meta_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+                if meta_sync_status:
+                    meta_sync_status = SyncTaskStatus.JOB_SUBMITTED
+                else:
+                    meta_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
+            else:
+                meta_sync_status = meta_sync_result.status
+            files_sync_result: SyncTaskResult = self._check_folder_sync_result(task_name=files_sync_task)
+            if files_sync_result.status != SyncTaskStatus.RUNNING and files_sync_result.status != SyncTaskStatus.PENDING:
+                source_folder = self._get_absolute_cluster_study_readonly_files_path(study_id).rstrip(os.sep)
+                params = f"-auv {source_folder}/. {target_folder}/"
+                study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=files_sync_task)
+                datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=files_sync_task)
+                logger.info(f"sync_from_studies_folder Syncing  RAW/DERIVED files for study[{study_id}]")
+                self.create_empty_file(file_path=study_log_file)
+                logger.info(f'Sending cluster job by requestor - {self.requestor}')
+                logger.info(f" Task - [{files_sync_task}]; Command -[{command}]; params - [{params}]")
+                files_sync_status, message, job_out2, job_err2, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                            job_params=params, identifier=study_id, taskname=files_sync_task,
+                                                                            log=True, log_path=datamover_log_file)
+                self._log_job_output(status=files_sync_status, job_out=job_out2, job_err=job_err2, log_file_study_path=study_log_file) 
+                if files_sync_status:
+                    files_sync_status = SyncTaskStatus.JOB_SUBMITTED
+                else:
+                    files_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
+            else:
+                files_sync_status = files_sync_result.status
+            
+        return meta_sync_status,files_sync_status,chebi_sync_task
+        
     def sync_public_study_to_ftp(self, source_study_folder:str, target_ftp_folder:str , ignore_list: List[str] = None,
-                                 **kwargs):
-        result: SyncTaskResult = self.check_folder_sync_status(sync_name='public_rsync')
-        if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
-            return False
+                                 **kwargs):   
+        command = 'rsync'
+        meta_sync_task = 'rsync_meta_pub_ftp'
+        files_sync_task = 'rsync_rdfiles_pub_ftp'
+        audit_sync_task = 'rsync_audit_pub_ftp'
+        meta_sync_status = None
+        files_sync_status = None
+        audit_sync_status = None
+        study_id = self.studyId
+        target_folder = self._get_absolute_ftp_public_study_path(study_id).rstrip(os.sep)
+        exclude = self.build_exclusion_list(ignore_list=ignore_list)            
+        make_dir_with_chmod(self._get_study_log_folder(study_id=study_id), 0o777)
         
-        source_study_folder_path = self._get_absolute_study_datamover_path(self.studyId).rstrip(os.sep)
-
-        make_dir_with_chmod(self._get_study_log_folder(), 0o777)
-        command = "rsync"
-        rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
-        ignore_set = set()
-        if ignore_list:
-            ignore_set = ignore_set.union(set(ignore_list))
-        if rsync_exclude_list:
-            ignore_set = ignore_set.union(set(rsync_exclude_list))
-        exclude = ''
-        if ignore_set:
-            for ignore_file in ignore_set:
-                exclude = f"{exclude} --exclude '{ignore_file}'"
-
-        params = f"-auv -P {exclude} --delete {source_study_folder_path} {self.ftp_public_root_path}/"
+        meta_sync_result: SyncTaskResult = self._check_folder_sync_result(task_name=meta_sync_task)
+        if meta_sync_result.status != SyncTaskStatus.RUNNING and meta_sync_result.status != SyncTaskStatus.PENDING:
+            
+            source_folder = self._get_absolute_cluster_study_metadata_files_path(study_id).rstrip(os.sep)
+            params = f"-auv {source_folder}/. {target_folder}/"
+            study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=meta_sync_task)
+            datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=meta_sync_task)
+            logger.info("sync_from_studies_folder Syncing  Metadata files for study : " + study_id)
+            self.create_empty_file(file_path=study_log_file)
+            logger.info(f'Sending cluster job by requestor - {self.requestor}')
+            logger.info(f" Task - [{meta_sync_task}]; Command -[{command}]; params - [{params}]")
+            meta_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                        job_params=params, identifier=study_id, taskname=meta_sync_task,
+                                                                        log=True, log_path=datamover_log_file)
+            self._log_job_output(status=meta_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+            if meta_sync_status:
+                meta_sync_status = SyncTaskStatus.JOB_SUBMITTED
+            else:
+                meta_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
+        else:
+            meta_sync_status = meta_sync_result.status
+            
+        files_sync_result: SyncTaskResult = self._check_folder_sync_result(task_name=files_sync_task)
+        if files_sync_result.status != SyncTaskStatus.RUNNING and files_sync_result.status != SyncTaskStatus.PENDING:
+            source_folder = self._get_absolute_cluster_study_readonly_files_path(study_id).rstrip(os.sep)
+            params = f"-auv {source_folder}/. {target_folder}/"
+            study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=files_sync_task)
+            datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=files_sync_task)
+            logger.info("sync_from_studies_folder Syncing  RAW/DERIVED files for study : " + study_id)
+            self.create_empty_file(file_path=study_log_file)
+            logger.info(f'Sending cluster job by requestor - {self.requestor}')
+            logger.info(f" Task - [{self.files_sync_task}]; Command -[{command}]; params - [{params}]")
+            files_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                        job_params=params, identifier=study_id, taskname=files_sync_task,
+                                                                        log=True, log_path=datamover_log_file)
+            self._log_job_output(status=files_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+            if files_sync_status:
+                files_sync_status = SyncTaskStatus.JOB_SUBMITTED
+            else:
+                files_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
+        else:
+            files_sync_status = files_sync_result.status
         
-        submitter = f"{self.studyId}_public"
-        study_log_file = os.path.join(self._get_study_log_folder(), f"{submitter}_{command}.log")
-        self.create_empty_file(file_path=study_log_file)
-        logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + self.studyId)
-
-        status, message, job_out, job_err, log_file = submit_job(False, None, queue=self.app.config.get('LSF_DATAMOVER_Q'),
-                                                                 job_cmd=command, job_params=params,
-                                                                 submitter=submitter, log=True,
-                                                                 log_path=self._get_study_log_datamover_path())
-        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
-        return status
-
+        audit_sync_result: SyncTaskResult = self._check_folder_sync_result(task_name=audit_sync_task)
+        if audit_sync_result.status != SyncTaskStatus.RUNNING and audit_sync_result.status != SyncTaskStatus.PENDING:
+            source_folder = self._get_absolute_cluster_study_audit_files_path(study_id).rstrip(os.sep)
+            params = f"-auv {source_folder}/. {target_folder}/"
+            study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=audit_sync_task)
+            datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=audit_sync_task)
+            logger.info(f"sync_from_studies_folder Syncing  audit files for study[study_id]")
+            self.create_empty_file(file_path=study_log_file)
+            logger.info(f'Sending cluster job by requestor - {self.requestor}')
+            logger.info(f" Task - [{self.audit_sync_task}]; Command -[{command}]; params - [{params}]")
+            status3, message, job_out3, job_err3, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                        job_params=params, identifier=study_id, taskname=audit_sync_task,
+                                                                        log=True, log_path=datamover_log_file)
+            self._log_job_output(status=status3, job_out=job_out3, job_err=job_err3, log_file_study_path=study_log_file)
+            if audit_sync_status:
+                audit_sync_status = SyncTaskStatus.JOB_SUBMITTED
+            else:
+                audit_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
+        else:
+            audit_sync_status = audit_sync_result.status
+        return meta_sync_status,files_sync_status,audit_sync_status
 
     def sync_from_ftp_folder(self, source_ftp_folder: str, ignore_list: List[str] = None, **kwargs) -> bool:
-
-        result: SyncTaskResult = self.check_folder_sync_status()
-        if result.status == SyncTaskStatus.RUNNING or result.status == SyncTaskStatus.PENDING:
-            return False
-
-        source_study_ftp_folder_path = self._get_absolute_ftp_private_path(source_ftp_folder).rstrip(os.sep)
-        target_study_folder = self._get_absolute_study_datamover_path(self.studyId).rstrip(os.sep)
-        make_dir_with_chmod(self._get_study_log_folder(), 0o770)
-        command = "rsync"
-        rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
-        ignore_set = set()
-        if ignore_list:
-            ignore_set = ignore_set.union(set(ignore_list))
-        if rsync_exclude_list:
-            ignore_set = ignore_set.union(set(rsync_exclude_list))
-
-        if ignore_set:
-            exclude = ''
-            for ignore_file in ignore_set:
-                exclude = f"{exclude} --exclude '{ignore_file}'"
-            params = f"-auv {exclude} {source_study_ftp_folder_path}/. {target_study_folder}/"
+        command = 'rsync'
+        meta_sync_status = None
+        rdfiles_sync_status = None
+        study_id = self.studyId
+        source_folder = self._get_absolute_ftp_private_path(source_ftp_folder).rstrip(os.sep)
+        exclude = self.build_exclusion_list(ignore_list=ignore_list)
+        make_dir_with_chmod(self._get_study_log_folder(study_id=study_id), 0o777)
+        
+        meta_sync_result: SyncTaskResult = self._check_folder_sync_result(task_name=self.sync_meta_task)
+        if meta_sync_result.status != SyncTaskStatus.RUNNING and meta_sync_result.status != SyncTaskStatus.PENDING:
+            
+            target_folder = self._get_absolute_cluster_study_metadata_files_path(study_id).rstrip(os.sep)
+            params = f"-auv --include='*/' --include='*.txt' --include='*.tsv' --exclude='*' {source_folder}/. {target_folder}/"
+            study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.sync_meta_task)
+            datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=self.sync_meta_task)
+            logger.info(f"sync_from_ftp_folder : Syncing  Metadata files for study[{study_id}]")
+            self.create_empty_file(file_path=study_log_file)
+            logger.info(f'Sending cluster job by requestor - {self.requestor}')
+            logger.info(f" Task - [{self.sync_meta_task}]; Command -[{command}]; params - [{params}]")
+            status1, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                        job_params=params, identifier=study_id, taskname=self.sync_meta_task,
+                                                                        log=True, log_path=datamover_log_file)
+            self._log_job_output(status=status1, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+            if meta_sync_status:
+                meta_sync_status = SyncTaskStatus.JOB_SUBMITTED
+            else:
+                meta_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
         else:
-            params = f"-auv {source_study_ftp_folder_path}/. {target_study_folder}/"
+            meta_sync_status = meta_sync_result.status
+                        
+        rdfiles_sync_result: SyncTaskResult = self._check_folder_sync_result(task_name=self.sync_rdfiles_task)
+        if rdfiles_sync_result.status != SyncTaskStatus.RUNNING and rdfiles_sync_result.status != SyncTaskStatus.PENDING:
+            target_folder = self._get_absolute_cluster_study_readonly_files_path(study_id).rstrip(os.sep)
+            params = f"-auv {exclude} --exclude='*.txt' --exclude='*.tsv' {source_folder}/. {target_folder}/"
+            study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.sync_rdfiles_task)
+            datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=self.sync_rdfiles_task)
+            logger.info(f"sync_from_ftp_folder Syncing  RAW/DERIVED files for study[{study_id}]")
+            self.create_empty_file(file_path=study_log_file)
+            logger.info(f'Sending cluster job by requestor - {self.requestor}')
+            logger.info(f" Task - [{self.sync_rdfiles_task}]; Command -[{command}]; params - [{params}]")
+            files_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                        job_params=params, identifier=study_id, taskname=self.sync_rdfiles_task,
+                                                                        log=True, log_path=datamover_log_file)
+            self._log_job_output(status=files_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file) 
+            if rdfiles_sync_status:
+                rdfiles_sync_status = SyncTaskStatus.JOB_SUBMITTED
+            else:
+                rdfiles_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED 
+        else:
+            rdfiles_sync_status = rdfiles_sync_result.status        
+        return meta_sync_status,rdfiles_sync_status
 
-        submitter = f"{self.studyId}_do"
-        study_log_file = os.path.join(self._get_study_log_folder(), f"{submitter}_{command}.log")
-        self.create_empty_file(file_path=study_log_file)
-
-        logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + self.studyId)
-        status, message, job_out, job_err, log_file = submit_job(False, None, queue=self.app.config.get('LSF_DATAMOVER_Q'),
-                                                                 job_cmd=command, job_params=params,
-                                                                 submitter=submitter, log=True,
-                                                                 log_path=self._get_study_log_datamover_path())
-        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
-        return status
-
-    def calculate_sync(self, source_ftp_folder: str, ignore_list: List[str] = None) -> bool:
-        source_study_ftp_folder_path = self._get_absolute_ftp_private_path(source_ftp_folder).rstrip(os.sep)
-        target_study_folder = self._get_absolute_study_datamover_path(self.studyId).rstrip(os.sep)
-
-        make_dir_with_chmod(self._get_study_log_folder(), 0o777)
-        command = "rsync"
+    def build_exclusion_list(self, ignore_list):
         rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
         ignore_set = set()
         if ignore_list:
@@ -163,38 +278,80 @@ class DataMoverAvailableStorage(object):
         if ignore_set:
             for ignore_file in ignore_set:
                 exclude = f"{exclude} --exclude '{ignore_file}'"
-            params = f"-aunv {exclude} {source_study_ftp_folder_path}/. {target_study_folder}/"
-        else:
-            params = f"-aunv {source_study_ftp_folder_path}/. {target_study_folder}/"
-
-        submitter = f"{self.studyId}_calc"
-        study_log_file = os.path.join(self._get_study_log_folder(), f"{submitter}_{command}.log")
+        return exclude
+    
+    def _sync_analysis_metafiles(self, source_ftp_folder: str, ignore_list: List[str] = None) -> bool:
+        command = 'rsync'
+        status = None
+        study_id = self.studyId
+        source_folder = self._get_absolute_ftp_private_path(source_ftp_folder).rstrip(os.sep)
+        exclude = self.build_exclusion_list(ignore_list=ignore_list)
+            
+        target_folder = self._get_absolute_cluster_study_metadata_files_path(study_id).rstrip(os.sep)
+        params = f"-aunv --include='*/' --include='*.txt' --include='*.tsv' --exclude='*' {source_folder}/. {target_folder}/"
+        study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.calc_metedata_task)
+        datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=self.calc_metedata_task)
+        logger.info(f"sync_from_ftp_folder : Calculating sync status of Metadata files for study[{study_id}]")
         self.create_empty_file(file_path=study_log_file)
-
-        logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + self.studyId)
-        status, message, job_out, job_err, log_file = submit_job(False, None, queue=self.app.config.get('LSF_DATAMOVER_Q'),
-                                                                 job_cmd=command, job_params=params,
-                                                                 submitter=submitter, log=True,
-                                                                 log_path=self._get_study_log_datamover_path())
+        logger.info(f'Sending cluster job by requestor - {self.requestor}')
+        logger.info(f" Task - [{self.calc_metedata_task}]; Command -[{command}]; params - [{params}]")
+        status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                    job_params=params, identifier=study_id, taskname=self.calc_metedata_task,
+                                                                    log=True, log_path=datamover_log_file)
+        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)          
+        return status
+    
+    def _sync_analysis_rdfiles(self, source_ftp_folder: str, ignore_list: List[str] = None) -> bool:
+        command = 'rsync'
+        status = None
+        study_id = self.studyId
+        source_folder = self._get_absolute_ftp_private_path(source_ftp_folder).rstrip(os.sep)
+        exclude = self.build_exclusion_list(ignore_list=ignore_list)
+        
+        target_folder = self._get_absolute_cluster_study_readonly_files_path(study_id).rstrip(os.sep)
+        params = f"-aunv {exclude} --exclude='*.txt' --exclude='*.tsv' {source_folder}/. {target_folder}/"
+        study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.calc_rdfiles_task)
+        datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=self.calc_rdfiles_task)
+        logger.info(f"sync_from_ftp_folder Calculating Syncing status  RAW/DERIVED files for study[{study_id}]")
+        self.create_empty_file(file_path=study_log_file)
+        logger.info(f'Sending cluster job by requestor - {self.requestor}')
+        logger.info(f" Task - [{self.calc_rdfiles_task}]; Command -[{command}]; params - [{params}]")
+        status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                                                                    job_params=params, identifier=study_id, taskname=self.calc_rdfiles_task,
+                                                                    log=True, log_path=datamover_log_file)
         self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+            
         return status
 
-    def check_calculate_sync_status(self, source_ftp_folder: str, force: bool = False, ignore_list: List = None) -> SyncCalculationTaskResult:
-        job_name = f'{self.studyId}_calc_rsync'
-        job_no_found = 'is not found in queue'
-        result: SyncCalculationTaskResult = SyncCalculationTaskResult()
-        study_log_file = os.path.join(self._get_study_log_folder(), f"{self.studyId}_calc_rsync.log")
+    def sync_anaysis_job_results(self, source_ftp_folder: str, force: bool = True, ignore_list: List = None) -> SyncCalculationTaskResult:
+        study_id = self.studyId
+        calc_meta_job = f'{study_id}_{self.calc_metedata_task}'
+        calc_rdfiles_job = f'{study_id}_{self.calc_rdfiles_task}'
+    
+        meta_calc_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.calc_metedata_task)
+        meta_sync_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.sync_meta_task)
+        meta_calc_result = self._check_job_result(calc_log_file=meta_calc_log_file, sync_log_file=meta_sync_log_file, job_name=calc_meta_job, 
+                                                  folder_type=self.meta_folder_type,source_ftp_folder=source_ftp_folder, ignore_list=ignore_list, force=force)
 
-        status, message, msg_out, msg_err = list_jobs(self.app.config.get('LSF_DATAMOVER_Q'), job_name)
+        rdfiles_calc_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.calc_rdfiles_task)
+        rdfiles_sync_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.sync_rdfiles_task)
+        rdfiles_calc_result = self._check_job_result(calc_log_file=rdfiles_calc_log_file, sync_log_file=rdfiles_sync_log_file,job_name=calc_rdfiles_job, 
+                                                     folder_type=self.rdfiles_folder_type, source_ftp_folder=source_ftp_folder, ignore_list=ignore_list, force=force)
+
+        return meta_calc_result,rdfiles_calc_result
+    
+    def _check_job_result(self, calc_log_file=None, sync_log_file=None, job_name=None, folder_type=None, source_ftp_folder=None, ignore_list=None, force=True):
+        job_no_found = 'is not found in queue'
+        status, message, msg_out, msg_err = list_jobs(self.datamover_queue, job_name)
         try:
             if status:
                 if job_no_found in msg_err:
-                    if not os.path.exists(study_log_file):
-                        return self._init_calculate_sync(source_ftp_folder, ignore_list)
+                    if not os.path.exists(calc_log_file):
+                        return self._init_sync_analysis(folder_type=folder_type, source_ftp_folder=source_ftp_folder, ignore_list=ignore_list)
                     else:
-                        result = self._check_calc_log_file_status(study_log_file, source_ftp_folder,
-                                                                  False, force, ignore_list)
-                        result.last_update_time = time.ctime(os.path.getmtime(study_log_file))
+                        result = self._check_calc_log_file_status(calc_log_file=calc_log_file, sync_log_file=sync_log_file, folder_type=folder_type, 
+                                                                  source_ftp_folder=source_ftp_folder, job_found=False, force=force, ignore_list=ignore_list)
+                        result.last_update_time = time.ctime(os.path.getmtime(calc_log_file))
                         return result
                 if 'JOBID' in msg_out:
                     job_id = 'NONE'
@@ -205,9 +362,10 @@ class DataMoverAvailableStorage(object):
                         if len(splitted) > 1 and splitted[0]:
                             job_id = splitted[0]
 
-                    result = self._check_calc_log_file_status(study_log_file, source_ftp_folder, True, force)
-                    result.last_update_time = time.ctime(os.path.getmtime(study_log_file))
-                    result.description = f'Request ID : {job_id}'
+                    result = self._check_calc_log_file_status(calc_log_file=calc_log_file, sync_log_file=sync_log_file, folder_type=folder_type, 
+                                                                  source_ftp_folder=source_ftp_folder, job_found=True, force=force, ignore_list=ignore_list)
+                    result.last_update_time = time.ctime(os.path.getmtime(calc_log_file))
+                    result.description = f'Job ID : {job_id}'
                     return result
                 else:
                     result.status = SyncCalculationStatus.UNKNOWN
@@ -215,72 +373,81 @@ class DataMoverAvailableStorage(object):
                 result.status = SyncCalculationStatus.UNKNOWN
                 # raise MetabolightsException(message=message, http_code=500)
         except Exception as e:
-            message = f'Could not check the job status for study sync  - {self.studyId}'
+            message = f'Could not check the Sync analysis status for study sync  - {self.studyId}'
             logger.error(message + ' ;  reason  :-' + str(e))
             result.status = SyncCalculationStatus.UNKNOWN
             # raise MetabolightsException(message=message, http_code=500, exception=e)
         return result
 
-    def _init_calculate_sync(self, source_ftp_folder: str, ignore_list: List = None) -> SyncCalculationTaskResult:
+    def _init_sync_analysis(self, folder_type:str = 'metadata', source_ftp_folder: str = 'NONE', ignore_list: List = None) -> SyncCalculationTaskResult:
         result: SyncCalculationTaskResult = SyncCalculationTaskResult()
         try:
-            status = self.calculate_sync(source_ftp_folder, ignore_list)
-            if status:
-                result.status = SyncCalculationStatus.CALCULATING
-                result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
-            else:
-                result.status = SyncCalculationStatus.UNKNOWN
-                result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+            make_dir_with_chmod(self._get_study_log_folder(study_id=self.studyId), 0o777)
+            if folder_type == self.meta_folder_type:
+                status = self._sync_analysis_metafiles(source_ftp_folder, ignore_list)
+                if status:
+                    result.status = SyncCalculationStatus.CALCULATING
+                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                else:
+                    result.status = SyncCalculationStatus.UNKNOWN
+                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+            else :
+                status = self._sync_analysis_rdfiles(source_ftp_folder, ignore_list)
+                if status:
+                    result.status = SyncCalculationStatus.CALCULATING
+                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
+                else:
+                    result.status = SyncCalculationStatus.UNKNOWN
+                    result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
         except Exception as e:
             result.status = SyncCalculationStatus.UNKNOWN
             result.last_update_time = datetime.now().strftime("%d/%m/%y %H:%M:%S.%f")
             # raise MetabolightsException(message="Error while calculating ftp folder sync status", http_code=500, exception=e)
         return result
 
-    def _check_calc_log_file_status(self, study_log_file: str,
-                                    source_ftp_folder: str, job_found: bool,
-                                    force: bool, ignore_list: List = None) -> SyncCalculationTaskResult:
+    def _check_calc_log_file_status(self, calc_log_file: str, sync_log_file: str, folder_type:str = 'metadata',
+                                    source_ftp_folder: str ='NONE', job_found: bool = False,
+                                    force: bool = True, ignore_list: List = None) -> SyncCalculationTaskResult:
         result: SyncCalculationTaskResult = SyncCalculationTaskResult()
         if not job_found:
             # check for one day case
-            logfile_time = os.path.getmtime(study_log_file)
+            logfile_time = os.path.getmtime(calc_log_file)
             seconds_since_epoch = datetime.now().timestamp()
             difference = seconds_since_epoch - logfile_time
             if difference > 86400:
                 # More than day since log updated
                 logger.info("Logfile updated since more than a day. So init calc request !")
-                return self._init_calculate_sync(source_ftp_folder, ignore_list)
+                return self._init_sync_analysis(folder_type=folder_type, source_ftp_folder=source_ftp_folder, ignore_list= ignore_list)
 
-            sync_log_file = os.path.join(self._get_study_log_folder(), f"{self.studyId}_do_rsync.log")
             if os.path.exists(sync_log_file):
                 sync_log_file_time = os.path.getmtime(sync_log_file)
                 if sync_log_file_time > logfile_time:
                     # Sync happened after calculation
                     logger.info("Logfile outdated as sync happened recently, so init calc request !")
-                    return self._init_calculate_sync(source_ftp_folder, ignore_list)
+                    return self._init_sync_analysis(folder_type=folder_type, source_ftp_folder=source_ftp_folder, ignore_list= ignore_list)
 
             if force:
-                return self._init_calculate_sync(source_ftp_folder, ignore_list)
+                return self._init_sync_analysis(folder_type=folder_type, source_ftp_folder=source_ftp_folder, ignore_list= ignore_list)
             else:
-                if self.str_in_file(file_path=study_log_file, word='Successfully completed'):
+                if self.str_in_file(file_path=calc_log_file, word='Successfully completed'):
                     # Read output
-                    first_line = self.read_first_line(study_log_file)
+                    first_line = self.read_first_line(calc_log_file)
                     if 'sending incremental file list' in first_line:
-                        read_second_line = self.read_second_line(study_log_file)
+                        read_second_line = self.read_second_line(calc_log_file)
                         if len(read_second_line) == 0:
                             result.status = SyncCalculationStatus.SYNC_NOT_NEEDED
                         else:
                             result.status = SyncCalculationStatus.SYNC_NEEDED
-                            result.description = self.read_lines(study_log_file)
-                elif self.str_in_file(file_path=study_log_file, word='Exited with exit code'):
+                            result.description = self.read_lines(calc_log_file)
+                elif self.str_in_file(file_path=calc_log_file, word='Exited with exit code'):
                     logger.info("Last calculation was failure !")
                     result.status = SyncCalculationStatus.NOT_FOUND
-                elif os.path.getsize(study_log_file) < 1:
+                elif os.path.getsize(calc_log_file) < 1:
                     result.status = SyncCalculationStatus.CALCULATION_FAILURE
                 else:
                     result.status = SyncCalculationStatus.UNKNOWN
         else:
-            if os.path.getsize(study_log_file) > 1:
+            if os.path.getsize(calc_log_file) > 1:
                 result.status = SyncCalculationStatus.CALCULATING
             else:
                 result.status = SyncCalculationStatus.PENDING
@@ -312,8 +479,8 @@ class DataMoverAvailableStorage(object):
             command = "mkdir"
             exist_ok_param = "-p" if exist_ok else ''
             params = f"{exist_ok_param} -m {chmod_string} {joined_paths}"
-
-            output: CommandOutput = self._execute_and_get_result(command, params)
+            task_name = "create-ftp-folder"
+            output: CommandOutput = self._execute_and_get_result(task_name=task_name, command=command, params=params)
             return output.execution_status
         else:
             return False
@@ -339,8 +506,8 @@ class DataMoverAvailableStorage(object):
 
             command = "rm"
             params = "-rf " + study_ftp_private_path
-
-            output: CommandOutput = self._execute_and_get_result(command, params)
+            task_name = "delete-ftp-folder"
+            output: CommandOutput = self._execute_and_get_result(task_name=task_name, command=command, params=params)
             return output.execution_status
         else:
             return False
@@ -355,8 +522,8 @@ class DataMoverAvailableStorage(object):
 
             command = "mv"
             params = study_ftp_private_path + " " + target_study_ftp_folder_path + "/."
-
-            output: CommandOutput = self._execute_and_get_result(command, params)
+            task_name = "move-ftp-folder"
+            output: CommandOutput = self._execute_and_get_result(task_name=task_name, command=command, params=params)
             return output.execution_status
         else:
             return False
@@ -369,8 +536,8 @@ class DataMoverAvailableStorage(object):
             command = "chmod"
             guid_value = '2' if guid else ''
             params = f"-R {guid_value}{chmod_string} {study_ftp_private_path}"
-
-            output: CommandOutput = self._execute_and_get_result(command, params)
+            task_name = "update-ftp-permission"
+            output: CommandOutput = self._execute_and_get_result(task_name=task_name, command=command, params=params)
             return output.execution_status
         else:
             return False
@@ -383,7 +550,8 @@ class DataMoverAvailableStorage(object):
             study_ftp_private_path = self._get_absolute_ftp_private_path(study_ftp_folder_name)
             command = "stat"
             params = f"--format '%a' {study_ftp_private_path}"
-            output: CommandOutput = self._execute_and_get_result(command, params)
+            task_name = "ftp-folder-permission"
+            output: CommandOutput = self._execute_and_get_result(task_name=task_name, command=command, params=params)
             if output.execution_status:
                 return output.execution_output
             else:
@@ -391,14 +559,18 @@ class DataMoverAvailableStorage(object):
         else:
             return ''
 
-    def check_folder_sync_status(self, sync_name='do_rsync') -> SyncTaskResult:
-
-        job_name = f'{self.studyId}_{sync_name}'
+    def get_folder_sync_results(self) -> SyncTaskResult:
+        sync_metafiles_result = self._check_folder_sync_result(task_name=self.sync_meta_task)
+        sync_rdfiles_result = self._check_folder_sync_result(task_name=self.sync_rdfiles_task)
+        return sync_metafiles_result,sync_rdfiles_result
+    
+    def _check_folder_sync_result(self, task_name=None) -> SyncTaskResult:
         job_no_found = 'is not found in queue'
+        job_name = f'{self.studyId}_{task_name}'
+        queue = self.datamover_queue
+        study_log_file = self._get_study_log_file_path(study_id=self.studyId, task_name=task_name)
         result: SyncTaskResult = SyncTaskResult()
-        study_log_file = os.path.join(self._get_study_log_folder(), f"{self.studyId}_{sync_name}.log")
-
-        status, message, msg_out, msg_err = list_jobs(self.app.config.get('LSF_DATAMOVER_Q'), job_name)
+        status, message, msg_out, msg_err = list_jobs(queue=queue, job_name=job_name)
         try:
             if status:
                 if job_no_found in msg_err:
@@ -457,53 +629,58 @@ class DataMoverAvailableStorage(object):
             else:
                 return SyncTaskStatus.PENDING
 
-    def _execute_and_get_result(self, command, params) -> CommandOutput:
-        study_log_folder = self._get_study_log_folder()
+    def _execute_and_get_result(self, task_name=None, command=None, params=None) -> CommandOutput:
+        try:
+            study_id = self.studyId
+            queue = self.datamover_queue
+            job_log_file = self._get_study_log_file_path(study_id=study_id, task_name=task_name)
+            datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=task_name)
+            make_dir_with_chmod(self._get_study_log_folder(study_id=self.studyId), 0o777)
+            self.create_empty_file(file_path=job_log_file)
+            
+            logger.info(f'Sending cluster job by requestor - {self.requestor}') 
+            logger.info(f'Task - {task_name} ; Command - {command} ; params {params}')
+            status, message, job_out, job_err, log_file = submit_job(False, None, queue=queue, job_cmd=command, job_params=params, 
+                                                                    identifier=study_id, taskname=task_name, log=True, log_path=datamover_log_file)
+            status1 = self.check_if_job_successful(status=status, job_out=job_out, log_file_study_path=job_log_file)
+            self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=job_log_file)
 
-        make_dir_with_chmod(study_log_folder, 0o777)
-        self.create_empty_file(file_path=self._get_study_log_file(command=command))
+            if command == 'stat':
+                output = self.read_first_line(job_log_file)
+            else:
+                output = "None"
 
-        logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + self.studyId)
-        status, message, job_out, job_err, log_file = submit_job(False, None, queue=self.app.config.get('LSF_DATAMOVER_Q'),
-                                                                 job_cmd=command, job_params=params,
-                                                                 submitter=self.requestor, log=True,
-                                                                 log_path=self._get_study_log_datamover_path())
-        log_file_name = os.path.basename(log_file)
-        log_file_study_path = os.path.join(study_log_folder, log_file_name)
-        status1 = self.check_if_job_successful(status=status, job_out=job_out, log_file_study_path=log_file_study_path)
-        self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=log_file_study_path)
-
-        if command == 'stat':
-            output = self.read_first_line(log_file_study_path)
-        else:
-            output = "None"
-
-        return CommandOutput(execution_status=status1, execution_output=output)
+            return CommandOutput(execution_status=status1, execution_output=output)
+        except Exception as e:
+            message = f'Could not execute and get results for task[{task_name}] ; study[{self.studyId}]'
+            logger.error(message + ' ;  reason  :-' + str(e))
+        return CommandOutput(execution_status=False, execution_output='UNKNOWN')
 
     def check_folder_exists(self, check_folder: str) -> CommandOutput:
 
         try:
-            study_log_folder = self._get_study_log_folder()
             command = 'test'
-            param = f'-d {check_folder}'
-
-            make_dir_with_chmod(study_log_folder, 0o777)
-            self.create_empty_file(file_path=self._get_study_log_file(command=command))
-
-            logger.info("Sending cluster job : " + command + " ;For Study :- " + self.studyId)
-            status, message, job_out, job_err, log_file = submit_job(False, None, queue=self.app.config.get('LSF_DATAMOVER_Q'),
-                                                                     job_cmd=command, job_params=param,
-                                                                     submitter=self.requestor, log=True,
-                                                                     log_path=self._get_study_log_datamover_path())
-            log_file_name = os.path.basename(log_file)
-            log_file_study_path = os.path.join(study_log_folder, log_file_name)
-            status = self.check_if_job_successful(status=status, job_out=job_out, log_file_study_path=log_file_study_path)
-            self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=log_file_study_path)
+            task_name = 'check-dir'
+            params = f'-d {check_folder}'
+            queue = self.datamover_queue
+            study_id = self.studyId
+            queue = self.datamover_queue
+            job_log_file = self._get_study_log_file_path(study_id=study_id, task_name=task_name)
+            datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=task_name)
+            make_dir_with_chmod(self._get_study_log_folder(study_id=self.studyId), 0o777)
+            self.create_empty_file(file_path=job_log_file)
+            
+            logger.info(f'Sending cluster job by requestor - {self.requestor}')
+            logger.info(f'Task - {task_name} ; Command - {command} ; params {params}')
+            status, message, job_out, job_err, log_file = submit_job(False, None, queue=queue, job_cmd=command, job_params=params, 
+                                                                     identifier=self.studyId, taskname=task_name, log=True, log_path=datamover_log_file)
+            status = self.check_if_job_successful(status=status, job_out=job_out, log_file_study_path=job_log_file)
+            self._log_job_output(status=status, job_out=job_out, job_err=job_err, log_file_study_path=job_log_file)
 
             if status:
                 return CommandOutput(execution_status=True, execution_output=None)
             else:
-                if self.str_in_file(file_path=log_file_study_path, word='Exited with exit code'):
+                if self.str_in_file(file_path=job_log_file, word='Exited with exit code'):
                     return CommandOutput(execution_status=False, execution_output='NOT_PRESENT')
         except Exception as e:
             message = f'Could not check the folder existence for Study  - {self.studyId}'
@@ -521,22 +698,38 @@ class DataMoverAvailableStorage(object):
         logger.info("----------------------- ")
 
     def _get_absolute_ftp_private_path(self, relative_path: str) -> str:
-        return os.path.join(self.ftp_user_home_path, relative_path.lstrip('/'))
-    
+        return os.path.join(self.ftp_private_root_path, relative_path.lstrip('/'))
+        
     def _get_absolute_ftp_public_study_path(self, relative_path: str) -> str:
         return os.path.join(self.ftp_public_root_path, relative_path.lstrip('/'))
 
+    # Don't use this method!
     def _get_absolute_study_datamover_path(self, relative_path: str) -> str:
-        return os.path.join(self.studies_root_path_datamover, relative_path.lstrip('/'))
+        return os.path.join('self.studies_root_path_datamover', relative_path.lstrip('/'))
 
-    def _get_study_log_folder(self) -> str:
-        return os.path.join(self.source_study_path, 'audit', 'logs')
+    def _get_absolute_cluster_study_metadata_files_path(self, relative_path: str) -> str:
+        return os.path.join(self.cluster_study_metadata_files_root_path, relative_path.lstrip('/'))
 
-    def _get_study_log_datamover_path(self) -> str:
-        return os.path.join(self.app.config.get('LSF_DATAMOVER_STUDY_PATH'), self.studyId, "audit", "logs")
+    def _get_absolute_cluster_study_readonly_files_path(self, relative_path: str) -> str:
+        return os.path.join(self.cluster_study_readonly_files_root_path, relative_path.lstrip('/'))
 
-    def _get_study_log_file(self, command: str) -> str:
-        return os.path.join(self._get_study_log_folder(), self.requestor + "_" + command + ".log")
+    def _get_absolute_cluster_study_audit_files_path(self, relative_path: str) -> str:
+        return os.path.join(self.cluster_study_readonly_audit_files_root_path, relative_path.lstrip('/'))
+    
+    def _get_study_log_folder(self, study_id:str) -> str:
+        return os.path.join(self.study_internal_files_path.lstrip('/'), study_id, self.study_logs_folder_name)
+    
+    def _get_chebi_sub_folder(self, study_id:str) -> str:
+        return os.path.join(self.study_internal_files_path.lstrip('/'), study_id, self.chebi_annotation_sub_folder)
+
+    def _get_study_log_datamover_path(self, study_id:str, task_name:str) -> str:
+        return os.path.join(self._get_study_log_datamover_folder(study_id=study_id), study_id + "_" + task_name + ".log")
+    
+    def _get_study_log_datamover_folder(self, study_id:str):
+        return os.path.join(self.cluster_study_internal_files_root_path.lstrip('/'), study_id, self.study_logs_folder_name)
+
+    def _get_study_log_file_path(self, study_id:str, task_name: str) -> str:
+        return os.path.join(self._get_study_log_folder(study_id=study_id), study_id + "_" + task_name + ".log")
 
     def str_in_file(self, file_path, word):
         try:

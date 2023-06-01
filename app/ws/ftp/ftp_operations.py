@@ -630,7 +630,7 @@ class SyncPublicStudyToFTP(Resource):
            return {'Error': 'Given study is not public yet!'} 
         study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
 
-        ftp_public_storage = StorageService.get_ftp_private_storage(app)
+        ftp_public_storage = StorageService.get_ftp_public_storage(app)
         logger.info(f"Syncing files from public study folder to FTP folder for {study_id}")
         ftp_public_storage.sync_to_public_ftp(source_local_folder=study_path, target_folder=study_id, ignore_list=None)
         return {'Success': 'Syncing files from study folder to ftp folder is started'}
