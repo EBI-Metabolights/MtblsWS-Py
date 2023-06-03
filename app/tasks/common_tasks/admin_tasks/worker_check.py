@@ -32,6 +32,7 @@ def maintain_workers():
     try:
         stats = celery.control.inspect().stats()
         print(stats)    
+        return True
     except Exception as ex:
         # inputs = {"subject": "Study id creation on DB was failed.",
         #             "body":f"Study id on db creation was failed: folder: {folder_name}, user: {user.username} <p> {str(exc)}"}

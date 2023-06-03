@@ -31,6 +31,7 @@ celery = Celery(
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
         "app.tasks.common_tasks.basic_tasks.ftp_operations",
         "app.tasks.common_tasks.basic_tasks.study_folder_maintenance",
+        "app.tasks.datamover_tasks.basic_tasks.file_management"
     ],
 )
 
@@ -83,12 +84,6 @@ def update_task_was_sent_state(sender=None, headers=None, **kwargs):
     task = celery.tasks.get(sender)
     backend = task.backend if task else celery.backend
     backend.store_result(headers["id"], None, "INITIATED")
-    
-@after_task_publish.connect
-def update_task_was_sent_state(sender=None, headers=None, **kwargs):
-    task = celery.tasks.get(sender)
-    backend = task.backend if task else celery.backend
-    backend.store_result(headers["id"], None, "INITIATED")
 
 system_settings = get_system_settings(None)
 # celery.conf.beat_schedule = {
@@ -111,11 +106,18 @@ system_settings = get_system_settings(None)
 #     }
 # }
 celery.conf.beat_schedule = {
-    "check_integration": {
+    "worker_healtcheck": {
         "task": "app.tasks.common_tasks.admin_tasks.maintain_workers",
         "schedule": system_settings.worker_heath_check_period_in_seconds,
         "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3},
-    }
+    },
+    "create_remote_folder": {
+        "task": "app.tasks.datamover_tasks.basic_tasks.file_management.create_folders",
+        "schedule": system_settings.worker_heath_check_period_in_seconds,
+        "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3},
+        "args": ("", 0o770, True),
+    },    
+    
 }
 celery.conf.timezone = "UTC"
 
