@@ -115,7 +115,7 @@ celery.conf.beat_schedule = {
         "task": "app.tasks.datamover_tasks.basic_tasks.file_management.create_folders",
         "schedule": system_settings.worker_heath_check_period_in_seconds,
         "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3},
-        "args": ("", 0o770, True),
+        "args": ("", 0o777, True),
     },    
     
 }

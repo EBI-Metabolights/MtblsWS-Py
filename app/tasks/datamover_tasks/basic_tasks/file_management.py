@@ -55,6 +55,7 @@ def create_folders(
                             "status": False,
                             "message": f"Path '{path_item}'  already exists. Permission could not be updated. Exception: {str(ex)}",
                         }
+                        raise ex
                 else:
                     results[path_item] = {"status": True, "message": f"Path '{path_item}' already exists."}
         else:
@@ -71,5 +72,6 @@ def create_folders(
                     "status": False,
                     "message": f"Path '{path_item}' could not be created. Exception: {str(ex)}",
                 }
+                raise ex
                 
     return results
