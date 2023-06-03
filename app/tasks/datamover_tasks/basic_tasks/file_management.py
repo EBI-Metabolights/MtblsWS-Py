@@ -39,36 +39,36 @@ def create_folders(self, folder_paths: Union[str, List[str]], acl: Union[int, Ac
     else:
         permission = acl
            
-    for path in paths:
-        exist = True if os.path.exists(path) else False
-        is_dir = True if exist and os.path.isdir(path) else False
+    for path_item in paths:
+        exist = True if os.path.exists(path_item) else False
+        is_dir = True if exist and os.path.isdir(path_item) else False
         
         if exist:
             if not is_dir:
-                results[path] = {"status": False, "message": f"Path '{path}' is not a folder"}
+                results[path_item] = {"status": False, "message": f"Path '{path_item}' is not a folder"}
             else:
-                current_permission = os.stat(path).st_mode & 0o777
+                current_permission = os.stat(path_item).st_mode & 0o777
                 if permission != current_permission:
                     try:
-                        os.chmod(path, mode=permission, exist_ok=exist_ok)
-                        last_permission = os.stat(path).st_mode & 0o777
+                        os.chmod(path_item, mode=permission)
+                        last_permission = os.stat(path_item).st_mode & 0o777
                         if last_permission == permission:
-                            results[path] = {"status": True, "message": f"Path '{path}'  already exists. Folder permission was updated"}
+                            results[path_item] = {"status": True, "message": f"Path '{path_item}'  already exists. Folder permission was updated"}
                         else:
-                            results[path] = {"status": True, "message": f"Path '{path}'  already exists. Permission could not be updated."}
+                            results[path_item] = {"status": True, "message": f"Path '{path_item}'  already exists. Permission could not be updated."}
                     except Exception as exc:
-                        results[path] = {"status": False, "message": f"Path '{path}'  already exists. Permission could not be updated. Exception: {str(exc)}"}
+                        results[path_item] = {"status": False, "message": f"Path '{path_item}'  already exists. Permission could not be updated. Exception: {str(exc)}"}
                 else:
-                    results[path] = {"status": True, "message": f"Path '{path}' already exists."}
+                    results[path_item] = {"status": True, "message": f"Path '{path_item}' already exists."}
         else:
             try:
-                os.makedirs(path, mode=permission, exist_ok=exist_ok)
+                os.makedirs(path_item, mode=permission, exist_ok=exist_ok)
             
-                last_status = True if os.path(path) else False
+                last_status = True if os.path(path_item) else False
                 if last_status:
-                    results[path] = {"status": True, "message": f"Path '{path}' was created."}
+                    results[path_item] = {"status": True, "message": f"Path '{path_item}' was created."}
                 else:
-                    results[path] = {"status": False, "message": f"Path '{path}' could not be created."}
+                    results[path_item] = {"status": False, "message": f"Path '{path_item}' could not be created."}
             except Exception as exc:
-                results[path] = {"status": False, "message": f"Path '{path}' could not be created. Exception: {str(exc)}"}            
+                results[path_item] = {"status": False, "message": f"Path '{path_item}' could not be created. Exception: {str(exc)}"}            
     return results
