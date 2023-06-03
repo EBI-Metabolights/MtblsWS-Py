@@ -15,6 +15,7 @@ class RemoteFileManager(FileManager):
         super(RemoteFileManager, self).__init__(name=name)
         self.mounted_root_folder = mounted_root_folder
 
+    
     def create_folder(self, folder_paths: Union[str, List[str]], acl: Acl = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True) -> bool:
                 
         inputs = {"folder_paths": folder_paths, "acl": acl, "exist_ok": exist_ok }
