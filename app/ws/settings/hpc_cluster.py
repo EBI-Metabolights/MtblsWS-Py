@@ -24,9 +24,12 @@ class HpcClusterSettings(MetabolightsBaseSettings):
     cluster_study_readonly_public_metadata_versions_root_path:str
     cluster_study_readonly_integrity_check_files_root_path:str
     
+    cluster_readonly_storage_recycle_bin_root_path:str
+    cluster_rw_storage_recycle_bin_root_path:str
+    
     job_submit_command:str = "bsub"
     job_running_command:str = "bjobs"
-    job_kill_command:str = "bjobs"
+    job_kill_command:str = "bkill"
     job_track_email:str
     job_track_log_location:str
     job_status_read_timeout:str="10"

@@ -60,14 +60,24 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: Maintain Data Files",
+            "name": "Python: Maintain MetaData/Data Files",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/scripts/maintain_study_folders.py",
+            "program": "${workspaceFolder}/scripts/study_folder_maintenance.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}"},
-            "args": ["MTBLS20", "data", "sample_report.txt", "PRE_RELEASE", "not-apply"]
+            "args": ["MTBLS1", "metadata", "sample_report.txt", "", "not-apply"]
+        },
+        {
+            "name": "Python: Create Test Data Files",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/create_test_data_files.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}"},
+            "args": ["/nfs/public/services/metabolomics/prod/studies/stage/private", "/nfs/public/rw/metabolomics/dev/studies/maintenance_test/test-data-files"]
         },
         {
             "name": "Guvicorn profile",

@@ -1,19 +1,20 @@
 import os
-import time
 import sys
+import time
 from typing import Dict, List
-
 
 from app.tasks.worker import get_flask_app
 from app.ws.db.schemes import Study
 from app.ws.db.types import StudyStatus
-from app.ws.folder_maintenance import MaintenanceActionLog, MaintenanceException, StudyFolderMaintenanceTask
+from app.ws.folder_maintenance import (MaintenanceActionLog,
+                                       MaintenanceException,
+                                       StudyFolderMaintenanceTask)
 from app.ws.settings.study import StudySettings
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_service import StudyService
 
 
-def maintain_study_data_files(
+def maintain_folders(
     study_id_list: List[str],
     target=None,
     recycle_bin_folder_name: str = None,
@@ -69,18 +70,28 @@ def maintain_study_data_files(
                 )
 
                 maintenance_task_list[study_id] = maintenance_task
-                try:
-                    if target == "data":
+
+                if target == "data":
+                    try:
                         maintenance_task.create_maintenace_actions_for_study_data_files()
-                    elif target == "metadata":
+                    except Exception as ex:
+                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+                    finally:
+                        write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
+                elif target == "metadata":
+                    try:
                         maintenance_task.maintain_study_rw_storage_folders()
-                    elif target == "private-ftp":
+                    except Exception as ex:
+                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+                    finally:
+                        write_actions(fa, maintenance_task.actions, study_id, study_status.name)
+                elif target == "private-ftp":
+                    try:
                         maintenance_task.maintain_study_rw_storage_folders()
-                except Exception as ex:
-                    print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
-                    raise ex
-                finally:
-                    write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
+                    except Exception as ex:
+                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+                    finally:
+                        write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
 
     return maintenance_task_list
 
@@ -136,7 +147,7 @@ if __name__ == "__main__":
             for i in range(30):
                 study_ids.append(f"MTBLS{(i+1)}")
         study_ids.sort(key=sort_by_study_id)
-        results = maintain_study_data_files(
+        results = maintain_folders(
             study_ids,
             target=target,
             flask_app=flask_app,
@@ -163,5 +174,5 @@ if __name__ == "__main__":
 #         skip_study_ids = [f"MTBLS{(i + 1)}" for i in range(501)]
 #         study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
 #         study_ids.sort(key=sort_by_study_id)
-#         results = maintain_study_folders(study_ids, flask_app=flask_app)
+#         results = maintain_folders(study_ids, flask_app=flask_app)
 #     print("end")

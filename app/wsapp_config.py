@@ -336,7 +336,7 @@ def initialize_app(flask_app):
     api.add_resource(ChebiLiteEntity, res_path + "/chebi/chebi-ids/<string:compound_name>")
     api.add_resource(ChebiEntity, res_path + "/chebi/entities/<string:chebi_id>")
 
-    api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/study-folders/maintain-folders")
+    api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/study-folders/<string:study_id>/maintain")
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
     
     

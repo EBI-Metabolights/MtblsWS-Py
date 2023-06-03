@@ -30,6 +30,7 @@ celery = Celery(
         "app.tasks.periodic_tasks.compound",
         "app.tasks.periodic_tasks.study",
         "app.tasks.periodic_tasks.study_folder",
+        "app.tasks.periodic_tasks.worker_check",
         "app.tasks.curation.metabolon"
     ],
 )
@@ -89,30 +90,31 @@ def update_task_was_sent_state(sender=None, headers=None, **kwargs):
     backend.store_result(headers["id"], None, "INITIATED")
 
 system_settings = get_system_settings(None)
+# celery.conf.beat_schedule = {
+#     "check_integration": {
+#         "task": "app.tasks.periodic_tasks.integration_check.check_integrations",
+#         "schedule": system_settings.integration_test_period_in_seconds,
+#         "options": {"expires": 55},
+#     },
+#     "sync_compound_on_es_and_db": {
+#         "task": "app.tasks.periodic_tasks.compound.sync_compounds_on_es_and_db",
+#         "schedule": system_settings.es_compound_sync_task_period_in_secs ,
+#         "args": (system_settings.metabolights_apitoken,),
+#         "options": {"expires": 60 },
+#     },
+#         "sync_study_on_es_and_db": {
+#         "task": "app.tasks.periodic_tasks.study.sync_studies_on_es_and_db",
+#         "schedule": system_settings.es_study_sync_task_period_in_secs ,
+#         "args": (system_settings.metabolights_apitoken,),
+#         "options": {"expires": 60 },
+#     }
+# }
 celery.conf.beat_schedule = {
     "check_integration": {
-        "task": "app.tasks.periodic_tasks.integration_check.check_integrations",
-        "schedule": system_settings.integration_test_period_in_seconds,
-        "options": {"expires": 55},
-    },
-    "sync_compound_on_es_and_db": {
-        "task": "app.tasks.periodic_tasks.compound.sync_compounds_on_es_and_db",
-        "schedule": system_settings.es_compound_sync_task_period_in_secs ,
-        "args": (system_settings.metabolights_apitoken,),
-        "options": {"expires": 60 },
-    },
-        "sync_study_on_es_and_db": {
-        "task": "app.tasks.periodic_tasks.study.sync_studies_on_es_and_db",
-        "schedule": system_settings.es_study_sync_task_period_in_secs ,
-        "args": (system_settings.metabolights_apitoken,),
-        "options": {"expires": 60 },
-    },
-        "maintain_study_folders": {
-        "task": "app.tasks.periodic_tasks.study_folder.maintain_study_folders",
-        "schedule": system_settings.study_folder_maintenance_task_period_in_secs ,
-        "args": (system_settings.metabolights_apitoken,),
-        "options": {"expires": 60 },
-    },
+        "task": "app.tasks.periodic_tasks.worker_check.maintain_workers",
+        "schedule": system_settings.worker_heath_check_period_in_seconds,
+        "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3},
+    }
 }
 celery.conf.timezone = "UTC"
 

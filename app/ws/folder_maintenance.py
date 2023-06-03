@@ -2,6 +2,7 @@ import glob
 import hashlib
 import logging
 import os
+import pathlib
 import re
 import shutil
 import time
@@ -14,6 +15,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from isatools import isatab, model as isatools_model
 from pydantic import BaseModel
+from app.utils import INVESTIGATION_FILE_ROWS_LIST, INVESTIGATION_FILE_ROWS_SET
 
 from app.ws.db.types import StudyStatus
 from app.ws.settings.study import StudySettings
@@ -352,7 +354,7 @@ class StudyFolderMaintenanceTask(object):
         
         return self.future_actions
 
-    def sanitise(obj):
+    def sanitise(self, obj):
         message = str(obj)
         if message:
            return " ".join(message.splitlines())
@@ -426,6 +428,7 @@ class StudyFolderMaintenanceTask(object):
         update_metadata_files = False
         try:
             self.maintain_rw_storage_folders()
+            self.maintain_unwanted_files()
             self.maintain_metadata_file_types_and_permissions()
             same_metada_files = self.check_study_folder_metadata_signature()
             update_metadata_files = not same_metada_files or self.force_to_maintain
@@ -654,6 +657,26 @@ class StudyFolderMaintenanceTask(object):
 
         return metadata_files
 
+    def maintain_unwanted_files(self, recursive=False):
+        if recursive:
+            file_refs = pathlib.Path(self.study_metadata_files_path).rglob(".*")
+        else:
+            file_refs = pathlib.Path(self.study_metadata_files_path).glob(".*")
+            
+        for file in file_refs:
+            if file.name.startswith(".nfs"):
+                continue
+            self.backup_file(file, reason="Hidden file", force_delete=True)
+            type = "folder" if file.is_dir() else "file"
+            action_log = MaintenanceActionLog(
+                item=str(file),
+                action=MaintenanceAction.UPDATE_FILE_PERMISSION,
+                parameters={},
+                message=f"{self.study_id}: {str(file)} is hidden {type}. It was removed.",
+            )
+            self.actions.append(action_log)            
+
+
     def update_permission(self, file_path, chmod=0o644):
         octal_value = oct(os.stat(file_path).st_mode & 0o777)
         octal_value_str = octal_value.replace("0o", "")
@@ -671,21 +694,24 @@ class StudyFolderMaintenanceTask(object):
             )
             self.actions.append(action_log)
 
-    def _create_folder_future_actions(self, file_path: str, mode: int, backup_path: str, created_folders: Dict[str, int], deleted_folders: Set[str], backup_path_permission = "750"):
+    def _create_folder_future_actions(self, file_path: str, mode: int, backup_path: str, created_folders: Dict[str, int], deleted_folders: Set[str], backup_path_permission = 0o750):
         study_id = self.study_id
         chmod_str = oct(mode).replace("0o", "")
         if os.path.exists(file_path) and not os.path.isdir(file_path):
             file_basename = os.path.basename(file_path)
+            backup_path_permission_str = oct(backup_path_permission_str).replace("0o", "")
             if not os.path.exists(backup_path) and backup_path not in created_folders:
                 action_log = MaintenanceActionLog(
                     item=backup_path,
                     action=MaintenanceAction.CREATE,
-                    parameters={"chmod": backup_path_permission},
+                    parameters={"chmod": backup_path_permission_str},
                     message=f"{study_id}: {backup_path} folder will be created.",
-                    command=f"mkdir -p -m {backup_path_permission} '{backup_path}'"
+                    command=f"mkdir -p -m {backup_path_permission_str} '{backup_path}'"
                 )
                 self.future_actions.append(action_log)
-                created_folders[backup_path] = backup_path_permission
+                if self.apply_future_actions:
+                    os.makedirs(backup_path, mode=mode, exist_ok=True)   
+                created_folders[backup_path] = backup_path_permission_str
                 
             target_path = os.path.join(backup_path, file_basename)
             # shutil.move(file_path, target_path)
@@ -800,18 +826,15 @@ class StudyFolderMaintenanceTask(object):
 
     def maintain_study_symlinks(self, target_path, link_path):
         study_id = self.study_id
-        if os.path.exists(link_path):
-            if os.path.islink(link_path):
-                current_target = os.readlink(link_path)
-                if current_target == target_path:
-                    return
-
-                self.backup_file(
-                    link_path, reason=f"Symbolic link was pointing to different target folder: {current_target}"
-                )
-
+        if os.path.islink(link_path):
+            current_target = os.readlink(link_path)
+            if current_target == target_path:
+                return
             else:
-                self.backup_file(link_path, reason=f"{link_path} is not symbolic link.")
+                os.unlink(link_path)
+                
+        if os.path.exists(link_path):
+            self.backup_file(link_path, reason=f"{link_path} is not symbolic link.")
 
             os.symlink(target_path, link_path)
             action_log = MaintenanceActionLog(
@@ -924,11 +947,15 @@ class StudyFolderMaintenanceTask(object):
             else:
                 raise MaintenanceException(message=f"{settings.investigation_file_name} is empty or has no study.")
         except Exception as ex:
+            if isinstance(ex, MaintenanceException):
+                message = ex.message
+            else:
+                message = f"{study_id}: {settings.investigation_file_name} could not be loaded. Error: {self.sanitise(ex)}"
             action_log = MaintenanceActionLog(
                 item=investigation_file_path,
                 action=MaintenanceAction.ERROR_MESSAGE,
                 parameters={},
-                message=f"{study_id}: {settings.investigation_file_name} could not be loaded. Error: {self.sanitise(ex)}",
+                message=message,
                 successful=False,
             )
             self.actions.append(action_log)
@@ -1069,12 +1096,39 @@ class StudyFolderMaintenanceTask(object):
         cleantext = " ".join(cleantext.split())
         return cleantext.strip()
 
-    def backup_file(self, file_path, reason=None, prefix=None):
+    def backup_file(self, file_path, reason=None, prefix=None, backup_path=None, force_delete=True):
         if os.path.exists(file_path):
             basename = os.path.basename(file_path)
-            if self.delete_unreferenced_metadata_files:
+            if self.delete_unreferenced_metadata_files or force_delete:
                 # move if target file exist before renaming other file
-                target_path = os.path.join(self.study_recycle_bin_path, basename)
+                if not backup_path:
+                    backup_path = self.study_recycle_bin_path
+                if os.path.exists(backup_path) and not os.path.isdir(backup_path):
+                    basename = os.path.basename(backup_path)
+                    dirname = os.path.basename(backup_path)
+                    renamed_basename = f"{self.recycle_bin_folder_name}_{basename}"
+                    renamed_backup_path = os.path.join(dirname, renamed_basename)
+                    shutil.move(backup_path, renamed_backup_path)  
+                    action_log = MaintenanceActionLog(
+                        item=backup_path,
+                        action=MaintenanceAction.RENAME,
+                        parameters={"target": renamed_backup_path},
+                        message=f"{self.study_id}: {backup_path} is not folder. Current file was renamed to {renamed_backup_path}.",
+                    )
+                    self.actions.append(action_log)           
+                                        
+                if not os.path.exists(backup_path):
+                    os.makedirs(backup_path, exist_ok=True)
+                    action_log = MaintenanceActionLog(
+                        item=backup_path,
+                        action=MaintenanceAction.CREATE,
+                        parameters={},
+                        message=f"{self.study_id}: {backup_path} folder was created.",
+                    )
+                    self.actions.append(action_log)                    
+                target_path = os.path.join(backup_path, basename)
+                target_dir = os.path.dirname(target_path)
+                os.makedirs(target_dir, exist_ok=True)
                 shutil.move(file_path, target_path)  # move current assay file
                 action_log = MaintenanceActionLog(
                     item=file_path,
@@ -1381,14 +1435,29 @@ class StudyFolderMaintenanceTask(object):
                 message=f"{self.study_id}: {assay_file_path} file column '{scan_polarity_name}' values are updated: '{updated_values}'",
             )
             self.actions.append(action_log)
-
+        
+        non_empty_columns = {"Data Transformation Name", "Extract Name", "MS Assay Name", "NMR Assay Name", "Normalization Name"}
+        sample_name = "Sample Name"
+        if sample_name in assay_df.columns:
+            empty_values = assay_df[assay_df[sample_name] == ''].index
+            # non_values = assay_df[assay_df[sample_name] == ''].index
+            uniques = pd.unique(assay_df[sample_name])
+            if len(assay_df.index) == uniques.size and empty_values.size == 0:
+                print("al")
+                
+                for col in non_empty_columns:
+                    if col in assay_df.columns:
+                        values = assay_df[assay_df[col] == ''].index
+                        
+                        if values.size > 0:
+                            assay_df[col]  = assay_df[sample_name]
+                        
     def maintain_maf_file_content(self, investigation, assignment_file_path, maf_df: pd.DataFrame):
         pass
 
     def maintain_assay_file_content(self, investigation):
         study_id = self.study_id
         assignment_column_name = "Metabolite Assignment File"
-        error = False
         if investigation and investigation.studies and investigation.studies[0]:
             study: isatools_model.Study = investigation.studies[0]
             referenced_assignment_file_paths = set()
@@ -1742,14 +1811,47 @@ class StudyFolderMaintenanceTask(object):
             with open(i_filename, 'r') as fp:
                 data = fp.readlines()
                 current_data_line_count = 0
+                expected_rows  = {}
+                unexpected_rows = {}
+                
+                line_number = 0
                 for line in data:
+                    line_number += 1
                     if not line.startswith("Comment") and line.strip():
                         current_data_line_count += 1
-            if current_data_line_count < self.minimum_investigation_file_line:
-                raise MaintenanceException(message=f"Some required lines are missing in {self.settings.investigation_file_name} file. Check Investigation file content. Current file has {len(data)} lines. It should have at least {self.minimum_investigation_file_line} lines.")
-            # else:
-            #     raise MaintenanceException(message=f"Check Investigation file content. Current file has {len(data)} lines. There are some unexpected lines.")
-                                                       
+                        split = line.strip().split('\t')
+                        if split and split[0]:
+                            row_header = split[0]
+                            if row_header not in INVESTIGATION_FILE_ROWS_SET:
+                                if row_header not in unexpected_rows:
+                                    unexpected_rows[row_header] = [line_number]
+                                else:
+                                    unexpected_rows[row_header].append(line_number)
+                            else:
+                                if row_header not in expected_rows:
+                                    expected_rows[row_header] = [line_number]
+                                else:
+                                    expected_rows[row_header].append(line_number)
+            unexpected_rows_messages = []
+            if unexpected_rows:
+                unexpected_rows_messages = [f"Unexpected row '{x}' at line(s) {' '.join(str(unexpected_rows[x]))}"  for x in unexpected_rows]    
+            multiple_rows_messages =[]
+            if expected_rows:
+                multiple_rows_messages = [f"Multiple row '{x}'  at lines: {' '.join(str(expected_rows[x]))}" for x in expected_rows if len(expected_rows[x]) > 1]
+            missing = []
+            for item in INVESTIGATION_FILE_ROWS_LIST:
+                if item not in expected_rows:
+                    missing.append(item)
+            missing_item_messages = []
+            if missing:
+                missing_item_messages = [f"Some expected rows were not found in investigation file: {', '.join(missing)}"]
+            all_messages = unexpected_rows_messages
+            all_messages.extend(multiple_rows_messages)
+            all_messages.extend(missing_item_messages)
+            if all_messages:
+                message=f"Error in {self.settings.investigation_file_name} file. {'.'.join(all_messages)}"
+                raise MaintenanceException(message=message)
+                                
             if try_to_fix:
                 data = b''  
                 with open(i_filename, 'rb') as fp:
