@@ -24,7 +24,7 @@ from flask import current_app as app, request, abort
 from flask.json import jsonify
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from app.tasks.curation.metabolon import metabolon_confirm
+from app.tasks.common_tasks.curation_tasks.metabolon import metabolon_confirm
 from app.utils import MetabolightsException
 
 from app.ws.db_connection import update_release_date

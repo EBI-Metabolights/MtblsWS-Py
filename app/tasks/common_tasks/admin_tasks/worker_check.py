@@ -26,7 +26,7 @@ def sort_by_study_id(key: str):
             return int(val)
     return -1
 
-@celery.task(base=MetabolightsTask, name="app.tasks.periodic_tasks.worker_check.maintain_workers")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.admin_tasks.maintain_workers")
 def maintain_workers():
     
     try:

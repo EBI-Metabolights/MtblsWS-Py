@@ -9,7 +9,7 @@ from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.tasks.worker import MetabolightsTask, celery, get_flask_app, send_email
 
 
-@celery.task(base=MetabolightsTask, name="app.tasks.common.elasticsearch.reindex_study")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_study")
 def reindex_study(user_token, study_id):
     flask_app = get_flask_app()
     with flask_app.app_context():
@@ -19,14 +19,14 @@ def reindex_study(user_token, study_id):
         )
         return {"study_id": study_id}
 
-@celery.task(base=MetabolightsTask, name="app.tasks.common.elasticsearch.delete_study_index")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.elasticsearch.delete_study_index")
 def delete_study_index(user_token, study_id):
     flask_app = get_flask_app()
     with flask_app.app_context():
         ElasticsearchService.get_instance(flask_app).delete_study_index(user_token, study_id)
         return {"study_id": study_id}
     
-@celery.task(base=MetabolightsTask, name="app.tasks.common.elasticsearch.reindex_all_studies")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_all_studies")
 def reindex_all_public_studies(user_token, send_email_to_submitter=False):
     
     try:        
@@ -59,7 +59,7 @@ def reindex_all_public_studies(user_token, send_email_to_submitter=False):
             send_email("Reindex all studies task was failed", result_str, None, email, None)
             raise ex
         
-@celery.task(base=MetabolightsTask, name="app.tasks.common.elasticsearch.reindex_all_studies")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_all_studies")
 def reindex_all_studies(user_token, send_email_to_submitter=False):
     
     try:        
@@ -114,21 +114,21 @@ def reindex_studies_in_list(user_token, flask_app, studies):
             "failed_indexed_studies": failed_indexed_studies
             }     
     
-@celery.task(base=MetabolightsTask, name="app.tasks.common.elasticsearch.reindex_compound")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_compound")
 def reindex_compound(user_token, compound_id):
     flask_app = get_flask_app()
     with flask_app.app_context():
         ElasticsearchService.get_instance(flask_app).reindex_compound(user_token, compound_id)
         return {"compound_id": compound_id}
 
-@celery.task(base=MetabolightsTask, name="app.tasks.common.elasticsearch.delete_compound_index")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.elasticsearch.delete_compound_index")
 def delete_compound_index(user_token, compound_id):
     flask_app = get_flask_app()
     with flask_app.app_context():
         ElasticsearchService.get_instance(flask_app).delete_compound_index(user_token, compound_id)
         return {"compound_id": compound_id}
         
-@celery.task(base=MetabolightsTask, name="app.tasks.common.elasticsearch.reindex_all_compounds")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.elasticsearch.reindex_all_compounds")
 def reindex_all_compounds(user_token, send_email_to_submitter=False):    
     try:     
         flask_app = get_flask_app()

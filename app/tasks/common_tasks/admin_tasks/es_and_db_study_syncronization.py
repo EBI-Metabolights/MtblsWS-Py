@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 from app.tasks.worker import get_flask_app
 
 
-@celery.task(base=MetabolightsTask, name="app.tasks.periodic_tasks.study.sync_studies_on_es_and_db")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization.sync_studies_on_es_and_db")
 def sync_studies_on_es_and_db(user_token: str, send_email_to_submitter=False):
     try:
         flask_app = get_flask_app()

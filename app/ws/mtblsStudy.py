@@ -31,22 +31,22 @@ from flask_restful_swagger import swagger
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.storage_service import StorageService
-from app.tasks.common.elasticsearch import (delete_study_index,
+from app.tasks.common_tasks.basic_tasks.elasticsearch import (delete_study_index,
                                             reindex_all_public_studies,
                                             reindex_all_studies, reindex_study)
-from app.tasks.common.email import (send_email_for_study_submitted,
+from app.tasks.common_tasks.basic_tasks.email import (send_email_for_study_submitted,
                                     send_technical_issue_email)
-from app.tasks.common.ftp_operations import create_private_ftp_folder
-from app.tasks.periodic_tasks.study import sync_studies_on_es_and_db
-from app.tasks.periodic_tasks.study_folder import \
-    maintain_metadata_study_folders
+from app.tasks.common_tasks.basic_tasks.ftp_operations import create_private_ftp_folder
+from app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization import sync_studies_on_es_and_db
+from app.tasks.common_tasks.basic_tasks.study_folder import maintain_metadata_study_folders
+
 from app.utils import (MetabolightsDBException, MetabolightsException,
                        metabolights_exception_handler)
 from app.ws import db_connection as db_proxy
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyTaskModel
 from app.ws.db.schemes import Study, StudyTask
-from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus
+from app.ws.db.types import StudyStatus, StudyTaskName, StudyTaskStatus, UserRole
 from app.ws.db.wrappers import (create_study_model_from_db_study,
                                 update_study_model_from_directory)
 from app.ws.db_connection import (add_placeholder_flag, create_empty_study,
@@ -1209,11 +1209,6 @@ class CreateAccession(Resource):
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email": new_accession_number}
         create_ftp_folder_task = create_private_ftp_folder.apply_async(kwargs=inputs)
         logger.info(f"Step 7: Create ftp folder task is started for study {study_acc} with task id: {create_ftp_folder_task.id}")
-
-        # # Start read only study folder creation task
-        # inputs = {"study_id": study_acc}
-        # create_readonly_study_folders_task = create_readonly_study_folders.apply_async(kwargs=inputs)
-        # logger.info(f"Step 7: Create read only study folders task is started for study {study_acc} with task id: {create_readonly_study_folders_task.id}")
         
         # Start reindex task
         inputs = {"user_token": user_token, "study_id": study_acc}

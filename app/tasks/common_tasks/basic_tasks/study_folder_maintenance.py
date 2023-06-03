@@ -26,7 +26,7 @@ def sort_by_study_id(key: str):
             return int(val)
     return -1
 
-@celery.task(base=MetabolightsTask, name="app.tasks.periodic_tasks.study_folder.maintain_metadata_study_folders")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.study_folder_maintenance.maintain_metadata_study_folders")
 def maintain_metadata_study_folders(user_token: str, send_email_to_submitter=False, study_id: str=None, force_to_maintain=False):
     all_results = []
     headers = ["STUDY_ID", "STUDY STATUS", "STATUS", "ACTION", "ITEM", "MESSAGE", "PARAMETERS"]

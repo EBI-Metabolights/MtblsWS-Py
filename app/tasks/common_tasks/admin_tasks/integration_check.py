@@ -2,10 +2,9 @@ import datetime
 import os
 from smtplib import SMTP
 from app.services.storage_service.storage_service import StorageService
-from app.tasks.common.email import send_technical_issue_email
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.study.user_service import UserService
-from app.tasks.worker import celery, get_flask_app, send_email
+from app.tasks.worker import celery, get_flask_app
 import requests
 
 check_functions = {}
@@ -73,7 +72,7 @@ def check_classyfire(flask_app):
 #### Integration check 
 ####################################################################################################
 
-@celery.task(name="app.tasks.periodic_tasks.integration_check.check_integrations")
+@celery.task(name="app.tasks.common_tasks.admin_tasks.integration_check.check_integrations")
 def check_integrations():
     flask_app = get_flask_app()
     test_results = {}
