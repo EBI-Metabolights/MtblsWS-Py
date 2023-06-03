@@ -32,7 +32,7 @@ def create_folders(
         path_exist = os.path.exists(path_item)
         print(path_item)
         if path_exist:
-            if os.path.isdir(path_item):
+            if not os.path.isdir(path_item):
                 results[path_item] = {"status": False, "message": f"Path '{path_item}' is not a folder"}
             else:
                 current_permission = os.stat(path_item).st_mode & 0o777
