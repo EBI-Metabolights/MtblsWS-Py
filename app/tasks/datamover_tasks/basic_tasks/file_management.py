@@ -38,6 +38,7 @@ def create_folders(
                 current_permission = os.stat(path_item).st_mode & 0o777
                 if permission != current_permission:
                     try:
+                        
                         os.chmod(path_item, mode=permission)
                         last_permission = os.stat(path_item).st_mode & 0o777
                         if last_permission == permission:
@@ -53,7 +54,7 @@ def create_folders(
                     except Exception as ex:
                         results[path_item] = {
                             "status": False,
-                            "message": f"Path '{path_item}'  already exists. Permission could not be updated. Exception: {str(ex)}",
+                            "message": f"Path '{path_item}'  already exists. Permission could not be updated. Root cause: {str(ex)}",
                         }
                         raise ex
                 else:
@@ -70,7 +71,7 @@ def create_folders(
             except Exception as ex:
                 results[path_item] = {
                     "status": False,
-                    "message": f"Path '{path_item}' could not be created. Exception: {str(ex)}",
+                    "message": f"Path '{path_item}' could not be created. Root cause: {str(ex)}",
                 }
                 raise ex
                 
