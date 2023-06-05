@@ -26,7 +26,7 @@ from flask_restful_swagger import swagger
 
 from app.tasks.datamover_tasks.basic_tasks.file_management import \
     create_folders
-from app.utils import MetabolightsException
+from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.study.user_service import UserService
 
 logger = logging.getLogger("wslog")
@@ -71,6 +71,7 @@ class DataFolders(Resource):
             {"code": 417, "message": "Unexpected result."},
         ],
     )
+    @metabolights_exception_handler
     def put(self):
 
         # User authentication
