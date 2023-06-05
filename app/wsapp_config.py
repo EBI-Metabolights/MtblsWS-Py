@@ -348,6 +348,6 @@ def initialize_app(flask_app):
     
     api.add_resource(BannerMessage, res_path + "/ebi-internal/banner")
     
-    api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
+    # api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
     
     
