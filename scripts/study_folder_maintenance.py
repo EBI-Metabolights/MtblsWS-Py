@@ -62,6 +62,7 @@ def maintain_folders(
                     study_status,
                     public_release_date,
                     submission_date,
+                    obfuscationcode=study.obfuscationcode,
                     recycle_bin_folder_name=recycle_bin_folder_name,
                     delete_unreferenced_metadata_files=delete_unreferenced_metadata_files,
                     settings=settings,
@@ -73,7 +74,7 @@ def maintain_folders(
 
                 if target == "data":
                     try:
-                        maintenance_task.create_maintenace_actions_for_study_data_files()
+                        maintenance_task.create_maintenance_actions_for_study_data_files()
                     except Exception as ex:
                         print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
                     finally:

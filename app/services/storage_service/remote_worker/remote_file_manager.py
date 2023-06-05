@@ -12,7 +12,7 @@ from app.ws.settings.utils import get_cluster_settings
 
 class RemoteFileManager(FileManager):
 
-    def __init__(self, name, mounted_root_folder):
+    def __init__(self, name, mounted_root_folder=None):
         super(RemoteFileManager, self).__init__(name=name)
         self.mounted_root_folder = mounted_root_folder
 
@@ -27,7 +27,7 @@ class RemoteFileManager(FileManager):
             return False
 
         for item in output:
-            if not item["status"]:
+            if "status" not in output[item] or not output[item]["status"]:
                 return False
         return True
 

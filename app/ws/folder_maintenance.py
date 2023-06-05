@@ -15,11 +15,13 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from isatools import isatab, model as isatools_model
 from pydantic import BaseModel
+from app.services.storage_service.remote_worker.remote_file_manager import RemoteFileManager
 from app.utils import INVESTIGATION_FILE_ROWS_LIST, INVESTIGATION_FILE_ROWS_SET
 
 from app.ws.db.types import StudyStatus
+from app.ws.settings.hpc_cluster import HpcClusterSettings
 from app.ws.settings.study import StudySettings
-from app.ws.settings.utils import get_study_settings
+from app.ws.settings.utils import get_cluster_settings, get_study_settings
 
 logger = logging.getLogger("wslog")
 
@@ -67,6 +69,7 @@ class StudyFolderMaintenanceTask(object):
         study_status: StudyStatus,
         public_release_date: datetime,
         submission_date: datetime,
+        obfuscationcode: str = None,
         settings: StudySettings = None,
         recycle_bin_folder_name=None,
         delete_unreferenced_metadata_files=True,
@@ -85,6 +88,7 @@ class StudyFolderMaintenanceTask(object):
         create_data_files_maintenance_file=True
     ) -> None:
         self.study_id = study_id
+        self.obfuscationcode = obfuscationcode
         self.study_status = study_status
         self.public_release_date = public_release_date
         self.submission_date = submission_date
@@ -92,7 +96,7 @@ class StudyFolderMaintenanceTask(object):
         self.settings = settings
         if not self.settings:
             self.settings = get_study_settings()
-
+        self.cluster_settings: HpcClusterSettings = get_cluster_settings()
         self.recycle_bin_folder_name = recycle_bin_folder_name
         if not self.recycle_bin_folder_name:
             date_format = "%Y-%m-%d_%H-%M-%S"
@@ -135,8 +139,35 @@ class StudyFolderMaintenanceTask(object):
         self.max_referenced_files_in_folder = max_referenced_files_in_folder
         self.create_data_files_maintenance_file=create_data_files_maintenance_file
         self.apply_future_actions = apply_future_actions
+        self.file_manager: RemoteFileManager = RemoteFileManager(f"{self.study_id}_remote_file_manager")
 
-
+    def execute_future_actions(self) -> Dict[str, str]:
+        success = True
+        for action in self.future_actions:
+            result = self.execute_action(action)
+            if not result:
+                success = False
+        return success
+                
+    def execute_action(self, action_log: MaintenanceActionLog):
+        if action_log.action == MaintenanceAction.CREATE:
+            permission = None
+            try:
+                permission = int(action_log.parameters["chmod"], 8)
+            except Exception as ex:
+                pass
+            if permission:
+                return self.file_manager.create_folder(action_log.item, acl=permission)
+            else:
+                return self.file_manager.create_folder(action_log.item)
+        elif action_log.action == MaintenanceAction.MOVE or action_log.action == MaintenanceAction.RENAME:
+            target_path = None
+            if "target" in  action_log.parameters and action_log.parameters["target"]:
+                target_path = action_log.parameters["target"]
+            
+            return self.file_manager.move(action_log.item, target_path)
+        return False
+                            
     def _create_sanitise_file_name_actions(self,  updated_file_names: Dict[str, str]) -> Dict[str, str]:
         for key in updated_file_names:
             file = updated_file_names[key]
@@ -327,7 +358,7 @@ class StudyFolderMaintenanceTask(object):
             f.writelines(["TYPE\tSTATUS\tMODIFIED TIME\tREFERENCED FILE PATH\tRENAME TASK\n"])
             f.writelines(data_files)
         
-    def create_maintenace_actions_for_study_data_files(self) -> List[MaintenanceActionLog]:
+    def create_maintenance_actions_for_study_data_files(self) -> List[MaintenanceActionLog]:
         referenced_file_set = self.get_all_referenced_data_files()
         updated_file_names = {}
         for item in referenced_file_set:
@@ -348,11 +379,15 @@ class StudyFolderMaintenanceTask(object):
 
 
     def create_maintenace_actions_for_study_private_ftp_folder(self) -> List[MaintenanceActionLog]:
+            settings = self.settings
+            study_id = self.study_id
+            cluster_private_ftp_recycle_bin_root_path = self.settings.cluster_private_ftp_recycle_bin_root_path
+            created_folders = {}
+            deleted_folders = set()
+            folder_name = f"{study_id.lower()}-{self.obfuscationcode}"
+            private_ftp_root_path = os.path.join(settings.cluster_private_ftp_root_path, folder_name)
+            self._create_folder_future_actions(private_ftp_root_path, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders)
 
-        self.calculate_readonly_study_folders_future_actions()
-
-        
-        return self.future_actions
 
     def sanitise(self, obj):
         message = str(obj)
@@ -419,7 +454,6 @@ class StudyFolderMaintenanceTask(object):
             raise ex
         return referenced_files_set
 
-        
                             
     def maintain_study_rw_storage_folders(self) -> List[MaintenanceActionLog]:
                     
@@ -680,7 +714,7 @@ class StudyFolderMaintenanceTask(object):
     def update_permission(self, file_path, chmod=0o644):
         octal_value = oct(os.stat(file_path).st_mode & 0o777)
         octal_value_str = octal_value.replace("0o", "")
-        chmod_str = oct(chmod).replace("0o", "")
+        chmod_str = oct(chmod & 0o777).replace("0o", "")
 
         current_chmod = int(octal_value, 8)
 

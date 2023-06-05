@@ -213,14 +213,14 @@ def get_input_permission_value(acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE)
 
 
 def update_permission(path_item, permission):
-    current_permission = os.stat(path_item).st_mode
+    current_permission = os.stat(path_item).st_mode & 0o777
     current_permission_str = oct(current_permission).replace("0o", "")
-    permission_str = oct(permission).replace("0o", "")
+    permission_str = oct(permission & 0o777).replace("0o", "")
     if permission != current_permission:
         try:
             os.chmod(path_item, mode=permission)
-            last_permission = os.stat(path_item).st_mode
-            if last_permission == permission:
+            last_permission = os.stat(path_item).st_mode & 0o777
+            if last_permission & 0o777 == permission & 0o777:
                 result = {
                     "status": True,
                     "message": f"Path '{path_item}' permission was updated from {current_permission_str} to {permission_str}.",

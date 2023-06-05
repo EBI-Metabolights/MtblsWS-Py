@@ -34,11 +34,11 @@ from app.services.storage_service.storage_service import StorageService
 from app.tasks.common_tasks.basic_tasks.elasticsearch import (delete_study_index,
                                             reindex_all_public_studies,
                                             reindex_all_studies, reindex_study)
-from app.tasks.common_tasks.basic_tasks.email import (send_email_for_study_submitted,
+from app.tasks.common_tasks.basic_tasks.email import (send_email_for_private_ftp_folder, send_email_for_study_submitted,
                                     send_technical_issue_email)
 from app.tasks.common_tasks.basic_tasks.ftp_operations import create_private_ftp_folder
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization import sync_studies_on_es_and_db
-from app.tasks.common_tasks.basic_tasks.study_folder_maintenance import maintain_rw_storage_study_folders
+from app.tasks.common_tasks.basic_tasks.study_folder_maintenance import maintain_readonly_storage_study_folders, maintain_rw_storage_study_folders
 
 from app.utils import (MetabolightsDBException, MetabolightsException,
                        metabolights_exception_handler)
@@ -1124,13 +1124,13 @@ class CreateAccession(Resource):
             if study.submissiondate.timestamp() > last_study_datetime.timestamp():
                 last_study_datetime = study.submissiondate
         study_settings = get_study_settings()
-        if (datetime.now() - last_study_datetime).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
-            logger.warning(f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins")
-            raise MetabolightsException(message="Submitter can create only one study in five minutes.", http_code=429)
+        # if (datetime.now() - last_study_datetime).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
+        #     logger.warning(f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins")
+        #     raise MetabolightsException(message="Submitter can create only one study in five minutes.", http_code=429)
         
-        if len(submitted_studies) >= study_settings.max_study_in_submitted_status and user.role != UserRole.ROLE_SUPER_USER.value and user.role != UserRole.SYSTEM_ADMIN.value:
-            logger.warning(f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status.")
-            raise MetabolightsException(message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.", http_code=400)
+        # if len(submitted_studies) >= study_settings.max_study_in_submitted_status and user.role != UserRole.ROLE_SUPER_USER.value and user.role != UserRole.SYSTEM_ADMIN.value:
+        #     logger.warning(f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status.")
+        #     raise MetabolightsException(message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.", http_code=400)
         
         logger.info(f"Step 1: New study creation request is received from user {user.username}")
         new_accession_number = True
@@ -1177,13 +1177,14 @@ class CreateAccession(Resource):
         #     logger.error(f"Failed to rename new study folder {str(inputs)}")
         #     send_technical_issue_email.apply_async(kwargs=inputs)
         #     raise MetabolightsException(message=f"Could not renamed {folder_name}  to {study_acc} ", http_code=503)
-        
+        maintenance_task = None
         try:
             maintenance_task = StudyFolderMaintenanceTask(
                 study.acc,
                 StudyStatus(study.status),
                 study.releasedate,
                 study.submissiondate,
+                obfuscationcode=study.obfuscationcode,
                 recycle_bin_folder_name=f"_INITIAL_{study.acc}",
                 delete_unreferenced_metadata_files=False,
                 settings=get_study_settings(),
@@ -1191,29 +1192,59 @@ class CreateAccession(Resource):
                 force_to_maintain=True,
             )
             maintenance_task.maintain_study_rw_storage_folders()
+            maintenance_task.create_maintenance_actions_for_study_data_files()
+            maintenance_task.execute_future_actions()
+            maintenance_task.future_actions.clear()
             logger.info(f"Step 3: Study folders and initial files are created for {study_acc}.")
         except Exception as exc:
             inputs = {"subject": "Failed to create initial files for new study folder", 
                       "body":f"Failed to create initial files for new study folder {study_acc}, user: {user.username} <p> {str(exc)}"}
             logger.error(f"Failed to create audit/internal folders for new study folder {str(inputs)}")
             send_technical_issue_email.apply_async(kwargs=inputs)
+            if isinstance(exc, MetabolightsException):
+                raise exc
+            else:
+                raise MetabolightsException(message="Study folder creation was failed.", http_code=501, exception=exc)
+            
         # Send email if it is new study
         if new_accession_number:
             inputs = {"user_token": user_token, "study_id": study_acc}
             new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
-            logger.info(f"Step 6: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
+            logger.info(f"Step 4: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
         else:
-            logger.info(f"Step 6: Skipping email. No email will be sent for the study {study_acc}")
+            logger.info(f"Step 4: Skipping email. No email will be sent for the study {study_acc}")
+ 
+        ftp_folder_name = study_acc.lower() + '-' + study.obfuscationcode
+        relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+        relative_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), ftp_folder_name)
+        maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()    
+        result = maintenance_task.execute_future_actions()    
+        maintenance_task.future_actions.clear()
+        if new_accession_number:
+            if result:
+                logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
+                send_email_for_private_ftp_folder(user_token, study_acc, relative_study_path)
+            else:
+                logger.info(f"Step 5: Error to create FTP folder for the study {study_acc}")
+                inputs = {"subject": "Failed to create ftp folders for new study", 
+                      "body":f"Failed to create initial private ftp folder for new study {study_acc}, user: {user.username}"}
+                send_technical_issue_email.apply_async(kwargs=inputs)
+        else:
+            logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
+    
+        # # Start ftp folder creation task
+    
+        # inputs = {"user_token": user_token, "study_id": study_acc, "send_email": new_accession_number}
+    
+        # create_ftp_folder_task = create_private_ftp_folder.apply_async(kwargs=inputs)
         
-        # Start ftp folder creation task
-        inputs = {"user_token": user_token, "study_id": study_acc, "send_email": new_accession_number}
-        create_ftp_folder_task = create_private_ftp_folder.apply_async(kwargs=inputs)
-        logger.info(f"Step 7: Create ftp folder task is started for study {study_acc} with task id: {create_ftp_folder_task.id}")
+    
+        logger.info(f"Step 6: Create ftp folder task is started for study {study_acc} with task id: {create_ftp_folder_task.id}")
         
         # Start reindex task
         inputs = {"user_token": user_token, "study_id": study_acc}
         reindex_task = reindex_study.apply_async(kwargs=inputs)
-        logger.info(f"Step 8: Reindex task is started for study {study_acc} with task id: {reindex_task.id}")
+        logger.info(f"Step 7: Reindex task is started for study {study_acc} with task id: {reindex_task.id}")
             
         return {"new_study": study_acc}
 

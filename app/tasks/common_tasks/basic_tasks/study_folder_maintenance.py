@@ -134,24 +134,25 @@ def maintain_readonly_storage_study_folders(user_token: str, send_email_to_submi
                             study_status,
                             study.releasedate,
                             study.submissiondate,
+                            obfuscationcode=study.obfuscationcode,
                             recycle_bin_folder_name=f"_INITIAL_{study.acc}",
                             delete_unreferenced_metadata_files=False,
                             settings=get_study_settings(),
                             apply_future_actions=False,
                             force_to_maintain=force_to_maintain,
                         )
-                        results = maintenance_task.create_maintenace_actions_for_study_data_files()
+                        results = maintenance_task.create_maintenance_actions_for_study_data_files()
+                        maintenance_task.execute_future_actions()
                         rows = []
-                        file_manager = RemoteFileManager("remote_client", mounted_root_folder="/")
                         for action in maintenance_task.future_actions:
-                            success = execute_action(file_manager, action)
+                            success = maintenance_task.execute_action(action)
                             # success = action.successful
                             action_name = action.action.name
                             item = action.item
                             message = action.message
                             parameters = action.parameters
                             rows.append(
-                                [f"{study_id}", f"{study_status.name}", f"{success}", f"{action_name}", f"{item}", f"{message}", f"{parameters}"]
+                                [f"{study_id}", f"{study_status.name}", f"{action_name}", f"{item}", f"{message}", f"{parameters}"]
                             )
                         
                         all_results.extend(rows)
@@ -184,21 +185,3 @@ def maintain_readonly_storage_study_folders(user_token: str, send_email_to_submi
         raise ex                    
 
 
-def execute_action(file_manager: RemoteFileManager, action_log: MaintenanceActionLog):
-    if action_log.action == MaintenanceAction.CREATE:
-        permission = None
-        try:
-            permission = int(action_log.parameters["acl"], 8)
-        except Exception as ex:
-            pass
-        if permission:
-            return file_manager.create_folder(action_log.item, acl=permission)
-        else:
-            return file_manager.create_folder(action_log.item)
-    elif action_log.action == MaintenanceAction.MOVE or action_log.action == MaintenanceAction.RENAME:
-        target_path = None
-        if "target" in  action_log.parameters and action_log.parameters["target"]:
-            target_path = action_log.parameters["target"]
-        
-        return file_manager.move(action_log.item, target_path)
-    return False
