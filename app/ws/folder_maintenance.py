@@ -489,27 +489,31 @@ class StudyFolderMaintenanceTask(object):
 
         if self.study_status == StudyStatus.INREVIEW or self.study_status == StudyStatus.INCURATION:
             permission = Acl.AUTHORIZED_READ.value
-        elif self.study_status == StudyStatus.INCURATION:
+        elif self.study_status == StudyStatus.SUBMITTED:
             permission = Acl.AUTHORIZED_READ_WRITE.value
+            
+        if not os.path.exists(private_ftp_root_path):
+            self._create_folder_future_actions(
+                private_ftp_root_path,
+                0o770,
+                cluster_private_ftp_recycle_bin_root_path,
+                created_folders,
+                deleted_folders,
+            )
 
-        self._create_folder_future_actions(
-            private_ftp_root_path,
-            permission,
-            cluster_private_ftp_recycle_bin_root_path,
-            created_folders,
-            deleted_folders,
-        )
+            sub_folder = os.path.join(private_ftp_root_path, "RAW_FILES")
+            self._create_folder_future_actions(
+                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+            )
 
-        sub_folder = os.path.join(settings.cluster_private_ftp_root_path, folder_name, "RAW_FILES")
-        self._create_folder_future_actions(
-            sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
-        )
-
-        sub_folder = os.path.join(settings.cluster_private_ftp_root_path, folder_name, "DERIVED_FILES")
-        self._create_folder_future_actions(
-            sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
-        )
-
+            sub_folder = os.path.join(private_ftp_root_path, "DERIVED_FILES")
+            self._create_folder_future_actions(
+                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+            )
+        
+        self.update_permission(private_ftp_root_path, permission)
+        
+        
     def sanitise(self, obj):
         message = str(obj)
         if message:
