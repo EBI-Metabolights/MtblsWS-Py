@@ -33,3 +33,5 @@ class HpcClusterSettings(MetabolightsBaseSettings):
     job_track_email:str
     job_track_log_location:str
     job_status_read_timeout:str="10"
+    
+    task_get_timeout_in_seconds: int = 10

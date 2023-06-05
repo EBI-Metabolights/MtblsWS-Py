@@ -1,7 +1,10 @@
 import logging
 import os
-from typing import List, Tuple, Union
+import shutil
+from typing import List, Union
+
 import celery
+
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
 from app.tasks.worker import MetabolightsTask, celery
@@ -15,8 +18,8 @@ logger = logging.getLogger("datamover_worker")
 def create_folders(
     self, folder_paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE, exist_ok: bool = True
 ):
-    results = {}        
-    input_paths = get_input_folder_paths(folder_paths)
+    results = {}
+    input_paths = get_input_paths(folder_paths)
     permission = get_input_permission_value(acl)
 
     for path_item in input_paths:
@@ -48,39 +51,158 @@ def create_folders(
                     "status": False,
                     "message": f"Path '{path_item}' could not be created. Root cause: {str(ex)}",
                 }
-                raise ex
     return results
 
 
 @celery.task(
     bind=True,
     base=MetabolightsTask,
-    name="app.tasks.datamover_tasks.basic_tasks.file_management.update_folder_permission",
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.chmod",
 )
-
-def update_folder_permission(
-    self, folder_paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE
-):
+def chmod(self, paths: Union[str, List[str]], acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE):
     results = {}
-        
-    input_paths = get_input_folder_paths(folder_paths)
+
+    input_paths = get_input_paths(paths)
     permission = get_input_permission_value(acl)
 
     for path_item in input_paths:
         results[path_item] = update_permission(path_item, permission)
-    
+
     return results
 
-def get_input_folder_paths(folder_paths: Union[str, List[str]]) -> List[str]:
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.delete_folders",
+)
+def delete_folders(self, folder_paths: Union[str, List[str]]):
+    results = {}
+
+    input_paths = get_input_paths(folder_paths)
+
+    for path_item in input_paths:
+        if os.path.exists(path_item):
+            if os.path.isdir(path_item):
+                try:
+                    shutil.rmtree(path_item)
+                    results[path_item] = {"status": False, "message": f"'{path_item}' was deleted."}
+                except Exception as ex:
+                    results[path_item] = {
+                        "status": False,
+                        "message": f"Path '{path_item}' could not be deleted. Root cause: {str(ex)}",
+                    }
+            else:
+                results[path_item] = {"status": False, "message": f"'{path_item}' is not a folder or does not exist."}
+        else:
+            results[path_item] = {"status": False, "message": f"There is no folder '{path_item}'."}
+    return results
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.move",
+)
+def move(self, source_path: str, target_path: str):
+    input_path = source_path
+    new_path = target_path
+
+    if not input_path or not new_path:
+        return {"status": False, "message": f"inputs are not valid."}
+
+    if os.path.exists(input_path):
+        if not os.path.exists(new_path):
+            try:
+                shutil.move(input_path, new_path)
+                if not os.path.exists(input_path) and os.path.exists(new_path):
+                    return {"status": True, "message": f"'{input_path}' was moved to {new_path}."}
+                else:
+                    return {
+                        "status": False,
+                        "message": f"Unexpected status: {input_path} could not be moved to {new_path} successfully.",
+                    }
+            except Exception as ex:
+                return {
+                    "status": False,
+                    "message": f"Path '{input_path}' could not be moved to {new_path}. Root cause: {str(ex)}",
+                }
+        else:
+            return {"status": False, "message": f"'{new_path}' already exists."}
+    else:
+        return {"status": False, "message": f"'{new_path}'  does not exist."}
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.isfile",
+)
+def isfile(self, source_path: str) -> bool:
+    if source_path and os.path.exists(source_path) and os.path.isfile(source_path):
+        return True
+    return False
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.isdir",
+)
+def isdir(self, source_path: str) -> bool:
+    if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
+        return True
+    return False
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.exists",
+)
+def exists(self, source_path: str) -> bool:
+    input_path = get_input_paths(source_path)
+
+    if os.path.exists(input_path):
+        return True
+    return False
+
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.get_permission",
+)
+def get_permission(self, source_path: str):
+    try:
+        if source_path and os.path.exists(source_path):
+            current_permission = os.stat(source_path).st_mode
+            current_permission_str = oct(current_permission).replace("0o", "")
+            result = {"status": True, "value": current_permission, "octal_value": current_permission_str}
+            return result
+        else:
+            return {"status": False, "message": f"'{source_path}' does not exist.", "value": -1, "octal_value": -1}
+
+    except Exception as ex:
+        return {
+            "status": False,
+            "message": f"Permission check error for '{source_path}'. Root cause: {str(ex)}",
+            "value": -1,
+            "octal_value": -1,
+        }
+
+
+def get_input_paths(folder_paths: Union[str, List[str]]) -> List[str]:
     input_paths: List[str] = []
     if not folder_paths:
         return input_paths
-    
+
     if isinstance(folder_paths, str):
         input_paths.append(folder_paths)
     else:
         input_paths = folder_paths
     return input_paths
+
 
 def get_input_permission_value(acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE) -> int:
     if isinstance(acl, Acl):
@@ -91,13 +213,13 @@ def get_input_permission_value(acl: Union[int, Acl] = Acl.AUTHORIZED_READ_WRITE)
 
 
 def update_permission(path_item, permission):
-    current_permission = os.stat(path_item).st_mode & 0o777
+    current_permission = os.stat(path_item).st_mode
     current_permission_str = oct(current_permission).replace("0o", "")
     permission_str = oct(permission).replace("0o", "")
     if permission != current_permission:
         try:
             os.chmod(path_item, mode=permission)
-            last_permission = os.stat(path_item).st_mode & 0o777
+            last_permission = os.stat(path_item).st_mode
             if last_permission == permission:
                 result = {
                     "status": True,

@@ -38,7 +38,7 @@ from app.tasks.common_tasks.basic_tasks.email import (send_email_for_study_submi
                                     send_technical_issue_email)
 from app.tasks.common_tasks.basic_tasks.ftp_operations import create_private_ftp_folder
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization import sync_studies_on_es_and_db
-from app.tasks.common_tasks.basic_tasks.study_folder_maintenance import maintain_metadata_study_folders
+from app.tasks.common_tasks.basic_tasks.study_folder_maintenance import maintain_rw_storage_study_folders
 
 from app.utils import (MetabolightsDBException, MetabolightsException,
                        metabolights_exception_handler)
@@ -1939,7 +1939,7 @@ class MtblsStudyFolders(Resource):
         logger.info('Searching study folders')
         inputs = {"user_token": user_token, "send_email_to_submitter": True, "study_id": study_id, "force_to_maintain": force_to_maintain }
         try: 
-            result = maintain_metadata_study_folders.apply_async(kwargs=inputs, expires=60*5)
+            result = maintain_rw_storage_study_folders.apply_async(kwargs=inputs, expires=60*5)
 
             result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
             return result
