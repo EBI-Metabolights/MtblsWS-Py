@@ -114,12 +114,12 @@ def maintain_storage_study_folders(
                     "executed_on": os.uname().nodename,
                     "result": "Listed Below",
                 }
-
+            result_str = json.dumps(result, indent=4)
+            result_str = result_str + "<p>" + df.to_html().replace('border="1"', 'border="0"')
             if send_email_to_submitter:
-                result_str = json.dumps(result, indent=4)
-                result_str = result_str + "<p>" + df.to_html().replace('border="1"', 'border="0"')
-                send_email("Result of the task: maintain MetaboLights study folders", result_str, None, email, None)
 
+                send_email("Result of the task: maintain MetaboLights study folders", result_str, None, email, None)
+            return result_str
     except Exception as ex:
         if send_email_to_submitter:
             result_str = str(ex).replace("\n", "<p>")
