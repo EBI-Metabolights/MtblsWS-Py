@@ -979,6 +979,7 @@ class StudyFolderMaintenanceTask(object):
     def maintain_rw_storage_folders(self):
         settings = self.settings
         study_id = self.study_id
+        study_settings = self.study_settings
         rw_storage_recycle_bin_path = os.path.join(self.rw_storage_recycle_bin_path, self.study_id)
         study_recycle_bin_path = self.study_recycle_bin_path
 
@@ -991,24 +992,24 @@ class StudyFolderMaintenanceTask(object):
         metadata_path = os.path.join(settings.study_metadata_files_root_path, study_id)
         self._create_rw_storage_folder(metadata_path, 0o755, rw_storage_recycle_bin_path)
 
-        internal_backup_folder_path = os.path.join(audit_path, settings.internal_backup_folder_name)
+        internal_backup_folder_path = os.path.join(audit_path, study_settings.internal_backup_folder_name)
         self._create_rw_storage_folder(internal_backup_folder_path, 0o755, rw_storage_recycle_bin_path)
 
-        study_audit_folder_path = os.path.join(audit_path, settings.audit_folder_name)
+        study_audit_folder_path = os.path.join(audit_path, study_settings.audit_folder_name)
         self._create_rw_storage_folder(study_audit_folder_path, 0o755, study_recycle_bin_path)
 
-        log_path = os.path.join(internal_file_path, settings.internal_logs_folder_name)
+        log_path = os.path.join(internal_file_path, study_settings.internal_logs_folder_name)
         self._create_rw_storage_folder(log_path, 0o777, study_recycle_bin_path)
 
         read_only_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
         readonly_files_symbolic_link_path = os.path.join(
-            settings.study_metadata_files_root_path, study_id, settings.readonly_files_symbolic_link_name
+            settings.study_metadata_files_root_path, study_id, study_settings.readonly_files_symbolic_link_name
         )
         audit_folder_symbolic_link_path: str = os.path.join(
-            settings.study_metadata_files_root_path, study_id, settings.audit_files_symbolic_link_name
+            settings.study_metadata_files_root_path, study_id, study_settings.audit_files_symbolic_link_name
         )
         internal_file_symbolic_link_path: str = os.path.join(
-            settings.study_metadata_files_root_path, study_id, settings.internal_files_symbolic_link_name
+            settings.study_metadata_files_root_path, study_id, study_settings.internal_files_symbolic_link_name
         )
 
         self.maintain_study_symlinks(read_only_files_path, readonly_files_symbolic_link_path)
