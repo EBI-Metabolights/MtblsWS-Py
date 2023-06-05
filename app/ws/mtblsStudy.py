@@ -38,7 +38,7 @@ from app.tasks.common_tasks.basic_tasks.email import (send_email_for_study_submi
                                     send_technical_issue_email)
 from app.tasks.common_tasks.basic_tasks.ftp_operations import create_private_ftp_folder
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization import sync_studies_on_es_and_db
-from app.tasks.common_tasks.basic_tasks.study_folder import maintain_metadata_study_folders
+from app.tasks.common_tasks.basic_tasks.study_folder_maintenance import maintain_metadata_study_folders
 
 from app.utils import (MetabolightsDBException, MetabolightsException,
                        metabolights_exception_handler)

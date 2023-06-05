@@ -105,20 +105,15 @@ system_settings = get_system_settings(None)
 #         "options": {"expires": 60 },
 #     }
 # }
-celery.conf.beat_schedule = {
-    "worker_healtcheck": {
-        "task": "app.tasks.common_tasks.admin_tasks.maintain_workers",
-        "schedule": system_settings.worker_heath_check_period_in_seconds,
-        "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3},
-    },
-    "create_remote_folder": {
-        "task": "app.tasks.datamover_tasks.basic_tasks.file_management.create_folders",
-        "schedule": system_settings.worker_heath_check_period_in_seconds,
-        "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3},
-        "args": ("", 0o770, True),
-    },    
-    
-}
+# celery.conf.beat_schedule = {
+
+#     "create_remote_folder": {
+#         "task": "app.tasks.datamover_tasks.basic_tasks.file_management.create_folders",
+#         "schedule": system_settings.worker_heath_check_period_in_seconds,
+#         "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3},
+#         "args": ("", 0o777, True),
+#     }
+# }
 celery.conf.timezone = "UTC"
 
 
