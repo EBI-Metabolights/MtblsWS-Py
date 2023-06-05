@@ -59,23 +59,23 @@ class MaintenanceAction(str, Enum):
 
 
 class StudyFolders(BaseModel):
-    study_metadata_files_root_path: str
-    study_internal_files_root_path: str
-    study_audit_files_root_path: str
+    study_metadata_files_root_path: str = ""
+    study_internal_files_root_path: str = ""
+    study_audit_files_root_path: str = ""
 
-    study_readonly_files_root_path: str
-    study_readonly_audit_files_root_path: str
-    study_readonly_metadata_files_root_path: str
-    study_readonly_public_metadata_versions_root_path: str
-    study_readonly_integrity_check_files_root_path: str
+    study_readonly_files_root_path: str = ""
+    study_readonly_audit_files_root_path: str = ""
+    study_readonly_metadata_files_root_path: str = ""
+    study_readonly_public_metadata_versions_root_path: str = ""
+    study_readonly_integrity_check_files_root_path: str = ""
 
-    readonly_storage_recycle_bin_root_path: str
-    rw_storage_recycle_bin_root_path: str
+    readonly_storage_recycle_bin_root_path: str = ""
+    rw_storage_recycle_bin_root_path: str = ""
 
-    cluster_private_ftp_root_path:str
-    cluster_public_ftp_root_path:str
-    cluster_private_ftp_recycle_bin_root_path:str
-    cluster_public_ftp_recycle_bin_root_path:str    
+    cluster_private_ftp_root_path: str = ""
+    cluster_public_ftp_root_path: str = ""
+    cluster_private_ftp_recycle_bin_root_path: str = ""
+    cluster_public_ftp_recycle_bin_root_path: str = ""    
     
 
 class FolderRootPaths(object):
