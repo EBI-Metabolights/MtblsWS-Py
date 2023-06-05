@@ -30,7 +30,7 @@ celery = Celery(
         "app.tasks.common_tasks.basic_tasks.email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
         "app.tasks.common_tasks.basic_tasks.ftp_operations",
-        "app.tasks.common_tasks.basic_tasks.study_folder_maintenance",
+        "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
         "app.tasks.datamover_tasks.basic_tasks.file_management"
     ],
 )

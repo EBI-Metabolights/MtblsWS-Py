@@ -3,8 +3,6 @@ import os
 import shutil
 from typing import List, Union
 
-import celery
-
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
 from app.tasks.worker import MetabolightsTask, celery

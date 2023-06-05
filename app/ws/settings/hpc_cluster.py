@@ -29,8 +29,8 @@ class HpcClusterSettings(MetabolightsBaseSettings):
     
     
     cluster_private_ftp_root_path:str
-    cluster_public_ftp_root_path:str
     cluster_private_ftp_recycle_bin_root_path:str
+    cluster_public_ftp_root_path:str
     cluster_public_ftp_recycle_bin_root_path:str    
     
     job_submit_command:str = "bsub"
