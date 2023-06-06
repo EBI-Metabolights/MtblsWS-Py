@@ -146,7 +146,7 @@ class StudyFolderMaintenanceTask(object):
         submission_date: datetime,
         obfuscationcode: str = None,
         settings: StudySettings = None,
-        recycle_bin_folder_name=None,
+        task_name=None,
         delete_unreferenced_metadata_files=True,
         fix_tsv_file_headers=True,
         fix_assay_file_column_values=True,
@@ -179,11 +179,16 @@ class StudyFolderMaintenanceTask(object):
         
         self.paths: FolderRootPaths = FolderRootPaths(study_settings=self.study_settings, cluster_settings=self.cluster_settings, cluster_mode=self.cluster_execution_mode)
         self.settings = self.paths.folders
-        self.recycle_bin_folder_name = recycle_bin_folder_name
-        if not self.recycle_bin_folder_name:
-            date_format = "%Y-%m-%d_%H-%M-%S"
-            self.recycle_bin_folder_name = time.strftime(date_format)
-
+        self.task_name = task_name
+        date_format = "%Y-%m-%d_%H-%M-%S"
+        timestamp_str = time.strftime(date_format)
+        if not self.task_name:
+            self.recycle_bin_folder_name = f"{self.study_id}_{timestamp_str}"
+            self.task_name = timestamp_str
+        else:
+            self.recycle_bin_folder_name = f"{self.study_id}_{self.task_name}_{timestamp_str}"
+            self.task_name = f"{self.task_name}_{timestamp_str}"
+            
         self.study_recycle_bin_path = os.path.join(
             self.settings.study_audit_files_root_path,
             study_id,
@@ -306,7 +311,7 @@ class StudyFolderMaintenanceTask(object):
                     target_path = os.path.join(self.study_metadata_files_path, new_basename)
 
                     if os.path.exists(target_path):
-                        renamed_path = f"{target_path}_{self.recycle_bin_folder_name}"
+                        renamed_path = f"{target_path}_{self.task_name}"
                         action_log = MaintenanceActionLog(
                             item=target_path,
                             action=MaintenanceAction.RENAME,
@@ -413,7 +418,7 @@ class StudyFolderMaintenanceTask(object):
                             subfolder_name = f"{prefix}{(i + 1):03}"
                             new_folder = os.path.join(referenced_folder, subfolder_name)
                             if os.path.exists(new_folder):
-                                renamed_path = f"{new_folder}_{self.recycle_bin_folder_name}"
+                                renamed_path = f"{new_folder}_{self.task_name}"
                                 action_log = MaintenanceActionLog(
                                     item=new_folder,
                                     action=MaintenanceAction.RENAME,
@@ -635,7 +640,7 @@ class StudyFolderMaintenanceTask(object):
         update_metadata_files = False
         try:
             if create_audit_folder:
-                self.create_audit_folder(self.recycle_bin_folder_name)
+                self.create_audit_folder(self.task_name)
             self.maintain_rw_storage_folders()
             self.maintain_unwanted_files()
             self.maintain_metadata_file_types_and_permissions()
@@ -776,7 +781,7 @@ class StudyFolderMaintenanceTask(object):
         action_log_file_path = os.path.join(
             self.study_internal_files_path,
             self.study_settings.internal_logs_folder_name,
-            f"{self.recycle_bin_folder_name}_{self.study_settings.study_folder_maintenance_log_file_name}",
+            f"{self.task_name}_{self.study_settings.study_folder_maintenance_log_file_name}",
         )
         with open(action_log_file_path, "w") as f:
             f.writelines(rows)
@@ -1356,7 +1361,7 @@ class StudyFolderMaintenanceTask(object):
                 if os.path.exists(backup_path) and not os.path.isdir(backup_path):
                     basename = os.path.basename(backup_path)
                     dirname = os.path.basename(backup_path)
-                    renamed_basename = f"{self.recycle_bin_folder_name}_{basename}"
+                    renamed_basename = f"{self.task_name}_{basename}"
                     renamed_backup_path = os.path.join(dirname, renamed_basename)
                     shutil.move(backup_path, renamed_backup_path)
                     action_log = MaintenanceActionLog(
@@ -1390,9 +1395,9 @@ class StudyFolderMaintenanceTask(object):
             else:
                 # rename if target file exist before renaming other file
                 if prefix:
-                    renamed_basename = f"{prefix}_{self.recycle_bin_folder_name}_{basename}"
+                    renamed_basename = f"{prefix}_{self.task_name}_{basename}"
                 else:
-                    renamed_basename = f"{self.recycle_bin_folder_name}_{basename}"
+                    renamed_basename = f"{self.task_name}_{basename}"
                 dirname = os.path.dirname(file_path)
                 target_path = os.path.join(dirname, renamed_basename)
                 shutil.move(file_path, target_path)  # move current assay file

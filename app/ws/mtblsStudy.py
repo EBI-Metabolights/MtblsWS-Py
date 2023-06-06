@@ -1162,7 +1162,7 @@ class CreateAccession(Resource):
         #         study.releasedate,
         #         study.submissiondate,
         #         obfuscationcode=study.obfuscationcode,
-        #         recycle_bin_folder_name=f"_INITIAL_{study.acc}",
+        #         task_name=f"_INITIAL_{study.acc}",
         #         delete_unreferenced_metadata_files=False,
         #         settings=get_study_settings(),
         #         apply_future_actions=False,
@@ -1194,7 +1194,7 @@ class CreateAccession(Resource):
         # maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
         # result = maintenance_task.execute_future_actions()
         # maintenance_task.future_actions.clear()
-        inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False}
+        inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False, "task_name": "INITIAL"}
         create_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
         logger.info(f"Step 4: Create initial files and folders task has been started for study {study_acc} with task id: {create_folders_task.id}")
         
@@ -1882,6 +1882,7 @@ class MtblsStudyFolders(Resource):
                 "send_email_to_submitter": True,
                 "study_id": study_id,
                 "force_to_maintain": force_to_maintain,
+                "task_name": "MAINTAIN"
             }
             task = maintain_storage_study_folders.apply_async(kwargs=inputs)
 

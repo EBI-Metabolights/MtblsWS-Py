@@ -17,7 +17,7 @@ from app.ws.study.study_service import StudyService
 def maintain_folders(
     study_id_list: List[str],
     target=None,
-    recycle_bin_folder_name: str = None,
+    task_name: str = None,
     settings: StudySettings = None,
     flask_app=None,
     output_summary_report=None,
@@ -36,9 +36,6 @@ def maintain_folders(
     if not target:
         raise MaintenanceException(message="target should be 'metadata', 'data' or 'private-ftp")
 
-    if not recycle_bin_folder_name:
-        date_format = "%Y-%m-%d_%H-%M-%S"
-        recycle_bin_folder_name = time.strftime(date_format)
 
     maintenance_task_list: Dict[str, StudyFolderMaintenanceTask] = {}
     if not settings:
@@ -63,7 +60,7 @@ def maintain_folders(
                     public_release_date,
                     submission_date,
                     obfuscationcode=study.obfuscationcode,
-                    recycle_bin_folder_name=recycle_bin_folder_name,
+                    task_name=task_name,
                     delete_unreferenced_metadata_files=delete_unreferenced_metadata_files,
                     settings=settings,
                     apply_future_actions=apply_future_actions,
@@ -135,9 +132,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 3 and sys.argv[3]:
         output_summary_report = sys.argv[3]
 
-    recycle_bin_folder_name = None
+    task_name = None
     if len(sys.argv) > 4 and sys.argv[4]:
-        recycle_bin_folder_name = sys.argv[4]
+        task_name = sys.argv[4]
 
     apply_future_actions = False
     if len(sys.argv) > 5 and sys.argv[5]:
@@ -153,7 +150,7 @@ if __name__ == "__main__":
             target=target,
             flask_app=flask_app,
             output_summary_report=output_summary_report,
-            recycle_bin_folder_name=recycle_bin_folder_name,
+            task_name=task_name,
             apply_future_actions=apply_future_actions,
         )
 

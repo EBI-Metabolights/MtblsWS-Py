@@ -31,7 +31,8 @@ def maintain_storage_study_folders(
     maintain_data_storage=True,
     maintain_private_ftp_storage=True,
     cluster_execution_mode=True,
-    failing_gracefully=False
+    failing_gracefully=False,
+    task_name=None
 ):
     all_results = []
     headers = ["STUDY_ID", "STUDY STATUS", "STATUS", "ACTION", "ITEM", "MESSAGE", "PARAMETERS"]
@@ -63,8 +64,8 @@ def maintain_storage_study_folders(
                             study_status,
                             study.releasedate,
                             study.submissiondate,
+                            task_name=task_name,
                             obfuscationcode=study.obfuscationcode,
-                            recycle_bin_folder_name=f"_INITIAL_{study.acc}",
                             delete_unreferenced_metadata_files=False,
                             settings=get_study_settings(),
                             apply_future_actions=True,
@@ -124,7 +125,6 @@ def maintain_storage_study_folders(
             result_str = result_str + "<p>" + df.to_html().replace('border="1"', 'border="0"')
             if send_email_to_submitter:
                 send_email("Result of the task: maintain MetaboLights study folders", result_str, None, email, None)
-            
             return result_str
     except Exception as ex:
         if send_email_to_submitter:
