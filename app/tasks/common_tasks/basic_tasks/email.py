@@ -6,7 +6,7 @@ from app.ws.db_connection import (
     get_release_date_of_study,
     query_study_submitters,
 )
-from app.ws.settings.utils import get_system_settings
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.tasks.worker import (
     MetabolightsTask,
@@ -66,9 +66,8 @@ def send_email_for_private_ftp_folder(user_token, study_id, folder_name):
 
     flask_app = get_flask_app()
     with flask_app.app_context():
-        relative_studies_root_path = flask_app.config.get(
-            "PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH"
-        )
+        
+        relative_studies_root_path = get_study_settings().cluster_private_ftp_user_path
         relative_study_path = os.path.join(
             os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
         )

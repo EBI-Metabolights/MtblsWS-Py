@@ -35,9 +35,10 @@ class StudySettings(MetabolightsBaseSettings):
 
     cluster_private_ftp_root_path:str
     cluster_private_ftp_recycle_bin_root_path:str
+    
     cluster_public_ftp_root_path:str
     cluster_public_ftp_recycle_bin_root_path:str    
-    
+    cluster_private_ftp_user_path: str
     
     audit_files_symbolic_link_name:str = "AUDIT_FILES" 
     internal_files_symbolic_link_name:str = "INTERNAL_FILES"

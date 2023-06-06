@@ -1085,13 +1085,26 @@ class CreateAccession(Resource):
             if study.submissiondate.timestamp() > last_study_datetime.timestamp():
                 last_study_datetime = study.submissiondate
         study_settings = get_study_settings()
-        if (datetime.now() - last_study_datetime).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
-            logger.warning(f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins")
+        if (
+            datetime.now() - last_study_datetime
+        ).total_seconds() < study_settings.min_study_creation_interval_in_mins * 60:
+            logger.warning(
+                f"New study creation request from user {user.username} in {study_settings.min_study_creation_interval_in_mins} mins"
+            )
             raise MetabolightsException(message="Submitter can create only one study in five minutes.", http_code=429)
 
-        if len(submitted_studies) >= study_settings.max_study_in_submitted_status and user.role != UserRole.ROLE_SUPER_USER.value and user.role != UserRole.SYSTEM_ADMIN.value:
-            logger.warning(f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status.")
-            raise MetabolightsException(message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.", http_code=400)
+        if (
+            len(submitted_studies) >= study_settings.max_study_in_submitted_status
+            and user.role != UserRole.ROLE_SUPER_USER.value
+            and user.role != UserRole.SYSTEM_ADMIN.value
+        ):
+            logger.warning(
+                f"New study creation request from user {user.username}. User has already {study_settings.max_study_in_submitted_status} study in Submitted status."
+            )
+            raise MetabolightsException(
+                message="The user can have at most two studies in Submitted status. Please complete and update status of your current studies.",
+                http_code=400,
+            )
 
         logger.info(f"Step 1: New study creation request is received from user {user.username}")
         new_accession_number = True
@@ -1191,7 +1204,7 @@ class CreateAccession(Resource):
             relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
             relative_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), ftp_folder_name)
             inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": folder_name}
-            send_email_for_private_ftp_folder.apply_async (kwargs=inputs)
+            send_email_for_private_ftp_folder.apply_async(kwargs=inputs)
         else:
             logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
 
@@ -1864,11 +1877,15 @@ class MtblsStudyFolders(Resource):
 
         logger.info("Searching study folders")
         try:
-            maintain_storage_study_folders(
-                user_token, send_email_to_submitter=True, study_id=study_id, force_to_maintain=force_to_maintain
-            )
+            inputs = {
+                "user_token": user_token,
+                "send_email_to_submitter": True,
+                "study_id": study_id,
+                "force_to_maintain": force_to_maintain,
+            }
+            task = maintain_storage_study_folders.apply_async(kwargs=inputs)
 
-            result = {"content": f"Task has been started. Result will be sent by email", "message": None, "err": None}
+            result = {"content": f"Task has been started. Result will be sent by email with task id {task.id}", "message": None, "err": None}
             return result
         except Exception as ex:
             raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
