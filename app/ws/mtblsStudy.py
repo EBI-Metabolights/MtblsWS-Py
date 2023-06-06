@@ -62,7 +62,6 @@ from app.ws.db_connection import (
     query_study_submitters,
     study_submitters,
 )
-from app.ws.folder_maintenance import StudyFolderMaintenanceTask
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
@@ -1188,23 +1187,24 @@ class CreateAccession(Resource):
         if new_accession_number:
             inputs = {"user_token": user_token, "study_id": study_acc}
             new_study_email_task = send_email_for_study_submitted.apply_async(kwargs=inputs)
-            logger.info(f"Step 4: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
+            logger.info(f"Step 3: Sending email for new study {study_acc} with task id: {new_study_email_task.id}")
         else:
-            logger.info(f"Step 4: Skipping email. No email will be sent for the study {study_acc}")
+            logger.info(f"Step 3: Skipping email. No email will be sent for the study {study_acc}")
 
         # maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
         # result = maintenance_task.execute_future_actions()
         # maintenance_task.future_actions.clear()
         inputs = {"user_token": user_token, "study_id": study_acc, "send_email_to_submitter": False}
-        maintain_storage_study_folders.apply_async(kwargs=inputs)
+        create_folders_task = maintain_storage_study_folders.apply_async(kwargs=inputs)
+        logger.info(f"Step 4: Create initial files and folders task has been started for study {study_acc} with task id: {create_folders_task.id}")
+        
         # Start ftp folder creation task
 
         if new_accession_number:
             ftp_folder_name = study_acc.lower() + "-" + study.obfuscationcode
-            relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
-            relative_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), ftp_folder_name)
-            inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": folder_name}
+            inputs = {"user_token": user_token, "study_id": study_acc, "folder_name": ftp_folder_name}
             send_email_for_private_ftp_folder.apply_async(kwargs=inputs)
+            logger.info(f"Step 5: Sending FTP folder email for the study {study_acc}")
         else:
             logger.info(f"Step 5: Skipping FTP folder email for the study {study_acc}")
 

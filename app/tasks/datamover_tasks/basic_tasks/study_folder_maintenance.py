@@ -30,9 +30,12 @@ def maintain_storage_study_folders(
     maintain_metadata_storage=True,
     maintain_data_storage=True,
     maintain_private_ftp_storage=True,
+    cluster_execution_mode=True,
+    failing_gracefully=False
 ):
     all_results = []
     headers = ["STUDY_ID", "STUDY STATUS", "STATUS", "ACTION", "ITEM", "MESSAGE", "PARAMETERS"]
+    exceptions = {}
     try:
         flask_app = get_flask_app()
         UserService.get_instance(flask_app).validate_user_has_curator_role(user_token)
@@ -66,7 +69,7 @@ def maintain_storage_study_folders(
                             settings=get_study_settings(),
                             apply_future_actions=True,
                             force_to_maintain=force_to_maintain,
-                            cluster_execution_mode=True
+                            cluster_execution_mode=cluster_execution_mode
                         )
                         if maintain_metadata_storage:
                             maintenance_task.maintain_study_rw_storage_folders()
@@ -107,6 +110,9 @@ def maintain_storage_study_folders(
                                 "",
                             ]
                         )
+                        exceptions[study_id] = exc
+                        if not failing_gracefully:
+                            raise exc
                 df = pd.DataFrame(all_results, columns=headers)
 
                 result = {
@@ -117,8 +123,8 @@ def maintain_storage_study_folders(
             result_str = json.dumps(result, indent=4)
             result_str = result_str + "<p>" + df.to_html().replace('border="1"', 'border="0"')
             if send_email_to_submitter:
-
                 send_email("Result of the task: maintain MetaboLights study folders", result_str, None, email, None)
+            
             return result_str
     except Exception as ex:
         if send_email_to_submitter:

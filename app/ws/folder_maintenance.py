@@ -225,7 +225,43 @@ class StudyFolderMaintenanceTask(object):
         self.apply_future_actions = apply_future_actions
         
         # self.file_manager = MountedVolumeFileManager(f"{self.study_id}_local_file_manager")
-        
+    
+    def create_audit_folder(self, folder_name: str = None, stage: str = "BEFORE"):
+        if os.path.exists(self.study_metadata_files_path):
+            self.maintain_rw_storage_folders()
+            metadata_files_list = self.get_all_metadata_files(recursive=False)
+            metadata_files_list.sort()
+            
+            if metadata_files_list:
+                if not folder_name:
+                    date_format = "%Y-%m-%d_%H-%M-%S"
+                    folder_name =  time.strftime(date_format)
+                if stage:
+                    folder_name = f"{folder_name}_{stage}"
+                audit_folder_path = os.path.join(self.study_audit_files_path, folder_name)
+                os.makedirs(audit_folder_path, exist_ok=True)
+                
+                for file in metadata_files_list:
+                    basename = os.path.basename(file)
+                    target_file = os.path.join(audit_folder_path, basename)
+                    shutil.copy(file, target_file)
+                
+                self.update_study_folder_metadata_signature()
+                metadata_files_signature_path = os.path.join(
+                    self.study_internal_files_path, self.study_settings.metadata_files_signature_file_name
+                )
+                basename = os.path.basename(metadata_files_signature_path)
+                target_file = os.path.join(audit_folder_path, basename)
+                shutil.copy(metadata_files_signature_path, target_file)
+                action_log = MaintenanceActionLog(
+                    item=audit_folder_path,
+                    action=MaintenanceAction.INFO_MESSAGE,
+                    parameters={},
+                    message=f"{self.study_id}: Audit folder {folder_name} was created.",
+                    successful=True,
+                )
+                self.actions.append(action_log)
+                    
     def execute_future_actions(self) -> Dict[str, str]:
         if self.cluster_execution_mode:
             success = True
@@ -235,7 +271,7 @@ class StudyFolderMaintenanceTask(object):
                     success = False
             return success
         return False
-
+    
     def execute_action(self, action_log: MaintenanceActionLog):
         if action_log.action == MaintenanceAction.CREATE:
             permission = None
@@ -491,27 +527,42 @@ class StudyFolderMaintenanceTask(object):
             permission = Acl.AUTHORIZED_READ.value
         elif self.study_status == StudyStatus.SUBMITTED:
             permission = Acl.AUTHORIZED_READ_WRITE.value
-            
-        if not os.path.exists(private_ftp_root_path):
-            self._create_folder_future_actions(
-                private_ftp_root_path,
-                0o770,
-                cluster_private_ftp_recycle_bin_root_path,
-                created_folders,
-                deleted_folders,
-            )
-
-            sub_folder = os.path.join(private_ftp_root_path, "RAW_FILES")
-            self._create_folder_future_actions(
-                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
-            )
-
-            sub_folder = os.path.join(private_ftp_root_path, "DERIVED_FILES")
-            self._create_folder_future_actions(
-                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
-            )
         
-        self.update_permission(private_ftp_root_path, permission)
+        create_folder = self.study_status == StudyStatus.INCURATION or self.study_status == StudyStatus.SUBMITTED or self.study_status == StudyStatus.INREVIEW
+        if not os.path.exists(private_ftp_root_path):
+            if create_folder:
+                self._create_folder_future_actions(
+                    private_ftp_root_path,
+                    0o770,
+                    cluster_private_ftp_recycle_bin_root_path,
+                    created_folders,
+                    deleted_folders,
+                )
+
+                sub_folder = os.path.join(private_ftp_root_path, "RAW_FILES")
+                self._create_folder_future_actions(
+                    sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+                )
+
+                sub_folder = os.path.join(private_ftp_root_path, "DERIVED_FILES")
+                self._create_folder_future_actions(
+                    sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+                )
+                self.update_permission(private_ftp_root_path, permission)
+        else:
+            if create_folder and self.study_status == StudyStatus.SUBMITTED:
+                self.update_permission(private_ftp_root_path, 0o770)
+                sub_folder = os.path.join(private_ftp_root_path, "RAW_FILES")
+                self._create_folder_future_actions(
+                    sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+                )
+
+                sub_folder = os.path.join(private_ftp_root_path, "DERIVED_FILES")
+                self._create_folder_future_actions(
+                    sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+                )                
+                         
+            self.update_permission(private_ftp_root_path, permission)
         
         
     def sanitise(self, obj):
@@ -578,11 +629,13 @@ class StudyFolderMaintenanceTask(object):
             raise ex
         return referenced_files_set
 
-    def maintain_study_rw_storage_folders(self) -> List[MaintenanceActionLog]:
+    def maintain_study_rw_storage_folders(self, create_audit_folder=True) -> List[MaintenanceActionLog]:
         investigation = None
         investigation_file_path = os.path.join(self.study_metadata_files_path, self.investigation_file_name)
         update_metadata_files = False
         try:
+            if create_audit_folder:
+                self.create_audit_folder(self.recycle_bin_folder_name)
             self.maintain_rw_storage_folders()
             self.maintain_unwanted_files()
             self.maintain_metadata_file_types_and_permissions()
