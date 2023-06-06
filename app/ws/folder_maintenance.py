@@ -887,7 +887,7 @@ class StudyFolderMaintenanceTask(object):
             type = "folder" if file.is_dir() else "file"
             action_log = MaintenanceActionLog(
                 item=str(file),
-                action=MaintenanceAction.UPDATE_FILE_PERMISSION,
+                action=MaintenanceAction.MOVE,
                 parameters={},
                 message=f"{self.study_id}: {str(file)} is hidden {type}. It was removed.",
             )
@@ -964,20 +964,20 @@ class StudyFolderMaintenanceTask(object):
                 octal_value = created_folders[file_path]
 
             current_chmod = int(octal_value, 8)
-            if current_chmod != int(mode):
+            if current_chmod != int(mode & 0o777):
                 octal_value_str = octal_value.replace("0o", "")
                 # os.chmod(file_path, mode=mode)
-                action_log = MaintenanceActionLog(
-                    item=file_path,
-                    action=MaintenanceAction.UPDATE_FILE_PERMISSION,
-                    parameters={"chmod": chmod_str},
-                    message=f"{self.study_id}: {file_path} file permission will be updated from {octal_value_str} to {chmod_str}.",
-                    command=f"chmod {chmod_str} '{file_path}'",
-                )
+
                 if self.apply_future_actions:
                     self.update_permission(file_path, mode)
-                    self.actions.append(action_log)
                 else:
+                    action_log = MaintenanceActionLog(
+                        item=file_path,
+                        action=MaintenanceAction.UPDATE_FILE_PERMISSION,
+                        parameters={"chmod": chmod_str},
+                        message=f"{self.study_id}: {file_path} file permission will be updated from {octal_value_str} to {chmod_str}.",
+                        command=f"chmod {chmod_str} '{file_path}'",
+                    )
                     self.future_actions.append(action_log)
 
         if (not os.path.exists(file_path) or file_path in deleted_folders) and file_path not in created_folders:

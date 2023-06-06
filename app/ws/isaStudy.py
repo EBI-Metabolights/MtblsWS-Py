@@ -3568,7 +3568,7 @@ class StudyPublications(Resource):
                 isa_study.publications[index] = updated_publication
                 break
         if not found:
-            abort(404, message='Could not find the publication title you tried to update')
+            abort(404)
         if term_source:
             add_ontology_to_investigation(isa_inv, term_source.name, term_source.version,
                                           term_source.file, term_source.description)
