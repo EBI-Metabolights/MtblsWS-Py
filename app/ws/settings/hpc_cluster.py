@@ -32,4 +32,4 @@ class HpcClusterSettings(MetabolightsBaseSettings):
     job_kill_command:str = "bjobs"
     job_track_email:str
     job_track_log_location:str
-    job_status_read_timeout:str="10"
+    job_status_read_timeout:int=10

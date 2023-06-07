@@ -79,11 +79,11 @@ class DataMoverAvailableStorage(object):
                 self.create_empty_file(file_path=study_log_file)
                 logger.info(f'Sending cluster job by requestor - {self.requestor}')
                 logger.info(f" Task - [{chebi_sync_task}]; Command -[{command}]; params - [{params}]")
-                chebi_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                chebi_sync_job, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
                                                                             job_params=params, identifier=study_id, taskname=chebi_sync_task,
                                                                             log=True, log_path=datamover_log_file)
-                self._log_job_output(status=chebi_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
-                if chebi_sync_status:
+                self._log_job_output(status=chebi_sync_job, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+                if chebi_sync_job:
                     chebi_sync_status = SyncTaskStatus.JOB_SUBMITTED
                 else:
                     chebi_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED   
@@ -102,11 +102,11 @@ class DataMoverAvailableStorage(object):
                 self.create_empty_file(file_path=study_log_file)
                 logger.info(f'Sending cluster job by requestor - {self.requestor}')
                 logger.info(f" Task - [{meta_sync_task}]; Command -[{command}]; params - [{params}]")
-                meta_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                meta_sync_job, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
                                                                             job_params=params, identifier=study_id, taskname=meta_sync_task,
                                                                             log=True, log_path=datamover_log_file)
-                self._log_job_output(status=meta_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
-                if meta_sync_status:
+                self._log_job_output(status=meta_sync_job, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+                if meta_sync_job:
                     meta_sync_status = SyncTaskStatus.JOB_SUBMITTED
                 else:
                     meta_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
@@ -122,28 +122,26 @@ class DataMoverAvailableStorage(object):
                 self.create_empty_file(file_path=study_log_file)
                 logger.info(f'Sending cluster job by requestor - {self.requestor}')
                 logger.info(f" Task - [{files_sync_task}]; Command -[{command}]; params - [{params}]")
-                files_sync_status, message, job_out2, job_err2, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+                files_sync_job, message, job_out2, job_err2, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
                                                                             job_params=params, identifier=study_id, taskname=files_sync_task,
                                                                             log=True, log_path=datamover_log_file)
-                self._log_job_output(status=files_sync_status, job_out=job_out2, job_err=job_err2, log_file_study_path=study_log_file) 
-                if files_sync_status:
+                self._log_job_output(status=files_sync_job, job_out=job_out2, job_err=job_err2, log_file_study_path=study_log_file) 
+                if files_sync_job:
                     files_sync_status = SyncTaskStatus.JOB_SUBMITTED
                 else:
                     files_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
             else:
                 files_sync_status = files_sync_result.status
             
-        return meta_sync_status,files_sync_status,chebi_sync_task
+        return meta_sync_status,files_sync_status,chebi_sync_status
         
-    def sync_public_study_to_ftp(self, source_study_folder:str, target_ftp_folder:str , ignore_list: List[str] = None,
+    def sync_public_study_to_ftp(self, source_study_folder:str=None, target_ftp_folder:str=None , ignore_list: List[str] = None,
                                  **kwargs):   
         command = 'rsync'
         meta_sync_task = 'rsync_meta_pub_ftp'
         files_sync_task = 'rsync_rdfiles_pub_ftp'
-        audit_sync_task = 'rsync_audit_pub_ftp'
         meta_sync_status = None
         files_sync_status = None
-        audit_sync_status = None
         study_id = self.studyId
         target_folder = self._get_absolute_ftp_public_study_path(study_id).rstrip(os.sep)
         exclude = self.build_exclusion_list(ignore_list=ignore_list)            
@@ -153,18 +151,18 @@ class DataMoverAvailableStorage(object):
         if meta_sync_result.status != SyncTaskStatus.RUNNING and meta_sync_result.status != SyncTaskStatus.PENDING:
             
             source_folder = self._get_absolute_cluster_study_metadata_files_path(study_id).rstrip(os.sep)
-            params = f"-auv {source_folder}/. {target_folder}/"
+            params = f"-auv --include='*.txt' --include='*.tsv' --exclude='*' --no-links --delete {source_folder}/. {target_folder}/"
             study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=meta_sync_task)
             datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=meta_sync_task)
             logger.info("sync_from_studies_folder Syncing  Metadata files for study : " + study_id)
             self.create_empty_file(file_path=study_log_file)
             logger.info(f'Sending cluster job by requestor - {self.requestor}')
             logger.info(f" Task - [{meta_sync_task}]; Command -[{command}]; params - [{params}]")
-            meta_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+            meta_sync_job, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
                                                                         job_params=params, identifier=study_id, taskname=meta_sync_task,
                                                                         log=True, log_path=datamover_log_file)
             self._log_job_output(status=meta_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
-            if meta_sync_status:
+            if meta_sync_job:
                 meta_sync_status = SyncTaskStatus.JOB_SUBMITTED
             else:
                 meta_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
@@ -180,39 +178,19 @@ class DataMoverAvailableStorage(object):
             logger.info("sync_from_studies_folder Syncing  RAW/DERIVED files for study : " + study_id)
             self.create_empty_file(file_path=study_log_file)
             logger.info(f'Sending cluster job by requestor - {self.requestor}')
-            logger.info(f" Task - [{self.files_sync_task}]; Command -[{command}]; params - [{params}]")
-            files_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+            logger.info(f" Task - [{files_sync_task}]; Command -[{command}]; params - [{params}]")
+            files_sync_job, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
                                                                         job_params=params, identifier=study_id, taskname=files_sync_task,
                                                                         log=True, log_path=datamover_log_file)
             self._log_job_output(status=files_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
-            if files_sync_status:
+            if files_sync_job:
                 files_sync_status = SyncTaskStatus.JOB_SUBMITTED
             else:
                 files_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
         else:
             files_sync_status = files_sync_result.status
-        
-        audit_sync_result: SyncTaskResult = self._check_folder_sync_result(task_name=audit_sync_task)
-        if audit_sync_result.status != SyncTaskStatus.RUNNING and audit_sync_result.status != SyncTaskStatus.PENDING:
-            source_folder = self._get_absolute_cluster_study_audit_files_path(study_id).rstrip(os.sep)
-            params = f"-auv {source_folder}/. {target_folder}/"
-            study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=audit_sync_task)
-            datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=audit_sync_task)
-            logger.info(f"sync_from_studies_folder Syncing  audit files for study[study_id]")
-            self.create_empty_file(file_path=study_log_file)
-            logger.info(f'Sending cluster job by requestor - {self.requestor}')
-            logger.info(f" Task - [{self.audit_sync_task}]; Command -[{command}]; params - [{params}]")
-            status3, message, job_out3, job_err3, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
-                                                                        job_params=params, identifier=study_id, taskname=audit_sync_task,
-                                                                        log=True, log_path=datamover_log_file)
-            self._log_job_output(status=status3, job_out=job_out3, job_err=job_err3, log_file_study_path=study_log_file)
-            if audit_sync_status:
-                audit_sync_status = SyncTaskStatus.JOB_SUBMITTED
-            else:
-                audit_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
-        else:
-            audit_sync_status = audit_sync_result.status
-        return meta_sync_status,files_sync_status,audit_sync_status
+            
+        return meta_sync_status,files_sync_status
 
     def sync_from_ftp_folder(self, source_ftp_folder: str, ignore_list: List[str] = None, **kwargs) -> bool:
         command = 'rsync'
@@ -227,18 +205,18 @@ class DataMoverAvailableStorage(object):
         if meta_sync_result.status != SyncTaskStatus.RUNNING and meta_sync_result.status != SyncTaskStatus.PENDING:
             
             target_folder = self._get_absolute_cluster_study_metadata_files_path(study_id).rstrip(os.sep)
-            params = f"-auv --include='*/' --include='*.txt' --include='*.tsv' --exclude='*' {source_folder}/. {target_folder}/"
+            params = f"-auv --include='*.txt' --include='*.tsv' --exclude='*' {source_folder}/. {target_folder}/"
             study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.sync_meta_task)
             datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=self.sync_meta_task)
             logger.info(f"sync_from_ftp_folder : Syncing  Metadata files for study[{study_id}]")
             self.create_empty_file(file_path=study_log_file)
             logger.info(f'Sending cluster job by requestor - {self.requestor}')
             logger.info(f" Task - [{self.sync_meta_task}]; Command -[{command}]; params - [{params}]")
-            status1, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+            meta_sync_job, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
                                                                         job_params=params, identifier=study_id, taskname=self.sync_meta_task,
                                                                         log=True, log_path=datamover_log_file)
-            self._log_job_output(status=status1, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
-            if meta_sync_status:
+            self._log_job_output(status=meta_sync_job, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file)
+            if meta_sync_job:
                 meta_sync_status = SyncTaskStatus.JOB_SUBMITTED
             else:
                 meta_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED
@@ -255,11 +233,11 @@ class DataMoverAvailableStorage(object):
             self.create_empty_file(file_path=study_log_file)
             logger.info(f'Sending cluster job by requestor - {self.requestor}')
             logger.info(f" Task - [{self.sync_rdfiles_task}]; Command -[{command}]; params - [{params}]")
-            files_sync_status, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
+            files_sync_job, message, job_out, job_err, log_file = submit_job(email=False, account=None, queue=self.datamover_queue, job_cmd=command,
                                                                         job_params=params, identifier=study_id, taskname=self.sync_rdfiles_task,
                                                                         log=True, log_path=datamover_log_file)
-            self._log_job_output(status=files_sync_status, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file) 
-            if rdfiles_sync_status:
+            self._log_job_output(status=files_sync_job, job_out=job_out, job_err=job_err, log_file_study_path=study_log_file) 
+            if files_sync_job:
                 rdfiles_sync_status = SyncTaskStatus.JOB_SUBMITTED
             else:
                 rdfiles_sync_status = SyncTaskStatus.JOB_SUBMISSION_FAILED 
@@ -288,7 +266,7 @@ class DataMoverAvailableStorage(object):
         exclude = self.build_exclusion_list(ignore_list=ignore_list)
             
         target_folder = self._get_absolute_cluster_study_metadata_files_path(study_id).rstrip(os.sep)
-        params = f"-aunv --include='*/' --include='*.txt' --include='*.tsv' --exclude='*' {source_folder}/. {target_folder}/"
+        params = f"-aunv --include='*.txt' --include='*.tsv' --exclude='*' {source_folder}/. {target_folder}/"
         study_log_file = self._get_study_log_file_path(study_id=study_id, task_name=self.calc_metedata_task)
         datamover_log_file = self._get_study_log_datamover_path(study_id=study_id, task_name=self.calc_metedata_task)
         logger.info(f"sync_from_ftp_folder : Calculating sync status of Metadata files for study[{study_id}]")
@@ -717,16 +695,16 @@ class DataMoverAvailableStorage(object):
         return os.path.join(self.cluster_study_readonly_audit_files_root_path, relative_path.lstrip('/'))
     
     def _get_study_log_folder(self, study_id:str) -> str:
-        return os.path.join(self.study_internal_files_path.lstrip('/'), study_id, self.study_logs_folder_name)
+        return os.path.join(self.study_internal_files_path, study_id, self.study_logs_folder_name)
     
     def _get_chebi_sub_folder(self, study_id:str) -> str:
-        return os.path.join(self.study_internal_files_path.lstrip('/'), study_id, self.chebi_annotation_sub_folder)
+        return os.path.join(self.study_internal_files_path, study_id, self.chebi_annotation_sub_folder)
 
     def _get_study_log_datamover_path(self, study_id:str, task_name:str) -> str:
         return os.path.join(self._get_study_log_datamover_folder(study_id=study_id), study_id + "_" + task_name + ".log")
     
     def _get_study_log_datamover_folder(self, study_id:str):
-        return os.path.join(self.cluster_study_internal_files_root_path.lstrip('/'), study_id, self.study_logs_folder_name)
+        return os.path.join(self.cluster_study_internal_files_root_path, study_id, self.study_logs_folder_name)
 
     def _get_study_log_file_path(self, study_id:str, task_name: str) -> str:
         return os.path.join(self._get_study_log_folder(study_id=study_id), study_id + "_" + task_name + ".log")
@@ -790,7 +768,7 @@ class DataMoverAvailableStorage(object):
     def check_if_job_successful(self, status, job_out, log_file_study_path):
         if status:
             if "is submitted to queue" in job_out:
-                for x in range(0, self.read_time_out):
+                for x in range(0, self.read_timeout):
                     if self.str_in_file(file_path=log_file_study_path, word='Successfully completed'):
                         return True
                     if self.str_in_file(file_path=log_file_study_path, word='Exited with exit code'):

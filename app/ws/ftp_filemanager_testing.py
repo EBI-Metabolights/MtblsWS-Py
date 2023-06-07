@@ -22,6 +22,7 @@ from flask_restful_swagger import swagger
 from flask import request, abort, jsonify
 from flask import current_app as app
 from app.services.storage_service.unmounted.data_mover_client import DataMoverAvailableStorage
+from app.services.storage_service.models import SyncTaskStatus
 from app.ws.db_connection import check_access_rights
 
 logger = logging.getLogger('wslog')
@@ -94,7 +95,7 @@ class FTPRemoteFileManager(Resource):
                 "dataType": "string",
                 "enum": ["create ftp folder", "move ftp folder", "delete ftp folder",
                          "check folder exists", "check ftp folder status", "check sync status",
-                         "sync folder from ftp", "sync folder from study", "get ftp folder permission",
+                         "sync folder from ftp", "sync folder from study", "sync to public ftp", "get ftp folder permission",
                          "set ftp folder permission"]
             },
             {
@@ -239,8 +240,8 @@ class FTPRemoteFileManager(Resource):
                 logger.info('Checking FTP folder status!')
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('ftp_filemanager_testing',
                                                                                           study_id, app)
-                output = data_mover_storage.sync_anaysis_job_results(source_ftp_folder=source_folder, force=False)
-                result = {'result': output.dict()}
+                meta_calc_result,rdfiles_calc_result = data_mover_storage.sync_anaysis_job_results(source_ftp_folder=source_folder, force=False)
+                result = {'result':{'meta_calc_result':meta_calc_result.dict(),'rdfiles_calc_result': rdfiles_calc_result.dict()}}
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -249,8 +250,8 @@ class FTPRemoteFileManager(Resource):
                 logger.info('Checking Sync status!')
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage('ftp_filemanager_testing',
                                                                                           study_id, app)
-                output = data_mover_storage.get_folder_sync_results()
-                result = {'result': output.dict()}
+                sync_metafiles_result,sync_rdfiles_result = data_mover_storage.get_folder_sync_results()
+                result = {'result':{'sync_metafiles_result':sync_metafiles_result.dict(),'sync_rdfiles_result': sync_rdfiles_result.dict()}}
             except Exception as e:
                 logger.info('Exception ' + str(e))
                 print(e)
@@ -260,11 +261,8 @@ class FTPRemoteFileManager(Resource):
                 logger.info('Syncing FTP folder !')
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage("ftp_filemanager_testing",
                                                                                           study_id, app)
-                status = data_mover_storage.sync_from_ftp_folder(source_folder)
-                if status:
-                    result = {'status': 'Success'}
-                else:
-                    result = {'status': 'Failure'}
+                meta_sync_status,rdfiles_sync_status = data_mover_storage.sync_from_ftp_folder(source_folder)
+                result = {'meta_sync_status': meta_sync_status, 'rdfiles_sync_status':rdfiles_sync_status}
             except Exception as e:
                 logger.info(e)
                 print(e)
@@ -273,11 +271,19 @@ class FTPRemoteFileManager(Resource):
                 logger.info('Syncing study folder !')
                 data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage("ftp_filemanager_testing",
                                                                                           study_id, app)
-                status = data_mover_storage.sync_from_studies_folder(target_folder)
-                if status:
-                    result = {'status': 'Success'}
-                else:
-                    result = {'status': 'Failure'}
+                meta_sync_status,files_sync_status,chebi_sync_status = data_mover_storage.sync_from_studies_folder(target_folder)
+                result = {'meta_sync_status': meta_sync_status, 'files_sync_status':files_sync_status, 'chebi_sync_status':chebi_sync_status}
+            except Exception as e:
+                logger.info(e)
+                print(e)
+                
+        elif operation == 'sync to public ftp':
+            try:
+                logger.info('Syncing study to public ftp !')
+                data_mover_storage: DataMoverAvailableStorage = DataMoverAvailableStorage("ftp_filemanager_testing",
+                                                                                          study_id, app)
+                meta_public_sync_status,files_public_sync_status = data_mover_storage.sync_public_study_to_ftp()
+                result = {'meta_sync_status': meta_public_sync_status, 'files_sync_status':files_public_sync_status}
             except Exception as e:
                 logger.info(e)
                 print(e)

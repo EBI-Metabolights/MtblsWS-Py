@@ -95,8 +95,8 @@ class SyncCalculation(Resource):
         study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
         storage = StorageService.get_ftp_private_storage(app)
 
-        result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
-        return jsonify(result.dict())
+        meta_calc_result,rdfiles_calc_result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
+        return jsonify({'result':{'meta_calc_result':meta_calc_result.dict(),'rdfiles_calc_result': rdfiles_calc_result.dict()}})
 
 
 class SyncFromFtpFolder(Resource):
@@ -161,9 +161,9 @@ class SyncFromFtpFolder(Resource):
 
         ftp_folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
         ignore_list = app.config.get('INTERNAL_MAPPING_LIST')
-        storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
+        meta_sync_status,rdfiles_sync_status = storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
 
-        return jsonify({"status": "sync task is started."})
+        return jsonify({'meta_sync_status': meta_sync_status, 'files_sync_status':rdfiles_sync_status})
 
 
 class FtpFolderSyncStatus(Resource):
@@ -225,8 +225,8 @@ class FtpFolderSyncStatus(Resource):
         study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
         storage = StorageService.get_ftp_private_storage(app)
 
-        result = storage.check_folder_sync_status(study_id, study.obfuscationcode, study_path)
-        return jsonify(result.dict())
+        sync_metafiles_result,sync_rdfiles_result = storage.check_folder_sync_status(study_id=study_id, obfuscation_code=None, target_local_path=study_path)
+        return jsonify({'result':{'sync_metafiles_result':sync_metafiles_result.dict(),'sync_rdfiles_result': sync_rdfiles_result.dict()}})
 
 class FtpFolderPermission(Resource):
     @swagger.operation(
@@ -564,11 +564,9 @@ class SyncFromStudyFolder(Resource):
 
         ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
 
-        ftp_private_storage.sync_from_local(source_local_folder=None, target_folder=destination, ignore_list=None, sync_chebi_annotation=sync_only_chebi_results)
-
+        meta_sync_status,files_sync_status,chebi_sync_status = ftp_private_storage.sync_from_local(source_local_folder=None, target_folder=destination, ignore_list=None, sync_chebi_annotation=sync_only_chebi_results)
         logger.info('Copying file %s to FTP %s', study_id, destination)
-        return {'Success': 'Copying files from study folder to ftp folder is started'}
-
+        return {'meta_sync_status': meta_sync_status, 'files_sync_status':files_sync_status, 'chebi_sync_status':chebi_sync_status}
 
 class SyncPublicStudyToFTP(Resource):
     @swagger.operation(
@@ -632,5 +630,5 @@ class SyncPublicStudyToFTP(Resource):
 
         ftp_public_storage = StorageService.get_ftp_public_storage(app)
         logger.info(f"Syncing files from public study folder to FTP folder for {study_id}")
-        ftp_public_storage.sync_to_public_ftp(source_local_folder=study_path, target_folder=study_id, ignore_list=None)
-        return {'Success': 'Syncing files from study folder to ftp folder is started'}
+        meta_public_sync_status,files_public_sync_status = ftp_public_storage.sync_to_public_ftp(source_local_folder=study_path, target_folder=study_id, ignore_list=None)
+        return {'meta_sync_status': meta_public_sync_status, 'files_sync_status':files_public_sync_status}
