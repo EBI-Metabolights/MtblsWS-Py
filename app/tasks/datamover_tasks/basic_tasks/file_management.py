@@ -159,9 +159,8 @@ def isdir(self, source_path: str) -> bool:
     name="app.tasks.datamover_tasks.basic_tasks.file_management.exists",
 )
 def exists(self, source_path: str) -> bool:
-    input_path = get_input_paths(source_path)
 
-    if os.path.exists(input_path):
+    if source_path and os.path.exists(source_path):
         return True
     return False
 
