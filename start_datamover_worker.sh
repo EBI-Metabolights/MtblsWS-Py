@@ -19,7 +19,7 @@ APPDIR="/app-root"
 APP_LOG_DIR=$APPDIR/logs
 PYTHONPATH="$APPDIR:$PYTHONPATH"
 
-source $APPDIR/.env
+source $APPDIR/.env 
 export $(cat $APPDIR/.env | grep -v '#' | xargs)
 
 echo "Python version:" $(python3 --version)
