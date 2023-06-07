@@ -66,7 +66,7 @@ celery.conf.update(
     task_routes={
         "app.tasks.common_tasks.*": {"queue": "common-tasks"},
         "app.tasks.compute_tasks.*": {"queue": "compute-tasks"},
-        "app.tasks.datamover_tasks.*": {"queue": "datamover-common-tasks"},
+        "app.tasks.datamover_tasks.*": {"queue": "datamover-tasks"},
         "app.tasks.system_monitor_tasks.*": {"queue": "monitor-tasks"},
     },
     task_default_queue="common-tasks",

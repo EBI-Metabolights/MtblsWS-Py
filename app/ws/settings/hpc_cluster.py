@@ -40,14 +40,14 @@ class HpcClusterSettings(MetabolightsBaseSettings):
     job_status_read_timeout:str="10"
     
     job_project_name:str = "metabolights-ws"
-    number_of_datamover_workers:int = 3
+    number_of_datamover_workers:int = 1
     datamover_worker_maximum_uptime_in_seconds:int =  3 * 24 * 60 * 60
     datamover_job_submission_script_path: str
     task_get_timeout_in_seconds: int = 10
     
     maximum_shutdown_signal_per_time: int = 1
     number_of_additional_localhost_workers:int = 1
-    number_of_remote_vm_workers:int = 2
+    number_of_remote_vm_workers:int = 0
     
     vm_worker_hostnames: str
     start_vm_worker_script_template_name: str = "start_vm_worker_template.sh.j2"

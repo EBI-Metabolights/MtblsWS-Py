@@ -1,12 +1,9 @@
 import os
-import shutil
-from typing import Union, List
+from typing import List, Union
 
-from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
-from app.services.storage_service.exceptions import StorageServiceException
 from app.services.storage_service.file_manager import FileManager
-from app.tasks.datamover_tasks.basic_tasks import file_management 
+from app.tasks.datamover_tasks.basic_tasks import file_management
 from app.ws.settings.utils import get_cluster_settings
 
 
