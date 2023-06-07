@@ -22,16 +22,16 @@ result_backend = broker_url
 celery = Celery(
     __name__,
     include=[
-        "app.tasks.common_tasks.admin_tasks.integration_check",
         "app.tasks.common_tasks.admin_tasks.es_and_db_compound_syncronization",
         "app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization",
-        "app.tasks.common_tasks.admin_tasks.worker_check",
         "app.tasks.common_tasks.curation_tasks.metabolon",
         "app.tasks.common_tasks.basic_tasks.email",
         "app.tasks.common_tasks.basic_tasks.elasticsearch",
         "app.tasks.common_tasks.basic_tasks.ftp_operations",
         "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
-        "app.tasks.datamover_tasks.basic_tasks.file_management"
+        "app.tasks.datamover_tasks.basic_tasks.file_management",
+        "app.tasks.system_monitor_tasks.worker_maintenance",
+        "app.tasks.system_monitor_tasks.integration_check",
     ],
 )
 
@@ -64,11 +64,12 @@ def get_email_service(flask_app=None):
 
 celery.conf.update(
     task_routes={
-        "app.tasks.common_tasks.*": {"queue": "mtbls-tasks"},
+        "app.tasks.common_tasks.*": {"queue": "common-tasks"},
         "app.tasks.compute_tasks.*": {"queue": "compute-tasks"},
-        "app.tasks.datamover_tasks.*": {"queue": "datamover-tasks"},
+        "app.tasks.datamover_tasks.*": {"queue": "datamover-common-tasks"},
+        "app.tasks.system_monitor_tasks.*": {"queue": "monitor-tasks"},
     },
-    task_default_queue="mtbls-tasks",
+    task_default_queue="common-tasks",
     broker_url=broker_url,
     result_backend=result_backend,
     task_acks_late=celery_settings.celery_task_acks_late,
@@ -105,15 +106,14 @@ system_settings = get_system_settings(None)
 #         "options": {"expires": 60 },
 #     }
 # }
-# celery.conf.beat_schedule = {
+celery.conf.beat_schedule = {
 
-#     "create_remote_folder": {
-#         "task": "app.tasks.datamover_tasks.basic_tasks.file_management.create_folders",
-#         "schedule": system_settings.worker_heath_check_period_in_seconds,
-#         "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3},
-#         "args": ("", 0o777, True),
-#     }
-# }
+    "check_workers": {
+        "task": "app.tasks.system_monitor_tasks.worker_maintenance.check_all_workers",
+        "schedule": system_settings.worker_heath_check_period_in_seconds,
+        "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3}
+    }
+}
 celery.conf.timezone = "UTC"
 
 

@@ -900,7 +900,7 @@ class StudyFolderMaintenanceTask(object):
 
         current_chmod = int(octal_value, 8)
 
-        if current_chmod != int(chmod):
+        if current_chmod != int(chmod & 0o777):
             os.chmod(file_path, mode=chmod)
             action_log = MaintenanceActionLog(
                 item=file_path,

@@ -24,7 +24,7 @@
                 "--loglevel",
                 "info",
                 "-Q",
-                "mtbls-tasks"
+                "monitor-tasks"
             ],
             "jinja": true,
             "justMyCode": false,
@@ -50,7 +50,8 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "env": {"PYTHONPATH": "${cwd}"}
         },
         {
             "name": "Python: Refactor",

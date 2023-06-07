@@ -1,9 +1,10 @@
 import os
 
 from app.services.storage_service.mounted.local_storage import LocalStorage
-from app.services.storage_service.remote_worker.remote_storage import RemoteStorage
+from app.services.storage_service.remote_worker.remote_ftp_storage import RemoteFtpStorage
 from app.services.storage_service.storage import Storage
 from app.services.storage_service.unmounted.unmounted_storage import UnmountedStorage
+from app.ws.settings.utils import get_study_settings
 
 
 class StorageService(object):
@@ -23,7 +24,8 @@ class StorageService(object):
         if mount_type and mount_type.lower() == "unmounted":
             return UnmountedStorage('ftp_private_storage', app=app)
         if mount_type and mount_type.lower() == "remote_worker":
-            return RemoteStorage('remote_worker', app=app)
+            private_ftp_folder_root_path = get_study_settings().cluster_private_ftp_root_path
+            return RemoteFtpStorage('remote_worker', app=app, remote_folder=private_ftp_folder_root_path)
         raise NotImplementedError(f"Mounted type {mount_type} is not defined.")
 
     @staticmethod

@@ -9,10 +9,12 @@ from app.utils import MetabolightsException
 
 class UnmountedStorage(Storage):
 
-    def __init__(self, name, app):
+    def __init__(self, name, app, remote_file_manager=None):
         self.app = app
         manager_name = name + '_mounted_volume_file_manager'
-        self.remote_file_manager: UnmountedVolumeFileManager = UnmountedVolumeFileManager(manager_name, app)
+        self.remote_file_manager = remote_file_manager
+        if not remote_file_manager:
+            self.remote_file_manager: UnmountedVolumeFileManager = UnmountedVolumeFileManager(manager_name, app)
 
         super(UnmountedStorage, self).__init__(name=name, remote_file_manager=self.remote_file_manager)
 
