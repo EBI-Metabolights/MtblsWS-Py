@@ -19,9 +19,18 @@ class RemoteFileManager(FileManager):
     def get_absolute_path(self, path: Union[str, List[str]]) -> str:
         if self.mounted_root_folder:
             if isinstance(path, list):
-                return [os.path.join(self.mounted_root_folder, x.strip().strip(os.sep)) for x in path if x.strip().strip(os.sep)]
+                paths = []
+                for item in path:
+                    if item.strip().strip(os.sep):
+                        if item.strip().startswith(self.mounted_root_folder):
+                            paths.append(item.strip())
+                        else:
+                            paths.append(os.path.join(self.mounted_root_folder, path.strip().strip(os.sep)))
             else:
+                
                 if path.strip().strip(os.sep):
+                    if path.strip().startswith(self.mounted_root_folder):
+                        return path.strip()
                     return os.path.join(self.mounted_root_folder, path.strip().strip(os.sep))
                 else:
                     return ""
