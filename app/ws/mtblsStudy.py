@@ -43,7 +43,7 @@ from app.tasks.common_tasks.basic_tasks.email import (
     send_technical_issue_email,
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization import sync_studies_on_es_and_db
-from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import maintain_storage_study_folders
+from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
 
 from app.utils import MetabolightsDBException, MetabolightsException, metabolights_exception_handler
 from app.ws import db_connection as db_proxy
@@ -64,7 +64,7 @@ from app.ws.db_connection import (
 )
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
-from app.ws.settings.utils import get_study_settings
+from app.ws.settings.utils import get_cluster_settings, get_study_settings
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import StudyService
 from app.ws.study.user_service import UserService
@@ -1336,65 +1336,70 @@ class DeleteStudy(Resource):
         mtbls_email = app.config.get("MTBLS_SUBMITTER_EMAIL")
         add_placeholder_flag(study_id)
         study_submitters(study_id, mtbls_email, "add")
+        folder_path = self.get_absolute_path(folder_path)
+        inputs = {"task_name": "DELETE_STUDY"}
+        cluster_settings = get_cluster_settings()
+        task = delete_study_folders.apply_async(kwargs=inputs)
+        output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds*2)
 
-        study_settings = get_study_settings()
-        study_location = os.path.join(study_settings.study_metadata_files_root_path, study_id)
-        # Remove all files in the study folder except the sample sheet and the investigation sheet.
-        if not os.path.exists(study_location):
-            os.makedirs(study_location, exist_ok=True)
-        template_folder = study_settings.study_default_template_path
-        target_file = os.path.join(study_location, "s_{0}.txt".format(study_id))
-        if not os.path.exists(target_file):
-            from_path = os.path.join(template_folder, "s_Sample.txt")
-            copy_file(from_path, target_file)
-        target_file = os.path.join(study_location, "s_{0}.txt".format(study_id))
-        if not os.path.exists(target_file):
-            from_path = os.path.join(template_folder, "i_Investigation.txt")
-            copy_file(from_path, target_file)
+        # study_settings = get_study_settings()
+        # study_location = os.path.join(study_settings.study_metadata_files_root_path, study_id)
+        # # Remove all files in the study folder except the sample sheet and the investigation sheet.
+        # if not os.path.exists(study_location):
+        #     os.makedirs(study_location, exist_ok=True)
+        # template_folder = study_settings.study_default_template_path
+        # target_file = os.path.join(study_location, "s_{0}.txt".format(study_id))
+        # if not os.path.exists(target_file):
+        #     from_path = os.path.join(template_folder, "s_Sample.txt")
+        #     copy_file(from_path, target_file)
+        # target_file = os.path.join(study_location, "s_{0}.txt".format(study_id))
+        # if not os.path.exists(target_file):
+        #     from_path = os.path.join(template_folder, "i_Investigation.txt")
+        #     copy_file(from_path, target_file)
 
-        files = os.listdir(study_location)
-        files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
+        # files = os.listdir(study_location)
+        # files_to_delete = [file for file in files if StudyUtils.is_template_file(file, study_id) is False]
 
-        for file_name in files_to_delete:
-            status, message = remove_file(study_location, file_name, True)
+        # for file_name in files_to_delete:
+        #     status, message = remove_file(study_location, file_name, True)
 
-        # Remove all files in the upload folder
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
-        private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
-        if ftp_private_storage.remote.does_folder_exist(private_ftp_study_folder):
-            ftp_private_storage.remote.delete_folder(private_ftp_study_folder)
+        # # Remove all files in the upload folder
+        # ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        # private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
+        # if ftp_private_storage.remote.does_folder_exist(private_ftp_study_folder):
+        #     ftp_private_storage.remote.delete_folder(private_ftp_study_folder)
 
-        # ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        # raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
-        # derived_files_folder = os.path.join(private_ftp_study_folder, 'DERIVED_FILES')
-        # ftp_private_storage.remote.create_folder(raw_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
-        # ftp_private_storage.remote.create_folder(derived_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # # ftp_private_storage.remote.create_folder(private_ftp_study_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # # raw_files_folder = os.path.join(private_ftp_study_folder, 'RAW_FILES')
+        # # derived_files_folder = os.path.join(private_ftp_study_folder, 'DERIVED_FILES')
+        # # ftp_private_storage.remote.create_folder(raw_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # # ftp_private_storage.remote.create_folder(derived_files_folder, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
 
-        # Here we want to overwrite the 2 basic files,the sample sheet and the investigation sheet
-        for file_name in os.listdir(study_location):
-            if file_name.startswith("i_Investigation"):
-                from_path = os.path.join(study_settings.study_default_template_path, "i_Investigation.txt")
+        # # Here we want to overwrite the 2 basic files,the sample sheet and the investigation sheet
+        # for file_name in os.listdir(study_location):
+        #     if file_name.startswith("i_Investigation"):
+        #         from_path = os.path.join(study_settings.study_default_template_path, "i_Investigation.txt")
 
-                logger.info("Attempting to copy {0} to {1}".format(from_path, study_location))
+        #         logger.info("Attempting to copy {0} to {1}".format(from_path, study_location))
 
-                copy_file(from_path, study_location + "/i_Investigation.txt")
-                logger.info("Restored investigation.txt file for {0} to template state.".format(study_id))
+        #         copy_file(from_path, study_location + "/i_Investigation.txt")
+        #         logger.info("Restored investigation.txt file for {0} to template state.".format(study_id))
 
-                StudyUtils.overwrite_investigation_file(study_location=study_location, study_id=study_id)
-                logger.info(
-                    "Updated investigation file with values for Study Identifier and Study File Name for study: {0}".format(
-                        study_id
-                    )
-                )
-            else:
-                # as there are only two files in the directory this will be the sample file.
-                from_path = os.path.join(
-                    study_settings.study_metadata_files_root_path,
-                    study_settings.study_default_template_path,
-                    "s_Sample.txt",
-                )
-                copy_file(from_path, study_location + "/s_{0}.txt".format(study_id))
-                logger.info("Restored sample.txt file for {0} to template state.".format(study_id))
+        #         StudyUtils.overwrite_investigation_file(study_location=study_location, study_id=study_id)
+        #         logger.info(
+        #             "Updated investigation file with values for Study Identifier and Study File Name for study: {0}".format(
+        #                 study_id
+        #             )
+        #         )
+        #     else:
+        #         # as there are only two files in the directory this will be the sample file.
+        #         from_path = os.path.join(
+        #             study_settings.study_metadata_files_root_path,
+        #             study_settings.study_default_template_path,
+        #             "s_Sample.txt",
+        #         )
+        #         copy_file(from_path, study_location + "/s_{0}.txt".format(study_id))
+        #         logger.info("Restored sample.txt file for {0} to template state.".format(study_id))
 
         status, message = wsc.reindex_study(study_id, user_token)
         if not status:

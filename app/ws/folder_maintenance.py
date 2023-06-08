@@ -1038,6 +1038,50 @@ class StudyFolderMaintenanceTask(object):
             deleted_folders,
         )
 
+    def delete_rw_storage_folders(self):
+        settings = self.settings
+        study_id = self.study_id
+        rw_storage_recycle_bin_path = os.path.join(self.rw_storage_recycle_bin_path, self.study_id)
+
+        audit_path = os.path.join(settings.study_audit_files_root_path, study_id)
+        self.backup_file(audit_path, backup_path=rw_storage_recycle_bin_path, force_delete=True)
+
+        internal_file_path = os.path.join(settings.study_internal_files_root_path, study_id)
+        self.backup_file(internal_file_path, backup_path=rw_storage_recycle_bin_path, force_delete=True)
+        
+        metadata_path = os.path.join(settings.study_metadata_files_root_path, study_id)
+        self.backup_file(metadata_path, backup_path=rw_storage_recycle_bin_path, force_delete=True)
+
+    def delete_readonly_storage_folders(self):
+        settings = self.settings
+        study_id = self.study_id
+        readonly_storage_recycle_bin_path = self.readonly_storage_recycle_bin_path
+
+        readonly_files_path = os.path.join(settings.study_readonly_files_root_path, study_id)
+        self.backup_file(readonly_files_path, backup_path=readonly_storage_recycle_bin_path, force_delete=True)
+        readonly_metadata_path = os.path.join(settings.study_readonly_metadata_files_root_path, study_id)
+        self.backup_file(readonly_metadata_path, backup_path=readonly_storage_recycle_bin_path, force_delete=True)
+        readonly_audit_path = os.path.join(settings.study_readonly_audit_files_root_path, study_id)
+        self.backup_file(readonly_audit_path, backup_path=readonly_storage_recycle_bin_path, force_delete=True)
+        readonly_public_metadata_versions_path = os.path.join(
+            settings.study_readonly_public_metadata_versions_root_path, study_id
+        )
+        self.backup_file(readonly_public_metadata_versions_path, backup_path=readonly_storage_recycle_bin_path, force_delete=True)
+        readonly_integrity_check_files_path = os.path.join(
+            settings.study_readonly_integrity_check_files_root_path, study_id
+        )
+        self.backup_file(readonly_integrity_check_files_path, backup_path=readonly_storage_recycle_bin_path, force_delete=True)
+
+    def delete_private_ftp_storage_folders(self):
+        settings = self.settings
+        study_id = self.study_id
+        cluster_private_ftp_recycle_bin_root_path = self.settings.cluster_private_ftp_recycle_bin_root_path
+        
+        folder_name = f"{study_id.lower()}-{self.obfuscationcode}"
+        private_ftp_root_path = os.path.join(settings.cluster_private_ftp_root_path, folder_name)
+        self.backup_file(private_ftp_root_path, backup_path=cluster_private_ftp_recycle_bin_root_path, force_delete=True)
+                        
+
     def maintain_rw_storage_folders(self):
         settings = self.settings
         study_id = self.study_id
