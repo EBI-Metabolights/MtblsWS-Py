@@ -37,7 +37,7 @@ class HpcClusterSettings(MetabolightsBaseSettings):
     job_kill_command:str = "bkill"
     job_track_email:str
     job_track_log_location:str
-    job_status_read_timeout:str="10"
+    job_status_read_timeout:int=10
     
     job_project_name:str = "metabolights-ws"
     number_of_datamover_workers:int = 1
@@ -54,5 +54,5 @@ class HpcClusterSettings(MetabolightsBaseSettings):
     remote_vm_deployment_path: str
     remote_vm_conda_environment: str
     localhost_conda_environment: str
-
+    
     

@@ -45,6 +45,7 @@ class StudySettings(MetabolightsBaseSettings):
     readonly_files_symbolic_link_name:str = "FILES"
     
     audit_folder_name:str = "audit"
+    chebi_annotation_sub_folder:str = "chebi_pipeline_annotations"
     
     metadata_summary_file_name: str = "metadata_summary.tsv"
     data_files_summary_file_name: str = "data_files_summary.tsv"

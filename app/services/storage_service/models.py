@@ -22,7 +22,8 @@ class SyncTaskStatus(str, Enum):
     START_FAILURE = 'START_FAILURE'
     SYNC_FAILURE = 'SYNC_FAILURE'
     COMPLETED_SUCCESS = 'COMPLETED_SUCCESS'
-
+    JOB_SUBMITTED = 'JOB_SUBMITTED'
+    JOB_SUBMISSION_FAILED = 'JOB_SUBMISSION_FAILED'
 
 class JobResultModel(BaseModel):
     description: str = Field('')
