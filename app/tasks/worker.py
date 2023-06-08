@@ -1,15 +1,15 @@
-from functools import lru_cache
-import json
 import os
+from functools import lru_cache
 
 from celery import Celery
 from celery.signals import after_task_publish
 from flask import Flask
 from flask_mail import Mail
 
-from app.ws.email.email_service import EmailService
-from app.ws.settings.utils import get_celery_settings, get_redis_settings, get_system_settings
 from app.tasks.utils import ValueMaskUtility
+from app.ws.email.email_service import EmailService
+from app.ws.settings.utils import (get_celery_settings, get_redis_settings,
+                                   get_system_settings)
 from app.ws.study.user_service import UserService
 
 celery_settings = get_celery_settings()
@@ -22,15 +22,16 @@ result_backend = broker_url
 celery = Celery(
     __name__,
     include=[
-        "app.tasks.periodic_tasks.integration_check",
-        "app.tasks.common.email",
-        "app.tasks.common.elasticsearch",
-        "app.tasks.common.ftp_operations",
-        "app.tasks.common.remote_folder_operations",
-        "app.tasks.periodic_tasks.compound",
-        "app.tasks.periodic_tasks.study",
-        "app.tasks.periodic_tasks.study_folder",
-        "app.tasks.curation.metabolon"
+        "app.tasks.common_tasks.admin_tasks.es_and_db_compound_syncronization",
+        "app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization",
+        "app.tasks.common_tasks.curation_tasks.metabolon",
+        "app.tasks.common_tasks.basic_tasks.email",
+        "app.tasks.common_tasks.basic_tasks.elasticsearch",
+        "app.tasks.common_tasks.basic_tasks.ftp_operations",
+        "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
+        "app.tasks.datamover_tasks.basic_tasks.file_management",
+        "app.tasks.system_monitor_tasks.worker_maintenance",
+        "app.tasks.system_monitor_tasks.integration_check",
     ],
 )
 
@@ -63,9 +64,12 @@ def get_email_service(flask_app=None):
 
 celery.conf.update(
     task_routes={
-        "app.tasks.*": {"queue": "mtbls-tasks"},
+        "app.tasks.common_tasks.*": {"queue": "common-tasks"},
+        "app.tasks.compute_tasks.*": {"queue": "compute-tasks"},
+        "app.tasks.datamover_tasks.*": {"queue": "datamover-tasks"},
+        "app.tasks.system_monitor_tasks.*": {"queue": "monitor-tasks"},
     },
-    task_default_queue="mtbls-tasks",
+    task_default_queue="common-tasks",
     broker_url=broker_url,
     result_backend=result_backend,
     task_acks_late=celery_settings.celery_task_acks_late,
@@ -81,38 +85,34 @@ def update_task_was_sent_state(sender=None, headers=None, **kwargs):
     task = celery.tasks.get(sender)
     backend = task.backend if task else celery.backend
     backend.store_result(headers["id"], None, "INITIATED")
-    
-@after_task_publish.connect
-def update_task_was_sent_state(sender=None, headers=None, **kwargs):
-    task = celery.tasks.get(sender)
-    backend = task.backend if task else celery.backend
-    backend.store_result(headers["id"], None, "INITIATED")
 
 system_settings = get_system_settings(None)
+# celery.conf.beat_schedule = {
+#     "check_integration": {
+#         "task": "app.tasks.common_tasks.admin_tasks.integration_check.check_integrations",
+#         "schedule": system_settings.integration_test_period_in_seconds,
+#         "options": {"expires": 55},
+#     },
+#     "sync_compound_on_es_and_db": {
+#         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_compound_syncronization.sync_compounds_on_es_and_db",
+#         "schedule": system_settings.es_compound_sync_task_period_in_secs ,
+#         "args": (system_settings.metabolights_apitoken,),
+#         "options": {"expires": 60 },
+#     },
+#         "sync_study_on_es_and_db": {
+#         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization.sync_studies_on_es_and_db",
+#         "schedule": system_settings.es_study_sync_task_period_in_secs ,
+#         "args": (system_settings.metabolights_apitoken,),
+#         "options": {"expires": 60 },
+#     }
+# }
 celery.conf.beat_schedule = {
-    "check_integration": {
-        "task": "app.tasks.periodic_tasks.integration_check.check_integrations",
-        "schedule": system_settings.integration_test_period_in_seconds,
-        "options": {"expires": 55},
-    },
-    "sync_compound_on_es_and_db": {
-        "task": "app.tasks.periodic_tasks.compound.sync_compounds_on_es_and_db",
-        "schedule": system_settings.es_compound_sync_task_period_in_secs ,
-        "args": (system_settings.metabolights_apitoken,),
-        "options": {"expires": 60 },
-    },
-        "sync_study_on_es_and_db": {
-        "task": "app.tasks.periodic_tasks.study.sync_studies_on_es_and_db",
-        "schedule": system_settings.es_study_sync_task_period_in_secs ,
-        "args": (system_settings.metabolights_apitoken,),
-        "options": {"expires": 60 },
-    },
-        "maintain_study_folders": {
-        "task": "app.tasks.periodic_tasks.study_folder.maintain_study_folders",
-        "schedule": system_settings.study_folder_maintenance_task_period_in_secs ,
-        "args": (system_settings.metabolights_apitoken,),
-        "options": {"expires": 60 },
-    },
+
+    "check_workers": {
+        "task": "app.tasks.system_monitor_tasks.worker_maintenance.check_all_workers",
+        "schedule": system_settings.worker_heath_check_period_in_seconds,
+        "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3}
+    }
 }
 celery.conf.timezone = "UTC"
 

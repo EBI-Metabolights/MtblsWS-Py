@@ -109,6 +109,12 @@ class StudyService(object):
 
         return []
 
+    def get_all_study_ids(self):
+
+        with self.db_manager.session_maker() as db_session:
+            study_id_list = db_session.query(Study.acc).all()
+            return study_id_list
+        
     def get_study_tasks(self, study_id, task_name=None):
         try:
             with self.db_manager.session_maker() as db_session:

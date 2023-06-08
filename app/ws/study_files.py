@@ -1450,7 +1450,7 @@ class SampleStudyFiles(Resource):
         upload_location = study_id.lower() + "-" + obfuscation_code
 
         # Get all unique file names
-        all_files_in_study_location = get_all_files(study_location, include_raw_data=True,
+        all_files_in_study_location = get_all_files(study_location, include_raw_data=True, include_sub_dir=True,
                                                     assay_file_list=get_assay_file_list(study_location))
         filtered_files_in_study_location = get_files(all_files_in_study_location[0])
         all_files = get_files(filtered_files_in_study_location)

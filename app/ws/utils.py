@@ -338,7 +338,25 @@ def get_assay_headers_and_protcols(assay_type):
 
     return tidy_header_row, tidy_data_row, protocols, assay_desc, assay_data_type, assay_file_type, assay_mandatory_type
 
-
+def delete_column_from_tsv_file(file_df: pd.DataFrame, column_name: str):
+    column_index = -1
+    deleted_column_names = [column_name]
+    if column_name in file_df.columns:
+        column_index = file_df.columns.get_loc(column_name)
+    if column_index >= 0:
+        if (column_index + 1) < len(file_df.columns):
+            next_column_name = file_df.columns[column_index + 1]
+            if next_column_name.startswith("Term Source REF") or next_column_name.startswith("Term Accession Number") :
+                deleted_column_names.append(next_column_name)
+            if (column_index + 2) < len(file_df.columns):
+                next_column_name = file_df.columns[column_index + 2]
+                if next_column_name.startswith("Term Source REF") or next_column_name.startswith("Term Accession Number") :
+                    deleted_column_names.append(next_column_name)
+        for column in deleted_column_names:
+            file_df.drop(column, axis=1, inplace=True)
+    else:
+        return False
+    
 def get_table_header(table_df, study_id=None, file_name=None):
     # Get an indexed header row
     df_header = pd.DataFrame(list(table_df))  # Get the header row only
@@ -736,6 +754,7 @@ def collect_all_mzml_files(study_id, study_metadata_files_folder):
         os.symlink(source, target, target_is_directory=False)
     
     return folder_path + "/"
+
 def convert_to_isa(study_location, study_id):
     input_folder = ""
     try:
@@ -751,14 +770,12 @@ def convert_to_isa(study_location, study_id):
 
 
 def update_correct_sample_file_name(isa_study, study_location, study_id):
-    sample_file_name = isa_study.filename
-    sample_file_name = os.path.join(study_location, sample_file_name)
+    sample_file_path = os.path.join(study_location, isa_study.filename)
     short_sample_file_name = 's_' + study_id.upper() + '.txt'
-    default_sample_file_name = os.path.join(study_location, short_sample_file_name)
-    if os.path.isfile(sample_file_name):
-        if sample_file_name != default_sample_file_name:
-            isa_study.identifier = study_id  # Adding the study identifier
-            os.rename(sample_file_name, default_sample_file_name)  # Rename the sample file
+    default_sample_file_path = os.path.join(study_location, short_sample_file_name)
+    if os.path.isfile(sample_file_path):
+        if sample_file_path != default_sample_file_path:
+            os.rename(sample_file_path, default_sample_file_path)  # Rename the sample file
             isa_study.filename = short_sample_file_name  # Add the new filename to the investigation
 
     return isa_study, short_sample_file_name

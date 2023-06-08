@@ -44,6 +44,7 @@ from app.ws.elasticsearch.settings import get_elasticsearch_settings
 from app.ws.email.email_service import EmailService
 from app.ws.email.settings import get_email_service_settings
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
+from app.ws.folders.data_folders import DataFolders
 from app.ws.ftp.ftp_operations import (FtpFolderPermission,
                                        FtpFolderPermissionModification,
                                        FtpFolderSyncStatus, PrivateFtpFolder,
@@ -336,7 +337,7 @@ def initialize_app(flask_app):
     api.add_resource(ChebiLiteEntity, res_path + "/chebi/chebi-ids/<string:compound_name>")
     api.add_resource(ChebiEntity, res_path + "/chebi/entities/<string:chebi_id>")
 
-    api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/study-folders/maintain-folders")
+    api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/study-folders/<string:study_id>/maintain")
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
     
     
@@ -346,4 +347,7 @@ def initialize_app(flask_app):
     api.add_resource(ElasticSearchQuery, res_path + "/es-index/search")
     
     api.add_resource(BannerMessage, res_path + "/ebi-internal/banner")
+    
+    api.add_resource(DataFolders, res_path + "/ebi-internal/data-folders")
+    
     

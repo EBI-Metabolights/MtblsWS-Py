@@ -17,7 +17,7 @@ class Storage(ABC):
     def _get_remote_file_manager(self) -> FileManager:
         return self._remote_file_manager
 
-    remote = property(fget=_get_remote_file_manager)
+    remote: FileManager = property(fget=_get_remote_file_manager)
 
     @abstractmethod
     def sync_from_local(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):

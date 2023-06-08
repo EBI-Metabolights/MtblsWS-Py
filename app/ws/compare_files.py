@@ -17,6 +17,7 @@
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 import logging
+import os
 import numpy as np
 import pandas as pd
 
@@ -24,6 +25,7 @@ from flask import request, abort
 from flask.json import jsonify
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from app.utils import metabolights_exception_handler
 from app.ws.mtblsWSclient import WsClient
 from app.ws.utils import log_request, read_tsv
 from app.ws.isaApiClient import IsaApiClient
@@ -36,7 +38,7 @@ iac = IsaApiClient()
 def diff_pd(df1, df2):
    # https://stackoverflow.com/questions/17095101/outputting-difference-in-two-pandas-dataframes-side-by-side-highlighting-the-d
     """Identify differences between two pandas DataFrames"""
-    assert (df1.columns == df2.columns).all(), \
+    if any (df1.columns != df2.columns):
         "DataFrame column names are different"
     if any(df1.dtypes != df2.dtypes):
         "Data Types are different, trying to convert"
@@ -114,6 +116,7 @@ class CompareTsvFiles(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self, study_id):
 
         log_request(request)
@@ -137,8 +140,8 @@ class CompareTsvFiles(Resource):
         assay_filename = None
         if request.args:
             args = parser.parse_args(req=request)
-            filename1 = args['filename1'].lower() if args['filename1'] else None
-            filename2 = args['filename2'].lower() if args['filename2'] else None
+            filename1 = args['filename1'] if args['filename1'] else None
+            filename2 = args['filename2']if args['filename2'] else None
         if not filename1 or not filename2:
             logger.warning("Missing TSV filenames.")
             abort(404, "Missing TSV filenames.")
@@ -148,9 +151,7 @@ class CompareTsvFiles(Resource):
             study_status = wsc.get_permissions(study_id, user_token)
         if not read_access:
             abort(401, "Study does not exist or your do not have access to this study.")
-
-        location = study_location
-        df1 = read_tsv(filename1)
-        df2 = read_tsv(filename2)
+        df1 = read_tsv(str(os.path.join(study_location, filename1)))
+        df2 = read_tsv(str(os.path.join(study_location, filename2)))
         diff_df = diff_pd(df1, df2)
-        return jsonify({"entries": diff_df})
+        return diff_df.to_json()
