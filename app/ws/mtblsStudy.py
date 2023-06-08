@@ -1336,8 +1336,7 @@ class DeleteStudy(Resource):
         mtbls_email = app.config.get("MTBLS_SUBMITTER_EMAIL")
         add_placeholder_flag(study_id)
         study_submitters(study_id, mtbls_email, "add")
-        folder_path = self.get_absolute_path(folder_path)
-        inputs = {"task_name": "DELETE_STUDY"}
+        inputs = {"user_token": user_token, "study_id": study_id, "task_name": "DELETE_STUDY"}
         cluster_settings = get_cluster_settings()
         task = delete_study_folders.apply_async(kwargs=inputs)
         output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds*2)
