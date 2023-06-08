@@ -30,7 +30,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mm_models import *
 from app.ws.models import Investigation_api_model, serialize_investigation
 from app.ws.mtblsWSclient import WsClient
-from app.ws.utils import delete_column_from_tsv_file, log_request, add_ontology_to_investigation, read_tsv, update_ontolgies_in_isa_tab_sheets, write_tsv
+from app.ws.utils import delete_column_from_tsv_file, delete_column_from_tsv_file, log_request, add_ontology_to_investigation, read_tsv, update_ontolgies_in_isa_tab_sheets, write_tsv, write_tsv
 
 logger = logging.getLogger('wslog')
 iac = IsaApiClient()
