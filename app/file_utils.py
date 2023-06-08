@@ -22,7 +22,7 @@ def make_dir_with_chmod(file_path, chmod):
         if not os.path.exists(file_path):
             os.makedirs(file_path, mode=chmod, exist_ok=True)
 
-        current_chmod = int(oct(os.stat(file_path).st_mode & 0o777), 8)
+        current_chmod = int(oct(os.stat(file_path).st_mode), 8)
         if current_chmod == int(chmod):
             return
 

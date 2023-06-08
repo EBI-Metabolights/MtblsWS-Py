@@ -6,7 +6,7 @@ from app.ws.db_connection import (
     get_release_date_of_study,
     query_study_submitters,
 )
-from app.ws.settings.utils import get_system_settings
+from app.ws.settings.utils import get_study_settings
 from app.ws.study.user_service import UserService
 from app.tasks.worker import (
     MetabolightsTask,
@@ -19,7 +19,7 @@ from app.tasks.worker import (
 
 
 @celery.task(
-    base=MetabolightsTask, name="app.tasks.common.email.send_email_for_study_submitted"
+    base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.email.send_email_for_study_submitted"
 )
 def send_email_for_study_submitted(user_token, study_id):
     flask_app = get_flask_app()
@@ -41,7 +41,7 @@ def send_email_for_study_submitted(user_token, study_id):
         }
 
 @celery.task(
-    base=MetabolightsTask, name="app.tasks.common.email.send_test_email"
+    base=MetabolightsTask, name="app.tasks.common_tasks.basic_tasks.email.send_test_email"
 )
 def send_test_email(user_token):
     flask_app = get_flask_app()
@@ -60,15 +60,14 @@ def send_test_email(user_token):
 
 @celery.task(
     base=MetabolightsTask,
-    name="app.tasks.common.email.send_email_for_private_ftp_folder",
+    name="app.tasks.common_tasks.basic_tasks.email.send_email_for_private_ftp_folder",
 )
 def send_email_for_private_ftp_folder(user_token, study_id, folder_name):
 
     flask_app = get_flask_app()
     with flask_app.app_context():
-        relative_studies_root_path = flask_app.config.get(
-            "PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH"
-        )
+        
+        relative_studies_root_path = get_study_settings().cluster_private_ftp_user_path
         relative_study_path = os.path.join(
             os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
         )
@@ -92,11 +91,11 @@ def send_email_for_private_ftp_folder(user_token, study_id, folder_name):
         }
 
 
-@celery.task(name="app.tasks.common.email.send_generic_email")
+@celery.task(name="app.tasks.common_tasks.basic_tasks.email.send_generic_email")
 def send_generic_email(subject, body, from_address, to_addresses, cc_addresses):
 
     send_email(subject, body, from_address, to_addresses, cc_addresses)
 
-@celery.task(name="app.tasks.common.email.send_technical_issue_email")
+@celery.task(name="app.tasks.common_tasks.basic_tasks.email.send_technical_issue_email")
 def send_technical_issue_email(subject, body):
     report_internal_technical_issue(subject, body)

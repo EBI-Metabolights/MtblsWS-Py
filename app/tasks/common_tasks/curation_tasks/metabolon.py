@@ -23,7 +23,7 @@ iac = IsaApiClient()
 logger = logging.getLogger('wslog')
 
 
-@celery.task(bind=True, base=MetabolightsTask, name="app.tasks.curation.metabolon.metabolon_confirm")
+@celery.task(bind=True, base=MetabolightsTask, name="app.tasks.common_tasks.curation_tasks.metabolon.metabolon_confirm")
 def metabolon_confirm(self, study_id: str, study_location: str, user_token, email):
     flask_app = get_flask_app()
     with flask_app.app_context():

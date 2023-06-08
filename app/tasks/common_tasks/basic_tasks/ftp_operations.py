@@ -1,4 +1,4 @@
-from app.tasks.common.email import send_email_for_private_ftp_folder
+from app.tasks.common_tasks.basic_tasks.email import send_email_for_private_ftp_folder
 from app.tasks.worker import MetabolightsTask, celery, get_flask_app
 from app.ws.study.commons import create_ftp_folder
 from app.ws.study.study_service import StudyService
@@ -7,7 +7,7 @@ from app.ws.study.study_service import StudyService
 @celery.task(
     base=MetabolightsTask,
     bind=True,
-    name="app.tasks.common.ftp_operations.create_ftp_folder",
+    name="app.tasks.common_tasks.basic_tasks.ftp_operations.create_ftp_folder",
     soft_time_limit=110,
     time_limit=120,
     autoretry_for={Exception},

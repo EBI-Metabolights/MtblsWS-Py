@@ -24,9 +24,35 @@ class HpcClusterSettings(MetabolightsBaseSettings):
     cluster_study_readonly_public_metadata_versions_root_path:str
     cluster_study_readonly_integrity_check_files_root_path:str
     
+    cluster_readonly_storage_recycle_bin_root_path:str
+    cluster_rw_storage_recycle_bin_root_path:str
+    
+    cluster_private_ftp_root_path:str
+    cluster_private_ftp_recycle_bin_root_path:str
+    cluster_public_ftp_root_path:str
+    cluster_public_ftp_recycle_bin_root_path:str    
+    
     job_submit_command:str = "bsub"
     job_running_command:str = "bjobs"
-    job_kill_command:str = "bjobs"
+    job_kill_command:str = "bkill"
     job_track_email:str
     job_track_log_location:str
-    job_status_read_timeout:str="10"
+    job_status_read_timeout:int=10
+    
+    job_project_name:str = "metabolights-ws"
+    number_of_datamover_workers:int = 1
+    datamover_worker_maximum_uptime_in_seconds:int =  3 * 24 * 60 * 60
+    datamover_job_submission_script_path: str
+    task_get_timeout_in_seconds: int = 10
+    
+    maximum_shutdown_signal_per_time: int = 1
+    number_of_additional_localhost_workers:int = 1
+    number_of_remote_vm_workers:int = 0
+    
+    vm_worker_hostnames: str
+    start_vm_worker_script_template_name: str = "start_vm_worker_template.sh.j2"
+    remote_vm_deployment_path: str
+    remote_vm_conda_environment: str
+    localhost_conda_environment: str
+
+    

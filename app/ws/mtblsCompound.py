@@ -3,8 +3,8 @@ import os
 from flask import request, current_app as app, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
-from app.tasks.common.elasticsearch import delete_compound_index, reindex_all_compounds, reindex_compound
-from app.tasks.periodic_tasks.compound import sync_compound_on_es_and_db
+from app.tasks.common_tasks.basic_tasks.elasticsearch import delete_compound_index, reindex_all_compounds, reindex_compound
+from app.tasks.common_tasks.admin_tasks.es_and_db_compound_syncronization import sync_compound_on_es_and_db
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
 from flask import send_file, make_response
 from app.ws.db.dbmanager import DBManager

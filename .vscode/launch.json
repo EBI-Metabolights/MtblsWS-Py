@@ -24,7 +24,7 @@
                 "--loglevel",
                 "info",
                 "-Q",
-                "mtbls-tasks"
+                "monitor-tasks"
             ],
             "jinja": true,
             "justMyCode": false,
@@ -50,7 +50,8 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "env": {"PYTHONPATH": "${cwd}"}
         },
         {
             "name": "Python: Refactor",
@@ -60,15 +61,25 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: Maintain Folder",
+            "name": "Python: Maintain MetaData/Data Files",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/scripts/maintain_folders.py",
+            "program": "${workspaceFolder}/scripts/study_folder_maintenance.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "env": {"PYTHONPATH": "${cwd}"}
+            "env": {"PYTHONPATH": "${cwd}"},
+            "args": ["MTBLS1", "metadata", "sample_report.txt", "", "not-apply"]
         },
-        
+        {
+            "name": "Python: Create Test Data Files",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/create_test_data_files.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}"},
+            "args": ["/nfs/public/services/metabolomics/prod/studies/stage/private", "/nfs/public/rw/metabolomics/dev/studies/maintenance_test/test-data-files"]
+        },
         {
             "name": "Guvicorn profile",
             "type": "python",

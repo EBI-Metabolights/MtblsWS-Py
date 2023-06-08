@@ -2,7 +2,7 @@
 from flask import current_app as app, request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from app.tasks.common.email import send_test_email
+from app.tasks.common_tasks.basic_tasks.email import send_test_email
 
 from app.utils import metabolights_exception_handler
 from app.ws.study.user_service import UserService
