@@ -136,6 +136,6 @@ class RemoteFileManager(FileManager):
             return False
 
         for item in output:
-            if not item["status"]:
+            if "status" not in output[item] or not output[item]["status"]:
                 return False
         return True

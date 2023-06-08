@@ -7,14 +7,8 @@ echo "Host $HOST approved, starting Green Unicorn server"
 
 APPDIR=$PWD
 LOG_PATH=$APPDIR/logs
-#VENVDIR=$APPDIR/venv368
-
-PATH=~/opt/sqlite/bin:$PATH
-LD_LIBRARY_PATH=~/opt/sqlite/lib:$LD_LIBRARY_PATH
-LD_RUN_PATH=~/opt/sqlite/lib:$LD_RUN_PATH
 
 mkdir -p $APPDIR/logs
-mkdir -p $APPDIR/instance
 
 
 PYTHONPATH=$APPDIR
@@ -59,7 +53,7 @@ PROCESS_ID=$(ps -ef | grep "$SEARCH" | awk '{ print $2 }' | head -n -1 | tr '\n'
 if [ -z "$PROCESS_ID" ]; then
     EXISTING_PROCESS=$(netstat -plant 2>/dev/null | grep $SERVER_PORT | awk '{print $7}') | tr "/" " "
     if [ -z "$EXISTING_PROCESS" ]; then
-        echo "CELERY BEAT will be started"
+        echo "GUNICORN will be started"
         gunicorn -b 0.0.0.0:$SERVER_PORT --access-logfile $APPDIR/logs/gunicorn_$HOST --error-logfile $APPDIR/logs/gunicorn_$HOST  --worker-class gevent --preload wsapp:app --workers 3 --threads 2 --pid ./app_${HOST}.pid  --log-level info --capture-output --daemon  > $LOG 3>&1 & echo $! > app_$HOST.pid
     else
         echo "!!!WARNING: An application is already running on port $SERVER_PORT. Kill this process before starting server. Current process id and process name $EXISTING_PROCESS"
