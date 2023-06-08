@@ -53,12 +53,6 @@ class StudySettings(MetabolightsBaseSettings):
     metadata_files_signature_file_name: str = "metadata_files_signature.txt"
     data_files_maintenance_file_name: str = "data_files_summary.txt"
     
-    metadata_summary_file_name: str = "metadata_summary.tsv"
-    data_files_summary_file_name: str = "data_files_summary.tsv"
-    study_folder_maintenance_log_file_name: str = "maintenance_log.tsv"
-    metadata_files_signature_file_name: str = "metadata_files_signature.txt"
-    data_files_maintenance_file_name: str = "data_files_summary.txt"
-    
     study_default_template_path:str = "./resources/templates/study/default"
     template_sample_file_name:str = "s_Sample.txt"
     study_partner_metabolon_template_path:str = "./resources/templates/study/metabolon"
