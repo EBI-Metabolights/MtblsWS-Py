@@ -202,32 +202,6 @@ def copytree(src, dst, symlinks=False, ignore=None, include_raw_data=False, incl
         raise
 
 
-def scandir_get_aspera(dir):
-    subfolders, files = [], []
-
-    for f in os.scandir(dir):
-        if f.is_dir():
-            subfolders.append(f.path)
-        if f.is_file():
-            if os.path.splitext(f.name)[1].lower() in ('.partial', '.aspera-ckpt', '.aspx'):
-                files.append(f.path)
-
-    for dir in list(subfolders):
-        sf, f = scandir_get_aspera(dir)
-        subfolders.extend(sf)
-        files.extend(f)
-    return subfolders, files
-
-
-def delete_asper_files(directory):
-    subs, files = scandir_get_aspera(directory)
-    for file_to_delete in files:
-        print("File to delete  : " + file_to_delete)
-        if os.path.exists(file_to_delete):  # First, does the file/folder exist?
-            if os.path.isfile(file_to_delete):  # is it a file?
-                os.remove(file_to_delete)
-
-
 def copy_files_and_folders(source, destination, include_raw_data=True, include_investigation_file=True):
     """
       Make a copy of files/folders from origin to destination. If destination already exists, it will be replaced.
@@ -942,7 +916,9 @@ def remove_file(file_location, file_name, always_remove=False):
             if file_status == 'active' and not always_remove:  # If active metadata and "remove anyway" flag if not set
                 return False, "Can not delete any active metadata files " + file_name
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
-            if os.path.isfile(file_to_delete):  # is it a file?
+            if os.path.islink(file_to_delete):
+                os.unlink(file_to_delete)
+            elif os.path.isfile(file_to_delete):  # is it a file?
                 os.remove(file_to_delete)
             elif os.path.isdir(file_to_delete):  # is it a folder
                 shutil.rmtree(file_to_delete)

@@ -117,4 +117,4 @@ class Metabolon(Resource):
             result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
             return result
         except Exception as ex:
-            raise MetabolightsException(http_code=500, message=f"Sync all compounds task submission was failed", exception=ex)
+            raise MetabolightsException(http_code=500, message=f"Metabolon confirm task submission was failed", exception=ex)
