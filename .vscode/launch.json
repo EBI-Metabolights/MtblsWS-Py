@@ -24,7 +24,7 @@
                 "--loglevel",
                 "info",
                 "-Q",
-                "monitor-tasks"
+                "common-tasks,monitor-tasks"
             ],
             "jinja": true,
             "justMyCode": false,

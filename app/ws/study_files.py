@@ -21,7 +21,6 @@ import logging
 import os
 import shutil
 import time
-import zipfile
 
 from flask import current_app as app
 from flask import request, abort
@@ -31,14 +30,16 @@ from flask_restful_swagger import swagger
 from jsonschema.exceptions import ValidationError
 
 from app.services.storage_service.storage_service import StorageService
-from app.utils import metabolights_exception_handler
+from app.study_folder_utils import find_study_data_files
+from app.tasks.datamover_tasks.curation_tasks import data_file_operations
+from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.folder_utils import get_basic_files, get_all_files_from_filesystem, get_all_files, write_audit_files
 from app.ws.study.study_service import StudyService, identify_study_id
 from app.ws.study.user_service import UserService
-from app.ws.utils import get_assay_file_list, remove_file, delete_asper_files, log_request, copy_files_and_folders
+from app.ws.utils import get_assay_file_list, remove_file, log_request
 
 logger = logging.getLogger('wslog')
 wsc = WsClient()
@@ -303,13 +304,12 @@ without setting the "force" parameter to True''',
         else:
             return {'Error': message}
 
-
-class StudyRawAndDerivedDataFile(Resource):
+        
+class StudyRawAndDerivedDataFiles(Resource):
     @swagger.operation(
         summary="Search raw and derived data files in the study",
         notes="""
-        Search raw and derived data files in the study. 
-        Study metadata files (i_Investigation.txt, m_*.tsv, etc) are filtered.
+        Search data files in in the study. 
         """,
         parameters=[
             {
@@ -322,13 +322,35 @@ class StudyRawAndDerivedDataFile(Resource):
             },
             {
                 "name": "search_pattern",
-                "description": "search pattern (*.mzML, *.zip, etc.). Default is *",
+                "description": "search pattern (FILES/*.mzML, FILES/*.zip, FILES/**/*.d etc.). Default is FILES/*",
                 "required": False,
                 "allowEmptyValue": True,
                 "allowMultiple": False,
                 "paramType": "query",
                 "dataType": "string",
-                "default": '*'
+                "default": 'FILES/*'
+            },
+            {
+                "name": "file_match",
+                "description": "Folder file matches",
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+                "default": True
+            },
+            {
+                "name": "folder_match",
+                "description": "Search folder matches",
+                "paramType": "query",
+                "type": "Boolean",
+                "defaultValue": True,
+                "format": "application/json",
+                "required": True,
+                "allowMultiple": False,
+                "default": False
             },
             {
                 "name": "user_token",
@@ -350,6 +372,7 @@ class StudyRawAndDerivedDataFile(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def get(self, study_id):
 
         # param validation
@@ -367,64 +390,34 @@ class StudyRawAndDerivedDataFile(Resource):
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('search_pattern', help='Search pattern')
-
-        search_pattern = '*'
-
+        parser.add_argument('folder_match', help='Folder matches')
+        parser.add_argument('file_match', help='File matches')
+        settings = get_study_settings()
+        
+        data_files_subfolder = settings.readonly_files_symbolic_link_name
+        search_pattern = f'{data_files_subfolder}/*'
+        file_match = False
+        folder_match = False
         if request.args:
             args = parser.parse_args(req=request)
-            search_pattern = args['search_pattern'] if args['search_pattern'] else '*'
+            file_match = True if args['file_match'].lower() == "true" else False
+            folder_match = True if args['folder_match'].lower() == "true" else False
+            if not folder_match and not file_match:
+                raise MetabolightsException(http_code=401, message="At least one of them should be True: file_match, folder_match")
+            search_pattern = f"{args['search_pattern']}" if 'search_pattern' in args and args['search_pattern'] else search_pattern
             if '..' + os.path.sep in search_pattern or '.' + os.path.sep in search_pattern:
-                abort(401, error="Relative folder search patterns (., ..) are not allowed")
+                raise MetabolightsException(http_code=401, message="Relative folder search patterns (., ..) are not allowed")
+            if not search_pattern.startswith(f'{data_files_subfolder}/'):
+                raise MetabolightsException(http_code=401, message=f"Search pattern should start with {f'{data_files_subfolder}/'}")
 
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token)
-        if not is_curator:
-            abort(403, error="User has no curator role")
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        StudyService.get_instance(app).get_study_by_acc(study_id)
         settings = get_study_settings()
         
         study_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
-        search_path = os.path.join(settings.study_readonly_files_root_path, study_id)
-        ignore_list = self.get_ignore_list(search_path)
-
-        glob_search_result = glob.glob(os.path.join(search_path, search_pattern), recursive=True)
-        search_results = [os.path.abspath(file) for file in glob_search_result if not os.path.isdir(file)]
-        excluded_folders = app.config.get("FOLDER_EXCLUSION_LIST")
-
-        excluded_folder_set = set(
-            [os.path.basename(os.path.abspath(os.path.join(study_folder, file))) for file in excluded_folders])
-        filtered_result = []
-        warning_occurred = False
-        for item in search_results:
-            is_in_study_folder = item.startswith(search_path + os.path.sep) and ".." + os.path.sep not in item
-            if is_in_study_folder:
-                relative_path = item.replace(search_path + os.path.sep, '')
-                sub_path = relative_path.split(os.path.sep)
-                if sub_path and sub_path[0] not in excluded_folder_set:
-                    filtered_result.append(item)
-            else:
-                if not warning_occurred:
-                    message = f"{search_pattern} pattern results for {study_id} are not allowed: {item}"
-                    logger.warning(message)
-                    warning_occurred = True
-
-        files = [file for file in filtered_result if file not in ignore_list]
-        files.sort()
-
-        result = [{"name": file.replace(search_path + "/", "")} for file in files]
+        result = find_study_data_files(study_folder, data_files_subfolder, search_pattern=search_pattern, match_folders=folder_match, match_files=file_match, )
 
         return jsonify({'files': result})
-
-    def get_ignore_list(self, search_path):
-        ignore_list = []
-
-        metadata_files = glob.glob(os.path.join(search_path, "[isam]_*.t[xs]?"))
-        internal_file_names = app.config.get("INTERNAL_MAPPING_LIST")
-        internal_files = [os.path.join(search_path, file + ".json") for file in internal_file_names]
-        internal_files.append(os.path.join(search_path, "missing_files.txt"))
-        ignore_list.extend(metadata_files)
-        ignore_list.extend(internal_files)
-        return ignore_list
 
     @swagger.operation(
         summary="Move raw and drived data files to RAW_FILES, DERIVED_FILES or RECYCLE_BIN folder",
@@ -432,8 +425,8 @@ class StudyRawAndDerivedDataFile(Resource):
         notes='''Move files to RAW_FILES, DERIVED_FILES, or RECYCLE_BIN folder. <pre><code>
 {    
     "files": [
-        {"name": "a_MTBLS123_LC-MS_positive_hilic_metabolite_profiling.txt"},
-        {"name": "Raw-File-001.raw"}
+        {"name": "FILES/Sample/data.d"},
+        {"name": "FILES/Raw-File-001.raw"}
     ]
 }</pre></code></br> 
 ''',
@@ -504,6 +497,7 @@ class StudyRawAndDerivedDataFile(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def put(self, study_id):
 
         # param validation
@@ -533,81 +527,28 @@ class StudyRawAndDerivedDataFile(Resource):
             override = True if args['override'] and args['override'].lower() == "true" else False
 
         if not target_location or target_location not in ("RAW_FILES", "DERIVED_FILES", "RECYCLE_BIN"):
-            abort(400, error='target location is invalid or not defined')
+            raise MetabolightsException(http_code=400, message=f"Target location is not valid")
         # body content validation
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['files']
             if data is None:
-                abort(412, error='Files are defined')
+                raise MetabolightsException(http_code=412, message=f"Files are not defined")
             files = data
         except (ValidationError, Exception):
-            abort(400, error='Incorrect JSON provided')
+            raise MetabolightsException(http_code=412, message=f"Incorrect JSON")
 
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-        
-        settings = get_study_settings()
-        studies_folder = settings.study_metadata_files_root_path
-        study_path = os.path.abspath(os.path.join(studies_folder, study_id))
-        files_path = os.path.join(studies_folder, study_id, settings.readonly_files_symbolic_link_name)
-        ignore_list = self.get_ignore_list(study_path)
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        StudyService.get_instance(app).get_study_by_acc(study_id)
+        files_input = [{"name": str(x["name"])} for x in files if "name" in x and x["name"]]
+        try:
+            inputs = {"study_id": study_id, "files": files_input, "target_location": target_location, "override": override }
+            result = data_file_operations.move_data_files.apply_async(kwargs=inputs, expires=60*5)
 
-        raw_data_dir = os.path.abspath(os.path.join(files_path, "RAW_FILES"))
-        derived_data_dir = os.path.abspath(os.path.join(files_path, "DERIVED_FILES"))
-        recycle_bin_dir = os.path.abspath(os.path.join(settings.study_readonly_integrity_check_files_root_path , study_id))
-        if target_location == 'RAW_FILES':
-            os.makedirs(raw_data_dir, exist_ok=True)
-        elif target_location == 'DERIVED_FILES':
-            os.makedirs(derived_data_dir, exist_ok=True)
-        else:
-            os.makedirs(recycle_bin_dir, exist_ok=True)
-
-        warnings = []
-        successes = []
-        errors = []
-        for file in files:
-
-            if "name" in file and file["name"]:
-                f_name = file["name"]
-                try:
-                    file_path = os.path.abspath(os.path.join(study_path, f_name))
-                    if not os.path.exists(file_path):
-                        warnings.append({'file': f_name, 'message': 'Operation is ignored. File does not exist.'})
-                        continue
-
-                    if file_path in ignore_list:
-                        warnings.append({'file': f_name, 'message': 'Operation is ignored. File is in ignore list.'})
-                        continue
-
-                    base_name = os.path.basename(f_name)
-                    if target_location == 'RAW_FILES':
-                        target_path = os.path.abspath(os.path.join(raw_data_dir, base_name))
-                    elif target_location == 'DERIVED_FILES':
-                        target_path = os.path.abspath(os.path.join(derived_data_dir, base_name))
-                    else:
-                        target_path = os.path.abspath(os.path.join(recycle_bin_dir, f_name))
-                        split = os.path.split(target_path)
-                        if not os.path.exists(split[0]):
-                            os.makedirs(split[0])
-
-                    if file_path == target_path:
-                        warnings.append({'file': f_name, 'message': 'Operation is ignored. Target is same directory.'})
-                        continue
-
-                    if not override and os.path.exists(target_path):
-                        warnings.append({'file': f_name, 'message': 'Operation is ignored. Target file exists.'})
-                        continue
-
-                    shutil.move(file_path, target_path)
-                    successes.append({'file': f_name, 'message': f'File is moved to {target_location}'})
-
-                except Exception as e:
-                    errors.append({'file': f_name, 'message': str(e)})
-        return jsonify({'successes': successes, 'warnings': warnings, 'errors': errors})
+            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+            return result
+        except Exception as ex:
+            raise MetabolightsException(http_code=500, message=f"Move files task submission was failed", exception=ex)
 
 
 class StudyRawAndDerivedDataFolder(Resource):
@@ -1559,6 +1500,7 @@ class UnzipFiles(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def post(self, study_id):
 
         # param validation
@@ -1589,51 +1531,25 @@ class UnzipFiles(Resource):
             data_dict = json.loads(request.data.decode('utf-8'))
             data = data_dict['files']
             if data is None:
-                abort(412)
+                raise MetabolightsException(http_code=400, message=f"files parameter is invalid")
             files = data
         except (ValidationError, Exception):
-            abort(400, 'Incorrect JSON provided')
+            raise MetabolightsException(http_code=400, message=f"files parameter is invalid")
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        StudyService.get_instance(app).get_study_by_acc(study_id)
+        
+        files_input = [{"name": str(x["name"])} for x in files if "name" in x and x["name"]]
+        study_metadata_path = os.path.join(get_study_settings().cluster_study_metadata_files_root_path, study_id)
+        try:
+            inputs = {"study_metadata_path": study_metadata_path, "files": files_input, "remove_zip_files": True, "override": True }
+            result = data_file_operations.unzip_folders.apply_async(kwargs=inputs, expires=60*5)
 
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = wsc.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-
-        audit_status, dest_path = write_audit_files(study_location)
-
-        inv_message = ""
-
-        for file in files:
-            f_name = file["name"]
-            try:
-                with zipfile.ZipFile(os.path.join(study_location, f_name), "r") as zip_ref:
-                    # zip_ref.extractall(study_location)
-                    list_of_file_names = zip_ref.namelist()
-                    for file_name in list_of_file_names:
-                        if not (file_name.startswith('i_') and file_name.endswith('.txt')):
-                            # Extract a single file from zip
-                            zip_ref.extract(file_name, path=study_location)
-                        else:
-                            inv_message = '. Investigation file not extracted'
-
-            except Exception as e:
-                msg = 'Could not extract zip file ' + f_name
-                logger.error(msg + ":" + str(e))
-                return {'Error': msg}
-
-            try:
-                if remove_zip:
-                    remove_file(study_location, f_name, always_remove=True)
-            except:
-                msg = 'Could not remove zip file ' + f_name
-                logger.error(msg)
-                return {'Error': msg}
-
-        ret_msg = 'Files unzipped' + inv_message
-        if remove_zip:
-            ret_msg = 'Files unzipped and removed' + inv_message
-
+            result = {'content': f"Task has been started. Result will be sent by email. Task id: {result.id}", 'message': None, "err": None}
+            return result
+        except Exception as ex:
+            raise MetabolightsException(http_code=500, message=f"Unzip task submission was failed", exception=ex)
+        
+        
         return {'Success': ret_msg}
 
 
@@ -1906,6 +1822,7 @@ class DeleteAsperaFiles(Resource):
             }
         ]
     )
+    @metabolights_exception_handler
     def delete(self, study_id):
 
         # User authentication
@@ -1920,24 +1837,15 @@ class DeleteAsperaFiles(Resource):
             abort(401)
 
         study_id = study_id.upper()
-
-        # Need to check that the user is actually an active user, ie the user_token exists
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-            study_status = wsc.get_permissions(study_id, user_token)
-        st_s = get_study_settings()
-        directories_to_check = [os.path.join(path_var, study_id) for path_var in [
-            st_s.study_readonly_files_root_path
-        ]]
-        if not is_curator:
-            abort(401)
-
+        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        StudyService.get_instance(app).get_study_by_acc(study_id)
+        
         logger.info('Deleting aspera files from study ' + study_id)
-        try:
-            for dir in directories_to_check:
-                delete_asper_files(dir)
-            logger.info('All aspera files deleted successfully !')
-            return {'Success': 'Deleted files successfully !'}
-
-        except Exception as e:
-            logger.error('Other error! Can not delete files ', str(e))
-            return {'Error': 'Deleting aspera files Failed!'}
+                
+        inputs = {"study_id": study_id}
+        result = data_file_operations.delete_aspera_files_from_data_files.apply_async(kwargs=inputs, expires=60*5)
+        return  {
+            "content": f"Task has been started. Task id: {result.id}",
+            "message": None,
+            "err": None,
+        }
