@@ -65,8 +65,8 @@ def unzip_folders(self, study_metadata_path: str, files: Dict[str, Any], remove_
             f_name = file["name"]
             file_path = os.path.join(study_metadata_path, f_name)
             messages[f_name] = {"unzip": False, "delete_zip_file": False, "detail": []}
-            if not os.path.exists(file_path) or os.path.isfile(file_path):
-                messages[f_name]["detail"].append(f"{target_relative_path} does not exist or not a valid zip file.")
+            if not os.path.exists(file_path) or not os.path.isfile(file_path):
+                messages[f_name]["detail"].append(f"{file_path} does not exist or not a valid zip file.")
                 continue
             error = False
             target_relative_path = file_path.replace(".zip", "")
@@ -106,7 +106,7 @@ def unzip_folders(self, study_metadata_path: str, files: Dict[str, Any], remove_
 @celery.task(
     bind=True, base=MetabolightsTask, name="app.tasks.datamover_tasks.curation_tasks.data_file_operations.move_data_files"
 )
-def move_data_files(self, study_id: str=None, files: Dict[str, Any]=None,  target_location:str = "RECYCLE_BIN", override: bool = False):
+def move_data_files(self, study_id: str=None, files: Dict[str, Any]=None,  target_location:str = "RECYCLE_BIN", override: bool = False, task_name=None):
     if not study_id or not files:
         raise MaintenanceException(message="Invalid input")
     
@@ -118,18 +118,11 @@ def move_data_files(self, study_id: str=None, files: Dict[str, Any]=None,  targe
     study_path = os.path.join(settings.cluster_study_metadata_files_root_path, study_id)
     files_path = os.path.join(study_path, settings.readonly_files_symbolic_link_name)
 
-    raw_data_dir = os.path.join(files_path, "RAW_FILES")
-    derived_data_dir = os.path.join(files_path, "DERIVED_FILES")
     date_format = "%Y-%m-%d_%H-%M-%S"
     timestamp_str = time.strftime(date_format)
-    task_name =  f"{study_id}_MOVE_DATA_FILES_{timestamp_str}"
+    if not task_name:
+        task_name =  f"{study_id}_MOVE_DATA_FILES_{timestamp_str}"
     recycle_bin_dir = os.path.join(settings.cluster_readonly_storage_recycle_bin_root_path, task_name)
-    if target_location == 'RAW_FILES':
-        os.makedirs(raw_data_dir, exist_ok=True)
-    elif target_location == 'DERIVED_FILES':
-        os.makedirs(derived_data_dir, exist_ok=True)
-    else:
-        os.makedirs(recycle_bin_dir, exist_ok=True)
 
     warnings = []
     successes = []
@@ -150,16 +143,18 @@ def move_data_files(self, study_id: str=None, files: Dict[str, Any]=None,  targe
                 
                 if target_location == 'RAW_FILES':
                     new_relative_path = f_name.replace(f"{settings.readonly_files_symbolic_link_name}/", f"{settings.readonly_files_symbolic_link_name}/RAW_FILES/", 1)
-                    target_path = os.path.join(raw_data_dir, new_relative_path)
+                    target_path = os.path.join(study_path, new_relative_path)
                 elif target_location == 'DERIVED_FILES':
                     new_relative_path = f_name.replace(f"{settings.readonly_files_symbolic_link_name}/", f"{settings.readonly_files_symbolic_link_name}/DERIVED_FILES/", 1)
-                    target_path = os.path.join(derived_data_dir, new_relative_path)
+                    target_path = os.path.join(study_path, new_relative_path)
                 else:
                     target_path = os.path.join(recycle_bin_dir, f_name)
                     split = os.path.split(target_path)
                     if not os.path.exists(split[0]):
                         os.makedirs(split[0])
-
+                parent_directory = os.path.dirname(target_path)
+                if not os.path.exists(parent_directory):
+                    os.makedirs(parent_directory, exist_ok=True)
                 if file_path == target_path:
                     warnings.append({'file': f_name, 'message': 'Operation is ignored. Target is same directory.'})
                     continue

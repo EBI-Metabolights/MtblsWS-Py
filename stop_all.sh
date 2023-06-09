@@ -13,13 +13,13 @@ else
 fi
 
 
-PROCESS_ID=$(ps -ef | grep ":celery beat --logfile $LOG_PATH/celery_beat_${HOST}.log" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -ef | grep "python3 -m celery -A app.tasks.worker:celery beat --logfile $LOG_PATH/celery_beat_${HOST}.log" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     echo "NO CELERY BEAT"
 else
     echo "CELERY BEAT PROCESS_ID: ${PROCESS_ID} will be killed"
-    kill -9 $PROCESS_ID
+    kill -9 $PROCESS_IDtarget_relative_path
 fi
 
 cd $APPDIR

@@ -55,3 +55,4 @@ python-jose
 passlib
 tweepy
 celery[redis]
+pydantic-settings-yaml

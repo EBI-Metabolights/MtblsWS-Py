@@ -156,9 +156,9 @@ class MetabolightsTask(celery.Task):
                     new_kwargs[key] = ValueMaskUtility.mask_value(key, kwargs[key])
 
             kwargs_str = str(new_kwargs) if new_kwargs else ""
+            send_email = False
             if isinstance(einfo.exception, MetabolightsException):
                 exc: MetabolightsException = einfo.exception
-                send_email = False
                 if exc.http_code >= 500:
                     send_email = True
             if send_email:
