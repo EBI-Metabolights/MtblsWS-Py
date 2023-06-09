@@ -135,8 +135,8 @@ class SendFiles(Resource):
                 f_type = _file['type']
                 f_name = _file['file']
                 if "metadata" in f_type:
-                    files = files + f_name + ','
-            file_name = files.rstrip(",")
+                    files = files + f_name + '|'
+            file_name = files.rstrip("|")
 
         remove_file = False
         safe_path = safe_join(study_metadata_location, file_name)
@@ -148,10 +148,10 @@ class SendFiles(Resource):
             zip_name = os.path.join(download_folder_path, short_zip)
             if os.path.isfile(zip_name):
                 os.remove(zip_name)
-            if ',' in file_name and not os.path.exists(safe_path):
+            if '|' in file_name and not os.path.exists(safe_path):
                 zipfile = ZipFile(zip_name, mode='a')
                 remove_file = True
-                files = file_name.split(',')
+                files = file_name.split('|')
                 for file in files:
                     safe_path = safe_join(study_metadata_location, file)
                     if os.path.isdir(safe_path):
@@ -304,8 +304,8 @@ class SendFilesPrivate(Resource):
                 f_type = _file['type']
                 f_name = _file['file']
                 if "metadata" in f_type:
-                    files = files + f_name + ','
-            file_name = files.rstrip(",")
+                    files = files + f_name + '|'
+            file_name = files.rstrip("|")
 
         remove_file = False
         safe_path = safe_join(study_metadata_location, file_name)
@@ -317,10 +317,10 @@ class SendFilesPrivate(Resource):
             zip_name = os.path.join(download_folder_path, short_zip)
             if os.path.isfile(zip_name):
                 os.remove(zip_name)
-            if ',' in file_name and not os.path.exists(safe_path):
+            if '|' in file_name and not os.path.exists(safe_path):
                 zipfile = ZipFile(zip_name, mode='a')
                 remove_file = True
-                files = file_name.split(',')
+                files = file_name.split('|')
                 for file in files:
                     safe_path = safe_join(study_metadata_location, file)
                     if os.path.isdir(safe_path):
