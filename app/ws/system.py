@@ -47,6 +47,6 @@ class SystemTestEmail(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"] 
                  
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         inputs = {"user_token": user_token}
         send_test_email.apply_async(kwargs=inputs)

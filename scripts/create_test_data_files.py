@@ -12,7 +12,7 @@ from app.study_folder_utils import FileDescriptor, get_study_folder_files
 
 from app.tasks.worker import get_flask_app
 from app.ws.folder_maintenance import MaintenanceException
-from app.ws.settings.study import StudySettings
+from app.config.model.study import StudySettings
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_service import StudyService
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
         target_path = sys.argv[2]
 
     with flask_app.app_context():
-        studies = StudyService.get_instance(flask_app).get_all_study_ids()
+        studies = StudyService.get_instance().get_all_study_ids()
         skip_study_ids = [f"MTBLS{(i + 1)}" for i in range(2324)]
         # skip_study_ids = []
         study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]

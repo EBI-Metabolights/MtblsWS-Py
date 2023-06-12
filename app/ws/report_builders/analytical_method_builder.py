@@ -11,6 +11,7 @@ from pandas import DataFrame
 from flask import current_app as app, abort
 from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
+from app.config import get_settings
 
 from app.ws.mtbls_maf import totuples
 from app.ws.performance_and_metrics.builder_performance_tracker import BuilderPerformanceTracker
@@ -245,8 +246,9 @@ class AnalyticalMethodBuilder:
         :param result: Resultant dataframe from building process.
         :return: n/a
         """
-        token_path = app.config.get('GOOGLE_SHEET_TOKEN')
-        mariana_folder_id = app.config.get('MARIANA_DRIVE_ID')
+        settings = get_settings()
+        token_path = settings.google.connection.google_sheet_api
+        mariana_folder_id = settings.google.services.google_mariana_drive_id
 
         title = f'{self.studytype} {str(datetime.datetime.now())}'
 

@@ -1,16 +1,17 @@
 import json
 import logging
 import re
-from uuid import uuid4
 import uuid
 
-from flask import request, jsonify, make_response, current_app as app
+from flask import current_app as app
+from flask import jsonify, make_response, request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
-from pydantic import BaseModel
 
-from app.utils import MetabolightsAuthorizationException, MetabolightsDBException, metabolights_exception_handler, MetabolightsException
-from app.ws.auth.auth_manager import AuthenticationManager, get_security_settings
+from app.config import get_settings
+from app.utils import (MetabolightsAuthorizationException,
+                       MetabolightsException, metabolights_exception_handler)
+from app.ws.auth.auth_manager import AuthenticationManager
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyAccessPermission, UserModel
 from app.ws.db.schemes import Study, User
@@ -37,7 +38,7 @@ def validate_token_in_request_body(content):
             username = content[key]
         
     try:
-        user_in_token = AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt_token)
+        user_in_token = AuthenticationManager.get_instance().validate_oauth2_token(token=jwt_token)
     except MetabolightsAuthorizationException as e:
         return make_response(jsonify({"content": "invalid", "message": e.message, "err": e}), 401)
     except MetabolightsException as e:
@@ -118,15 +119,15 @@ class AuthLoginWithToken(Resource):
                                           "err": None}), 400)
 
         api_token = content["token"]
-        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(api_token)
-        settings = get_security_settings(app)
+        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(api_token)
+        settings = get_settings().auth.configuration
         if UserRole(user['role']) == UserRole.ROLE_SUPER_USER:
             exp = settings.admin_jwt_token_expires_in_mins
         else:
             exp = settings.access_token_expires_delta
             
         try:
-            token = AuthenticationManager.get_instance(app).create_oauth2_token_by_api_token(api_token, exp_period_in_mins=exp)
+            token = AuthenticationManager.get_instance().create_oauth2_token_by_api_token(api_token, exp_period_in_mins=exp)
         except MetabolightsException as e:
             return make_response(jsonify({"content": "invalid", "message": e.message, "err": e}), e.http_code)
         except Exception as e:
@@ -173,7 +174,7 @@ class AuthLogin(Resource):
         password = content["secret"]
 
         try:
-            token = AuthenticationManager.get_instance(app).create_oauth2_token(username, password)
+            token = AuthenticationManager.get_instance().create_oauth2_token(username, password)
         except MetabolightsAuthorizationException as e:
             return make_response(jsonify({"content": "invalid", "message": e.message, "err": str(e)}), e.http_code)
         except MetabolightsException as e:
@@ -184,7 +185,7 @@ class AuthLogin(Resource):
         if not token:
             return make_response(jsonify({"content": "invalid", "message": "Authentication failed", "err": None}), 403)
 
-        user: UserModel = UserService.get_instance(app).get_db_user_by_user_name(username)
+        user: UserModel = UserService.get_instance().get_db_user_by_user_name(username)
         
         resp = make_response(jsonify({"content": user.dict(), "message": "Authentication successful", "err": None}), 200)
         resp.headers["Access-Control-Expose-Headers"] = "Jwt, User"
@@ -289,7 +290,7 @@ class OneTimeTokenCreation(Resource):
         jwt = str(jwt).replace("Bearer ", "")
         
         try:
-            AuthenticationManager.get_instance(app).validate_oauth2_token(token=jwt)
+            AuthenticationManager.get_instance().validate_oauth2_token(token=jwt)
         except Exception as ex:
             raise MetabolightsAuthorizationException(message="User token is not valid or expired")
         jwt_key = f"one-time-token-request:jwt:{jwt}"
@@ -301,7 +302,7 @@ class OneTimeTokenCreation(Resource):
             redis.delete_value(token_key)
         token = str(uuid.uuid4())
         token_key = f"one-time-token-request:token:{token}"
-        ex = get_security_settings(app).one_time_token_expires_in_seconds
+        ex = get_settings().auth.configuration.one_time_token_expires_in_seconds
         redis.set_value(jwt_key, token, ex=ex)
         redis.set_value(token_key, jwt, ex=ex)
         return jsonify({"one_time_token": token})
@@ -335,8 +336,8 @@ class AuthUser(Resource):
         if "jwt" in response.headers and "user" in response.headers and response.headers["jwt"]:
             username = response.headers["user"]
             try:
-                UserService.get_instance(app).validate_username_with_submitter_or_super_user_role(username)
-                m_user = UserService.get_instance(app).get_simplified_user_by_username(username)
+                UserService.get_instance().validate_username_with_submitter_or_super_user_role(username)
+                m_user = UserService.get_instance().get_simplified_user_by_username(username)
                 response_data = {"content": json.dumps({"owner": m_user.dict()}), "message": None, "err": None}
                 response = make_response(response_data, 200)
                 response.headers["Access-Control-Allow-Origin"] = "*"
@@ -470,7 +471,7 @@ class AuthUserStudyPermissions2(Resource):
                       
 
 def update_study_permission(permission: StudyAccessPermission, user_token, filter, view_in_review_studies=False):
-    with DBManager.get_instance(app).session_maker() as db_session:
+    with DBManager.get_instance().session_maker() as db_session:
         query = db_session.query(Study.acc, Study.status, Study.obfuscationcode)
         study = filter(query).first()
         if not study:
@@ -490,7 +491,7 @@ def update_study_permission(permission: StudyAccessPermission, user_token, filte
         try:
             user = None
             if user_token: 
-                user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
+                user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
             if user:
                 anonymous_user = False
         except Exception:

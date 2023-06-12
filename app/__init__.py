@@ -1,19 +1,24 @@
-#  EMBL-EBI MetaboLights - https://www.ebi.ac.uk/metabolights
-#  Metabolomics team
-#
-#  European Bioinformatics Institute (EMBL-EBI), European Molecular Biology Laboratory, Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, United Kingdom
-#
-#  Last modified: 2017-Apr-25
-#  Modified by:   kenneth
-#
-#  Copyright 2019 EMBL - European Bioinformatics Institute
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+from pathlib import Path
 
-__author__ = 'jrmacias@ebi.ac.uk'
+application_path = Path(__file__).parent.parent
+
+build_number_file = application_path / Path(".build_number")
+__build_number__ = ""
+if build_number_file.exists():
+    __build_number__ = build_number_file.read_text(encoding="utf-8")
+    
+app_version_file = application_path / Path("app_version")
+
+app_version_number = "1.7.5"
+if app_version_file.exists():
+    app_version_number = app_version_file.read_text(encoding="utf-8")
+    
+__app_version__ = app_version_number + f"-{__build_number__}" if __build_number__ else app_version_number
+
+api_version_file = application_path / Path("api_version")
+
+api_version_number = "1.7.5"
+if api_version_file.exists():
+    api_version_number = app_version_file.read_text(encoding="utf-8")
+
+__api_version__ = api_version_number + f"-{__build_number__}" if __build_number__ else api_version_number

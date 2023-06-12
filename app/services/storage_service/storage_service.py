@@ -1,4 +1,4 @@
-import os
+from app.config import get_settings
 
 from app.services.storage_service.mounted.local_storage import LocalStorage
 from app.services.storage_service.remote_worker.remote_ftp_storage import RemoteFtpStorage
@@ -13,47 +13,40 @@ class StorageService(object):
                 'studies_storage': None}
 
     @staticmethod
-    def get_studies_storage(app=None) -> Storage:
-        return StorageService._get_local_storage('studies_storage', "STUDY_PATH", app=app)
+    def get_studies_storage() -> Storage:
+        return StorageService._get_local_storage('studies_storage', get_settings().study.study_metadata_files_root_path)
 
     @staticmethod
-    def get_ftp_private_storage(app=None) -> Storage:
-        mount_type = app.config.get("FTP_PRIVATE_MOUNT_TYPE")
+    def get_ftp_private_storage() -> Storage:
+        mount_type = get_settings().ftp_server.private.configuration.mount_type
         if mount_type and mount_type.lower() == "mounted":
-            return StorageService._get_local_storage('ftp_private_storage', "MOUNTED_FTP_PRIVATE_ROOT_PATH", app=app)
+            return StorageService._get_local_storage('ftp_private_storage', get_settings().ftp_server.private.configuration.studies_folder_absolute_path)
         if mount_type and mount_type.lower() == "unmounted":
-            return UnmountedStorage('ftp_private_storage', app=app)
+            return UnmountedStorage('ftp_private_storage')
         if mount_type and mount_type.lower() == "remote_worker":
             private_ftp_folder_root_path = get_study_settings().cluster_private_ftp_root_path
-            return RemoteFtpStorage('remote_worker', app=app, remote_folder=private_ftp_folder_root_path)
+            return RemoteFtpStorage('remote_worker', remote_folder=private_ftp_folder_root_path)
         raise NotImplementedError(f"Mounted type {mount_type} is not defined.")
 
     @staticmethod
-    def get_ftp_public_storage(app=None) -> Storage:
-        mount_type = app.config.get("FTP_PUBLIC_MOUNT_TYPE")
+    def get_ftp_public_storage() -> Storage:
+        mount_type = get_settings().ftp_server.public.configuration.mount_type
         if mount_type and mount_type.lower() == "mounted":
-            return StorageService._get_local_storage('ftp_public_storage', "MOUNTED_FTP_PUBLIC_ROOT_PATH", app=app)
+            return StorageService._get_local_storage('ftp_public_storage', get_settings().ftp_server.public.configuration.studies_folder_absolute_path)
         if mount_type and mount_type.lower() == "unmounted":
-            return UnmountedStorage('ftp_public_storage', app=app)
+            return UnmountedStorage('ftp_public_storage')
         raise NotImplementedError(f"Mounted type {mount_type} is not defined.")
 
     @staticmethod
-    def get_report_storage(app=None) -> Storage:
-        return StorageService._get_local_storage('report_storage', "REPORTING_ROOT_PATH", app=app)
+    def get_report_storage() -> Storage:
+        return StorageService._get_local_storage('report_storage', get_settings().report.reporting_root_path)
 
     @staticmethod
-    def _get_local_storage(name: str, environment_variable, app=None) -> Storage:
+    def _get_local_storage(name: str, path: str) -> Storage:
         if name in StorageService.storages and StorageService.storages[name]:
             return StorageService.storages[name]
 
-        if app:
-            remote_path = app.config.get(environment_variable)
-        else:
-            remote_path = os.getenv(environment_variable)
-            if not remote_path:
-                raise Exception(f'environment variable {environment_variable} is not found')
-
-        manager = LocalStorage(name, remote_folder=remote_path)
+        manager = LocalStorage(name, remote_folder=path)
         StorageService.storages[name] = manager
         return manager
     

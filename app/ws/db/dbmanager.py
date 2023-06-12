@@ -1,16 +1,16 @@
 from urllib.parse import quote
 
-from flask import current_app as app
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from app.config import get_settings
+from app.config.model.database import DatabaseConnection
 
-from app.ws.db.settings import DatabaseSettings, get_database_settings
 
 
 class DBManager(object):
-    def __init__(self, db_config: DatabaseSettings = None):
-        self.db_config = db_config
+    def __init__(self, db_config: DatabaseConnection = None):
+        self.db_config: DatabaseConnection = db_config
         self.db_url = self._get_db_url()
 
         self._engine = create_engine(self.db_url)
@@ -19,11 +19,9 @@ class DBManager(object):
     instance = None
 
     @classmethod
-    def get_instance(cls, application=None):
+    def get_instance(cls):
         if not cls.instance:
-            if not application:
-                application = app
-            db_settings = get_database_settings(application)
+            db_settings = get_settings().database.connection
 
             cls.instance = DBManager(db_config=db_settings)
         return cls.instance
@@ -37,11 +35,11 @@ class DBManager(object):
 
     def _get_db_url(self):
         db_config = self.db_config
-        user = db_config.database_user
-        password = db_config.database_password
-        host = db_config.database_host
-        port = db_config.database_port
-        db_name = db_config.database_name
+        user = db_config.user
+        password = db_config.password
+        host = db_config.host
+        port = db_config.port
+        db_name = db_config.database
         url = f"postgresql://{quote(user)}:{quote(password)}@{host}:{port}/{db_name}"
         return url
 

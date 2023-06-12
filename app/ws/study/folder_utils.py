@@ -10,9 +10,9 @@ from copy import deepcopy
 from operator import itemgetter
 
 from flask import current_app as app
+from app.config import get_settings
 
 from app.file_utils import make_dir_with_chmod
-from app.ws.settings.study import StudySettings
 from app.ws.settings.utils import get_study_settings
 from app.ws.utils import date_format, file_date_format, map_file_type, new_timestamped_folder, copy_file
 
@@ -28,9 +28,6 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     start_time = time.time()
     s_start_time = time.time()
-
-    # log_path = os.path.join(study_location, app.config.get('UPDATE_PATH_SUFFIX'), 'logs')
-    # make_dir_with_chmod(log_path, 0o777)
 
     study_files, latest_update_time = get_all_files(study_location, directory=directory,
                                                     include_raw_data=include_raw_data,
@@ -48,7 +45,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     upload_diff = []
     ftp_private_study_folder = study_id.lower() + "-" + obfuscation_code
-    ftp_private_relative_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+    ftp_private_relative_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
     ftp_private_relative_study_path = os.path.join(ftp_private_relative_root_path, ftp_private_study_folder)
     upload_location = [None, ftp_private_relative_study_path]
     upload_files = []
@@ -80,7 +77,7 @@ def get_file_information(study_location=None, path=None, directory=None, include
                          include_sub_dir=None, static_validation_file=None):
     file_list = []
     file_name = ""
-    ignore_file_list = app.config.get('IGNORE_FILE_LIST')
+    ignore_file_list = get_settings().file_filters.ignore_file_list
     latest_update_time = ""
     settings = get_study_settings()
     try:
@@ -243,7 +240,7 @@ def list_directories(file_location, dir_list, base_study_location, assay_file_li
                      static_validation_file=None, include_raw_data=None, ignore_file_list=None):
     static_file_found = False
     
-    folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
+    folder_exclusion_list = get_settings().file_filters.folder_exclusion_list
 
     if static_validation_file and os.path.isfile(static_validation_file):
         try:

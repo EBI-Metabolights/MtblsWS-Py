@@ -296,7 +296,7 @@ class SendFilesPrivate(Resource):
         #     study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not obfuscation_code:
             abort(403)
-        UserService.get_instance(app).validate_user_has_read_access(user_token, study_id, obfuscation_code)
+        UserService.get_instance().validate_user_has_read_access(user_token, study_id, obfuscation_code)
         files = ""
         if file_name == 'metadata':
             file_list = get_basic_files(study_metadata_location, include_sub_dir=False, assay_file_list=None)

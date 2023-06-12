@@ -47,6 +47,7 @@ from lxml import etree
 from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
 from dirsync import sync
+from app.config import get_settings
 
 from app.ws.mm_models import OntologyAnnotation
 from app.ws.settings.utils import get_study_settings
@@ -258,8 +259,8 @@ def copy_files_and_folders(source, destination, include_raw_data=True, include_i
 
 def remove_samples_from_isatab(std_path):
     # dest folder name is a timestamp
-    update_path_suffix = app.config.get('UPDATE_PATH_SUFFIX')
-    update_path = os.path.join(std_path, update_path_suffix)
+    settings = get_study_settings()
+    update_path = os.path.join(std_path, settings.audit_files_symbolic_link_name, settings.audit_folder_name)
     dest_path = new_timestamped_folder(update_path)
     # check for all samples
     for sample_file in glob.glob(os.path.join(std_path, "s_*.txt")):
@@ -270,7 +271,7 @@ def remove_samples_from_isatab(std_path):
         shutil.move(src_file, dest_file)
 
         # remove tagged lines
-        tag = app.config.get('DELETED_SAMPLES_PREFIX_TAG')
+        tag = get_settings().file_filters.deleted_samples_prefix_tag
         backup_file = dest_file.replace('.txt', '.bak')
         removed_lines = 0
         with open(dest_file, "r") as infile:
@@ -453,22 +454,21 @@ def totuples(df, text):
 # Allow for a more detailed logging when on DEBUG mode
 def log_request(request_obj):
 
-    if app.config.get('DEBUG'):
-        if not request_obj:
-            logger.error('REQUEST OBJECT is NONE')
-            return
-        if app.config.get('DEBUG_LOG_HEADERS'):
-            logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
-        if app.config.get('DEBUG_LOG_BODY'):
-            logger.debug('REQUEST BODY    -> %s', request_obj.data)
-        if app.config.get('DEBUG_LOG_JSON'):
-            if request_obj.is_json:
-                try:
-                    logger.debug('REQUEST JSON    -> %s', request_obj.json)
-                except Exception as ex:
-                    logger.debug('REQUEST JSON    -> Not Correct format')
-            else:
-                logger.debug('REQUEST JSON    -> EMPTY')
+    if not request_obj:
+        logger.error('REQUEST OBJECT is NONE')
+        return
+    if get_settings().server.log.log_headers:
+        logger.debug('REQUEST HEADERS -> %s', request_obj.headers)
+    if get_settings().server.log.log_body:
+        logger.debug('REQUEST BODY    -> %s', request_obj.data)
+    if get_settings().server.log.log_json:
+        if request_obj.is_json:
+            try:
+                logger.debug('REQUEST JSON    -> %s', request_obj.json)
+            except Exception as ex:
+                logger.debug('REQUEST JSON    -> Not Correct format')
+        else:
+            logger.debug('REQUEST JSON    -> EMPTY')
 
 
 def read_tsv(file_name):
@@ -962,13 +962,13 @@ def map_file_type(file_name, directory, assay_file_list=None):
     fname, ext = os.path.splitext(final_filename)
     fname = fname.lower()
     ext = ext.lower()
-    empty_exclusion_list = app.config.get('EMPTY_EXCLUSION_LIST')
-    ignore_file_list = app.config.get('IGNORE_FILE_LIST')
-    raw_files_list = app.config.get('RAW_FILES_LIST')
-    derived_files_list = app.config.get('DERIVED_FILES_LIST')
-    compressed_files_list = app.config.get('COMPRESSED_FILES_LIST')
-    internal_mapping_list = app.config.get('INTERNAL_MAPPING_LIST')
-    derived_data_folder_list = app.config.get('DERIVED_DATA_FOLDER_LST')
+    empty_exclusion_list = get_settings().file_filters.empty_exclusion_list
+    ignore_file_list = get_settings().file_filters.ignore_file_list
+    raw_files_list = get_settings().file_filters.raw_files_list
+    derived_files_list = get_settings().file_filters.derived_files_list
+    compressed_files_list = get_settings().file_filters.compressed_files_list
+    internal_mapping_list = get_settings().file_filters.internal_mapping_list
+    derived_data_folder_list = get_settings().file_filters.derived_data_folder_list
 
     full_path = os.path.join(directory, file_name)
     if os.path.exists(full_path):
@@ -1094,7 +1094,7 @@ def traverse_subfolders(study_location=None, file_location=None, file_list=None,
     if not os.path.isdir(study_location) or not os.path.isdir(file_location):
         return file_list, all_folders
 
-    folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
+    folder_exclusion_list = get_settings().file_filters.folder_exclusion_list
 
     if file_location not in all_folders:
         for params in os.walk(file_location):
@@ -1241,7 +1241,7 @@ def track_ga_event(category, action, tracking_id=None, label=None, value=0):
 
 
 def google_analytics():
-    tracking_id = app.config.get('GA_TRACKING_ID')
+    tracking_id = get_settings().google.services.google_analytics_tracking_id
     if tracking_id:
         environ = request.headers.environ
         url = environ['REQUEST_URI']
@@ -1360,13 +1360,14 @@ def clean_json(json_data, studyID):
 
 def get_techniques(studyID=None):
     print('getting techniques.... ')
-    params = app.config.get('DB_PARAMS')
 
     if studyID:
         sql = "select acc,studytype from studies where status= 3 and acc= '{studyid}'".format(studyid=studyID)
     else:
         sql = 'select acc,studytype from studies where status= 3'
 
+    settings = get_settings()
+    params = settings.database.connection.dict()
     with psycopg2.connect(**params) as conn:
         data = pd.read_sql_query(sql, conn)
 
@@ -1393,7 +1394,7 @@ def get_instrument(studyID, assay_name):
     try:
         source = '/metabolights/ws/studies/{study_id}/assay'.format(study_id=studyID)
         ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
-        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+        resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'assay_filename': assay_name})
         data = resp.text
         content = io.StringIO(data)
@@ -1416,7 +1417,7 @@ def get_orgaisms(studyID, sample_file_name):
     try:
         source = '/metabolights/ws/studies/{study_id}/sample'.format(study_id=studyID)
         ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
-        resp = requests.get(ws_url, headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')},
+        resp = requests.get(ws_url, headers={'user_token': get_settings().auth.service_account.api_token},
                             params={'sample_filename': sample_file_name})
         data = resp.text
         content = io.StringIO(data)
@@ -1459,7 +1460,7 @@ def get_studytype(studyID=None):
         source = '/metabolights/ws/studies/{study_id}/descriptors'.format(study_id=studyID)
         ws_url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
         try:
-            resp =requests.get(ws_url , headers={'user_token': app.config.get('METABOLIGHTS_TOKEN')})
+            resp =requests.get(ws_url , headers={'user_token': get_settings().auth.service_account.api_token})
             data = resp.json()
             for descriptor in data['studyDesignDescriptors']:
                 term = str(descriptor['annotationValue'])
@@ -1544,9 +1545,10 @@ def get_connection():
     conn = None
     cursor = None
     try:
-        params = app.config.get('DB_PARAMS')
-        conn_pool_min = app.config.get('CONN_POOL_MIN')
-        conn_pool_max = app.config.get('CONN_POOL_MAX')
+        settings = get_settings()
+        params = settings.database.connection.dict()
+        conn_pool_min = settings.database.configuration.conn_pool_min
+        conn_pool_max = settings.database.configuration.conn_pool_max
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
         cursor = conn.cursor()
@@ -1591,7 +1593,7 @@ def getFileList(studyID):
         source = '/metabolights/ws/studies/{study_id}/files?include_raw_data=false'.format(study_id=studyID)
         url = 'http://wp-p3s-15.ebi.ac.uk:5000' + source
         request_obj = urllib_request.Request(url)
-        request_obj.add_header('user_token', app.config.get('METABOLIGHTS_TOKEN'))
+        request_obj.add_header('user_token', get_settings().auth.service_account.api_token)
         response = urllib_request.urlopen(request_obj)
         content = response.read().decode('utf-8')
         j_content = json.loads(content)

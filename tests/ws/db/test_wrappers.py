@@ -9,7 +9,7 @@ class TestWrappers(object):
     def test_create_mtbls_file_obj_01(self, flask_app, sensitive_data):
         study_id = "MTBLS1"
         with flask_app.app_context():
-            db_manager = DBManager.get_instance(flask_app)
+            db_manager = DBManager.get_instance()
             with db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)
@@ -34,7 +34,7 @@ class TestWrappers(object):
     def test_create_mtbls_file_obj_01_optimized(self, flask_app, sensitive_data):
         study_id = "MTBLS1"
         with flask_app.app_context():
-            db_manager = DBManager.get_instance(flask_app)
+            db_manager = DBManager.get_instance()
             with db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)
@@ -60,7 +60,7 @@ class TestWrappers(object):
     def test_create_mtbls_file_obj_02_optimized(self, flask_app, sensitive_data):
         study_id = "MTBLS2435"
         with flask_app.app_context():
-            db_manager = DBManager.get_instance(flask_app)
+            db_manager = DBManager.get_instance()
             with db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)

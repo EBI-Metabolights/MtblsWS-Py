@@ -9,21 +9,24 @@ import time
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Set
+
 import numpy as np
 import pandas as pd
-
 from bs4 import BeautifulSoup
-from isatools import isatab, model as isatools_model
+from isatools import isatab
+from isatools import model as isatools_model
 from pydantic import BaseModel
+
+from app.config.model.hpc_cluster import HpcClusterConfiguration
+from app.config.model.study import StudySettings
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.acl import Acl
-from app.services.storage_service.mounted.local_file_manager import MountedVolumeFileManager
-from app.services.storage_service.remote_worker.remote_file_manager import RemoteFileManager
+from app.services.storage_service.mounted.local_file_manager import \
+    MountedVolumeFileManager
+from app.services.storage_service.remote_worker.remote_file_manager import \
+    RemoteFileManager
 from app.utils import INVESTIGATION_FILE_ROWS_LIST, INVESTIGATION_FILE_ROWS_SET
-
 from app.ws.db.types import StudyStatus
-from app.ws.settings.hpc_cluster import HpcClusterSettings
-from app.ws.settings.study import StudySettings
 from app.ws.settings.utils import get_cluster_settings, get_study_settings
 
 logger = logging.getLogger("wslog")
@@ -79,7 +82,7 @@ class StudyFolders(BaseModel):
     
 
 class FolderRootPaths(object):
-    def __init__(self, study_settings: StudySettings, cluster_settings: HpcClusterSettings, cluster_mode: False):
+    def __init__(self, study_settings: StudySettings, cluster_settings: HpcClusterConfiguration, cluster_mode: False):
         self.study_settings = study_settings
         self.cluster_settings = cluster_mode
         self.cluster_mode = cluster_mode
@@ -174,7 +177,7 @@ class StudyFolderMaintenanceTask(object):
             self.study_settings = get_study_settings()
         
         self.investigation_file_name = self.study_settings.investigation_file_name
-        self.cluster_settings: HpcClusterSettings = get_cluster_settings()
+        self.cluster_settings: HpcClusterConfiguration = get_cluster_settings()
         self.cluster_execution_mode = cluster_execution_mode
         
         self.paths: FolderRootPaths = FolderRootPaths(study_settings=self.study_settings, cluster_settings=self.cluster_settings, cluster_mode=self.cluster_execution_mode)

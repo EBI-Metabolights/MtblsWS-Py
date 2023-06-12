@@ -88,7 +88,7 @@ class UserAccounts(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         
         try:
             if user_name or user_id or email:
@@ -99,7 +99,7 @@ class UserAccounts(Resource):
                 elif user_id:
                     filter_clause = lambda query: query.filter(User.id == user_id)
                     
-                user: UserModel = UserService.get_instance(app).get_db_user_by_filter_clause(filter_clause)
+                user: UserModel = UserService.get_instance().get_db_user_by_filter_clause(filter_clause)
                 if user:
                     if user.role  == UserRole.ROLE_SUPER_USER.value or user.role  == UserRole.SYSTEM_ADMIN.value:
                         user.curator = True
@@ -108,7 +108,7 @@ class UserAccounts(Resource):
                         
                 return jsonify({"content": user.dict(), "message": None, "error": None})
             else:
-                users: List[UserModel] = UserService.get_instance(app).get_db_users_by_filter_clause()
+                users: List[UserModel] = UserService.get_instance().get_db_users_by_filter_clause()
                 user_dict = []
                 for user in users:
                     if user:
@@ -169,7 +169,7 @@ class UserAccounts(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
             
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         user: UserModel = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -182,7 +182,7 @@ class UserAccounts(Resource):
                 
         except (Exception) as ex:
             raise MetabolightsException(http_code=404, message="Invalid user data input", exception=ex)
-        db_session = DBManager.get_instance(app).session_maker()
+        db_session = DBManager.get_instance().session_maker()
         try:
             with db_session:
                 query = db_session.query(User)
@@ -281,7 +281,7 @@ class UserAccounts(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
             
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         user: NewUserModel = None
         try:
             data_dict = json.loads(request.data.decode('utf-8'))
@@ -297,7 +297,7 @@ class UserAccounts(Resource):
                 
         except (Exception) as ex:
             raise MetabolightsException(http_code=400, message="Invalid user data input", exception=ex)
-        db_session = DBManager.get_instance(app).session_maker()
+        db_session = DBManager.get_instance().session_maker()
         try:
             with db_session:
                 db_user = User()
@@ -390,7 +390,7 @@ class UserAccounts(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
         
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         
         try:
             if user_name or user_id or email:
@@ -400,7 +400,7 @@ class UserAccounts(Resource):
                     filter_clause = lambda query: query.filter(User.email == email)
                 elif user_id:
                     filter_clause = lambda query: query.filter(User.id == user_id)
-                db_session = DBManager.get_instance(app).session_maker()
+                db_session = DBManager.get_instance().session_maker()
                 try:
                     with db_session:
                         query = db_session.query(User)

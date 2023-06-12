@@ -26,6 +26,7 @@ from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pyopenms import MSExperiment, FileHandler
+from app.config import get_settings
 
 from app.ws.misc_utilities.response_messages import HTTP_200, HTTP_404, HTTP_403, HTTP_401
 from app.ws.mtblsWSclient import WsClient
@@ -245,11 +246,13 @@ class ZipSpectraFiles(Resource):
         if not is_curator:
             abort(403)
 
-        reporting_path = os.path.join(app.config.get('REPORTING_ROOT_PATH'), app.config.get('REPORTING_PATH'), 'global')
+        reporting_path = os.path.join(get_settings().study.report_root_path, 
+                                      get_settings().study.report_base_folder_name, 
+                                      get_settings().study.report_global_folder_name)
         sz = SpectraZipper(
             study_type='NMR',
             reporting_path=reporting_path,
-            private_studies_dir=app.config.get('STUDY_PATH'),
+            private_studies_dir=get_settings().study.study_metadata_files_root_path,
             spectra_dir=f'NMR_spectra_files_{str(datetime.datetime.now())}',
             study_location=study_location
         )

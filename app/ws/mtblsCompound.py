@@ -36,7 +36,7 @@ class MtblsCompounds(Resource):
 
         logger.info('Getting  All Compound IDs ')
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             accs = db_session.query(RefMetabolite.acc).all()
             acc_list = []
             for acc in accs:
@@ -82,7 +82,7 @@ class MtblsCompoundsDetails(Resource):
 
         logger.info('Getting Compound details for accession number  %s', accession)
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             metabolite = db_session.query(RefMetabolite).filter(RefMetabolite.acc == accession).first()
 
             if not metabolite:

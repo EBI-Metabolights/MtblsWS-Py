@@ -70,7 +70,7 @@ class V1StudyDetail(Resource):
             user_token = request.headers['user_token']
                 
         
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             query = query.filter(Study.acc == study_id)
             study = query.first()
@@ -80,7 +80,7 @@ class V1StudyDetail(Resource):
 
             if StudyStatus(study.status) != StudyStatus.PUBLIC:
                 if user_token:
-                    UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+                    UserService.get_instance().validate_user_has_write_access(user_token, study_id)
                 else:
                     abort(http_status_code=403)
                     

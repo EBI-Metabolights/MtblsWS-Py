@@ -123,7 +123,7 @@ class StudyStatus(Resource):
 
         if study_status.lower() == db_study_status.lower():
             raise MetabolightsException(message=f"Status is already {str(study_status)} so there is nothing to change")
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        ftp_private_storage = StorageService.get_ftp_private_storage()
         ftp_private_study_folder = study_id.lower() + '-' + obfuscation_code
 
         # Update the last status change date field
@@ -254,7 +254,7 @@ class ToggleAccess(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         return toogle_ftp_folder_permission(app, study_id)
 
 class ToggleAccessGet(Resource):
@@ -310,5 +310,5 @@ class ToggleAccessGet(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         return get_ftp_folder_access_status(app, study_id)

@@ -5,6 +5,7 @@ from flask import current_app as app, jsonify
 from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
@@ -89,11 +90,11 @@ class SyncCalculation(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
-        study = StudyService.get_instance(app).get_study_by_acc(study_id)
-        study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
-        storage = StorageService.get_ftp_private_storage(app)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
+        storage = StorageService.get_ftp_private_storage()
 
         meta_calc_result,rdfiles_calc_result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
         return jsonify({'result':{'meta_calc_result':meta_calc_result.dict(),'rdfiles_calc_result': rdfiles_calc_result.dict()}})
@@ -153,14 +154,14 @@ class SyncFromFtpFolder(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
-        study = StudyService.get_instance(app).get_study_by_acc(study_id)
-        study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
-        storage = StorageService.get_ftp_private_storage(app)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
+        storage = StorageService.get_ftp_private_storage()
 
         ftp_folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
-        ignore_list = app.config.get('INTERNAL_MAPPING_LIST')
+        ignore_list = get_settings().file_filters.internal_mapping_list
         meta_sync_status,rdfiles_sync_status = storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
 
         return jsonify({'meta_sync_status': meta_sync_status, 'files_sync_status':rdfiles_sync_status})
@@ -219,11 +220,11 @@ class FtpFolderSyncStatus(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
-        study = StudyService.get_instance(app).get_study_by_acc(study_id)
-        study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
-        storage = StorageService.get_ftp_private_storage(app)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
+        storage = StorageService.get_ftp_private_storage()
 
         sync_metafiles_result,sync_rdfiles_result = storage.check_folder_sync_status(study_id=study_id, obfuscation_code=None, target_local_path=study_path)
         return jsonify({'result':{'sync_metafiles_result':sync_metafiles_result.dict(),'sync_rdfiles_result': sync_rdfiles_result.dict()}})
@@ -282,7 +283,7 @@ class FtpFolderPermission(Resource):
             user_token = request.headers["user_token"]
 
         # Security check
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
         return get_ftp_folder_access_status(app, study_id)
 
@@ -340,7 +341,7 @@ class FtpFolderPermissionModification(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         return toogle_ftp_folder_permission(app, study_id)
 
 
@@ -418,7 +419,7 @@ class PrivateFtpFolder(Resource):
         study_id = study_id.upper()
 
         logger.info('Creating a new study upload folder for study %s', study_id)
-        study = StudyService.get_instance(app).get_study_by_acc(study_id)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
         return WsClient.create_upload_folder(study_id, study.obfuscationcode, user_token, send_email=send_email)
 
 
@@ -475,9 +476,9 @@ class PrivateFtpFolderPath(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
-        study = StudyService.get_instance(app).get_study_by_acc(study_id)
-        relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
         folder_name = f'{study_id.lower()}-{study.obfuscationcode}'
         relative_ftp_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
         return relative_ftp_study_path
@@ -555,11 +556,11 @@ class SyncFromStudyFolder(Resource):
             args = parser.parse_args(req=request)
             sync_only_chebi_results = False if args['sync_only_chebi_pipeline_results'].lower() == 'false' else True
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
-        study = StudyService.get_instance(app).get_study_by_acc(study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
         destination = study_id.lower() + '-' + study.obfuscationcode
 
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        ftp_private_storage = StorageService.get_ftp_private_storage()
         logger.info(f"syncing files from study folder to FTP folder for {study_id}")
 
         ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
@@ -622,13 +623,13 @@ class SyncPublicStudyToFTP(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
-        study = StudyService.get_instance(app).get_study_by_acc(study_id)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
         if study.status != 0:
            return {'Error': 'Given study is not public yet!'} 
-        study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
+        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
 
-        ftp_public_storage = StorageService.get_ftp_public_storage(app)
+        ftp_public_storage = StorageService.get_ftp_public_storage()
         logger.info(f"Syncing files from public study folder to FTP folder for {study_id}")
         meta_public_sync_status,files_public_sync_status = ftp_public_storage.sync_to_public_ftp(source_local_folder=study_path, target_folder=study_id, ignore_list=None)
         return {'meta_sync_status': meta_public_sync_status, 'files_sync_status':files_public_sync_status}

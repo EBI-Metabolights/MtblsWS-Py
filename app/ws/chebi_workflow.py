@@ -38,6 +38,7 @@ from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from pubchempy import get_compounds
 from zeep import Client
+from app.config import get_settings
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage import Storage
@@ -508,7 +509,7 @@ def search_and_update_maf(study_id, study_metadata_location, annotation_file_nam
     
     if obfuscation_code:  # So the curators can FTP new files into the private upload folder for the study
          ftp_private_annotation_folder = os.path.join(study_id.lower() + "-" + obfuscation_code, settings.internal_files_symbolic_link_name, anno_sub_folder)
-         ftp_private_storage = StorageService.get_ftp_private_storage(app)
+         ftp_private_storage = StorageService.get_ftp_private_storage()
          create_annotation_folder_on_remote_storage(ftp_private_storage, ftp_private_annotation_folder)
 
     # First make sure the existing pubchem annotated spreadsheet is loaded
@@ -975,7 +976,7 @@ def search_and_update_maf(study_id, study_metadata_location, annotation_file_nam
     print_log("ChEBI pipeline Done. Overall it took %s seconds" % round(time.time() - first_start_time, 2))
     if obfuscation_code:
         ftp_private_folder = os.path.join(study_id.lower() + "-" + obfuscation_code)
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        ftp_private_storage = StorageService.get_ftp_private_storage()
         sync_annotation_folder_with_remote_storage(ftp_private_storage, ftp_private_folder)
     return maf_len, pubchem_df_len, pubchem_file
 
@@ -1204,7 +1205,7 @@ def removeHydrogen(sdf_file_name):
         count = 0
         final_file = ''
         molecule = str(file_data, 'utf-8').split('$$$$')
-        mol_count = app.config.get('REMOVED_HS_MOL_COUNT')
+        mol_count = get_settings().chebi.pipeline.removed_hs_mol_count
         for mol in molecule:
             if count <= mol_count:
                 fileText = fileText + mol + '$$$$'
@@ -1410,7 +1411,7 @@ def remove_sdf_files(sdf_file_name, study_location, sdf_file_list):
 
 def classyfire(inchi):
     print_log("    -- Starting querying ClassyFire")
-    url = app.config.get('CLASSYFIRE_ULR')
+    url = get_settings().chebi.pipeline.search_services.classyfire_url
     label = 'MetaboLights WS'
     query_id = None
     try:
@@ -1436,7 +1437,7 @@ def get_classyfire_results(query_id, classyfire_file_name, return_format, classy
                 # r = None
                 start_time = time.time()
                 print_log("       -- Getting ClassyFire SDF for query id: " + str(query_id))
-                url = app.config.get('CLASSYFIRE_ULR')
+                url = get_settings().chebi.pipeline.search_services.classyfire_url
                 r = requests.get('%s/queries/%s.%s' % (url, query_id, return_format),
                                  headers={"Content-Type": "application/%s" % return_format})
                 time.sleep(3)  # Give ClassyFire time to recover first ;-)
@@ -1506,7 +1507,7 @@ def get_classyfire_lookup_mapping():
 
 def get_chebi_obo_file():
     print_log('loading ChEBI OBO file')
-    obo_file = app.config.get('OBO_FILE')
+    obo_file = get_settings().chebi.pipeline.obo_file
     onto = pronto.Ontology(obo_file)
     return onto
 
@@ -1518,8 +1519,8 @@ def get_is_a(onto, chebi_compound):
 
 
 def get_chebi_client():
-    url = app.config.get('CHEBI_URL')
-    wait_time = app.config.get('CHEBI_URL_WAIT')
+    url = get_settings().chebi.service.connection.chebi_ws_wsdl
+    wait_time = get_settings().chebi.pipeline.chebi_url_wait
     client = None
     retries = 20
     attempts = 0
@@ -1631,24 +1632,6 @@ def get_csid(inchikey):
     return csid
 
 
-# def get_csid(inchikey):
-#     csid = ""
-#     csurl_base = app.config.get('CHEMSPIDER_URL')
-#
-#     if inchikey:
-#         url1 = csurl_base + 'SimpleSearch&searchOptions.QueryText=' + inchikey
-#         resp1 = requests.get(url1)
-#         if resp1.status_code == 200:
-#             url2 = csurl_base + 'GetSearchResult&rid=' + resp1.text
-#             resp2 = requests.get(url2)
-#             if resp2.status_code == 200:
-#                 csid = resp2.text
-#                 csid = csid.replace('[', '').replace(']', '').split(',')[0]
-#                 print_log("    -- Found CSID " + csid + " using ChemSpider, inchikey: " + inchikey)
-#                 return csid
-#     return csid
-
-
 def get_pubchem_cid_on_inchikey(cactus_stdinchikey, opsin_stdinchikey):
     pc_cid = ''
     inchis = []
@@ -1702,7 +1685,7 @@ def create_pubchem_df(maf_df):
 
 def opsin_search(comp_name, req_type):
     result = ""
-    opsin_url = app.config.get('OPSIN_URL')
+    opsin_url = get_settings().chebi.pipeline.search_services.opsin_url
     url = opsin_url + comp_name + '.json'
     resp = requests.get(url)
     if resp.status_code == 200:
@@ -2031,7 +2014,7 @@ class SplitMaf(Resource):
         ]
     )
     def post(self, study_id):
-        http_base_location = app.config.get('WS_APP_BASE_LINK')
+        http_base_location = get_settings().server.service.ws_app_base_link
         http_file_location = http_base_location + os.sep + study_id + os.sep + 'files'
 
         # param validation
@@ -2091,7 +2074,7 @@ class SplitMaf(Resource):
 
 def processUniChemResponse(inchi_key):
     print_log(' calling UNICHEM_URL for inchi key - ' + inchi_key)
-    unichem_url = app.config.get('UNICHEM_URL')
+    unichem_url = get_settings().chebi.pipeline.search_services.unichem_url
     unichem_url = unichem_url.replace("INCHI_KEY", inchi_key)
     resp = requests.get(unichem_url)
     unichem_id = ''
@@ -2122,7 +2105,7 @@ def processUniChemResponse(inchi_key):
 
 def get_cas_id(inchi_key):
     print_log(' calling Chem plus for inchi key - ' + inchi_key)
-    chem_plus_url = app.config.get('CHEM_PLUS_URL')
+    chem_plus_url = get_settings().chebi.pipeline.search_services.chem_plus_url
     chem_plus_url = chem_plus_url.replace("INCHI_KEY", inchi_key)
     cas_id = ''
     # resp = requests.get(chem_plus_url)
@@ -2139,7 +2122,7 @@ def get_cas_id(inchi_key):
 
 def get_dime_db(inchi_key):
     print_log(' calling DIME DB for inchi key - ' + inchi_key)
-    dime_url = app.config.get('DIME_URL')
+    dime_url = get_settings().chebi.pipeline.search_services.dime_url
     dime_url = dime_url.replace("INCHI_KEY", inchi_key)
     dime_db_ids = ''
     resp = requests.get(dime_url)
@@ -2271,7 +2254,7 @@ class ChEBIPipeLine(Resource):
     )
     def post(self, study_id):
 
-        http_base_location = app.config.get('WS_APP_BASE_LINK')
+        http_base_location = get_settings().server.service.ws_app_base_link
         http_file_location = http_base_location + os.sep + study_id + os.sep + 'files'
         # param validation
         if study_id is None:
@@ -2327,7 +2310,7 @@ class ChEBIPipeLine(Resource):
                 classyfire_search).lower() + "' -d 'annotation_file_name=#FILE_NAME#' -d 'update_study_maf=" + str(
                 update_study_maf).lower() + "' "
             cmd = cmd + param + " -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-            cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + \
+            cmd = cmd + get_settings().chebi.pipeline.chebi_pipeline_url + study_id + \
                   "/chebi-pipeline?source=cluster' "
             print_log("cluster job -  %s", cmd)
 
@@ -2509,14 +2492,14 @@ class ChEBIPipeLineLoad(Resource):
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('sdf_file_name', help="SDF File to load into ChEBI", location="args")
         args = parser.parse_args()
         sdf_file_name = args['sdf_file_name']
 
-        shell_script = app.config.get('CHEBI_UPLOAD_SCRIPT')
+        shell_script = get_settings().chebi.pipeline.chebi_upload_script
         command = shell_script
         if sdf_file_name:
             command = shlex.split(shell_script + ' ' + sdf_file_name)

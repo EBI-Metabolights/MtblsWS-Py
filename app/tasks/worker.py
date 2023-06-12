@@ -5,16 +5,18 @@ from celery import Celery
 from celery.signals import after_task_publish
 from flask import Flask
 from flask_mail import Mail
+from app.config import get_settings
+from app.config.model.celery import CelerySettings
+from app.config.model.redis_cache import RedisConnection
 
 from app.tasks.utils import ValueMaskUtility
 from app.ws.email.email_service import EmailService
-from app.ws.settings.utils import (get_celery_settings, get_redis_settings,
-                                   get_system_settings)
+
 from app.ws.study.user_service import UserService
 
-celery_settings = get_celery_settings()
+settings: CelerySettings = get_settings().celery
 
-rs = get_redis_settings()
+rs: RedisConnection = settings.broker
 broker_url = (
     f"redis://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}"
 )
@@ -72,11 +74,11 @@ celery.conf.update(
     task_default_queue="common-tasks",
     broker_url=broker_url,
     result_backend=result_backend,
-    task_acks_late=celery_settings.celery_task_acks_late,
-    task_acks_on_failure_or_timeout=celery_settings.celery_task_acks_on_failure_or_timeout,
-    task_reject_on_worker_lost=celery_settings.celery_task_reject_on_worker_lost,
-    task_track_started=celery_settings.celery_task_track_started,
-    result_expires=celery_settings.celery_result_expires,
+    task_acks_late=True,
+    task_acks_on_failure_or_timeout=False,
+    task_reject_on_worker_lost=True,
+    task_track_started=True,
+    result_expires=settings.configuration.celery_result_expires,
 )
 
 
@@ -86,23 +88,24 @@ def update_task_was_sent_state(sender=None, headers=None, **kwargs):
     backend = task.backend if task else celery.backend
     backend.store_result(headers["id"], None, "INITIATED")
 
-system_settings = get_system_settings(None)
+service_account_apitoken = get_settings().auth.service_account.api_token
+periodic_task_configuration = get_settings().celery.periodic_task_configuration
 # celery.conf.beat_schedule = {
 #     "check_integration": {
 #         "task": "app.tasks.common_tasks.admin_tasks.integration_check.check_integrations",
-#         "schedule": system_settings.integration_test_period_in_seconds,
+#         "schedule": periodic_task_configuration.integration_test_period_in_seconds,
 #         "options": {"expires": 55},
 #     },
 #     "sync_compound_on_es_and_db": {
 #         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_compound_syncronization.sync_compounds_on_es_and_db",
-#         "schedule": system_settings.es_compound_sync_task_period_in_secs ,
-#         "args": (system_settings.metabolights_apitoken,),
+#         "schedule": periodic_task_configuration.es_compound_sync_task_period_in_secs ,
+#         "args": (service_account_apitoken,),
 #         "options": {"expires": 60 },
 #     },
 #         "sync_study_on_es_and_db": {
 #         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization.sync_studies_on_es_and_db",
-#         "schedule": system_settings.es_study_sync_task_period_in_secs ,
-#         "args": (system_settings.metabolights_apitoken,),
+#         "schedule": periodic_task_configuration.es_study_sync_task_period_in_secs ,
+#         "args": (service_account_apitoken,),
 #         "options": {"expires": 60 },
 #     }
 # }
@@ -110,8 +113,8 @@ celery.conf.beat_schedule = {
 
     "check_workers": {
         "task": "app.tasks.system_monitor_tasks.worker_maintenance.check_all_workers",
-        "schedule": system_settings.worker_heath_check_period_in_seconds,
-        "options": {"expires": system_settings.worker_heath_check_period_in_seconds - 3}
+        "schedule": periodic_task_configuration.worker_heath_check_period_in_seconds,
+        "options": {"expires": periodic_task_configuration.worker_heath_check_period_in_seconds - 3}
     }
 }
 celery.conf.timezone = "UTC"
@@ -131,8 +134,8 @@ def send_email(subject_name, body, from_address, to_addresses, cc_addresses):
         )
 
 def report_internal_technical_issue(subject, body):
-    settings = get_system_settings(None)
-    send_email(subject, body, None, settings.technical_issue_recipient_email, None)
+    email = get_settings().email.email_service.configuration.technical_issue_recipient_email_address
+    send_email(subject, body, None, email, None)
     
 class MetabolightsTask(celery.Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
@@ -143,7 +146,7 @@ class MetabolightsTask(celery.Task):
             if "email" in kwargs:
                 username = kwargs["email"]
             if not username and "user_token" in kwargs and kwargs["user_token"]:
-                user = UserService.get_instance(flask_app).get_simplified_user_by_token(kwargs["user_token"])
+                user = UserService.get_instance().get_simplified_user_by_token(kwargs["user_token"])
                 if user:
                     username = user.userName
                 

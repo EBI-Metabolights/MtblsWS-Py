@@ -1,6 +1,5 @@
 from typing import List, Optional
 
-from flask import current_app as app
 from sqlalchemy import func
 
 from app.utils import MetabolightsException, MetabolightsAuthorizationException
@@ -18,12 +17,10 @@ class UserService(object):
     study_settings = None
 
     @classmethod
-    def get_instance(cls, application=None):
+    def get_instance(cls):
         if not cls.instance:
             cls.instance = UserService()
-            if not application:
-                application = app
-            cls.db_manager = DBManager.get_instance(application)
+            cls.db_manager = DBManager.get_instance()
             cls.study_settings = get_study_settings()
         return cls.instance
     

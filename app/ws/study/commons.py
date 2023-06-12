@@ -3,6 +3,7 @@ import logging
 import os
 
 from flask import abort, current_app as app
+from app.config import get_settings
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
@@ -65,13 +66,6 @@ def get_all_studies_for_user(user_token):
     return text_resp
 
 
-def get_queue_folder():
-    # Updated to remove Java WS /study/getQueueFolder dependency
-    queue_folder = app.config.get('STUDY_QUEUE_FOLDER')
-    logger.info('Found queue upload folder for this server as:' + queue_folder)
-    return queue_folder
-
-
 def get_permissions(study_id, user_token, obfuscation_code=None):
     """
     Check MTBLS-WS for permissions on this Study for this user
@@ -128,7 +122,7 @@ def get_study_location(study_id, user_token):
 
 
 def create_ftp_folder(study_id, obfuscation_code, user_token, email_service=None, send_email=True):
-    private_ftp_sm = StorageService.get_ftp_private_storage(app)
+    private_ftp_sm = StorageService.get_ftp_private_storage()
     new_folder_name = study_id.lower() + '-' + obfuscation_code
 
     new_folder = False
@@ -142,7 +136,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service=None
         private_ftp_sm.remote.create_folder(folders, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
         new_folder = True
 
-    relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+    relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
     relative_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), new_folder_name)
 
     if new_folder and send_email:

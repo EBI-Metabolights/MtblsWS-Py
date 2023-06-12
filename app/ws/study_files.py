@@ -29,6 +29,7 @@ from flask.json import jsonify
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 from jsonschema.exceptions import ValidationError
+from app.config import get_settings
 
 from app.services.storage_service.storage_service import StorageService
 from app.utils import metabolights_exception_handler
@@ -138,7 +139,7 @@ class StudyFiles(Resource):
                                           assay_file_list=get_assay_file_list(study_location),
                                           static_validation_file=False)
 
-        relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+        relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
         folder_name = f'{study_id.lower()}-{obfuscation_code}'
         upload_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
 
@@ -389,7 +390,7 @@ class StudyRawAndDerivedDataFile(Resource):
 
         glob_search_result = glob.glob(os.path.join(search_path, search_pattern), recursive=True)
         search_results = [os.path.abspath(file) for file in glob_search_result if not os.path.isdir(file)]
-        excluded_folders = app.config.get("FOLDER_EXCLUSION_LIST")
+        excluded_folders = get_settings().file_filters.folder_exclusion_list
 
         excluded_folder_set = set(
             [os.path.basename(os.path.abspath(os.path.join(study_folder, file))) for file in excluded_folders])
@@ -419,7 +420,7 @@ class StudyRawAndDerivedDataFile(Resource):
         ignore_list = []
 
         metadata_files = glob.glob(os.path.join(search_path, "[isam]_*.t[xs]?"))
-        internal_file_names = app.config.get("INTERNAL_MAPPING_LIST")
+        internal_file_names = get_settings().file_filters.internal_mapping_list
         internal_files = [os.path.join(search_path, file + ".json") for file in internal_file_names]
         internal_files.append(os.path.join(search_path, "missing_files.txt"))
         ignore_list.extend(metadata_files)
@@ -692,7 +693,7 @@ class StudyRawAndDerivedDataFolder(Resource):
 
         glob_search_result = glob.glob(os.path.join(search_path, search_pattern))
         search_results = [os.path.abspath(file) for file in glob_search_result if os.path.isdir(file)]
-        excluded_folders = app.config.get("FOLDER_EXCLUSION_LIST")
+        excluded_folders = get_settings().file_filters.folder_exclusion_list
 
         excluded_folder_set = set([self.get_validated_basename(study_folder, file) for file in excluded_folders])
         excluded_folder_set.add("RAW_FILES")
@@ -848,9 +849,9 @@ class StudyRawAndDerivedDataFolder(Resource):
         study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-        studies_folder = app.config.get("STUDY_PATH")
+        studies_folder = get_settings().study.study_metadata_files_root_path
         study_path = os.path.abspath(os.path.join(studies_folder, study_id))
-        excluded_folders = app.config.get("FOLDER_EXCLUSION_LIST")
+        excluded_folders = get_settings().file_filters.folder_exclusion_list
 
         excluded_folder_set = set([os.path.abspath(os.path.join(study_path, file)) for file in excluded_folders])
 
@@ -1047,7 +1048,7 @@ def update_files_list_schema(study_id, obfuscation_code, study_location, files_l
     if not include_internal_files:
         study_files = [item for item in study_files if 'type' in item and item['type'] != 'internal_mapping']
 
-    relative_studies_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+    relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
     folder_name = f'{study_id.lower()}-{obfuscation_code}'
     upload_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
     files_list_schema = {'study': study_files,
@@ -1156,11 +1157,11 @@ class CopyFilesFolders(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
-        study = StudyService.get_instance(app).get_study_by_acc(study_id)
-        study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
-        storage = StorageService.get_ftp_private_storage(app)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
+        storage = StorageService.get_ftp_private_storage()
 
         result = storage.check_folder_sync_status(study_id, study.obfuscationcode, study_path)
         return jsonify(result.dict())
@@ -1215,7 +1216,7 @@ class CopyFilesFolders(Resource):
     #
     #     logger.info("For %s we use %s as the upload path. The study path is %s", study_id, upload_location,
     #                 study_location)
-    #     ftp_private_storage = StorageService.get_ftp_private_storage(app)
+    #     ftp_private_storage = StorageService.get_ftp_private_storage()
     #     audit_status, dest_path = write_audit_files(study_location)
     #     if single_files_only:
     #         for file in files:
@@ -1376,7 +1377,7 @@ class SyncFolder(Resource):
             destination = study_id.lower() + '-' + obfuscation_code
             source = study_location
 
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        ftp_private_storage = StorageService.get_ftp_private_storage()
         logger.info("syncing files from " + source + " to " + destination)
         try:
 
@@ -1763,7 +1764,7 @@ class StudyFilesTree(Resource):
 
         upload_folder = study_id.lower() + "-" + obfuscation_code
 
-        ftp_private_relative_root_path = app.config.get("PRIVATE_FTP_RELATIVE_STUDIES_ROOT_PATH")
+        ftp_private_relative_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
         upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
 
         if directory:

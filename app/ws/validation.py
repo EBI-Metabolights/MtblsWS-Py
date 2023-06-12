@@ -212,19 +212,6 @@ class Validation(Resource):
                 #     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
                 #                    log_category=log_category, static_validation_file=static_validation_file)
 
-            # if study_status == 'in review':
-            #     try:
-            #         cmd = "curl --silent --request POST -i -H \\'Accept: application/json\\' -H \\'Content-Type: application/json\\' -H \\'user_token: " + user_token + "\\' '"
-            #         cmd = cmd + app.config.get('CHEBI_PIPELINE_URL') + study_id + "/validate-study/update-file'"
-            #         logger.info("Starting cluster job for Validation schema update: " + cmd)
-            #         status, message, job_out, job_err = lsf_job('bsub', job_param=cmd, send_email=False)
-            #         lsf_msg = message + '. ' + job_out + '. ' + job_err
-            #         if not status:
-            #             logger.error("LSF job error: " + lsf_msg)
-            #         else:
-            #             logger.info("LSF job submitted: " + lsf_msg)
-            #     except Exception as e:
-            #         logger.error(str(e))
         else:
             static_validation_file_path = os.path.join(internal_files_folder, settings.validation_files_json_name)
             validation_schema = \
@@ -374,7 +361,7 @@ class OverrideValidation(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
 
         study_id = study_id.upper()
         override_list = {}

@@ -112,7 +112,7 @@ class StudyJsonExporter(Resource):
                 return int(study_id)
             return 0
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         study_settings = get_study_settings()
         study_folders = study_settings.study_metadata_files_root_path
         if not json_folder:
@@ -129,7 +129,7 @@ class StudyJsonExporter(Resource):
             if self.validate_json_file(file, True):
                 skip_files.add(file)
         m_study_list = []
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             if not study_id:
                 query = query.order_by(Study.acc)
@@ -253,9 +253,9 @@ class PublicStudyJsonExporter(Resource):
                 return int(study_id)
             return 0
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         m_study_list = []
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             if not study_id:
                 query = query.filter(Study.status == StudyStatus.PUBLIC.value).order_by(Study.acc)

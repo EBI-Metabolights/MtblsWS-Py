@@ -2,6 +2,7 @@ import os
 import time
 from datetime import datetime
 from typing import List, Union
+from app.config import get_settings
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.models import SyncCalculationTaskResult, SyncTaskResult, CommandOutput, \
@@ -28,13 +29,6 @@ class DataMoverAvailableStorage(object):
         self.sync_meta_task = 'rsync_meta_study'
         self.sync_rdfiles_task = 'rsync_rdfiles_study'
         
-        #self.read_timeout = app.config.get('JOB_STATUS_READ_TIMEOUT')
-        #self.source_study_path = os.path.join(app.config.get('STUDY_PATH'), study_id)
-        #self.ftp_user_home_path = app.config.get('LSF_DATAMOVER_FTP_PRIVATE_HOME')
-        #self.ftp_public_root_path = app.config.get('LSF_DATAMOVER_FTP_PUBLIC_STUDY_ROOT_PATH')
-        #self.studies_root_path_datamover = app.config.get('LSF_DATAMOVER_STUDY_PATH')
-        #self.datamover_absolute_studies_path = os.path.join(self.ftp_user_home_path, self.studyId)
-        #self.chebi_annotation_sub_folder = app.config.get('CHEBI_PIPELINE_ANNOTATION_FOLDER')
         self.datamover_queue = self.cluster_settings.cluster_lsf_bsub_datamover_queue
         self.read_timeout = self.cluster_settings.job_status_read_timeout
         self.study_metadata_files_path = self.study_settings.study_metadata_files_root_path
@@ -246,7 +240,7 @@ class DataMoverAvailableStorage(object):
         return meta_sync_status,rdfiles_sync_status
 
     def build_exclusion_list(self, ignore_list):
-        rsync_exclude_list = self.app.config.get('RSYNC_EXCLUDE_LIST')
+        rsync_exclude_list = get_settings().file_filters.rsync_exclude_list
         ignore_set = set()
         if ignore_list:
             ignore_set = ignore_set.union(set(ignore_list))

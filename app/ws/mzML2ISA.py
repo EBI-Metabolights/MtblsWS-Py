@@ -228,7 +228,7 @@ class ValidateMzML(Resource):
 
         study_id = study_id.upper()
 
-        UserService.get_instance(app).validate_user_has_write_access(user_token, study_id)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         return self.validate_mzml_files(study_id)
 
     def validate_mzml_files(self, study_id):

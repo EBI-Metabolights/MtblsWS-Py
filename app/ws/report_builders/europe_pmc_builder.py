@@ -9,6 +9,7 @@ from cascadict import CascaDict
 from fuzzywuzzy import fuzz
 from flask import current_app as app, abort
 from typing import List, Union
+from app.config import get_settings
 
 from app.ws.cronjob import setGoogleSheet
 from app.ws.isaApiClient import IsaApiClient
@@ -60,8 +61,8 @@ class EuropePmcReportBuilder:
         :return: A message as a string indicating success or failure.
         """
         list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
-        root_path = app.config.get('REPORTING_ROOT_PATH')
-        path = os.path.join(root_path, app.config.get('REPORTING_PATH'), 'global', 'europepmc.csv')
+        root_path = get_settings().study.report_root_path
+        path = os.path.join(root_path, get_settings().study.report_base_folder_name, get_settings().study.report_global_folder_name, 'europepmc.csv')
         try:
 
             report_dataframe = pandas.DataFrame(list_of_result_dicts,
@@ -77,8 +78,8 @@ class EuropePmcReportBuilder:
                 logger.info(msg)
             else:
                 try:
-                    setGoogleSheet(report_dataframe, app.config.get('EUROPE_PMC_REPORT'),
-                                   'europe_pmc_report', app.config.get('GOOGLE_SHEET_TOKEN'))
+                    setGoogleSheet(report_dataframe, get_settings().google.sheets.europe_pmc_report,
+                                   'europe_pmc_report', get_settings().google.connection.google_sheet_api)
                     msg = 'Saved report to google drive.'
                 except Exception as e:
                     abort(500, str(e))

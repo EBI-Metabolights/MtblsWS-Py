@@ -9,7 +9,7 @@ from app.ws.db.types import StudyStatus
 from app.ws.folder_maintenance import (MaintenanceActionLog,
                                        MaintenanceException,
                                        StudyFolderMaintenanceTask)
-from app.ws.settings.study import StudySettings
+from app.config.model.study import StudySettings
 from app.ws.settings.utils import get_study_settings
 from app.ws.study.study_service import StudyService
 
@@ -50,7 +50,7 @@ def maintain_folders(
             header = f"STUDY_ID\tSTUDY STATUS\tSTATUS\tCOMMAND\tACTION\tITEM\tMESSAGE\tPARAMETERS\n"
             fa.writelines([header])
             for study_id in study_id_list:
-                study: Study = StudyService.get_instance(flask_app).get_study_by_acc(study_id=study_id)
+                study: Study = StudyService.get_instance().get_study_by_acc(study_id=study_id)
                 study_status = StudyStatus(study.status)
                 public_release_date = study.releasedate
                 submission_date = study.submissiondate
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 #         return -1
 
 #     with flask_app.app_context():
-#         studies = StudyService.get_instance(flask_app).get_all_study_ids()
+#         studies = StudyService.get_instance().get_all_study_ids()
 #         skip_study_ids = [f"MTBLS{(i + 1)}" for i in range(501)]
 #         study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
 #         study_ids.sort(key=sort_by_study_id)

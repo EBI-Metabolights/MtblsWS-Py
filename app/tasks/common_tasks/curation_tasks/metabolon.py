@@ -6,10 +6,8 @@ import logging
 import os
 import time
 import celery
-from app.tasks.worker import (MetabolightsTask, celery, get_flask_app, send_email)
-from flask.json import jsonify
+from app.tasks.worker import (MetabolightsTask, celery, send_email)
 from app.tasks.worker import MetabolightsTask
-from app.utils import MetabolightsException
 
 from app.ws.db_connection import update_release_date
 from app.ws.isaApiClient import IsaApiClient
@@ -25,107 +23,105 @@ logger = logging.getLogger('wslog')
 
 @celery.task(bind=True, base=MetabolightsTask, name="app.tasks.common_tasks.curation_tasks.metabolon.metabolon_confirm")
 def metabolon_confirm(self, study_id: str, study_location: str, user_token, email):
-    flask_app = get_flask_app()
-    with flask_app.app_context():
-        message = {}
-        success = True
-        start = time.time()
+
+    message = {}
+    success = True
+    start = time.time()
+    try:
+        message["task_status"] = 'Error'
+        # Validate all mzML files, in both study and upload folders
+        # This method also copy files to the study folder and adds a new extension in the upload folder.
+        val_status = ''
+        val_message = ''
         try:
-            message["task_status"] = 'Error'
-            # Validate all mzML files, in both study and upload folders
-            # This method also copy files to the study folder and adds a new extension in the upload folder.
-            val_status = ''
-            val_message = ''
-            try:
-                val_message = 'Could not validate all the mzML files'
-                val_status, val_message = validate_mzml_files(study_id)
-            except:
-                message.update({'mzML validation': 'Failed', "result": val_message})
-                success = False
-                
+            val_message = 'Could not validate all the mzML files'
+            val_status, val_message = validate_mzml_files(study_id)
+        except:
+            message.update({'mzML validation': 'Failed', "result": val_message})
+            success = False
             
-            # Adding the success to the final message we will return
-            if val_status:
-                message.update({'mzML validation': 'Successful'})
-            else:
-                message.update({'mzML validation': 'Failed', "result": ""})
-                success = False
-
-            # Create ISA-Tab files using mzml2isa
-            conv_status =''
-            conv_message = ''
-            try:
-                conv_message = 'Could not convert all the mzML files to ISA-Tab'
-                conv_status, conv_message = convert_to_isa(study_location, study_id)
-            except:
-                message.update({'mzML2ISA conversion': 'Failed', "result": conv_message})
-                success = False
-
-            if conv_status:
-                message.update({'mzML2ISA conversion': 'Successful'})
-            else:
-                message.update({'mzML2ISA conversion': 'Failed', "result": ""})
-                success = False
-
-            split_status = ''
-            split_message = ''
-            # Split the two pos/neg assays from Metabolon into 4
-            try:
-                split_message = 'Could not correctly split the assays'
-                split_status, split_message = split_metabolon_assays(study_location, study_id)
-            except:
-                message.update({'Assay splitting': 'Failed', "result": split_message})
-                success = False
-
-            if split_status:
-                message.update({'Assay splitting': 'Successful'})
-            else:
-                message.update({'Assay splitting': 'Failed', "result": ""})
-                success = False
-
-            copy_status = ''
-            copy_message = ''
-            # copy Metabolon investigation file into the study folder
-            try:
-                copy_status, copy_message = copy_metabolon_template(study_id, user_token, study_location)
-            except:
-                message.update({'Investigation template replacement': 'Failed', "result": copy_message + " The investigation file still needs replacing"})
-                success = False
-                
-            if copy_status:
-                message.update({'Investigation template replacement': 'Successful'})
-            else:
-                message.update({'Investigation template replacement': 'Failed', "result": ""})
-                success = False
-
-            if success:
-                message["task_status"] = 'All conversion steps completed successfully'
         
-        except Exception as ex:
-            message.update({"Failure reason": f"{str(ex)}"})
-            message["task_status"] = 'unexpected error'
-            raise ex
-        finally:
-            end = time.time()
-            result = {
-                "status": success,
-                "study_id": study_id,
-                "result": message,
-                "start_time": datetime.datetime.fromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S"),
-                "end_time": datetime.datetime.fromtimestamp(end).strftime("%Y-%m-%d %H:%M:%S"),
-                "report_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "executed_on":  os.uname().nodename
-                }
+        # Adding the success to the final message we will return
+        if val_status:
+            message.update({'mzML validation': 'Successful'})
+        else:
+            message.update({'mzML validation': 'Failed', "result": ""})
+            success = False
+
+        # Create ISA-Tab files using mzml2isa
+        conv_status =''
+        conv_message = ''
+        try:
+            conv_message = 'Could not convert all the mzML files to ISA-Tab'
+            conv_status, conv_message = convert_to_isa(study_location, study_id)
+        except:
+            message.update({'mzML2ISA conversion': 'Failed', "result": conv_message})
+            success = False
+
+        if conv_status:
+            message.update({'mzML2ISA conversion': 'Successful'})
+        else:
+            message.update({'mzML2ISA conversion': 'Failed', "result": ""})
+            success = False
+
+        split_status = ''
+        split_message = ''
+        # Split the two pos/neg assays from Metabolon into 4
+        try:
+            split_message = 'Could not correctly split the assays'
+            split_status, split_message = split_metabolon_assays(study_location, study_id)
+        except:
+            message.update({'Assay splitting': 'Failed', "result": split_message})
+            success = False
+
+        if split_status:
+            message.update({'Assay splitting': 'Successful'})
+        else:
+            message.update({'Assay splitting': 'Failed', "result": ""})
+            success = False
+
+        copy_status = ''
+        copy_message = ''
+        # copy Metabolon investigation file into the study folder
+        try:
+            copy_status, copy_message = copy_metabolon_template(study_id, user_token, study_location)
+        except:
+            message.update({'Investigation template replacement': 'Failed', "result": copy_message + " The investigation file still needs replacing"})
+            success = False
             
-            body_intro = f"You can see the result of your task {str(self.request.id)}.<p>" 
-            result_str = body_intro + json.dumps(result, indent=4)
-            result_str = result_str.replace("\n", "<p>")
-            send_email("Result of the task: partner metabolon confirm", result_str, None, email, None)
+        if copy_status:
+            message.update({'Investigation template replacement': 'Successful'})
+        else:
+            message.update({'Investigation template replacement': 'Failed', "result": ""})
+            success = False
+
+        if success:
+            message["task_status"] = 'All conversion steps completed successfully'
+    
+    except Exception as ex:
+        message.update({"Failure reason": f"{str(ex)}"})
+        message["task_status"] = 'unexpected error'
+        raise ex
+    finally:
+        end = time.time()
+        result = {
+            "status": success,
+            "study_id": study_id,
+            "result": message,
+            "start_time": datetime.datetime.fromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S"),
+            "end_time": datetime.datetime.fromtimestamp(end).strftime("%Y-%m-%d %H:%M:%S"),
+            "report_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "executed_on":  os.uname().nodename
+            }
         
+        body_intro = f"You can see the result of your task {str(self.request.id)}.<p>" 
+        result_str = body_intro + json.dumps(result, indent=4)
+        result_str = result_str.replace("\n", "<p>")
+        send_email("Result of the task: partner metabolon confirm", result_str, None, email, None)
+    
 
 
 def copy_metabolon_template(study_id, user_token, study_location):
-    # flask_app = get_flask_app()
     settings = get_study_settings()
     status, message = True, "Copied Metabolon template into study " + study_id
     invest_file = settings.investigation_file_name
@@ -142,8 +138,6 @@ def copy_metabolon_template(study_id, user_token, study_location):
 
     try:
         
-        # api_version = 'MOE API ' + str(flask_app.config.get('API_VERSION'))
-        # mzml2isa_version = 'mzml2isa ' + str(flask_app.config.get('MZML2ISA_VERSION'))
         # Updating the ISA-Tab investigation file with the correct study id
         isa_study, isa_inv, std_path = iac.get_isa_study(
             study_id=study_id, api_key=user_token, skip_load_tables=True, study_location=study_location)

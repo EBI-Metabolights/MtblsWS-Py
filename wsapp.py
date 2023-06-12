@@ -21,6 +21,7 @@ import os
 
 from flask import Flask
 from jinja2 import Environment, select_autoescape, FileSystemLoader
+from app.config import get_settings
 
 from app.wsapp_config import initialize_app
 
@@ -75,14 +76,13 @@ def main():
     setup_logging()
     print("Initialising application")
     initialize_app(application)
-    logger.info("Starting server %s v%s", application.config.get('WS_APP_NAME'),
-                application.config.get('WS_APP_VERSION'))
-    # application.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG, ssl_context=context)
-    print("Starting application on port %s" % str(application.config.get('PORT')))
-    application.run(host="0.0.0.0", port=application.config.get('PORT'), debug=application.config.get('DEBUG'),
+    logger.info("Starting server %s v%s", get_settings().server.description.ws_app_name,
+                get_settings().server.description.ws_app_version)
+    print("Starting application on port %s" % str(get_settings().server.service.port))
+    application.run(host="0.0.0.0", port=get_settings().server.service.port, debug=get_settings().flask.DEBUG,
                     threaded=True, use_reloader=False)
-    logger.info("Finished server %s v%s", application.config.get('WS_APP_NAME'),
-                application.config.get('WS_APP_VERSION'))
+    logger.info("Finished server %s v%s", get_settings().server.description.ws_app_name,
+                get_settings().server.description.ws_app_version)
 
 
 print("before main")

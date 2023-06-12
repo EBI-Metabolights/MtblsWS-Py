@@ -104,7 +104,7 @@ class Metabolon(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        user = UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        user = UserService.get_instance().validate_user_has_curator_role(user_token)
         email = user['username']
         settings = get_study_settings()
         study_location = os.path.join(settings.study_metadata_files_root_path, study_id)

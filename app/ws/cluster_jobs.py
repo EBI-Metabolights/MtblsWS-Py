@@ -276,7 +276,7 @@ class LsfUtils(Resource):
             abort(404)
 
         # param validation
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
 
         status, message, job_out, job_err = kill_job(queue, lsf_job_id)
 

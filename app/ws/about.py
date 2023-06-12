@@ -22,6 +22,7 @@ import os
 from flask import request
 from flask_restful import Resource, fields, marshal_with
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.utils import metabolights_exception_handler
 from app.ws.isaAssay import log_request
@@ -76,17 +77,17 @@ class About(Resource):
 
         """Get a basic description of the Web Service"""
         logger.info('Getting WS-about onto_information')
-        api = {"ApiVersion": app.config.get('API_VERSION'),
-               "ApiDocumentation": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".html",
-               "ApiSpecification": app.config.get('WS_APP_BASE_LINK') + app.config.get('API_DOC') + ".json",
-               "IsatoolsApi": app.config.get('ISA_API_VERSION'),
-               "METASPACE-Api": app.config.get('METASPACE_API_VERSION'),
-               "mzml2isa": app.config.get('MZML2ISA_VERSION')
+        api = {"ApiVersion": get_settings().server.description.metabolights_api_version,
+               "ApiDocumentation": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".html",
+               "ApiSpecification": get_settings().server.service.app_host_url + get_settings().server.service.api_doc + ".json",
+               "IsatoolsApi": get_settings().server.description.isa_api_version,
+               "METASPACE-Api": get_settings().server.description.metaspace_api_version,
+               "mzml2isa": get_settings().server.description.mzml2isa_api_version
                }
-        appl = {"WsName": app.config.get('WS_APP_NAME'),
-                "WsVersion": app.config.get('WS_APP_VERSION'),
-                "WsDescription": app.config.get('WS_APP_DESCRIPTION'),
-                "WsURL": app.config.get('WS_APP_BASE_LINK') + app.config.get('RESOURCES_PATH')
+        appl = {"WsName": get_settings().server.description.ws_app_name,
+                "WsVersion": get_settings().server.description.ws_app_version,
+                "WsDescription": get_settings().server.description.ws_app_description,
+                "WsURL": get_settings().server.service.app_host_url + get_settings().server.service.resources_path 
                 }
         about = {'WsApp': appl, 'WsApi': api}
         return about

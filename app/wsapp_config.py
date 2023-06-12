@@ -16,10 +16,12 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import socket
 from flask_cors import CORS
 from flask_mail import Mail
 from flask_restful import Api
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.ws.about import About, AboutServer
 from app.ws.assay_protocol import GetProtocolForAssays
@@ -29,8 +31,7 @@ from app.ws.auth.authentication import (AuthLogin, AuthLoginWithToken,
 from app.ws.biostudies import BioStudies, BioStudiesFromMTBLS
 from app.ws.chebi.search.chebi_search_manager import ChebiSearchManager
 from app.ws.chebi.search.curated_metabolite_table import CuratedMetaboliteTable
-from app.ws.chebi.settings import get_chebi_ws_settings
-from app.ws.chebi.wsproxy import ChebiWsProxy
+from app.ws.chebi.wsproxy import get_chebi_ws_proxy
 from app.ws.chebi_workflow import ChEBIPipeLine, ChEBIPipeLineLoad, SplitMaf
 from app.ws.chebi_ws import ChebiEntity, ChebiLiteEntity
 from app.ws.cluster_jobs import LsfUtils
@@ -40,9 +41,7 @@ from app.ws.curation_log import curation_log
 from app.ws.db.dbmanager import DBManager
 from app.ws.elasticsearch.elastic_service import ElasticsearchService
 from app.ws.elasticsearch.search import ElasticSearchQuery
-from app.ws.elasticsearch.settings import get_elasticsearch_settings
 from app.ws.email.email_service import EmailService
-from app.ws.email.settings import get_email_service_settings
 from app.ws.enzyme_portal_helper import EnzymePortalHelper
 from app.ws.folders.data_folders import DataFolders
 from app.ws.ftp.ftp_operations import (FtpFolderPermission,
@@ -113,46 +112,67 @@ from app.ws.validation import (NewValidation, OverrideValidation,
 
 
 def configure_app(flask_app):
-    flask_app.config.from_object('config')
-    #flask_app.config.from_pyfile('config.py', silent=True)
-
+    
+    settings = get_settings()
+    flask_app.config.from_object(settings.flask)
     # These code completes WsClient initialization using flask app context
     if not WsClient.search_manager:
-        chebi_settings = get_chebi_ws_settings(flask_app)
-        chebi_proxy = ChebiWsProxy(settings=chebi_settings)
-        curation_table_file_path = flask_app.config.get("CURATED_METABOLITE_LIST_FILE_LOCATION")
+        chebi_proxy = get_chebi_ws_proxy()
+        curation_table_file_path = get_settings().chebi.pipeline.curated_metabolite_list_file_location
         curation_table = CuratedMetaboliteTable.get_instance(curation_table_file_path)
         chebi_search_manager = ChebiSearchManager(ws_proxy=chebi_proxy, curated_metabolite_table=curation_table)
         WsClient.search_manager = chebi_search_manager
 
     if not WsClient.email_service:
-        email_settings = get_email_service_settings(flask_app)
+        email_settings = settings.email
         flask_mail = Mail(flask_app)
         email_service = EmailService(settings=email_settings, mail=flask_mail)
         WsClient.email_service = email_service
 
     if not WsClient.elasticsearch_service:
-        db_manager = DBManager.get_instance(flask_app)
+        db_manager = DBManager.get_instance()
         study_settings = get_study_settings()
-        elasticsearch_settings = get_elasticsearch_settings(flask_app)
+        elasticsearch_settings = settings.elasticsearch
         elasticsearch_service = ElasticsearchService(settings=elasticsearch_settings,
                                                      db_manager=db_manager, study_settings=study_settings)
         WsClient.elasticsearch_service = elasticsearch_service
+
+    ########################################################################################################################
+    #  Print important parameters to show on startup
+    ########################################################################################################################
+    study_settings = settings.study
+    cluster_settings = settings.hpc_cluster.configuration
+    print("Configuration parameters are loaded...")
+    print("................................................................................................................")
+    print(f"DB HOST:\t\t\t{settings.database.connection.host}")
+    print(f"STUDY_METADATA_ROOT_PATH:\t{study_settings.study_metadata_files_root_path}")
+    print(f"STUDY_AUDIT_FILES_ROOT_PATH:\t{study_settings.study_audit_files_root_path}")
+    print(f"STUDY_INTERNAL_FILES_ROOT_PATH:\t{study_settings.study_internal_files_root_path}")
+    print(f"STUDY_READONLY_FILES_ROOT_PATH:\t{study_settings.study_readonly_files_root_path}")
+    print(f"ELASTICSEARCH_HOST:\t\t{settings.elasticsearch.connection.host}")
+    print(f"LSF_HOST:\t\t\t{cluster_settings.cluster_lsf_host}")
+    print(f"REPORTING_ROOT_PATH:\t\t{settings.study.report_root_path}")
+    print(f"COMPOUND_FILES_ROOT_PATH:\t{study_settings.reference_folder}")
+    print(f"MAIL_SERVER:\t\t\t{settings.email.email_service.connection.host}:{settings.email.email_service.connection.port}")
+    print(f"SERVER HOST NAME:\t\tActual: {socket.gethostname()}. WS_HOST_NAME:: {settings.server.service.mtbls_ws_host}")
+    print(f"SERVER PORT:\t\t\t{settings.server.service.port}")
+    print("................................................................................................................")
+
 
 
 def initialize_app(flask_app):
     configure_app(flask_app)
 
-    CORS(flask_app, resources={flask_app.config.get("CORS_RESOURCES_PATH"): 
-                               {"origins": flask_app.config.get('CORS_HOSTS'), 
+    CORS(flask_app, resources={get_settings().server.service.cors_resources_path: 
+                               {"origins": get_settings().server.service.cors_hosts, 
                                 "methods": {"GET, HEAD, POST, OPTIONS, PUT, DELETE"}}})
 
-    res_path = flask_app.config.get('RESOURCES_PATH')
+    res_path = get_settings().server.service.resources_path 
     api = swagger.docs(Api(flask_app),
                        description='MetaboLights RESTful WebService',
-                       apiVersion=flask_app.config.get('API_VERSION'),
-                       basePath=flask_app.config.get('WS_APP_BASE_LINK'),
-                       api_spec_url=flask_app.config.get('API_DOC'),
+                       apiVersion=get_settings().server.description.metabolights_api_version,
+                       basePath=get_settings().server.service.app_host_url,
+                       api_spec_url=get_settings().server.service.api_doc,
                        resourcePath=res_path
                        )
 
@@ -305,7 +325,6 @@ def initialize_app(flask_app):
     # api.add_resource(FileEncodingChecker, res_path + "/ebi-internal/studies/encoding-check")
     api.add_resource(Jira, res_path + "/ebi-internal/create_tickets")
 
-    # api.add_resource(GoogleDocs, res_path + "/ebi-internal/curation_log")
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
     api.add_resource(UpdateValidationFile, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")

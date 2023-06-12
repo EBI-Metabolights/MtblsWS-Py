@@ -80,7 +80,7 @@ class DataFolders(Resource):
             user_token = request.headers["user_token"]
 
         # check for access rights
-        user = UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        user = UserService.get_instance().validate_user_has_curator_role(user_token)
 
         parser = reqparse.RequestParser()
         parser.add_argument("folder_path", location="args")

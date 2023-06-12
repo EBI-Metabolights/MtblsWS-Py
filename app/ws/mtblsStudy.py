@@ -20,14 +20,13 @@
 import glob
 import logging
 import os
-import time
 from datetime import datetime
-from distutils.dir_util import copy_tree
 
 from flask import current_app as app
 from flask import jsonify, request, send_file
 from flask_restful import Resource, abort, reqparse
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.file_utils import make_dir_with_chmod
 from app.services.storage_service.storage_service import StorageService
@@ -120,7 +119,7 @@ class MtblsPrivateStudies(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
 
         priv_list = wsc.get_private_studies()
         return jsonify(priv_list)
@@ -631,154 +630,154 @@ class CloneAccession(Resource):
         ],
     )
     def post(self):
-        # User authentication
-        user_token = None
-        include_raw_data = False
-        bypass = False
-        lcms_default_study = "MTBLS121"  # This is the standard LC-MS study. This is private but safe for all to clone
+        # # User authentication
+        # user_token = None
+        # include_raw_data = False
+        # bypass = False
+        # lcms_default_study = "MTBLS121"  # This is the standard LC-MS study. This is private but safe for all to clone
 
-        if "user_token" in request.headers:
-            user_token = request.headers["user_token"]
+        # if "user_token" in request.headers:
+        #     user_token = request.headers["user_token"]
 
-        if user_token is None:
-            abort(401)
+        # if user_token is None:
+        #     abort(401)
 
-        if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == "true":
-            include_raw_data = True
+        # if "include_raw_data" in request.headers and request.headers["include_raw_data"].lower() == "true":
+        #     include_raw_data = True
 
-        parser = reqparse.RequestParser()
-        parser.add_argument("study_id", help="Study Identifier")
-        parser.add_argument("to_study_id", help="Study Identifier")
-        study_id = None
-        to_study_id = None
+        # parser = reqparse.RequestParser()
+        # parser.add_argument("study_id", help="Study Identifier")
+        # parser.add_argument("to_study_id", help="Study Identifier")
+        # study_id = None
+        # to_study_id = None
 
-        if request.args:
-            args = parser.parse_args(req=request)
-            study_id = args["study_id"]
-            to_study_id = args["to_study_id"]
+        # if request.args:
+        #     args = parser.parse_args(req=request)
+        #     study_id = args["study_id"]
+        #     to_study_id = args["to_study_id"]
 
-        # param validation
-        if study_id is None:
-            study_id = lcms_default_study
+        # # param validation
+        # if study_id is None:
+        #     study_id = lcms_default_study
 
-        if study_id is lcms_default_study:
-            bypass = True  # Users can safely clone this study, even when passing in MTBLS121
+        # if study_id is lcms_default_study:
+        #     bypass = True  # Users can safely clone this study, even when passing in MTBLS121
 
-        # Can the user read the study requested?
-        (
-            is_curator,
-            read_access,
-            write_access,
-            obfuscation_code,
-            study_location,
-            release_date,
-            submission_date,
-            study_status,
-        ) = wsc.get_permissions(study_id, user_token)
+        # # Can the user read the study requested?
+        # (
+        #     is_curator,
+        #     read_access,
+        #     write_access,
+        #     obfuscation_code,
+        #     study_location,
+        #     release_date,
+        #     submission_date,
+        #     study_status,
+        # ) = wsc.get_permissions(study_id, user_token)
 
-        if not bypass:
-            if not read_access:
-                abort(401, message="Study does not exist or your do not have access to this study.")
+        # if not bypass:
+        #     if not read_access:
+        #         abort(401, message="Study does not exist or your do not have access to this study.")
 
-        study_id = study_id.upper()
+        # study_id = study_id.upper()
 
-        # This is the existing study
-        study_to_clone = study_location
+        # # This is the existing study
+        # study_to_clone = study_location
 
-        # If the user did not provide an existing study id to clone into, we create a new study
-        if to_study_id is None:
-            study_date = get_year_plus_one()
-            logger.info("Creating a new MTBLS Study (cloned from %s) with release date %s", study_id, study_date)
-            new_folder_name = user_token + "~~" + study_date + "~" + "new_study_requested_" + get_timestamp()
+        # # If the user did not provide an existing study id to clone into, we create a new study
+        # if to_study_id is None:
+        #     study_date = get_year_plus_one()
+        #     logger.info("Creating a new MTBLS Study (cloned from %s) with release date %s", study_id, study_date)
+        #     new_folder_name = user_token + "~~" + study_date + "~" + "new_study_requested_" + get_timestamp()
 
-            # study_to_clone = study_location
-            queue_folder = wsc.get_queue_folder()
-            existing_studies = wsc.get_all_studies_for_user(user_token)
-            logger.info("Found the following studies: " + existing_studies)
+        #     # study_to_clone = study_location
+        #     queue_folder = wsc.get_queue_folder_removec()
+        #     existing_studies = wsc.get_all_studies_for_user(user_token)
+        #     logger.info("Found the following studies: " + existing_studies)
 
-            logger.info(
-                "Adding " + study_to_clone + ", using name " + new_folder_name + ", to the queue folder " + queue_folder
-            )
-            # copy the study onto the queue folder
-            try:
-                logger.info(
-                    "Attempting to copy "
-                    + study_to_clone
-                    + " to MetaboLights queue folder "
-                    + os.path.join(queue_folder, new_folder_name)
-                )
-                if include_raw_data:
-                    copy_tree(
-                        study_to_clone, os.path.join(queue_folder, new_folder_name)
-                    )  # copy the folder to the queue
-                    # There is a bug in copy_tree which prevents you to use the same destination folder twice
-                else:
-                    copy_files_and_folders(
-                        study_to_clone,
-                        os.path.join(queue_folder, new_folder_name),
-                        include_raw_data=include_raw_data,
-                        include_investigation_file=True,
-                    )
-            except:
-                return {"error": "Could not add study into the MetaboLights queue"}
+        #     logger.info(
+        #         "Adding " + study_to_clone + ", using name " + new_folder_name + ", to the queue folder " + queue_folder
+        #     )
+        #     # copy the study onto the queue folder
+        #     try:
+        #         logger.info(
+        #             "Attempting to copy "
+        #             + study_to_clone
+        #             + " to MetaboLights queue folder "
+        #             + os.path.join(queue_folder, new_folder_name)
+        #         )
+        #         if include_raw_data:
+        #             copy_tree(
+        #                 study_to_clone, os.path.join(queue_folder, new_folder_name)
+        #             )  # copy the folder to the queue
+        #             # There is a bug in copy_tree which prevents you to use the same destination folder twice
+        #         else:
+        #             copy_files_and_folders(
+        #                 study_to_clone,
+        #                 os.path.join(queue_folder, new_folder_name),
+        #                 include_raw_data=include_raw_data,
+        #                 include_investigation_file=True,
+        #             )
+        #     except:
+        #         return {"error": "Could not add study into the MetaboLights queue"}
 
-            logger.info("Folder successfully added to the queue")
-            # get a list of the users private studies to see if a new study has been created
-            new_studies = wsc.get_all_studies_for_user(user_token)
-            number = 0
-            while existing_studies == new_studies:
-                number = number + 1
-                if number == 20:  # wait for 20 secounds for the MetaboLights queue to process the study
-                    logger.info("Waited to long for the MetaboLights queue, waiting for email now")
-                    abort(408)
+        #     logger.info("Folder successfully added to the queue")
+        #     # get a list of the users private studies to see if a new study has been created
+        #     new_studies = wsc.get_all_studies_for_user(user_token)
+        #     number = 0
+        #     while existing_studies == new_studies:
+        #         number = number + 1
+        #         if number == 20:  # wait for 20 secounds for the MetaboLights queue to process the study
+        #             logger.info("Waited to long for the MetaboLights queue, waiting for email now")
+        #             abort(408)
 
-                logger.info("Checking if the new study has been processed by the queue")
-                time.sleep(3)  # Have to check every so many secounds to see if the queue has finished
-                new_studies = wsc.get_all_studies_for_user(user_token)
+        #         logger.info("Checking if the new study has been processed by the queue")
+        #         time.sleep(3)  # Have to check every so many secounds to see if the queue has finished
+        #         new_studies = wsc.get_all_studies_for_user(user_token)
 
-            logger.info("Ok, now there is a new private study for the user")
+        #     logger.info("Ok, now there is a new private study for the user")
 
-            # Tidy up the response strings before converting to lists
-            new_studies_list = new_studies.replace("[", "").replace("]", "").replace('"', "").split(",")
-            existing_studies_list = existing_studies.replace("[", "").replace("]", "").replace('"', "").split(",")
+        #     # Tidy up the response strings before converting to lists
+        #     new_studies_list = new_studies.replace("[", "").replace("]", "").replace('"', "").split(",")
+        #     existing_studies_list = existing_studies.replace("[", "").replace("]", "").replace('"', "").split(",")
 
-            logger.info("returning the new study, %s", user_token)
-            # return the new entry, i.e. difference between the two lists
-            diff = list(set(new_studies_list) - set(existing_studies_list))
+        #     logger.info("returning the new study, %s", user_token)
+        #     # return the new entry, i.e. difference between the two lists
+        #     diff = list(set(new_studies_list) - set(existing_studies_list))
 
-            study_id = diff[0]
-        else:  # User proved an existing study to clone into
-            # Can the user read the study requested?
-            (
-                is_curator,
-                read_access,
-                write_access,
-                obfuscation_code,
-                study_location,
-                release_date,
-                submission_date,
-                study_status,
-            ) = wsc.get_permissions(to_study_id, user_token)
+        #     study_id = diff[0]
+        # else:  # User proved an existing study to clone into
+        #     # Can the user read the study requested?
+        #     (
+        #         is_curator,
+        #         read_access,
+        #         write_access,
+        #         obfuscation_code,
+        #         study_location,
+        #         release_date,
+        #         submission_date,
+        #         study_status,
+        #     ) = wsc.get_permissions(to_study_id, user_token)
 
-            # Can the user write into the given study?
-            if not write_access:
-                abort(403)
+        #     # Can the user write into the given study?
+        #     if not write_access:
+        #         abort(403)
 
-            copy_files_and_folders(
-                study_to_clone, study_location, include_raw_data=include_raw_data, include_investigation_file=True
-            )
+        #     copy_files_and_folders(
+        #         study_to_clone, study_location, include_raw_data=include_raw_data, include_investigation_file=True
+        #     )
 
-            study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
+        #     study_id = to_study_id  # Now we need to work with the new folder, not the study to clone from
 
-        new_study_location = os.path.join(app.config.get("STUDY_PATH"), study_id)
 
-        log_path = os.path.join(new_study_location, app.config.get("UPDATE_PATH_SUFFIX"), "logs")
-        make_dir_with_chmod(log_path, 0o777)
 
-        # Create an upload folder for all studies anyway
-        status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
-        upload_location = status["upload_location"]
-        return {"new_study": study_id, "upload_location": upload_location}
+        # make_dir_with_chmod(log_path, 0o777)
+
+        # # Create an upload folder for all studies anyway
+        # status = wsc.create_upload_folder(study_id, obfuscation_code, user_token)
+        # upload_location = status["upload_location"]
+        # return {"new_study": study_id, "upload_location": upload_location}
+        raise MetabolightsException(message="Not implemented")
 
 
 class CreateUploadFolder(Resource):
@@ -1015,7 +1014,7 @@ class PublicStudyDetail(Resource):
         if not study_id:
             abort(401)
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             query = query.filter(Study.status == StudyStatus.PUBLIC.value, Study.acc == study_id)
             study = query.first()
@@ -1050,7 +1049,7 @@ class CreateAccession(Resource):
             },
             {
                 "name": "study_id",
-                "description": "Requested study id",
+                "description": "Requested study id (Leave it empty for new study id)",
                 "paramType": "header",
                 "type": "string",
                 "required": False,
@@ -1074,8 +1073,8 @@ class CreateAccession(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        user = UserService.get_instance(app).validate_user_has_submitter_or_super_user_role(user_token)
-        studies = UserService.get_instance(app).get_user_studies(user.apitoken)
+        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
+        studies = UserService.get_instance().get_user_studies(user.apitoken)
         submitted_studies = []
         last_study_datetime = datetime.fromtimestamp(0)
         for study in studies:
@@ -1121,7 +1120,7 @@ class CreateAccession(Resource):
         study: Study = None
         try:
             study_acc = create_empty_study(user_token, study_id=study_acc)
-            study = StudyService.get_instance(app).get_study_by_acc(study_id=study_acc)
+            study = StudyService.get_instance().get_study_by_acc(study_id=study_acc)
 
             if study and study.acc:
                 logger.info(f"Step 2: Study id {study_acc} is created on DB.")
@@ -1237,9 +1236,9 @@ class CreateAccession(Resource):
         if not requested_study_id.startswith(study_id_prefix):
             abort(401, message="Invalid study id format. Study id must start with %s" % study_id_prefix)
         # Rule 2
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         # Rule 3
-        last_stable_id = StudyService.get_instance(app).get_next_stable_study_id()
+        last_stable_id = StudyService.get_instance().get_next_stable_study_id()
         requested_id_str = requested_study_id.upper().replace(study_id_prefix, "")
         requested_id = None
         try:
@@ -1333,7 +1332,7 @@ class DeleteStudy(Resource):
                 study_submitters(study_id, submitter[0], "delete")
 
         # Add the placeholder flag and MetaboLights user to the study
-        mtbls_email = app.config.get("MTBLS_SUBMITTER_EMAIL")
+        mtbls_email = get_settings().auth.service_account.email
         add_placeholder_flag(study_id)
         study_submitters(study_id, mtbls_email, "add")
 
@@ -1359,7 +1358,7 @@ class DeleteStudy(Resource):
             status, message = remove_file(study_location, file_name, True)
 
         # Remove all files in the upload folder
-        ftp_private_storage = StorageService.get_ftp_private_storage(app)
+        ftp_private_storage = StorageService.get_ftp_private_storage()
         private_ftp_study_folder = study_id.lower() + "-" + obfuscation_code
         if ftp_private_storage.remote.does_folder_exist(private_ftp_study_folder):
             ftp_private_storage.remote.delete_folder(private_ftp_study_folder)
@@ -1592,9 +1591,9 @@ class UnindexedStudy(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         try:
-            with DBManager.get_instance(app).session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(StudyTask)
                 filtered = query.filter(
                     StudyTask.last_execution_status != StudyTaskStatus.EXECUTION_SUCCESSFUL,
@@ -1651,9 +1650,9 @@ class RetryReindexStudies(Resource):
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
 
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         try:
-            with DBManager.get_instance(app).session_maker() as db_session:
+            with DBManager.get_instance().session_maker() as db_session:
                 query = db_session.query(StudyTask)
                 filtered = query.filter(
                     StudyTask.last_execution_status != StudyTaskStatus.EXECUTION_SUCCESSFUL,
@@ -1714,7 +1713,7 @@ class MtblsPublicStudiesIndexAll(Resource):
         user_token = ""
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
-        UserService.get_instance(app).validate_user_has_curator_role(user_token)
+        UserService.get_instance().validate_user_has_curator_role(user_token)
         logger.info("Indexing public studies")
         inputs = {"user_token": user_token, "send_email_to_submitter": True}
         try:

@@ -5,12 +5,12 @@ from enum import Enum
 import logging
 import os
 import re
-import subprocess
 from typing import List, Union
 import uuid
+from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.tasks.bash_client import BashClient
 from app.utils import MetabolightsException
-from app.ws.settings.hpc_cluster import HpcClusterSettings
+
 from app.ws.settings.utils import get_cluster_settings
 
 logger = logging.getLogger('wslog')
@@ -23,7 +23,7 @@ class JobState(str, Enum):
     
 class LsfClient(object):
     
-    def __init__(self, cluster_settings: HpcClusterSettings=None) -> None:
+    def __init__(self, cluster_settings: HpcClusterConfiguration=None) -> None:
         self.cluster_settings = cluster_settings
         if not cluster_settings:
             self.cluster_settings = get_cluster_settings()

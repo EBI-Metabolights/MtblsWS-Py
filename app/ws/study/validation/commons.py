@@ -29,11 +29,12 @@ import numpy as np
 import pandas as pd
 import requests
 from flask import current_app as app
+from app.config import get_settings
 
 from app.ws.cluster_jobs import submit_job
 from app.ws.db_connection import override_validations, update_validation_status, query_comments
 from app.ws.isaApiClient import IsaApiClient
-from app.ws.settings.study import StudySettings
+from app.config.model.study import StudySettings
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
 from app.ws.study.folder_utils import get_all_files_from_filesystem, list_directories_full
@@ -206,7 +207,7 @@ def is_empty_file(full_file_name, study_location=None):
     # This will return False if a filename is not correct, ie. has a space etc.
     empty_file = True
 
-    ignore_file_list = app.config.get('IGNORE_FILE_LIST')
+    ignore_file_list = get_settings().file_filters.ignore_file_list
     short_file_name = os.path.basename(full_file_name).lower()
     for ignore in ignore_file_list:  # Now there are a bunch of files we want to ignore regardless if they are empty
         if ignore in short_file_name:
@@ -919,7 +920,7 @@ def is_valid_raw_file_column_entry(value: str) -> bool:
     :return: bool value indicating whether the entry is valid.
 
     """
-    valid_filetypes = app.config.get('RAW_FILES_LIST')
+    valid_filetypes = get_settings().file_filters.raw_files_list
     for filetype in valid_filetypes:
         if value.endswith(filetype) and len(value) > len(filetype):
             return True
@@ -940,7 +941,7 @@ def is_valid_derived_column_entry(value: str) -> dict:
         'valid': False,
         'is_text_file': False
     }
-    valid_filetypes = app.config.get('DERIVED_FILES_LIST')
+    valid_filetypes = get_settings().file_filters.derived_files_list
     valid_filetypes.append('.txt')
     for filetype in valid_filetypes:
         if value.endswith(filetype):
@@ -1171,7 +1172,7 @@ def validate_assays(isa_study, readonly_files_folder, metadata_files_folder, int
 def get_files_in_sub_folders(study_location):
     folder_list = []
     file_list = []
-    folder_exclusion_list = app.config.get('FOLDER_EXCLUSION_LIST')
+    folder_exclusion_list = get_settings().file_filters.folder_exclusion_list
 
     for file_name in os.listdir(study_location):
         # for file_name in file_list:

@@ -25,6 +25,7 @@ import pandas as pd
 from flask import request, abort, current_app as app
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
@@ -726,7 +727,7 @@ class AddRows(Resource):
         if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
             if not is_curator:
                 abort(403)
-            file_name = app.config.get('MTBLS_ZOOMA_FILE')
+            file_name = get_settings().file_resources.mtbls_zooma_file
         else:
             file_name = os.path.join(study_location, file_name)
 
@@ -1251,7 +1252,7 @@ class GetTsvFile(Resource):
         if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
             if not is_curator:
                 abort(403)
-            file_name = app.config.get('MTBLS_ZOOMA_FILE')
+            file_name = get_settings().file_resources.mtbls_zooma_file
         else:
             file_name = os.path.join(study_location, file_name)
 
@@ -1321,7 +1322,7 @@ class GetAssayMaf(Resource):
 
         study_id = study_id.upper()
 
-        with DBManager.get_instance(app).session_maker() as db_session:
+        with DBManager.get_instance().session_maker() as db_session:
             query = db_session.query(Study)
             query = query.filter(Study.status == StudyStatus.PUBLIC.value,
                                  Study.acc == study_id)

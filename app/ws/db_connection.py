@@ -27,6 +27,7 @@ import psycopg2
 import psycopg2.extras
 from flask import current_app as app, abort
 from psycopg2 import pool
+from app.config import get_settings
 from app.utils import MetabolightsDBException
 from app.ws.settings.utils import get_study_settings
 
@@ -438,6 +439,7 @@ def get_private_studies():
     release_connection(postgresql_pool, conn)
     return data
 
+
 def get_all_non_public_studies():
     query = "select acc from studies where status = 0 OR status = 1 OR status = 2;"
     postgresql_pool, conn, cursor = get_connection()
@@ -445,6 +447,7 @@ def get_all_non_public_studies():
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data
+
 
 def get_study_by_type(sType, publicStudy=True):
     q2 = ' '
@@ -504,6 +507,7 @@ def add_placeholder_flag(study_id):
 
     except Exception as e:
         return False, str(e)
+
 
 def get_obfuscation_code(study_id):
     val_acc(study_id)
@@ -931,6 +935,7 @@ def override_validations(study_id, method, override=""):
     except Exception as e:
         return False
 
+
 def query_comments(study_id):
     """
     Get any comments associated with a study.
@@ -952,6 +957,7 @@ def query_comments(study_id):
     data = cursor.fetchall()
     release_connection(postgresql_pool, conn)
     return data[0]
+
 
 def update_comments(study_id, comments=None):
     """
@@ -1128,13 +1134,16 @@ def execute_query(query=None, user_token=None, study_id=None, study_obfuscation_
         logger.error("Error: " + str(e))
     return data
 
+
 def get_connection():
     postgresql_pool = None
     conn = None
     cursor = None
-    params = app.config.get('DB_PARAMS')
-    conn_pool_min = app.config.get('CONN_POOL_MIN')
-    conn_pool_max = app.config.get('CONN_POOL_MAX')
+    settings = get_settings()
+    params = settings.database.connection.dict()
+
+    conn_pool_min = settings.database.configuration.conn_pool_min
+    conn_pool_max = settings.database.configuration.conn_pool_max
     try:
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
@@ -1152,9 +1161,10 @@ def get_connection2():
     conn = None
     cursor = None
     try:
-        params = app.config.get('DB_PARAMS')
-        conn_pool_min = app.config.get('CONN_POOL_MIN')
-        conn_pool_max = app.config.get('CONN_POOL_MAX')
+        settings = get_settings()
+        params = settings.database.connection.dict()
+        conn_pool_min = settings.database.configuration.conn_pool_min
+        conn_pool_max = settings.database.configuration.conn_pool_max
         postgresql_pool = psycopg2.pool.SimpleConnectionPool(conn_pool_min, conn_pool_max, **params)
         conn = postgresql_pool.getconn()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)

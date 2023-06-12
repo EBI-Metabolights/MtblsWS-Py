@@ -10,7 +10,7 @@
             "envFile": "${workspaceFolder}/.env",
             "justMyCode": false,
             "postDebugTask": "killdebugger",
-            "env": {"PYTHONPATH": "${cwd}"}
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
         },
         {
             "name": "Celery Worker",
@@ -24,11 +24,12 @@
                 "--loglevel",
                 "info",
                 "-Q",
-                "monitor-tasks"
+                "common-tasks,monitor-tasks"
             ],
             "jinja": true,
             "justMyCode": false,
-            "env": {"PYTHONPATH": "${cwd}"}
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
+
         }, 
         {
             "name": "Celery Beat",
@@ -43,7 +44,9 @@
                 "info"
             ],
             "jinja": true,
-            "justMyCode": false
+            "justMyCode": false,
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
+
         },      
         {
             "name": "Python: Current File (Integrated Terminal)",
@@ -51,7 +54,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "env": {"PYTHONPATH": "${cwd}"}
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
         },
         {
             "name": "Python: Refactor",

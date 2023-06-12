@@ -1,5 +1,6 @@
 import datetime
 import os
+from app.config import get_settings
 
 from app.ws.db_connection import (
     get_email,
@@ -24,9 +25,7 @@ from app.tasks.worker import (
 def send_email_for_study_submitted(user_token, study_id):
     flask_app = get_flask_app()
     with flask_app.app_context():
-        user = UserService.get_instance(
-            flask_app
-        ).validate_user_has_submitter_or_super_user_role(user_token)
+        user = UserService.get_instance().validate_user_has_submitter_or_super_user_role(user_token)
         email_service = get_email_service(flask_app)
         user_email = user.username
         submitters_email_list = [user_email]
@@ -46,9 +45,7 @@ def send_email_for_study_submitted(user_token, study_id):
 def send_test_email(user_token):
     flask_app = get_flask_app()
     with flask_app.app_context():
-        user = UserService.get_instance(
-            flask_app
-        ).validate_user_has_curator_role(user_token)
+        user = UserService.get_instance().validate_user_has_curator_role(user_token)
         email_service = get_email_service(flask_app)
         user_email = user.username
         time = datetime.datetime.now().isoformat()
@@ -67,7 +64,7 @@ def send_email_for_private_ftp_folder(user_token, study_id, folder_name):
     flask_app = get_flask_app()
     with flask_app.app_context():
         
-        relative_studies_root_path = get_study_settings().cluster_private_ftp_user_path
+        relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
         relative_study_path = os.path.join(
             os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
         )
