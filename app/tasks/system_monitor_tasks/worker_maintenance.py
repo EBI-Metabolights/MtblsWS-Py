@@ -3,6 +3,7 @@ import os
 import shutil
 import socket
 from typing import Any, Dict, List, Union
+from app.config import get_settings
 from app.tasks.bash_client import BashClient
 
 from app.tasks.lsf_client import LsfClient
@@ -249,7 +250,23 @@ def check_datamover_workers(
             messages.append(f"Shutdown signal was sent to {', '.join(running_worker_names)}")
 
         if create_new_job:
-            script_path = cluster_settings.datamover_job_submission_script_path
+            script_template = cluster_settings.datamover_job_submission_script_template_name
+            settings = get_settings()
+            inputs = {
+                "QUEUE_NAME": settings.hpc_cluster.datamover.queue_name,
+                "REMOTE_SERVER_BASE_PATH": settings.hpc_cluster.datamover.worker.worker_deployment_root_path,
+                "SINGULARITY_DOCKER_USERNAME": settings.hpc_cluster.datamover.worker.singularity_docker_username,
+                "SINGULARITY_DOCKER_PASSWORD": settings.hpc_cluster.datamover.worker.singularity_docker_password,
+                "SINGULARITY_IMAGE": settings.hpc_cluster.datamover.worker.singularity_image,
+                "CONFIG_FILE_PATH": settings.hpc_cluster.datamover.worker.config_file_path,
+                "SECRETS_PATH": settings.hpc_cluster.datamover.worker.secrets_path,
+                "LOGS_PATH": settings.hpc_cluster.datamover.worker.logs_path,
+                "HOME_DIR": settings.hpc_cluster.datamover.worker.user_home_binding_source_path,
+                "HOME_DIR_MOUNT_PATH": settings.hpc_cluster.datamover.worker.user_home_binding_target_path,
+                "SHARED_PATHS": settings.hpc_cluster.datamover.worker.shared_paths,
+            }
+            script_path = BashClient.prepare_script_from_template(script_template, **inputs)
+            
             out_log_path = os.path.join(cluster_settings.job_track_log_location, f"{worker_name}_out.log")
             err_log_path = os.path.join(cluster_settings.job_track_log_location, f"{worker_name}_err.log")
             try:
@@ -261,6 +278,9 @@ def check_datamover_workers(
                 message = f"Exception after kill jobs command. {str(exc)}"
                 logger.warning(message)
                 messages.append(message)
+            finally:
+                if script_path and os.path.exists(script_path):
+                    os.remove(script_path)
             
         results[worker_name] = " ".join(messages)
 

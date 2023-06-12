@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import List
 from pydantic import BaseModel
 
 
@@ -41,7 +42,7 @@ class HpcClusterConfiguration(BaseModel):
     job_project_name: str = "metabolights-ws"
     number_of_datamover_workers: int = 1
     datamover_worker_maximum_uptime_in_seconds: int = 3 * 24 * 60 * 60
-    datamover_job_submission_script_path: str
+    datamover_job_submission_script_template_name: str
     task_get_timeout_in_seconds: int = 10
 
     maximum_shutdown_signal_per_time: int = 1
@@ -66,13 +67,26 @@ class DataMoverPathConfiguration(BaseModel):
     public_ftp_study_root_path: str
     study_metadata_root_path: str
     study_data_root_path: str
+    
 
-
+class WorkerConfiguration(BaseModel):
+    worker_deployment_root_path: str
+    singularity_image: str
+    singularity_docker_username: str
+    singularity_docker_password: str
+    user_home_binding_source_path: str
+    user_home_binding_target_path: str
+    logs_path: str
+    config_file_path: str
+    secrets_path: str
+    shared_paths: List[str]
+    
+    
 class HpcDataMoverSettings(BaseModel):
     connection: HpcConnection
     queue_name: str
     paths: DataMoverPathConfiguration
-
+    worker: WorkerConfiguration
 
 class HpcComputeSettings(BaseModel):
     connection: HpcConnection

@@ -41,8 +41,8 @@ logger = logging.getLogger('wslog')
 
 def setup_logging():
     default_log_dir = os.path.join(current_dir, "logs")
-    if not os.path.exists(default_log_dir):
-        os.makedirs(default_log_dir, exist_ok=True)
+    # if not os.path.exists(default_log_dir):
+    #     os.makedirs(default_log_dir, exist_ok=True)
 
     logging_config_file_path = get_settings().server.log.log_config_file_path
 
