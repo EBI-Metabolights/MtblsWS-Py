@@ -429,6 +429,7 @@ def import_metaspace(study_id=None, dataset_ids=None, study_location=None, user_
                      obfuscation_code=None, sm_instance=None):
     mtspc_obj = None
     input_folder = study_location
+    # TODO: DOWNLOAD METASPACE FILES to correct path
     output_dir = study_location
     std_title = "Please update title of this METASPACE generated study " + study_id
     std_description = "Please update abstract of this METASPACE generated study " + study_id

@@ -32,6 +32,8 @@ class ServerDescription(BaseModel):
 
 
 class LogSettings(BaseModel):
+    log_config_file_path: str = ""
+    log_path: str = "./logs"
     log_headers: bool = True
     log_body: bool = False
     log_json: bool = False
@@ -41,3 +43,4 @@ class ServerSettings(BaseModel):
     service: ServerService
     description: ServerDescription = ServerDescription()
     log: LogSettings
+    temp_directory_path: str

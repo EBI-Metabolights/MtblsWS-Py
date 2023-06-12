@@ -16,7 +16,11 @@ fi
 
 APPDIR="/app-root"
 
-APP_LOG_DIR=$APPDIR/logs
+if [ -z "$LOGS_PATH" ]; then
+    LOGS_PATH=$APPDIR/logs
+fi
+
+
 PYTHONPATH="$APPDIR:$PYTHONPATH"
 
 source $APPDIR/.env 
@@ -26,4 +30,4 @@ echo "Python version:" $(python3 --version)
 echo "Host name: $HOST"
 
 cd $APPDIR
-python3 -m celery -A app.tasks.worker:celery worker --loglevel debug -Q $QUEUE_NAME --autoscale 2,20 --logfile $APP_LOG_DIR/celery_datamover_worker.log -n ${WORKER_NAME}@%h
+python3 -m celery -A app.tasks.worker:celery worker --loglevel info -Q $QUEUE_NAME --autoscale 2,20 --logfile $LOGS_PATH/celery_datamover_worker.log -n ${WORKER_NAME}@%h

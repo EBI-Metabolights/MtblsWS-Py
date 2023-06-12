@@ -1,5 +1,10 @@
 #!/bin/bash
-SERVER_PORT=5001
+SERVER_PORT="$1"
+
+if [ -z "$SERVER_PORT" ]; then
+    echo "SERVER PORT parameter is not defined. execute with port number"
+    exit 1
+fi
 HOST=$(hostname)
 APPDIR=$PWD
 LOG_PATH=$APPDIR/logs
@@ -19,7 +24,7 @@ if [ -z "$PROCESS_ID" ]; then
     echo "NO CELERY BEAT"
 else
     echo "CELERY BEAT PROCESS_ID: ${PROCESS_ID} will be killed"
-    kill -9 $PROCESS_IDtarget_relative_path
+    kill -9 $PROCESS_ID
 fi
 
 cd $APPDIR

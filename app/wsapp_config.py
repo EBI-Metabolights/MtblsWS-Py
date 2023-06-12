@@ -141,7 +141,7 @@ def configure_app(flask_app):
     ########################################################################################################################
     study_settings = settings.study
     cluster_settings = settings.hpc_cluster.configuration
-    print("Configuration parameters are loaded...")
+    print("Configuration parameters...")
     print("................................................................................................................")
     print(f"DB HOST:\t\t\t{settings.database.connection.host}")
     print(f"STUDY_METADATA_ROOT_PATH:\t{study_settings.study_metadata_files_root_path}")

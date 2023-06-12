@@ -44,14 +44,12 @@ def setup_logging():
     if not os.path.exists(default_log_dir):
         os.makedirs(default_log_dir, exist_ok=True)
 
-    logging_config_file_path = None
-    if "LOG_FILE_CONFIG" in os.environ and os.environ["LOG_FILE_CONFIG"]:
-        logging_config_file_path = os.environ["LOG_FILE_CONFIG"]
+    logging_config_file_path = get_settings().server.log.log_config_file_path
 
     if logging_config_file_path and os.path.exists(logging_config_file_path):
         print(f"Using logging config file {logging_config_file_path}")
     else:
-        default_logging_config_file_path = os.path.join(current_dir, f"logging_{hostname}.conf")
+        default_logging_config_file_path = os.path.join(get_settings().server.log.log_path, f"logging_{hostname}.conf")
         logging_config_file_path = default_logging_config_file_path
         if os.path.exists(default_logging_config_file_path):
             print(f"Using default logging config file {default_logging_config_file_path}")

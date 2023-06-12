@@ -7,6 +7,7 @@ import os
 import re
 from typing import List, Union
 import uuid
+from app.config import get_settings
 from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.tasks.bash_client import BashClient
 from app.utils import MetabolightsException
@@ -180,7 +181,7 @@ class LsfClient(object):
         
         content = [f"{x}\n" for x in content]
         temp_file_name =  f"{basename}_bsub_script_{str(uuid.uuid4())}.sh"
-        file_input_path = os.path.join("/tmp", temp_file_name)
+        file_input_path = os.path.join(get_settings().server.temp_directory_path, temp_file_name)
         
         with open(file_input_path, "w") as f:
             f.writelines(content)

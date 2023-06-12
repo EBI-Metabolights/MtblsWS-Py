@@ -6,6 +6,7 @@ import os
 import subprocess
 from typing import Tuple
 import uuid
+from app.config import get_settings
 
 from app.utils import MetabolightsException
 
@@ -70,7 +71,7 @@ class BashClient(object):
         basename = os.path.basename(script_template_name).replace(".j2", "").replace(".", "_")
         
         temp_file_name =  f"{basename}_{str(uuid.uuid4())}.sh"
-        file_input_path = os.path.join("/tmp", temp_file_name)
+        file_input_path = os.path.join(get_settings().server.temp_directory_path, temp_file_name)
         
         with open(file_input_path, "w") as f:
             f.writelines(content)

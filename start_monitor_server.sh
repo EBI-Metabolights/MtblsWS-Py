@@ -1,8 +1,12 @@
 #!/bin/bash
-. ../../functions.inc
+SERVER_PORT="$1"
+
+if [ -z "$SERVER_PORT" ]; then
+    echo "SERVER PORT parameter is not defined. execute with port number"
+    exit 1
+fi
 HOST=$(hostname)
 echo $HOST
-check_host .
 
 APPDIR=$PWD
 LOG_PATH=$APPDIR/logs
