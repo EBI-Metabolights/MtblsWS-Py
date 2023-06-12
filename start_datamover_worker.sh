@@ -19,12 +19,10 @@ APPDIR="/app-root"
 if [ -z "$LOGS_PATH" ]; then
     LOGS_PATH=$APPDIR/logs
 fi
+export CONFIG_FILE_PATH="$APPDIR/config.yaml"
+export SECRETS_PATH="$APPDIR/.secrets"
 
-
-PYTHONPATH="$APPDIR:$PYTHONPATH"
-
-source $APPDIR/.env 
-export $(cat $APPDIR/.env | grep -v '#' | xargs)
+export PYTHONPATH="$APPDIR:$PYTHONPATH"
 
 echo "Python version:" $(python3 --version)
 echo "Host name: $HOST"

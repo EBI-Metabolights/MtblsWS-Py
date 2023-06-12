@@ -7,7 +7,11 @@ APPDIR=$PWD
 if [ -z "$LOGS_PATH" ]; then
     LOGS_PATH=$APPDIR/logs
 fi
-PYTHONPATH="$APPDIR:$PYTHONPATH":
+export CONFIG_FILE_PATH="$APPDIR/config.yaml"
+export SECRETS_PATH="$APPDIR/.secrets"
+
+export PYTHONPATH="$APPDIR:$PYTHONPATH"
+
 LOG=$LOGS_PATH/gunicorn_$HOST
 
 #launch WS
