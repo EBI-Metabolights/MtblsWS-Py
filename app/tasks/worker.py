@@ -10,6 +10,7 @@ from app.config.model.celery import CelerySettings
 from app.config.model.redis_cache import RedisConnection
 
 from app.tasks.utils import ValueMaskUtility
+from app.utils import MetabolightsException
 from app.ws.email.email_service import EmailService
 
 from app.ws.study.user_service import UserService
@@ -32,6 +33,7 @@ celery = Celery(
         "app.tasks.common_tasks.basic_tasks.ftp_operations",
         "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
         "app.tasks.datamover_tasks.basic_tasks.file_management",
+        "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
         "app.tasks.system_monitor_tasks.worker_maintenance",
         "app.tasks.system_monitor_tasks.integration_check",
     ],
@@ -157,7 +159,13 @@ class MetabolightsTask(celery.Task):
                     new_kwargs[key] = ValueMaskUtility.mask_value(key, kwargs[key])
 
             kwargs_str = str(new_kwargs) if new_kwargs else ""
-            traceback = str(einfo.traceback).replace("\n", "<p>")
-            args_str = str(args) if args else ""
-            body = f"Task <b>{self.name}</b> with <b>{str(task_id)}</b> failed. <p>Submitter: {username} <p> Executed on: {os.uname().nodename} <p>  {str(exc)}<p>Args: {args_str}<p>kwargs: {kwargs_str}<p>{traceback}"
-            report_internal_technical_issue(subject_name, body)
+            send_email = False
+            if isinstance(einfo.exception, MetabolightsException):
+                exc: MetabolightsException = einfo.exception
+                if exc.http_code >= 500:
+                    send_email = True
+            if send_email:
+                traceback = str(einfo.traceback).replace("\n", "<p>")
+                args_str = str(args) if args else ""
+                body = f"Task <b>{self.name}</b> with <b>{str(task_id)}</b> failed. <p>Submitter: {username} <p> Executed on: {os.uname().nodename} <p>  {str(exc)}<p>Args: {args_str}<p>kwargs: {kwargs_str}<p>{traceback}"
+                report_internal_technical_issue(subject_name, body)

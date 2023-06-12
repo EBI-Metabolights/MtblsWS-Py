@@ -100,5 +100,5 @@ class DataFolders(Resource):
             return result
         except Exception as ex:
             raise MetabolightsException(
-                http_code=500, message=f"Sync all compounds task submission was failed", exception=ex
+                http_code=500, message=f"Create folder task submission was failed", exception=ex
             )

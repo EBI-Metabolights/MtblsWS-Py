@@ -60,12 +60,12 @@ iac = IsaApiClient()
 
 instance_dir = os.path.join(os.getcwd(), "instance")
 flask_app = Flask(__name__, instance_relative_config=True, instance_path=instance_dir)
-
+study_settings = get_study_settings()
 pubchem_end = "_pubchem.tsv"
 complete_end = "_complete.sdf"
 pubchem_sdf_extension = '_pubchem.sdf'
 classyfire_end = "_classyfire"
-anno_sub_folder = "chebi_pipeline_annotations"
+anno_sub_folder = study_settings.chebi_annotation_sub_folder
 final_cid_column_name = "final_external_id"
 unknown_list = "unknown", "un-known", "n/a", "un_known", "not known", "not-known", "not_known", "unidentified", \
                "not identified", "unmatched"
@@ -475,7 +475,7 @@ def get_cas_from_synonyms(synonyms):
             return i[4:]
 
 
-def search_and_update_maf(study_id, study_metadata_location, annotation_file_name, classyfire_search, user_token,
+def search_and_update_maf(study_id: str, study_metadata_location: str, annotation_file_name: str, classyfire_search, user_token,
                           run_silently=None, update_study_maf=None, obfuscation_code=None):
     sdf_file_list = []
     exiting_pubchem_file = False
