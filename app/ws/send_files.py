@@ -127,7 +127,7 @@ class SendFiles(Resource):
         if not read_access:
             abort(403)
         settings = get_study_settings()
-        study_metadata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
+        study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         files = ""
         if file_name == 'metadata':
             file_list = get_basic_files(study_metadata_location, include_sub_dir=False, assay_file_list=None)
@@ -289,7 +289,7 @@ class SendFilesPrivate(Resource):
             logger.info('No file name given')
             abort(404)
         settings = get_study_settings()
-        study_metadata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
+        study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
         # check for access rights
         # is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \

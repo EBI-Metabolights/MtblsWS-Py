@@ -2031,8 +2031,8 @@ class SplitMaf(Resource):
         study_status = wsc.get_permissions(study_id, user_token)
         if not is_curator:
             abort(403)
-        settings = get_study_settings()
-        study_metdata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
+        settings = get_settings()
+        study_metdata_location = os.path.join(settings.study.mounted_paths.study_metadata_files_root_path, study_id)
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('annotation_file_name', help="Metabolite Annotation File", location="args")
@@ -2299,8 +2299,8 @@ class ChEBIPipeLine(Resource):
         run_silently = True if run_silently == 'true' else False
         run_on_cluster = True if run_on_cluster == 'true' else False
         update_study_maf = True if update_study_maf == 'true' else False
-        settings = get_study_settings()
-        study_metadata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
+        settings = get_settings()
+        study_metadata_location = os.path.join(settings.study.mounted_paths.study_metadata_files_root_path, study_id)
         print_log("Creating a new study audit folder for study %s", study_id)
         audit_status, dest_path = write_audit_files(study_metadata_location)
         cmd = ""

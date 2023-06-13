@@ -4,6 +4,7 @@ import os
 
 from flask import abort, current_app as app
 from app.config import get_settings
+from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
@@ -114,7 +115,7 @@ def get_study_location(study_id, user_token):
     if not read_access:
         abort(403)
     settings = get_study_settings()
-    location = os.path.join(settings.study_metadata_files_root_path, study_id.upper())
+    location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id.upper())
     if not os.path.isdir(location):
         abort(404, 'There is no path for %s' % (study_id,))
     logger.info('... found study folder %s', location)
@@ -136,7 +137,7 @@ def create_ftp_folder(study_id, obfuscation_code, user_token, email_service=None
         private_ftp_sm.remote.create_folder(folders, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
         new_folder = True
 
-    relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
+    relative_studies_root_path = get_private_ftp_relative_root_path()
     relative_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), new_folder_name)
 
     if new_folder and send_email:

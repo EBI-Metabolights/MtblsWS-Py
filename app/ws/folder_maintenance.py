@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 from isatools import isatab
 from isatools import model as isatools_model
 from pydantic import BaseModel
+from app.config import get_settings
 
 from app.config.model.hpc_cluster import HpcClusterConfiguration
 from app.config.model.study import StudySettings
@@ -87,48 +88,49 @@ class FolderRootPaths(object):
         self.cluster_settings = cluster_mode
         self.cluster_mode = cluster_mode
         self.folders = StudyFolders()
-        self.folders.study_metadata_files_root_path = self.study_settings.study_metadata_files_root_path
+        self.folders.study_metadata_files_root_path = self.study_settings.mounted_paths.study_metadata_files_root_path
         
         if self.cluster_mode:
             self._update_folders_as_cluster_mode()
         else:
             self._update_folders()
-
-        self.folders.cluster_private_ftp_root_path = self.study_settings.cluster_private_ftp_root_path
-        self.folders.cluster_private_ftp_recycle_bin_root_path = self.study_settings.cluster_private_ftp_recycle_bin_root_path
-        self.folders.cluster_public_ftp_root_path = self.study_settings.cluster_public_ftp_root_path
-        self.folders.cluster_public_ftp_recycle_bin_root_path = self.study_settings.cluster_public_ftp_recycle_bin_root_path
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+        self.folders.cluster_private_ftp_root_path = mounted_paths.cluster_private_ftp_root_path
+        self.folders.cluster_private_ftp_recycle_bin_root_path = mounted_paths.cluster_private_ftp_recycle_bin_root_path
+        self.folders.cluster_public_ftp_root_path = mounted_paths.cluster_public_ftp_root_path
+        self.folders.cluster_public_ftp_recycle_bin_root_path = mounted_paths.cluster_public_ftp_recycle_bin_root_path
         
 
     def _update_folders(self):
-        self.folders.study_metadata_files_root_path = self.study_settings.study_metadata_files_root_path
-        self.folders.study_internal_files_root_path = self.study_settings.study_internal_files_root_path
-        self.folders.study_audit_files_root_path = self.study_settings.study_audit_files_root_path
+        self.folders.study_metadata_files_root_path = self.study_settings.mounted_paths.study_metadata_files_root_path
+        self.folders.study_internal_files_root_path = self.study_settings.mounted_paths.study_internal_files_root_path
+        self.folders.study_audit_files_root_path = self.study_settings.mounted_paths.study_audit_files_root_path
         
-        self.folders.study_readonly_files_root_path = self.study_settings.study_readonly_files_root_path
-        self.folders.study_readonly_audit_files_root_path = self.study_settings.study_readonly_audit_files_root_path
-        self.folders.study_readonly_metadata_files_root_path = self.study_settings.study_readonly_metadata_files_root_path
-        self.folders.study_readonly_public_metadata_versions_root_path = self.study_settings.study_readonly_public_metadata_versions_root_path
-        self.folders.study_readonly_integrity_check_files_root_path = self.study_settings.study_readonly_integrity_check_files_root_path
+        self.folders.study_readonly_files_root_path = self.study_settings.mounted_paths.study_readonly_files_root_path
+        self.folders.study_readonly_audit_files_root_path = self.study_settings.mounted_paths.study_readonly_audit_files_root_path
+        self.folders.study_readonly_metadata_files_root_path = self.study_settings.mounted_paths.study_readonly_metadata_files_root_path
+        self.folders.study_readonly_public_metadata_versions_root_path = self.study_settings.mounted_paths.study_readonly_public_metadata_versions_root_path
+        self.folders.study_readonly_integrity_check_files_root_path = self.study_settings.mounted_paths.study_readonly_integrity_check_files_root_path
         
-        self.folders.readonly_storage_recycle_bin_root_path = self.study_settings.readonly_storage_recycle_bin_root_path
-        self.folders.rw_storage_recycle_bin_root_path = self.study_settings.rw_storage_recycle_bin_root_path
+        self.folders.readonly_storage_recycle_bin_root_path = self.study_settings.mounted_paths.readonly_storage_recycle_bin_root_path
+        self.folders.rw_storage_recycle_bin_root_path = self.study_settings.mounted_paths.rw_storage_recycle_bin_root_path
         
 
  
     def _update_folders_as_cluster_mode(self):
-        self.folders.study_metadata_files_root_path = self.study_settings.cluster_study_metadata_files_root_path
-        self.folders.study_internal_files_root_path = self.study_settings.cluster_study_internal_files_root_path
-        self.folders.study_audit_files_root_path = self.study_settings.cluster_study_audit_files_root_path
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+        self.folders.study_metadata_files_root_path = mounted_paths.cluster_study_metadata_files_root_path
+        self.folders.study_internal_files_root_path = mounted_paths.cluster_study_internal_files_root_path
+        self.folders.study_audit_files_root_path = mounted_paths.cluster_study_audit_files_root_path
         
-        self.folders.study_readonly_files_root_path = self.study_settings.cluster_study_readonly_files_root_path
-        self.folders.study_readonly_audit_files_root_path = self.study_settings.cluster_study_readonly_audit_files_root_path
-        self.folders.study_readonly_metadata_files_root_path = self.study_settings.cluster_study_readonly_metadata_files_root_path
-        self.folders.study_readonly_public_metadata_versions_root_path = self.study_settings.cluster_study_readonly_public_metadata_versions_root_path
-        self.folders.study_readonly_integrity_check_files_root_path = self.study_settings.study_readonly_integrity_check_files_root_path
+        self.folders.study_readonly_files_root_path = mounted_paths.cluster_study_readonly_files_root_path
+        self.folders.study_readonly_audit_files_root_path = mounted_paths.cluster_study_readonly_audit_files_root_path
+        self.folders.study_readonly_metadata_files_root_path = mounted_paths.cluster_study_readonly_metadata_files_root_path
+        self.folders.study_readonly_public_metadata_versions_root_path = mounted_paths.cluster_study_readonly_public_metadata_versions_root_path
+        self.folders.study_readonly_integrity_check_files_root_path = mounted_paths.cluster_study_readonly_integrity_check_files_root_path
         
-        self.folders.readonly_storage_recycle_bin_root_path = self.study_settings.cluster_readonly_storage_recycle_bin_root_path
-        self.folders.rw_storage_recycle_bin_root_path = self.study_settings.cluster_rw_storage_recycle_bin_root_path
+        self.folders.readonly_storage_recycle_bin_root_path = mounted_paths.cluster_readonly_storage_recycle_bin_root_path
+        self.folders.rw_storage_recycle_bin_root_path = mounted_paths.cluster_rw_storage_recycle_bin_root_path
                
 
 class MaintenanceActionLog(BaseModel):
@@ -522,13 +524,13 @@ class StudyFolderMaintenanceTask(object):
         return self.future_actions
 
     def create_maintenace_actions_for_study_private_ftp_folder(self) -> List[MaintenanceActionLog]:
-        settings = self.settings
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         study_id = self.study_id
-        cluster_private_ftp_recycle_bin_root_path = self.settings.cluster_private_ftp_recycle_bin_root_path
+        cluster_private_ftp_recycle_bin_root_path = mounted_paths.cluster_private_ftp_recycle_bin_root_path
         created_folders = {}
         deleted_folders = set()
         folder_name = f"{study_id.lower()}-{self.obfuscationcode}"
-        private_ftp_root_path = os.path.join(settings.cluster_private_ftp_root_path, folder_name)
+        private_ftp_root_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)
         permission = Acl.READ_ONLY.value
 
         if self.study_status == StudyStatus.INREVIEW or self.study_status == StudyStatus.INCURATION:
@@ -1090,12 +1092,12 @@ class StudyFolderMaintenanceTask(object):
         self.backup_file(readonly_integrity_check_files_path, backup_path=readonly_integrity_check_files_backup_path, force_delete=True)
 
     def delete_private_ftp_storage_folders(self):
-        settings = self.settings
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         study_id = self.study_id
-        cluster_private_ftp_recycle_bin_root_path = self.settings.cluster_private_ftp_recycle_bin_root_path
+        cluster_private_ftp_recycle_bin_root_path = mounted_paths.cluster_private_ftp_recycle_bin_root_path
         
         folder_name = f"{study_id.lower()}-{self.obfuscationcode}"
-        private_ftp_root_path = os.path.join(settings.cluster_private_ftp_root_path, folder_name)
+        private_ftp_root_path = os.path.join(mounted_paths.cluster_private_ftp_root_path, folder_name)
         private_ftp_root_backup_path = os.path.join(cluster_private_ftp_recycle_bin_root_path, "private-ftp-files")
         self.backup_file(private_ftp_root_path, backup_path=private_ftp_root_backup_path, force_delete=True)
                         
@@ -1210,9 +1212,11 @@ class StudyFolderMaintenanceTask(object):
     def maintain_investigation_file(self):
         study_id = self.study_id
         study_settings = self.study_settings
+        
+        
         investigation_file_path = os.path.join(self.study_metadata_files_path, study_settings.investigation_file_name)
         temaplate_investigation_file_path = os.path.join(
-            study_settings.study_default_template_path, study_settings.investigation_file_name
+            get_settings().file_resources.study_default_template_path, study_settings.investigation_file_name
         )
         investigation_file_candidates = glob.glob(os.path.join(self.study_metadata_files_path, "i_*.txt"))
 
@@ -1474,7 +1478,7 @@ class StudyFolderMaintenanceTask(object):
 
     def maintain_sample_file(self, investigation: isatools_model.Investigation):
         study_id = self.study_id
-        study_template_path = self.study_settings.study_default_template_path
+        study_template_path = get_settings().file_resources.study_default_template_path
         short_sample_file_name = "s_" + study_id.upper() + ".txt"
         default_sample_file_path = os.path.join(self.study_metadata_files_path, short_sample_file_name)
         investigation_file_path = os.path.join(self.study_metadata_files_path, self.investigation_file_name)

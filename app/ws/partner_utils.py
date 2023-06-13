@@ -107,7 +107,7 @@ class Metabolon(Resource):
         user = UserService.get_instance().validate_user_has_curator_role(user_token)
         email = user['username']
         settings = get_study_settings()
-        study_location = os.path.join(settings.study_metadata_files_root_path, study_id)
+        study_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         
         try:
             inputs = {"study_id": study_id, "study_location": study_location, "user_token": user_token, "email": email}

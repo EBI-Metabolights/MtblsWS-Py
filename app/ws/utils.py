@@ -636,10 +636,10 @@ def add_new_protocols_from_assay(assay_type, protocol_params, assay_file_name, s
 def validate_mzml_files(study_id):
 
     status, result = True, "All mzML files validated in both study and upload folder"
-    study_settings = get_study_settings()
-    studies_folder = study_settings.study_readonly_files_root_path
+    settings = get_settings()
+    studies_folder = settings.study.mounted_paths.study_readonly_files_root_path
     study_folder = os.path.join(studies_folder, study_id)
-    xsd_path = study_settings.mzml_xsd_schema_file_path
+    xsd_path = settings.file_resources.mzml_xsd_schema_file_path
     xmlschema_doc = etree.parse(xsd_path)
     xmlschema = etree.XMLSchema(xmlschema_doc)  
     # Getting xsd schema for validation
@@ -705,9 +705,9 @@ def create_temp_dir_in_study_folder(parent_folder: str) -> str:
 
 def collect_all_mzml_files(study_id, study_metadata_files_folder):
     settings = get_study_settings()
-    temp_folder = os.path.join(settings.study_internal_files_root_path, study_id, "temp")
+    temp_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id, "temp")
     folder_path = create_temp_dir_in_study_folder(parent_folder=temp_folder)
-    files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
+    files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
     mzml_files = {}
     if os.path.exists(files_folder) and os.path.isdir(files_folder):  # Only check if the folder exists
         files = glob.iglob(os.path.join(files_folder, '*.mzML'))  # Are there mzML files there?
@@ -805,7 +805,7 @@ def update_ontolgies_in_isa_tab_sheets(ontology_type, old_value, new_value, stud
 
 
 def create_maf(technology, study_metadata_location, assay_file_name, annotation_file_name):
-    study_settings = get_study_settings()
+    settings = get_settings()
     
     update_maf = False
 
@@ -816,11 +816,11 @@ def create_maf(technology, study_metadata_location, assay_file_name, annotation_
     # Fixed column headers to look for in the MAF, defaults to MS
     sample_name = 'Sample Name'
     assay_name = 'MS Assay Name'
-    annotation_file_template = study_settings.study_mass_spectrometry_maf_file_template_path
+    annotation_file_template = settings.file_resources.study_mass_spectrometry_maf_file_template_path
 
     # NMR MAF and assay name
     if technology == "NMR":
-        annotation_file_template = study_settings.study_nmr_spectroscopy_maf_file_template_path
+        annotation_file_template = settings.file_resources.study_nmr_spectroscopy_maf_file_template_path
         assay_name = 'NMR Assay Name'
 
     if annotation_file_name is None or len(annotation_file_name) == 0:

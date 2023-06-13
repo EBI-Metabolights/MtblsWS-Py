@@ -1,6 +1,7 @@
 import datetime
 import os
 from app.config import get_settings
+from app.config.utils import get_private_ftp_relative_root_path
 
 from app.ws.db_connection import (
     get_email,
@@ -64,7 +65,7 @@ def send_email_for_private_ftp_folder(user_token, study_id, folder_name):
     flask_app = get_flask_app()
     with flask_app.app_context():
         
-        relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
+        relative_studies_root_path = get_private_ftp_relative_root_path()
         relative_study_path = os.path.join(
             os.sep, relative_studies_root_path.lstrip(os.sep), folder_name
         )

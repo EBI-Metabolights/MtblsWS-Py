@@ -5,6 +5,7 @@ import shutil
 import time
 from typing import Any, Dict, List, Union
 import zipfile
+from app.config import get_settings
 
 from app.tasks.worker import MetabolightsTask, celery
 from app.utils import MetabolightsException
@@ -18,8 +19,8 @@ logger = logging.getLogger("datamover_worker")
     bind=True, base=MetabolightsTask, name="app.tasks.datamover_tasks.curation_tasks.data_file_operations.delete_aspera_files"
 )
 def delete_aspera_files_from_data_files(self, study_id: str):
-    settings = get_study_settings()
-    study_data_path =  os.path.join(settings.cluster_study_readonly_files_root_path, study_id)
+    mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+    study_data_path =  os.path.join(mounted_paths.cluster_study_readonly_files_root_path, study_id)
 
     delete_asper_files(study_data_path)
     
@@ -111,18 +112,19 @@ def move_data_files(self, study_id: str=None, files: Dict[str, Any]=None,  targe
         raise MaintenanceException(message="Invalid input")
     
     settings = get_study_settings()
+    mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
     for file in files:
         if "name" not in file or not file["name"] or not file["name"].startswith(f"{settings.readonly_files_symbolic_link_name}/"):
             raise MaintenanceException(message=f"File names should start with {settings.readonly_files_symbolic_link_name}/")
             
-    study_path = os.path.join(settings.cluster_study_metadata_files_root_path, study_id)
+    study_path = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
     files_path = os.path.join(study_path, settings.readonly_files_symbolic_link_name)
 
     date_format = "%Y-%m-%d_%H-%M-%S"
     timestamp_str = time.strftime(date_format)
     if not task_name:
         task_name =  f"{study_id}_MOVE_DATA_FILES_{timestamp_str}"
-    recycle_bin_dir = os.path.join(settings.cluster_readonly_storage_recycle_bin_root_path, task_name)
+    recycle_bin_dir = os.path.join(mounted_paths.cluster_readonly_storage_recycle_bin_root_path, task_name)
 
     warnings = []
     successes = []

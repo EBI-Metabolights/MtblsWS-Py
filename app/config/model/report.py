@@ -2,6 +2,6 @@ from pydantic import BaseModel
 
 
 class ReportSettings(BaseModel):
-    reporting_root_path: str
-    mariana_path: str
-    reporting_path: str
+    mariana_report_folder_name: str
+    report_base_folder_name: str
+    report_global_folder_name: str = "global"

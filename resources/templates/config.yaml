@@ -6,9 +6,9 @@ flask:
 server:
     service:
         port: 5001
-        app_host_url: https://www.ebi.ac.uk
-        ws_app_base_link: https://www.ebi.ac.uk/metabolights
-        mtbls-users_ws_host: http://server-ip-or-internal-dns-name
+        app_host_url: https://wwwdev.ebi.ac.uk
+        ws_app_base_link: https://wwwdev.ebi.ac.uk/metabolights
+        mtbls_ws_host: http://vm_internal_name
         resources_path: /metabolights/ws
         cors_hosts: "*"
         cors_resources_path: /metabolights/ws/*
@@ -23,11 +23,11 @@ server:
 
 database:
     connection: 
-        host: postgredb
+        host: dbhost
         port: 5432
-        user: user
+        user: dbuser
         password: <secret_file:database_password>
-        database: db_name
+        database: db
     configuration:
         conn_pool_min: 1
         conn_pool_max: 3
@@ -52,12 +52,11 @@ email:
             use_tls: False
             use_ssl: False
         configuration:
-            no_reply_email_address: no-reply@invalid.ac.uk
-            curation_email_address: no-reply@invalid.ac.uk
-            technical_issue_recipient_email_address: no-reply@invalid.ac.uk
+            no_reply_email_address: test@user.com
+            curation_email_address: test@user.com
+            technical_issue_recipient_email_address: test@user.com
+            hpc_cluster_job_track_email_address: test@user.com
     template_email_configuration:
-        # MetaboLights website URL that will be shown in an email.
-        metabolights_host_url_in_email: https://www.ebi.ac.uk/metabolights
         # Help document URL to upload data to MetaboLigts private FTP server
         ftp_upload_help_doc_url: https://docs.google.com/document/d/15rSS6Mrj2Aj_uMyh4-3n8RJzAdWi1uoHsaKkxqPyC4I            
 auth:
@@ -70,26 +69,22 @@ auth:
         one_time_token_expires_in_seconds: 300
         admin_jwt_token_expires_in_mins: 480
     service_account:
-        email: service_account_name@invalid.ac.uk
+        email: test@user.com
         api_token: <secret_file:service_account_api_token>
 ftp_server:
     private:
         connection:
-            host: ftp-private.ebi.ac.uk
-            username: user_name
+            host: ft-server-host
+            username: ftp_user
             password: <secret_file:private_ftp_server_password>
         configuration:
             mount_type: remote_worker
-            private_ftp_user_home_path: /private/ftp/user/path
-            studies_folder_absolute_path: /private/ftp/user/path/dev
-            private_ftp_folders_relative_path: /dev
     public:
         configuration:
-            mount_type: unmounted
-            studies_folder_absolute_path: /local/mounted/private/ftp/user/path/dev            
+            mount_type: remote_worker
 jira:
     connection:
-        username: jira-user
+        username: jira_user
         password: <secret_file:jira_password>
 twitter:
     connection: <secret_file:twitter_credentials.json>
@@ -109,21 +104,21 @@ chebi:
             chebi_ws_strict: False
             chebi_ws_xml_huge_tree: True            
     pipeline:
-        curated_metabolite_list_file_location: /nfs/web_hx2/cm/metabolights/test/MasterList.txt
-        chebi_upload_script: /chebi/upload/script/path/metabolights.sh
-        chebi_pipeline_url: metabolights/ws/endpoinds/chebi/endpoint-url
+        curated_metabolite_list_file_location: /file/path/test/MasterList.txt
+        chebi_upload_script:/file/path/dev/studies/stage/private/chebi/metabolights.sh
+        chebi_pipeline_url: http://internal-server:5000/metabolights/ws/ebi-internal/
         chebi_pipeline_annotation_folder: chebi_pipeline_annotations
-        obo_file: /internal/path/chebi_lite.obo
+        obo_file:/file/path/chebi/ontology/chebi_lite.obo
         chebi_url_wait: 300
         removed_hs_mol_count: 500
-        classyfire_mapping: /internal/path/ClassyFire_Mapping.tsv
+        classyfire_mapping:/file/path/metabolights/submissionTool/ClassyFire_Mapping.tsv
         search_services:
-            classyfire_url: http://classyfire_server
+            classyfire_url: http://classyfire_url
             opsin_url: https://opsin.ch.cam.ac.uk/opsin/
             chemspider_url: http://parts.chemspider.com/JSON.ashx?op=
             chem_plus_url: https://chem.nlm.nih.gov/api/data/inchikey/equals/INCHI_KEY?data=summary
             unichem_url: https://www.ebi.ac.uk/unichem/rest/inchikey/INCHI_KEY
-            dime_url: 'https://dimedb.ibers.aber.ac.uk/api/metabolites?where={%22_id%22%20:%20%22INCHI_KEY%22}&projection={%22External%20Sources%22%20:%201}'
+            dime_url: https://dimedb.ibers.aber.ac.uk/api/metabolites?where={%22_id%22%20:%20%22INCHI_KEY%22}&projection={%22External%20Sources%22%20:%201}           
 google:
     connection:
         google_sheet_api: <secret_file:google_sheet_api_credentials.json>
@@ -133,199 +128,166 @@ google:
         google_analytics_tracking_id: <secret_file:google_analytics_tracking_id>
         google_mariana_drive_id: <secret_file:google_mariana_drive_id>
     sheets:
-        zooma_sheet: https://docs.google.com/spreadsheets/zooma_sheet/path
-        europe_pmc_report: https://docs.google.com/spreadsheets/europe_pmc_report/path
-        mtbls-users_statistics: https://docs.google.com/spreadsheets/mtbls-users_statistics/path
-        lc_ms_statistics: https://docs.google.com/spreadsheets/mtbls-users_statistics/path
-        mtbls-users_curation_log: https://docs.google.com/spreadsheets/mtbls-users_statistics/path
+        zooma_sheet: https://docs.google.com/spreadsheets/d/zooma_sheet
+        europe_pmc_report: https://docs.google.com/spreadsheets/d/europe_pmc_report-E
+        mtbls_statistics: https://docs.google.com/spreadsheets/d/mtbls_statistics
+        lc_ms_statistics: https://docs.google.com/spreadsheets/d/lc_ms_statistics/edit#gid=805314595
+        mtbls_curation_log: https://docs.google.com/spreadsheets/d/mtbls_curation_log
 bioportal:
     api_token: <secret_file:bioportal_api_token>
     url: http://data.bioontology.org
 redis_cache:
     connection:
-        redis_host: redis-server
+        redis_host: redis
         redis_password: <secret_file:redis_cache_password>
-        redis_port: 1111
-        redis_db: 7
+        redis_port: 9111
+        redis_db: 10
     configuration:
-        banner_message_key: metabolights:banner:message
-        species_tree_cache_key: metabolights:species:tree
+        banner_message_key: metabolights:test-banner:message
+        species_tree_cache_key: metabolights:test-species:tree
 celery:
     broker:
-        redis_host: redis-server
+        redis_host: redis
         redis_password: <secret_file:redis_cache_password>
-        redis_port: 1111
-        redis_db: 2
+        redis_port: 9111
+        redis_db: 10
     configuration:
         celery_result_expires: 300
     periodic_task_configuration:
         integration_test_period_in_seconds: 60
         es_compound_sync_task_period_in_secs: 600
         es_study_sync_task_period_in_secs: 600
-        worker_heath_check_period_in_seconds: 600
+        worker_heath_check_period_in_seconds: 30
 report:
-    reporting_root_path: /reporting/root/path
-    mariana_path : folder-name
-    reporting_path: base-folder-name
+    mariana_report_folder_name : mariana
+    report_base_folder_name: base
+    report_global_folder_name: global
 hpc_cluster:
     datamover:
         connection:
-            host: host-name
+            host: hpc_login
             username: user
-        queue_name: queue
-        paths:
-            private_ftp_study_root_path: /private/ftp/user/path/dev
-            public_ftp_study_root_path: /public/ftp/path/databases/metabolights/.test
-            study_metadata_root_path: /current/studies/metabolights/dev/studies/stage/private
-            study_data_root_path: /current/studies/metabolights/dev/studies/stage/private
+        queue_name: datamover
+        cluster_private_ftp_user_home_path: /private/ftp/user
+        mounted_paths:
+            cluster_study_metadata_files_root_path: /path/to/data/rw/metabolomics/dev/studies/maintenance_test/metadata-files
+            cluster_study_internal_files_root_path: /path/to/data/rw/metabolomics/dev/studies/maintenance_test/internal-files
+            cluster_study_audit_files_root_path: /path/to/data/rw/metabolomics/dev/studies/maintenance_test/audit-files
+            cluster_study_readonly_files_root_path: /path/to/data/services/metabolomics/dev/studies/data-files
+            cluster_study_readonly_metadata_files_root_path: /path/to/data/services/metabolomics/dev/studies/metadata-files
+            cluster_study_readonly_public_metadata_versions_root_path: /path/to/data/services/metabolomics/dev/studies/public-metadata-versions
+            cluster_study_readonly_audit_files_root_path: /path/to/data/services/metabolomics/dev/studies/audit-files
+            cluster_study_readonly_integrity_check_files_root_path: /path/to/data/services/metabolomics/dev/studies/integrity-check-files
+            cluster_readonly_storage_recycle_bin_root_path: /path/to/data/services/metabolomics/dev/studies/deleted-files
+            cluster_rw_storage_recycle_bin_root_path: /path/to/data/rw/metabolomics/dev/studies/maintenance_test/deleted-files
+            
+            cluster_private_ftp_root_path: /private/ftp/user/dev
+            cluster_private_ftp_recycle_bin_root_path: /private/ftp/user/dev/.deleted-files
+            cluster_public_ftp_root_path: /public/ftp/path//databases/metabolights/.test/.deleted-files
+            cluster_public_ftp_recycle_bin_root_path: /public/ftp/path//databases/metabolights/.test/.deleted-files 
+            cluster_reports_root_path: /path/to/data/rw/metabolomics/dev/reports
+            cluster_compounds_root_path: /path/to/data/prod/reference
         worker:
-            worker_deployment_root_path: /datamover/path
-            singularity_image: /datamover/path/metablsws-py_test-latest.sif
-            singularity_docker_username: admin
+            number_of_datamover_workers: 1
+            datamover_worker_maximum_uptime_in_seconds:  259200
+            datamover_worker_submission_script_template_name: run_singularity.sh.j2
+            worker_deployment_root_path: /hpc/data/path
+            broker_queue_names: datamover-tasks
+            singularity_image: /hpc/data/path/metablsws-py_test-latest.sif
+            singularity_docker_username: ozgur
             singularity_docker_password: <secret_file:singularity_docker_password>
-            user_home_binding_source_path: /homes/met_user
-            user_home_binding_target_path: /home/met_user
-            logs_path: /datamover/path/logs
-            config_file_path: /datamover/path/config.yaml
-            secrets_path: /datamover/path/.secrets
+            user_home_binding_source_path: /homes/tc_cm01
+            user_home_binding_target_path: /home/tc_cm01
+            logs_path: /hpc/data/path/logs
+            config_file_path: /hpc/data/path/config.yaml
+            secrets_path: /hpc/data/path/.secrets
             shared_paths:
-            - /current/studies/metabolights/prod/studies/stage/private
-            - /internal/data/path/services/metabolomics
-            - /internal/data/path/rw/metabolomics
-            - /private/ftp/user/path/dev
-            - /public/ftp/path/databases/metabolights/studies/public
-            - /internal/data/path/rw/metabolomics/dev/compounds
+            - /path/to/data/prod/studies/stage/private
+            - /path/to/data/services/metabolomics
+            - /path/to/data/rw/metabolomics
+            - /private/ftp/user/dev
+            - /public/ftp/path//databases/metabolights/studies/public
+            - /path/to/data/rw/metabolomics/dev/compounds
     compute:
         connection:
-            host: hpc-server-login
-            username: mtbls-user
+            host: hpc_login
+            username: compute_user
         standard_queue: standard
         long_process_queue: long
         default_queue: default
     ssh_command: /usr/bin/ssh
     configuration:
-        cluster_lsf_host: hpc-server-login
-        cluster_lsf_host_user: mtbls-user
-        cluster_lsf_datamover_user: met_user
-        cluster_lsf_host_ssh_command: /usr/bin/ssh
-        cluster_lsf_bsub_default_queue: short
-        cluster_lsf_bsub_datamover_queue: datamover
-        cluster_lsf_bsub_standard_queue: standard
-        cluster_lsf_bsub_long_process_queue: long
-        cluster_study_metadata_files_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/metadata-files
-        cluster_study_internal_files_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/internal-files
-        cluster_study_audit_files_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/internal-files
-        cluster_study_readonly_files_root_path: /internal/data/path/services/metabolomics/dev/studies/data-files
-        cluster_study_readonly_audit_files_root_path: /internal/data/path/services/metabolomics/dev/studies/metadata-files
-        cluster_study_readonly_metadata_files_root_path: /internal/data/path/services/metabolomics/dev/studies/audit-files
-        cluster_study_readonly_public_metadata_versions_root_path: /internal/data/path/services/metabolomics/dev/studies/public-metadata-versions
-        cluster_study_readonly_integrity_check_files_root_path: /internal/data/path/services/metabolomics/dev/studies/public-metadata-versions
-        cluster_readonly_storage_recycle_bin_root_path: /internal/data/path/services/metabolomics/dev/studies/public-metadata-versions
-        cluster_rw_storage_recycle_bin_root_path: /internal/data/path/services/metabolomics/dev/studies/public-metadata-versions
-        cluster_private_ftp_root_path: /private/ftp/user/path/dev
-        cluster_private_ftp_recycle_bin_root_path: /private/ftp/user/path/dev/.deleted-files
-        cluster_public_ftp_root_path: /public/ftp/path/databases/metabolights/.test/.deleted-files
-        cluster_public_ftp_recycle_bin_root_path: /public/ftp/path/databases/metabolights/.test/.deleted-files 
+        job_project_name: metabolights-ws-test
+        task_get_timeout_in_seconds: 10
+        job_status_read_timeout: 10
         job_submit_command: bsub
         job_running_command: bjobs
         job_kill_command: bkill
-        job_track_email: admin
-        job_track_log_location: /datamover/path/logs/jobs
-        job_status_read_timeout: 10
-        job_project_name: metabolights-ws
-        number_of_datamover_workers: 1
-        datamover_worker_maximum_uptime_in_seconds:  259200
-        datamover_job_submission_script_template_name: run_singularity.sh.j2
-        task_get_timeout_in_seconds: 10
+        job_track_log_location: /hpc/data/path/logs/jobs
         maximum_shutdown_signal_per_time: 1
-        number_of_additional_localhost_workers: 1
+        number_of_additional_localhost_workers: 0
         number_of_remote_vm_workers: 0
-        vm_worker_hostnames: wp-np3-19.ebi.ac.uk
+        vm_worker_hostnames: remote_vm_name
         start_vm_worker_script_template_name: start_vm_worker_template.sh.j2
-        remote_vm_deployment_path: /internal/data/path/rw/metabolomics/development/admin/metblWS-Py
-        remote_vm_conda_environment: conda-env1
-        localhost_conda_environment: conda-env1
+        remote_vm_deployment_path: /path/to/data/rw/metabolomics/development/ozgur/MtblsWS-Py
+        remote_vm_conda_environment: python38-MtblsWS
+        localhost_conda_environment: python38-MtblsWS
         fella_pathway_script_path: /invalid
+
 study:
+    mounted_paths:
+        study_metadata_files_root_path: /path/to/data/rw/metabolomics/dev/studies/maintenance_test/metadata-files
+        study_internal_files_root_path: /path/to/data/rw/metabolomics/dev/studies/maintenance_test/internal-files
+        study_audit_files_root_path: /path/to/data/rw/metabolomics/dev/studies/maintenance_test/audit-files
+        study_readonly_files_root_path: /path/to/data/services/metabolomics/dev/studies/data-files
+        study_readonly_metadata_files_root_path: /path/to/data/services/metabolomics/dev/studies/metadata-files
+        study_readonly_audit_files_root_path: /path/to/data/services/metabolomics/dev/studies/audit-files
+        study_readonly_public_metadata_versions_root_path: /path/to/data/services/metabolomics/dev/studies/public-metadata-versions
+        study_readonly_integrity_check_files_root_path: /path/to/data/services/metabolomics/dev/studies/integrity-check-files
+        readonly_storage_recycle_bin_root_path: /path/to/data/services/metabolomics/dev/studies/deleted-files
+        rw_storage_recycle_bin_root_path: /path/to/data/rw/metabolomics/dev/studies/maintenance_test/deleted-files
+        reports_root_path: /path/to/data/rw/metabolomics/dev/reports
+        compounds_root_path: /file/path/to/compounds
+        private_ftp_root_path: ""
+        private_ftp_recycle_bin_root_path:  ""
+        public_ftp_root_path: ""
+        public_ftp_recycle_bin_root_path: ""
+
+    private_ftp_user_home_path: ""
     max_study_in_submitted_status: 2
-    min_study_creation_interval_in_mins: 5
-    
-    study_metadata_files_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/metadata-files
-    study_internal_files_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/internal-files
-    study_audit_files_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/audit-files
-
-    study_readonly_files_root_path: /internal/data/path/services/metabolomics/dev/studies/data-files
-    study_readonly_metadata_files_root_path: /internal/data/path/services/metabolomics/dev/studies/metadata-files
-    study_readonly_audit_files_root_path: /internal/data/path/services/metabolomics/dev/studies/audit-files
-    study_readonly_public_metadata_versions_root_path: /internal/data/path/services/metabolomics/dev/studies/public-metadata-versions
-    study_readonly_integrity_check_files_root_path: /internal/data/path/services/metabolomics/dev/studies/integrity-check-files
-
-    readonly_storage_recycle_bin_root_path: /internal/data/path/services/metabolomics/dev/studies/deleted-files
-    rw_storage_recycle_bin_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/deleted-files
-    
-    cluster_study_metadata_files_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/metadata-files
-    cluster_study_internal_files_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/internal-files
-    cluster_study_audit_files_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/audit-files
-
-    cluster_study_readonly_files_root_path: /internal/data/path/services/metabolomics/dev/studies/data-files
-    cluster_study_readonly_metadata_files_root_path: /internal/data/path/services/metabolomics/dev/studies/metadata-files
-    cluster_study_readonly_audit_files_root_path: /internal/data/path/services/metabolomics/dev/studies/audit-files
-    cluster_study_readonly_public_metadata_versions_root_path: /internal/data/path/services/metabolomics/dev/studies/public-metadata-versions
-    cluster_study_readonly_integrity_check_files_root_path: /internal/data/path/services/metabolomics/dev/studies/integrity-check-files
-
-    cluster_readonly_storage_recycle_bin_root_path: /internal/data/path/services/metabolomics/dev/studies/deleted-files
-    cluster_rw_storage_recycle_bin_root_path: /internal/data/path/rw/metabolomics/dev/studies/maintenance_test/deleted-files
-
-    cluster_private_ftp_root_path: /public/ftp/path/databases/metabolights/.test
-    cluster_private_ftp_recycle_bin_root_path: /private/ftp/user/path/dev/.deleted-files
-    
-    cluster_public_ftp_root_path: /private/ftp/user/path/dev
-    cluster_public_ftp_recycle_bin_root_path: /public/ftp/path/databases/metabolights/.test/.deleted-files
-
-    cluster_private_ftp_user_path: /private/ftp/user/path
-    
+    min_study_creation_interval_in_mins: 5 
     audit_files_symbolic_link_name: AUDIT_FILES
     internal_files_symbolic_link_name: INTERNAL_FILES
     readonly_files_symbolic_link_name: FILES
-    
     audit_folder_name: audit
     chebi_annotation_sub_folder: chebi_pipeline_annotations
-    
     metadata_summary_file_name: metadata_summary.tsv
     data_files_summary_file_name: data_files_summary.tsv
     study_folder_maintenance_log_file_name: maintenance_log.tsv
     metadata_files_signature_file_name: metadata_files_signature.txt
     data_files_maintenance_file_name: data_files_summary.txt
-    
-    study_default_template_path: ./resources/templates/study/default
     template_sample_file_name: s_Sample.txt
-    study_partner_metabolon_template_path: ./resources/templates/study/metabolon
-
-    study_mass_spectrometry_maf_file_template_path: ./resources/m_metabolite_profiling_mass_spectrometry_v2_maf.tsv
-    study_nmr_spectroscopy_maf_file_template_path: ./resources/m_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv
-    report_root_path: /root/path/reports
-    report_mariana_folder_name: mariana-folder
-    report_base_folder_name: base-folder
-    report_global_folder_name: global
     files_list_json_file_name: files-all.json
     files_list_json_file_creation_timeout: 90
-    
     investigation_file_name: i_Investigation.txt
     internal_logs_folder_name: logs
     internal_backup_folder_name: internal-backup
-    mzml_xsd_schema_file_path: ./resources/mzML1.1.1_idx.xsd
-    
     validation_report_file_name: validation_report.json
     validation_files_json_name: validation_files.json
     validation_files_limit: 10000
-    validations_file: ./resources/validation_schema.json
-    validation_script: /internal/path/val/validation.sh
+    validation_script:/file/path/scripts/cluster_scripts/val/validation.sh
     missing_files_name: missing_files.txt
-    reference_folder: /internal/path/to/compound/reference
 
 file_resources:
-    mtbls-users_ontology_file: ./resources/Metabolights.owl
-    mtbls-users_zooma_file: ./resources/metabolights_zooma.tsv
+    mtbls_ontology_file: ./resources/Metabolights.owl
+    mtbls_zooma_file: ./resources/metabolights_zooma.tsv
+    mzml_xsd_schema_file_path: ./resources/mzML1.1.1_idx.xsd
+    validations_file: ./resources/validation_schema.json
+    study_default_template_path: ./resources/templates/study/default
+    study_partner_metabolon_template_path: ./resources/templates/study/metabolon
+    study_mass_spectrometry_maf_file_template_path: ./resources/m_metabolite_profiling_mass_spectrometry_v2_maf.tsv
+    study_nmr_spectroscopy_maf_file_template_path: ./resources/m_metabolite_profiling_NMR_spectroscopy_v2_maf.tsv
+
 file_filters:
     deleted_samples_prefix_tag: __TO_BE_DELETED__
     compressed_files_list:

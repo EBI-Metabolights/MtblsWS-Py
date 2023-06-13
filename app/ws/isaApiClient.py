@@ -143,7 +143,7 @@ class IsaApiClient:
         settings = self.settings
         
         if save_investigation_copy or save_samples_copy or save_assays_copy:  # Only create audit folder when requested
-            update_path = os.path.join(settings.study_audit_files_root_path, study_id, settings.audit_folder_name)
+            update_path = os.path.join(settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name)
 
             dest_path = new_timestamped_folder(update_path)
 

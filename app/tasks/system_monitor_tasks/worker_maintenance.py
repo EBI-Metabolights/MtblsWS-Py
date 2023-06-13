@@ -116,7 +116,7 @@ def check_additional_vm_workers(
             full_worker_name = f"{worker_name_prefix}_{index}@{remote_hostname}"
             if full_worker_name not in registered_workers:
                 if started_remote_vm_workers[remote_hostname] < start_maximum_worker_on_vm_per_time:
-                    ssh_command = BashClient.build_ssh_command(hostname=remote_hostname, username=cluster_settings.cluster_lsf_datamover_user)
+                    ssh_command = BashClient.build_ssh_command(hostname=remote_hostname, username=get_settings().hpc_cluster.datamover.connection.username)
                     paramters = {
                         "application_deployment_path": cluster_settings.remote_vm_deployment_path,
                         "worker_name": worker_name,
@@ -153,7 +153,7 @@ def check_datamover_workers(
     results = {}
     cluster_settings = get_cluster_settings()
     if number_of_workers < 0:
-        number_of_workers = max(cluster_settings.number_of_datamover_workers, 0)
+        number_of_workers = max(get_settings().hpc_cluster.datamover.worker.number_of_datamover_workers, 0)
     if maximum_shutdown_signal_per_time < -1:
         maximum_shutdown_signal_per_time = max(cluster_settings.maximum_shutdown_signal_per_time, 0)
 
@@ -169,7 +169,7 @@ def check_datamover_workers(
             uptimes[key] = uptime
     shutdown_signal_count = 0
     worker_name_prefix = (
-        f"{cluster_settings.job_project_name}_{cluster_settings.cluster_lsf_bsub_datamover_queue}_worker"
+        f"{cluster_settings.job_project_name}_{get_settings().hpc_cluster.datamover.queue_name}_worker"
     )
 
     client = LsfClient()
@@ -219,7 +219,7 @@ def check_datamover_workers(
                 send_shutdown_signal = True
             else:
                 if shutdown_signal_count < maximum_shutdown_signal_per_time:
-                    max_uptime = cluster_settings.datamover_worker_maximum_uptime_in_seconds
+                    max_uptime = get_settings().hpc_cluster.datamover.worker.datamover_worker_maximum_uptime_in_seconds
                     for name in running_worker_names:
                         send_shutdown_signal = True if name in uptimes and uptimes[name] > max_uptime else False
                 if not send_shutdown_signal:
@@ -250,10 +250,10 @@ def check_datamover_workers(
             messages.append(f"Shutdown signal was sent to {', '.join(running_worker_names)}")
 
         if create_new_job:
-            script_template = cluster_settings.datamover_job_submission_script_template_name
+            script_template = get_settings().hpc_cluster.datamover.worker.datamover_worker_submission_script_template_name
             settings = get_settings()
             inputs = {
-                "QUEUE_NAME": settings.hpc_cluster.datamover.queue_name,
+                "QUEUE_NAME": settings.hpc_cluster.datamover.worker.broker_queue_names,
                 "REMOTE_SERVER_BASE_PATH": settings.hpc_cluster.datamover.worker.worker_deployment_root_path,
                 "SINGULARITY_DOCKER_USERNAME": settings.hpc_cluster.datamover.worker.singularity_docker_username,
                 "SINGULARITY_DOCKER_PASSWORD": settings.hpc_cluster.datamover.worker.singularity_docker_password,
@@ -292,7 +292,7 @@ if __name__ == "__main__":
     # cluster_settings = get_cluster_settings()
     # project_name = cluster_settings.job_project_name
     # worker_name_prefix = (
-    #     f"{cluster_settings.job_project_name}_{cluster_settings.cluster_lsf_bsub_datamover_queue}_worker"
+    #     f"{cluster_settings.job_project_name}_{get_settings().hpc_cluster.datamover.queue_name}_worker"
     # )
     # local_hostname = socket.gethostname()
     # results = celery.control.inspect().stats()

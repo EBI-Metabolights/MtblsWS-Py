@@ -80,7 +80,7 @@ class StudyService(object):
         try:
             update_study_model_from_directory(
                 m_study,
-                self.study_settings.study_metadata_files_root_path,
+                self.study_settings.mounted_paths.study_metadata_files_root_path,
                 optimize_for_es_indexing=optimize_for_es_indexing,
                 revalidate_study=revalidate_study,
                 user_token_to_revalidate=user_token,

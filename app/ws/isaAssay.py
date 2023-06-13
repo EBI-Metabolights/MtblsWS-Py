@@ -501,7 +501,7 @@ Other columns, like "Parameter Value[Instrument]" must be matches exactly like t
 
         except (ValidationError, Exception):
             abort(400, 'Incorrect JSON provided')
-        study_metadata_location = os.path.join(get_study_settings().study_metadata_files_root_path, study_id)
+        study_metadata_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, study_id)
         isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                          skip_load_tables=True, study_location=study_metadata_location)
 
@@ -576,7 +576,7 @@ def get_all_unique_protocols_from_study_assays(study_id, assays):
 def create_assay(assay_type, columns, study_id, ontology, output_folder=None):
     profiling = 'metabolite_profiling'
     settings = get_study_settings()
-    studies_path = settings.study_metadata_files_root_path  # Root folder for all studies
+    studies_path = settings.mounted_paths.study_metadata_files_root_path  # Root folder for all studies
     study_path = os.path.join(studies_path, study_id)  # This particular study
     polarity = ''
     column = ''

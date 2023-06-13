@@ -1333,7 +1333,7 @@ class GetAssayMaf(Resource):
 
         logger.info('Trying to load MAF for Study %s, Sheet number %d', study_id, sheet_number)
 
-        study_path = get_study_settings().study_metadata_files_root_path
+        study_path = get_study_settings().mounted_paths.study_metadata_files_root_path
         study_location = os.path.join(study_path, study_id)
         maflist = []
 

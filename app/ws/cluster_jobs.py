@@ -24,6 +24,7 @@ from flask_restful_swagger import swagger
 from flask import request, abort
 from flask import current_app as app
 from datetime import datetime
+from app.config import get_settings
 from app.ws.db_connection import check_access_rights
 from app.ws.study.user_service import UserService
 from app.ws.settings.utils import get_cluster_settings
@@ -34,18 +35,19 @@ logger = logging.getLogger('wslog')
 def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=None, identifier=None, taskname=None , log=False,
                log_path=None):
     cluster_settings = get_cluster_settings()
+    settings = get_settings()
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
     bsub_cmd = cluster_settings.job_submit_command
-    lsf_host = cluster_settings.cluster_lsf_host
-    lsf_host_user = cluster_settings.cluster_lsf_host_user
-    ssh_cmd = cluster_settings.cluster_lsf_host_ssh_command
+    lsf_host = settings.hpc_cluster.compute.connection.host
+    lsf_host_user = settings.hpc_cluster.compute.connection.username
+    ssh_cmd = settings.hpc_cluster.ssh_command
     log_file_path = None
     job_cmd1 = job_cmd
     
     if email:
         if account is None:
-            account = cluster_settings.job_track_email
+            account = settings.email.email_service.configuration.hpc_cluster_job_track_email_address
 
         bsub_cmd = bsub_cmd + " -u " + account
 
@@ -53,10 +55,11 @@ def submit_job(email=False, account=None, queue=None, job_cmd=None, job_params=N
         return False, "JOB command should not be empty!", str(msg_out), str(msg_err)
 
     if queue is None:
-        queue = cluster_settings.cluster_lsf_bsub_default_queue
+        queue = settings.hpc_cluster.compute
 
-    if queue == cluster_settings.cluster_lsf_bsub_datamover_queue:
-        lsf_host_user = cluster_settings.cluster_lsf_datamover_user
+    if queue == settings.hpc_cluster.datamover.queue_name:
+        lsf_host = settings.hpc_cluster.datamover.connection.host
+        lsf_host_user = settings.hpc_cluster.datamover.connection.username
 
     bsub_cmd = bsub_cmd + " -q " + queue
     ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host
@@ -102,15 +105,18 @@ def list_jobs(queue=None, job_name=None):
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
     bjobs_cmd = cluster_settings.job_running_command
-    lsf_host = cluster_settings.cluster_lsf_host
-    lsf_host_user = cluster_settings.cluster_lsf_host_user
-    ssh_cmd = cluster_settings.cluster_lsf_host_ssh_command
+    
+    settings = get_settings()
+    lsf_host = settings.hpc_cluster.compute.connection.host
+    lsf_host_user = settings.hpc_cluster.compute.connection.username
+    ssh_cmd = settings.hpc_cluster.ssh_command
 
     if queue is None:
-        queue = cluster_settings.cluster_lsf_bsub_default_queue
+        queue = settings.hpc_cluster.compute
 
-    if queue == cluster_settings.cluster_lsf_bsub_datamover_queue:
-        lsf_host_user = cluster_settings.cluster_lsf_datamover_user
+    if queue == settings.hpc_cluster.datamover.queue_name:
+        lsf_host = settings.hpc_cluster.datamover.connection.host
+        lsf_host_user = settings.hpc_cluster.datamover.connection.username
 
     bjobs_cmd = f'{bjobs_cmd} -q {queue}'
     if job_name:
@@ -141,12 +147,14 @@ def kill_job(queue=None, job_id=None):
     msg_out = "No LSF job output"
     msg_err = "No LSF job error"
     bkill_cmd = cluster_settings.job_kill_command
-    lsf_host = cluster_settings.cluster_lsf_host
-    lsf_host_user = cluster_settings.cluster_lsf_host_user
-    ssh_cmd = cluster_settings.cluster_lsf_host_ssh_command
+    settings = get_settings()
+    lsf_host = settings.hpc_cluster.compute.connection.host
+    lsf_host_user = settings.hpc_cluster.compute.connection.username
+    ssh_cmd = settings.hpc_cluster.ssh_command
 
-    if queue == cluster_settings.cluster_lsf_bsub_datamover_queue:
-        lsf_host_user = cluster_settings.cluster_lsf_datamover_user
+    if queue == settings.hpc_cluster.datamover.queue_name:
+        lsf_host_user = settings.hpc_cluster.datamover.connection.username
+        lsf_host = settings.hpc_cluster.datamover.connection.host
 
     bkill_cmd = bkill_cmd + " " + job_id
     ssh_cmd = ssh_cmd + " " + lsf_host_user + "@" + lsf_host

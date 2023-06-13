@@ -6,6 +6,7 @@ from flask import request, abort
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from app.config import get_settings
+from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
@@ -93,7 +94,7 @@ class SyncCalculation(Resource):
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
+        study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
         storage = StorageService.get_ftp_private_storage()
 
         meta_calc_result,rdfiles_calc_result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
@@ -157,7 +158,7 @@ class SyncFromFtpFolder(Resource):
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
+        study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
         storage = StorageService.get_ftp_private_storage()
 
         ftp_folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
@@ -223,7 +224,7 @@ class FtpFolderSyncStatus(Resource):
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
+        study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
         storage = StorageService.get_ftp_private_storage()
 
         sync_metafiles_result,sync_rdfiles_result = storage.check_folder_sync_status(study_id=study_id, obfuscation_code=None, target_local_path=study_path)
@@ -465,7 +466,7 @@ class PrivateFtpFolderPath(Resource):
         ]
     )
     @metabolights_exception_handler
-    def get(self, study_id):
+    def get(self, study_id: str):
         log_request(request)
         # param validation
         if study_id is None:
@@ -478,7 +479,7 @@ class PrivateFtpFolderPath(Resource):
 
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
+        relative_studies_root_path = get_private_ftp_relative_root_path()
         folder_name = f'{study_id.lower()}-{study.obfuscationcode}'
         relative_ftp_study_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
         return relative_ftp_study_path
@@ -627,7 +628,7 @@ class SyncPublicStudyToFTP(Resource):
         study = StudyService.get_instance().get_study_by_acc(study_id)
         if study.status != 0:
            return {'Error': 'Given study is not public yet!'} 
-        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
+        study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
 
         ftp_public_storage = StorageService.get_ftp_public_storage()
         logger.info(f"Syncing files from public study folder to FTP folder for {study_id}")

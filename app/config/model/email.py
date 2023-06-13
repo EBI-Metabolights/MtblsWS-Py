@@ -14,10 +14,10 @@ class EmailServiceConfiguration(BaseModel):
     no_reply_email_address: str
     curation_email_address: str
     technical_issue_recipient_email_address: str
+    hpc_cluster_job_track_email_address: str
 
 
 class EmailTemplateConfiguration(BaseModel):
-    metabolights_host_url_in_email: str
     ftp_upload_help_doc_url: str
 
 

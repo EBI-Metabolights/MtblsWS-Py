@@ -200,8 +200,8 @@ class cronjob(Resource):
             time_stamp = {"created_at": "2020-07-20", "updated_at": datetime.today().strftime('%Y-%m-%d')}
             res = {**time_stamp, **data}
             file_name = 'study_classify.json'
-            file_path = os.path.join(get_settings().study.report_root_path, 
-                                     get_settings().study.report_mariana_folder_name)
+            file_path = os.path.join(get_settings().study.mounted_paths.reports_root_path, 
+                                     get_settings().report.mariana_report_folder_name)
             writeDataToFile(file_path + file_name, res, True)
             return jsonify(res)
         elif source == 'ftp file permission':

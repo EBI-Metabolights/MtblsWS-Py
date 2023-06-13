@@ -24,6 +24,7 @@ from flask import current_app as app
 from flask_restful import Resource, abort
 from isatools.isatab import dump
 from isatools.model import *
+from app.config import get_settings
 
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.isaAssay import create_assay
@@ -73,7 +74,7 @@ class MetaSpaceIsaApiClient(Resource):
 
         if not isa_inv:
             try:
-                from_path = get_study_settings().study_default_template_path
+                from_path = get_settings().file_resources.study_default_template_path
                 to_path = output_dir
                 copy_files_and_folders(from_path, to_path, include_raw_data=True, include_investigation_file=True)
                 # status, message = convert_to_isa(to_path, study_id)

@@ -210,7 +210,7 @@ class MetaboliteAnnotationFile(Resource):
             abort(403)
 
         maf_feedback = ""
-        study_location = os.path.join(get_study_settings().study_metadata_files_root_path, study_id)
+        study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, study_id)
         for assay_file_name in assay_file_names:
             annotation_file_name = None
             assay_file = assay_file_name['assay_file_name']

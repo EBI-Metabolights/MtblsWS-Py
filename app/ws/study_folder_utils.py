@@ -1,5 +1,6 @@
 
 import os
+from app.config import get_settings
 
 from app.file_utils import make_dir_with_chmod
 from app.utils import MetabolightsFileOperationException
@@ -12,9 +13,9 @@ iac = IsaApiClient()
 
 def create_initial_study_folder(folder_name, app):
     settings = get_study_settings()
-    study_metadata_root_path = settings.study_metadata_files_root_path
+    study_metadata_root_path = settings.mounted_paths.study_metadata_files_root_path
     
-    from_path = settings.study_default_template_path
+    from_path = get_settings().file_resources.study_default_template_path
     study_metadata_location = os.path.join(study_metadata_root_path, folder_name)
     to_path = study_metadata_location
     if os.path.exists(to_path):

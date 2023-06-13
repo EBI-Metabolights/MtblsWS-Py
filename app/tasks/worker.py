@@ -9,8 +9,7 @@ from app.config import get_settings
 from app.config.model.celery import CelerySettings
 from app.config.model.redis_cache import RedisConnection
 
-from app.tasks.utils import ValueMaskUtility
-from app.utils import MetabolightsException
+from app.utils import MetabolightsException, ValueMaskUtility
 from app.ws.email.email_service import EmailService
 
 from app.ws.study.user_service import UserService

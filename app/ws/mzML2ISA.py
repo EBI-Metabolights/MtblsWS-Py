@@ -24,6 +24,7 @@ from lxml import etree
 from flask import request, abort, current_app as app, jsonify
 from flask_restful import Resource, abort
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.utils import metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
@@ -232,10 +233,10 @@ class ValidateMzML(Resource):
         return self.validate_mzml_files(study_id)
 
     def validate_mzml_files(self, study_id):
-        study_settings = get_study_settings()
-        studies_folder = study_settings.study_readonly_files_root_path
+        settings = get_settings()
+        studies_folder = settings.study.mounted_paths.study_readonly_files_root_path
         study_folder = os.path.join(studies_folder, study_id)
-        xsd_path = study_settings.mzml_xsd_schema_file_path
+        xsd_path = settings.file_resources.mzml_xsd_schema_file_path
         xmlschema_doc = etree.parse(xsd_path)
         xmlschema = etree.XMLSchema(xmlschema_doc)
         

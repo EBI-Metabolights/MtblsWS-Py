@@ -6,12 +6,11 @@ class FtpServerConnection(BaseModel):
     username: str
     password: str
 
+class MountedFtpStorageConfiguration(BaseModel):
+    ftp_folders_root_path: str = ""
 
 class PrivateFtpServerConfiguration(BaseModel):
-    mount_type: str
-    private_ftp_user_home_path: str
-    studies_folder_absolute_path: str
-    private_ftp_folders_relative_path: str
+    mount_type: str = "remote_worker"
 
 
 class PrivateFtpServerSettings(BaseModel):
@@ -20,8 +19,8 @@ class PrivateFtpServerSettings(BaseModel):
 
 
 class PublicFtpServerConfiguration(BaseModel):
-    mount_type: str
-    studies_folder_absolute_path: str
+    mount_type: str = "remote_worker"
+    mounted_public_ftp_folders_root_path: str = ""
 
 
 class PublicFtpServerSettings(BaseModel):

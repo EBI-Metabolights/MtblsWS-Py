@@ -142,7 +142,7 @@ class MtblsCompoundFile(Resource):
         compound_id = accession.upper()
 
         study_settings = get_study_settings()
-        compound_file_path = os.path.join(study_settings.reference_folder, compound_id, compound_id + "_data.json")
+        compound_file_path = os.path.join(study_settings.mounted_paths.compounds_root_path, compound_id, compound_id + "_data.json")
     
         if os.path.exists(compound_file_path):
             resp = make_response(send_file(compound_file_path))
@@ -204,7 +204,7 @@ class MtblsCompoundSpectraFile(Resource):
         compound_id = accession.upper()
 
         settings = get_study_settings()
-        spectrum_path = os.path.join(settings.reference_folder, compound_id, compound_id + "_spectrum")
+        spectrum_path = os.path.join(settings.mounted_paths.compounds_root_path, compound_id, compound_id + "_spectrum")
         specra_file_path = os.path.join(spectrum_path, spectra_id, spectra_id + ".json")
     
         if os.path.exists(specra_file_path):

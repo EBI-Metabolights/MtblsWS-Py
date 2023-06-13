@@ -13,7 +13,7 @@ class TestWrappers(object):
             with db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)
-            studies_root_path = get_study_settings().study_metadata_files_root_path
+            studies_root_path = get_study_settings().mounted_paths.study_metadata_files_root_path
             update_study_model_from_directory(study, studies_root_path,
                                               optimize_for_es_indexing=False,
                                               revalidate_study=True,
@@ -38,7 +38,7 @@ class TestWrappers(object):
             with db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)
-            studies_root_path = get_study_settings().study_metadata_files_root_path
+            studies_root_path = get_study_settings().mounted_paths.study_metadata_files_root_path
             update_study_model_from_directory(study, studies_root_path,
                                               optimize_for_es_indexing=True,
                                               revalidate_study=True,
@@ -64,7 +64,7 @@ class TestWrappers(object):
             with db_manager.session_maker() as db_session:
                 db_study_obj = db_session.query(Study).filter(Study.acc == study_id).first()
                 study = create_study_model_from_db_study(db_study_obj)
-            studies_root_path = get_study_settings().study_metadata_files_root_path
+            studies_root_path = get_study_settings().mounted_paths.study_metadata_files_root_path
             update_study_model_from_directory(study, studies_root_path,
                                               optimize_for_es_indexing=True,
                                               revalidate_study=True,

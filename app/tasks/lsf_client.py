@@ -28,9 +28,10 @@ class LsfClient(object):
         self.cluster_settings = cluster_settings
         if not cluster_settings:
             self.cluster_settings = get_cluster_settings()
+        self.settings = get_settings()
         
     def submit_datamover_job(self, script_path: str, job_name: str, output_file=None, error_file=None, account=None) -> int:
-        queue = self.cluster_settings.cluster_lsf_bsub_datamover_queue
+        queue = get_settings().hpc_cluster.datamover.queue_name
         bsub_command = self._get_submit_command(script_path, queue, job_name, output_file, error_file, account)
         stdout, stderr = BashClient.execute_command(bsub_command)
         job_id = ""
@@ -54,7 +55,7 @@ class LsfClient(object):
             
     def kill_jobs(self, job_id_list: List[str], failing_gracefully=False):
         kill_command = f"{self.cluster_settings.job_kill_command} {' '.join(job_id_list)}"
-        ssh_command = BashClient.build_ssh_command(hostname=self.cluster_settings.cluster_lsf_host, username=self.cluster_settings.cluster_lsf_datamover_user)       
+        ssh_command = BashClient.build_ssh_command(hostname=self.settings.hpc_cluster.datamover.connection.host, username=self.settings.hpc_cluster.datamover.connection.username)       
         command = f"{ssh_command} {kill_command}"  
         stdout, stderr = BashClient.execute_command(command)
         
@@ -102,25 +103,25 @@ class LsfClient(object):
         
     def _get_job_status_command(self):
         command = f"{self.cluster_settings.job_running_command} -noheader -w -P {self.cluster_settings.job_project_name}"
-        ssh_command = BashClient.build_ssh_command(hostname=self.cluster_settings.cluster_lsf_host, username=self.cluster_settings.cluster_lsf_datamover_user)
+        ssh_command = BashClient.build_ssh_command(hostname=self.settings.hpc_cluster.datamover.connection.host, username=self.settings.hpc_cluster.datamover.connection.username)
         
         return f"{ssh_command} {command}"        
         
     def _get_submit_command(self, script: str, job_name: str, queue=None, output_file=None, error_file=None, account=None) -> int:
-        ssh_command = BashClient.build_ssh_command(hostname=self.cluster_settings.cluster_lsf_host, username=self.cluster_settings.cluster_lsf_datamover_user)     
+        ssh_command = BashClient.build_ssh_command(hostname=self.settings.hpc_cluster.datamover.connection.host, username=self.settings.hpc_cluster.datamover.connection.username)     
         script_file_path = self._prepare_script_to_submit_on_lsf(script, queue, job_name, output_file, error_file, account)
         submission_command = f"bsub < {script_file_path}"
         
         return f"{ssh_command} {submission_command}"
     
     def _build_sub_command(self, command: str, job_name: str, queue=None, output_file=None, error_file=None, account=None):
-        bsub_command = [self.cluster_settings.job_submit_command]
+        bsub_command = [self.settings.hpc_cluster.configuration.job_submit_command]
         
         bsub_command.append("-q")
         if queue:
             bsub_command.append(queue)
         else:
-            bsub_command.append(self.cluster_settings.cluster_lsf_bsub_default_queue)
+            bsub_command.append(get_settings().hpc_cluster.compute.default_queue)
 
         bsub_command.append("-P")
         bsub_command.append(self.cluster_settings.job_project_name)

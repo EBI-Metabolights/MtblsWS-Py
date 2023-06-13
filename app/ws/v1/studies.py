@@ -85,7 +85,7 @@ class V1StudyDetail(Resource):
                     abort(http_status_code=403)
                     
             study_settings = get_study_settings()
-            study_folders = study_settings.study_metadata_files_root_path
+            study_folders = study_settings.mounted_paths.study_metadata_files_root_path
             m_study = create_study_model_from_db_study(study)
 
         update_study_model_from_directory(m_study, study_folders, optimize_for_es_indexing=True)

@@ -4,6 +4,7 @@ import pandas
 
 from typing import List
 from flask import current_app as app, abort
+from app.config import get_settings
 from app.ws.misc_utilities.dataframe_utils import DataFrameUtils
 from app.ws.settings.utils import get_study_settings
 from app.ws.utils import totuples
@@ -37,7 +38,7 @@ class CombinedMafBuilder:
             list_of_mafs.extend(maf_as_dict)
         settings = get_study_settings()
         
-        reporting_path = os.path.join(settings.report_root_path, settings.report_base_folder_name, settings.report_global_folder_name)
+        reporting_path = os.path.join(settings.mounted_paths.reports_root_path, get_settings().report.report_base_folder_name, get_settings().report.report_global_folder_name)
         combined_maf = None
         try:
             combined_maf = pandas.DataFrame(list_of_mafs)
@@ -68,7 +69,7 @@ class CombinedMafBuilder:
         """
         for i, study_id in enumerate(self.studies_to_combine):
             # copy = repr(self.original_study_location).strip("'")
-            study_location = os.path.join(get_study_settings().study_metadata_files_root_path, study_id)
+            study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, study_id)
 
             for maf in self.sort_mafs(study_location, study_id):
                 maf_temp = None

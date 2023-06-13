@@ -11,6 +11,7 @@ from operator import itemgetter
 
 from flask import current_app as app
 from app.config import get_settings
+from app.config.utils import get_private_ftp_relative_root_path
 
 from app.file_utils import make_dir_with_chmod
 from app.ws.settings.utils import get_study_settings
@@ -45,7 +46,7 @@ def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, di
 
     upload_diff = []
     ftp_private_study_folder = study_id.lower() + "-" + obfuscation_code
-    ftp_private_relative_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
+    ftp_private_relative_root_path = get_private_ftp_relative_root_path()
     ftp_private_relative_study_path = os.path.join(ftp_private_relative_root_path, ftp_private_study_folder)
     upload_location = [None, ftp_private_relative_study_path]
     upload_files = []

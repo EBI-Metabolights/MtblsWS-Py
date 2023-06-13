@@ -27,6 +27,7 @@ from flask_restful_swagger import swagger
 from app.tasks.datamover_tasks.basic_tasks.file_management import \
     create_folders
 from app.utils import MetabolightsException, metabolights_exception_handler
+from app.ws.settings.utils import get_cluster_settings
 from app.ws.study.user_service import UserService
 
 logger = logging.getLogger("wslog")
@@ -95,7 +96,8 @@ class DataFolders(Resource):
         try:
             inputs = {"folder_paths": folder_path, "acl": folder_permission_int, "exist_ok": True}
             task = create_folders.apply_async(kwargs=inputs, expires=60 * 5)
-            result = task.get()
+            cluster_settings = get_cluster_settings()
+            result = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
 
             return result
         except Exception as ex:

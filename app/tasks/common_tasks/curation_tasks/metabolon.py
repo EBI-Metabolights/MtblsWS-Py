@@ -6,6 +6,7 @@ import logging
 import os
 import time
 import celery
+from app.config import get_settings
 from app.tasks.worker import (MetabolightsTask, celery, send_email)
 from app.tasks.worker import MetabolightsTask
 
@@ -127,7 +128,7 @@ def copy_metabolon_template(study_id, user_token, study_location):
     invest_file = settings.investigation_file_name
 
     # Get the correct location of the Metabolon template study
-    template_study_location = settings.study_partner_metabolon_template_path
+    template_study_location = get_settings().file_resources.study_partner_metabolon_template_path
     template_study_location = os.path.join(template_study_location, invest_file)
     dest_file = os.path.join(study_location, invest_file)
 

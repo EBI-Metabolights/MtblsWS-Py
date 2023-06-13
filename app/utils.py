@@ -1,4 +1,5 @@
 from flask import make_response
+import re
 
 
 def metabolights_exception_handler(func):
@@ -18,7 +19,6 @@ def metabolights_exception_handler(func):
 
 
 class MetabolightsException(Exception):
-
     def __init__(self, message: str = "", exception: Exception = None, http_code=400):
         super(MetabolightsException, self).__init__()
         self.message = message
@@ -33,20 +33,17 @@ class MetabolightsException(Exception):
 
 
 class MetabolightsDBException(MetabolightsException):
-
     def __init__(self, message: str, exception: Exception = None, http_code=501):
         super(MetabolightsDBException, self).__init__(message, exception, http_code)
 
 
 class MetabolightsFileOperationException(MetabolightsException):
-
     def __init__(self, message: str, exception: Exception = None, http_code=400):
         super(MetabolightsFileOperationException, self).__init__(message, exception, http_code)
 
 
 class MetabolightsAuthorizationException(MetabolightsException):
-
-    def __init__(self, message: str="", exception: Exception = None, http_code=401):
+    def __init__(self, message: str = "", exception: Exception = None, http_code=401):
         super(MetabolightsAuthorizationException, self).__init__(message, exception, http_code)
 
     def __str__(self):
@@ -54,6 +51,74 @@ class MetabolightsAuthorizationException(MetabolightsException):
             return f"{str(self.__class__.__name__)}: {self.message}, http_code: {self.http_code} Cause -->: [{str(self.exception)}]"
         else:
             return f"{str(self.__class__.__name__)}: {self.message}, http_code: {self.http_code}"
+
+
+class ValueMaskUtility(object):
+    MASK_KEYS = {
+        "user_token": "uuid",
+        "apitoken": "uuid",
+        "api_token": "uuid",
+        "to_address": "email",
+        "email": "email",
+        "password": "secret",
+        "credential": "secret",
+        "secret": "secret",
+        "private_key": "secret",
+        "consumer_key": "uuid",
+        "bearer": "uuid",
+        "client_id": "uuid",
+    }
+
+    @classmethod
+    def mask_value(cls, name: str, value: str):
+        if name:
+            for val in cls.MASK_KEYS:
+                if val in name.lower():
+                    mask_type = cls.MASK_KEYS[val]
+                    if mask_type == "uuid":
+                        return cls.mask_uuid(value)
+                    elif mask_type == "email":
+                        return cls.mask_email(value)
+                    elif mask_type == "secret":
+                        return "***********"
+        return value
+
+    @classmethod
+    def mask_uuid(cls, value):
+        if len(value) < 2:
+            return value
+        replaced = re.sub("[^-]", "*", value)
+        if len(value) > 7:
+            replaced = value[:3] + replaced[3:-3] + value[-3:]
+        else:
+            replaced = value[:1] + replaced[1:-1] + value[-1:]
+
+        return replaced
+
+    @classmethod
+    def mask_email(cls, value: str):
+        if not value:
+            return ""
+        data = value.split("@")
+        if len(data) > 1:
+            head = data[0]
+            if len(head) > 3:
+                replaced = re.sub("[\w]", "*", head)
+                replaced = head[0] + replaced[1:-1] + head[-1:]
+            else:
+                if len(head) > 1:
+                    replaced = head[0] + replaced[1:]
+                else:
+                    replaced = "*"
+            data[0] = replaced
+            email = "@".join(data)
+            return email
+
+        replaced = re.sub("[\w]", "*", value)
+        if len(replaced) > 2:
+            replaced = value[0] + replaced[1:-1] + value[-1:]
+        return replaced
+
 
 INVESTIGATION_FILE_ROWS_LIST = [
     "ONTOLOGY SOURCE REFERENCE",

@@ -137,14 +137,14 @@ class ExtractMSSpectra(Resource):
             retention_time = retention_time.strip()
         full_mzml_file_name = None
         settings = get_study_settings()
-        study_metadata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
+        study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         if mzml_file_name:
             full_mzml_file_name = os.path.join(study_metadata_location, mzml_file_name)
 
         peak_list, mz_list, mz_start, mz_stop, intensity_min, intensity_max, rt_list = \
             self.create_mtblc_peak_list(full_mzml_file_name, retention_time)
         base_file_name = os.path.basename(full_mzml_file_name)
-        parent_folder = os.path.dirname(os.path.join(settings.study_internal_files_root_path, study_id, "spectra", mzml_file_name))
+        parent_folder = os.path.dirname(os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id, "spectra", mzml_file_name))
         os.makedirs(parent_folder, exist_ok=True)
         short_name = base_file_name.replace(".mzML", "")
         json_file_name = base_file_name.replace(".mzML", ".json")
@@ -246,13 +246,13 @@ class ZipSpectraFiles(Resource):
         if not is_curator:
             abort(403)
 
-        reporting_path = os.path.join(get_settings().study.report_root_path, 
-                                      get_settings().study.report_base_folder_name, 
-                                      get_settings().study.report_global_folder_name)
+        reporting_path = os.path.join(get_settings().study.mounted_paths.reports_root_path, 
+                                      get_settings().report.report_base_folder_name, 
+                                      get_settings().report.report_global_folder_name)
         sz = SpectraZipper(
             study_type='NMR',
             reporting_path=reporting_path,
-            private_studies_dir=get_settings().study.study_metadata_files_root_path,
+            private_studies_dir=get_settings().study.mounted_paths.study_metadata_files_root_path,
             spectra_dir=f'NMR_spectra_files_{str(datetime.datetime.now())}',
             study_location=study_location
         )

@@ -10,7 +10,7 @@ from app.services.storage_service.models import SyncTaskStatus
 
 class UnmountedStorage(Storage):
 
-    def __init__(self, name, app, remote_file_manager=None):
+    def __init__(self, name, app=None, remote_file_manager=None):
         self.app = app
         manager_name = name + '_mounted_volume_file_manager'
         self.remote_file_manager = remote_file_manager

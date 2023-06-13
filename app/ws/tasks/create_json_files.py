@@ -9,6 +9,7 @@ import time
 from flask import request, current_app as app
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+from app.config import get_settings
 
 from app.utils import metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
@@ -114,13 +115,13 @@ class StudyJsonExporter(Resource):
 
         UserService.get_instance().validate_user_has_curator_role(user_token)
         study_settings = get_study_settings()
-        study_folders = study_settings.study_metadata_files_root_path
+        study_folders = study_settings.mounted_paths.study_metadata_files_root_path
         if not json_folder:
             now = datetime.datetime.now()
             dt = time.gmtime(now.timestamp())
             json_folder = time.strftime("%Y%m%d_%H%M%S", dt)
 
-        json_path = os.path.join(study_settings.report_root_path, study_settings.report_base_folder_name, "INDEXED_ALL_STUDIES", json_folder)
+        json_path = os.path.join(study_settings.mounted_paths.reports_root_path, get_settings().report.report_base_folder_name, "INDEXED_ALL_STUDIES", json_folder)
 
         os.makedirs(json_path, exist_ok=True)
         skip_files = set()
@@ -267,7 +268,7 @@ class PublicStudyJsonExporter(Resource):
                 raise MetabolightsDBException(f"There is no public study")
 
             settings = get_study_settings()
-            study_folders = settings.study_metadata_files_root_path
+            study_folders = settings.mounted_paths.study_metadata_files_root_path
             for study in studies:
                 m_study = create_study_model_from_db_study(study)
                 m_study_list.append(m_study)
@@ -275,7 +276,7 @@ class PublicStudyJsonExporter(Resource):
         now = datetime.datetime.now()
         dt = time.gmtime(now.timestamp())
         file_time = time.strftime("%Y-%m-%d_%H%M%S", dt)
-        json_path = os.path.join(settings.report_root_path, settings.report_base_folder_name, "INDEXED_PUBLIC_STUDIES", file_time)
+        json_path = os.path.join(settings.mounted_paths.reports_root_path, get_settings().report.report_base_folder_name, "INDEXED_PUBLIC_STUDIES", file_time)
         os.makedirs(json_path, exist_ok=True)
         for m_study in m_study_list:
             update_study_model_from_directory(m_study, study_folders)

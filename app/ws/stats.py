@@ -107,7 +107,7 @@ def update_maf_stats(user_token):
             logger.error("Failed to update database for " + study_id)
             continue
         
-        study_metadata_location = os.path.join(get_study_settings().study_metadata_files_root_path, study_id)
+        study_metadata_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, study_id)
         try:
             isa_study, isa_inv, std_path = iac.get_isa_study(study_id=study_id, api_key=user_token,
                                                              skip_load_tables=True, study_location=study_metadata_location)

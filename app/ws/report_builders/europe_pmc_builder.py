@@ -61,8 +61,8 @@ class EuropePmcReportBuilder:
         :return: A message as a string indicating success or failure.
         """
         list_of_result_dicts = [row for study in self.study_list for row in self.process(study)]
-        root_path = get_settings().study.report_root_path
-        path = os.path.join(root_path, get_settings().study.report_base_folder_name, get_settings().study.report_global_folder_name, 'europepmc.csv')
+        root_path = get_settings().study.mounted_paths.reports_root_path
+        path = os.path.join(root_path, get_settings().report.report_base_folder_name, get_settings().report.report_global_folder_name, 'europepmc.csv')
         try:
 
             report_dataframe = pandas.DataFrame(list_of_result_dicts,

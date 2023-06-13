@@ -17,7 +17,7 @@ env = Environment(
 
 class EmailService(object):
     def __init__(self, settings: EmailSettings = None, mail: Mail = None):
-        self.settings = settings
+        self.email_settings = settings
         self.mail = mail
 
     email_service = None
@@ -43,7 +43,7 @@ class EmailService(object):
 
     def send_generic_email(self, subject_name, body, from_mail_address, to_mail_addresses, cc_mail_addresses=None):
         if not from_mail_address:
-            from_mail_address = self.settings.email_service.configuration.no_reply_email_address
+            from_mail_address = self.email_settings.email_service.configuration.no_reply_email_address
         if not cc_mail_addresses:
             cc_mail_addresses = []
         if not isinstance(cc_mail_addresses, list):
@@ -69,9 +69,9 @@ class EmailService(object):
         curation_mail_address=None,
     ):
         if not from_mail_address:
-            from_mail_address = self.settings.email_service.configuration.no_reply_email_address
+            from_mail_address = self.email_settings.email_service.configuration.no_reply_email_address
         if not curation_mail_address:
-            curation_mail_address = self.settings.email_service.configuration.curation_email_address
+            curation_mail_address = self.email_settings.email_service.configuration.curation_email_address
         recipients = set()
         recipients.add(user_email)
         recipients = list(recipients.union(submitters_mail_addresses))
@@ -91,12 +91,9 @@ class EmailService(object):
 
     def send_email_for_queued_study_submitted(self, study_id, release_date, user_email, submitters_mail_addresses):
         file_name = " * Online submission * "
-        public_study_url = os.path.join(
-            self.settings.template_email_configuration.metabolights_host_url_in_email, study_id
-        )
-        private_study_url = os.path.join(
-            self.settings.template_email_configuration.metabolights_host_url_in_email, "editor", "study", study_id
-        )
+        host = get_settings().server.service.ws_app_base_link
+        public_study_url = os.path.join(host, study_id)
+        private_study_url = os.path.join(host, "editor", "study", study_id)
         subject_name = f"Congratulations! Your study {study_id} has been successfully processed!"
 
         content = {

@@ -486,9 +486,9 @@ def update_val_schema_files(validation_file, study_id, user_token, obfuscation_c
     if not settings:
         settings = get_study_settings()
         
-    internal_files_folder = os.path.join(settings.study_internal_files_root_path, study_id)
-    readonly_files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
-    metadata_files_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
+    internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
+    readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+    metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
     # Tidy up old files first
     validation_files_path = os.path.join(internal_files_folder, settings.validation_files_json_name)
     if os.path.isfile(validation_files_path):
@@ -562,15 +562,15 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
     validation_section = validation_section.lower()
     if not settings:
         settings = get_study_settings()
-    internal_files_folder = os.path.join(settings.study_internal_files_root_path, study_id)
-    readonly_files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
-    metadata_files_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
+    internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
+    readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+    metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
     # Ensuring we have the latest database values
     is_curator, read_access, write_access, db_obfuscation_code, db_study_location, db_release_date, \
     db_submission_date, db_study_status = commons.get_permissions(study_id, user_token)
 
     try:
-        validation_schema_file = settings.validations_file
+        validation_schema_file = get_settings().file_resources.validations_file
 
         if validation_schema_file.startswith('http'):
             response = requests.get(validation_schema_file)

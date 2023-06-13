@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from typing import Union, List
+from app.config import get_settings
 from app.file_utils import make_dir_with_chmod
 
 from app.services.storage_service.acl import Acl
@@ -61,14 +62,15 @@ class ReadOnlyFileVolumeManager(object):
         else:
             return False
 
-    def _execute_and_get_result(self, study_id: str, requestor: str, command: str, params: str) -> CommandOutput:
-        study_internal_files_folder = os.path.join(self.study_settings.study_internal_files_root_path, study_id)
+    def _execute_and_get_result(self, study_id: str, requestor: str, command: str, params: str) -> CommandOutput
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
+        study_internal_files_folder = os.path.join( get_settings().study.mounted_paths.study_internal_files_root_path, study_id)
         study_log_folder = os.path.join(study_internal_files_folder, self.study_settings.internal_logs_folder_name)
-        cluster_study_internal_files_folder = os.path.join(self.cluster_settings.cluster_study_internal_files_root_path, study_id)
+        cluster_study_internal_files_folder = os.path.join(mounted_paths.cluster_study_internal_files_root_path, study_id)
         cluster_study_log_folder = os.path.join(cluster_study_internal_files_folder, self.study_settings.internal_logs_folder_name)
         logger.info("Sending cluster job : " + command + " " + params + " ;For Study :- " + study_id)
         
-        status, message, job_out, job_err, log_file = submit_job(False, None, queue=self.cluster_settings.cluster_lsf_bsub_datamover_queue,
+        status, message, job_out, job_err, log_file = submit_job(False, None, queue=get_settings().hpc_cluster.datamover.queue_name,
                                                                  job_cmd=command, job_params=params,
                                                                  submitter=requestor, log=True,
                                                                  log_path=cluster_study_log_folder)

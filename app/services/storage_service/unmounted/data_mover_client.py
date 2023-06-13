@@ -16,10 +16,10 @@ logger = logging.getLogger('wslog_datamover')
 
 class DataMoverAvailableStorage(object):
 
-    def __init__(self, requestor, study_id, app):
-        self.app = app
+    def __init__(self, requestor, study_id, app=None):
         self.requestor = requestor
         self.studyId = study_id
+        self.settings = get_settings()
         self.cluster_settings = get_cluster_settings()
         self.study_settings = get_study_settings()
         self.meta_folder_type = 'metadata'
@@ -28,19 +28,19 @@ class DataMoverAvailableStorage(object):
         self.calc_rdfiles_task = 'calc_rdfiles_study'
         self.sync_meta_task = 'rsync_meta_study'
         self.sync_rdfiles_task = 'rsync_rdfiles_study'
-        
-        self.datamover_queue = self.cluster_settings.cluster_lsf_bsub_datamover_queue
+        mounted_paths = self.settings.hpc_cluster.datamover.mounted_paths
+        self.datamover_queue = self.settings.hpc_cluster.datamover.queue_name
         self.read_timeout = self.cluster_settings.job_status_read_timeout
-        self.study_metadata_files_path = self.study_settings.study_metadata_files_root_path
-        self.study_readonly_files_path = self.study_settings.study_readonly_files_root_path
-        self.study_internal_files_path = self.study_settings.study_internal_files_root_path
+        self.study_metadata_files_path = self.settings.study.mounted_paths.study_metadata_files_root_path
+        self.study_readonly_files_path = self.settings.study.mounted_paths.study_readonly_files_root_path
+        self.study_internal_files_path = self.settings.study.mounted_paths.study_internal_files_root_path
         self.study_logs_folder_name = self.study_settings.internal_logs_folder_name
-        self.ftp_private_root_path = self.cluster_settings.cluster_private_ftp_root_path
-        self.ftp_public_root_path = self.cluster_settings.cluster_public_ftp_root_path
-        self.cluster_study_metadata_files_root_path = self.cluster_settings.cluster_study_metadata_files_root_path
-        self.cluster_study_readonly_files_root_path = self.cluster_settings.cluster_study_readonly_files_root_path
-        self.cluster_study_internal_files_root_path = self.cluster_settings.cluster_study_internal_files_root_path
-        self.cluster_study_readonly_audit_files_root_path = self.cluster_settings.cluster_study_readonly_audit_files_root_path
+        self.ftp_private_root_path = mounted_paths.cluster_private_ftp_root_path
+        self.ftp_public_root_path = mounted_paths.cluster_public_ftp_root_path
+        self.cluster_study_metadata_files_root_path = mounted_paths.cluster_study_metadata_files_root_path
+        self.cluster_study_readonly_files_root_path = mounted_paths.cluster_study_readonly_files_root_path
+        self.cluster_study_internal_files_root_path = mounted_paths.cluster_study_internal_files_root_path
+        self.cluster_study_readonly_audit_files_root_path = mounted_paths.cluster_study_readonly_audit_files_root_path
         self.chebi_annotation_sub_folder = self.study_settings.chebi_annotation_sub_folder
 
     def sync_from_studies_folder(self, target_ftp_folder: str, ignore_list: List[str] = None,

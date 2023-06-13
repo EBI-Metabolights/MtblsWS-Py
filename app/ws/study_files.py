@@ -29,6 +29,7 @@ from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 from jsonschema.exceptions import ValidationError
 from app.config import get_settings
+from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.storage_service import StorageService
 from app.study_folder_utils import find_study_data_files
@@ -99,7 +100,7 @@ class StudyFiles(Resource):
             }
         ]
     )
-    def get(self, study_id):
+    def get(self, study_id: str):
 
         # param validation
         if study_id is None:
@@ -140,7 +141,7 @@ class StudyFiles(Resource):
                                           assay_file_list=get_assay_file_list(study_location),
                                           static_validation_file=False)
 
-        relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
+        relative_studies_root_path = get_private_ftp_relative_root_path()
         folder_name = f'{study_id.lower()}-{obfuscation_code}'
         upload_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
 
@@ -415,8 +416,8 @@ class StudyRawAndDerivedDataFiles(Resource):
         StudyService.get_instance().get_study_by_acc(study_id)
         settings = get_study_settings()
         
-        study_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
-        search_path = os.path.join(settings.study_readonly_files_root_path, study_id)
+        study_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+        search_path = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
         ignore_list = self.get_ignore_list(search_path)
 
         glob_search_result = glob.glob(os.path.join(search_path, search_pattern), recursive=True)
@@ -666,8 +667,8 @@ class StudyRawAndDerivedDataFolder(Resource):
             abort(403, error="User has no curator role")
         study_settings = get_study_settings()
 
-        study_folder = os.path.join(study_settings.study_metadata_files_root_path, study_id)
-        search_path = os.path.join(study_settings.study_readonly_files_root_path, study_id)
+        study_folder = os.path.join(study_settings.mounted_paths.study_metadata_files_root_path, study_id)
+        search_path = os.path.join(study_settings.mounted_paths.study_readonly_files_root_path, study_id)
 
 
         glob_search_result = glob.glob(os.path.join(search_path, search_pattern))
@@ -828,7 +829,7 @@ class StudyRawAndDerivedDataFolder(Resource):
         study_status = wsc.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-        studies_folder = get_settings().study.study_metadata_files_root_path
+        studies_folder = get_settings().study.mounted_paths.study_metadata_files_root_path
         study_path = os.path.abspath(os.path.join(studies_folder, study_id))
         excluded_folders = get_settings().file_filters.folder_exclusion_list
 
@@ -956,7 +957,7 @@ class StudyFilesReuse(Resource):
             }
         ]
     )
-    def get(self, study_id):
+    def get(self, study_id: str):
 
         # param validation
         if study_id is None:
@@ -991,7 +992,7 @@ class StudyFilesReuse(Resource):
             wsc.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403)
-        study_metadata_location = os.path.join(settings.study_metadata_files_root_path, study_id)
+        study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         files_list_json_file = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, files_list_json)
 
         if force_write:
@@ -1027,7 +1028,7 @@ def update_files_list_schema(study_id, obfuscation_code, study_location, files_l
     if not include_internal_files:
         study_files = [item for item in study_files if 'type' in item and item['type'] != 'internal_mapping']
 
-    relative_studies_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
+    relative_studies_root_path = get_private_ftp_relative_root_path()
     folder_name = f'{study_id.lower()}-{obfuscation_code}'
     upload_path = os.path.join(os.sep, relative_studies_root_path.lstrip(os.sep), folder_name)
     files_list_schema = {'study': study_files,
@@ -1139,7 +1140,7 @@ class CopyFilesFolders(Resource):
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        study_path = os.path.join(get_settings().study.study_metadata_files_root_path, study_id)
+        study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
         storage = StorageService.get_ftp_private_storage()
 
         result = storage.check_folder_sync_status(study_id, study.obfuscationcode, study_path)
@@ -1576,9 +1577,9 @@ class UnzipFiles(Resource):
             raise MetabolightsException(http_code=400, message=f"files parameter is invalid")
         UserService.get_instance().validate_user_has_curator_role(user_token)
         StudyService.get_instance().get_study_by_acc(study_id)
-        
+        mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         files_input = [{"name": str(x["name"])} for x in files if "name" in x and x["name"]]
-        study_metadata_path = os.path.join(get_study_settings().cluster_study_metadata_files_root_path, study_id)
+        study_metadata_path = os.path.join(mounted_paths.cluster_study_metadata_files_root_path, study_id)
         try:
             inputs = {"study_metadata_path": study_metadata_path, "files": files_input, "remove_zip_files": True, "override": True }
             result = data_file_operations.unzip_folders.apply_async(kwargs=inputs, expires=60*5)
@@ -1718,7 +1719,7 @@ class StudyFilesTree(Resource):
 
         upload_folder = study_id.lower() + "-" + obfuscation_code
 
-        ftp_private_relative_root_path = get_settings().ftp_server.private.configuration.private_ftp_folders_relative_path
+        ftp_private_relative_root_path = get_private_ftp_relative_root_path()
         upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
 
         if directory:

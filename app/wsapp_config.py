@@ -22,6 +22,7 @@ from flask_mail import Mail
 from flask_restful import Api
 from flask_restful_swagger import swagger
 from app.config import get_settings
+from app.utils import ValueMaskUtility
 
 from app.ws.about import About, AboutServer
 from app.ws.assay_protocol import GetProtocolForAssays
@@ -140,25 +141,39 @@ def configure_app(flask_app):
     #  Print important parameters to show on startup
     ########################################################################################################################
     study_settings = settings.study
-    cluster_settings = settings.hpc_cluster.configuration
+    
     print("Configuration parameters...")
     print("................................................................................................................")
     print(f"DB HOST:\t\t\t{settings.database.connection.host}")
-    print(f"STUDY_METADATA_ROOT_PATH:\t{study_settings.study_metadata_files_root_path}")
-    print(f"STUDY_AUDIT_FILES_ROOT_PATH:\t{study_settings.study_audit_files_root_path}")
-    print(f"STUDY_INTERNAL_FILES_ROOT_PATH:\t{study_settings.study_internal_files_root_path}")
-    print(f"STUDY_READONLY_FILES_ROOT_PATH:\t{study_settings.study_readonly_files_root_path}")
+    print(f"STUDY_METADATA_ROOT_PATH:\t{study_settings.mounted_paths.study_metadata_files_root_path}")
+    print(f"STUDY_AUDIT_FILES_ROOT_PATH:\t{study_settings.mounted_paths.study_audit_files_root_path}")
+    print(f"STUDY_INTERNAL_FILES_ROOT_PATH:\t{study_settings.mounted_paths.study_internal_files_root_path}")
+    print(f"STUDY_READONLY_FILES_ROOT_PATH:\t{study_settings.mounted_paths.study_readonly_files_root_path}")
     print(f"ELASTICSEARCH_HOST:\t\t{settings.elasticsearch.connection.host}")
-    print(f"LSF_HOST:\t\t\t{cluster_settings.cluster_lsf_host}")
-    print(f"REPORTING_ROOT_PATH:\t\t{settings.study.report_root_path}")
-    print(f"COMPOUND_FILES_ROOT_PATH:\t{study_settings.reference_folder}")
+    print(f"LSF_HOST:\t\t\t{settings.hpc_cluster.datamover.connection.host}")
+    print(f"REPORTS_ROOT_PATH:\t\t{settings.study.mounted_paths.reports_root_path}")
+    print(f"COMPOUND_FILES_ROOT_PATH:\t{study_settings.mounted_paths.compounds_root_path}")
     print(f"MAIL_SERVER:\t\t\t{settings.email.email_service.connection.host}:{settings.email.email_service.connection.port}")
     print(f"SERVER HOST NAME:\t\tActual: {socket.gethostname()}. WS_HOST_NAME:: {settings.server.service.mtbls_ws_host}")
     print(f"SERVER PORT:\t\t\t{settings.server.service.port}")
     print("................................................................................................................")
 
+    import yaml
+    if settings.flask.DEBUG:
+        import copy
+        masked_copy = copy.deepcopy(settings.dict())
+        mask_settings(masked_copy)
+        masked_settings_text = yaml.dump(masked_copy)
+        print(masked_settings_text)
 
-
+def mask_settings(data: dict):
+    for k, v in data.items():
+        if isinstance(v, dict):
+            mask_settings(v)
+        else:
+            masked_val = ValueMaskUtility.mask_value(k, v)
+            data[k] = masked_val
+            
 def initialize_app(flask_app):
     configure_app(flask_app)
 

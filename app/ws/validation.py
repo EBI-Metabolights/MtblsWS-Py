@@ -129,9 +129,9 @@ class Validation(Resource):
             abort(403)
         settings = get_study_settings()
             
-        internal_files_folder = os.path.join(settings.study_internal_files_root_path, study_id)
-        readonly_files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
-        metadata_files_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
+        internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
+        readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+        metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         # query validation
         parser = reqparse.RequestParser()
         parser.add_argument('section', help="Validation section", location="args")
@@ -281,7 +281,7 @@ class UpdateValidationFile(Resource):
         if not write_access:
             abort(403)
         settings = get_study_settings()
-        file_path = os.path.join(settings.study_internal_files_root_path, study_id)
+        file_path = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
         validation_report_file_name = settings.validation_report_file_name
         validation_file = os.path.join(file_path, validation_report_file_name)
         """ Background thread to update the validations file """
@@ -651,9 +651,9 @@ class NewValidation(Resource):
         logger.info("Validation params are - " + str(log_category) + " " + str(section))
         pattern = re.compile(".validation_" + section + "\S+.json")
         
-        internal_files_folder = os.path.join(settings.study_internal_files_root_path, study_id)
-        readonly_files_folder = os.path.join(settings.study_readonly_files_root_path, study_id)
-        metadata_files_folder = os.path.join(settings.study_metadata_files_root_path, study_id)
+        internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
+        readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+        metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
     
         for file_item in os.listdir(internal_files_folder):
             if pattern.match(file_item):

@@ -20,7 +20,7 @@ from app.config.model.report import ReportSettings
 from app.config.model.server import ServerSettings
 from app.config.model.study import StudySettings
 from app.config.model.twitter import TwitterSettings
-from app.config.utils import ApplicationBaseSettings
+from app.config.base import ApplicationBaseSettings
 
 
 class ApplicationSettings(ApplicationBaseSettings):

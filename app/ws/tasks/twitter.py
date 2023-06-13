@@ -121,7 +121,7 @@ class PublicStudyTweet(Resource):
                                  Study.releasedate >= start, Study.releasedate < end)
             new_public_studies = query.all()
             settings = get_study_settings()
-            study_folders = settings.study_metadata_files_root_path
+            study_folders = settings.mounted_paths.study_metadata_files_root_path
             url = get_settings().server.service.ws_app_base_link
 
             public_study_messages = []

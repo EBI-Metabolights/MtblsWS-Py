@@ -377,7 +377,7 @@ class IsaTabInvestigationFile(Resource):
         location = study_location
         if study_version:
             location = os.path.join(
-                settings.study_audit_files_root_path, study_id, settings.audit_folder_name, study_version
+                settings.mounted_paths.study_audit_files_root_path, study_id, settings.audit_folder_name, study_version
             )
 
         files = glob.glob(os.path.join(location, inv_filename))
@@ -1023,7 +1023,7 @@ class PublicStudyDetail(Resource):
                 raise MetabolightsDBException(f"{study_id} does not exist or is not public")
 
             settings = get_study_settings()
-            study_folders = settings.study_metadata_files_root_path
+            study_folders = settings.mounted_paths.study_metadata_files_root_path
             m_study = create_study_model_from_db_study(study)
 
         update_study_model_from_directory(m_study, study_folders)
@@ -1141,7 +1141,7 @@ class CreateAccession(Resource):
         # try:
         #     # All required steps are completed. RENAME temp study folder to study accession number
         #     if new_accession_number:
-        #         root_study_path = study_settings.study_metadata_files_root_path
+        #         root_study_path = study_settings.mounted_paths.study_metadata_files_root_path
         #         last_study_path = os.path.join(root_study_path, study_acc)
         #         os.rename(study_path, last_study_path)
         #         logger.info(f"Step 5: Study folder {folder_name} is renamed to {study_acc}.")
@@ -1249,7 +1249,7 @@ class CreateAccession(Resource):
             if not (last_stable_id >= requested_id > 0):
                 raise MetabolightsException(message="Requested study id must be less then last study id", http_code=400)
         # Rule 4
-        study_location = os.path.join(get_study_settings().study_metadata_files_root_path, requested_study_id)
+        study_location = os.path.join(get_study_settings().mounted_paths.study_metadata_files_root_path, requested_study_id)
         if os.path.exists(study_location):
             files = os.listdir(study_location)
             if files:
@@ -1341,7 +1341,7 @@ class DeleteStudy(Resource):
         output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds*2)
 
         # study_settings = get_study_settings()
-        # study_location = os.path.join(study_settings.study_metadata_files_root_path, study_id)
+        # study_location = os.path.join(study_settings.mounted_paths.study_metadata_files_root_path, study_id)
         # # Remove all files in the study folder except the sample sheet and the investigation sheet.
         # if not os.path.exists(study_location):
         #     os.makedirs(study_location, exist_ok=True)
@@ -1392,7 +1392,7 @@ class DeleteStudy(Resource):
         #     else:
         #         # as there are only two files in the directory this will be the sample file.
         #         from_path = os.path.join(
-        #             study_settings.study_metadata_files_root_path,
+        #             study_settings.mounted_paths.study_metadata_files_root_path,
         #             study_settings.study_default_template_path,
         #             "s_Sample.txt",
         #         )
