@@ -7,8 +7,14 @@ APPDIR=$PWD
 if [ -z "$LOGS_PATH" ]; then
     LOGS_PATH=$APPDIR/logs
 fi
-export CONFIG_FILE_PATH="$APPDIR/config.yaml"
-export SECRETS_PATH="$APPDIR/.secrets"
+
+if [ -z "$CONFIG_FILE_PATH" ]; then
+    CONFIG_FILE_PATH="$APPDIR/config.yaml"
+fi
+
+if [ -z "$SECRETS_PATH" ]; then
+    SECRETS_PATH="$APPDIR/.secrets"
+fi
 
 export PYTHONPATH="$APPDIR:$PYTHONPATH"
 

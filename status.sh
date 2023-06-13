@@ -10,16 +10,21 @@ HOST=$(hostname)
 APPDIR=$PWD
 LOG_PATH=$APPDIR/logs
 
-SEARCH="gunicorn -b 0.0.0.0:$SERVER_PORT --access-logfile $APPDIR/logs/gunicorn_$HOST --error-logfile "
-PROCESS_ID=$(ps -ef | grep "$SEARCH" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
-    echo "NO GUNICORN SERVER"
+    EXISTING_PROCESS=$(netstat -plant 2>/dev/null | grep $SERVER_PORT | awk '{print $7}' | tr "/" " ")
+    echo $EXISTING_PROCESS
+    if [ -z "$EXISTING_PROCESS" ]; then
+        echo "NO GUNICORN SERVER on port $SERVER_PORT"
+    else
+        echo "An application is already running on port $SERVER_PORT. It may be gunicorn server. Current process id and process name: $EXISTING_PROCESS"
+    fi
 else
     echo "GUNICORN SERVER PROCESS_ID: ${PROCESS_ID}"
 fi
 
-PROCESS_ID=$(ps -aux | grep ":celery worker -Q monitor-tasks --logfile $LOG_PATH/celery_monitor_worker_${HOST}.log --loglevel info -n monitor_worker@" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_monitor_worker_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     echo "NO CELERY MONITOR WORKER"
@@ -27,7 +32,7 @@ else
     echo "CELERY MONITOR WORKER PROCESS_ID: ${PROCESS_ID}"
 fi
 
-PROCESS_ID=$(ps -aux | grep ":celery beat --logfile $LOG_PATH/celery_beat_${HOST}.log" | awk '{ print $2 }' |  head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' |  head -n -1 | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     echo "NO CELERY BEAT"

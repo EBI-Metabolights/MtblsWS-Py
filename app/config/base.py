@@ -19,11 +19,11 @@ class MetabolightsConfigurationException(Exception):
         return f"{str(self.__class__.__name__)}: {self.message}"
 
 
-def get_path_from_environment(name):
+def get_path_from_environment(name, dafault):
     if name in os.environ and os.environ[name]:
         value = os.environ[name]
     else:
-        raise MetabolightsConfigurationException(message=f"Environment variable '{name}' is not defined.")
+        value = dafault
 
     if not os.path.exists(value):
         message = f"{name} path '{value}' does not exist. Set this environment variable"
@@ -35,8 +35,8 @@ def get_path_from_environment(name):
 
 
 PROJECT_PATH = Path(__file__).parent.parent.parent
-CONFIG_FILE_PATH = get_path_from_environment("CONFIG_FILE_PATH")
-SECRETS_PATH = get_path_from_environment("SECRETS_PATH")
+CONFIG_FILE_PATH = get_path_from_environment("CONFIG_FILE_PATH", os.path.join(PROJECT_PATH, "config.yaml"))
+SECRETS_PATH = get_path_from_environment("SECRETS_PATH", os.path.join(PROJECT_PATH, ".secrets"))
 
 
 class ApplicationBaseSettings(BaseSettings):
