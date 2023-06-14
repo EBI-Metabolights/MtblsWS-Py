@@ -1019,12 +1019,12 @@ class StudyFilesReuse(Resource):
 
 
 def update_files_list_schema(study_id, obfuscation_code, study_location, files_list_json_file,
-                             include_internal_files: bool = False):
+                             include_internal_files: bool = False, include_sub_dir=None):
     study_files, upload_files, upload_diff, upload_location, latest_update_time = \
         get_all_files_from_filesystem(study_id, obfuscation_code, study_location,
                                       directory=None, include_raw_data=True,
                                       assay_file_list=get_assay_file_list(study_location),
-                                      static_validation_file=False)
+                                      static_validation_file=False, include_sub_dir=include_sub_dir)
     if not include_internal_files:
         study_files = [item for item in study_files if 'type' in item and item['type'] != 'internal_mapping']
 
