@@ -997,7 +997,7 @@ class StudyFilesReuse(Resource):
 
         if force_write:
             return update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
-                                            files_list_json_file, include_internal_files=include_internal_files, include_sub_dir=True)
+                                            files_list_json_file, include_internal_files=include_internal_files)
         if os.path.isfile(files_list_json_file):
             logger.info("Files list json found for studyId - %s!", study_id)
             try:
