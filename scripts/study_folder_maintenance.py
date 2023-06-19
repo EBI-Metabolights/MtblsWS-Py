@@ -19,7 +19,6 @@ def maintain_folders(
     target=None,
     task_name: str = None,
     settings: StudySettings = None,
-    flask_app=None,
     output_summary_report=None,
     delete_unreferenced_metadata_files=True,
     apply_future_actions=False,
@@ -40,56 +39,54 @@ def maintain_folders(
     maintenance_task_list: Dict[str, StudyFolderMaintenanceTask] = {}
     if not settings:
         settings = get_study_settings()
-    if not flask_app:
-        flask_app = get_flask_app()
     if not output_summary_report:
         output_summary_report = "./study_folder_future_maintenance_log.tsv"
     future_action_log_file_path = output_summary_report
-    with flask_app.app_context():
-        with open(future_action_log_file_path, "w") as fa:
-            header = f"STUDY_ID\tSTUDY STATUS\tSTATUS\tCOMMAND\tACTION\tITEM\tMESSAGE\tPARAMETERS\n"
-            fa.writelines([header])
-            for study_id in study_id_list:
-                study: Study = StudyService.get_instance().get_study_by_acc(study_id=study_id)
-                study_status = StudyStatus(study.status)
-                public_release_date = study.releasedate
-                submission_date = study.submissiondate
-                maintenance_task = StudyFolderMaintenanceTask(
-                    study_id,
-                    study_status,
-                    public_release_date,
-                    submission_date,
-                    obfuscationcode=study.obfuscationcode,
-                    task_name=task_name,
-                    delete_unreferenced_metadata_files=delete_unreferenced_metadata_files,
-                    settings=settings,
-                    apply_future_actions=apply_future_actions,
-                    force_to_maintain=True,
-                )
 
-                maintenance_task_list[study_id] = maintenance_task
+    with open(future_action_log_file_path, "w") as fa:
+        header = f"STUDY_ID\tSTUDY STATUS\tSTATUS\tCOMMAND\tACTION\tITEM\tMESSAGE\tPARAMETERS\n"
+        fa.writelines([header])
+        for study_id in study_id_list:
+            study: Study = StudyService.get_instance().get_study_by_acc(study_id=study_id)
+            study_status = StudyStatus(study.status)
+            public_release_date = study.releasedate
+            submission_date = study.submissiondate
+            maintenance_task = StudyFolderMaintenanceTask(
+                study_id,
+                study_status,
+                public_release_date,
+                submission_date,
+                obfuscationcode=study.obfuscationcode,
+                task_name=task_name,
+                delete_unreferenced_metadata_files=delete_unreferenced_metadata_files,
+                settings=settings,
+                apply_future_actions=apply_future_actions,
+                force_to_maintain=True,
+            )
 
-                if target == "data":
-                    try:
-                        maintenance_task.create_maintenance_actions_for_study_data_files()
-                    except Exception as ex:
-                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
-                    finally:
-                        write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
-                elif target == "metadata":
-                    try:
-                        maintenance_task.maintain_study_rw_storage_folders()
-                    except Exception as ex:
-                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
-                    finally:
-                        write_actions(fa, maintenance_task.actions, study_id, study_status.name)
-                elif target == "private-ftp":
-                    try:
-                        maintenance_task.maintain_study_rw_storage_folders()
-                    except Exception as ex:
-                        print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
-                    finally:
-                        write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
+            maintenance_task_list[study_id] = maintenance_task
+
+            if target == "data":
+                try:
+                    maintenance_task.create_maintenance_actions_for_study_data_files()
+                except Exception as ex:
+                    print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+                finally:
+                    write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
+            elif target == "metadata":
+                try:
+                    maintenance_task.maintain_study_rw_storage_folders()
+                except Exception as ex:
+                    print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+                finally:
+                    write_actions(fa, maintenance_task.actions, study_id, study_status.name)
+            elif target == "private-ftp":
+                try:
+                    maintenance_task.maintain_study_rw_storage_folders()
+                except Exception as ex:
+                    print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
+                finally:
+                    write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
 
     return maintenance_task_list
 
@@ -111,7 +108,7 @@ def write_actions(f, actions: List[MaintenanceActionLog], study_id, study_status
 
 
 if __name__ == "__main__":
-    flask_app = get_flask_app()
+    
 
     def sort_by_study_id(key: str):
         if key:
@@ -140,19 +137,17 @@ if __name__ == "__main__":
     if len(sys.argv) > 5 and sys.argv[5]:
         apply_future_actions = True if sys.argv[5].lower().startswith("apply") else False
 
-    with flask_app.app_context():
-        if not study_ids:
-            for i in range(30):
-                study_ids.append(f"MTBLS{(i+1)}")
-        study_ids.sort(key=sort_by_study_id)
-        results = maintain_folders(
-            study_ids,
-            target=target,
-            flask_app=flask_app,
-            output_summary_report=output_summary_report,
-            task_name=task_name,
-            apply_future_actions=apply_future_actions,
-        )
+    if not study_ids:
+        for i in range(30):
+            study_ids.append(f"MTBLS{(i+1)}")
+    study_ids.sort(key=sort_by_study_id)
+    results = maintain_folders(
+        study_ids,
+        target=target,
+        output_summary_report=output_summary_report,
+        task_name=task_name,
+        apply_future_actions=apply_future_actions,
+    )
 
     print("end")
 

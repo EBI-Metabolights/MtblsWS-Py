@@ -62,7 +62,7 @@ class ReadOnlyFileVolumeManager(object):
         else:
             return False
 
-    def _execute_and_get_result(self, study_id: str, requestor: str, command: str, params: str) -> CommandOutput
+    def _execute_and_get_result(self, study_id: str, requestor: str, command: str, params: str) -> CommandOutput:
         mounted_paths = get_settings().hpc_cluster.datamover.mounted_paths
         study_internal_files_folder = os.path.join( get_settings().study.mounted_paths.study_internal_files_root_path, study_id)
         study_log_folder = os.path.join(study_internal_files_folder, self.study_settings.internal_logs_folder_name)

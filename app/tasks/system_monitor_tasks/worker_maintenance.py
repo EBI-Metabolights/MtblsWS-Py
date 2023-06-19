@@ -92,7 +92,7 @@ def check_additional_vm_workers(
                 file_path = BashClient.prepare_script_from_template(
                     cluster_settings.start_vm_worker_script_template_name, **paramters
                 )
-                BashClient.execute_command(f"bash < {file_path}")
+                result = BashClient.execute_command(f"bash < {file_path}")
                 try:
                     os.remove(file_path)
                 except Exception as exc:
@@ -126,7 +126,7 @@ def check_additional_vm_workers(
                     file_path = BashClient.prepare_script_from_template(
                         cluster_settings.start_vm_worker_script_template_name, **paramters
                     )
-                    BashClient.execute_command(f"{ssh_command} bash < {file_path}")
+                    result = BashClient.execute_command(f"{ssh_command} bash < {file_path}")
                     try:
                         os.remove(file_path)
                     except Exception as exc:

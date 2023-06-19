@@ -2,7 +2,7 @@ import fnmatch
 import glob
 import os
 import pathlib
-from typing import Dict
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -27,6 +27,14 @@ class FileDescriptor(BaseModel):
     extension: str = ""
     is_stop_folder: bool = False
     sub_filename:str = ""
+
+
+def get_all_metadata_files(study_metadata_files_path):
+    metadata_files = []
+    patterns = ["a_*.txt", "s_*.txt", "i_*.txt", "m_*.tsv"]
+    for pattern in patterns:
+        metadata_files.extend(glob.glob(os.path.join(study_metadata_files_path, pattern), recursive=False))
+    return metadata_files
 
 def find_study_data_files(study_metadata_path, filtered_subfolder=None, search_pattern=None, match_files=True, match_folders=True):
 
@@ -60,8 +68,17 @@ def find_study_data_files(study_metadata_path, filtered_subfolder=None, search_p
         return result
     
 
-def get_study_folder_files(root_path, file_descriptors: Dict[str, FileDescriptor], root: pathlib.Path, list_all_files=False, pattern=None):
+def get_study_folder_files(root_path, file_descriptors: Dict[str, FileDescriptor], root: pathlib.Path, list_all_files=False, pattern=None, recursive=True, exclude_list=None, include_metadata_files=False):
+    if not exclude_list:
+        exclude_list = []
+    relative_root_path = str(root).replace(f"{root_path}", "").lstrip("/")
+    if str(root_path) != str(root):
+        if not relative_root_path or relative_root_path in exclude_list:
+            yield root
     for item in root.iterdir():
+        relative_path = str(item).replace(f"{root_path}", "").lstrip("/")
+        if relative_path in exclude_list:
+            continue
         name = str(item)
         if not list_all_files:
             if item.name and item.name[0] == ".":
@@ -96,8 +113,11 @@ def get_study_folder_files(root_path, file_descriptors: Dict[str, FileDescriptor
                 yield item
             else:
                 if pattern and fnmatch.fnmatch(name, pattern):
-                    file_descriptors[relative_path] = FileDescriptor(relative_path=relative_path, is_dir=True, modified_time=m_time, extension=ext, is_stop_folder=True)
-                yield from get_study_folder_files(root_path, file_descriptors, item, list_all_files=list_all_files, pattern=pattern)
+                    file_descriptors[relative_path] = FileDescriptor(relative_path=relative_path, is_dir=True, modified_time=m_time, extension=ext, is_stop_folder=False)
+                if recursive:
+                    yield from get_study_folder_files(root_path, file_descriptors, item, list_all_files=list_all_files, pattern=pattern, recursive=recursive, exclude_list=exclude_list, include_metadata_files=include_metadata_files)
+                else:
+                    yield item
         else:
             if pattern and not fnmatch.fnmatch(name, pattern):
                 continue
@@ -105,8 +125,9 @@ def get_study_folder_files(root_path, file_descriptors: Dict[str, FileDescriptor
             if not list_all_files:
                 if ext in SKIP_FILE_EXTENSIONS:
                     continue
-                if len(item.name) > 2 and item.name[:2] in METADATA_FILE_PREFIXES:
-                    continue
+                if not include_metadata_files:
+                    if len(item.name) > 2 and item.name[:2] in METADATA_FILE_PREFIXES:
+                        continue
 
                 
             relative_path = str(item).replace(f"{root_path}/", "")

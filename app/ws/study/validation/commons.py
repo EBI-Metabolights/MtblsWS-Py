@@ -28,7 +28,6 @@ import traceback
 import numpy as np
 import pandas as pd
 import requests
-from flask import current_app as app
 from app.config import get_settings
 
 from app.ws.cluster_jobs import submit_job

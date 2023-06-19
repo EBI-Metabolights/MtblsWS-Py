@@ -17,9 +17,7 @@ from app.ws.study.user_service import UserService
 settings: CelerySettings = get_settings().celery
 
 rs: RedisConnection = settings.broker
-broker_url = (
-    f"redis://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}"
-)
+broker_url = f"redis://:{rs.redis_password}@{rs.redis_host}:{rs.redis_port}/{rs.redis_db}"
 result_backend = broker_url
 celery = Celery(
     __name__,
@@ -33,6 +31,7 @@ celery = Celery(
         "app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance",
         "app.tasks.datamover_tasks.basic_tasks.file_management",
         "app.tasks.datamover_tasks.curation_tasks.data_file_operations",
+        "app.tasks.datamover_tasks.basic_tasks.execute_commands",
         "app.tasks.system_monitor_tasks.worker_maintenance",
         "app.tasks.system_monitor_tasks.integration_check",
     ],
@@ -42,8 +41,6 @@ celery = Celery(
 @lru_cache(1)
 def get_flask_app():
     flask_app = Flask(__name__)
-    flask_app.config.from_object("config")
-
     return flask_app
 
 

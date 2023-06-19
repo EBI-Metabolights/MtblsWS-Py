@@ -2,7 +2,6 @@ import datetime
 from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field, validator
-from app.ws.db.types import UserStatus
 
 from app.ws.db.utils import datetime_to_int
 

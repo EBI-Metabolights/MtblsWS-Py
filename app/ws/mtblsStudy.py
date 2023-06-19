@@ -29,6 +29,7 @@ from flask_restful_swagger import swagger
 from app.config import get_settings
 
 from app.file_utils import make_dir_with_chmod
+from app.services.storage_service.models import SyncTaskResult
 from app.services.storage_service.storage_service import StorageService
 from app.tasks.common_tasks.basic_tasks.elasticsearch import (
     delete_study_index,
@@ -43,6 +44,7 @@ from app.tasks.common_tasks.basic_tasks.email import (
 )
 from app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization import sync_studies_on_es_and_db
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
+from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
 
 from app.utils import MetabolightsDBException, MetabolightsException, metabolights_exception_handler
 from app.ws import db_connection as db_proxy
@@ -1893,3 +1895,162 @@ class MtblsStudyFolders(Resource):
             return result
         except Exception as ex:
             raise MetabolightsException(http_code=500, message=f"Task submission was failed: {str(ex)}", exception=ex)
+
+
+
+class StudyFolderSyncronization(Resource):
+    @swagger.operation(
+        summary="(Curator Only) Sync study folders between different staging areas.",
+        nickname="Start sync process. New and updated files will be sync from source to target study folder",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "source_staging_area",
+                "description": "Source study folder stage",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["private-ftp", "readonly-study", "rw-study", "public-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "private-ftp",
+                "default": "private-ftp"
+            },
+            {
+                "name": "target_staging_area",
+                "description": "Target study folder stage",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["private-ftp", "readonly-study", "rw-study", "public-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "rw-study",
+                "default": "rw-study"
+            },
+            {
+                "name": "sync_type",
+                "description": "Sync category: sync metadada or data or internal files",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["metadata", "data", "internal", "public-metadata-versions", "integrity-check", "audit"],
+                "allowEmptyValue": False,
+                "defaultValue": "metadata",
+                "default": "metadata"
+            },
+            {
+                "name": "dry_run",
+                "description": "Only check whether there is a difference ",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "Boolean",
+                "allowEmptyValue": False,
+                "defaultValue": True,
+                "default": True
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def post(self, study_id):
+        log_request(request)
+        # param validation
+        if study_id is None:
+            raise MetabolightsException(message='Please provide valid parameter for study identifier')
+        study_id = study_id.upper()
+        sync_type = "metadata"
+        
+        user_token = None
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+            
+        dry_run = True
+        if "dry_run" in request.headers:
+            dry_run = True if request.headers["dry_run"].lower() == "true" else False 
+        
+        if "sync_type" in request.headers:
+            sync_type = request.headers["sync_type"]
+            
+        source_staging_area = "private-ftp"
+        if "source_staging_area" in request.headers:
+            source_staging_area = request.headers["source_staging_area"]
+        
+        target_staging_area = "rw_study"
+        if "target_staging_area" in request.headers:
+            target_staging_area = request.headers["target_staging_area"]
+        if target_staging_area == source_staging_area:
+            raise MetabolightsException(message="Source and target staging areas should be different.") 
+                    
+        if sync_type not in ("metadata", "data", "internal", "public-metadata-versions", "integrity-check", "audit"):
+            raise MetabolightsException(message="sync_type is invalid.")
+        
+        staging_areas = ["private-ftp", "readonly-study", "rw-study", "public-ftp"]
+        if source_staging_area not in staging_areas:
+            raise MetabolightsException(message="Source staging area is invalid.")
+        
+        if target_staging_area not in staging_areas:
+            raise MetabolightsException(message="Target staging area is invalid.")
+        
+        if source_staging_area == "private-ftp" and ((sync_type == "data" and target_staging_area == "readonly-study") or (sync_type == "metadata" and target_staging_area == "rw-study")):
+            study = StudyService.get_instance().get_study_by_acc(study_id)
+            UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+                UserService.get_instance().validate_user_has_curator_role(user_token)
+        else:
+            UserService.get_instance().validate_user_has_curator_role(user_token)
+        
+        folder_type = StudyFolderType(sync_type.replace("-","_").upper())
+        source_location = StudyFolderLocation(f"{source_staging_area.replace('-','_').upper()}_STORAGE")
+        target_location = StudyFolderLocation(f"{target_staging_area.replace('-','_').upper()}_STORAGE")
+        source = StudyFolder(location=source_location, folder_type=folder_type)
+        target = StudyFolder(location=target_location, folder_type=folder_type)
+
+        if not source.folder_type in VALID_FOLDERS[source_location]:
+            raise MetabolightsException(message="Source folder type is not valid in the selected staging area.")
+
+        if not target.folder_type in VALID_FOLDERS[target_location]:
+            raise MetabolightsException(message="target folder type is not valid in the selected staging area.")
+        
+        study = study = StudyService.get_instance().get_study_by_acc(study_id)
+        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
+        
+        if dry_run:
+            status: SyncTaskResult = client.rsync_dry_run(source, target, status_check_only=False)
+        else:
+            status: SyncTaskResult = client.rsync(source, target, status_check_only=False)
+        return status.dict()

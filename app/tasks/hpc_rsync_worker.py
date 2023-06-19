@@ -1,0 +1,257 @@
+import datetime
+from enum import Enum
+import pathlib
+from typing import List
+
+from pydantic import BaseModel
+from app.services.storage_service.models import (
+    SyncCalculationStatus,
+    SyncCalculationTaskResult,
+    SyncTaskResult,
+    SyncTaskStatus,
+)
+from app.tasks.bash_client import BashExecutionResult, CapturedBashExecutionResult, LoggedBashExecutionResult
+from app.tasks.hpc_worker_bash_runner import BashExecutionTaskStatus, HpcWorkerBashRunner, TaskDescription
+
+
+class RsyncResult(BaseModel):
+    valid_result: bool = False
+    dry_run: bool = False
+    returncode: int = -1
+    files: List[str] = []
+    number_of_files: int = 0
+    total_bytes: int = 0
+    total_size_str: str = ""
+    error_message: str = ""
+    success_message: str = ""
+
+
+class HpcRsyncWorker:
+    @staticmethod
+    def start_rsync(
+        task_name,
+        study_id,
+        source_path,
+        target_path,
+        include_list=None,
+        exclude_list=None,
+        rsync_arguments="-auv",
+        stdout_log_file_path: str = None,
+        stderr_log_file_path: str = None,
+    ) -> SyncTaskResult:
+        command = HpcRsyncWorker.build_rsync_command(
+            source_path, target_path, include_list, exclude_list, rsync_arguments=rsync_arguments
+        )
+        runner = HpcWorkerBashRunner(
+            task_name=task_name,
+            study_id=study_id,
+            command=command,
+            stdout_log_file_path=stdout_log_file_path,
+            stderr_log_file_path=stderr_log_file_path,
+        )
+        task_status: BashExecutionTaskStatus = runner.get_bash_execution_status(result_only=False)
+
+        return HpcRsyncWorker.get_sync_task_result(task_status)
+
+    def get_rsync_status(task_name, study_id) -> SyncTaskResult:
+        runner = HpcWorkerBashRunner(task_name=task_name, study_id=study_id)
+        task_status: BashExecutionTaskStatus = runner.get_bash_execution_status(result_only=True)
+        return HpcRsyncWorker.get_sync_task_result(task_status)
+
+    @staticmethod
+    def start_rsync_dry_run(
+        task_name,
+        study_id,
+        source_path,
+        target_path,
+        include_list=None,
+        exclude_list=None,
+        rsync_arguments="-aunv",
+        stdout_log_file_path: str = None,
+        stderr_log_file_path: str = None,
+    ) -> SyncCalculationTaskResult:
+        command = HpcRsyncWorker.build_rsync_command(
+            source_path,
+            target_path,
+            include_list,
+            exclude_list,
+            rsync_arguments=rsync_arguments,
+        )
+        runner = HpcWorkerBashRunner(
+            task_name=task_name,
+            study_id=study_id,
+            command=command,
+            stdout_log_file_path=stdout_log_file_path,
+            stderr_log_file_path=stderr_log_file_path,
+        )
+        task_status: BashExecutionTaskStatus = runner.get_bash_execution_status(result_only=False)
+
+        return HpcRsyncWorker.get_sync_calculation_result(task_status)
+
+    @staticmethod
+    def get_rsync_dry_run_status(task_name, study_id) -> SyncCalculationTaskResult:
+        runner = HpcWorkerBashRunner(task_name=task_name, study_id=study_id)
+        task_status: BashExecutionTaskStatus = runner.get_bash_execution_status(result_only=True)
+        return HpcRsyncWorker.get_sync_calculation_result(task_status)
+
+    @staticmethod
+    def get_sync_calculation_result(task_status: BashExecutionTaskStatus) -> SyncCalculationTaskResult:
+        task_description = task_status.description
+        sync_required = False
+        last_update_time = datetime.datetime.now().isoformat()
+        calc_result = SyncCalculationTaskResult()
+        calc_result.last_update_time = last_update_time
+        if task_status.result_ready and task_status.result:
+            rsync_result = HpcRsyncWorker.evaluate_rsync_result(task_status)
+            if rsync_result.valid_result:
+                if rsync_result.returncode > 0:
+                    calc_result.status = SyncCalculationStatus.CALCULATION_FAILURE
+                    calc_result.description = rsync_result.error_message
+                else:
+                    if rsync_result.number_of_files > 0:
+                        calc_result.status = SyncCalculationStatus.SYNC_NEEDED
+                    else:
+                        calc_result.status = SyncCalculationStatus.SYNC_NOT_NEEDED
+
+                    calc_result.description = rsync_result.success_message
+                return calc_result
+            else:
+                calc_result.status = SyncCalculationStatus.CALCULATION_FAILURE
+                calc_result.description = rsync_result.error_message
+        else:
+            if task_description:
+                last_update_time = datetime.datetime.fromtimestamp(task_description.last_update_time).isoformat()
+                calc_result.last_update_time = last_update_time
+        if not task_description:
+            status = SyncCalculationStatus.NO_TASK
+        elif task_description.last_status == "SUCCESS":
+            if sync_required:
+                status = SyncCalculationStatus.SYNC_NEEDED
+            status = SyncCalculationStatus.SYNC_NOT_NEEDED
+        elif task_description.last_status == "FAILURE":
+            status = SyncCalculationStatus.CALCULATION_FAILURE
+        elif task_description.last_status == "INITIATED":
+            status = SyncCalculationStatus.CALCULATING
+        elif task_description.last_status == "RETRY" or task_description.last_status == "STARTED":
+            status = SyncCalculationStatus.CALCULATING
+        else:
+            status = SyncCalculationStatus.UNKNOWN
+        calc_result.status = status
+        return calc_result
+
+    @staticmethod
+    def evaluate_rsync_result(task_status: BashExecutionTaskStatus, trimmed_files_count: int = -1) -> RsyncResult:
+        rsync_result = RsyncResult()
+        if not task_status.result_ready or not task_status.result:
+            return rsync_result
+        rsync_result.valid_result = True
+        result: BashExecutionResult = task_status.result
+        stdout_lines = []
+        stderr_lines = []
+        if isinstance(result, LoggedBashExecutionResult):
+            logged_result: LoggedBashExecutionResult = result
+            stdout_lines = pathlib.Path(logged_result.stdout_log_file_path).read_text().split("\n")
+            stderr_lines = pathlib.Path(logged_result.stderr_log_file_path).read_text().split("\n")
+        elif isinstance(result, CapturedBashExecutionResult):
+            captured_result: CapturedBashExecutionResult = result
+            stdout_lines = captured_result.stdout
+            stderr_lines = captured_result.stderr
+
+        rsync_result.returncode = result.returncode
+        if result.returncode > 0:
+            rsync_result.error_message = f"{stderr_lines[0]}..." if stdout_lines else f"Error code {result.returncode}"
+            return rsync_result
+        else:
+            messages = []
+            if len(stdout_lines) > 5:
+                if stdout_lines[1].startswith("created directory"):
+                    rsync_result.files = stdout_lines[3:-4]
+                else:
+                    rsync_result.files = stdout_lines[2:-4]
+                rsync_result.number_of_files = len(rsync_result.files)
+                messages.append(f"# of files: {len(rsync_result.files)}.")
+
+            size_line = stdout_lines[-2]
+            if size_line.startswith("total size is"):
+                try:
+                    rsync_result.total_bytes = int(size_line.split()[3].replace(",", ""))
+                    rsync_result.total_size_str = f"{round(rsync_result.total_bytes/(1.0*1024*1024), 2)} MB"
+
+                    messages.append(f"Total size: {rsync_result.total_size_str}.")
+                    if rsync_result.number_of_files == 0 and rsync_result.total_bytes > 0:
+                        messages.append(f"Files are empty.")
+                except Exception as exc:
+                    pass
+
+            if trimmed_files_count >= 0 and len(rsync_result.files) > trimmed_files_count:
+                trimmed_files = stdout_lines[:trimmed_files_count]
+                rsync_result.files = trimmed_files
+                messages.append(f"First {trimmed_files_count} files: {', '.join(trimmed_files)} ...")
+            elif len(rsync_result.files) > 0:
+                messages.append(f"Files: {', '.join(rsync_result.files)}.")
+
+            if rsync_result.number_of_files > 0:
+                rsync_result.success_message = " ".join(messages)
+            else:
+                rsync_result.success_message = "No files"
+
+            return rsync_result
+
+    @staticmethod
+    def get_sync_task_result(task_status: BashExecutionTaskStatus) -> SyncTaskResult:
+        task_description = task_status.description
+        if not task_description:
+            status = SyncTaskStatus.NO_TASK
+        elif task_description.last_status == "SUCCESS":
+            status = SyncTaskStatus.COMPLETED_SUCCESS
+        elif task_description.last_status == "FAILURE":
+            status = SyncTaskStatus.COMPLETED_SUCCESS
+        elif task_description.last_status == "INITIATED":
+            status = SyncTaskStatus.JOB_SUBMITTED
+        elif task_description.last_status == "RETRY" or task_description.last_status == "STARTED":
+            status = SyncTaskStatus.RUNNING
+        else:
+            status = SyncTaskStatus.UNKNOWN
+
+        if task_description:
+            last_update_time = datetime.datetime.fromtimestamp(task_description.last_update_time).isoformat()
+        else:
+            last_update_time = datetime.datetime.now().isoformat()
+        task_result: SyncTaskResult = SyncTaskResult(
+            status=status, description="...", last_update_time=last_update_time
+        )
+
+        if task_status.result_ready and task_status.result:
+            rsync_result = HpcRsyncWorker.evaluate_rsync_result(task_status)
+            if rsync_result.valid_result:
+                if rsync_result.returncode > 0:
+                    task_result.description = rsync_result.error_message
+                    task_result.status = SyncTaskStatus.SYNC_FAILURE
+                else:
+                    task_result.description = rsync_result.success_message
+                    task_result.status = SyncTaskStatus.COMPLETED_SUCCESS
+            else:
+                task_result.description = rsync_result.error_message
+                task_result.status = SyncTaskStatus.SYNC_FAILURE
+        return task_result
+
+    @staticmethod
+    def build_rsync_command(
+        source_path: str, target_path: str, include_list=None, exclude_list=None, rsync_arguments: str = "-aunv"
+    ):
+        source_path = source_path.rstrip("/")
+        target_path = target_path.rstrip(".").rstrip("/")
+
+        command_terms = ["rsync"]
+        command_terms.append(rsync_arguments)
+        if include_list:
+            for item in include_list:
+                command_terms.append(f"--include='{item}'")
+        if exclude_list:
+            for item in exclude_list:
+                command_terms.append(f"--exclude='{item}'")
+        command_terms.append(f"'{source_path}/.'")
+        command_terms.append(f"'{target_path}/'")
+
+        command = " ".join(command_terms)
+        return command

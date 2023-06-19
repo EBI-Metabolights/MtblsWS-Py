@@ -10,7 +10,9 @@ from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.acl import Acl
 from app.services.storage_service.storage_service import StorageService
-from app.utils import metabolights_exception_handler
+from app.tasks.hpc_study_rsync_client import StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
+from app.utils import MetabolightsException, metabolights_exception_handler
+from app.ws.db.types import StudyStatus
 from app.ws.ftp.ftp_utils import get_ftp_folder_access_status, toogle_ftp_folder_permission
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.study_service import StudyService
@@ -81,7 +83,7 @@ class SyncCalculation(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('force', help='Force to recalculate')
         force_recalculate = False
-
+        
         if request.args:
             args = parser.parse_args(req=request)
             force_recalculate = True if args['force'].lower() == 'true' else False
@@ -92,13 +94,20 @@ class SyncCalculation(Resource):
             user_token = request.headers["user_token"]
 
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-
+        status_check_only = False if force_recalculate else True
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
-        storage = StorageService.get_ftp_private_storage()
-
-        meta_calc_result,rdfiles_calc_result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
-        return jsonify({'result':{'meta_calc_result':meta_calc_result.dict(),'rdfiles_calc_result': rdfiles_calc_result.dict()}})
+        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
+        source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
+        target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
+        status = client.rsync_dry_run(source, target, status_check_only=status_check_only)
+        return status.dict()        
+        
+        # study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
+        # storage = StorageService.get_ftp_private_storage()
+        
+        # meta_calc_result = storage.calculate_sync_status(study_id, study.obfuscationcode, study_path, force=force_recalculate)
+        # # return jsonify({'result':{'meta_calc_result':meta_calc_result.dict(),'rdfiles_calc_result': rdfiles_calc_result.dict()}})
+        # return jsonify(meta_calc_result.dict())
 
 
 class SyncFromFtpFolder(Resource):
@@ -113,6 +122,18 @@ class SyncFromFtpFolder(Resource):
                 "allowMultiple": False,
                 "paramType": "path",
                 "dataType": "string"
+            },
+            {
+                "name": "sync_type",
+                "description": "Sync category: sync metadada or data or internal files",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["metadata", "data", "internal"],
+                "allowEmptyValue": False,
+                "defaultValue": "metadata",
+                "default": "metadata"
             },
             {
                 "name": "user_token",
@@ -147,25 +168,54 @@ class SyncFromFtpFolder(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            raise MetabolightsException(message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
-
+        sync_type = "metadata"
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+        
+        if "sync_type" in request.headers:
+            sync_type = request.headers["sync_type"]
+        if sync_type not in ("data", "internal", "metadata"):
+            raise MetabolightsException(message="sync_type is not valid")
+        study = None
+        if sync_type not in ("data", "metadata"):
+            UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+            study = StudyService.get_instance().get_study_by_acc(study_id)
+            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+                UserService.get_instance().validate_user_has_curator_role(user_token)
+        else:
+            UserService.get_instance().validate_user_has_curator_role(user_token)
+            
+        if sync_type == "metadata":
+            source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
+            target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
+        elif sync_type == "data":
+            source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.DATA)
+            target = StudyFolder(location=StudyFolderLocation.READONLY_STUDY_STORAGE, folder_type=StudyFolderType.DATA)
+        elif sync_type == "internal":
+            source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.INTERNAL)
+            target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.INTERNAL)
+        if not study:
+            study = StudyService.get_instance().get_study_by_acc(study_id)
+        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
+        
+        
+        status = client.rsync(source, target, status_check_only=False)
+        return status.dict()
 
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        # study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
+        # storage = StorageService.get_ftp_private_storage()
 
-        study = StudyService.get_instance().get_study_by_acc(study_id)
-        study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
-        storage = StorageService.get_ftp_private_storage()
+        # ftp_folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
+        # ignore_list = get_settings().file_filters.internal_mapping_list
+        # meta_sync_status = storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
+        # return jsonify({'meta_sync_status': meta_sync_status.dict()})
+        # meta_sync_status,rdfiles_sync_status = storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
 
-        ftp_folder_name = f"{study_id.lower()}-{study.obfuscationcode}"
-        ignore_list = get_settings().file_filters.internal_mapping_list
-        meta_sync_status,rdfiles_sync_status = storage.sync_from_storage(ftp_folder_name, study_path, ignore_list=ignore_list, logger=logger)
-
-        return jsonify({'meta_sync_status': meta_sync_status, 'files_sync_status':rdfiles_sync_status})
+        # return jsonify({'meta_sync_status': meta_sync_status, 'files_sync_status': rdfiles_sync_status})
 
 
 class FtpFolderSyncStatus(Resource):
@@ -224,11 +274,11 @@ class FtpFolderSyncStatus(Resource):
         UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
         study = StudyService.get_instance().get_study_by_acc(study_id)
-        study_path = os.path.join(get_settings().study.mounted_paths.study_metadata_files_root_path, study_id)
-        storage = StorageService.get_ftp_private_storage()
-
-        sync_metafiles_result,sync_rdfiles_result = storage.check_folder_sync_status(study_id=study_id, obfuscation_code=None, target_local_path=study_path)
-        return jsonify({'result':{'sync_metafiles_result':sync_metafiles_result.dict(),'sync_rdfiles_result': sync_rdfiles_result.dict()}})
+        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
+        source = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
+        target = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
+        status = client.rsync(source, target, status_check_only=True)
+        return status.dict()
 
 class FtpFolderPermission(Resource):
     @swagger.operation(
@@ -499,23 +549,24 @@ class SyncFromStudyFolder(Resource):
                 "dataType": "string"
             },
             {
+                "name": "sync_type",
+                "description": "Sync category: sync metadada or data or internal files",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["metadata", "data", "internal"],
+                "allowEmptyValue": False,
+                "defaultValue": "metadata",
+                "default": "metadata"
+            },
+            {
                 "name": "user_token",
                 "description": "User API token",
                 "paramType": "header",
                 "type": "string",
                 "required": True,
                 "allowMultiple": False
-            },
-            {
-                "name": "sync_only_chebi_pipeline_results",
-                "description": "Option to choose whether to sync only chebi annotation results or whole folder",
-                "required": False,
-                "allowEmptyValue": True,
-                "allowMultiple": False,
-                "paramType": "query",
-                "type": "Boolean",
-                "defaultValue": True,
-                "default": True
             }
         ],
         responseMessages=[
@@ -542,33 +593,77 @@ class SyncFromStudyFolder(Resource):
         log_request(request)
         # param validation
         if study_id is None:
-            abort(404, 'Please provide valid parameter for study identifier')
+            raise MetabolightsException(message='Please provide valid parameter for study identifier')
         study_id = study_id.upper()
-
+        sync_type = "metadata"
         # User authentication
         user_token = None
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+        
+        if "sync_type" in request.headers:
+            sync_type = request.headers["sync_type"]
+            
+        if sync_type not in ("data", "internal", "metadata"):
+            raise MetabolightsException(message="sync_type is not valid")
+        
+        
+        study = None
+        if sync_type not in ("data", "metadata"):
+            UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+            study = StudyService.get_instance().get_study_by_acc(study_id)
+            if StudyStatus(study.status) != StudyStatus.SUBMITTED:
+                UserService.get_instance().validate_user_has_curator_role(user_token)
+        else:
+            UserService.get_instance().validate_user_has_curator_role(user_token)
+            
+        if sync_type == "metadata":
+            target = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.METADATA)
+            source = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.METADATA)
+        elif sync_type == "data":
+            target = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.DATA)
+            source = StudyFolder(location=StudyFolderLocation.READONLY_STUDY_STORAGE, folder_type=StudyFolderType.DATA)
+        elif sync_type == "internal":
+            target = StudyFolder(location=StudyFolderLocation.PRIVATE_FTP_STORAGE, folder_type=StudyFolderType.INTERNAL)
+            source = StudyFolder(location=StudyFolderLocation.RW_STUDY_STORAGE, folder_type=StudyFolderType.INTERNAL)
+        if not study:
+            study = StudyService.get_instance().get_study_by_acc(study_id)
+        client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
+        
+        
+        status = client.rsync(source, target, status_check_only=False)
+        return status.dict()
+    
+        # log_request(request)
+        # # param validation
+        # if study_id is None:
+        #     abort(404, 'Please provide valid parameter for study identifier')
+        # study_id = study_id.upper()
 
-        parser = reqparse.RequestParser()
-        parser.add_argument('sync_only_chebi_pipeline_results', help='Sync only CHEBI pipeline')
-        sync_only_chebi_results = True
-        if request.args:
-            args = parser.parse_args(req=request)
-            sync_only_chebi_results = False if args['sync_only_chebi_pipeline_results'].lower() == 'false' else True
+        # # User authentication
+        # user_token = None
+        # if "user_token" in request.headers:
+        #     user_token = request.headers["user_token"]
 
-        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-        study = StudyService.get_instance().get_study_by_acc(study_id)
-        destination = study_id.lower() + '-' + study.obfuscationcode
+        # parser = reqparse.RequestParser()
+        # parser.add_argument('sync_only_chebi_pipeline_results', help='Sync only CHEBI pipeline')
+        # sync_only_chebi_results = True
+        # if request.args:
+        #     args = parser.parse_args(req=request)
+        #     sync_only_chebi_results = False if args['sync_only_chebi_pipeline_results'].lower() == 'false' else True
 
-        ftp_private_storage = StorageService.get_ftp_private_storage()
-        logger.info(f"syncing files from study folder to FTP folder for {study_id}")
+        # UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        # study = StudyService.get_instance().get_study_by_acc(study_id)
+        # destination = study_id.lower() + '-' + study.obfuscationcode
 
-        ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+        # ftp_private_storage = StorageService.get_ftp_private_storage()
+        # logger.info(f"syncing files from study folder to FTP folder for {study_id}")
 
-        meta_sync_status,files_sync_status,chebi_sync_status = ftp_private_storage.sync_from_local(source_local_folder=None, target_folder=destination, ignore_list=None, sync_chebi_annotation=sync_only_chebi_results)
-        logger.info('Copying file %s to FTP %s', study_id, destination)
-        return {'meta_sync_status': meta_sync_status, 'files_sync_status':files_sync_status, 'chebi_sync_status':chebi_sync_status}
+        # ftp_private_storage.remote.create_folder(destination, acl=Acl.AUTHORIZED_READ_WRITE, exist_ok=True)
+
+        # meta_sync_status,files_sync_status,chebi_sync_status = ftp_private_storage.sync_from_local(source_local_folder=None, target_folder=destination, ignore_list=None, sync_chebi_annotation=sync_only_chebi_results)
+        # logger.info('Copying file %s to FTP %s', study_id, destination)
+        # return {'meta_sync_status': meta_sync_status, 'files_sync_status':files_sync_status, 'chebi_sync_status':chebi_sync_status}
 
 class SyncPublicStudyToFTP(Resource):
     @swagger.operation(

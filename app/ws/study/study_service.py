@@ -1,10 +1,11 @@
+from app.config import get_settings
 from app.utils import MetabolightsDBException, MetabolightsFileOperationException, MetabolightsException
 from app.ws.db.dbmanager import DBManager
 from app.ws.db.models import StudyModel
 from app.ws.db.schemes import Study, User, Stableid, StudyTask
 from app.ws.db.types import UserStatus, UserRole, StudyStatus
 from app.ws.db.wrappers import create_study_model_from_db_study, update_study_model_from_directory
-from app.ws.settings.utils import get_study_settings
+
 
 
 def identify_study_id(study_id: str, obfuscation_code: str = None):
@@ -29,7 +30,7 @@ class StudyService(object):
         if not cls.instance:
             cls.instance = StudyService()
             cls.db_manager = DBManager.get_instance()
-            cls.study_settings = get_study_settings()
+            cls.study_settings = get_settings().study
         return cls.instance
 
     def get_study_by_acc(self, study_id) -> Study:

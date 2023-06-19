@@ -77,7 +77,7 @@ from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
                                MtblsStudiesWithMethods, MtblsStudyFolders,
                                MtblsStudyValidationStatus, MyMtblsStudies,
                                MyMtblsStudiesDetailed, PublicStudyDetail,
-                               ReindexStudy, RetryReindexStudies,
+                               ReindexStudy, RetryReindexStudies, StudyFolderSyncronization,
                                UnindexedStudy)
 from app.ws.mtblsWSclient import WsClient
 from app.ws.mzML2ISA import Convert2ISAtab, ValidateMzML
@@ -370,6 +370,8 @@ def initialize_app(flask_app):
     api.add_resource(ChebiEntity, res_path + "/chebi/entities/<string:chebi_id>")
 
     api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/study-folders/<string:study_id>/maintain")
+    api.add_resource(StudyFolderSyncronization, res_path + "/ebi-internal/study-folders/<string:study_id>/rsync")
+    
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
     
     

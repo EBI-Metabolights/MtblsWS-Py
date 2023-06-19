@@ -15,24 +15,30 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+import datetime
 import glob
 import json
 import logging
 import os
+import pathlib
 import shutil
 import time
+from typing import Dict, List, Set
 
-from flask import current_app as app
+from isatools import isatab
+from isatools.model import Investigation, Study, Assay
 from flask import request, abort
 from flask.json import jsonify
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
 from jsonschema.exceptions import ValidationError
+import pandas as pd
+from pydantic import BaseModel
 from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
 
 from app.services.storage_service.storage_service import StorageService
-from app.study_folder_utils import find_study_data_files
+from app.study_folder_utils import FileDescriptor, find_study_data_files, get_all_metadata_files, get_study_folder_files
 from app.tasks.datamover_tasks.curation_tasks import data_file_operations
 from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.isaApiClient import IsaApiClient
@@ -894,6 +900,170 @@ class StudyRawAndDerivedDataFolder(Resource):
         return jsonify({'successes': successes, 'warnings': warnings, 'errors': errors})
 
 
+
+
+
+class LiteFileMetadata(BaseModel):
+    createdAt: str = ''
+    directory: bool = False
+    file: str
+    status: str = "unreferenced"
+    timestamp: str = ""
+    type: str = "unknown"
+
+
+class FileMetadata(BaseModel):
+    createdAt: str = ''
+    directory: bool = False
+    file: str
+    status: str = "unreferenced"
+    timestamp: str = ""
+    type: str = "unknown"
+    relative_path: str = ''
+    extension: str = ""
+    is_stop_folder: bool = False
+    
+class FileSearchResult(BaseModel):
+    study: List[FileMetadata] = []
+    private: List[str] = []
+    uploadPath: str = ''
+    obfuscationCode: str = ''
+    latest: List[str] = []
+
+class LiteFileSearchResult(BaseModel):
+    study: List[LiteFileMetadata] = []
+    private: List[str] = []
+    uploadPath: str = ''
+    obfuscationCode: str = ''
+    latest: List[str] = []    
+
+class StudyFolderIndex(BaseModel):
+    study: List[FileMetadata] = []
+    
+def get_directory_files(root_path: str, subpath:str, recursive=False, search_pattern="**/*", exclude_list=None, include_metadata_files=True):
+    source_file_descriptors: Dict[str, FileDescriptor] = {}
+    if not exclude_list:
+        exclude_list = []
+    root_path_item = pathlib.Path(root_path)
+        
+    
+    source_folders_iter = []
+    filtered_path = root_path_item
+    if subpath:
+        subpath_item = pathlib.Path(subpath)
+        filtered_path = root_path_item / subpath_item
+        search_path =  root_path_item /  pathlib.Path(search_pattern)
+    else:
+        filtered_path = root_path_item
+        search_path =  root_path_item.parent /  pathlib.Path(search_pattern)
+    if os.path.exists(root_path):
+        source_folders_iter = get_study_folder_files(
+            root_path_item, source_file_descriptors, filtered_path, pattern=str(search_path), recursive=recursive, exclude_list=exclude_list, include_metadata_files=include_metadata_files
+        )
+    
+        [x for x in source_folders_iter]
+    return source_file_descriptors
+        
+
+def evaluate_files(source_file_descriptors: Dict[str, FileDescriptor], referenced_file_set: Set[str]) -> FileSearchResult:
+    file_search_result = FileSearchResult()
+    results = file_search_result.study
+    settings = get_settings()
+    derived_file_extensions = set(settings.file_filters.derived_files_list)
+    raw_file_extensions = set(settings.file_filters.raw_files_list)
+    for key, file in source_file_descriptors.items():
+        name = os.path.basename(file.relative_path)
+        datetime.datetime.fromtimestamp(file.modified_time)
+        modified_time = datetime.datetime.fromtimestamp(file.modified_time)
+        long_datetime = modified_time.strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = modified_time.strftime("%Y%m%d%H%M%S")
+        metadata = FileMetadata(file=name, directory=file.is_dir, createdAt=long_datetime, timestamp=timestamp)
+        # if  file.is_stop_folder:
+        #     metadata.directory = False
+        # else:
+        #     if file.is_dir:
+        #         metadata.type = "directory"
+        if file.is_dir:
+            metadata.type = "directory"                
+        if file.relative_path in referenced_file_set:
+            metadata.status = "active"
+        
+        if file.extension == ".tsv" and name.startswith("m_"):
+            metadata.type = "metadata_maf"
+        elif file.extension == ".txt" and name.startswith("s_"):
+            metadata.type = "metadata_sample"
+        elif file.extension == ".txt" and name.startswith("a_"):
+            metadata.type = "metadata_assay"
+        elif file.extension == ".txt" and name.startswith("i_"):
+            metadata.type = "metadata_investigation"
+        elif file.extension in derived_file_extensions:
+            metadata.type = "derived"
+        elif file.extension in derived_file_extensions:
+            metadata.type = "derived"        
+        elif file.extension in raw_file_extensions:
+            metadata.type = "raw"
+        elif file.extension in ('.xls', '.xlsx', '.xlsm', '.csv', '.tsv'):
+            metadata.type = "spreadsheet"
+        elif file.extension in ('.png', '.tiff', '.tif', '.jpeg', '.mpg', '.jpg'):
+            metadata.type = "image"
+            
+        if file.relative_path.startswith(settings.study.audit_files_symbolic_link_name) or file.relative_path.startswith(settings.study.internal_files_symbolic_link_name):
+            metadata.type = "audit" 
+        metadata.relative_path = file.relative_path
+        metadata.is_stop_folder = file.is_stop_folder
+        metadata.extension = file.extension
+        results.append(metadata)
+    return LiteFileSearchResult.parse_obj(file_search_result)
+
+def get_referenced_file_set(study_id, metadata_path: str) -> Set[str]:
+        referenced_files: Set[str] = set()
+        try:
+            investigation_file_name = get_settings().study.investigation_file_name
+            investigation_file_path = os.path.join(metadata_path, investigation_file_name)
+            investigation: Investigation = None
+            if not os.path.exists(investigation_file_path):
+                return []
+            
+            with open(investigation_file_path, encoding="utf-8", errors="ignore") as fp:
+                # loading tables also load Samples and Assays
+                investigation = isatab.load(fp, skip_load_tables=True)
+            referenced_files.add(investigation_file_name)
+            if investigation and investigation.studies and investigation.studies[0]:
+                study: Study = investigation.studies[0]
+                referenced_files.add(study.filename)
+                if study.assays:
+                    for item in study.assays:
+                        assay: Assay = item
+                        referenced_files.add(assay.filename)
+                        assay_file_path = os.path.join(metadata_path, assay.filename)
+                        if os.path.exists(assay_file_path):
+                            df: pd.DataFrame = pd.read_csv(assay_file_path, delimiter="\t", header=0, dtype=str)
+                            if df is not None:
+                                df = df.fillna("")
+                            referenced_file_columns: List[str] = []
+                            for column in df.columns:
+                                if " Data File" in column or "Metabolite Assignment File" in column:
+                                    referenced_file_columns.append(column)
+                                    file_names = df[column].unique()
+                                    for item in file_names:
+                                        if item:
+                                            referenced_files.add(item)                            
+                            # df: pd.DataFrame = pd.read_csv(assay_file_path, delimiter="\t", header=0, names=referenced_file_columns, dtype=str)
+                            # if df is not None:
+                            #     df = df.fillna("")
+                            # for column in referenced_file_columns:
+                            #     file_names = df[column].unique()
+                            #     for item in file_names:
+                            #         if item:
+                            #             referenced_files.add(item)
+            file_list = list(referenced_files)
+            file_list.sort()
+            return file_list
+        except Exception as  exc:
+            logger.error(f"Error reading investigation file of {study_id}")
+            raise exc
+        
+
 class StudyFilesReuse(Resource):
     @swagger.operation(
         summary="Get a list, with timestamps, of all files in the study folder from file-list result already created",
@@ -985,37 +1155,59 @@ class StudyFilesReuse(Resource):
             if args['include_internal_files']:
                 include_internal_files = False if args['include_internal_files'].lower() != 'true' else True
         settings = get_study_settings()
-        files_list_json = settings.files_list_json_file_name
         study_id, obfuscation_code = identify_study_id(study_id, obfuscation_code)
-        # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token, obfuscation_code)
-        if not read_access:
-            abort(403)
+
+            
+        UserService.get_instance().validate_user_has_read_access(user_token=user_token, obfuscationcode=obfuscation_code, study_id=study_id)
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        upload_folder = study_id.lower() + "-" + study.obfuscationcode
+
         study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
-        files_list_json_file = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, files_list_json)
-
-        if force_write:
-            return update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
-                                            files_list_json_file, include_internal_files=include_internal_files)
-        if os.path.isfile(files_list_json_file):
-            logger.info("Files list json found for studyId - %s!", study_id)
-            try:
-                with open(files_list_json_file, 'r', encoding='utf-8') as f:
-                    files_list_schema = json.load(f)
-                    logger.info("Listing files list from files-list json file!")
-            except Exception as e:
-                logger.error('Error while reading file list schema file: ' + str(e))
-                files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
-                                                             files_list_json_file,
-                                                             include_internal_files=include_internal_files)
-        else:
-            logger.info(" Files list json not found! for studyId - %s!", study_id)
-            files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
-                                                         files_list_json_file,
-                                                         include_internal_files=include_internal_files)
-
-        return files_list_schema
+        # files_list_json = settings.files_list_json_file_name
+        # files_list_json_file = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name, files_list_json)
+        # indexed_files = None
+        # if os.path.exists(files_list_json_file):
+        #     try:
+        #         with open(files_list_json_file, "r") as fp:
+        #             cached_data = json.load(fp)
+        #             indexed_files = StudyFolderIndex.parse_obj(cached_data)
+        #     except Exception as exc:
+        #         logger.warning(f"Error reading {files_list_json} for study {study_id}")
+        
+        referenced_files = get_referenced_file_set(study_id=study_id, metadata_path=study_metadata_location)
+        exclude_list = set(get_settings().file_filters.internal_mapping_list)
+        # if force_write:
+        directory_files = get_directory_files(study_metadata_location, None, search_pattern="**/*", recursive=False, exclude_list=exclude_list)
+        # metadata_files = get_all_metadata_files()
+        # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
+        # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
+        search_result = evaluate_files(directory_files, referenced_files)
+        ftp_private_relative_root_path = get_private_ftp_relative_root_path()
+        upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
+        search_result.uploadPath = upload_path
+        search_result.obfuscationCode = study.obfuscationcode
+        return search_result.dict()
+    
+        # return update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
+        #                                 files_list_json_file, include_internal_files=include_internal_files)
+        # if os.path.isfile(files_list_json_file):
+        #     logger.info("Files list json found for studyId - %s!", study_id)
+        #     try:
+        #         with open(files_list_json_file, 'r', encoding='utf-8') as f:
+        #             files_list_schema = json.load(f)
+        #             logger.info("Listing files list from files-list json file!")
+        #     except Exception as e:
+        #         logger.error('Error while reading file list schema file: ' + str(e))
+        #         files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
+        #                                                      files_list_json_file,
+        #                                                      include_internal_files=include_internal_files)
+        # else:
+        #     logger.info(" Files list json not found! for studyId - %s!", study_id)
+        #     files_list_schema = update_files_list_schema(study_id, obfuscation_code, study_metadata_location,
+        #                                                  files_list_json_file,
+        #                                                  include_internal_files=include_internal_files)
+        # 
+        # return files_list_schema
 
 
 def update_files_list_schema(study_id, obfuscation_code, study_location, files_list_json_file,
@@ -1709,32 +1901,33 @@ class StudyFilesTree(Resource):
 
         if directory and directory.startswith(os.sep):
             abort(401, "You can only specify folders in the current study folder")
-
+        settings = get_settings()
         study_id, obfuscation_code = identify_study_id(study_id)
         # check for access rights
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, study_status = \
-            wsc.get_permissions(study_id, user_token, obfuscation_code)
-        if not read_access:
-            abort(403)
-
-        upload_folder = study_id.lower() + "-" + obfuscation_code
+        UserService.get_instance().validate_user_has_read_access(user_token, study_id=study_id, obfuscationcode=obfuscation_code)
+        
+        study = StudyService.get_instance().get_study_by_acc(study_id)
+        upload_folder = study_id.lower() + "-" + study.obfuscationcode
 
         ftp_private_relative_root_path = get_private_ftp_relative_root_path()
         upload_path = os.path.join(ftp_private_relative_root_path, upload_folder)
 
-        if directory:
-            study_location = os.path.join(study_location, directory)
-
-        file_list = []
-        try:
-            file_list = get_basic_files(study_location, include_sub_dir, get_assay_file_list(study_location))
-            if not include_internal_files:
-                file_list = [item for item in file_list if 'type' in item and item['type'] != 'internal_mapping']
-        except Exception as e:
-            abort(408, error=e.args)
-
-        return jsonify({'study': file_list, 'latest': [], 'private': [],
-                        'uploadPath': upload_path, 'obfuscationCode': obfuscation_code})
+        settings = get_settings().study
+        
+        study_metadata_location = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+            
+        # files_list_json_file = os.path.join(study_metadata_location, settings.readonly_files_symbolic_link_name, files_list_json)
+        referenced_files = get_referenced_file_set(study_id=study_id, metadata_path=study_metadata_location)
+        exclude_list = set(get_settings().file_filters.internal_mapping_list)
+        # if force_write:
+        directory_files = get_directory_files(study_metadata_location, directory, search_pattern="**/*", recursive=False, exclude_list=exclude_list, include_metadata_files=True)
+        # metadata_files = get_all_metadata_files()
+        # internal_files_path = os.path.join(study_metadata_location, settings.internal_files_symbolic_link_name)
+        # internal_files = glob.glob(os.path.join(internal_files_path, "*.json"))
+        search_result = evaluate_files(directory_files, referenced_files)
+        search_result.uploadPath = upload_path
+        search_result.obfuscationCode = study.obfuscationcode
+        return search_result.dict()
 
 
 class FileList(Resource):

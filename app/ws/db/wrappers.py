@@ -7,10 +7,8 @@ import os.path
 
 from isatools import isatab
 
-from app.utils import MetabolightsFileOperationException
 from app.ws.db import models
-from app.ws.db.models import StudyDerivedData, TableModel, ValidationEntriesModel, ValidationEntryModel, BackupModel, IndexedUserModel, \
-    IndexedAssayModel
+from app.ws.db.models import TableModel, ValidationEntriesModel, ValidationEntryModel, BackupModel, IndexedUserModel, IndexedAssayModel
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.db.utils import date_str_to_int, datetime_to_int

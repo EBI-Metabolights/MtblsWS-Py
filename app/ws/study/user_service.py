@@ -66,8 +66,11 @@ class UserService(object):
                     if study[1] == StudyStatus.PUBLIC.value:
                         return True
                     else:
-                        if obfuscationcode and study[2] != obfuscationcode:
-                            raise MetabolightsAuthorizationException(message=f"Not a valid study id or obfuscation code")
+                        if obfuscationcode:
+                            if study[2] == obfuscationcode and study[1] == StudyStatus.INREVIEW.value:
+                                return True
+                            if study[2] != obfuscationcode:
+                                raise MetabolightsAuthorizationException(message=f"Not a valid study id or obfuscation code")
                     
         except Exception as e:
             raise MetabolightsAuthorizationException(message=f"Error while retreiving user from database", exception=e)        

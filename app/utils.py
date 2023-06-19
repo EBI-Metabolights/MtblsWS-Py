@@ -54,7 +54,8 @@ class MetabolightsAuthorizationException(MetabolightsException):
 
 
 class ValueMaskUtility(object):
-    MASK_KEYS = {
+    EXACT_MATCHES = {"token"}
+    SEARCH_PATTERNS = {
         "user_token": "uuid",
         "apitoken": "uuid",
         "api_token": "uuid",
@@ -67,14 +68,15 @@ class ValueMaskUtility(object):
         "consumer_key": "uuid",
         "bearer": "uuid",
         "client_id": "uuid",
+        "access_key": "secret"
     }
 
     @classmethod
     def mask_value(cls, name: str, value: str):
         if name:
-            for val in cls.MASK_KEYS:
-                if val in name.lower():
-                    mask_type = cls.MASK_KEYS[val]
+            for val in cls.SEARCH_PATTERNS:
+                if val in name.lower() or name.lower() in cls.EXACT_MATCHES:
+                    mask_type = cls.SEARCH_PATTERNS[val]
                     if mask_type == "uuid":
                         return cls.mask_uuid(value)
                     elif mask_type == "email":

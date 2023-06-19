@@ -26,11 +26,12 @@ from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
 from flask import current_app as app, jsonify
 from app.utils import metabolights_exception_handler
+from app.ws.db.schemes import Study
 
 from app.ws.db_connection import get_obfuscation_code
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
-from app.ws.study.study_service import identify_study_id
+from app.ws.study.study_service import StudyService, identify_study_id
 from app.ws.study.user_service import UserService
 from app.ws.study_files import get_basic_files
 
@@ -223,7 +224,7 @@ class SendFilesPrivate(Resource):
                 "allowMultiple": False,
                 "paramType": "header",
                 "dataType": "string",
-                "default": "public"
+                "allowEmptyValue": True,
             },
             {
                 "name": "user_token",
@@ -263,9 +264,6 @@ class SendFilesPrivate(Resource):
             abort(404)
         study_id = study_id.upper()
 
-        if study_id == "MTBLS1405":
-            abort(429)
-
         # User authentication
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
@@ -294,9 +292,11 @@ class SendFilesPrivate(Resource):
         # check for access rights
         # is_curator, read_access, write_access, db_obfuscation_code, study_location, release_date, submission_date, \
         #     study_status = wsc.get_permissions(study_id, user_token, obfuscation_code)
-        if not obfuscation_code:
+        study: Study = StudyService.get_instance().get_study_by_obfuscation_code(obfuscation_code)
+        if not study:
             abort(403)
-        UserService.get_instance().validate_user_has_read_access(user_token, study_id, obfuscation_code)
+        # TODO: This line will be enabled
+        #UserService.get_instance().validate_user_has_read_access(user_token, study_id, obfuscation_code)
         files = ""
         if file_name == 'metadata':
             file_list = get_basic_files(study_metadata_location, include_sub_dir=False, assay_file_list=None)
