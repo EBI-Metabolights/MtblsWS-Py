@@ -1,4 +1,3 @@
-from datetime import datetime
 import os
 from typing import List
 from celery.result import AsyncResult
@@ -41,7 +40,6 @@ class RemoteFtpStorage(Storage):
         # remote_job_manager = DataMoverAvailableStorage("unmounted_storage", study_id, self.app)
         # meta_sync_status,files_sync_status,chebi_sync_status = remote_job_manager.sync_from_studies_folder(target_folder, ignore_list, **kwargs)
         # return meta_sync_status,files_sync_status,chebi_sync_status
-        pass
 
     def sync_to_public_ftp(self, source_local_folder: str, target_folder: str, ignore_list: List[str] = None, **kwargs):
         study_id = os.path.basename(source_local_folder)
@@ -57,7 +55,6 @@ class RemoteFtpStorage(Storage):
         # remote_job_manager = DataMoverAvailableStorage("unmounted_storage", study_id, self.app)
         # meta_public_sync_status,files_public_sync_status = remote_job_manager.sync_public_study_to_ftp(source_study_folder=source_local_folder, target_ftp_folder=target_folder, ignore_list=ignore_list, **kwargs)
         # return meta_public_sync_status,files_public_sync_status
-        pass
 
     def get_private_ftp_root_path(self):
         settings = get_settings()

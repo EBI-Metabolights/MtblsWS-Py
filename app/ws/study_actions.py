@@ -33,7 +33,7 @@ from app.ws.ftp.ftp_utils import get_ftp_folder_access_status, toogle_ftp_folder
 from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.user_service import UserService
-from app.ws.validation import validate_study
+from app.ws.study.validation.commons import validate_study
 
 logger = logging.getLogger('wslog')
 

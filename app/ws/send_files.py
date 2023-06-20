@@ -24,16 +24,13 @@ from zipfile import ZipFile
 from flask import request, send_file, safe_join, abort, make_response
 from flask_restful import Resource, reqparse
 from flask_restful_swagger import swagger
-from flask import current_app as app, jsonify
 from app.utils import metabolights_exception_handler
 from app.ws.db.schemes import Study
 
-from app.ws.db_connection import get_obfuscation_code
 from app.ws.mtblsWSclient import WsClient
 from app.ws.settings.utils import get_study_settings
+from app.ws.study.folder_utils import get_basic_files
 from app.ws.study.study_service import StudyService, identify_study_id
-from app.ws.study.user_service import UserService
-from app.ws.study_files import get_basic_files
 
 logger = logging.getLogger('wslog')
 # MetaboLights (Java-Based) WebService client

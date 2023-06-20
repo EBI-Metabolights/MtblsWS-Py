@@ -88,6 +88,8 @@ logs.txt
 ssl/
 
 # files for keeping PID
+config.yaml
+.secrets
 /app*.pid.old
 /app*.pid
 /tests/.pytest_cache/

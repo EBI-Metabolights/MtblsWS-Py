@@ -107,7 +107,7 @@ from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.v1.studies import V1StudyDetail
 from app.ws.validation import (NewValidation, OverrideValidation,
-                               UpdateValidationFile, Validation,
+                               ValidationFile, ValidationProcess,
                                ValidationComment)
 
 
@@ -312,7 +312,7 @@ def initialize_app(flask_app):
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
-    api.add_resource(Validation, res_path + "/studies/<string:study_id>/validate-study")
+    api.add_resource(ValidationFile, res_path + "/studies/<string:study_id>/validate-study")
     api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
     api.add_resource(MtblsStudyValidationStatus,
                      res_path + "/studies/<string:study_id>/validation-status/<string:validation_status>")
@@ -340,7 +340,7 @@ def initialize_app(flask_app):
 
     api.add_resource(EnzymePortalHelper, res_path + "/ebi-internal/check_if_metabolite/<string:chebi_id>")
     api.add_resource(OverrideValidation, res_path + "/ebi-internal/<string:study_id>/validate-study/override")
-    api.add_resource(UpdateValidationFile, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
+    api.add_resource(ValidationProcess, res_path + "/ebi-internal/<string:study_id>/validate-study/update-file")
     api.add_resource(ValidationComment, res_path + "/ebi-internal/<string:study_id>/validate-study/comment")
     api.add_resource(SplitMaf, res_path + "/ebi-internal/<string:study_id>/split-maf")
     api.add_resource(ChEBIPipeLine, res_path + "/ebi-internal/<string:study_id>/chebi-pipeline")

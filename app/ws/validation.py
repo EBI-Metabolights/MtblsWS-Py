@@ -15,13 +15,14 @@
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+import datetime
 import json
 import logging
 import os
+from pathlib import Path
 import re
-import threading
-
-from flask import current_app as app
+import shutil
+from typing import Any, Dict
 from flask import request
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
@@ -29,13 +30,13 @@ from app.ws.db_connection import override_validations, query_comments, update_co
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
 from app.ws.study.user_service import UserService
-from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser, get_last_update_on_folder, \
-    update_val_schema_files, validate_study
+from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser
+from app.ws.validation_utils import update_validation_files_task
 
 logger = logging.getLogger('wslog')
 
 
-class Validation(Resource):
+class ValidationFile(Resource):
     @swagger.operation(
         summary="Validate study",
         notes='''Validating the overall study. 
@@ -122,106 +123,140 @@ class Validation(Resource):
 
         study_id = study_id.upper()
 
-        # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location_deprecated, release_date, submission_date, \
-        study_status = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
         settings = get_study_settings()
             
         internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
-        readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
-        metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+        # readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
+        # metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
         # query validation
-        parser = reqparse.RequestParser()
-        parser.add_argument('section', help="Validation section", location="args")
-        parser.add_argument('level', help="Validation message levels", location="args")
-        parser.add_argument('static_validation_file', help="Use pre-generated validations", location="args")
-        args = parser.parse_args()
-        section = args['section']
-        log_category = args['level']
-        static_validation_file = args['static_validation_file']
-        if not static_validation_file:
-            static_validation_file = 'true'  # Set to same as input default value
-        static_validation_file = True if static_validation_file.lower() == 'true' else False
+        # parser = reqparse.RequestParser()
+        # parser.add_argument('section', help="Validation section", location="args")
+        # parser.add_argument('level', help="Validation message levels", location="args")
+        # parser.add_argument('static_validation_file', help="Use pre-generated validations", location="args")
+        # args = parser.parse_args()
+        # section = args['section']
+        # log_category = args['level']
+        # static_validation_file = args['static_validation_file']
+        # if not static_validation_file:
+        #     static_validation_file = 'true'  # Set to same as input default value
+        # static_validation_file = True if static_validation_file.lower() == 'true' else False
 
-        log_categories = "error", "warning", "info", "success", "all"
-        if log_category is None or log_category not in log_categories:
-            log_category = 'all'
+        # log_categories = "error", "warning", "info", "success", "all"
+        # if log_category is None or log_category not in log_categories:
+        #     log_category = 'all'
 
-        val_sections = "all", "isa-tab", "publication", "protocols", "people", "samples", "assays", "maf", "files"
-        if section is None or section not in val_sections:
-            section = 'all'
-
-        try:
-            number_of_files = sum([len(files) for r, d, files in os.walk(readonly_files_folder)])
-        except:
-            number_of_files = 0
+        # val_sections = "all", "isa-tab", "publication", "protocols", "people", "samples", "assays", "maf", "files"
+        # if section is None or section not in val_sections:
+        #     section = 'all'
         
-        validation_files_limit = settings.validation_files_limit
-        force_static_validation = False
+        # validation_files_limit = settings.validation_files_limit
+        # force_static_validation = False
 
-        # We can only use the static validation file when all values are used. MOE uses 'all' as default
-        if section != 'all' or log_category != 'all':
-            static_validation_file = False
+        # # We can only use the static validation file when all values are used. MOE uses 'all' as default
+        # if section != 'all' or log_category != 'all':
+        #     static_validation_file = False
 
-        if section == 'all' or log_category == 'all':
-            validation_file = os.path.join(internal_files_folder, settings.validation_report_file_name)
-            if os.path.isfile(validation_file):
-                with open(validation_file, 'r', encoding='utf-8') as f:
-                    validation_schema = json.load(f)
+        # if section == 'all' or log_category == 'all':
+    
+        validation_file = Path(os.path.join(internal_files_folder, settings.validation_report_file_name))
+        max_response_in_section =  settings.max_validation_messages_count_in_response
+        if validation_file.exists() and validation_file.is_file():
+            try:
+                validation_schema = json.loads(validation_file.read_text(encoding="utf-8"))
+                if "validation" in validation_schema and validation_schema["validation"]:
+                    if "last_update_time" not in validation_schema["validation"]:
+                        update_time = datetime.datetime.fromtimestamp(validation_file.stat().st_mtime)
+                        last_update_time_str = update_time.strftime('%Y-%m-%d-%H:%M')
+                        validation_schema["validation"]["last_update_time"] = last_update_time_str
+                        validation_schema["validation"]["last_update_timestamp"] = update_time.timestamp()
+                    if "validations" in validation_schema["validation"] and validation_schema["validation"]["validations"]:
+                        sections = validation_schema["validation"]["validations"]
+                        for section in sections:
+                            if "details" in section and len(section["details"]) > max_response_in_section:
+                                section["details"].sort(key=validation_message_sorter)
+                                section["details"] = section["details"][:max_response_in_section]
+                        
                     return validation_schema
+            except Exception as exc:
+                if validation_file.is_symlink():
+                    validation_file.unlink()
+                elif validation_file.is_file():
+                    os.remove(validation_file)
+                elif validation_file.is_dir():
+                    shutil.rmtree(str(validation_file))
+                logger.error(f"{str(exc)}")
+                
+        now = datetime.datetime.now()
+        last_update_time_str = now.strftime('%Y-%m-%d-%H:%M')
+        return {"validation": {"status": "not ready", "timing": 0, "last_update_time": last_update_time_str, "last_update_timestamp": now.timestamp(), "validations": []}}
 
-        if section == 'all' and log_category == 'all' and number_of_files >= validation_files_limit:
-            force_static_validation = True  # ToDo, We need to use static files until pagenation is implemented
-            static_validation_file = force_static_validation
+def validation_message_sorter(item: Dict[str, Any]):
+    if "status" in item and item["status"]:
+        if item["status"] == "error":
+            return 0
+        elif item["status"] == "warning":
+            return 10
+        elif item["status"] == "info":
+            return 100
+        elif item["status"] == "success":
+            return 100
+    return 1000
+        # try:
+        #     number_of_files = sum([len(files) for r, d, files in os.walk(readonly_files_folder)])
+        # except:
+        #     number_of_files = 0
+            
+        # if section == 'all' and log_category == 'all' and number_of_files >= validation_files_limit:
+        #     force_static_validation = True  # ToDo, We need to use static files until pagenation is implemented
+        #     static_validation_file = force_static_validation
 
-        study_status = study_status.lower()
+        # study_status = study_status.lower()
 
-        if (static_validation_file and study_status in ('in review', 'public')) or force_static_validation:
+        # if (static_validation_file and study_status in ('in review', 'public')) or force_static_validation:
 
-            validation_file =  os.path.join(internal_files_folder, settings.validation_report_file_name)
-            # Some file in the filesystem is newer than the validation reports, so we need to re-generate
-            validation_file_mtime = 0
-            if os.path.exists(validation_file):
-                validation_file_mtime = os.path.getmtime(validation_file)
+        #     validation_file =  os.path.join(internal_files_folder, settings.validation_report_file_name)
+        #     # Some file in the filesystem is newer than the validation reports, so we need to re-generate
+        #     validation_file_mtime = 0
+        #     if os.path.exists(validation_file):
+        #         validation_file_mtime = os.path.getmtime(validation_file)
             
                 
-            if get_last_update_on_folder(readonly_files_folder) > validation_file_mtime or get_last_update_on_folder(metadata_files_folder) > validation_file_mtime:
-                return update_val_schema_files(validation_file, study_id, user_token,
-                                               obfuscation_code, log_category=log_category, return_schema=True)
+        #     if get_last_update_on_folder(readonly_files_folder) > validation_file_mtime or get_last_update_on_folder(metadata_files_folder) > validation_file_mtime:
+        #         return update_val_schema_files(validation_file, study_id, user_token,
+        #                                        obfuscation_code, log_category=log_category, return_schema=True)
 
-            if os.path.isfile(validation_file):
-                try:
-                    with open(validation_file, 'r', encoding='utf-8') as f:
-                        validation_schema = json.load(f)
-                except Exception as e:
-                    logger.error(str(e))
-                    validation_schema = update_val_schema_files(validation_file, study_id, user_token,
-                                                                obfuscation_code, log_category=log_category,
-                                                                return_schema=True)
-                    # validation_schema = \
-                    #     validate_study(study_id, study_location, user_token, obfuscation_code,
-                    #                    validation_section=section,
-                    #                    log_category=log_category, static_validation_file=False)
-            else:
-                validation_schema = update_val_schema_files(validation_file, study_id, user_token,
-                                                            obfuscation_code, log_category=log_category,
-                                                            return_schema=True)
-                # validation_schema = \
-                #     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
-                #                    log_category=log_category, static_validation_file=static_validation_file)
+        #     if os.path.isfile(validation_file):
+        #         try:
+        #             with open(validation_file, 'r', encoding='utf-8') as f:
+        #                 validation_schema = json.load(f)
+        #         except Exception as e:
+        #             logger.error(str(e))
+        #             validation_schema = update_val_schema_files(validation_file, study_id, user_token,
+        #                                                         obfuscation_code, log_category=log_category,
+        #                                                         return_schema=True)
+        #             # validation_schema = \
+        #             #     validate_study(study_id, study_location, user_token, obfuscation_code,
+        #             #                    validation_section=section,
+        #             #                    log_category=log_category, static_validation_file=False)
+        #     else:
+        #         validation_schema = update_val_schema_files(validation_file, study_id, user_token,
+        #                                                     obfuscation_code, log_category=log_category,
+        #                                                     return_schema=True)
+        #         # validation_schema = \
+        #         #     validate_study(study_id, study_location, user_token, obfuscation_code, validation_section=section,
+        #         #                    log_category=log_category, static_validation_file=static_validation_file)
 
-        else:
-            static_validation_file_path = os.path.join(internal_files_folder, settings.validation_files_json_name)
-            validation_schema = \
-                validate_study(study_id, metadata_files_folder, user_token, obfuscation_code, validation_section=section,
-                               log_category=log_category, static_validation_file=static_validation_file_path)
+        # else:
+        #     static_validation_file_path = os.path.join(internal_files_folder, settings.validation_files_json_name)
+        #     validation_schema = \
+        #         validate_study(study_id, metadata_files_folder, user_token, obfuscation_code, validation_section=section,
+        #                        log_category=log_category, static_validation_file=static_validation_file_path)
 
-        return validation_schema
+        # return validation_schema
 
 
-class UpdateValidationFile(Resource):
+class ValidationProcess(Resource):
     @swagger.operation(
         summary="Update validation file",
         notes="Update validation file",
@@ -276,20 +311,27 @@ class UpdateValidationFile(Resource):
         study_id = study_id.upper()
 
         # param validation
-        is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
-        study_status = commons.get_permissions(study_id, user_token)
-        if not write_access:
-            abort(403)
-        settings = get_study_settings()
-        file_path = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
-        validation_report_file_name = settings.validation_report_file_name
-        validation_file = os.path.join(file_path, validation_report_file_name)
-        """ Background thread to update the validations file """
-        threading.Thread(
-            target=update_val_schema_files(validation_file, study_id, user_token, obfuscation_code),
-            daemon=True).start()
+        # is_curator, read_access, write_access, obfuscation_code, study_location, release_date, submission_date, \
+        # study_status = commons.get_permissions(study_id, user_token)
+        # if not write_access:
+        #     abort(403)
+        
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
+        result = update_validation_files_task( study_id=study_id, user_token=user_token)    
+        return result    
+        # settings = get_study_settings()
+        # file_path = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
+        # validation_report_file_name = settings.validation_report_file_name
+        # validation_file = os.path.join(file_path, validation_report_file_name)
+        
+        
+        
+        # """ Background thread to update the validations file """
+        # threading.Thread(
+        #     target=update_validation_schema_files(validation_file, study_id, user_token, obfuscation_code),
+        #     daemon=True).start()
 
-        return {"success": "Validation schema file updated"}
+        # return {"success": "Validation schema file update process is triggered"}
 
 
 class OverrideValidation(Resource):

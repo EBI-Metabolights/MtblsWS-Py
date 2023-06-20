@@ -12,7 +12,6 @@ from app.ws.db.models import TableModel, ValidationEntriesModel, ValidationEntry
 from app.ws.db.schemes import Study, User
 from app.ws.db.types import StudyStatus, UserRole, UserStatus
 from app.ws.db.utils import date_str_to_int, datetime_to_int
-from app.ws.study.validation.commons import validate_study
 
 logger = logging.getLogger(__file__)
 
@@ -213,26 +212,26 @@ def fill_validations(m_study, path, revalidate_study, user_token_to_revalidate):
     validation_entries_model = ValidationEntriesModel()
     m_study.validations = validation_entries_model
 
-    if revalidate_study:
-        results = validate_study(m_study.studyIdentifier, path, user_token_to_revalidate, m_study.obfuscationCode)
-        if results and "validation" in results:
-            validation_result = results["validation"]
-            if "status" in validation_result:
-                validation_entries_model.status = validation_result["status"]
-            validation_entries_model.overriden = False
-            validation_entries_model.passedMinimumRequirement = False
-            if "validations" in validation_result:
-                validations = validation_result["validations"]
-                for section in validations:
-                    if "details" in section:
-                        for message in section["details"]:
-                            validation_entry_model = ValidationEntryModel()
-                            validation_entry_model.status = message["status"]
-                            validation_entry_model.description = message["description"]
-                            validation_entry_model.message = message["message"]
-                            validation_entry_model.group = message["section"]
-                            validation_entry_model.overriden = message["val_override"]
-                            validation_entries_model.entries.append(validation_entry_model)
+#     if revalidate_study:
+#         results = validate_study(m_study.studyIdentifier, path, user_token_to_revalidate, m_study.obfuscationCode)
+#         if results and "validation" in results:
+#             validation_result = results["validation"]
+#             if "status" in validation_result:
+#                 validation_entries_model.status = validation_result["status"]
+#             validation_entries_model.overriden = False
+#             validation_entries_model.passedMinimumRequirement = False
+#             if "validations" in validation_result:
+#                 validations = validation_result["validations"]
+#                 for section in validations:
+#                     if "details" in section:
+#                         for message in section["details"]:
+#                             validation_entry_model = ValidationEntryModel()
+#                             validation_entry_model.status = message["status"]
+#                             validation_entry_model.description = message["description"]
+#                             validation_entry_model.message = message["message"]
+#                             validation_entry_model.group = message["section"]
+#                             validation_entry_model.overriden = message["val_override"]
+#                             validation_entries_model.entries.append(validation_entry_model)
 
 
 def get_value_with_column_name(dataframe, column_name):

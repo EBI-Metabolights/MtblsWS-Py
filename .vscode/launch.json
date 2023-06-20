@@ -28,7 +28,7 @@
             ],
             "jinja": true,
             "justMyCode": false,
-            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets"}
+            "env": {"PYTHONPATH": "${cwd}", "CONFIG_FILE_PATH": "${cwd}/config.yaml", "SECRETS_PATH": "${cwd}/.secrets", "GEVENT_SUPPORT": "True"}
 
         }, 
         {

@@ -55,3 +55,4 @@ class StudySettings(BaseModel):
     validation_files_limit: int = 10000
     validation_script: str = "/nfs/www-prod/web_hx2/cm/metabolights/scripts/cluster_scripts/val/validation.sh"
     missing_files_name: str = "missing_files.txt"
+    max_validation_messages_count_in_response: int = 50

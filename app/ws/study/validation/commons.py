@@ -16,6 +16,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+import datetime
 import glob
 import json
 import logging
@@ -31,12 +32,14 @@ import requests
 from app.config import get_settings
 
 from app.ws.cluster_jobs import submit_job
-from app.ws.db_connection import override_validations, update_validation_status, query_comments
+from app.ws.db.schemes import Study
+from app.ws.db_connection import  update_validation_status, query_comments
 from app.ws.isaApiClient import IsaApiClient
 from app.config.model.study import StudySettings
 from app.ws.settings.utils import get_study_settings
-from app.ws.study import commons
-from app.ws.study.folder_utils import get_all_files_from_filesystem, list_directories_full
+from app.ws.study.folder_utils import get_files_for_validation
+from app.ws.study.study_service import StudyService
+from app.ws.study_folder_utils import FileSearchResult
 from app.ws.utils import read_tsv, map_file_type, get_assay_file_list, find_text_in_isatab_file, get_table_header, \
     get_assay_type_from_file_name, get_assay_headers_and_protcols
 
@@ -480,16 +483,19 @@ def check_maf_rows(validations, val_section, maf_df, column_name, is_ms=False, l
                     info, val_sequence=11, log_category=log_category)
 
 
-def update_val_schema_files(validation_file, study_id, user_token, obfuscation_code,
-                            log_category='all', return_schema: bool=False, settings: StudySettings=None):
-    if not settings:
-        settings = get_study_settings()
+
+
+def update_validation_schema_files(validation_file, study_id, user_token, obfuscation_code,
+                            log_category='all', study_settings: StudySettings=None):
+    settings = get_settings()
+    if not study_settings:
+        study_settings = settings.study
         
-    internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
-    readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
-    metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
+    internal_files_folder = os.path.join(study_settings.mounted_paths.study_internal_files_root_path, study_id)
+    readonly_files_folder = os.path.join(study_settings.mounted_paths.study_readonly_files_root_path, study_id)
+    metadata_files_folder = os.path.join(study_settings.mounted_paths.study_metadata_files_root_path, study_id)
     # Tidy up old files first
-    validation_files_path = os.path.join(internal_files_folder, settings.validation_files_json_name)
+    validation_files_path = os.path.join(internal_files_folder, study_settings.validation_files_json_name)
     if os.path.isfile(validation_files_path):
         os.remove(validation_files_path)
 
@@ -497,13 +503,14 @@ def update_val_schema_files(validation_file, study_id, user_token, obfuscation_c
         os.remove(validation_file)
 
     f_start_time = time.time()
-    file_list = []
     
-    file_list = list_directories_full(metadata_files_folder, file_list, base_study_location=metadata_files_folder)    
-    
+    search_result = get_files_for_validation(study_id, metadata_files_folder)
+    for item in search_result.study:
+        item.file = item.relative_path
+    result = search_result.dict(include={"study"})
     try:
         with open(validation_files_path, 'w', encoding='utf-8') as f1:
-            json.dump(file_list, f1, ensure_ascii=False)
+            json.dump(result, f1, ensure_ascii=False)
     except Exception as e1:
         logger.error('Error Writing validation file list: ' + str(e1))
 
@@ -512,17 +519,18 @@ def update_val_schema_files(validation_file, study_id, user_token, obfuscation_c
     v_start_time = time.time()
     validation_schema = validate_study(study_id, metadata_files_folder, user_token, obfuscation_code,
                                        log_category=log_category, static_validation_file=validation_files_path)
-    if log_category == 'all':  # Only write the complete file, not when we have a sub-section only query
-        try:
-            with open(validation_file, 'w', encoding='utf-8') as f:
-                # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
-                json.dump(validation_schema, f, ensure_ascii=False)
-        except Exception as e:
-            logger.error('Error writing validation schema file: ' + str(e))
-        logger.info(study_id + " - Generating validations list took %s seconds" % round(time.time() - v_start_time, 2))
+    # if log_category == 'all':  # Only write the complete file, not when we have a sub-section only query
+    try:
+        with open(validation_file, 'w', encoding='utf-8') as f:
+            # json.dump(validation_schema, f, ensure_ascii=False, indent=4)
+            json.dump(validation_schema, f, ensure_ascii=False)
+    except Exception as e:
+        logger.error('Error writing validation schema file: ' + str(e))
+    v_end_time = time.time() 
+    time_elipsed = round(v_end_time - v_start_time, 2)
+    logger.info(study_id + " - Generating validations list took %s seconds" % time_elipsed)
 
-    if return_schema:
-        return validation_schema
+    return {"status": "completed", "file": validation_file}
 
 
 def get_last_update_on_folder(study_location):
@@ -554,6 +562,9 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
 
     """
     start_time = time.time()
+    last_update_time = datetime.datetime.now()
+    last_update_timestamp = last_update_time.timestamp()
+    last_update_time_str = last_update_time.strftime('%Y-%m-%d-%H:%M')
     all_validations = []
     validation_schema = None
     error_found = False
@@ -564,10 +575,12 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
     internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
     readonly_files_folder = os.path.join(settings.mounted_paths.study_readonly_files_root_path, study_id)
     metadata_files_folder = os.path.join(settings.mounted_paths.study_metadata_files_root_path, study_id)
-    # Ensuring we have the latest database values
-    is_curator, read_access, write_access, db_obfuscation_code, db_study_location, db_release_date, \
-    db_submission_date, db_study_status = commons.get_permissions(study_id, user_token)
 
+    
+    
+    isa_date_format = "%Y-%m-%d"
+    study: Study = StudyService.get_instance().get_study_by_acc(study_id)
+    db_release_date = study.releasedate.strftime(isa_date_format)
     try:
         validation_schema_file = get_settings().file_resources.validations_file
 
@@ -586,18 +599,17 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
     override_list = []
     comment_list = []
     try:
-        query_list = override_validations(study_id, 'query')
-        if query_list and query_list[0]:
-            for val in query_list[0].split('|'):
-                override_list.append(val)
+        override = study.override
+        if override:
+            override_list.extend(override.split('|'))
     except Exception as e:
         logger.error('Could not query overridden validations from the database. ' + str(e))
 
 
     try:
-        query_comment_list = query_comments(study_id)
-        if query_comment_list and query_comment_list[0]:
-            comment_list.extend(query_comment_list[0].split('|'))
+        comment = study.comment
+        if comment:
+            comment_list.extend(comment.split('|'))
     except IndexError as e:
         logger.error(f'Unable to retrieve comment list from database: {str(e)}')
 
@@ -701,20 +713,20 @@ def validate_study(study_id, study_location_old, user_token, obfuscation_code,
         error_found = True
     if amber_warning:
         warning_found = True
-
+    
     if error_found:
         update_validation_status(study_id=study_id, validation_status=error)
         end_time = round(time.time() - start_time, 2)
-        return {"validation": {"status": error, "timing": end_time, "validations": all_validations}}
+        return {"validation": {"status": error, "timing": end_time, "last_update_time": last_update_time_str, "last_update_timestamp": last_update_timestamp,  "validations": all_validations}}
 
     if warning_found:
         update_validation_status(study_id=study_id, validation_status=warning)
         end_time = round(time.time() - start_time, 2)
-        return {"validation": {"status": warning, "timing": end_time, "validations": all_validations}}
+        return {"validation": {"status": warning, "timing": end_time, "last_update_time": last_update_time_str, "last_update_timestamp": last_update_timestamp, "validations": all_validations}}
 
     update_validation_status(study_id=study_id, validation_status=success)
     end_time = round(time.time() - start_time, 2)
-    return {"validation": {"status": success, "timing": end_time, "validations": all_validations}}
+    return {"validation": {"status": success, "timing": end_time, "last_update_time": last_update_time_str, "last_update_timestamp": last_update_timestamp, "validations": all_validations}}
 
 
 def get_assay_column_validations(validation_schema, a_header):
@@ -1201,44 +1213,37 @@ def validate_files(study_id, readonly_files_folder, metadata_files_folder, obfus
                    val_section="files", log_category=error, static_validation_file=None):
     validations = []
     
-    assay_file_list = get_assay_file_list(metadata_files_folder)
     settings = get_study_settings()
     # folder_list = get_files_in_sub_folders(study_location)
-    study_files, _upload_files, _upload_diff, _upload_location, latest_update_time = \
-        get_all_files_from_filesystem(study_id, obfuscation_code, metadata_files_folder,
-                                      directory=None, include_raw_data=True, validation_only=True,
-                                      assay_file_list=assay_file_list,
-                                      short_format=True, include_sub_dir=True,
-                                      static_validation_file=static_validation_file)
+    search_result: FileSearchResult = get_files_for_validation(study_id, metadata_files_folder)
+    study_files = search_result.study 
     sample_cnt = 0
     raw_file_found = False
     derived_file_found = False
     compressed_found = False
+    ignore_file_set = set(get_settings().file_filters.ignore_file_list)
     for file in study_files:
-        file_name = file['file']
-        file_name = str(file_name)
-        file_type = file['type']
-        file_status = file['status']
+        file_name = file.relative_path
+        file_type = file.type
+        file_status = file.status
         isa_tab_warning = False
-
+        
         full_file_name = os.path.join(metadata_files_folder, file_name)
 
         # Don't check our internal folders
         if not file_name.startswith(settings.internal_files_symbolic_link_name) and not file_name.startswith(settings.audit_files_symbolic_link_name):
-            if os.path.isdir(os.path.join(full_file_name)):
+            if file.file != file.relative_path and file.file.startswith(('i_', 'a_', 's_', 'm_')) and not isa_tab_warning:
+                add_msg(validations, val_section,
+                        "ISA-Tab metadata document " + file_name + " is detected in subfolder.",
+                        warning, val_section, value=file_name, val_sequence=2, log_category=log_category)
+                isa_tab_warning = True
+            if file.directory and file.is_stop_folder and file.status == "active":
                 for sub_file_name in os.listdir(full_file_name):
                     if is_empty_file(os.path.join(full_file_name, sub_file_name), study_location=metadata_files_folder):
-                        add_msg(validations, val_section, "Empty file found in a sub-directory", info, val_section,
+                        add_msg(validations, val_section, "Empty file is found in a sub-directory", info, val_section,
                                 value=os.path.join(file_name, sub_file_name), val_sequence=1, log_category=log_category)
 
-                    # warning for sub folders with ISA tab
-                    if sub_file_name.startswith(('i_', 'a_', 's_', 'm_')) and not isa_tab_warning:
-                        add_msg(validations, val_section,
-                                "Sub-directory " + file_name + " contains ISA-Tab metadata documents",
-                                warning, val_section, value=file_name, val_sequence=2, log_category=log_category)
-                        isa_tab_warning = True
-
-            if is_empty_file(full_file_name, study_location=metadata_files_folder):
+            if file.file not in ignore_file_set  and not file.directory and file.is_empty:
                 # if '/' in file_name and file_name.split("/")[1].lower() not in empty_exclusion_list:  # In case the file is in a folder
                 add_msg(validations, val_section, "Empty files are not allowed: '" + file_name + "'",
                         error, val_section,
@@ -2010,52 +2015,6 @@ def validate_isa_tab_metadata(isa_inv, isa_study, validation_schema, file_name, 
                 val_sequence=5, log_category=log_category)
 
     return return_validations(val_section, validations, override_list, comment_list)
-
-
-def run_validation_in_File(validations_file, study_id, study_location, user_token, obfuscation_code, section,
-                           log_category, validation_run_msg):
-    validations_assay_running = validations_file[:-5] + "_inProgress.json"
-    if os.path.isfile(validations_assay_running):
-        return {"message": validation_run_msg}, 202
-    # if validation file is already present - check if no update after that
-    elif os.path.isfile(validations_file):
-        if is_newer_timestamp(study_location + '/DERIVED_FILES', validations_file) or is_newer_timestamp(
-                study_location + '/RAW_FILES', validations_file):
-            validation_schema = \
-                validate_study(study_id, study_location, user_token, obfuscation_code,
-                               validation_section=section,
-                               log_category=log_category, basic_validation=False)
-            try:
-                with open(validations_file, 'w', encoding='utf-8') as f:
-                    json.dump(validation_schema, f, ensure_ascii=False)
-            except Exception as e:
-                logger.error('Error writing validation schema file: ' + str(e))
-        else:
-            try:
-                with open(validations_file, 'r', encoding='utf-8') as f:
-                    validation_schema = json.load(f)
-            except Exception as e:
-                logger.error(str(e))
-                return {"message": validation_run_msg}, 202
-    # no job running . create new job and generate validation
-    else:
-        try:
-            open(validations_assay_running, "w+")
-            validation_schema = \
-                validate_study(study_id, study_location, user_token, obfuscation_code,
-                               validation_section=section,
-                               log_category=log_category, basic_validation=False)
-
-            with open(validations_file, 'w', encoding='utf-8') as f:
-                json.dump(validation_schema, f, ensure_ascii=False)
-            os.remove(validations_assay_running)
-        except Exception as e:
-            logger.error('Error writing validation schema file: ' + str(e))
-            try:
-                os.remove(validations_assay_running)
-            except:
-                pass
-    return validation_schema
 
 
 def job_status(job_id):

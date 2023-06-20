@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 from typing import Union
 from pydantic import BaseModel
@@ -12,6 +13,7 @@ from app.utils import MetabolightsException
 
 from app.ws.redis.redis import RedisStorage, get_redis_server
 
+logger = logging.getLogger("ws_log")
 
 class TaskDescription(BaseModel):
     task_id: str = ""
@@ -168,6 +170,7 @@ class HpcWorkerBashRunner:
             value = self.redis.get_value(self.key).decode()
             return self.parse_redis_value(value)
         except Exception as exc:
+            logger.error("Error parsing redis value")
             return None
 
     def save_task_description(self, desc: TaskDescription):

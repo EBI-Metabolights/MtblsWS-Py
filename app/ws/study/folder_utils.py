@@ -14,11 +14,20 @@ from app.config import get_settings
 from app.config.utils import get_private_ftp_relative_root_path
 
 from app.file_utils import make_dir_with_chmod
+from app.study_folder_utils import get_all_study_metadata_and_data_files
 from app.ws.settings.utils import get_study_settings
+from app.ws.study_folder_utils import FileSearchResult, evaluate_files_in_detail, get_referenced_file_set
 from app.ws.utils import date_format, file_date_format, map_file_type, new_timestamped_folder, copy_file
 
 logger = logging.getLogger("wslog")
 
+def get_files_for_validation(study_id, study_metadata_files_path) -> FileSearchResult:
+    study_settings = get_settings().study
+    exclude_list = [study_settings.audit_files_symbolic_link_name, study_settings.internal_files_symbolic_link_name]
+    referenced_files = get_referenced_file_set(study_id=study_id, metadata_path=study_metadata_files_path)
+    metadata_and_data_files = get_all_study_metadata_and_data_files(study_metadata_files_path, exclude_list=exclude_list)
+    search_result = evaluate_files_in_detail(metadata_and_data_files, referenced_files)
+    return search_result
 
 def get_all_files_from_filesystem(study_id, obfuscation_code, study_location, directory=None,
                                   include_raw_data=None, assay_file_list=None, validation_only=False,
