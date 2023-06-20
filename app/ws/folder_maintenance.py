@@ -236,7 +236,7 @@ class StudyFolderMaintenanceTask(object):
         
         # self.file_manager = MountedVolumeFileManager(f"{self.study_id}_local_file_manager")
     
-    def create_audit_folder(self, folder_name: str = None, stage: str = "BEFORE"):
+    def create_audit_folder(self, folder_name: str = None, stage: str = "BACKUP"):
         if os.path.exists(self.study_metadata_files_path):
             self.maintain_rw_storage_folders()
             metadata_files_list = self.get_all_metadata_files(recursive=False)
@@ -538,29 +538,28 @@ class StudyFolderMaintenanceTask(object):
         elif self.study_status == StudyStatus.SUBMITTED:
             permission = Acl.AUTHORIZED_READ_WRITE.value
         
-        create_folder = self.study_status == StudyStatus.INCURATION or self.study_status == StudyStatus.SUBMITTED or self.study_status == StudyStatus.INREVIEW
+        # create_folder = self.study_status == StudyStatus.INCURATION or self.study_status == StudyStatus.SUBMITTED or self.study_status == StudyStatus.INREVIEW
         if not os.path.exists(private_ftp_root_path):
-            if create_folder:
-                self._create_folder_future_actions(
-                    private_ftp_root_path,
-                    0o770,
-                    cluster_private_ftp_recycle_bin_root_path,
-                    created_folders,
-                    deleted_folders,
-                )
+            self._create_folder_future_actions(
+                private_ftp_root_path,
+                0o770,
+                cluster_private_ftp_recycle_bin_root_path,
+                created_folders,
+                deleted_folders,
+            )
 
-                sub_folder = os.path.join(private_ftp_root_path, "RAW_FILES")
-                self._create_folder_future_actions(
-                    sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
-                )
+            sub_folder = os.path.join(private_ftp_root_path, "RAW_FILES")
+            self._create_folder_future_actions(
+                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+            )
 
-                sub_folder = os.path.join(private_ftp_root_path, "DERIVED_FILES")
-                self._create_folder_future_actions(
-                    sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
-                )
-                self.update_permission(private_ftp_root_path, permission)
+            sub_folder = os.path.join(private_ftp_root_path, "DERIVED_FILES")
+            self._create_folder_future_actions(
+                sub_folder, 0o770, cluster_private_ftp_recycle_bin_root_path, created_folders, deleted_folders
+            )
+            self.update_permission(private_ftp_root_path, permission)
         else:
-            if create_folder and self.study_status == StudyStatus.SUBMITTED:
+            if self.study_status == StudyStatus.SUBMITTED:
                 self.update_permission(private_ftp_root_path, 0o770)
                 sub_folder = os.path.join(private_ftp_root_path, "RAW_FILES")
                 self._create_folder_future_actions(
@@ -810,10 +809,11 @@ class StudyFolderMaintenanceTask(object):
             status = "REFERENCED" if file in referenced_metadata_files else "UNREFERENCED"
             type = "NOT METADATA"
             existence = "NOT EXIST"
+            m_time = 0
             if os.path.exists(file_path):
                 existence = "EXIST"
                 m_time = os.path.getmtime(file_path)
-            m_time = 0
+            
             if file.startswith("i_"):
                 type = "INVESTIGATION"
             elif file.startswith("a_"):
@@ -928,7 +928,7 @@ class StudyFolderMaintenanceTask(object):
         chmod_str = oct(mode).replace("0o", "")
         if os.path.exists(file_path) and not os.path.isdir(file_path):
             file_basename = os.path.basename(file_path)
-            backup_path_permission_str = oct(backup_path_permission_str).replace("0o", "")
+            backup_path_permission_str = oct(backup_path_permission).replace("0o", "")
             if not os.path.exists(backup_path) and backup_path not in created_folders:
                 action_log = MaintenanceActionLog(
                     item=backup_path,
@@ -1773,7 +1773,6 @@ class StudyFolderMaintenanceTask(object):
             # non_values = assay_df[assay_df[sample_name] == ''].index
             uniques = pd.unique(assay_df[sample_name])
             if len(assay_df.index) == uniques.size and empty_values.size == 0:
-                print("al")
 
                 for col in non_empty_columns:
                     if col in assay_df.columns:

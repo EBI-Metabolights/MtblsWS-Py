@@ -36,9 +36,10 @@ class LsfClient(object):
         bsub_command = self._get_submit_command(script_path, queue, job_name, output_file, error_file, account)
         result: CapturedBashExecutionResult = BashClient.execute_command(bsub_command)
         stdout = result.stdout
+        status_line = result.stdout[0] if result.stdout else ""
         job_id = ""
         pattern = re.compile('Job <(.+)> is submitted to queue <(.+)>.*', re.IGNORECASE)
-        match =  pattern.match(stdout)
+        match =  pattern.match(status_line)
         if match:
             match_result = match.groups()
             if not match_result[0] or not match_result[0].isnumeric():
@@ -60,9 +61,8 @@ class LsfClient(object):
         ssh_command = BashClient.build_ssh_command(hostname=self.settings.hpc_cluster.datamover.connection.host, username=self.settings.hpc_cluster.datamover.connection.username)       
         command = f"{ssh_command} {kill_command}"  
         result: CapturedBashExecutionResult = BashClient.execute_command(command)
-        stdout = result.stdout
         pattern = re.compile('Job <(.+)>.*', re.IGNORECASE)
-        lines = stdout.split("\n")
+        lines = result.stdout
         killed_job_id_list = []
         for line in lines:
             if line.strip():
@@ -73,7 +73,7 @@ class LsfClient(object):
                         raise MetabolightsException(message=f"No job id is defined.")
                            
                     killed_job_id_list.append(match_result[0])
-        return killed_job_id_list, stdout, result.stderr       
+        return killed_job_id_list, result.stdout, result.stderr       
           
     def get_job_status(self, job_names: Union[None, str, List[str]]=None):
         if not job_names:
@@ -84,10 +84,9 @@ class LsfClient(object):
         command = self._get_job_status_command()
 
         result: CapturedBashExecutionResult = BashClient.execute_command(command)  
-        stdout = result.stdout
         results = [] 
-        if stdout:
-            lines = stdout.split("\n")
+        if result.stdout:
+            lines = result.stdout
             for line in lines:
                 if line.strip():
                     columns = line.split()

@@ -71,7 +71,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {"PYTHONPATH": "${cwd}"},
-            "args": ["MTBLS1", "metadata", "sample_report.txt", "_TEST_DATA_REFERENCE_", "apply"]
+            "args": ["", "metadata", "metadata_migration_report.txt", "STORAGE_MIGRATION_TEST", "apply"]
         },
         {
             "name": "Python: Create Test Data Files",

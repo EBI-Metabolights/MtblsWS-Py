@@ -83,6 +83,7 @@ def get_study_folder_files(root_path, file_descriptors: Dict[str, FileDescriptor
         if not list_all_files:
             if item.name and item.name[0] == ".":
                 continue
+        
         if item.is_dir():            
             if not list_all_files:
                 if item.name in SKIP_FOLDER_NAMES:
@@ -96,8 +97,6 @@ def get_study_folder_files(root_path, file_descriptors: Dict[str, FileDescriptor
                         is_stop_folder = True
                         sub_filename = SKIP_FOLDER_CONTAINS_FILE_NAME
 
-
-                        
             ext = item.suffix.lower()
             relative_path = str(item).replace(f"{root_path}", "").lstrip("/")
 
@@ -131,7 +130,8 @@ def get_study_folder_files(root_path, file_descriptors: Dict[str, FileDescriptor
 
                 
             relative_path = str(item).replace(f"{root_path}/", "")
-            m_time = os.path.getmtime(item)
+            if not item.is_symlink() or (item.is_symlink() and item.resolve().exists()):
+                m_time = os.path.getmtime(item)
             file_descriptors[relative_path] = FileDescriptor(relative_path=relative_path, is_dir=False, modified_time=m_time, extension=ext)
                                 
             yield item

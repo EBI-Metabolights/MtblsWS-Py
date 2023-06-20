@@ -20,7 +20,7 @@ def maintain_folders(
     task_name: str = None,
     settings: StudySettings = None,
     output_summary_report=None,
-    delete_unreferenced_metadata_files=True,
+    delete_unreferenced_metadata_files=False,
     apply_future_actions=False,
 ):
     if target.lower().startswith("metadata"):
@@ -138,8 +138,10 @@ if __name__ == "__main__":
         apply_future_actions = True if sys.argv[5].lower().startswith("apply") else False
 
     if not study_ids:
-        for i in range(30):
-            study_ids.append(f"MTBLS{(i+1)}")
+        studies = StudyService.get_instance().get_all_study_ids()
+        skip_study_ids = []
+        study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
+        
     study_ids.sort(key=sort_by_study_id)
     results = maintain_folders(
         study_ids,

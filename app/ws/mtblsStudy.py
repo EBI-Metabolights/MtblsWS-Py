@@ -1839,6 +1839,18 @@ class MtblsStudyFolders(Resource):
                 "dataType": "string",
             },
             {
+                "name": "target_folder",
+                "description": "Select target study folders: metadata, data and private ftp folder",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["metadata", "data", "private-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "metadata",
+                "default": "metadata"
+            },
+            {
                 "name": "force",
                 "description": "Force to maintain",
                 "required": False,
@@ -1848,6 +1860,17 @@ class MtblsStudyFolders(Resource):
                 "type": "Boolean",
                 "defaultValue": False,
                 "default": True,
+            },
+            {
+                "name": "task_name",
+                "description": "Any task name, backup folders created with this name",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "allowEmptyValue": False,
+                "defaultValue": "MAINTAIN",
+                "default": "MAINTAIN"
             },
             {
                 "name": "user_token",
@@ -1873,6 +1896,28 @@ class MtblsStudyFolders(Resource):
         user_token = ""
         if "user_token" in request.headers:
             user_token = request.headers["user_token"]
+
+        target_folder = ""
+        if "target_folder" in request.headers:
+            target_folder = request.headers["target_folder"]
+
+        task_name = ""
+        if "task_name" in request.headers:
+            task_name = request.headers["task_name"]
+        if not task_name:
+            task_name = "MAINTAIN"
+        if target_folder not in ("metadata", "data", "private-ftp"):
+            raise MetabolightsException(message="Target folder is not defined.")
+        maintain_metadata_storage = False
+        maintain_data_storage = False
+        maintain_private_ftp_storage = False
+        if target_folder == "metadata":
+            maintain_metadata_storage = True
+        elif target_folder == "data":
+            maintain_data_storage = True
+        elif target_folder == "private-ftp":
+            maintain_private_ftp_storage = True
+            
         parser = reqparse.RequestParser()
         parser.add_argument("force", help="force to maintain", location="args")
         args = parser.parse_args()
@@ -1887,7 +1932,10 @@ class MtblsStudyFolders(Resource):
                 "send_email_to_submitter": True,
                 "study_id": study_id,
                 "force_to_maintain": force_to_maintain,
-                "task_name": "MAINTAIN"
+                "task_name": task_name,
+                "maintain_metadata_storage": maintain_metadata_storage,
+                "maintain_data_storage": maintain_data_storage,
+                "maintain_private_ftp_storage": maintain_private_ftp_storage
             }
             task = maintain_storage_study_folders.apply_async(kwargs=inputs)
 
