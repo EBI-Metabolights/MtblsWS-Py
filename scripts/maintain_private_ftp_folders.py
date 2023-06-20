@@ -19,6 +19,6 @@ if __name__ == "__main__":
     study_ids = [study[0] for study in studies if study[0] and study[0] not in skip_study_ids]
 
     study_ids.sort(key=sort_by_study_id)
-    maintain_folders(study_id_list=study_ids, target="private-ftp", task_name="MAINTAIN_PRIVATE_FTP", output_summary_report="ftp_folder_maintenance", apply_future_actions=True)
+    maintain_folders(study_id_list=study_ids, target="private-ftp", task_name="MAINTAIN_PRIVATE_FTP", output_summary_report="ftp_folder_maintenance.txt", apply_future_actions=True)
 
     print("end")

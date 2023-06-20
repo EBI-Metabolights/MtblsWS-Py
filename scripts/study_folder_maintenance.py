@@ -72,7 +72,10 @@ def maintain_folders(
                 except Exception as ex:
                     print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
                 finally:
-                    write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
+                    if apply_future_actions:
+                        write_actions(fa, maintenance_task.actions, study_id, study_status.name)
+                    else:
+                        write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
             elif target == "metadata":
                 try:
                     maintenance_task.maintain_study_rw_storage_folders()
@@ -82,11 +85,14 @@ def maintain_folders(
                     write_actions(fa, maintenance_task.actions, study_id, study_status.name)
             elif target == "private-ftp":
                 try:
-                    maintenance_task.maintain_study_rw_storage_folders()
+                    maintenance_task.create_maintenace_actions_for_study_private_ftp_folder()
                 except Exception as ex:
                     print(f"Maintain task could not be completed for {study_id}. {str(ex)}")
                 finally:
-                    write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
+                    if apply_future_actions:
+                        write_actions(fa, maintenance_task.actions, study_id, study_status.name)
+                    else:
+                        write_actions(fa, maintenance_task.future_actions, study_id, study_status.name)
 
     return maintenance_task_list
 
