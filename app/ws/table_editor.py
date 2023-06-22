@@ -1248,7 +1248,7 @@ class GetTsvFile(Resource):
             study_status = commons.get_permissions(study_id, user_token, obfuscation_code)
         if not read_access:
             abort(403)
-
+        file_basename = file_name
         if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
             if not is_curator:
                 abort(403)
@@ -1258,8 +1258,20 @@ class GetTsvFile(Resource):
 
         logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
+        maf_file = False
+        if file_basename.startswith("m_") and file_basename.endswith(".tsv"):
+            maf_file = True
         try:
-            file_df = read_tsv(file_name)
+            if maf_file:
+                col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
+                selected_columns = []
+                for column in col_names:
+                    header, ext = os.path.splitext(column)
+                    if header in default_maf_columns:
+                        selected_columns.append(column)
+                file_df = read_tsv(file_name, selected_columns)
+            else:
+                file_df = read_tsv(file_name)
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
 
@@ -1271,6 +1283,31 @@ class GetTsvFile(Resource):
         return {'header': df_header, 'data': df_data_dict}
 
 
+default_maf_columns = {
+    'database_identifier',
+    'chemical_formula',
+    'smiles',
+    'inchi',
+    'metabolite_identification',
+    'mass_to_charge',
+    'fragmentation',
+    'modifications',
+    'charge',
+    'retention_time',
+    'taxid',
+    'species',
+    'database',
+    'database_version',
+    'reliability',
+    'uri',
+    'search_engine',
+    'search_engine_score',
+    'smallmolecule_abundance_sub',
+    'smallmolecule_abundance_stdev_sub',
+    'smallmolecule_abundance_std_error_sub',
+    'chemical_shift',
+    'multiplicity'
+    }
 class GetAssayMaf(Resource):
     @swagger.operation(
         summary="Get MAF data for a given public study and MAF sheet number",
