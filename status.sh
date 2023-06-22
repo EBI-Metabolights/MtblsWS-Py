@@ -7,10 +7,10 @@ if [ -z "$SERVER_PORT" ]; then
 fi
 
 HOST=$(hostname)
-APPDIR=$PWD
+APPDIR=$(pwd -P)
 LOG_PATH=$APPDIR/logs
 
-PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
+PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
     EXISTING_PROCESS=$(netstat -plant 2>/dev/null | grep $SERVER_PORT | awk '{print $7}' | tr "/" " ")

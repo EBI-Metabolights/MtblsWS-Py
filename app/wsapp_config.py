@@ -106,9 +106,9 @@ from app.ws.tasks.create_json_files import (PublicStudyJsonExporter,
 from app.ws.tasks.twitter import PublicStudyTweet
 from app.ws.user_management import UserManagement
 from app.ws.v1.studies import V1StudyDetail
-from app.ws.validation import (NewValidation, OverrideValidation,
+from app.ws.validation import (NewValidation, OverrideValidation, StudyValidationTask,
                                ValidationFile, ValidationProcess,
-                               ValidationComment)
+                               ValidationComment, ValidationReport)
 
 
 def configure_app(flask_app):
@@ -312,6 +312,10 @@ def initialize_app(flask_app):
 
     api.add_resource(BioStudies, res_path + "/studies/<string:study_id>/biostudies")
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
+    api.add_resource(StudyValidationTask, res_path + "/studies/<string:study_id>/validation-task")
+    api.add_resource(ValidationReport, res_path + "/studies/<string:study_id>/validation-report")
+    api.add_resource(StudyFolderSyncronization, res_path + "/studies/<string:study_id>/study-folders/rsync-task")
+    
     api.add_resource(ValidationFile, res_path + "/studies/<string:study_id>/validate-study")
     api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")
     api.add_resource(MtblsStudyValidationStatus,
@@ -369,8 +373,7 @@ def initialize_app(flask_app):
     api.add_resource(ChebiLiteEntity, res_path + "/chebi/chebi-ids/<string:compound_name>")
     api.add_resource(ChebiEntity, res_path + "/chebi/entities/<string:chebi_id>")
 
-    api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/study-folders/<string:study_id>/maintain")
-    api.add_resource(StudyFolderSyncronization, res_path + "/ebi-internal/study-folders/<string:study_id>/rsync")
+    api.add_resource(MtblsStudyFolders, res_path + "/ebi-internal/<string:study_id>/study-folders/maintain")
     
     # ToDo, complete this: api.add_resource(CheckCompounds, res_path + "/ebi-internal/compound-names")
     

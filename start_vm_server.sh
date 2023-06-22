@@ -8,18 +8,15 @@ fi
 HOST=$(hostname)
 echo $HOST
 echo "Host $HOST approved, starting Green Unicorn server"
-LOG_PATH="$2"
-APPDIR=$PWD
+
+APPDIR=$(pwd -P)
 
 if [ -z "$SERVER_PORT" ]; then
     echo "SERVER PORT parameter is not defined. execute with port number"
     exit 1
 fi
 
-if [ -z "$LOG_PATH" ]; then
-    LOG_PATH=$APPDIR/logs
-fi
-
+LOG_PATH=$APPDIR/logs
 if [ -z "$CONFIG_FILE_PATH" ]; then
     CONFIG_FILE_PATH="$APPDIR/config.yaml"
 fi
@@ -61,7 +58,7 @@ if [ -z "$PROCESS_ID" ]; then
     EXISTING_PROCESS=$(netstat -plant 2>/dev/null | grep $SERVER_PORT | awk '{print $7}') | tr "/" " "
     if [ -z "$EXISTING_PROCESS" ]; then
         echo "GUNICORN will be started"
-        gunicorn -b 0.0.0.0:$SERVER_PORT --access-logfile $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT} --error-logfile $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT} --worker-class gevent --preload wsapp:app --workers 3 --threads 2 --pid ./app_${HOST}_${SERVER_PORT}.pid  --log-level info --capture-output --daemon  > $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT} 3>&1 & echo $! > app_${HOST}_${SERVER_PORT}.pid
+        gunicorn -b 0.0.0.0:$SERVER_PORT --access-logfile $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}.log --error-logfile $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}.log --worker-class gevent --preload wsapp:app --workers 3 --threads 2 --pid ./app_${HOST}_${SERVER_PORT}.pid  --log-level info --capture-output --daemon  > $LOG_PATH/gunicorn_${HOST}_${SERVER_PORT} 3>&1 & echo $! > app_${HOST}_${SERVER_PORT}.pid
     else
         echo "!!!WARNING: An application is already running on port $SERVER_PORT. Kill this process before starting server. Current process id and process name $EXISTING_PROCESS"
     fi

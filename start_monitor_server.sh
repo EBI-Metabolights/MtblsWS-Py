@@ -17,7 +17,7 @@ fi
 HOST=$(hostname)
 echo $HOST
 
-APPDIR=$PWD
+APPDIR=$(pwd -P)
 LOG_PATH=$APPDIR/logs
 
 cd $APPDIR

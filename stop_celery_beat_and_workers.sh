@@ -6,7 +6,7 @@ if [ -z "$SERVER_PORT" ]; then
     exit 1
 fi
 HOST=$(hostname)
-APPDIR=$PWD
+APPDIR=$(pwd -P)
 LOG_PATH=$APPDIR/logs
 
 PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' |  head -n -1 | tr '\n' ' ')
@@ -30,7 +30,7 @@ fi
 
 eval "$(conda shell.bash hook)"
 conda activate python38-MtblsWS
-
+C_FAKEFORK=1
 echo "Shutdown signal will be sent to all workers"
-celery -A app.tasks.worker:celery control shutdown -t 10
+celery -A app.tasks.worker:celery control shutdown
 echo "Shutdown signal was sent to all workers"

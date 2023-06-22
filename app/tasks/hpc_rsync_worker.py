@@ -12,6 +12,7 @@ from app.services.storage_service.models import (
 )
 from app.tasks.bash_client import BashExecutionResult, CapturedBashExecutionResult, LoggedBashExecutionResult
 from app.tasks.hpc_worker_bash_runner import BashExecutionTaskStatus, HpcWorkerBashRunner, TaskDescription
+from app.tasks.utils import get_current_utc_time_string, get_utc_time_string_from_timestamp
 
 
 class RsyncResult(BaseModel):
@@ -96,14 +97,26 @@ class HpcRsyncWorker:
 
     @staticmethod
     def get_sync_calculation_result(task_status: BashExecutionTaskStatus) -> SyncCalculationTaskResult:
+        UTC_SIMPLE_DATE_FORMAT='%Y-%m-%d %H:%M:%S'
+        
         task_description = task_status.description
         sync_required = False
-        last_update_time = datetime.datetime.now().isoformat()
+        
+        last_upate_time_val = datetime.datetime.now(datetime.timezone.utc)
+        last_update_time = last_upate_time_val.strftime(UTC_SIMPLE_DATE_FORMAT)
+        last_update_timestamp = last_upate_time_val.timestamp()
         calc_result = SyncCalculationTaskResult()
+        if task_description and task_description.task_id:
+            calc_result.description = f"Task id: {task_status.description.task_id}"
+        calc_result.new_task = task_status.new_task
         calc_result.last_update_time = last_update_time
+        calc_result.last_update_timestamp = last_update_timestamp
         if task_status.result_ready and task_status.result:
+            calc_result.task_done_timestamp  = task_status.description.task_done_time
+            calc_result.task_done_time_str = get_utc_time_string_from_timestamp(calc_result.task_done_timestamp)
             rsync_result = HpcRsyncWorker.evaluate_rsync_result(task_status)
             if rsync_result.valid_result:
+                
                 if rsync_result.returncode > 0:
                     calc_result.status = SyncCalculationStatus.CALCULATION_FAILURE
                     calc_result.description = rsync_result.error_message
@@ -114,13 +127,14 @@ class HpcRsyncWorker:
                         calc_result.status = SyncCalculationStatus.SYNC_NOT_NEEDED
 
                     calc_result.description = rsync_result.success_message
+                    
                 return calc_result
             else:
                 calc_result.status = SyncCalculationStatus.CALCULATION_FAILURE
                 calc_result.description = rsync_result.error_message
         else:
             if task_description:
-                last_update_time = datetime.datetime.fromtimestamp(task_description.last_update_time).isoformat()
+                last_update_time = get_utc_time_string_from_timestamp(task_description.last_update_time)
                 calc_result.last_update_time = last_update_time
         if not task_description:
             status = SyncCalculationStatus.NO_TASK
@@ -137,6 +151,7 @@ class HpcRsyncWorker:
         else:
             status = SyncCalculationStatus.UNKNOWN
         calc_result.status = status
+        
         return calc_result
 
     @staticmethod
@@ -214,9 +229,9 @@ class HpcRsyncWorker:
             status = SyncTaskStatus.UNKNOWN
 
         if task_description:
-            last_update_time = datetime.datetime.fromtimestamp(task_description.last_update_time).isoformat()
+            last_update_time = get_utc_time_string_from_timestamp(task_description.last_update_time)
         else:
-            last_update_time = datetime.datetime.now().isoformat()
+            last_update_time = get_current_utc_time_string()
         task_result: SyncTaskResult = SyncTaskResult(
             status=status, description="...", last_update_time=last_update_time
         )
@@ -233,6 +248,9 @@ class HpcRsyncWorker:
             else:
                 task_result.description = rsync_result.error_message
                 task_result.status = SyncTaskStatus.SYNC_FAILURE
+        else:
+            if task_description and task_description.task_id:
+                task_result.description = f"Task id: {task_description.task_id}"
         return task_result
 
     @staticmethod

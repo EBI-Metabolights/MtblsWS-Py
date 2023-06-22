@@ -15,8 +15,11 @@ if [ -z "$SECRETS_PATH" ]; then
 fi
 
 HOST=$(hostname)
-APPDIR=$PWD
+APPDIR=$(pwd -P)
 LOG_PATH=$APPDIR/logs
+
+cd $APPDIR
+
 PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
 
 if [ -z "$PROCESS_ID" ]; then
@@ -27,16 +30,7 @@ else
 fi
 
 
-PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' |  head -n -1 | tr '\n' ' ')
 
-if [ -z "$PROCESS_ID" ]; then
-    echo "NO CELERY BEAT"
-else
-    echo "CELERY BEAT PROCESS_ID: ${PROCESS_ID} will be killed"
-    kill -9 $PROCESS_ID
-fi
-
-cd $APPDIR
 
 eval "$(conda shell.bash hook)"
 conda activate python38-MtblsWS
@@ -45,5 +39,16 @@ source .env
 export $(cat .env | grep -v '#' | xargs)
 
 echo "Shutdown signal will be sent to all workers"
-celery -A app.tasks.worker:celery control shutdown -t 10
+C_FAKEFORK=1
+celery -A app.tasks.worker:celery control shutdown
 echo "Shutdown signal was sent to all workers"
+
+
+PROCESS_ID=$(ps -aux | grep "$LOG_PATH/celery_beat_${HOST}_${SERVER_PORT}.log" | awk '{ print $2 }' |  head -n -1 | tr '\n' ' ')
+
+if [ -z "$PROCESS_ID" ]; then
+    echo "NO CELERY BEAT"
+else
+    echo "CELERY BEAT PROCESS_ID: ${PROCESS_ID} will be killed"
+    kill -9 $PROCESS_ID
+fi

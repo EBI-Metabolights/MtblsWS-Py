@@ -114,7 +114,7 @@ class StudyRsyncClient:
     ) -> SyncTaskResult:
         self.validate_sync_direction(source, target)
         task_name = self.get_task_name(source, target, dry_run_mode=False)
-        date_timestamp = datetime.datetime.now().strftime("%y-%m-%d-%m_%H:%M:%S")
+        date_timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%y-%m-%d-%m_%H:%M:%S")
         stdout_log_filename = f"{task_name}_{date_timestamp}.stdout"
         stderr_log_filename = f"{task_name}_{date_timestamp}.stderr"
         stdout_log_file_path = os.path.join(self.log_path, stdout_log_filename)
@@ -156,7 +156,7 @@ class StudyRsyncClient:
         if status_check_only:
             result: SyncCalculationTaskResult = HpcRsyncWorker.get_rsync_dry_run_status(task_name, self.study_id)
         else:
-            date_timestamp = datetime.datetime.now().strftime("%y-%m-%d-%m_%H:%M:%S")
+            date_timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%y-%m-%d-%m_%H:%M:%S")
             stdout_log_filename = f"{task_name}_{date_timestamp}.stdout"
             stderr_log_filename = f"{task_name}_{date_timestamp}.stderr"
             stdout_log_file_path = os.path.join(self.log_path, stdout_log_filename)

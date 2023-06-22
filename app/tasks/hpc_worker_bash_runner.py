@@ -30,7 +30,7 @@ class BashExecutionTaskStatus(BaseModel):
     wait_in_seconds: float = 0
     result_ready: bool = False
     result: BashExecutionResult = None
-
+    new_task: bool = False
 
 WAIT_STATES = {"STARTED", "INITIATED", "RECEIVED", "STARTED", "RETRY", "PROGRESS"}
 
@@ -59,10 +59,10 @@ class HpcWorkerBashRunner:
         self.stdout_log_file_path = stdout_log_file_path
 
     def get_bash_execution_status(self, result_only: bool = False):
-        task_status: BashExecutionTaskStatus = self.get_status()
+        task_status: BashExecutionTaskStatus = self.get_status(result_only)
         task_description = task_status.description
         if not result_only:
-            if not task_description or (not task_status.running and task_description.last_status != "SUCCESS"):
+            if not task_description or (not task_status.running):
                 if not self.command:
                     raise MetabolightsException(message="Bash command is not set.")
                 task_status = self.execute(
@@ -70,20 +70,29 @@ class HpcWorkerBashRunner:
                     stdout_log_file_path=self.stdout_log_file_path,
                     stderr_log_file_path=self.stderr_log_file_path,
                 )
-
-        if task_status.result_ready and task_status.result:
-            self.redis.delete_value(self.key)
+                task_status.new_task = True
+        # if task_status.result_ready and task_status.result:
+        #     self.redis.delete_value(self.key)
         return task_status
 
-    def evaluate_current_status(self) -> BashExecutionTaskStatus:
+    def evaluate_current_status(self, results_only: bool) -> BashExecutionTaskStatus:
         task_status = BashExecutionTaskStatus()
         desc: TaskDescription = self.get_task_description()
         if desc and desc.task_id:
             result: AsyncResult = celery.AsyncResult(desc.task_id)
+            
+            
+            if result and result.state != "PENDING":
+                desc.task_id = result.task_id
+                
+                desc.last_status = result.state
+                desc.last_update_time = datetime.datetime.now(datetime.timezone.utc).timestamp()
+                desc.task_done_time  = result.date_done.timestamp() if result.date_done else 0
+                
             if result and result.state != "PENDING" and result.state != "REVOKED":
                 if result.state in WAIT_STATES:
                     task_status.running = True
-                else:
+                elif results_only:
                     task_status.result_ready = result.ready()
                     if task_status.result_ready:
                         task_status.wait_in_seconds = self.get_wait_time(result.date_done.timestamp())
@@ -95,10 +104,10 @@ class HpcWorkerBashRunner:
                             else:
                                 raise MetabolightsException(message="unexpected bash result")
 
-                        desc.task_done_time = result.date_done.isoformat()
+                        desc.task_done_time = result.date_done.timestamp()
                 task_status.description = desc
                 desc.task_id = result.task_id
-                desc.last_update_time = datetime.datetime.now().timestamp()
+                # desc.last_update_time = datetime.datetime.now(datetime.timezone.utc).timestamp()
                 desc.last_status = result.state
                 desc.stderr_log_filename = (
                     os.path.basename(self.stderr_log_file_path) if self.stderr_log_file_path else ""
@@ -114,8 +123,8 @@ class HpcWorkerBashRunner:
 
         return task_status
 
-    def get_status(self) -> BashExecutionTaskStatus:
-        return self.evaluate_current_status()
+    def get_status(self, results_only: bool) -> BashExecutionTaskStatus:
+        return self.evaluate_current_status(results_only=results_only)
 
     def execute(self, command, stdout_log_file_path=None, stderr_log_file_path=None) -> BashExecutionTaskStatus:
         inputs = {
@@ -127,7 +136,7 @@ class HpcWorkerBashRunner:
         task_id = task.id
         if task_id:
             result: AsyncResult = celery.AsyncResult(task_id)
-            now = datetime.datetime.now().timestamp()
+            now = datetime.datetime.now(datetime.timezone.utc).timestamp()
             state = result.state
             stderr_log_filename = os.path.basename(self.stderr_log_file_path) if stderr_log_file_path else ""
             stdout_log_filename = os.path.basename(self.stdout_log_file_path) if stdout_log_file_path else ""
@@ -147,7 +156,7 @@ class HpcWorkerBashRunner:
         raise MetabolightsException(http_code=501, message="Task can not be started")
 
     def get_wait_time(self, last_update_time: float):
-        now = datetime.datetime.now().timestamp()
+        now = datetime.datetime.now(datetime.timezone.utc).timestamp()
         elapsed_time = now - last_update_time
         if elapsed_time < 0:
             elapsed_time = 0

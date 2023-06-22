@@ -253,7 +253,7 @@ def check_datamover_workers(
             script_template = get_settings().hpc_cluster.datamover.worker.datamover_worker_submission_script_template_name
             settings = get_settings()
             inputs = {
-                "QUEUE_NAME": settings.hpc_cluster.datamover.worker.broker_queue_names,
+                "CELERY_QUEUE_NAME": settings.hpc_cluster.datamover.worker.broker_queue_names,
                 "REMOTE_SERVER_BASE_PATH": settings.hpc_cluster.datamover.worker.worker_deployment_root_path,
                 "SINGULARITY_DOCKER_USERNAME": settings.hpc_cluster.datamover.worker.singularity_docker_username,
                 "SINGULARITY_DOCKER_PASSWORD": settings.hpc_cluster.datamover.worker.singularity_docker_password,

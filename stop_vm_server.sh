@@ -14,7 +14,7 @@ if [ -z "$SECRETS_PATH" ]; then
 fi
 
 HOST=$(hostname)
-APPDIR=$PWD
+APPDIR=$(pwd -P)
 LOG_PATH=$APPDIR/logs
 PROCESS_ID=$(ps -ef | grep "$LOG_PATH/gunicorn_${HOST}_${SERVER_PORT}" | awk '{ print $2 }' | head -n -1 | tr '\n' ' ')
 

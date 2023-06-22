@@ -1948,7 +1948,7 @@ class MtblsStudyFolders(Resource):
 
 class StudyFolderSyncronization(Resource):
     @swagger.operation(
-        summary="(Curator Only) Sync study folders between different staging areas.",
+        summary="(Curator Only) If there is no rsync task, it starts new one.",
         nickname="Start sync process. New and updated files will be sync from source to target study folder",
         parameters=[
             {
@@ -2037,6 +2037,100 @@ class StudyFolderSyncronization(Resource):
     @metabolights_exception_handler
     def post(self, study_id):
         log_request(request)
+        return self.proces_rsync_request(study_id, request, start_new_task=True)
+
+    @swagger.operation(
+        summary="(Curator Only) Returns current rsync task status.",
+        parameters=[
+            {
+                "name": "study_id",
+                "description": "MTBLS Identifier",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "path",
+                "dataType": "string"
+            },
+            {
+                "name": "source_staging_area",
+                "description": "Source study folder stage",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["private-ftp", "readonly-study", "rw-study", "public-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "private-ftp",
+                "default": "private-ftp"
+            },
+            {
+                "name": "target_staging_area",
+                "description": "Target study folder stage",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["private-ftp", "readonly-study", "rw-study", "public-ftp"],
+                "allowEmptyValue": False,
+                "defaultValue": "rw-study",
+                "default": "rw-study"
+            },
+            {
+                "name": "sync_type",
+                "description": "Sync category: sync metadada or data or internal files",
+                "required": True,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "string",
+                "enum": ["metadata", "data", "internal", "public-metadata-versions", "integrity-check", "audit"],
+                "allowEmptyValue": False,
+                "defaultValue": "metadata",
+                "default": "metadata"
+            },
+            {
+                "name": "dry_run",
+                "description": "Only check whether there is a difference ",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "header",
+                "dataType": "Boolean",
+                "allowEmptyValue": False,
+                "defaultValue": True,
+                "default": True
+            },
+            {
+                "name": "user_token",
+                "description": "User API token",
+                "paramType": "header",
+                "type": "string",
+                "required": True,
+                "allowMultiple": False
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "OK."
+            },
+            {
+                "code": 401,
+                "message": "Unauthorized. Access to the resource requires user authentication."
+            },
+            {
+                "code": 403,
+                "message": "Forbidden. Access to the study is not allowed for this user."
+            },
+            {
+                "code": 404,
+                "message": "Not found. The requested identifier is not valid or does not exist."
+            }
+        ]
+    )
+    @metabolights_exception_handler
+    def get(self, study_id):
+        log_request(request)
+        return self.proces_rsync_request(study_id, request, start_new_task=False)    
+    
+    def proces_rsync_request(self, study_id: str, request, start_new_task:bool = False):
         # param validation
         if study_id is None:
             raise MetabolightsException(message='Please provide valid parameter for study identifier')
@@ -2096,9 +2190,12 @@ class StudyFolderSyncronization(Resource):
         
         study = study = StudyService.get_instance().get_study_by_acc(study_id)
         client = StudyRsyncClient(study_id=study_id, obfuscation_code=study.obfuscationcode)
-        
+        status_check_only = not start_new_task
         if dry_run:
-            status: SyncTaskResult = client.rsync_dry_run(source, target, status_check_only=False)
+            status: SyncTaskResult = client.rsync_dry_run(source, target, status_check_only=status_check_only)
         else:
-            status: SyncTaskResult = client.rsync(source, target, status_check_only=False)
+            status: SyncTaskResult = client.rsync(source, target, status_check_only=status_check_only)
         return status.dict()
+    
+
+    

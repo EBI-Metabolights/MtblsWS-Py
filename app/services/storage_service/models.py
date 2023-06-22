@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Union
 
 from pydantic import BaseModel, Field
 
@@ -26,8 +27,12 @@ class SyncTaskStatus(str, Enum):
     JOB_SUBMISSION_FAILED = 'JOB_SUBMISSION_FAILED'
 
 class JobResultModel(BaseModel):
+    new_task: bool = False
     description: str = Field('')
     last_update_time: str = Field('')
+    last_update_timestamp: Union[int, float] = 0
+    task_done_time_str: str = ""
+    task_done_timestamp:  Union[int, float] = 0
 
 
 class SyncTaskResult(JobResultModel):
