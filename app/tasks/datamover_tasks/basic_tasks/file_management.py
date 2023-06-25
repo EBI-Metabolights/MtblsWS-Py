@@ -140,7 +140,7 @@ def delete_files(self, file_paths: Union[str, List[str]]):
             else:
                 results[path_item] = {"status": False, "message": f"'{path_item}' is not a file / folder or does not exist."}
         else:
-            results[path_item] = {"status": False, "message": f"There is no folder '{path_item}'."}
+            results[path_item] = {"status": False, "message": f"There is no file or folder: '{path_item}'."}
     return results
 
 @celery.task(

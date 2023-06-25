@@ -30,7 +30,7 @@ import re
 import shutil
 import string
 import time
-from typing import List
+from typing import List, Tuple
 import uuid
 from os.path import normpath, basename
 
@@ -912,18 +912,21 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
 
     return isa_inv, onto
 
-def delete_remote_file(file_path: str) -> bool:
+def delete_remote_file(file_path: str) -> Tuple[bool, str]:
     inputs = {"file_paths": file_path}
     task = delete_files.apply_async(kwargs=inputs, expires=20)
     cluster_settings = get_settings().hpc_cluster.configuration
     output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
     if not output:
-        return False
+        return False, "No response from server."
 
     for item in output:
-        if not item["status"]:
-            return False
-    return True
+        if "status" in output[item]:
+            message = output[item]["message"] if "message" in output[item]  else ""
+            
+            return output[item]["status"], message
+        
+    return False, "No Files"
     
 def remove_file(file_location: str, file_name: str, always_remove=False):
     settings = get_settings()
@@ -949,8 +952,8 @@ def remove_file(file_location: str, file_name: str, always_remove=False):
             new_file_relative_path = file_name.replace(f"{audit_files_folder_name}/", "", 1)
             remote_path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, study_id, new_file_relative_path)
         try:    
-            delete_remote_file(remote_path)
-            return True, "File " + file_name + "is deleted"
+            result, message = delete_remote_file(remote_path)
+            return result, message
         except Exception as exc:
             return False, f"File {file_name} is not deleted. {str(exc)}"
     # Raw files are sometimes actually folders, so need to check if file or folder before removing
