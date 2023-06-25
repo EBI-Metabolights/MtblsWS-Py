@@ -113,7 +113,7 @@ def delete_files(self, file_paths: Union[str, List[str]]):
             if os.path.islink(path_item):
                 try:
                     os.unlink(path_item)
-                    results[path_item] = {"status": False, "message": f"'{path_item}' was deleted."}
+                    results[path_item] = {"status": True, "message": f"'{path_item}' was deleted."}
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
@@ -122,7 +122,7 @@ def delete_files(self, file_paths: Union[str, List[str]]):
             elif os.path.isfile(path_item):
                 try:
                     os.remove(path_item)
-                    results[path_item] = {"status": False, "message": f"'{path_item}' was deleted."}
+                    results[path_item] = {"status": True, "message": f"'{path_item}' was deleted."}
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,
@@ -131,7 +131,7 @@ def delete_files(self, file_paths: Union[str, List[str]]):
             elif os.path.isdir(path_item):
                 try:
                     shutil.rmtree(path_item)
-                    results[path_item] = {"status": False, "message": f"'{path_item}' was deleted."}
+                    results[path_item] = {"status": True, "message": f"'{path_item}' was deleted."}
                 except Exception as ex:
                     results[path_item] = {
                         "status": False,

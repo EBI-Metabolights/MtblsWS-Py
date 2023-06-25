@@ -39,3 +39,11 @@ if [ -z "$PROCESS_ID" ]; then
 else
     echo "CELERY BEAT PROCESS_ID: ${PROCESS_ID}"
 fi
+
+PYTHONPATH=$APPDIR
+
+cd $APPDIR
+
+eval "$(conda shell.bash hook)"
+conda activate python38-MtblsWS
+celery  -A app.tasks.worker:celery inspect stats | grep @
