@@ -33,6 +33,8 @@ class JobResultModel(BaseModel):
     last_update_timestamp: Union[int, float] = 0
     task_done_time_str: str = ""
     task_done_timestamp:  Union[int, float] = 0
+    task_id:  str = ""
+    dry_run: bool = True
 
 
 class SyncTaskResult(JobResultModel):

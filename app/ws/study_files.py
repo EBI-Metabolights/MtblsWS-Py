@@ -286,31 +286,25 @@ without setting the "force" parameter to True''',
 
         status = False
         message = None
-
+        errors = []
+        
+        deleted_files = []
         for file in files:
             try:
                 f_name = file["name"]
 
                 if f_name.startswith('i_') and f_name.endswith('.txt') and not is_curator:
-                    return {'Error': "Only MetaboLights curators can remove the investigation file"}
-
-                if file_location == "study":
+                    errors.append({"status": "error", 'message': "Only MetaboLights curators can remove the investigation file", 'file': f_name})  
+                elif file_location == "study":
                     status, message = remove_file(study_location, f_name, always_remove)
-                    s_status, s_message = remove_file(study_location, f_name, always_remove)
-                    if s_status:
-                        return {'Success': "File " + f_name + " deleted"}
+                    if not status:
+                        errors.append({"status": "error", 'message': message, 'file': f_name})
                     else:
-                        return {'Error': "Can not find and/or delete file " + f_name + " in the study or upload folder"}
-
-                if not status:
-                    return {'Error': message}
-            except:
-                return {'Error': message}
-
-        if status:
-            return {'Success': message}
-        else:
-            return {'Error': message}
+                        deleted_files.append({"status": "success", 'message': message, 'file': f_name})
+            except Exception as exc:
+                errors.append({"status": "error", 'message': str(exc), 'file': f_name})
+                
+        return {"errors": errors, "deleted_files": deleted_files}
 
         
 class StudyRawAndDerivedDataFiles(Resource):

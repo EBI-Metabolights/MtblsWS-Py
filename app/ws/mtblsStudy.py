@@ -42,7 +42,7 @@ from app.tasks.common_tasks.basic_tasks.email import (
     send_email_for_study_submitted,
     send_technical_issue_email,
 )
-from app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization import sync_studies_on_es_and_db
+from app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization import sync_studies_on_es_and_db
 from app.tasks.datamover_tasks.basic_tasks.study_folder_maintenance import delete_study_folders, maintain_storage_study_folders
 from app.tasks.hpc_study_rsync_client import VALID_FOLDERS, StudyFolder, StudyFolderLocation, StudyFolderType, StudyRsyncClient
 
@@ -1946,7 +1946,7 @@ class MtblsStudyFolders(Resource):
 
 
 
-class StudyFolderSyncronization(Resource):
+class StudyFolderSynchronization(Resource):
     @swagger.operation(
         summary="(Curator Only) If there is no rsync task, it starts new one.",
         nickname="Start sync process. New and updated files will be sync from source to target study folder",

@@ -22,8 +22,8 @@ result_backend = broker_url
 celery = Celery(
     __name__,
     include=[
-        "app.tasks.common_tasks.admin_tasks.es_and_db_compound_syncronization",
-        "app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization",
+        "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization",
+        "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization",
         "app.tasks.common_tasks.curation_tasks.metabolon",
         "app.tasks.common_tasks.curation_tasks.validation",
         "app.tasks.common_tasks.basic_tasks.email",
@@ -96,13 +96,13 @@ periodic_task_configuration = get_settings().celery.periodic_task_configuration
 #         "options": {"expires": 55},
 #     },
 #     "sync_compound_on_es_and_db": {
-#         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_compound_syncronization.sync_compounds_on_es_and_db",
+#         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization.sync_compounds_on_es_and_db",
 #         "schedule": periodic_task_configuration.es_compound_sync_task_period_in_secs ,
 #         "args": (service_account_apitoken,),
 #         "options": {"expires": 60 },
 #     },
 #         "sync_study_on_es_and_db": {
-#         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_study_syncronization.sync_studies_on_es_and_db",
+#         "task": "app.tasks.common_tasks.admin_tasks.es_and_db_study_synchronization.sync_studies_on_es_and_db",
 #         "schedule": periodic_task_configuration.es_study_sync_task_period_in_secs ,
 #         "args": (service_account_apitoken,),
 #         "options": {"expires": 60 },

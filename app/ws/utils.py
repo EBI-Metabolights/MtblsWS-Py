@@ -49,6 +49,7 @@ from mzml2isa.parsing import convert as isa_convert
 from pandas import Series
 from dirsync import sync
 from app.config import get_settings
+from app.tasks.datamover_tasks.basic_tasks.file_management import delete_files, delete_folders
 
 from app.ws.mm_models import OntologyAnnotation
 from app.ws.settings.utils import get_study_settings
@@ -911,8 +912,44 @@ def add_ontology_to_investigation(isa_inv, onto_name, onto_version, onto_file, o
 
     return isa_inv, onto
 
+def delete_remote_file(file_path: str) -> bool:
+    inputs = {"file_paths": file_path}
+    task = delete_files.apply_async(kwargs=inputs, expires=20)
+    cluster_settings = get_settings().hpc_cluster.configuration
+    output = task.get(timeout=cluster_settings.task_get_timeout_in_seconds * 2)
+    if not output:
+        return False
 
-def remove_file(file_location, file_name, always_remove=False):
+    for item in output:
+        if not item["status"]:
+            return False
+    return True
+    
+def remove_file(file_location: str, file_name: str, always_remove=False):
+    settings = get_settings()
+    
+    files_folder_name = settings.study.readonly_files_symbolic_link_name
+    internal_files_folder_name = settings.study.internal_files_symbolic_link_name
+    audit_files_folder_name = settings.study.audit_files_symbolic_link_name
+    if file_name.strip(os.sep) in (files_folder_name, internal_files_folder_name, audit_files_folder_name):
+        return False, "Managed folders can not be deleted."
+    
+    first_folder = file_name.split(os.sep)[0]
+    
+    if first_folder in (files_folder_name, internal_files_folder_name, audit_files_folder_name):
+        study_id = os.path.basename(file_location)
+        mounted_paths = settings.hpc_cluster.datamover.mounted_paths
+        if first_folder == files_folder_name:
+            remote_path = os.path.join(mounted_paths.cluster_study_readonly_files_root_path, study_id, file_name)
+        elif first_folder == internal_files_folder_name:
+            remote_path = os.path.join(mounted_paths.cluster_study_internal_files_root_path, study_id, file_name)
+        elif first_folder == audit_files_folder_name:
+            remote_path = os.path.join(mounted_paths.cluster_study_audit_files_root_path, study_id, file_name)
+        try:    
+            delete_remote_file(remote_path)
+            return True, "File " + file_name + "is deleted"
+        except Exception as exc:
+            return False, f"File {file_name} is not deleted. {str(exc)}"
     # Raw files are sometimes actually folders, so need to check if file or folder before removing
     file_to_delete = os.path.join(file_location, file_name)
     # file_status == 'active' of a file is actively used as metadata
@@ -921,7 +958,7 @@ def remove_file(file_location, file_name, always_remove=False):
     try:
         if file_type == 'metadata_investigation' or file_type == 'metadata_assay' or file_type == 'metadata_sample' or file_type == 'metadata_maf':
             if file_status == 'active' and not always_remove:  # If active metadata and "remove anyway" flag if not set
-                return False, "Can not delete any active metadata files " + file_name
+                return False, file_name + " is referenced in metadata file. Referenced files can not be deleted."
         if os.path.exists(file_to_delete):  # First, does the file/folder exist?
             if os.path.islink(file_to_delete):
                 os.unlink(file_to_delete)
@@ -931,9 +968,9 @@ def remove_file(file_location, file_name, always_remove=False):
                 shutil.rmtree(file_to_delete)
         else:
             return False, "Can not find file " + file_name
-    except:
-        return False, "Can not delete file " + file_name
-    return True, "File " + file_name + " deleted"
+    except Exception as exc:
+        return False, f"Can not delete file {file_name}. {str(exc)}"
+    return True, "File " + file_name + "is deleted"
 
 
 def map_file_type(file_name, directory, assay_file_list=None):

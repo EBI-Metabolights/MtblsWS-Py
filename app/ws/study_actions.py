@@ -34,6 +34,7 @@ from app.ws.isaApiClient import IsaApiClient
 from app.ws.mtblsWSclient import WsClient
 from app.ws.study.user_service import UserService
 from app.ws.study.validation.commons import validate_study
+from app.ws.validation_utils import ValidationReport, get_validation_report
 
 logger = logging.getLogger('wslog')
 
@@ -151,8 +152,9 @@ class StudyStatus(Resource):
         elif write_access:
             if db_study_status.lower() != 'submitted':  # and study_status != 'In Curation':
                 abort(403, "You can not change the study to this status")
+            validation_report: ValidationReport = get_validation_report()
 
-            if self.get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
+            if validation_report.validation.status in ("success", "warning", "info"):
                 self.update_status(study_id, study_status, is_curator=is_curator,
                                    obfuscation_code=obfuscation_code, user_token=user_token)
 
@@ -160,9 +162,11 @@ class StudyStatus(Resource):
                     isa_inv.public_release_date = new_date
                     isa_study.public_release_date = new_date
                     release_date = new_date
-
             else:
-                abort(403, "There are validation errors. Fix any problems before attempting to change study status.")
+                if validation_report.validation.status == "not ready":
+                    abort(403, "Study has not been validated yet. Validate your study, fix any problems before attempting to change study status.")
+                else:
+                    abort(403, "There are validation errors. Fix any problems before attempting to change study status.")
         else:
             abort(403, "You do not have rights to change the status for this study")
 
@@ -189,16 +193,16 @@ class StudyStatus(Resource):
         # Update database
         update_study_status(study_id, study_status, is_curator=is_curator)
 
-    @staticmethod
-    def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
-        validates = validate_study(study_id, study_location, user_token, obfuscation_code, log_category='error')
-        validations = validates['validation']
-        status = validations['status']
+    # @staticmethod
+    # def get_study_validation_status(study_id, study_location, user_token, obfuscation_code):
+    #     validates = validate_study(study_id, study_location, user_token, obfuscation_code, log_category='error')
+    #     validations = validates['validation']
+    #     status = validations['status']
 
-        if status != 'error':
-            return True
+    #     if status != 'error':
+    #         return True
 
-        return False
+    #     return False
 
 
 class ToggleAccess(Resource):

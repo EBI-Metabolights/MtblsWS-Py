@@ -29,7 +29,6 @@ from app.config import get_settings
 
 from app.utils import MetabolightsException, metabolights_exception_handler, MetabolightsDBException
 from app.ws.db.dbmanager import DBManager
-from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
 from app.ws.study.folder_utils import write_audit_files
 from app.ws.study.study_service import identify_study_id
@@ -50,6 +49,39 @@ logger = logging.getLogger('wslog')
 def insert_row(idx, df, df_insert):
     return df.iloc[:idx, ].append(df_insert, ignore_index=True).append(df.iloc[idx:, ]).reset_index(drop=True)
 
+def filter_dataframe(filename: str, df: pd.DataFrame, df_data_dict, df_header) -> pd.DataFrame:
+    if filename.startswith("m_") and filename.endswith(".tsv"):
+        filtered_df = df
+        filtered_df_header = df_header
+        selected_columns = []
+        for column in df.columns:
+            header, ext = os.path.splitext(column)
+            if header in default_maf_columns:
+                selected_columns.append(column)
+        filtered_df = df[selected_columns]
+        filtered_df_header = get_table_header(filtered_df)
+        df_data_dict = totuples(filtered_df.reset_index(), 'rows')
+        return df_data_dict, filtered_df_header
+    return df_data_dict, df_header
+
+def get_dataframe(filename, file_path) -> pd.DataFrame:
+        maf_file = False
+        if filename.startswith("m_") and filename.endswith(".tsv"):
+            maf_file = True
+        try:
+            if maf_file:
+                col_names = pd.read_csv(file_path, sep="\t", nrows=0).columns
+                selected_columns = []
+                for column in col_names:
+                    header, ext = os.path.splitext(column)
+                    if header in default_maf_columns:
+                        selected_columns.append(column)
+                file_df = read_tsv(file_path, selected_columns)
+            else:
+                file_df = read_tsv(file_path)
+            return file_df
+        except Exception:
+            abort(400, "The file name was not found")
 
 class SimpleColumns(Resource):
     @swagger.operation(
@@ -164,7 +196,7 @@ class SimpleColumns(Resource):
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
             table_df = read_tsv(file_name)
@@ -187,7 +219,7 @@ class SimpleColumns(Resource):
         df_header = get_table_header(table_df)
 
         message = write_tsv(table_df, file_name)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
 
@@ -283,7 +315,7 @@ class ComplexColumns(Resource):
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
             table_df = read_tsv(file_name)
@@ -325,7 +357,7 @@ class ComplexColumns(Resource):
         df_data_dict = totuples(table_df.reset_index(), 'rows')
 
         message = write_tsv(table_df, file_name)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
         return {'header': df_header, 'rows': df_data_dict, 'message': message}
 
     @swagger.operation(
@@ -569,7 +601,7 @@ class ColumnsRows(Resource):
             study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
             table_df = read_tsv(file_name)
@@ -602,7 +634,7 @@ class ColumnsRows(Resource):
 
         # Get an indexed header row
         df_header = get_table_header(table_df)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, table_df, df_data_dict, df_header)
         return {'header': df_header, 'rows': df_data_dict, 'message': message}
 
 
@@ -723,7 +755,7 @@ class AddRows(Resource):
             study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         if file_name == 'metabolights_zooma.tsv':  # This will edit the MetaboLights Zooma mapping file
             if not is_curator:
                 abort(403)
@@ -775,10 +807,10 @@ class AddRows(Resource):
 
         # Get the updated data table
         try:
-            df_data_dict = totuples(read_tsv(file_name), 'rows')
+            df_data_dict = totuples(get_dataframe(file_basename, file_name), 'rows')
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
-
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
     @swagger.operation(
@@ -900,7 +932,7 @@ class AddRows(Resource):
         study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
 
         try:
@@ -931,7 +963,7 @@ class AddRows(Resource):
 
         # Get an indexed header row
         df_header = get_table_header(file_df)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
     @swagger.operation(
@@ -1019,7 +1051,7 @@ class AddRows(Resource):
             study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
             file_df = read_tsv(file_name)
@@ -1046,7 +1078,7 @@ class AddRows(Resource):
 
         # Get an indexed header row
         df_header = get_table_header(file_df)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': message}
 
     @swagger.operation(
@@ -1134,7 +1166,7 @@ class AddRows(Resource):
             study_status = commons.get_permissions(study_id, user_token)
         if not write_access:
             abort(403)
-
+        file_basename = file_name
         file_name = os.path.join(study_location, file_name)
         try:
             file_df = read_tsv(file_name)
@@ -1156,7 +1188,7 @@ class AddRows(Resource):
 
         # Get an indexed header row
         df_header = get_table_header(file_df)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict, 'message': ""}
 
 class GetTsvFile(Resource):
@@ -1258,20 +1290,8 @@ class GetTsvFile(Resource):
 
         logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
-        maf_file = False
-        if file_basename.startswith("m_") and file_basename.endswith(".tsv"):
-            maf_file = True
         try:
-            if maf_file:
-                col_names = pd.read_csv(file_name, sep="\t", nrows=0).columns
-                selected_columns = []
-                for column in col_names:
-                    header, ext = os.path.splitext(column)
-                    if header in default_maf_columns:
-                        selected_columns.append(column)
-                file_df = read_tsv(file_name, selected_columns)
-            else:
-                file_df = read_tsv(file_name)
+            file_df = get_dataframe(file_basename, file_name)
         except FileNotFoundError:
             abort(400, "The file " + file_name + " was not found")
 
@@ -1279,7 +1299,7 @@ class GetTsvFile(Resource):
 
         # Get an indexed header row
         df_header = get_table_header(file_df, study_id, file_name_param)
-
+        df_data_dict, df_header = filter_dataframe(file_basename, file_df, df_data_dict, df_header)
         return {'header': df_header, 'data': df_data_dict}
 
 
@@ -1308,6 +1328,7 @@ default_maf_columns = {
     'chemical_shift',
     'multiplicity'
     }
+
 class GetAssayMaf(Resource):
     @swagger.operation(
         summary="Get MAF data for a given public study and MAF sheet number",
@@ -1370,7 +1391,7 @@ class GetAssayMaf(Resource):
 
         logger.info('Trying to load MAF for Study %s, Sheet number %d', study_id, sheet_number)
 
-        study_path = get_study_settings().mounted_paths.study_metadata_files_root_path
+        study_path = get_settings().study.mounted_paths.study_metadata_files_root_path
         study_location = os.path.join(study_path, study_id)
         maflist = []
 

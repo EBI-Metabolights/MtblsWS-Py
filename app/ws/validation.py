@@ -26,13 +26,13 @@ from typing import Any, Dict
 from flask import request
 from flask_restful import abort, Resource, reqparse
 from flask_restful_swagger import swagger
-from app.utils import metabolights_exception_handler
+from app.utils import MetabolightsException, metabolights_exception_handler
 from app.ws.db_connection import override_validations, query_comments, update_comments
 from app.ws.settings.utils import get_study_settings
 from app.ws.study import commons
 from app.ws.study.user_service import UserService
 from app.ws.study.validation.commons import job_status, is_newer_timestamp, submitJobToCluser
-from app.ws.validation_utils import update_validation_files_task
+from app.ws.validation_utils import get_validation_report_content, update_validation_files_task
 
 logger = logging.getLogger('wslog')
 
@@ -113,7 +113,7 @@ class ValidationFile(Resource):
         ]
     )
     def get(self, study_id):
-        get_validation_report_content(study_id, request)
+        return get_validation_report_content(study_id, "all")
 
 
 class ValidationReport(Resource):
@@ -128,6 +128,16 @@ class ValidationReport(Resource):
                 "allowMultiple": False,
                 "paramType": "path",
                 "dataType": "string"
+            },
+            {
+                "name": "level",
+                "description": "Study to validate",
+                "required": False,
+                "allowMultiple": False,
+                "paramType": "query",
+                "dataType": "string",
+                "defaultValue": "all",
+                "default": "all"
             },
             {
                 "name": "user_token",
@@ -159,66 +169,23 @@ class ValidationReport(Resource):
         ]
     )
     def get(self, study_id):
-        get_validation_report_content(study_id, request)
-
-
-def get_validation_report_content(study_id, request):
-    user_token = None
-    # User authentication
-    if "user_token" in request.headers:
-        user_token = request.headers["user_token"]
-        
-    study_id = study_id.upper()
-
-    UserService.get_instance().validate_user_has_write_access(user_token, study_id)
-    settings = get_study_settings()
-        
-    internal_files_folder = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
-
-    validation_file = Path(os.path.join(internal_files_folder, settings.validation_report_file_name))
-    max_response_in_section =  settings.max_validation_messages_count_in_response
-    last_update_time_str = ""
-    last_update_timestamp = 0
-    if validation_file.exists() and validation_file.is_file():
-        try:
-            validation_schema = json.loads(validation_file.read_text(encoding="utf-8"))
-            if "validation" in validation_schema and validation_schema["validation"]:
-                if "last_update_time" not in validation_schema["validation"]:
-                    last_update_timestamp = validation_file.stat().st_mtime
-                    update_time = datetime.datetime.fromtimestamp(last_update_timestamp)
-                    last_update_time_str = update_time.strftime('%Y-%m-%d-%H:%M')
-                    validation_schema["validation"]["last_update_time"] = last_update_time_str
-                    validation_schema["validation"]["last_update_timestamp"] = update_time.timestamp()
-                if "validations" in validation_schema["validation"] and validation_schema["validation"]["validations"]:
-                    sections = validation_schema["validation"]["validations"]
-                    for section in sections:
-                        if "details" in section and len(section["details"]) > max_response_in_section:
-                            section["details"].sort(key=validation_message_sorter)
-                            section["details"] = section["details"][:max_response_in_section]
-                    
-                return validation_schema
-        except Exception as exc:
-            if validation_file.is_symlink():
-                validation_file.unlink()
-            elif validation_file.is_file():
-                os.remove(validation_file)
-            elif validation_file.is_dir():
-                shutil.rmtree(str(validation_file))
-            logger.error(f"{str(exc)}")
+        user_token = None
+        parser = reqparse.RequestParser()
+        parser.add_argument('level', help="Validation level")
+        level = "all"
+        if request.args:
+            args = parser.parse_args(req=request)
+            level = args['level']
             
-    return {"validation": {"status": "not ready", "timing": 0, "last_update_time": last_update_time_str, "last_update_timestamp": last_update_timestamp, "validations": []}}
+        if level not in ("all", "error", "warning", "info", "success"):
+            raise MetabolightsException(message="level is not valid.")
+            
+        if "user_token" in request.headers:
+            user_token = request.headers["user_token"]
+        UserService.get_instance().validate_user_has_write_access(user_token, study_id)
 
-def validation_message_sorter(item: Dict[str, Any]):
-    if "status" in item and item["status"]:
-        if item["status"] == "error":
-            return 0
-        elif item["status"] == "warning":
-            return 10
-        elif item["status"] == "info":
-            return 100
-        elif item["status"] == "success":
-            return 100
-    return 1000
+        return get_validation_report_content(study_id, level)
+
         # try:
         #     number_of_files = sum([len(files) for r, d, files in os.walk(readonly_files_folder)])
         # except:
@@ -357,8 +324,8 @@ class ValidationProcess(Resource):
         # file_path = os.path.join(settings.mounted_paths.study_internal_files_root_path, study_id)
         # validation_report_file_name = settings.validation_report_file_name
         # validation_file = os.path.join(file_path, validation_report_file_name)
-        
-        
+
+
 
 class StudyValidationTask(Resource):
     @swagger.operation(

@@ -108,6 +108,7 @@ class HpcRsyncWorker:
         calc_result = SyncCalculationTaskResult()
         if task_description and task_description.task_id:
             calc_result.description = f"Task id: {task_status.description.task_id}"
+            calc_result.task_id = task_status.description.task_id
         calc_result.new_task = task_status.new_task
         calc_result.last_update_time = last_update_time
         calc_result.last_update_timestamp = last_update_timestamp
@@ -184,13 +185,13 @@ class HpcRsyncWorker:
                 else:
                     rsync_result.files = stdout_lines[2:-4]
                 rsync_result.number_of_files = len(rsync_result.files)
-                messages.append(f"# of files: {len(rsync_result.files)}.")
+                messages.append(f"Number of new/updated files: {len(rsync_result.files)}.")
 
             size_line = stdout_lines[-2]
             if size_line.startswith("total size is"):
                 try:
                     rsync_result.total_bytes = int(size_line.split()[3].replace(",", ""))
-                    rsync_result.total_size_str = f"{round(rsync_result.total_bytes/(1.0*1024*1024), 2)} MB"
+                    rsync_result.total_size_str = f"{round(rsync_result.total_bytes/(1.0*1024*1024), 2):02} MB"
 
                     messages.append(f"Total size: {rsync_result.total_size_str}.")
                     if rsync_result.number_of_files == 0 and rsync_result.total_bytes > 0:
@@ -208,7 +209,7 @@ class HpcRsyncWorker:
             if rsync_result.number_of_files > 0:
                 rsync_result.success_message = " ".join(messages)
             else:
-                rsync_result.success_message = "No files"
+                rsync_result.success_message = "There is no file to synchronise"
 
             return rsync_result
 
@@ -230,12 +231,25 @@ class HpcRsyncWorker:
 
         if task_description:
             last_update_time = get_utc_time_string_from_timestamp(task_description.last_update_time)
+            last_update_timestamp = task_description.last_update_time
+            task_done_time_str = get_utc_time_string_from_timestamp(task_description.task_done_time)
+            task_done_timestamp = task_description.task_done_time
         else:
             last_update_time = get_current_utc_time_string()
+            task_done_time_str = ""
+            task_done_timestamp = 0
+            last_update_timestamp = 0
+            
         task_result: SyncTaskResult = SyncTaskResult(
-            status=status, description="...", last_update_time=last_update_time
+            status=status, description="...", 
+            last_update_time=last_update_time, 
+            last_update_timestamp=last_update_timestamp, 
+            task_done_time_str=task_done_time_str,
+            task_done_timestamp=task_done_timestamp,  
+            dry_run=False
         )
-
+        if task_description and task_description.task_id:
+            task_result.task_id = task_status.description.task_id
         if task_status.result_ready and task_status.result:
             rsync_result = HpcRsyncWorker.evaluate_rsync_result(task_status)
             if rsync_result.valid_result:
@@ -248,9 +262,6 @@ class HpcRsyncWorker:
             else:
                 task_result.description = rsync_result.error_message
                 task_result.status = SyncTaskStatus.SYNC_FAILURE
-        else:
-            if task_description and task_description.task_id:
-                task_result.description = f"Task id: {task_description.task_id}"
         return task_result
 
     @staticmethod

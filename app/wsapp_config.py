@@ -77,7 +77,7 @@ from app.ws.mtblsStudy import (AuditFiles, CloneAccession, CreateAccession,
                                MtblsStudiesWithMethods, MtblsStudyFolders,
                                MtblsStudyValidationStatus, MyMtblsStudies,
                                MyMtblsStudiesDetailed, PublicStudyDetail,
-                               ReindexStudy, RetryReindexStudies, StudyFolderSyncronization,
+                               ReindexStudy, RetryReindexStudies, StudyFolderSynchronization,
                                UnindexedStudy)
 from app.ws.mtblsWSclient import WsClient
 from app.ws.mzML2ISA import Convert2ISAtab, ValidateMzML
@@ -314,7 +314,7 @@ def initialize_app(flask_app):
     api.add_resource(BioStudiesFromMTBLS, res_path + "/studies/biostudies")
     api.add_resource(StudyValidationTask, res_path + "/studies/<string:study_id>/validation-task")
     api.add_resource(ValidationReport, res_path + "/studies/<string:study_id>/validation-report")
-    api.add_resource(StudyFolderSyncronization, res_path + "/studies/<string:study_id>/study-folders/rsync-task")
+    api.add_resource(StudyFolderSynchronization, res_path + "/studies/<string:study_id>/study-folders/rsync-task")
     
     api.add_resource(ValidationFile, res_path + "/studies/<string:study_id>/validate-study")
     api.add_resource(NewValidation, res_path + "/studies/<string:study_id>/validation")

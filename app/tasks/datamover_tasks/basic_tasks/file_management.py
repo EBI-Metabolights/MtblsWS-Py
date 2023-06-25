@@ -97,6 +97,52 @@ def delete_folders(self, folder_paths: Union[str, List[str]]):
     return results
 
 
+
+@celery.task(
+    bind=True,
+    base=MetabolightsTask,
+    name="app.tasks.datamover_tasks.basic_tasks.file_management.delete_files",
+)
+def delete_files(self, file_paths: Union[str, List[str]]):
+    results = {}
+
+    input_paths = get_input_paths(file_paths)
+
+    for path_item in input_paths:
+        if os.path.exists(path_item):
+            if os.path.islink(path_item):
+                try:
+                    os.unlink(path_item)
+                    results[path_item] = {"status": False, "message": f"'{path_item}' was deleted."}
+                except Exception as ex:
+                    results[path_item] = {
+                        "status": False,
+                        "message": f"Path '{path_item}' could not be deleted. Root cause: {str(ex)}",
+                    }                
+            elif os.path.isfile(path_item):
+                try:
+                    os.remove(path_item)
+                    results[path_item] = {"status": False, "message": f"'{path_item}' was deleted."}
+                except Exception as ex:
+                    results[path_item] = {
+                        "status": False,
+                        "message": f"Path '{path_item}' could not be deleted. Root cause: {str(ex)}",
+                    }
+            elif os.path.isdir(path_item):
+                try:
+                    shutil.rmtree(path_item)
+                    results[path_item] = {"status": False, "message": f"'{path_item}' was deleted."}
+                except Exception as ex:
+                    results[path_item] = {
+                        "status": False,
+                        "message": f"Path '{path_item}' could not be deleted. Root cause: {str(ex)}",
+                    }
+            else:
+                results[path_item] = {"status": False, "message": f"'{path_item}' is not a file / folder or does not exist."}
+        else:
+            results[path_item] = {"status": False, "message": f"There is no folder '{path_item}'."}
+    return results
+
 @celery.task(
     bind=True,
     base=MetabolightsTask,

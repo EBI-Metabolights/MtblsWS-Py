@@ -52,6 +52,7 @@ class ChebiWsProxy(object):
         client_settings = Settings(strict=self.settings.chebi_ws_strict,
                                    xml_huge_tree=self.settings.chebi_ws_xml_huge_tree)
         logging.getLogger('zeep.wsdl.bindings.soap').setLevel(zeep_operation_log_level)
+        logging.getLogger('zeep.transports').setLevel(logging.INFO)
         try:
             client = Client(self.settings.chebi_ws_wsdl, settings=client_settings)
             return client.bind(self.settings.chebi_ws_wsdl_service, self.settings.chebi_ws_wsdl_service_port)

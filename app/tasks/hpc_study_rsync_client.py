@@ -273,7 +273,7 @@ class StudyRsyncClient:
             )
         if target.folder_type not in ALLOWED_STAGING_AREA_DIRECTIONS[source.location][target.location]:
             raise MetabolightsException(
-                message="Selected study folder syncronisation is not allowed from source staging area to target staging area ."
+                message="Selected study folder synchronization is not allowed from source staging area to target staging area ."
             )
 
     def is_valid_study_folder(self, study_folder: StudyFolder):

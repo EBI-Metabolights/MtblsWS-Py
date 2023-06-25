@@ -13,7 +13,7 @@ from app.ws.study.user_service import UserService
 logger = logging.getLogger(__name__)
 
 
-@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.admin_tasks.es_and_db_compound_syncronization.sync_compounds_on_es_and_db")
+@celery.task(base=MetabolightsTask, name="app.tasks.common_tasks.admin_tasks.es_and_db_compound_synchronization.sync_compounds_on_es_and_db")
 def sync_compound_on_es_and_db(user_token: str, send_email_to_submitter=False):
     try:
         UserService.get_instance().validate_user_has_curator_role(user_token)
