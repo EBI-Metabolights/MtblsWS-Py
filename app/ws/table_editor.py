@@ -486,7 +486,6 @@ class ComplexColumns(Resource):
         return {"Success": "Removed column(s) from " + file_name}
 
 
-            
 class ColumnsRows(Resource):
     @swagger.operation(
         summary="Update a given cell, based on row and column index",
@@ -1290,6 +1289,9 @@ class GetTsvFile(Resource):
 
         logger.info('Trying to load TSV file (%s) for Study %s', file_name, study_id)
         # Get the Assay table or create a new one if it does not already exist
+        maf_file = False
+        if file_basename.startswith("m_") and file_basename.endswith(".tsv"):
+            maf_file = True
         try:
             file_df = get_dataframe(file_basename, file_name)
         except FileNotFoundError:

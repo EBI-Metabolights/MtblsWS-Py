@@ -446,7 +446,6 @@ def log_request(request_obj):
         else:
             logger.debug('REQUEST JSON    -> EMPTY')
 
-
 def read_tsv(file_name, col_names=None):
     table_df = pd.DataFrame()  # Empty file
     try:
@@ -699,9 +698,6 @@ def to_isa_tab(study_id, input_folder, output_folder):
     return True, "ISA-Tab files generated for study " + study_id
 
 def create_temp_dir_in_study_folder(parent_folder: str) -> str:
-    
-    
-    
     date = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     rand = random.randint(1000, 9999999)
     folder_name = f"{date}-{str(rand)}"
