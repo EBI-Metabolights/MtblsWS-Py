@@ -6,13 +6,14 @@ workflow:
   rules:
     - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "development-pipeline-test"
 stages:
+  - prepare
   - build
   - configure
   - deploy
 
 
 build_version_files:
-  stage: build
+  stage: prepare
   rules:
     - if: $CI_COMMIT_BRANCH == "development" || $CI_COMMIT_BRANCH == "development-pipeline-test"
       variables:
